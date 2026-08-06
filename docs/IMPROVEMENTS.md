@@ -1796,30 +1796,6 @@ should not be offered for a site whose pages hold sections — `init --site` kno
 site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
 than silently useless.
 
-### XVII.67 The one refusal that does not teach (SH514)
-
-`POST /api/v2/staticfile/upload` refused a zero-byte file with Spring's default body:
-`{"timestamp":…,"status":400,"error":"Bad Request","path":"/api/v2/staticfile/upload"}`.
-No `title`, no `detail`, no `fix` — the only endpoint in this session's traffic that
-answered that way. The same endpoint answers a *missing* `folderId` properly, with all
-four fields and an example, so the convention is implemented and this path falls outside
-it.
-
-The file was real. `vilt-group.com` serves `/css/en.css?v=cf8427e` as **200 with 0
-bytes**, an empty stylesheet, which is legitimate; the capture wrote it faithfully. So a
-correct capture of a correct source produces bytes this endpoint rejects without saying
-why, and the whole conversion of a 64-asset site dies.
-
-Two answers and both are defensible, which is why the silence is the defect rather than
-the refusal. Accept it — an empty file is a file, and `convert` already reports `1 with
-no bytes in the tree` for the missing case, so it has a vocabulary for this. Or refuse
-it and **say so**: `title` naming the file, `detail` explaining that a zero-byte part
-cannot be stored, `fix` telling the caller to drop it.
-
-Whichever, the count belongs in the report. `59 uploaded, 1 with no bytes` is what the
-caller needs to see, not a stack of one failed request — and it is a line the conversion
-already knows how to print.
-
 ### XVII.70 The generator is on the wrong path (SH518)
 
 `shio apply --blueprint marketing-site --site X` writes what it promises: 8 post-types,
@@ -1887,3 +1863,24 @@ design. Where does it live: the docs repo has no test harness, and Shio's
 `cli/conformance/` already knows how to drive an instance. And how much is worth
 extracting: a first count of the executable blocks decides whether this is a gate or a
 periodic check, and that count is the first deliverable either way.
+
+## XIX The public site (Block S)
+
+Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
+positioning statement in the portfolio - a CMS whose primary operator is a coding agent
+- has no page that says so, and the ten laws, the eleven MCP tools, the content-as-files
+projection and site replication are legible only to somebody who already cloned the
+repository.
+
+This block builds that page in the shape `apps/site` already proved in Turing: Vite,
+React 19, Tailwind v4 and shadcn/ui, prerendered to static HTML per route, served at the
+root of a domain, with no backend of its own. What it does not copy is the argument.
+Turing's centrepiece is a live search box, because a visitor can type a query and judge
+the answer. Shio's is a Claude Code session, because what is being sold is not a feature
+a human operates - it is how cheaply an agent operates the product. Every section on the
+landing page therefore answers one of the ten laws with something a visitor can check: a
+token count, a teaching 4xx, a file tree, a draft that did not publish itself.
+
+The site is also written for the reader it is about. An agent evaluating a CMS reads the
+page it was handed, and a Claude Code-first product that answers only in HTML is making
+its own argument badly.

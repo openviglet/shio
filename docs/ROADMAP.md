@@ -94,7 +94,6 @@
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
-- 📋 **SH514** (deps: SH437 ✅) **A zero-byte asset is refused with Spring's default 400, so a conversion dies unexplained** — The source serves an empty stylesheet legitimately and the capture writes it faithfully, and the upload's only answer is a body with no title, detail or fix. → §XVII.67
 
 ## Block F — Market positioning
 
@@ -106,6 +105,8 @@
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
 - 📋 **SH499** (deps: SH479 ✅, SH487 ✅) **No published example is ever executed, so a renamed verb rots the docs silently** — 57 executable blocks over 17 pages carry 65 assertable subjects, so both questions are answered: it lives in cli/conformance/, and it is two instruments rather than one. → §XVIII.21
+
+## Block S — The public site (shio.viglet.org)
 
 ## Non-goals (do NOT add as tasks)
 

@@ -184,6 +184,18 @@ disk, **keyed by the file post's id** (not the folder tree), under
   writes the bytes in the same tx; returns the created post (the `File` widget
   stores its `id`). `ShStaticFileService.resolveOrCreateFilePostType()` bootstraps
   the system `File` post type on first use (system post types are **not** seeded).
+  **A zero-byte file is a file (SH514).** This refused an empty upload with
+  `ResponseStatusException(BAD_REQUEST, "Upload is empty")` — Spring's default body, *no title, no
+  detail, no fix*, the only endpoint in a whole session's traffic to answer that way while its own
+  sibling refusal for a missing `folderId` carries all four. And the file was real:
+  `vilt-group.com` serves `/css/en.css?v=cf8427e` as **200 with 0 bytes**, the capture wrote it
+  faithfully, and a 64-asset conversion died on an empty stylesheet. `MultipartFile.isEmpty()` was
+  answering two questions at once — *no part sent* and *a part holding an empty file* — and
+  separating them settles it: the first is a caller mistake (`upload-no-file`, and
+  `upload-unnamed-file` beside it, both teaching), the second is **content**, because a replica that
+  404s where its source answered an empty 200 is less faithful rather than safer. `convert` counts
+  them apart in its report (`… , 1 the source itself serves empty`), which is not the same fact as
+  `with no bytes in the tree`.
 - `GET /api/v2/staticfile/{id}` — streams the bytes; `GET /pre-upload/{folderId}/{fileName}`
   is a legacy-parity existence check (never blocks upload).
 - `POST /api/v2/staticfile/{id}/replace` (multipart: `file`) — **new bytes for an existing asset

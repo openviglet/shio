@@ -433,9 +433,57 @@ class ShStaticFileAPITest {
         mockMvc.perform(multipart("/api/v2/staticfile/" + id + "/replace")
                         .file(empty)
                         .principal(mockPrincipal))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                // SH514 — the refusal was right and Spring was dropping the sentence on the floor.
+                .andExpect(jsonPath("$.title").value("This replacement carries no bytes"))
+                .andExpect(jsonPath("$.fix").exists());
 
         assertEquals("keep me", Files.readString(storage.resolve(id, "keepme.txt")));
+    }
+
+    /**
+     * SH514 — a zero-byte file is a file, and refusing it killed a 64-asset conversion.
+     *
+     * <p>{@code vilt-group.com} serves {@code /css/en.css?v=cf8427e} as <b>200 with 0 bytes</b> — a
+     * legitimately empty stylesheet — and the capture wrote it faithfully. This endpoint answered
+     * {@code ResponseStatusException(BAD_REQUEST, "Upload is empty")}, which Spring renders with no
+     * title, no detail and no fix: the only endpoint in a whole session's traffic to answer that
+     * way, while its own sibling refusal for a missing {@code folderId} carries all four.</p>
+     *
+     * <p>{@code MultipartFile.isEmpty()} was answering two questions at once — no part sent, and a
+     * part holding an empty file — and separating them settles it. A replica that 404s where its
+     * source answered an empty 200 is less faithful, not safer.</p>
+     */
+    @Test
+    void stage06nAnEmptyFileIsAFileAndIsStored() throws Exception {
+        MockMultipartFile empty = new MockMultipartFile("file", "en.css", "text/css", new byte[0]);
+
+        String response = mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(empty)
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("en.css"))
+                .andReturn().getResponse().getContentAsString();
+
+        String id = com.jayway.jsonpath.JsonPath.read(response, "$.id");
+        assertTrue(storage.exists(id, "en.css"), "zero is a count of bytes, and the file is stored");
+        assertEquals(0, Files.size(storage.resolve(id, "en.css")));
+    }
+
+    /** And the caller mistake the old rule was conflated with, refused the way everything else is. */
+    @Test
+    void stage06oAPartWithNoNameIsRefusedWithAProblemDocument() throws Exception {
+        MockMultipartFile unnamed = new MockMultipartFile("file", "", "text/css", new byte[0]);
+
+        mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(unnamed)
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("This upload has no file name"))
+                .andExpect(jsonPath("$.detail").exists())
+                .andExpect(jsonPath("$.fix").exists());
     }
 
     @Test

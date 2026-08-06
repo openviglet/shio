@@ -148,6 +148,7 @@ export async function run(flags, positionals, ctx) {
     ctx.stdout.write(
       `  assets: ${assets.uploaded} uploaded, ${assets.present} already there`
         + `${assets.missing ? `, ${assets.missing} with no bytes in the tree` : ""}`
+        + `${assets.empty ? `, ${assets.empty} the source itself serves empty` : ""}`
         + " - served at the source's own paths\n",
     );
     const pointed = withResolvedFileFields(document, assets.ids);
@@ -219,7 +220,7 @@ async function sendAssets({ site, inventory, flags, createSite = false, admin },
   // SH471 — source path → the `File` post's id, so a section's `File` field can name the post that
   // holds those bytes rather than the path they came from. Free: the listing and the upload response
   // both already carry the id, so this costs no request that was not being made.
-  const summary = { uploaded: 0, present: 0, missing: 0, ids: new Map() };
+  const summary = { uploaded: 0, present: 0, missing: 0, empty: 0, ids: new Map() };
   if (!rows.length) return summary;
 
   const assetsDir = typeof flags.assetsDir === "string" ? flags.assetsDir : ASSETS_DIR;
@@ -283,6 +284,12 @@ async function sendAssets({ site, inventory, flags, createSite = false, admin },
     });
     if (created?.id) summary.ids.set(asset.path, created.id);
     summary.uploaded += 1;
+    // SH514 — counted apart, and it is not the same fact as `missing`. An empty file is a file:
+    // `vilt-group.com` serves `/css/en.css?v=cf8427e` as 200 with 0 bytes, the capture wrote it
+    // faithfully, and the upload refused it with Spring's default 400 — killing a 64-asset
+    // conversion over an empty stylesheet. It uploads now, and the count is what tells a reader
+    // that an asset which looks absent on the replica is absent at the source too.
+    if (!bytes.length) summary.empty += 1;
   }
   return summary;
 }

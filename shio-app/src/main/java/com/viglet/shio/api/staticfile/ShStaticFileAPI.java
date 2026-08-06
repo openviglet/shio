@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformGuard;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformPipeline;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformResult;
@@ -134,14 +136,39 @@ public class ShStaticFileAPI {
     /**
      * Upload a file into {@code folderId}, creating a {@code File} post for it.
      * Returns the created post (200) so the caller can store its id.
+     *
+     * <h2>A zero-byte file is a file (SH514)</h2>
+     *
+     * <p>This refused an empty upload with {@code ResponseStatusException(BAD_REQUEST, "Upload is
+     * empty")}, which Spring renders as {@code {"timestamp":…,"status":400,"error":"Bad
+     * Request","path":…}} — <b>no title, no detail, no fix</b>, and the only endpoint in a whole
+     * session's traffic to answer that way. The sibling refusal for a missing {@code folderId}
+     * carries all four and an example, so the convention was implemented and this path fell outside
+     * it.</p>
+     *
+     * <p>The file was real. {@code vilt-group.com} serves {@code /css/en.css?v=cf8427e} as <b>200
+     * with 0 bytes</b> — a legitimately empty stylesheet — the capture wrote it faithfully, and the
+     * whole conversion of a 64-asset site died on it. So a correct capture of a correct source
+     * produced bytes this endpoint rejected without saying why.</p>
+     *
+     * <p><b>{@code isEmpty()} was answering two questions at once</b>, and separating them settles
+     * it: {@code MultipartFile.isEmpty()} is {@code getSize() == 0}, which is true both when the
+     * caller sent no part and when the part holds an empty file. The first is a mistake and is
+     * refused — with a problem document, like everything else here. The second is <em>content</em>:
+     * a replica that 404s where its source answered an empty 200 is less faithful, not safer, and
+     * zero is a count of bytes. {@code /replace} keeps its refusal, because there the same bytes
+     * mean truncation of something that exists.</p>
      */
     @PostMapping("/upload")
     public ResponseEntity<ShPostUnified> upload(@RequestParam("file") MultipartFile file,
                                                 @RequestParam("folderId") String folderId,
                                                 @RequestParam(name = "createPost", defaultValue = "true") boolean createPost,
                                                 Principal principal) {
-        if (file == null || file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Upload is empty");
+        if (file == null) {
+            throw new NoFilePartException();
+        }
+        if (file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()) {
+            throw new UnnamedFilePartException();
         }
         String owner = principal != null ? principal.getName() : null;
         ShPostUnified post = shStaticFileService.upload(file, folderId, owner);
@@ -179,10 +206,10 @@ public class ShStaticFileAPI {
                                     Principal principal) {
         if (file == null || file.isEmpty()) {
             // An empty replacement would truncate the asset and answer 200. A caller that meant
-            // to delete it has `/v2/post-unified/{id}`, which also cleans up the bytes.
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Replacement is empty. Sending no bytes would truncate the asset; delete the "
-                            + "File post with DELETE /api/v2/post-unified/{id} instead.");
+            // to delete it has `/v2/post-unified/{id}`, which also cleans up the bytes. SH514 left
+            // this refusal standing and gave it the problem document it always deserved: the
+            // sentence was right and Spring was dropping it on the floor.
+            throw new EmptyReplacementException();
         }
         try {
             return shStaticFileService.replace(file, id,
@@ -335,5 +362,57 @@ public class ShStaticFileAPI {
 
     /** Response of {@code GET /{id}/signed-url}: the HMAC signature and the query to append. */
     public record ShSignedTransformUrl(String sig, String query) {
+    }
+
+    // --- SH514: the three refusals this endpoint owes a problem document ------
+    //
+    // Named subclasses rather than inline construction, which is the convention `ShTeachingException`
+    // enforces with a protected constructor: an error a caller can be expected to hit is part of the
+    // surface, and giving it a type is what stops one failure being worded three ways.
+
+    /** No {@code file} part in the request at all — a caller mistake, and nothing to store. */
+    public static class NoFilePartException extends ShTeachingException {
+
+        public NoFilePartException() {
+            super(ShProblem.badRequest("upload-no-file",
+                            "This request carried no file to upload")
+                    .withDetail("The `file` part is missing from the multipart body, so there are "
+                            + "no bytes to store. A file that is *empty* is a different thing and "
+                            + "is accepted: zero is a count of bytes, and a source that serves an "
+                            + "empty stylesheet with a 200 is replicated by storing one.")
+                    .withFix("Send the bytes as a multipart part named `file`, alongside "
+                            + "`folderId`.")
+                    .withExample("curl -F file=@site.css -F folderId=<id> "
+                            + "/api/v2/staticfile/upload"));
+        }
+    }
+
+    /** A part with no filename: there is nothing to address the stored asset by. */
+    public static class UnnamedFilePartException extends ShTeachingException {
+
+        public UnnamedFilePartException() {
+            super(ShProblem.badRequest("upload-unnamed-file",
+                            "This upload has no file name")
+                    .withDetail("An asset is addressed by its folder chain and its file name "
+                            + "(SH145), so a part with no name is one nothing could ever ask for.")
+                    .withFix("Set the part's filename — with curl, `-F file=@<path>` sends it.")
+                    .withExample("curl -F file=@hero.png -F folderId=<id> "
+                            + "/api/v2/staticfile/upload"));
+        }
+    }
+
+    /** Replacing an asset with nothing would truncate it and answer 200. */
+    public static class EmptyReplacementException extends ShTeachingException {
+
+        public EmptyReplacementException() {
+            super(ShProblem.badRequest("replace-empty",
+                            "This replacement carries no bytes")
+                    .withDetail("Replacing an asset with an empty body would truncate it and "
+                            + "answer 200, so every page that references it would serve nothing "
+                            + "and nothing would say why.")
+                    .withFix("Send the new bytes, or delete the asset with "
+                            + "DELETE /api/v2/post-unified/{id}, which also removes the file.")
+                    .withExample("curl -F file=@hero.png /api/v2/staticfile/<id>/replace"));
+        }
     }
 }
