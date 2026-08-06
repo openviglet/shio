@@ -519,6 +519,77 @@ test("SH449: an accepted page composes sections and carries no verbatim copy of 
   );
 });
 
+/**
+ * A page with two blocks, which is the normal page and the one SH520 is about — every real page
+ * mixes what the vocabulary matched with what it did not.
+ */
+const MIXED_PAGE = "<html><body><main>"
+  + "<section class=hero><h1>Home</h1><p>Welcome to the site.</p><a href=/go>Start</a></section>"
+  + "<section class=notes><h2>Notes</h2><p>Kept exactly as the source wrote it.</p></section>"
+  + "</main></body></html>";
+
+/** The page's block ids in source order, read the way a reviewer would. */
+async function blocksOfPage(ctx) {
+  const { proposalFor } = await import("../src/commands/propose.mjs");
+  const { proposal } = await proposalFor({}, ctx, "propose");
+  return proposal.pages[0].blocks;
+}
+
+test("SH520: accepting one block keeps every other block on the page, verbatim", async () => {
+  // The promise `propose` prints in the same run — "an unaccepted block stays verbatim markup" — and
+  // the whole reason accepting one block is an incremental decision rather than an all-or-nothing
+  // rewrite. Measured on viglet.org before this: accepting the FAQ left a Page holding a 6-byte
+  // title and one section where fidelity holds 42,371 bytes, so the hero, the product grid and the
+  // footer were gone and a megabyte of captured CSS was still served for markup that did not exist.
+  const site = { "/": MIXED_PAGE };
+  const [hero, notes] = await blocksOfPage(ctxWith({ site }));
+  const ctx = ctxWith({ site, plan: { accepted: [{ block: hero, type: "SectionHero" }] } });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+  const page = document.posts.find((post) => post.type === "Page");
+
+  assert.notEqual(hero, notes, "the fixture is two blocks, or this test asserts nothing");
+  assert.deepEqual(page.data.sections, [`${SECTIONS_FOLDER}/${hero}`],
+    "the accepted block is a section, exactly as before");
+  assert.equal(
+    page.data.content,
+    "<main><section class=notes><h2>Notes</h2><p>Kept exactly as the source wrote it.</p></section></main>",
+    "and the block nobody accepted is still on the page, as the source's own bytes with the source's "
+      + "own class attribute — the remainder, cut out of the captured file rather than re-serialized",
+  );
+  assert.ok(
+    !page.data.content.includes("Welcome to the site."),
+    "the accepted one is gone from the markup: a page that ships both renders it twice, and the "
+      + "acceptance becomes invisible in the output",
+  );
+  assert.match(ctx.stdout.text, /1 of 1 page\(s\) mixed/,
+    "and the reviewer is told, in the run that writes it, that the rest of the page was kept");
+});
+
+test("SH520: a mixed page is presented by the captured theme, because it carries the source's classes", async () => {
+  // SH510's rule on the page shape it did not have. The vocabulary's theme styles SH508's roles, and
+  // the half of a mixed page that nobody accepted has none of them — naming it would leave that half
+  // rendered as unstyled text, and writing it at all would be a post nobody renders.
+  const site = { "/": MIXED_PAGE };
+  const [hero] = await blocksOfPage(ctxWith({ site }));
+  const ctx = ctxWith({ site, plan: { accepted: [{ block: hero, type: "SectionHero" }] } });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+
+  assert.ok(
+    !document.posts.some((post) => post.data?.TITLE === vocabularyThemeTitle("Acme")),
+    "no Shio theme in the document, because the layout does not name it",
+  );
+  assert.equal(
+    document.posts.find((post) => post.type === "PageLayout").data.THEME,
+    undefined,
+    "and no captured one to name either on a fixture with no stylesheet — what is asserted here is "
+      + "that a mixed page never resolves to the vocabulary's theme, which SH509 wrote unconditionally",
+  );
+});
+
 // --- SH508: the layout contract a theme lays out with ---
 
 /**
@@ -1028,6 +1099,24 @@ test("SH438: a repeated signature on one page is listed once", () => {
   });
 
   assert.deepEqual(pages[0].data.sections, [`${SECTIONS_FOLDER}/cta1`, `${SECTIONS_FOLDER}/hero2`]);
+});
+
+test("SH520: a proposal from before the spans keeps its sections rather than duplicating them", () => {
+  // The shape a proposal file already on disk has. Without a span there is no way to cut the
+  // accepted block out, and writing the body anyway would render it twice — once as markup and once
+  // as the section it became. So the remainder is refused, which is exactly what the previous
+  // release wrote; re-running `shio propose` is what produces it, and that is a cheaper thing to say
+  // than a page whose hero appears twice.
+  const { pages } = buildConversion({
+    proposal: composed([{ path: "/", title: "Home", blocks: ["hero1", "kept2"] }],
+      [candidate("hero1"), candidate("kept2")]),
+    plan: { accepted: [{ block: "hero1", type: "SectionHero" }] },
+    site: "Acme",
+    markup: new Map([["/", "<html><body><main><section>one</section><section>two</section></main></body></html>"]]),
+  });
+
+  assert.deepEqual(pages[0].data.sections, [`${SECTIONS_FOLDER}/hero1`]);
+  assert.ok(!("content" in pages[0].data), "no span, no remainder — and no second copy of the hero");
 });
 
 test("SH438: a proposal from before this carried no pages, and still converts", () => {

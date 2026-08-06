@@ -24,6 +24,8 @@
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
 - 📋 **SH516** (deps: SH512) **The gate approves a page whose every link is broken, because it reads the tree and not the page** — verify resolves references against content furls, so 38 broken links and 43 broken references on the served page reach it as ok with 12 warnings. → §IX.31
+- 📋 **SH521** (deps: SH516) **The gate ignores the reads that already hold the finding** — agent/render answered links 0 and nine unstyled classes on the page verify called ok, because every check resolves against the tree and not the artefact. → §IX.33
+- 📋 **SH522** (deps: SH521) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
 
 ## Block I — Content as files (local-first authoring)
 
@@ -93,7 +95,6 @@
 - 📋 **SH514** (deps: SH437 ✅) **A zero-byte asset is refused with Spring's default 400, so a conversion dies unexplained** — The source serves an empty stylesheet legitimately and the capture writes it faithfully, and the upload's only answer is a body with no title, detail or fix. → §XVII.67
 - 📋 **SH515** (deps: SH473 ✅) **The rewriter rebases references the collector never fetched, so the page asks for what is not there** — A style attribute's url() and a fetch() string are rebased and never downloaded, so two images 404 and a JSON crash follows on a run that uploaded every asset. → §XVII.68
 - 📋 **SH517** (deps: SH469 ✅) **A rendered capture bakes a script's canvas and its transient classes, freezing behaviour as content** — The source's particles div is empty and the replica holds a dead canvas sized for the capture viewport, alongside scrollspy and active states caught mid-flight. → §XVII.69
-- 📋 **SH520** (deps: SH510 ✅) **Accepting one block discards every unaccepted block on the same page** — propose promises an unaccepted block stays verbatim markup, and the converted Page holds title and sections with no content, so a page keeps one section and loses the rest. → §XVII.71
 
 ## Block F — Market positioning
 

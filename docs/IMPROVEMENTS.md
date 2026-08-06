@@ -397,6 +397,55 @@ against **its own URL**: `<a href>`, `src`, `srcset`, `<link>`, `url()` in style
 *and* style attributes, and the strings a `fetch(` names. It is what a reader does by
 opening the page, which is why it keeps being the thing that finds what the tree cannot.
 
+### IX.33 A fact nobody joined to a judgement (SH521)
+
+`verify` answered **ok** on a page that had lost its hero, grid and footer. At the same
+moment `GET /agent/render` answered `links: 0, images: 0` — the intact version answers
+`links: 11, images: 1` — and `appearance.unstyledClasses` listed nine classes the page
+draws with and nothing styles.
+
+Shio knew. Two reads held the finding and the gate consults neither, because every
+`verify` check resolves against the **tree**: does a furl exist, is a File addressable,
+does a layout name a theme. All true of a page that is empty.
+
+That is the shape of every defect this work has produced. Not a missing fact — a fact
+nobody joined to a judgement: `unstyledClasses` is a finding written as a list, `links:
+0` one written as a number.
+
+So the change is small and structural: **the gate reads the artefact, not only the
+store.** `/agent/render` already computes what it needs, so this is a join and a
+threshold, not an analysis — a page whose `unstyledClasses` is non-empty has a theme
+that does not reach it, and a replicated page with fewer links than its capture recorded
+has lost content.
+
+It also ends the part of my own work that keeps going wrong. Every round I rebuild that
+join in Python and I have got it wrong twice — once reporting zero broken references on
+a page with a missing logo, once counting 106 editable fields on a page that was mostly
+gone.
+
+### IX.34 Both sides are held and never compared (SH522)
+
+Shio holds both sides of every comparison it does not make. A capture is a **declaration
+of the source**: six pages, eleven links, one image, this text. A proposal is a
+declaration of **intent**: these fields from these blocks. A desired-state document is a
+declaration of the **write**. And the artefact each produces is compared with none of
+them.
+
+So the question I ask every round — "is this what it was supposed to be?" — has no
+answer in the product, and I answer it by hand. That hand has been wrong twice: zero
+broken references on a page with a missing logo, and 106 editable fields on a page that
+had lost most of its content. Both times the declaration was on disk and the artefact
+was on the wire, and the join was forty lines of Python I wrote from memory.
+
+The verb is `shio diff`, and its argument is which declaration to judge against — the
+capture, the proposal, the document, or the same address at an earlier moment. What it
+returns is not pixels: fields present, absent and changed; references that resolved and
+that did not; counts the source recorded against counts the page shows.
+
+**Every artefact carries the identity of what declared it**, which is what makes this cheap: the inventory
+names the capture, the proposal names the inventory, the document names the proposal. Nothing has to be
+guessed or re-fetched — the chain is already written down and nobody has ever walked it.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1803,31 +1852,6 @@ stays a declaration of content.
 
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
-
-### XVII.71 The promise the mode rests on (SH520)
-
-Accepting one candidate discards every other block on the page. `viglet.org`'s home has
-a `SectionFaq` among its blocks; accepting it leaves a `Page` whose fields are `title`
-(6 bytes) and `sections` (one entry) and **no `content`**. The hero, the product grid
-and the footer are gone; the same page in fidelity holds 42,371 bytes of `content`.
-
-`propose` prints the opposite in the same run: **"an unaccepted block stays verbatim
-markup"**. That is the mode's central promise — it is what makes accepting one block a
-reviewable, incremental decision rather than an all-or-nothing rewrite — and it is not
-kept.
-
-What reaches the reader compounds it. The page still carries the captured theme, so
-**1,062,261 bytes of CSS** are served for markup that no longer exists, and the body is
-3,486 bytes with zero source classes. A megabyte of stylesheet for one FAQ.
-
-Mixing is the normal case, which is why this is not an edge. Six candidates on a real
-site and four in the vocabulary is a good hit rate; every page here holds accepted and
-unaccepted blocks, so every page loses most of itself.
-
-The composition already has the pieces: `convert` writes `content` for a fidelity page
-and `sections` for an accepted one, and a page needs both — the verbatim remainder
-around the sections, in source order. The check is the one the promise implies: accept
-one block on a page with two, and the other must still be in the rendered output.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 

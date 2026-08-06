@@ -548,9 +548,9 @@ it. Four decisions worth keeping:
   content. *SH509's rationale names a **blueprint** as the vehicle and this is a post instead*:
   `convert` writes a desired-state document and has no way to apply a blueprint, so a converted site
   would render themeless until somebody applied one by hand, and a package **plus** the constant
-  `convert` needs would be two copies of one stylesheet. **Written only when the conversion produces
-  both sections and a layout** — the roles are SH508's and a verbatim page has none of them, so on the
-  fidelity path it would be a post nobody renders. The tokens ride it as DTCG, because `ShThemeTokens`
+  `convert` needs would be two copies of one stylesheet. **Written only when the layout names it**
+  (SH520 tightened this from "sections and a layout") — the roles are SH508's, and a page that is
+  verbatim in whole or in part has none of them, so anywhere else it would be a post nobody renders. The tokens ride it as DTCG, because `ShThemeTokens`
   compiles `color.ink` into `--color-ink` and prepends the `:root` block, which is what makes a colour
   a field edit. Three closures the test holds, each of which fails the way an unstyled page fails —
   silently: every role in `LAYOUT_ROLES` is styled, every `var()` the stylesheet reads is a token the
@@ -568,12 +568,32 @@ it. Four decisions worth keeping:
   copy of the CSS in the layout would lose along with being a second copy of one stylesheet.
   **`authorable` is `verbatim === 0`, not "has any section"** — a conversion that left a page verbatim
   still names the captured theme, because fidelity's claim is a pixel comparison and cannot be made
-  without those bytes. A mixed site's composed pages stay unstyled, which is where they are today;
-  what the rule refuses is making one page *worse* than it is now to make another better. The capture
+  without those bytes; SH520 added `&& mixed === 0` for the same reason one page down. The capture
   is written byte for byte as before. The test measures rather than asserts a name: against a
   ~1.04 MB captured stylesheet the named theme is **under 1%** of it, there is exactly one
   `{{theme.css}}`, and `convert`'s report names the theme, because under SH507 which presentation a
   reviewer is getting is the mode's contract and not an implementation detail.
+- **A page is not one mode, and accepting one block used to discard the rest of it (SH520).**
+  `composePages` wrote `content` **or** `sections`, so a page with six blocks and one acceptance
+  became a `Page` holding a 6-byte `title` and one section — measured on `viglet.org`, where the same
+  page in fidelity holds 42,371 bytes: the hero, the product grid and the footer gone, with
+  **1,062,261 bytes of captured CSS** still served around a 3,486-byte body carrying zero source
+  classes. `propose` prints the opposite in the same run — *an unaccepted block stays verbatim
+  markup* — and that promise is what makes accepting one block incremental rather than an
+  all-or-nothing rewrite. Mixing is the normal case, not an edge: six candidates and four vocabulary
+  matches is a good hit rate, and every page then loses most of itself. So a mixed page now carries
+  **both**: `sections` for what was accepted, `content` holding the page's own bytes with exactly the
+  accepted blocks cut out. **Verbatim in SH449's sense — a slice, not a re-serialization** — and that
+  is what the mechanism buys: `stripNonMarkup` **blanks what it removes with the same number of
+  spaces** instead of deleting it, so every offset into its output is an offset into the source;
+  `tokenize` yields each token's `[start, end)`; `buildTree` records the span on every node; and the
+  proposal's `pages[].spans` is the array parallel to `blocks`. (The one concession, and it is
+  SH468's safe side: `foo<!--x-->bar` now reads as two words rather than one.) The two older shapes
+  are byte-identical — accept nothing and the whole body is the content, accept every block on a page
+  and there is no remainder — and a proposal written before the spans composes sections alone rather
+  than shipping a second copy of the accepted markup. **Ordering is what it does not buy**: a layout
+  is resolved per post-type and holds one `{{{content}}}`, so the remainder keeps the source's order
+  among itself and the sections render after it.
 - **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
   layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
   `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after

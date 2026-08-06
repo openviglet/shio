@@ -107,7 +107,12 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     .sort((a, b) => (a.url < b.url ? -1 : 1));
 
   const pages = composePages(proposal, new Set(sections.map((post) => post.url)), markup);
-  const verbatim = pages.filter((page) => typeof page.data.content === "string").length;
+  const held = pages.filter((page) => typeof page.data.content === "string");
+  // Two counts, because they are two different pages (SH520). `verbatim` is a page nobody accepted
+  // anything on — fidelity, whole. `mixed` is a page that kept some blocks and authored others, and
+  // it is the shape that used to be silently the first one minus everything it did not accept.
+  const verbatim = held.filter((page) => !page.data.sections).length;
+  const mixed = held.length - verbatim;
 
   const extras = [];
   const posts = [...sections, ...pages];
@@ -119,13 +124,23 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     posts.push(scriptsPost(proposal.scripts, site));
     extras.push("SiteScripts");
   }
-  // SH509 — the theme SH507's decision promised and the vocabulary never had. Written only for a
-  // conversion that produces **both** sections and a layout to name it: it styles SH508's roles, and
-  // a verbatim page has none of them, so on the fidelity path it would be a post nobody renders —
-  // and a document with sections but no page has no layout either, which is the same emptiness one
-  // step earlier. `Theme (Shio)` rather than `Theme` in `extras`, because that string is what decides
-  // whether the layout names the *captured* theme.
-  if (sections.length && pages.length) {
+  // SH510 — which of the two themes the one layout names, decided before either is written because
+  // the answer decides both. SH520 added the third page shape: a **mixed** page carries the source's
+  // own markup and the source's own class names, so the captured stylesheet is the one that has
+  // anything to say about it, and naming the vocabulary's theme would leave the half a curator did
+  // not accept rendered as unstyled text.
+  const theme = pages.length
+    ? layoutTheme({
+      site,
+      captured: extras.includes("Theme"),
+      authorable: sections.length > 0 && verbatim === 0 && mixed === 0,
+    })
+    : null;
+  // SH509 — the theme SH507's decision promised and the vocabulary never had. Written only when the
+  // layout **names** it: it styles SH508's roles, and a page that is verbatim in whole or in part has
+  // none of them, so anywhere else it would be a post nobody renders. `Theme (Shio)` rather than
+  // `Theme` in `extras`, because that string is what decides whether the *captured* theme was written.
+  if (theme === vocabularyThemeTitle(site)) {
     posts.push(vocabularyThemePost(site));
     extras.push("Theme (Shio)");
   }
@@ -133,11 +148,9 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
   // path wrote sections, a Page and a Theme and NO PageLayout, so `/preview/<site>/` answered
   // **400 — binds no layout for post-type 'Page'**. Block Q is named "an existing site becomes an
   // authorable Shio site" and neither of its two modes produced one. Every page needs a layout,
-  // because the renderer resolves one per post-type; the layout below serves both modes.
+  // because the renderer resolves one per post-type; the layout below serves all three modes.
   if (pages.length) {
-    posts.push(pageLayout(markup, site, layoutTheme({
-      site, captured: extras.includes("Theme"), authorable: sections.length > 0 && verbatim === 0,
-    })));
+    posts.push(pageLayout(markup, site, theme));
     extras.push("PageLayout");
   }
 
@@ -162,6 +175,7 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     sections,
     pages,
     verbatim,
+    mixed,
     extras,
   };
 }
@@ -478,6 +492,28 @@ function langOf(markup) {
  * A page with neither — no accepted section and no markup on disk — is still skipped, because that
  * is the one case where there is genuinely nothing to serve.</p>
  *
+ * <h3>And a page is not one mode, which is what the promise always said (SH520)</h3>
+ *
+ * <p>SH449 wrote `content` **or** `sections`, so accepting one block on a page discarded every other
+ * block on it. Measured on `viglet.org`: accepting the FAQ left a `Page` holding a 6-byte `title` and
+ * one section, where the same page in fidelity holds 42,371 bytes — the hero, the product grid and
+ * the footer gone, and a megabyte of captured CSS still served for markup that no longer existed.
+ * `propose` prints the opposite in the same run — *an unaccepted block stays verbatim markup* — and
+ * that promise is the whole reason accepting one block is an incremental decision rather than an
+ * all-or-nothing rewrite.</p>
+ *
+ * <p>So a mixed page gets **both**: `sections` for what was accepted, and `content` holding the
+ * page's own bytes with exactly the accepted blocks cut out. Verbatim in the sense SH449 insisted
+ * on — a slice of the captured file, not a re-serialization — because `stripNonMarkup` blanks rather
+ * than deletes and the proposal records each block's span. The remainder keeps the source's order
+ * among itself; the sections render after it, because a layout is resolved per post-type and there
+ * is one `{{{content}}}` in it.</p>
+ *
+ * <p>The two modes either side of it are byte-identical to what they were: accept nothing and the
+ * whole body is the content, accept every block on the page and there is no remainder to write.
+ * A proposal taken before SH520 has no spans, and such a page composes sections alone rather than
+ * duplicating the accepted markup — the old behaviour, which a fresh `shio propose` replaces.</p>
+ *
  * @param {Map<string, string>} markup path → the page's captured HTML, the same cache the proposal
  *   was computed from. Empty for a caller that has none, which yields exactly SH438's behaviour.
  */
@@ -486,16 +522,25 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
   for (const page of proposal?.pages ?? []) {
     const seen = new Set();
     const sections = [];
-    for (const id of page.blocks ?? []) {
+    const cut = [];
+    let kept = 0;
+    (page.blocks ?? []).forEach((id, at) => {
       const url = `${SECTIONS_FOLDER}/${id}`;
-      // First occurrence wins. A signature repeated on one page is still one section post with one
-      // set of fields, so listing it twice would ask the page to render the same content twice —
-      // a decision for the reviewer, not a thing to infer from a structural collision.
-      if (!sectionUrls.has(url) || seen.has(url)) continue;
+      if (!sectionUrls.has(url)) {
+        kept += 1;
+        return;
+      }
+      // The block became a section, so its bytes must not also be in the remainder — whichever
+      // occurrence it is. First occurrence wins for the *list*: a signature repeated on one page is
+      // still one section post with one set of fields, so listing it twice would ask the page to
+      // render the same content twice — a decision for the reviewer, not a thing to infer from a
+      // structural collision.
+      cut.push(page.spans?.[at] ?? null);
+      if (seen.has(url)) return;
       seen.add(url);
       sections.push(url);
-    }
-    const body = sections.length ? null : bodyOf(markup.get(page.path));
+    });
+    const body = contentFor({ html: markup.get(page.path), sections, kept, cut });
     if (!sections.length && body === null) continue;
     pages.push({
       url: page.path,
@@ -505,11 +550,44 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
       // than the site name: it is what makes two untitled pages two rows a human can tell apart.
       data: {
         title: titleOf(page),
-        ...(sections.length ? { sections } : { content: body }),
+        ...(sections.length ? { sections } : {}),
+        ...(body === null ? {} : { content: body }),
       },
     });
   }
   return pages.sort((a, b) => (a.url < b.url ? -1 : 1));
+}
+
+/**
+ * One page's verbatim half: the whole body, the remainder around its sections, or nothing (SH520).
+ *
+ * @param kept how many of the page's blocks were left in fidelity mode
+ * @param cut the spans of the blocks that became sections — `null` for one the proposal cannot place
+ */
+function contentFor({ html, sections, kept, cut }) {
+  if (!sections.length) return bodyOf(html);
+  // Everything was accepted: the sections are the page, and there is no remainder. Writing the body
+  // here would render every block twice.
+  if (!kept) return null;
+  // A span the proposal does not carry is a block this cannot cut, and cutting the others would
+  // leave that one rendered both as markup and as a section. Refusing the remainder is the honest
+  // half-answer, and it is exactly what the previous release wrote.
+  if (!cut.length || cut.some((span) => !span)) return null;
+  return bodyOf(without(html, cut));
+}
+
+/**
+ * The page's bytes with the given half-open spans removed, last one first so the earlier offsets
+ * still address what they addressed.
+ */
+function without(html, spans) {
+  if (typeof html !== "string") return html;
+  let out = html;
+  for (const [start, end] of [...spans].sort((a, b) => b[0] - a[0])) {
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end > out.length) continue;
+    out = out.slice(0, start) + out.slice(end);
+  }
+  return out;
 }
 
 /**
@@ -679,7 +757,7 @@ function scriptsPost(scripts, site) {
  * content. The preconditions come last because they are the sentence that decides whether the write
  * can work at all (SH436).
  */
-export function describeConversion({ document, sections, pages = [], verbatim = 0, extras,
+export function describeConversion({ document, sections, pages = [], verbatim = 0, mixed = 0, extras,
                                      requires = [] }, options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
@@ -697,6 +775,14 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
     lines.push(
       `  ${verbatim} of ${pages.length} page(s) in fidelity mode — the source's own markup, `
         + `rendered through ${document.postTypeLayout?.[PAGE_TYPE]}`,
+    );
+  }
+  // SH520 — the count that says the promise was kept. A reviewer who accepts one block on a page is
+  // told, in the run that writes it, that the blocks they did not accept are still on the page.
+  if (mixed) {
+    lines.push(
+      `  ${mixed} of ${pages.length} page(s) mixed — the accepted blocks as sections, the rest of `
+        + "each page kept as the source's own markup",
     );
   }
   // SH510 — which presentation the reviewer is getting, said out loud. Under SH507 it is the mode's

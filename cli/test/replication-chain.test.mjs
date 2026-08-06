@@ -278,13 +278,12 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     assert.equal(conversion.site, "Acme");
     assert.deepEqual(
       conversion.posts.map((post) => post.url),
-      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured", "/theme/shio",
-        "/theme/layout"],
+      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured", "/theme/layout"],
       "the accepted block's id addresses the section, a Page composes it on each source path it "
         + "appeared on (SH438), the theme rides the same document, and since SH464 so does the "
-        + "layout - a Page with none is a Page the renderer answers 400 for. /theme/shio is SH509: "
-        + "this run accepted a block, so the conversion is authorable and carries the theme SH507 "
-        + "decided it presents with, beside the captured one fidelity needs",
+        + "layout - a Page with none is a Page the renderer answers 400 for. No /theme/shio, and "
+        + "that is SH520: every page here kept a block nobody accepted, so every page carries the "
+        + "source's own markup and the captured stylesheet is the one with anything to say about it",
     );
     assert.equal(
       conversion.posts[0].data.heading,
@@ -304,6 +303,32 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     assert.equal(home.folder, "/");
     assert.deepEqual(home.data.sections, [`${SECTIONS_FOLDER}/${hero.id}`]);
     assert.equal(home.data.title, "Home", "the title the capture recorded, which `Page` requires");
+
+    // SH520 — the promise `propose` prints in phase two, held against the bytes phase one captured.
+    // One of the page's two blocks was accepted; the other has to still be on the page, and it has
+    // to be the source's own bytes rather than anything re-serialized from the tree.
+    const captured0 = await readFile(
+      join(cwd, MARKUP_DIR, inventory.pages.find((row) => row.path === "/").markup), "utf8");
+    const features = captured0.slice(
+      captured0.indexOf('<section class="features">'),
+      captured0.indexOf("</section>", captured0.indexOf('<section class="features">')) + 10,
+    );
+    assert.ok(
+      home.data.content.includes(features),
+      "the block nobody accepted is on the page, byte for byte — including its class attribute, "
+        + "which is what the captured stylesheet selects on",
+    );
+    assert.ok(
+      !home.data.content.includes('<section class="hero">'),
+      "and the accepted one is not, or the page renders it twice: once as markup and once as the "
+        + "section it became, which is the shape that makes an acceptance invisible in the output",
+    );
+    assert.equal(
+      conversion.posts.find((post) => post.type === "PageLayout").data.THEME,
+      "Acme (captured)",
+      "SH510's rule on SH520's page shape: a page carrying the source's class names is styled by "
+        + "the stylesheet those names came from",
+    );
 
     // ── phase four: the coverage gate ───────────────────────────────────────────────────
     const report = await verify.run({ checks: "projection,replication" }, [], ctx);

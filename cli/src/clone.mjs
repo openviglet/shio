@@ -251,11 +251,27 @@ const INLINE_TAGS = new Set(["span", "em", "strong", "b", "i", "a", "code", "sup
  * Removes what would make a tag scanner lie: comments, and the bodies of elements whose content is
  * not markup. The **open tags survive** — `<script src>` and a `<textarea name>` are both facts the
  * inventory needs, and only the text between them is noise.
+ *
+ * <h3>Blanked, not deleted — which is what makes an offset mean something (SH520)</h3>
+ *
+ * <p>What is removed is replaced by **exactly as many spaces**, so every index into the result is the
+ * same index into the bytes that were passed in. That is the whole of it: `buildTree` reads this
+ * string, so a node's span is a span in the *source*, and `convert` can cut an accepted block out of
+ * the page a curator captured without re-serializing anything. Deleting made the two coordinate
+ * systems differ by an unknown amount, which is why `convert.mjs` recorded that per-block bytes were
+ * unavailable and why accepting one block had to discard the rest of the page.</p>
+ *
+ * <p>It concedes one thing, and it is the safe side of SH468's argument: `foo&lt;!--x--&gt;bar` now
+ * reads as two words rather than one, because the comment leaves whitespace where it stood. Erring
+ * towards separation splits a pair the source did write; erring the other way invents a word it
+ * never contained.</p>
  */
 export function stripNonMarkup(html) {
-  let out = String(html ?? "").replace(/<!--[\s\S]*?-->/g, "");
+  const blanks = (length) => " ".repeat(length);
+  let out = String(html ?? "").replace(/<!--[\s\S]*?-->/g, (match) => blanks(match.length));
   for (const tag of RAW_TEXT) {
-    out = out.replace(new RegExp(`(<${tag}\\b[^>]*>)[\\s\\S]*?(</${tag}\\s*>)`, "gi"), "$1$2");
+    out = out.replace(new RegExp(`(<${tag}\\b[^>]*>)([\\s\\S]*?)(</${tag}\\s*>)`, "gi"),
+      (_match, open, body, close) => `${open}${blanks(body.length)}${close}`);
   }
   return out;
 }
@@ -699,13 +715,19 @@ export function decodeEntities(value) {
  * nobody could locate — the same argument `--render` settles by changing only where the HTML came
  * from. It also means the linear-scan property above is a property of *both* readers, and this is
  * still the only module in the repository reading a stranger's bytes.
+ *
+ * <p>Every token carries its half-open `[start, end)` span (SH520). Free — the scanner already knows
+ * both numbers — and it is what lets a tree built over `stripNonMarkup`'s blanked copy address the
+ * original bytes.</p>
  */
 export function* tokenize(html) {
   TAG.lastIndex = 0;
   let last = 0;
   let match;
   while ((match = TAG.exec(html)) !== null) {
-    if (match.index > last) yield { type: "text", text: html.slice(last, match.index) };
+    if (match.index > last) {
+      yield { type: "text", text: html.slice(last, match.index), start: last, end: match.index };
+    }
     // The self-closing slash is read off the end of the attribute chunk rather than captured by its
     // own optional group: an optional group beside a lazy class is one more ambiguity for the engine
     // to explore, and this is the module that reads a stranger's bytes.
@@ -716,10 +738,12 @@ export function* tokenize(html) {
       name: match[2].toLowerCase(),
       attrs: self ? raw.slice(0, -1) : raw,
       self,
+      start: match.index,
+      end: TAG.lastIndex,
     };
     last = TAG.lastIndex;
   }
-  if (last < html.length) yield { type: "text", text: html.slice(last) };
+  if (last < html.length) yield { type: "text", text: html.slice(last), start: last, end: html.length };
 }
 
 // ---------------------------------------------------------------------------------------------

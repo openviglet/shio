@@ -203,16 +203,30 @@ const CTA_TEXT_CEILING = 320;
  * @param {string} html the page's markup, already stripped of comments and raw-text bodies
  * @param {(html: string) => Iterable<{type: string, name?: string, attrs?: string, self?: boolean, text?: string}>} tokenize
  * @param {(raw: string) => Record<string, string>} parseAttrs
- * @returns {{tag: string, attrs: Record<string,string>, children: Array}} the root
+ * @returns {{tag: string, attrs: Record<string,string>, children: Array, start: number, end: number}}
+ *   the root. Every element node carries the half-open `[start, end)` span it occupies in `html`
+ *   (SH520) — and, because `stripNonMarkup` blanks rather than deletes, in the source `html` was made
+ *   from. A node whose close tag the page never wrote ends where the thing that closed it began.
  */
 export function buildTree(html, tokenize, parseAttrs) {
-  const root = { tag: "#root", attrs: {}, children: [] };
+  const root = { tag: "#root", attrs: {}, children: [], start: 0, end: html.length };
   const stack = [root];
   const top = () => stack.at(-1);
+  // Everything above `at` was closed by something other than its own tag, so it ends where that
+  // something began; the node at `at` — when the caller names one — ends after its own close tag.
+  const unwind = (at, upTo, through = null) => {
+    for (let index = stack.length - 1; index > at; index -= 1) stack[index].end = upTo;
+    stack[at].end = through ?? upTo;
+    stack.length = at;
+  };
   for (const token of tokenize(html)) {
     if (token.type === "text") {
       const text = String(token.text ?? "");
-      if (text.trim()) top().children.push({ tag: "#text", text, attrs: {}, children: [] });
+      if (text.trim()) {
+        top().children.push({
+          tag: "#text", text, attrs: {}, children: [], start: token.start, end: token.end,
+        });
+      }
       continue;
     }
     const name = token.name;
@@ -220,15 +234,20 @@ export function buildTree(html, tokenize, parseAttrs) {
       const at = stack.findLastIndex((node) => node.tag === name);
       // Not on the stack: a stray closer. Dropping it is the conservative choice — unwinding to
       // nothing would empty the stack and re-root the rest of the document.
-      if (at > 0) stack.length = at;
+      if (at > 0) unwind(at, token.start, token.end);
       continue;
     }
     const closes = IMPLICIT_CLOSE;
-    while (stack.length > 1 && closes[top().tag]?.has(name)) stack.pop();
-    const node = { tag: name, attrs: parseAttrs(token.attrs), children: [] };
+    while (stack.length > 1 && closes[top().tag]?.has(name)) unwind(stack.length - 1, token.start);
+    const node = {
+      tag: name, attrs: parseAttrs(token.attrs), children: [], start: token.start, end: token.end,
+    };
     top().children.push(node);
     if (!token.self && !VOID.has(name)) stack.push(node);
   }
+  // A page that never closed what it opened: the rest of the document is inside it, which is what a
+  // browser does with it too.
+  if (stack.length > 1) unwind(1, html.length);
   return root;
 }
 
@@ -758,11 +777,19 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     // axis, and without it the sections a page composes could only be ordered by id — an ordering
     // the source never had.
     const order = [];
-    composition.push({ path: page.path, title: page.title ?? null, blocks: order });
+    // SH520 — where each of those blocks *is*, as a half-open span in the page's own bytes. The
+    // blocks array says what a page is made of; this says which bytes each one is, which is what
+    // `convert` needs to cut an accepted block out and keep the rest of the page verbatim. Two
+    // integers per block, parallel to `blocks`, and only meaningful together with it.
+    const spans = [];
+    composition.push({ path: page.path, title: page.title ?? null, blocks: order, spans });
     blocks.forEach((block, index) => {
       const sig = signature(block);
       const id = idFor(sig);
       order.push(id);
+      spans.push(Number.isInteger(block.start) && Number.isInteger(block.end)
+        ? [block.start, block.end]
+        : null);
       const guess = classify(block, { first: index === 0 });
       const existing = candidates.get(id);
       if (existing) {

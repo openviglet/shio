@@ -90,7 +90,7 @@ export async function run(flags, positionals, ctx) {
   // The plan file and the proposal computed from the capture NOW: the pair is the whole point, since
   // an acceptance is only checkable against the candidates the current markup produces.
   const { proposal, plan, markup, inventory } = await proposalFor(flags, ctx, "convert");
-  const { document, stale, sections, pages, verbatim, extras } = buildConversion({
+  const { document, stale, sections, pages, verbatim, mixed, extras } = buildConversion({
     proposal,
     plan,
     site,
@@ -117,7 +117,7 @@ export async function run(flags, positionals, ctx) {
 
   if (typeof flags.out === "string" && flags.out) {
     await write(join(ctx.cwd, flags.out), `${JSON.stringify(document, null, 2)}\n`, ctx);
-    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, extras, requires: proposal.requires },
+    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires },
       flags));
     ctx.stdout.write(`  document: ${flags.out} (nothing was applied)\n`);
     return { document, applied: false, exitCode: 0 };
@@ -131,7 +131,7 @@ export async function run(flags, positionals, ctx) {
     await requirePostTypeFields(proposal.requires ?? [], { baseUrl, user, password }, ctx);
   }
 
-  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, extras, requires: proposal.requires },
+  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires },
     flags));
 
   // SH437/SH471 — the bytes, which are not content and so cannot ride the document. **Before** the

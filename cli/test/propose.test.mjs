@@ -983,6 +983,37 @@ test("SH438: the proposal records each page's blocks in source order, and its ti
   assert.deepEqual(proposal.pages.map((page) => page.blocks[0]), [hero.id, hero.id]);
 });
 
+test("SH520: a block's span cuts that block's own bytes out of the source, comments and all", () => {
+  // The property everything in SH520 rests on. `buildTree` reads `stripNonMarkup`'s output, so a
+  // span means something in the *source* only because that pass blanks what it removes instead of
+  // deleting it. The fixture below is built to break the naive version: a comment and a `<script>`
+  // body sit inside the first block, so a deleting strip would put every later offset short by
+  // their combined length and the second block's span would land mid-tag.
+  const source = "<html><body><main>"
+    + "<section class=hero><!-- a note nobody sees --><h1>Home</h1>"
+    + "<script>var x = \"</section>\";</script><p>Welcome.</p><a href=/go>Start</a></section>"
+    + "<section class=notes><h2>Notes</h2><p>Kept.</p></section>"
+    + "</main></body></html>";
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", source]]),
+    html: HTML,
+  });
+
+  const page = proposal.pages[0];
+  assert.equal(page.blocks.length, 2);
+  assert.deepEqual(
+    page.spans.map(([start, end]) => source.slice(start, end)),
+    [
+      "<section class=hero><!-- a note nobody sees --><h1>Home</h1>"
+        + "<script>var x = \"</section>\";</script><p>Welcome.</p><a href=/go>Start</a></section>",
+      "<section class=notes><h2>Notes</h2><p>Kept.</p></section>",
+    ],
+    "each span is that block and exactly that block, taken from the bytes the capture wrote — a "
+      + "slice, not a re-serialization, which is the difference SH449 spent a task on",
+  );
+});
+
 test("SH438: a page with no cached markup is in `read` and in `pages` neither", () => {
   const proposal = buildProposal({
     inventory: inventoryFor(["/", "/about", "/pricing"]),
