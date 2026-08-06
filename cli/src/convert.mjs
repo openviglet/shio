@@ -174,10 +174,10 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
 {{#if body}}<div class="shio-body" sh-field="body">{{{body}}}</div>{{/if}}
 {{#if image}}<p class="shio-image"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
 {{#if ctaLabel}}<p class="shio-cta"><a class="shio-cta-link" sh-field="ctaLabel" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
-{{#if features}}<ul class="shio-features">{{#each features}}<li class="shio-feature" data-shio-row="features" data-shio-icon="{{icon}}">{{#if title}}<h3 class="shio-feature-title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
-{{#if questions}}<div class="shio-questions">{{#each questions}}<div class="shio-question" data-shio-row="questions">{{#if question}}<h3 class="shio-question-text">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
-{{#if logos}}<ul class="shio-logos">{{#each logos}}<li class="shio-logo" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
-{{#if quotes}}<div class="shio-quotes">{{#each quotes}}<blockquote class="shio-quote" data-shio-row="quotes">{{#if quote}}<p class="shio-quote-text">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-quote-avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite class="shio-quote-author">{{author}}</cite>{{/if}}{{#if role}}<span class="shio-quote-role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
+{{#if features}}<ul class="shio-features">{{#each features}}<li class="shio-feature" data-shio-row="features" data-shio-icon="{{icon}}">{{#if title}}<h3 class="shio-feature-title" sh-field="features.{{@index}}.title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body" sh-field="features.{{@index}}.body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
+{{#if questions}}<div class="shio-questions">{{#each questions}}<div class="shio-question" data-shio-row="questions">{{#if question}}<h3 class="shio-question-text" sh-field="questions.{{@index}}.question">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-answer" sh-field="questions.{{@index}}.answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
+{{#if logos}}<ul class="shio-logos">{{#each logos}}<li class="shio-logo" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" sh-field="logos.{{@index}}.image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" sh-field="logos.{{@index}}.name" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name" sh-field="logos.{{@index}}.name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
+{{#if quotes}}<div class="shio-quotes">{{#each quotes}}<blockquote class="shio-quote" data-shio-row="quotes">{{#if quote}}<p class="shio-quote-text" sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-quote-avatar" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite class="shio-quote-author" sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span class="shio-quote-role" sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
 </section>
 {{/getRelation}}`;
 
@@ -251,15 +251,26 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
  * converts a JSON array into the `List<Map>` a section walks. One `{{#each}}` per collection, wrapped
  * in `{{#if}}` so an absent one renders no empty container.</p>
  *
- * <p><b>A row carries no `sh-field`, and that is the deliberate half.</b> SH185's protocol addresses
- * a field as a flat `prop` name on the post an `sh-post` ancestor names, so a row's `sh-field="body"`
- * inside `<section sh-post="{{id}}">` would resolve its owner to the **section** and write
- * `data.body` on a `SectionFeatureGrid` — a field that type does not declare — while a row's
- * `title` would rename the post. The protocol has no form for "the third row's second field", the
- * console's own relator widget is read-only for the same reason, and an annotation that lets a
- * curator type into a row and silently lose it is precisely the surprise P7 forbids. So the rows
- * render, are marked with `data-shio-row="<field>"` so the collection they came from is visible, and
- * are curated in the console's form until the protocol grows an indexed address.</p>
+ * <h3>The protocol grew the indexed address, which is what the rows were waiting for (SH475)</h3>
+ *
+ * <p>SH465 left a row unannotated and said why: SH185 addresses a field as a flat `prop` on the post
+ * a `sh-post` ancestor names, so `sh-field="body"` on a row would write `data.body` on the
+ * **section** — a field `SectionFeatureGrid` does not declare — and `title` would rename the post.
+ * That reasoning was right and the conclusion was a stop: five editable fields on a page whose two
+ * feature cards hold the actual content, and four of the seven section types are collection-shaped.</p>
+ *
+ * <p><b>The row is not a post, so it cannot be addressed as one.</b> An SH95 `Relator` declares
+ * nested fields — the value is an inline array of row maps in the section's own `data`, with no id
+ * to put in an `sh-post`. So the address is a **path**: `sh-field="features.{{@index}}.title"`, which
+ * `annotateEditable` passes through unchanged (it never parsed a prop) and
+ * `ShPostDraftMergeService` resolves into `data.features[0].title`. Three segments, the middle one
+ * an integer, the array and the row already there — anything else is still a flat key, so every
+ * existing prop writes exactly as it did.</p>
+ *
+ * <p>`data-shio-row="<field>"` stays: it names the collection a row came from, which the path
+ * repeats but a stylesheet and a reader cannot read out of an `sh-field`. What a row still does not
+ * get is a way to be **added, removed or reordered** — the path addresses a value, not a list — so
+ * that stays the console form's job.</p>
  */
 function pageLayout(markup, site, hasTheme) {
   const lang = langOf(markup);

@@ -10,6 +10,7 @@ package com.viglet.shio.api.post.unified;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,15 @@ import tools.jackson.databind.node.ObjectNode;
 @Service
 @Transactional
 public class ShPostDraftMergeService {
+
+    /**
+     * The middle segment of an indexed field address (SH475).
+     *
+     * <p>Bounded at six digits so {@code Integer.parseInt} cannot overflow: no collection this
+     * model holds has a millionth row, and an unbounded {@code \d+} would need the parse-and-catch
+     * this pattern exists to avoid.</p>
+     */
+    private static final Pattern INDEX = Pattern.compile("\\d{1,6}");
 
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
@@ -135,9 +145,60 @@ public class ShPostDraftMergeService {
                 ? (ObjectNode) parsed
                 : objectMapper.createObjectNode();
         if (attrChanges != null) {
-            attrChanges.forEach(node::set);
+            attrChanges.forEach((name, value) -> {
+                if (!setRow(node, name, value)) {
+                    node.set(name, value);
+                }
+            });
         }
         return node;
+    }
+
+    /**
+     * SH475 — {@code features.0.title}, the one field address that is not a flat name.
+     *
+     * <h2>Why a path, and why exactly this one</h2>
+     *
+     * <p>An SH95 collection field is a {@code Relator} with <b>nested</b> fields: the value is an
+     * inline array of row maps inside this post's {@code data}, not references to other posts. So a
+     * row has no id, {@code sh-post} cannot address it, and SH465 left every row of every converted
+     * collection unannotated — four of the seven section types are collection-shaped, which is most
+     * of what a replica actually says. The address it needed is a path into the value the post
+     * already holds.</p>
+     *
+     * <p><b>Three segments, and the middle one an integer.</b> Not a general JSON-pointer: a general
+     * path can create structure, and creating structure is how a mistyped prop silently becomes a
+     * shape the post-type does not declare — SH168's defect through a door SH168 does not watch.
+     * This one <em>never</em> creates: the collection must already be an array on this post and the
+     * index must already name a row of it. Anything else falls through to a flat key, so every prop
+     * that worked before writes exactly as it did.</p>
+     *
+     * @return whether the name was an indexed path <em>and</em> resolved to an existing row
+     */
+    private boolean setRow(ObjectNode data, String name, JsonNode value) {
+        if (name == null) {
+            return false;
+        }
+        String[] parts = name.split("\\.");
+        if (parts.length != 3 || parts[0].isEmpty() || parts[2].isEmpty()) {
+            return false;
+        }
+        // Digits rather than a parse-and-catch: a silent catch is a degradation with no trace
+        // (SH270), and "is this segment an index" is a question about the characters.
+        if (!INDEX.matcher(parts[1]).matches()) {
+            return false;
+        }
+        int index = Integer.parseInt(parts[1]);
+        JsonNode collection = data.get(parts[0]);
+        if (collection == null || !collection.isArray() || index >= collection.size()) {
+            return false;
+        }
+        JsonNode row = collection.get(index);
+        if (row == null || !row.isObject()) {
+            return false;
+        }
+        ((ObjectNode) row).set(parts[2], value);
+        return true;
     }
 
     private JsonNode safeRead(String data) {

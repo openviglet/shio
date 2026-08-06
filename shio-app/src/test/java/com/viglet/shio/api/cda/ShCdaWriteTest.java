@@ -284,6 +284,79 @@ class ShCdaWriteTest {
     }
 
     /**
+     * SH475 — {@code features.0.title}, the address a collection row needed.
+     *
+     * <p>A row of an SH95 collection is not a post: a {@code Relator} with nested fields holds an
+     * inline array of row maps in the section's own {@code data}, so there is no id for an
+     * {@code sh-post} and no flat prop that could reach the value. The converted layout emits
+     * {@code sh-field="features.{{@index}}.title"} and this is the half that has to understand it,
+     * or the editor writes a key called {@code features.0.title} at the top level and the row a
+     * curator typed into is unchanged.</p>
+     */
+    @Test
+    void anIndexedPropWritesIntoTheRowAndNotIntoANewKey() {
+        SecurityContextHolder.clearContext();
+        String data = "{\"title\":\"Grid\",\"features\":[{\"title\":\"One\",\"body\":\"a\"},"
+                + "{\"title\":\"Two\",\"body\":\"b\"}]}";
+        String postId = seedDraft(data);
+
+        shPostDraftMergeService.merge(postId, change("features.1.body", "edited"), false, "curator");
+
+        JsonNode after = objectMapper.readTree(shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.DRAFT).orElseThrow().getData());
+        assertThat(after.path("features").path(1).path("body").asString())
+                .as("the second row's body, in place")
+                .isEqualTo("edited");
+        assertThat(after.path("features").path(0).path("body").asString())
+                .as("and the first row untouched — a merge, not a replacement of the collection")
+                .isEqualTo("a");
+        assertThat(after.has("features.1.body"))
+                .as("""
+                        the failure this exists to catch: a flat set would store the path as a KEY, \
+                        which reads back as a successful save, renders nothing, and lands as an \
+                        SH168 unknown-field on a post the curator did nothing wrong to""")
+                .isFalse();
+    }
+
+    /**
+     * The narrowness is the safety (SH475): this resolver never creates structure, because a path
+     * that can create structure is a mistyped prop inventing a shape the post-type does not declare.
+     */
+    @Test
+    void aPathThatNamesNoExistingRowStaysAFlatKey() {
+        SecurityContextHolder.clearContext();
+        String postId = seedDraft("{\"title\":\"Grid\",\"features\":[{\"title\":\"One\"}]}");
+
+        shPostDraftMergeService.merge(postId, change("features.7.title", "nowhere"), false, "curator");
+
+        JsonNode after = objectMapper.readTree(shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.DRAFT).orElseThrow().getData());
+        assertThat(after.path("features").size())
+                .as("no row is invented to receive it")
+                .isEqualTo(1);
+        assertThat(after.has("features.7.title"))
+                .as("it falls through to the flat behaviour every other prop has, so the SH168 lint "
+                        + "reports it rather than this method deciding what the model should be")
+                .isTrue();
+    }
+
+    private String seedDraft(String data) {
+        String postId = UUID.randomUUID().toString();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShPostUnified post = new ShPostUnified();
+            post.setId(postId);
+            post.setState(ShPostState.DRAFT);
+            post.setTitle("Row fixture");
+            post.setFurl("/rows-" + postId.substring(0, 8));
+            post.setDate(Instant.now());
+            post.setOwner("admin");
+            post.setData(data);
+            entityManager.persist(post);
+        });
+        return postId;
+    }
+
+    /**
      * SH324 — the premise every hand-written fixture is modelling, and nothing asserted it.
      *
      * <p>{@code ShPostUnifiedWriteService.publish} gives the published row the <b>draft's id</b>, so

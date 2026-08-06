@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -324,30 +325,71 @@ class ShConvertedLayoutRenderTest {
                 .isEmpty();
     }
 
+    /**
+     * A row field the template draws into an <b>attribute</b>, so there is no element to annotate.
+     *
+     * <p>The same line the scalar union already draws and for the same reason: {@code ctaHref} is
+     * the {@code href} of the link whose text is {@code ctaLabel}, and only the text carries an
+     * {@code sh-field}. Declared rather than silently skipped — a row field that stops being an
+     * attribute has to be annotated, and an entry here that no longer applies is a suppression that
+     * rotted (SH142's rule).</p>
+     */
+    private static final Set<String> ROW_FIELDS_DRAWN_AS_ATTRIBUTES = Set.of("features.icon", "logos.href");
+
     @Test
-    @DisplayName("SH465: a collection row renders no editable prop, because the protocol has no address for one")
-    void aCollectionRowIsNotAnnotatedAsAField() {
+    @DisplayName("SH475: every collection row field is addressed by an indexed path, and the page carries it")
+    void aCollectionRowIsAddressedByAnIndexedPath() {
         String html = shPageRenderService.render(siteName, VOCABULARY_URL, ShPostState.DRAFT).html();
 
         assertThat(html)
-                .as("the rows are marked with the collection they came from, so what is on the page "
-                        + "is traceable to the field that holds it")
+                .as("the rows are still marked with the collection they came from, which the path "
+                        + "repeats but a stylesheet cannot read out of an sh-field")
                 .contains("data-shio-row=\"features\"")
                 .contains("data-shio-row=\"questions\"")
                 .contains("data-shio-row=\"logos\"")
                 .contains("data-shio-row=\"quotes\"");
-        assertThat(annotatedCollectionRows())
+
+        assertThat(misroutedRowFields())
                 .as("""
-                        and NOT with sh-field — asked of every {{#each}} block in the template \
-                        rather than of the four names, so the next collection inherits the rule. \
-                        SH185 addresses a field as a flat `prop` on the post the nearest sh-post \
-                        ancestor names, and a row sits inside `<section sh-post="{{id}}">` — so \
-                        `sh-field="body"` on a feature row would write data.body onto a \
-                        SectionFeatureGrid, which declares no such field, and `sh-field="title"` \
-                        would rename the post. There is no form for "the third row's second field", \
-                        which is why the console's own relator widget is read-only too. An \
-                        annotation a curator can type into and silently lose is the surprise P7 \
-                        forbids.""")
+                        asked of every {{#each}} block in the template rather than of the four \
+                        names, so the next collection inherits the rule. A row is NOT a post — an \
+                        SH95 Relator declares nested fields, so the value is an inline array of row \
+                        maps in the section's own data with no id to put in an sh-post — and a flat \
+                        `sh-field="body"` inside `<section sh-post="{{id}}">` would write data.body \
+                        onto a SectionFeatureGrid that declares no such field, while `title` would \
+                        rename the post. So the address is `<collection>.{{@index}}.<leaf>`, rooted \
+                        at the block it sits in, and anything else here is an edit routed at the \
+                        wrong value.""")
+                .isEmpty();
+
+        List<String> missing = new ArrayList<>();
+        List<String> checked = new ArrayList<>();
+        for (ShSectionType type : VOCABULARY) {
+            for (ShSectionField field : fieldsOf(type)) {
+                int dot = field.path().indexOf('.');
+                if (dot < 0 || !field.isRenderableAsText()
+                        || ROW_FIELDS_DRAWN_AS_ATTRIBUTES.contains(field.path())) {
+                    continue;
+                }
+                String prop = field.path().substring(0, dot) + ".0."
+                        + field.path().substring(dot + 1);
+                checked.add(type.name() + " → " + prop);
+                if (!html.contains("data-shio-prop=\"" + prop + "\"")) {
+                    missing.add(type.name() + " → " + prop);
+                }
+            }
+        }
+        assertThat(checked)
+                .as("a filter that excluded everything would make the next assertion pass against "
+                        + "a page with no rows on it at all")
+                .isNotEmpty();
+        assertThat(missing)
+                .as("""
+                        SH465's coverage check, one level down: it counted the fields DRAWN against \
+                        what the type declares and found four collections rendering as a heading. \
+                        This counts the fields ADDRESSABLE, inside a collection too — the gap it \
+                        closes is a page whose two feature cards a curator can read and cannot \
+                        edit, on the half of the vocabulary that holds the actual content.""")
                 .isEmpty();
     }
 
@@ -555,22 +597,35 @@ class ShConvertedLayoutRenderTest {
     }
 
     /**
-     * Any {@code {{#each}}} block of the template that annotates a row as an editable field.
+     * Every {@code sh-field} inside an {@code {{#each}}} block that is not that block's own indexed
+     * path (SH475) — a block with none at all included, which is the SH465 state.
      *
-     * <p>The block's own opening tag is the reported unit, which is what makes a failure readable:
-     * the answer to "which collection did somebody make editable" is the collection's name.</p>
+     * <p>The collection's name is the reported unit, which is what makes a failure readable: the
+     * answer to "which collection is addressed wrongly" is the collection.</p>
      */
-    private static List<String> annotatedCollectionRows() {
+    private static List<String> misroutedRowFields() {
         String body = pageBodyHtml();
-        List<String> annotated = new ArrayList<>();
+        List<String> wrong = new ArrayList<>();
         Matcher block = Pattern.compile("\\{\\{#each (\\w+)}}(.*?)\\{\\{/each}}", Pattern.DOTALL)
                 .matcher(body);
         while (block.find()) {
-            if (block.group(2).contains(ShRegionComposer.FIELD_ATTR)) {
-                annotated.add(block.group(1));
+            String collection = block.group(1);
+            Pattern indexed = Pattern.compile(
+                    "^" + Pattern.quote(collection) + "\\.\\{\\{@index}}\\.\\w+$");
+            Matcher field = Pattern.compile(ShRegionComposer.FIELD_ATTR + "=\"([^\"]*)\"")
+                    .matcher(block.group(2));
+            int found = 0;
+            while (field.find()) {
+                found++;
+                if (!indexed.matcher(field.group(1)).matches()) {
+                    wrong.add(collection + ": " + field.group(1));
+                }
+            }
+            if (found == 0) {
+                wrong.add(collection + ": no row field is addressable at all");
             }
         }
-        return annotated;
+        return wrong;
     }
 
     /**

@@ -410,14 +410,20 @@ it. Four decisions worth keeping:
   `getRelation` resolves ids and friendly URLs and would stringify a row map into nothing, while
   `ShRenderModel.fieldsOf` already hands Handlebars the `List<Map>` that `{{#each}}` walks. One
   `{{#each}}` per collection, wrapped in `{{#if}}` so an absent one renders no empty container.
-- **A row carries `data-shio-row`, deliberately not `sh-field` (SH465).** SH185 addresses a field as
-  a flat `prop` on the post the nearest `sh-post` ancestor names, and a row sits inside
-  `<section sh-post="{{id}}">` — so `sh-field="body"` on a feature row would write `data.body` onto a
-  `SectionFeatureGrid`, which declares no such field, and `sh-field="title"` would rename the post.
-  The protocol has no form for "the third row's second field", which is why the console's own relator
-  widget is read-only too. Rendered and curated in the console beats editable and silently lost (P7).
-  Growing an indexed address is a task of its own; until then the marker is what makes a row
-  traceable to the field that holds it.
+- **A row is addressed by a path, because it is not a post (SH465 stated the problem, SH475 is the
+  address).** SH185 addresses a field as a flat `prop` on the post the nearest `sh-post` ancestor
+  names, and a row sits inside `<section sh-post="{{id}}">` — so `sh-field="body"` on a feature row
+  would write `data.body` onto a `SectionFeatureGrid`, which declares no such field, and
+  `sh-field="title"` would rename the post. SH465 concluded "no `sh-field`, then", which left five
+  editable fields on a page whose two cards hold the content. **An `sh-post` was never available**:
+  a nested `Relator`'s rows are inline maps in the section's own `data` with no id. So
+  `sh-field="features.{{@index}}.title"` — `annotateEditable` passes a prop through unparsed, and
+  `ShPostDraftMergeService` resolves `<collection>.<index>.<leaf>` into the row. **Three segments,
+  the middle one digits, and it never creates**: the array and the row must already be there, so a
+  mistyped prop falls through to the flat behaviour and lands as an SH168 `unknown-field` rather than
+  inventing a shape the type does not declare. `data-shio-row` stays — the path repeats it, a
+  stylesheet cannot read an `sh-field`. What a row still has no address for is being **added,
+  removed or reordered**; that is the console form's job.
 - **The coverage check reads the vocabulary, and that is why it works (SH465).** SH464's tests seeded
   two section types by hand — "chosen because between them they cover every branch the union
   renders" — and both are scalar-only, so this class was green while four types drew a heading and
@@ -427,6 +433,13 @@ it. Four decisions worth keeping:
   draws fails by name, with nobody having to remember to come back (SH338). `File` fields are the one
   exemption, and it is named in the test: `file_url` resolves a post id, so a sentinel is not a value
   it can render.
+- **And it counts what is *addressable*, not only what is drawn (SH475).** The same read of the
+  vocabulary, one level down: every nested field of every declared type must appear as
+  `data-shio-prop="<collection>.0.<leaf>"` on the rendered page, and every `sh-field` inside an
+  `{{#each}}` block must be that block's own indexed path — asked of the blocks rather than of the
+  four names, so the next collection inherits the rule. Two exemptions, both declared:
+  `features.icon` and `logos.href` are drawn into **attributes**, which is the line the scalar union
+  already draws between `ctaLabel` and `ctaHref`.
 - **`{{{content}}}`, not one `Region` per block.** SH191's sidecar shape needs each block's own
   bytes and this pipeline cannot produce them: `buildTree` records no source offsets, so the only
   route back to markup is re-serializing a tree built from `stripNonMarkup`'s output, which has

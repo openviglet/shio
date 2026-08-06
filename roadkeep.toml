@@ -61,7 +61,13 @@ ref_scheme = "outline"
 # segment is checked against the site's own content rather than pinned, and a URI no controller
 # claims answers 404 instead of 401. The fourth run is spent — four tasks, four commits, and the
 # instrument-first argument held once more (SH460 shipped before the three it made legible).
+# Block R is first on instruction (2026-08-06): the published documentation at docs-shio
+# describes the 2018 product — MCP, agent, Universal Editor, Handlebars, blueprint and tenant
+# appear in zero of its 19 pages while Nashorn and shObject appear in six — so every block
+# below has shipped into a documentation set that contradicts it. The matrix (SH479) is first
+# within the block for the SH338 reason: it lands red and its count scopes the rest.
 priority = [
+  "Block R",
   "Block P",
   "Block H",
   "Block K",

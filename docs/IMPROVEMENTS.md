@@ -1500,31 +1500,6 @@ a capture fix's clothes.
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
 
-### XVII.51 Drawn, and still not authorable (SH475)
-
-SH465 made the collection draw and stopped short of making it editable. The rows are
-there — `<li class="shio-feature" data-shio-row="features">` with the title and body of
-both cards — and the row carries **no `sh-field`, no `data-shio-prop` and no
-`sh-post`**. The editable count on the page is unchanged at five: the grid's own
-`heading`, and nothing inside it.
-
-So a curator can edit the heading above two cards and neither card. That is the shape
-SH464 was filed to end, one level down: rendered and not authorable, on the half of the
-vocabulary that holds the actual content. Four of seven section types are
-collection-shaped, so it is most of what a section-based replica says.
-
-SH465's own rationale names the missing piece — "with `sh-post` on the row so the editor
-can address it" — so this is the half that did not land rather than a decision.
-`data-shio-row="features"` is already emitted, which means the template knows it is in a
-row and only the annotation is absent.
-
-The protocol says what the row needs. A collection item is a post, so `sh-post="{{id}}"`
-addresses it and `sh-field` on each of its fields names them, exactly as the section
-itself already does — SH185's resolution is nearest-ancestor, so a row inside an
-annotated section resolves correctly once it declares its own post. The check is the
-same one SH465 shipped: count the annotated fields against what the type declares, and
-count *inside* a collection too.
-
 ### XVII.52 An entity escaped twice is content nobody can repair (SH476)
 
 The source writes `rerank &amp; media models`, which a reader sees as `rerank & media
@@ -1598,3 +1573,432 @@ because the File form is one a curator actually opens.
 
 The measurement is already written: `ShFilePostTypeSourceTest.STILL_UNDECLARED` holds
 the three with their reasons and fails if one is declared without being removed.
+
+## XVIII End-user documentation for 2026.3 (Block R)
+
+The published documentation at `docs-shio` describes the 2018 product. Measured against
+the working tree: the words MCP, agent, Universal Editor, Handlebars, blueprint, tenant
+and `post-unified` appear in **zero** of its 19 pages, while Nashorn and `shObject`
+appear across six, and the landing page pins `v2026.1` and sells server-side JavaScript
+rendering plus Hazelcast as the product's four capabilities. Blocks H through Q shipped
+an agent-native CMS and none of it is published, so a reader who arrives at
+docs.viglet.org/shio is told the opposite of what the ten laws in `agents.md` say the
+product is.
+
+This block writes that documentation in the shape `docs-turing` already uses: narrative
+hubs with an `.mdx` landing page each, per-page front matter, pre-rendered Mermaid SVGs
+from `diagrams/`, the brand CSS variables, no em dashes, and a `COVERAGE.md` matrix that
+maps every shipped block to a page or to an explicit "deliberately internal" row. The
+matrix comes first (SH338: the instrument precedes the fixes), because an undocumented
+subsystem is exactly the defect class no page-by-page pass finds.
+
+`docs-shio` lives in a different git repository
+(`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
+Shio-repo ship, and the vigletdocs page edit.
+
+### XVIII.1 The matrix before the pages (§XVIII.1) (SH479)
+
+Write `docs-shio/COVERAGE.md` in the shape `docs-turing/COVERAGE.md` already has: one
+row per shipped block or feature cluster from Shio's own `CHANGELOG.md` (Block 0, A
+through Q), each pointing at a page and anchor, or carrying an explicit 🔒 "deliberately
+internal" verdict, with 🔴 for an orphan.
+
+It lands **red on purpose**. Blocks H, I, J, K, L, M, N, O, P and Q have no published
+page at all, so the first run of this matrix is the audit that scopes every other task
+in this block, and the count it prints is the number this block is measured by. That is
+the SH338 order: the instrument that finds the next omission ships before the omissions
+are fixed, because a page-by-page pass finds only the pages somebody thought of.
+
+The file is a maintenance artefact, not a sidebar entry (Turing's carries the "not
+rendered in the sidebar" note and Docusaurus is told to ignore it). The rule it creates
+is the one the `shio-roadmap-docs` skill currently asks a human to run from memory after
+every ship: is this user-facing, and if so where does it live. Once the matrix exists,
+that decision has a file to answer in, and a shipped block with no row is a visible
+defect rather than a habit nobody kept.
+
+### XVIII.2 The premise a reader meets first (§XVIII.2) (SH480)
+
+`docs-shio/index.mdx` exports `VERSION = "2026.1"`, and its four `FeatureCard`s are
+Content Modeling, Website Rendering ("server-side JavaScript engine (Nashorn /
+Node.js)"), GraphQL and Native Caching. Its quick-start step 4 sends the reader to
+"JavaScript API, components, and themes". Nothing on the page says a coding agent is the
+primary operator, that content is also files, or that a human curates rather than
+authors.
+
+Rewrite the landing page around the actual premise: **the agent builds, the human
+curates, the CDA delivers.** Keep the JSX component vocabulary the page already uses
+(`Pill`, `FeatureCard`, `NavCard`, `SectionLabel`) and the brand CSS variables, and keep
+the honest parts (open source, GPL v3, headless, GraphQL). Bump the version pill to
+2026.3, which is what `docusaurus.config.ts` already declares for the `shio` plugin. The
+prose introduction and the concept vocabulary are SH490's, not this page's: a landing
+page states the premise and routes.
+
+The ten design laws from `agents.md` are the source for the capability cards, not a list
+to paste: a reader wants to know what one call replaces, why the files matter, and what
+stops the agent from surprising them. `docs/specs/SH74-agent-native-cms.md` is the long
+form to compress, and the four hub pages of the restructured sidebar are what the
+`NavCard` grid should point at, alongside a quick start that begins with an agent rather
+than with a JavaScript API.
+
+### XVIII.3 Four hubs, in the order the work happens (§XVIII.3) (SH482)
+
+`sidebars-shio.ts` has eight flat categories (Getting Started, Installation, Content
+Management, Management, Developers, Headless, Security, Integration).
+`sidebars-turing.ts` instead groups everything under four hubs, each with its own `.mdx`
+landing page: Search it, Ask it, Automate it, Run it. The hub is where a reader who does
+not yet know the vocabulary starts.
+
+Shio's four are the product's own division of labour: **the agent builds it** (MCP, the
+agent surface, content as files, the CLI, blueprints), **the human curates it** (the
+console, the Universal Editor, review and publishing, preview), **the CDA delivers it**
+(the read contract, the JS client, the React SDK, the Next.js starter, GraphQL), and
+**run it** (install, configuration, tenancy, search indexing, security, operations).
+Replication spans build and curate; file it under build.
+
+Deliverables: the four `.mdx` hubs, the restructured `sidebars-shio.ts` with `link: {
+type: "doc" }` on each category, and the version row in the docs repo's own `agents.md`,
+which still records Shio as `0.3.7` with no newer version while `docusaurus.config.ts`
+declares 2026.3. Every page task in this block files into the structure this task
+creates, which is why it comes second and not last.
+
+### XVIII.4 The rendering story, rewritten (§XVIII.4) (SH483)
+
+`website-development.md` teaches Page Layouts whose Regions hold "server-side
+JavaScript" and an `shObject` API; `architecture-overview.md`,
+`configuration-reference.md`, `developer-guide.md`, `getting-started/intro.md` and
+`index.mdx` repeat it. The roadmap's own §IV records server-side JS rendering as
+**dropped**, and one of the nine non-goals is "No GraalJS server-side JS template
+engine". The published docs teach the thing the project decided against.
+
+Rewrite it from `docs/agents/renderer.md`: page → layout → region, Handlebars templates
+with the helper set, themes and static files, the section vocabulary in
+`@viglet/shio-sections`, region bindings, the `sh-region` and `data-shio-*` annotations,
+`/preview/**`, and the render digest as cheap textual proof (P9). Keep
+`shio.website.javascript.engine` and the Nashorn options out of
+`configuration-reference.md` unless the property still exists in the tree, and say so
+plainly where a reader of the old docs would look for it.
+
+This is the largest single rewrite in the block and the one most likely to be read by
+someone who followed the old pages, so it needs a short "what changed since the
+JavaScript engine" paragraph rather than a silent replacement.
+
+### XVIII.5 The MCP page (§XVIII.5) (SH481)
+
+`POST /mcp` is the surface the product is designed around and it is undocumented. Write
+the page from `docs/agents/mcp.md`: the single endpoint and its transport, `tools/list`
+and what the tool vocabulary is (read, find, upsert, move, delete, apply, verify), the
+resources and prompts, the token scope a tool call runs under, and the fact that the
+tool list is a measured budget rather than an open catalogue.
+
+Second half of the page: the Claude Code plugin. How an operator installs it, what it
+registers, and the note that a bare instance has no registered MCP server, so a local
+bridge is the path until one is configured. That last fact costs a reader an afternoon
+if it is missing.
+
+Model the page on `docs-turing/mcp-servers.md`, which documents both halves of Turing's
+MCP story (client and server) on one page, and keep the same discipline: a copyable
+request, a real response, and the error shape a caller gets when the arguments are wrong
+(P6: an error carries `fix`, `allowed`, `didYouMean` and `example`, which is a feature
+worth showing rather than describing).
+
+### XVIII.6 The agent surface page (§XVIII.6) (SH484)
+
+Write the REST half of the agent story from `docs/agents/agent-surface.md`, for a reader who is
+building an agent rather than using Claude Code: the **manifest** as one-call discovery, the
+**context pack**, the read verbs (`find`, `read`, `changes`, `diagnostics`, `memory`), and the
+write path (`batch` with its op vocabulary, `plan`, `apply`, `dryRun`).
+
+Three things a reader cannot infer and must be told. First, the SH79 address grammar:
+`post:<site>/<friendly-url>`, `folder:<site>/<name-chain>`, `site:<name>`, `id:<uuid>`,
+that writes take only `post:` and `folder:`, and that a site's home page is
+`post:<site>/`. Second, the verification loop (P9): `verify` and the render digest are
+how an agent closes the perception loop without a human round trip. Third, the endpoints
+that **do not** exist, because an agent cannot grep for an absence and inventing one is
+the common wrong turn.
+
+Response budgets belong here as a one-paragraph note with a pointer to the token-economy
+page, not as a second copy of that page's tables.
+
+### XVIII.7 The page a curator reads before letting an agent in (§XVIII.7) (SH485)
+
+This is the page that decides whether a human trusts the product, and there is no draft of it.
+Write it from Block L and Block O: writes land as **drafts by default**, a write can be asked to
+**dry-run** first, a destructive op needs a **confirm token**, an agent's changes land in a
+**review queue** a curator approves, every write carries **attribution**, a delete goes to a
+**trash** rather than away, and the AGENT token scope is bounded rather than an administrator
+session.
+
+State the bounds honestly, including the ones still open: the trash is restorable but an
+agent cannot yet list it, and a site delete cascades. A reader who discovers a gap after
+trusting the page loses more than one who was told.
+
+Pair it with the console half: what the review queue looks like, where attribution shows
+up, how publishing works, and what preview shows. `docs/agents/console-ui.md` and
+`docs/agents/security.md` are the sources; `docs-turing/human-in-the-loop.md` is the
+closest model in tone. This page is the natural landing page for the "the human curates
+it" hub.
+
+### XVIII.8 Content as files (§XVIII.8) (SH486)
+
+Write the page from `docs/agents/content-files.md`: the `shio/content/**`,
+`shio/folders/**`, `shio/assets/**` and `shio/post-types/*.json` layout, what a sidecar
+file carries, the `content-base.json` three-way merge and what happens when both sides
+changed, `movedFrom`, and how an asset is projected and pushed back.
+
+The argument the page has to make first is why files exist at all: an agent's cheapest
+tools are `Edit`, `Write` and `Grep`, and a projection to disk turns every content
+operation into one of them. The second thing it has to make unmissable is that the merge
+is what makes it safe: a pull, an edit and a push do not silently overwrite what a human
+changed in the console meanwhile.
+
+Byte-identical serialization and stable ordering (P5) are part of the contract and
+belong on the page, because a reader diffing two pulls needs to know that a no-op pull
+is a no-op diff. Show a real tree, a real sidecar and a real merge conflict rather than
+describing them.
+
+### XVIII.9 The CLI page (§XVIII.9) (SH487)
+
+`docs-turing/cli.md` documents `turing` verb by verb, with flags, exit codes and the CI
+use of each. Shio's `shio` binary has no equivalent page, although it is how content is
+pulled, pushed, applied, verified, reported on, replicated and photographed.
+
+Write it from `docs/agents/cli.md`: install, authentication and instance selection, then
+one section per verb with its flags and a copyable invocation. Include the **CI gate
+order**, which is the part a reader cannot reconstruct: which verb runs before which,
+and what a red gate means.
+
+Two honest notes belong on the page. `shio --help` is 14 KB and unbudgeted while the MCP
+tool list is capped and measured, so a reader choosing between the two surfaces should
+know which one costs what. And a verb's output is designed to be read by an agent, so
+the page should show what a machine consumes, not only what a terminal prints.
+
+### XVIII.10 Blueprints (§XVIII.10) (SH488)
+
+Write the page from `docs/agents/blueprints.md`: what a blueprint is (an appliable unit,
+not a prose recipe), what `blueprint.json` declares, the parameters an apply takes, the
+first-party packages that ship, the local package directory and its trust model, and
+what an apply reports.
+
+The reason the concept exists is worth one paragraph up front: an agent asked to build a
+blog should not rediscover a blog's shape, and a recipe in prose is something it
+re-derives every time. A package is the difference between a plan and a starting point.
+
+Two limits the page must state rather than let a reader discover: applying a first-party
+package today yields content whose design is the labelled fallback, because no package
+ships a theme, a layout and a binding yet (SH395 is open); and the local package
+directory is cached on first access, so a package dropped in is invisible until the
+process restarts (SH219 is open). Both are the kind of fact a reader forgives when the
+page says it and resents when it does not.
+
+### XVIII.11 The Universal Editor (§XVIII.11) (SH489)
+
+The Universal Editor is the console's answer to "the agent built this and it is nearly
+right". Write the page from `docs/specs/SH185-universal-editor-protocol.md`,
+`docs/agents/renderer.md` and the two Universal Editor sections of
+`docs/agents/console-ui.md`: how a rendered page carries `data-shio-*` annotations, what
+a curator can click and edit, the three states the iframe has, and that the save goes
+through the session rather than a token.
+
+What a page author must produce for the editor to work is the half a reader most needs:
+a template that emits `sh-post` and `sh-field` on the elements a curator should be able
+to edit, and what happens when it does not (the element is simply not editable,
+silently, which is the defect shape SH475 records for collection rows).
+
+Keep it about the curator's experience, with the authoring requirements as a clearly
+marked second section, and link the preview and publishing story rather than restating
+it.
+
+### XVIII.12 What Shio is, from the beginning (§XVIII.12) (SH490)
+
+`getting-started/intro.md` answers "what is Shio CMS?" with "model content, query it via
+GraphQL, build websites using server-side JavaScript", and `core-concepts.md` teaches
+Sites, Folders, Posts, Post Types, Page Layouts and Regions through the `shObject` API.
+Both are the 2018 product. A reader who finishes them cannot say what an agent does,
+what a curator does, or how a page is addressed.
+
+Rewrite the pair as the didactic layer of the documentation, the one Turing added in its
+second round: what problem Shio solves, who operates it (an agent builds, a human
+curates, the CDA delivers), and then the vocabulary in the order it is needed. Sites,
+folders and posts; post types as the one name-keyed surface; the SH79 address grammar
+including `post:<site>/` for a home page; publishing states and what draft-default
+means; page layouts, regions and themes as the renderer's own words; and what "headless"
+means here given that Shio also serves pages.
+
+No API reference, no configuration table, no console screenshots of admin forms: this is
+the page that makes the rest of the site readable, and it should end by pointing at the
+four hubs rather than at an endpoint.
+
+### XVIII.13 The architecture page (§XVIII.13) (SH491)
+
+`architecture-overview.md` is the page an evaluator, an architect and a new contributor
+all open first, and it is a diagram of the 2018 system: Nashorn as the rendering engine,
+Elasticsearch 9.3.3 as a stated dependency, Hazelcast as the cache tier, and no agent
+surface anywhere.
+
+Rewrite it against the tree: Spring Boot 4 on Java 21, the unified post model over the
+JOINED inheritance the tenant discriminator hangs off, Liquibase owning the schema, the
+Handlebars renderer with themes and regions, the agent gateway and MCP as one shape over
+the same services (P10: never a third contract), the content-as-files projection, the
+CDA and the JS SDKs, `/preview/**` versus the public `/sites/**` delivery grammar, the
+static-file subsystem, and Turing indexing as an opt-in edge rather than a component.
+
+Then the flows, one figure each, which is the half the current page does not have at
+all: an agent write from `batch` to a rendered page, a curator's correction through the
+Universal Editor, a CDA read, a files pull-edit-push round trip, and a replicated site
+being served. Deployment topologies stay, corrected for what actually needs to be
+co-located.
+
+### XVIII.14 Replication (§XVIII.14) (SH492)
+
+Block Q is the block with the clearest sales story and no published page: point Shio at
+a site that already exists, capture it, and get back a site a curator can edit. Write it
+from the `shio-replication-test` skill and `cli/conformance/`.
+
+The page has to separate the two modes it offers, because choosing wrong wastes a run:
+**fidelity** reproduces the source as captured, **authorable** extracts fields and
+regions a human can edit, and the second is the one that makes the replica a CMS site
+rather than a copy. Then the pipeline in order: `clone` with its asset and script flags,
+`propose`, `convert`, publish, and what `/sites/**` serves.
+
+Include how to judge a replica: `snapshot --against`, the conformance run, and what a
+red run usually means. And state the current boundaries rather than let a reader find
+them: the instance does not run a browser (a declared non-goal), so a JS-rendered source
+has limits; and a captured page carries residues the conformance suite is still
+catching, which is why the suite exists and is worth pointing a reader at.
+
+### XVIII.15 Tenancy and the operator's pages (§XVIII.15) (SH493)
+
+`docs-turing/multi-tenancy.md` documents Turing's Block J; Shio's SH22 shipped and has
+nothing. Write the page from `docs/specs/SH22-multi-tenancy.md` and
+`docs/agents/database.md`: what a tenant is, how one is provisioned, membership and
+roles, quotas, suspension, what is isolated and what is shared, and how a single-tenant
+install behaves (which is most installs, and the reader needs to know they can ignore
+the rest).
+
+The operator pages need the same pass. `administration-guide.md` documents users, groups
+and the `admin`/`admin` default with no tenant dimension; `installation-guide.md`
+predates the Spring Boot 4 launch rules the docs repo's own conventions record (a JAR is
+not directly executable, `.conf` files no longer work, external config arrives by
+`--spring.config.additional-location`); and neither says anything about the schema being
+Liquibase's or what a cross-database deployment implies.
+
+The one warning that belongs in bold: the tenant discriminator column is lowercase
+`tenant_id` and the H2 casing parameters exist for that reason, so an operator who
+"fixes" a startup error by flipping `ddl-auto` breaks the schema Liquibase owns.
+
+### XVIII.16 Search, and the promise the page should not make (§XVIII.16) (SH494)
+
+`search-caching.md` states that content is "automatically indexed when created or
+updated" and that this means "your site has search functionality out of the box, no
+additional configuration required". Both halves are wrong: Turing indexing is **off by
+default**, and when it is on, a post reaches the index on publish rather than on save.
+
+Rewrite the page from `docs/agents/turing.md`: what the integration is (Turing's own
+contract, via the ecosystem's SDK, not a second search engine), the configuration that
+turns it on, what is mapped and why the mapping is fixed, the AFTER_COMMIT seam and its
+bounded queue, the incident record when indexing fails, and `searchIndexing` in the
+manifest as what an agent can see.
+
+Two facts a reader needs and the current page hides. Absent is not empty: an instance
+with indexing off has no index, not an empty one. And switching indexing on does not
+index what is already published, which is SH413 in the backlog: until it ships, the page
+must say that a republish is what puts existing content in the index. The caching half
+of the page stays, corrected against what the tree caches today.
+
+### XVIII.17 The reference pages (§XVIII.17) (SH495)
+
+Three reference pages carry tables a reader will copy from, and none of them has been
+checked against the tree in years. `rest-api.md` documents session login plus per-object
+endpoints and knows nothing of `/api/v2/post-unified/**`, the copy and move verbs, the
+trash, or the three endpoints that deliberately do not exist.
+`configuration-reference.md` lists `shio.website.nashorn` and
+`shio.website.javascript.engine` as live properties. `security.md` describes HTTP Basic
+and a cookie CSRF token, with no token scopes, no stateless matcher and no CORS story.
+
+Rebuild each table from the tree, and delete rather than soften what is gone. For
+security, the two things a reader must be able to find are how a non-browser caller
+authenticates without a cookie (and which paths accept that) and what the AGENT scope
+may not do.
+
+The measurement discipline this project applies to itself applies here too: a property
+that cannot be found in the tree does not go on the page, and an endpoint gets on the
+page only with a request and a response somebody ran.
+
+### XVIII.18 Content modelling and delivery (§XVIII.18) (SH496)
+
+`content-modeling.md` teaches Post Types through the console form and stops at field
+types and the publishing workflow. Bring it up to the tree: post types as **one
+name-keyed surface** (the id-keyed twin was retired), the widget catalogue as it exists,
+`widgetSettings`, rename, and the post-types DSL from
+`docs/specs/SH62-post-types-dsl.md`. Add addresses, because a model without an
+addressing grammar cannot be queried.
+
+The four headless pages (`content-delivery-api`, `javascript-client`, `react-sdk`,
+`nextjs-starter`) are the best pages in the set and still need a pass: the read shapes
+the console itself consumes, draft and preview reads, caching and ETags, rate limits,
+generated types, and the version of each package a reader would install today.
+`graphql.md` needs the schema it actually serves.
+
+This is also where the "JS dev, zero Java" claim lives, and it is worth keeping and
+strengthening: a front-end developer building against the CDA is a real audience, and
+the agent-first reorientation does not change what they need. It does add one thing to
+say: how content an agent wrote reaches them, and when.
+
+### XVIII.19 Token economy, published (§XVIII.19) (SH497)
+
+P3 makes tokens a measured budget and a regression a build failure. That is a product
+feature, and `docs-turing` has three pages about cost (`token-usage`, `cost-governance`,
+`llm-gateway`) while `docs-shio` has none.
+
+Write one page: what the response budgets are and which surfaces they bind, the terse
+projection of the manifest and what it saves, the field selection and pagination a
+caller can use to spend less, what a context pack costs against the session it replaces,
+and the build-a-site benchmark as the number the project holds itself to.
+
+Two caveats keep it honest. The benchmark ends at `verify` rather than at a page a
+person can open (SH396 is open), so the published number measures content that passes
+checks. And the manifest's weight is mostly the per-endpoint prose kept verbatim on
+purpose, so terse mode saves about a tenth where a reader might expect a third.
+Publishing both numbers with their limits is worth more than publishing the flattering
+one, and it is the argument the ten laws already make: a cost that is argued rather than
+measured is a defect.
+
+### XVIII.20 The diagrams Shio does not have (§XVIII.20) (SH498)
+
+`diagrams/` holds `turing-*.mmd` (8) and `dumont-*.mmd` (6) and no `shio-*.mmd`. The
+convention the docs repo states is that anything past a small figure is a `.mmd`
+rendered to SVG by `scripts/render-diagrams.mjs`, referenced as
+`/img/diagrams/name.svg`, because inline Mermaid sizes inconsistently.
+`architecture-overview.md`'s component diagram is inline Mermaid with well over the ten
+nodes that convention allows.
+
+Author the Shio set: `shio-architecture` (the overview, 8 to 10 blocks, strictly
+top-to-bottom), `shio-agent-loop` (discover, plan, write, verify, as a sequence),
+`shio-render-pipeline` (page → layout → region → template → digest),
+`shio-content-files` (the pull, edit, push round trip with the three-way merge),
+`shio-replication-flow` (clone → propose → convert → publish → serve), and
+`shio-curation-flow` (draft, review queue, Universal Editor, publish).
+
+Use the repo's four-colour palette and the `graph TB` rule, keep the per-layer detail as
+small inline Mermaid under each figure with a table beneath it, and render before
+committing so the SVGs are in the tree rather than produced at build time on somebody
+else's machine.
+
+### XVIII.21 The examples nobody runs (§XVIII.21) (SH499)
+
+The failure this whole block repairs was not that anybody wrote the docs badly. It is
+that the pages were written once, the product moved, and nothing ever compared the two.
+A coverage matrix catches a subsystem with no page; it does not catch a page whose
+example stopped working.
+
+The instrument: extract the copyable invocations from `docs-shio` (fenced `bash`, `http`
+and `json` blocks carrying a `shio` verb, an `/api/v2/**` path or a `POST /mcp` body)
+and run them against a live instance seeded the way the conformance harness seeds one,
+asserting the shape of what comes back rather than the bytes. A renamed flag, a moved
+endpoint or a changed response key then fails a run instead of misleading a reader.
+
+Two questions to answer before building it, which is why this is an idea and not a
+design. Where does it live: the docs repo has no test harness, and Shio's
+`cli/conformance/` already knows how to drive an instance. And how much is worth
+extracting: a first count of the executable blocks decides whether this is a gate or a
+periodic check, and that count is the first deliverable either way.

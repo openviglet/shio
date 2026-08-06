@@ -34,7 +34,24 @@ reads.
 | `sh-region="NAME"` | `data-shio-region`, `data-shio-region-post` | this element is a region slot, filled from that Region post |
 | `sh-post="<id>"` | `data-shio-post` | fields below here belong to that post |
 | `sh-field="NAME"` | `data-shio-prop` | this element renders that field |
+| `sh-field="COLL.N.LEAF"` | `data-shio-prop` | this element renders the `LEAF` of row `N` of the collection field `COLL` (SH475) |
 | — | `data-shio-post-type` | on `<body>`: the page's post-type, so the editor can fetch a field schema without a second resolve |
+
+### A row of a nested collection is a path, because it is not a post (SH475)
+
+A `Relator` field with **nested** fields holds an inline array of row maps in its own post's
+`data` — there is no second post, so there is no id to put in an `sh-post`, and a flat
+`sh-field="title"` on a row would rename the post that owns the collection. The address is
+therefore a three-segment path: the collection's field name, the row's index, the row field.
+
+The renderer is unchanged — it never parsed a prop and still does not. What understands the path
+is the **write**: `ShPostDraftMergeService` resolves `COLL.N.LEAF` into the existing array, and
+**never creates**. The collection must already be an array on the post and `N` must already name a
+row of it; anything else is written as the flat key it looks like, so a mistyped prop surfaces as
+an SH168 `unknown-field` instead of inventing a shape the post-type does not declare.
+
+What the path deliberately does not express is **adding, removing or reordering** a row: it
+addresses a value, not a list. Those stay with the console's form.
 
 `sh-region` is not new. It is in `openviglet/bootstrap-site`, an export last touched in
 **2018**, and SH183 keeps it through the render for exactly this reason.
