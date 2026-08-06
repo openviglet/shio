@@ -29,6 +29,8 @@ const NAV_GROUPS = [
       { label: "MCP + CLI surface", href: "/#surface" },
       { label: "Errors that instruct", href: "/#errors" },
       { label: "Proof without a screenshot", href: "/#verify" },
+      { label: "Rendering and design tokens", href: "/features/rendering" },
+      { label: "Delivery and the SDKs", href: "/features/delivery" },
     ],
   },
   {

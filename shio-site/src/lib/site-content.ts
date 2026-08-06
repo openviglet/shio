@@ -1004,7 +1004,7 @@ export const PILLARS: Pillar[] = [
     title: "The agent gateway",
     description:
       "MCP over the same services the console uses, a manifest that answers first, and a context pack that ends the discovery session.",
-    anchor: "#surface",
+    anchor: "/features/agent-gateway",
   },
   {
     icon: FolderTree,
@@ -1012,7 +1012,7 @@ export const PILLARS: Pillar[] = [
     title: "Content as files",
     description:
       "The whole site projected to disk with a three-way merge behind it, so authoring is Edit and Write rather than a REST call per field.",
-    anchor: "#files",
+    anchor: "/features/content-as-files",
   },
   {
     icon: Layers,
@@ -1020,7 +1020,7 @@ export const PILLARS: Pillar[] = [
     title: "Blueprints",
     description:
       "Appliable units instead of prose recipes — post types, folders, content and carried files, converged in one transaction.",
-    anchor: "#blueprints",
+    anchor: "/features/blueprints",
   },
   {
     icon: Sparkles,
@@ -1028,7 +1028,7 @@ export const PILLARS: Pillar[] = [
     title: "Render and prove",
     description:
       "Pages, layouts, regions and a section vocabulary — with a digest, a lint and an audit that make a page checkable without a screenshot.",
-    anchor: "#verify",
+    anchor: "/features/rendering",
   },
   {
     icon: Boxes,
@@ -1036,7 +1036,7 @@ export const PILLARS: Pillar[] = [
     title: "Replication",
     description:
       "Point it at a site that already exists and get one a curator can edit — capture, convert, prove.",
-    anchor: "#replicate",
+    anchor: "/replicate",
   },
   {
     icon: Braces,
@@ -1044,7 +1044,7 @@ export const PILLARS: Pillar[] = [
     title: "Delivery",
     description:
       "REST and GraphQL, a zero-dependency TypeScript client, a React SDK and a generated Next.js starter.",
-    anchor: "#delivery",
+    anchor: "/features/delivery",
   },
 ];
 

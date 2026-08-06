@@ -87,7 +87,7 @@ for that repository.
 ## Backlog
 
 Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the transcript player
-(SH531), the plotted token budget (SH533), the markdown twins (SH537), the depth
-pages (SH539) and the public demo instance (SH540).
+(SH531), the plotted token budget (SH533), the markdown twins (SH537) and the
+public demo instance (SH540).
 The design behind each is `§XIX` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).

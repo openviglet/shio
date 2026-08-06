@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import App, { ROUTES } from "./App.tsx";
 import { ThemeProvider } from "@/components/theme-provider";
+import { FEATURE_DETAILS, FEATURE_SLUGS } from "@/lib/feature-content";
 
 export interface PrerenderRoute {
   /** URL path (also the output directory under dist/). */
@@ -48,6 +49,13 @@ export const routes: PrerenderRoute[] = [
     description:
       "An agent wrote nine pages last night and nobody has seen them yet. The curator half of Shio: the review queue an agent token cannot reach, expiring preview links, inline editing on the rendered page, draft-published diff and restore, reversible deletes, and the six gates that are on by default rather than configurable.",
   },
+  // The depth pages carry their own metadata, so the record is the single
+  // source for the route, the title and the description alike.
+  ...FEATURE_SLUGS.map((slug) => ({
+    path: `/features/${slug}`,
+    title: FEATURE_DETAILS[slug].metaTitle,
+    description: FEATURE_DETAILS[slug].metaDescription,
+  })),
 ];
 
 /**

@@ -17,6 +17,16 @@
   the fidelity-versus-authorable decision, and the bounds the crawl keeps
 - [/curator](https://shio.viglet.org/curator): the human half - the review queue, preview
   links, inline editing, and the six gates that stop an agent write
+- [/features/agent-gateway](https://shio.viglet.org/features/agent-gateway): the manifest,
+  the context pack, planned batches and teaching errors
+- [/features/content-as-files](https://shio.viglet.org/features/content-as-files): the
+  Markdown projection, the field table and the three-way merge
+- [/features/blueprints](https://shio.viglet.org/features/blueprints): the package format
+  and the rules that keep it from becoming a third contract
+- [/features/rendering](https://shio.viglet.org/features/rendering): layouts, regions, the
+  section vocabulary and design tokens in the W3C DTCG shape
+- [/features/delivery](https://shio.viglet.org/features/delivery): REST, GraphQL, the
+  zero-dependency client, the generated Next.js starter and the token scopes
 
 ## Start here
 

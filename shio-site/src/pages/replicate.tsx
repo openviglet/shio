@@ -225,6 +225,28 @@ export function ReplicatePage() {
                 </div>
 
                 <div className="rounded-xl border border-border bg-card p-5">
+                  <h3 className="text-sm font-bold">
+                    The stylesheet is read as tokens, not just concatenated
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    A source's CSS <em>contains</em> its palette, its type scale and its
+                    spacing rhythm, so a conversion that only appends the file throws all
+                    of it away &mdash; and the replica then looks right and cannot be
+                    changed. Eight groups are lifted into the theme's design tokens, and
+                    the report is honest about which ones are real: a declared custom
+                    property is genuinely editable, while a literal repeated twenty-three
+                    times is the palette by observation and changes nothing until somebody
+                    rewires the CSS.{" "}
+                    <a
+                      href="/features/rendering"
+                      className="font-medium text-primary underline underline-offset-4"
+                    >
+                      How tokens work &rarr;
+                    </a>
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-border bg-card p-5">
                   <h3 className="text-sm font-bold">The loss is computed, never listed</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     It is the complement of what the fields consumed &mdash; the only

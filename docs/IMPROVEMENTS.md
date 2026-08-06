@@ -1918,25 +1918,6 @@ the site is discovered by.
 The test is one an agent can run: fetch the site, answer "what can this do and what
 would the first call be", and pay for one page rather than for a bundle.
 
-### XIX.10 Depth pages per claim (SH539)
-
-The landing page is deliberately one screen per idea, which leaves every idea one click
-short. Turing solved this with feature pages generated from one content file, and the
-same mechanism fits here: a slug per pillar - the agent gateway, content as files,
-blueprints, the renderer and preview, delivery, replication - each with its own
-prerendered route, title and description.
-
-What those pages are for is the mechanism, at the level a reader deciding needs it and
-no deeper: the actual call, the actual file on disk, the actual error body.
-`docs/agents/` already holds the authoritative version and is written for somebody about
-to change the code, which makes it exactly the wrong link to hand a reader who has not
-chosen the product yet.
-
-They are also the site's search surface. One page that mentions everything ranks for
-nothing, and every one of these slugs is a phrase somebody types when they are looking
-for what Shio is - which is worth more than another section on a page that is already
-long.
-
 ### XIX.11 A public instance to point at (SH540)
 
 Turing's landing page went from a scripted demo to a genuinely live one by pointing the
