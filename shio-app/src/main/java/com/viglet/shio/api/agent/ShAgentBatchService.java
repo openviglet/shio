@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.agent.verify.ShPostLinks;
+import com.viglet.shio.api.error.ShDataIntegrityProblem;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.render.ShTemplateTitles;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
@@ -416,15 +418,46 @@ public class ShAgentBatchService {
         for (int index = 0; index < ops.size(); index++) {
             try {
                 results.add(dispatch(ops.get(index), session));
+                if (!session.dryRun) {
+                    // SH544 — not an extra flush, an earlier one. Hibernate auto-flushes before
+                    // the *next* op's address query anyway, so a refused insert would otherwise
+                    // surface inside op i+1 and be reported as `ops[i+1]`. An `at` that names the
+                    // wrong op is worse than no `at` at all (P6), and this is what makes it true.
+                    // Any JpaRepository is a handle on the one persistence context.
+                    shPostUnifiedRepository.flush();
+                }
             } catch (ShTeachingException failure) {
                 // Re-thrown, not wrapped: the original problem already teaches what was
                 // wrong (allowed values, didYouMean, an example). All this adds is
                 // *where* — without which a caller has to guess which of 40 ops failed.
                 throw new BatchOpException(failure.problem().withAt("ops[" + index + "]"));
+            } catch (DataAccessException refused) {
+                // SH544 — the database refusing one op used to leave here as a 500 with Spring's
+                // default body, so a 201-page conversion returned nothing that named the op, the
+                // address, the column or the length, and diagnosing it meant reading the server
+                // log. The batch is one transaction and this op has already marked it
+                // rollback-only, so there is nothing to salvage — only something to say.
+                throw new BatchOpException(
+                        ShDataIntegrityProblem.of(refused, subject(ops.get(index)))
+                                .withAt("ops[" + index + "]"));
             }
         }
         int changed = (int) results.stream().filter(Change::isChange).count();
         return new ShAgentChangeSet(session.dryRun, ops.size(), changed, List.copyOf(results));
+    }
+
+    /**
+     * The op and what it acted on, in the caller's own words (SH544) — {@code post.upsert
+     * post:vilt/about}. {@code ops[3]} says <em>which</em> op; this says <em>what</em> it was,
+     * which is what an agent holding a 40-op document needs in order to fix the source rather
+     * than the request.
+     */
+    private static String subject(ShAgentBatch.Op op) {
+        if (op == null) {
+            return null;
+        }
+        String name = op.op() == null ? "an op" : op.op().trim();
+        return op.address() == null || op.address().isBlank() ? name : name + " " + op.address();
     }
 
     /**

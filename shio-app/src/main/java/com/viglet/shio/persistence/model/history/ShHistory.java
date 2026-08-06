@@ -42,6 +42,9 @@ public class ShHistory implements Serializable {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
+	/** Declared width of {@link #description} — the limit the writer truncates to (SH544). */
+	public static final int DESCRIPTION_MAX_LENGTH = 255;
+
 	@Id
 	@VigletAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
@@ -70,6 +73,19 @@ public class ShHistory implements Serializable {
 	@Column(name = "subject_kind", length = 16)
 	private String subjectKind;
 
+	/**
+	 * The human-readable sentence describing the change, composed by
+	 * {@code ShContentAuditService.describe()} from a title the caller supplied.
+	 *
+	 * <p>The width is declared here — redundantly, since {@code VARCHAR(255)} is both the
+	 * changelog's type and JPA's default — because SH544 was the width being known to the
+	 * schema and to nobody else: five of one site's 198 page titles are longer than 245
+	 * characters, and each of them ended a 201-page conversion with a 500. The writer now
+	 * truncates against {@link #DESCRIPTION_MAX_LENGTH}, so the constant and the column have
+	 * to agree; {@code ShAuditDescriptionLengthTest} asserts they still do, against the
+	 * changelog rather than this annotation.</p>
+	 */
+	@Column(name = "description", length = DESCRIPTION_MAX_LENGTH)
 	private String description;
 
 	private String shObject;

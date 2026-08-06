@@ -10,11 +10,14 @@ package com.viglet.shio.api.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -210,5 +213,25 @@ class ShTeachingErrorTest {
         assertThat(response.getBody().getProperties())
                 .containsEntry("allowed", List.of("GET", "PUT"))
                 .hasEntrySatisfying("fix", fix -> assertThat(fix).asString().contains("GET, PUT"));
+    }
+
+    /**
+     * SH544 — a database refusal reaches the wire as a problem, not as a 500 with Spring's default
+     * body. The mapping itself is {@link ShDataIntegrityProblemTest}'s subject; what is asserted
+     * here is that the advice is wired to it at all, which is the part that was missing.
+     */
+    @Test
+    void handlerTurnsADatabaseRefusalIntoAProblem() {
+        ResponseEntity<ProblemDetail> response = handler.dataIntegrity(
+                new DataIntegrityViolationException("could not execute statement",
+                        new SQLException("Value too long for column \"DESCRIPTION\"", "22001")));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getHeaders().getContentType())
+                .isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getType())
+                .hasToString(ShProblem.TYPE_BASE + "value-too-long");
+        assertThat(response.getBody().getProperties()).containsKey("fix");
     }
 }

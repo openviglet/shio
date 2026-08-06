@@ -13,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -97,6 +98,17 @@ public class ShApiExceptionHandler {
                     + (required != null ? required.getSimpleName() : "the expected type") + ".");
         }
         return respond(HttpStatus.BAD_REQUEST.value(), problem.toProblemDetail());
+    }
+
+    /**
+     * The database refused the write (SH544). Answered as a 400 or a 409 rather than the 500 it
+     * used to be — see {@link ShDataIntegrityProblem} for which, and why a 500 is the wrong
+     * answer to a request that cannot succeed by being repeated.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ProblemDetail> dataIntegrity(DataIntegrityViolationException exception) {
+        ShProblem problem = ShDataIntegrityProblem.of(exception, null);
+        return respond(problem.status().value(), problem.toProblemDetail());
     }
 
     /** The body could not be parsed at all — almost always malformed JSON. */

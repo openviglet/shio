@@ -945,6 +945,25 @@ worth knowing: keyed on any read-only annotation it flags classes whose *writing
 matching `throw new X(` literally it misses the owner-qualified `Outer.XException` — which was the
 very bean it was written from.
 
+**A write is never refused by its own audit row, and a refusal that happens anyway names the op
+(SH544).** `ShHistory.description` is `VARCHAR(255)` and `ShContentAuditService.describe()` composed
+`Created "<title>"` with nothing between them, so five of one site's 198 page titles — ordinary
+marketing sentences over 245 characters — ended a **201-page** conversion with a 500, after 403
+assets had already been uploaded. Two defects, and only one of them is the column. The trail exists
+to *describe* a write and was deciding whether the write happened: the description is derived, so it
+is bounded where it is built, and the title gives way (the parenthesised `detail` an SH196 reader
+needs survives). The second is that the refusal was a **500 with Spring's default body** — nothing on
+the wire named the column, the width, the op or the address, so it was diagnosed from the server log,
+and SH513's CLI cannot print a field the server never sent. `ShDataIntegrityProblem` is now the one
+mapping both boundaries use: SQLSTATE `22001` is a 400 `value-too-long`, any other constraint a 409
+`data-integrity`, and never a 500 — **a 500 tells an agent to retry, which is the one thing that
+cannot work here**. In a batch the problem carries `at: ops[i]` plus the op and its address, and what
+makes that index *true* is not an extra flush but an **earlier** one: Hibernate auto-flushes before
+the next op's address query anyway, so without it a refused insert surfaces inside `ops[i+1]` and an
+`at` naming the wrong op is worse than none (P6). The constant and the schema are held together
+against the **changelog**, not the `@Column` annotation — `ddl-auto=none`, so asserting the entity
+agrees with itself proves nothing.
+
 **A post's locale is on the read, and only when it is not the default (SH348).** `/agent/read` and
 `find`'s rows carry `locale` — before this the string appeared nowhere in `ShAgentReadService`, so
 `locales: true` advertised a capability no read reported the state of. **Absent means the instance

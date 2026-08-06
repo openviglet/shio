@@ -38,6 +38,12 @@ import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 @Service
 public class ShContentAuditService {
 
+    /**
+     * Below this many characters a truncated title identifies nothing, so {@link #describe} cuts
+     * the line as a whole instead of reducing it to a verb and an ellipsis.
+     */
+    private static final int MIN_TITLE_ROOM = 8;
+
     private final ShHistoryRepository shHistoryRepository;
     private final ShAuditFeedWatermark watermark;
 
@@ -100,9 +106,45 @@ public class ShContentAuditService {
         shHistoryRepository.save(history);
     }
 
-    private static String describe(ShContentAction action, String title, String detail) {
+    /**
+     * Composes the description, and <b>bounds it</b> (SH544).
+     *
+     * <p>Package-private so {@code ShAuditDescriptionLengthTest} can assert the bound
+     * directly: the failure it prevents is a rolled-back transaction, which is the one thing a
+     * test of the caller cannot observe without a database that enforces the width.</p>
+     *
+     * <p>The title is the only unbounded part, so it is the part that gives way. Eliding it
+     * rather than the composed line keeps the shape — verb, quoted title, parenthesised detail
+     * — which is what the SH196 readers parse. Only when {@code detail} alone leaves no usable
+     * room for a title does the whole line get cut instead; that ordering is deliberate, since
+     * a description reduced to {@code Updated "…} names nothing.</p>
+     */
+    static String describe(ShContentAction action, String title, String detail) {
         String label = (title != null && !title.isBlank()) ? title : "(untitled)";
-        String described = action.verb() + " \"" + label + "\"";
-        return (detail == null || detail.isBlank()) ? described : described + " (" + detail + ")";
+        String suffix = (detail == null || detail.isBlank()) ? "" : " (" + detail + ")";
+        String prefix = action.verb() + " \"";
+        // The closing quote is the +1; `room` is what is left for the title itself.
+        int room = ShHistory.DESCRIPTION_MAX_LENGTH - prefix.length() - 1 - suffix.length();
+        if (label.length() <= room) {
+            return prefix + label + "\"" + suffix;
+        }
+        if (room >= MIN_TITLE_ROOM) {
+            return prefix + elide(label, room) + "\"" + suffix;
+        }
+        return elide(prefix + label + "\"" + suffix, ShHistory.DESCRIPTION_MAX_LENGTH);
+    }
+
+    /**
+     * Cuts {@code value} to {@code max} characters, the last of which marks the cut.
+     *
+     * <p>Never splits a surrogate pair: an emoji in a page title is two {@code char}s, and
+     * half of one is not a character any database will store back as it was given.</p>
+     */
+    private static String elide(String value, int max) {
+        int end = max - 1;
+        if (end > 0 && Character.isHighSurrogate(value.charAt(end - 1))) {
+            end--;
+        }
+        return value.substring(0, end) + "…";
     }
 }

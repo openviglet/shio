@@ -295,31 +295,6 @@ which is SH523's plan — inferring a type is only useful if applying it is revi
 The honest limit belongs in the report: three instances of a thing are evidence about
 those three. A proposal, not a conclusion — which is what `propose` already gets right.
 
-### VIII.26 A conversion refused by its own audit row (SH544)
-
-The write succeeded and the record of it did not. `ShContentAuditService.describe()`
-composes `Created "<title>"` and stores it in a column declared 255 characters wide,
-with no truncation between them. Five of vilt-group.com's 198 pages carry a title longer
-than 245 characters — ordinary marketing titles, a full sentence each — and any one of
-them ends the transaction.
-
-What is lost is not the row. The batch is one transaction, so a 201-page conversion
-returns nothing, having already uploaded 403 assets that stay. The site is left holding
-a media library and no content, a state no command produces deliberately and none
-reports.
-
-Two things are wrong and only one is the column. The first is that content is refused
-because of an audit row: the trail exists to describe a write, and it is deciding
-whether the write happens. The second is that the refusal is a 500 carrying Spring's
-default body, so nothing on the wire names the column, the op, the address or the
-length, and diagnosing it took the server log. SH513 already made the CLI print what
-such a body does carry, which is how the endpoint was identified at all; it cannot
-invent a field the server never sent.
-
-The fix is bounded: the description is derived, so it can be truncated where it is
-built, and the boundary that knows the limit can say so as an SH80 problem naming the op
-rather than as a stack trace.
-
 ### VIII.27 A publish that landed and reads as if it did not (SH545)
 
 Three reads disagree and only one is wrong. A probe page answered 404 on the public
