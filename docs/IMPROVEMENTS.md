@@ -295,6 +295,102 @@ which is SH523's plan — inferring a type is only useful if applying it is revi
 The honest limit belongs in the report: three instances of a thing are evidence about
 those three. A proposal, not a conclusion — which is what `propose` already gets right.
 
+### VIII.26 A conversion refused by its own audit row (SH544)
+
+The write succeeded and the record of it did not. `ShContentAuditService.describe()`
+composes `Created "<title>"` and stores it in a column declared 255 characters wide,
+with no truncation between them. Five of vilt-group.com's 198 pages carry a title longer
+than 245 characters — ordinary marketing titles, a full sentence each — and any one of
+them ends the transaction.
+
+What is lost is not the row. The batch is one transaction, so a 201-page conversion
+returns nothing, having already uploaded 403 assets that stay. The site is left holding
+a media library and no content, a state no command produces deliberately and none
+reports.
+
+Two things are wrong and only one is the column. The first is that content is refused
+because of an audit row: the trail exists to describe a write, and it is deciding
+whether the write happens. The second is that the refusal is a 500 carrying Spring's
+default body, so nothing on the wire names the column, the op, the address or the
+length, and diagnosing it took the server log. SH513 already made the CLI print what
+such a body does carry, which is how the endpoint was identified at all; it cannot
+invent a field the server never sent.
+
+The fix is bounded: the description is derived, so it can be truncated where it is
+built, and the boundary that knows the limit can say so as an SH80 problem naming the op
+rather than as a stack trace.
+
+### VIII.27 A publish that landed and reads as if it did not (SH545)
+
+Three reads disagree and only one is wrong. A probe page answered 404 on the public
+route, was published, and answered 200 — so the publish landed. Publishing it a second
+time answered `noop`, so the server knows. And `/agent/read` and `/agent/find` report
+`state: DRAFT` for that page, for every page of the site converted beside it, and for
+fixtures that have been serving publicly for weeks.
+
+The cost is not cosmetic. P9 asks that a change be provable from text, and publication
+is the state transition a curator cares about most. An agent that cannot read it back
+has three bad options: publish again, which the server correctly declines to notice;
+call the public route and infer the state from an HTTP code, which is what this round
+did; or report that the publish failed, which is worse than saying nothing.
+
+Reading a post's state is the cheapest question on the surface and it is asked after
+every write, so the number of callers is not the problem — the field is. Either it
+reports the DRAFT variant of a two-variant object without saying which it read, or it
+reads publication from somewhere it is not written. The distinction matters for the fix
+and not for the finding: whichever it is, the surface has one word for a question with
+two answers.
+
+The assertion this closes with is the probe, since that sequence is what distinguishes a
+misreported state from a route that serves drafts.
+
+### VIII.28 The rung of the ladder that cannot publish (SH546)
+
+P1 orders every capability MCP → files/CLI → REST → console, and publication is present
+at three of the four. `grep post.publish cli/src/` returns nothing and there is no
+`--publish` flag on any command.
+
+The gap is visible from inside the product. `shio convert` ends by printing *every post
+lands in DRAFT — publishing is a separate, explicit call (P7)*, which is correct and is
+the right thing to say. The binary that prints it cannot make that call. So the step
+immediately after the longest command in the CLI drops out of the tier and into raw
+HTTP: this round published a conversion by reading `/agent/find`, composing a batch
+document in Python, and posting it with curl — three tools and a hand-written document
+to perform the one op the previous command just told me to perform.
+
+This is worth stating as a P1 defect rather than a missing flag, because the shape
+recurs. A capability that lands at MCP and REST looks complete from both ends: the tool
+list has it, the API has it, and the tier in between is the one nobody reads to check.
+SH244 records the same shape for copy, which exists only as a console PUT.
+
+The verb is small — `shio publish --site X [--all|<address>]`, and its inverse — and the
+argument for it is not convenience. It is that the CLI is the tier P4 calls the agent's
+cheapest surface, and a conversion cannot be finished there.
+
+### VIII.29 A refusal that teaches the other endpoint's grammar (SH547)
+
+`POST /api/v2/agent/apply` takes a desired-state document. Sent an ops batch, it answers
+400 `empty-batch` — *The batch has no operations* — with `allowed` listing the eleven op
+names and `example` showing an `ops` array. Every teaching field in that document
+describes `/agent/batch`. Following it exactly reproduces the same 400.
+
+The mechanism is ordinary reuse: `apply` converts the document to ops and hands them to
+`ShAgentBatchService`, which raises the batch's own error when the list comes back
+empty. That is correct for `batch` and wrong here, and the error has no way to know
+which door it came through.
+
+P6 is not that a 4xx carries fields; it is that following them works. A problem document
+that names the wrong grammar is worse than a bare status, because a bare status sends
+the reader to the docs and this one sends them in a circle. The cost was small and
+exactly the cost P6 exists to remove: one wrong endpoint, then one wrong argument shape,
+before anything was learned.
+
+The fix is that `apply` answers for `apply` — a document with no `folders` and no
+`posts` is an empty *document*, and the fields that teach it should name those keys and
+show that shape. The shared choke point is right; what is missing is that the error
+knows its caller. The assertion is one request per endpoint asserting the two refusals
+differ, which is cheap and would have caught this before it was written.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -525,6 +621,27 @@ no assertion on the exit code of a real remote failure either.
 It is also the honest end of my part in this. I have been the verification for fifteen
 rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
 me looking.
+
+### IX.40 An instrument outside the order that runs it (SH548)
+
+Last round's finding was that four instruments passed a page that had lost most of its
+content, because each measures what is there and none holds an expectation. SH522's
+`diff` holds one, and on its first real run it worked: twelve pages compared against the
+capture that declared them, 35 facts lost, internal links 16 → 0 on eleven of them, text
+7073 → 1819 on the home page. Exit 1.
+
+On the same site, `verify` exited 0 having warned `page-unstyled` on ten pages, and
+`audit` exited 0 having warned `no-landmark`. Both warnings are true and neither is the
+finding. The gate order in `cli.md` runs `verify --checks projection,replication`, then
+three `--check` drift guards, then `verify`. `diff` is in none of them, so the only red
+signal on a gutted replica is one a person has to remember to ask for.
+
+Two things follow and they are separable. The narrow one is that the order should name
+`diff` wherever a capture exists, which is the condition it already tests for. The wider
+one is what the two exit codes mean: a site whose every page draws with classes no
+stylesheet defines is not a warning-shaped fact, and the argument for keeping it one is
+that SH521 could not tell a missing theme from a deliberate one. `diff` can — it knows
+what the source had — so the two reads together decide what one could not.
 
 ## X. Content as files (Block I)
 

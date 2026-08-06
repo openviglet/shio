@@ -366,6 +366,10 @@ function ctxWith({ bodies = {} } = {}) {
     },
     fs: {
       async mkdir() {},
+      async appendFile(path, body) {
+        const key = path.replace(/\\/g, "/");
+        written[key] = (written[key] ?? "") + body;
+      },
       async writeFile(path, body) {
         written[path.replace(/\\/g, "/")] = body;
       },
@@ -400,6 +404,10 @@ test("--assets writes the bytes into the tree beside the inventory", async () =>
 
   const files = Object.keys(ctx.written).sort();
   assert.deepEqual(files, [
+    // SH543 — the download phase reports itself the same way the crawl does, and for the stronger
+    // reason: this is the pass that can spend an hour on somebody else's server.
+    "/repo/shio/.shio/clone-progress.jsonl",
+    "/repo/shio/.shio/clone-status.json",
     "/repo/shio/.shio/source-inventory.json",
     "/repo/shio/assets/Blog/css/site.css",
     "/repo/shio/assets/Blog/img/hero.png",
@@ -486,12 +494,17 @@ test("a site name a path cannot hold is refused up front, not by the 200th write
   );
 });
 
-test("without --assets the capture still writes exactly one file", async () => {
+test("without --assets the capture still writes no bytes of somebody else's site", async () => {
   const ctx = ctxWith();
   await clone.run({ depth: 0 }, ["https://x.test"], ctx);
 
-  // SH377's promise, which SH378 is opt-in in order to keep.
-  assert.deepEqual(Object.keys(ctx.written), ["/repo/shio/.shio/source-inventory.json"]);
+  // SH377's promise, which SH378 is opt-in in order to keep. Asserted as "nothing under the asset
+  // tree" rather than as a file count since SH543: the count moved when the crawl learned to say
+  // where it was, and a count was never what the promise was about.
+  assert.deepEqual(
+    Object.keys(ctx.written).filter((path) => !path.startsWith("/repo/shio/.shio/")),
+    [],
+  );
 });
 
 // --- SH452: what a stylesheet references is not markup ---

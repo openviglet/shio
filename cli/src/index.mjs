@@ -63,6 +63,10 @@ const BOOLEANS = [
   // Opt-in because `--render` bakes the post-hydration DOM and handing that page its bundle back is
   // a hydration nobody asked for — but the *absence* is reported either way.
   "scripts",
+  // SH543: `clone` reports where it is to two files beside the inventory, because the caller of a
+  // two-hour crawl is not watching its pipe. `--no-progress` is for a run that must write only what
+  // it was asked for.
+  "no-progress",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would

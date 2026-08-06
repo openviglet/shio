@@ -93,8 +93,10 @@ be scoped. `clone` walks **one origin** and writes exactly two things: the inven
 `shio/.shio/source-inventory.json` and a report — the pages with titles and paths, the assets they
 reference, the locales *and how each shows up in a URL*, the forms and their fields, the navigation
 as the source spells it, and the third-party scripts. **Writing no content is the promise every
-later phase rests on** (`clone.test.mjs` asserts the file count): the thing a conversion is supposed
-to let you review would otherwise already exist. Four rules the walk keeps. **One origin** — every
+later phase rests on**: the thing a conversion is supposed to let you review would otherwise already
+exist. That promise is asserted as a **path prefix and not a file count** — nothing may land outside
+`shio/.shio/` — because SH543 added two files there and a count would have made a true invariant
+look broken while an untrue one went unstated. Four rules the walk keeps. **One origin** — every
 off-host link is recorded and never followed. **A seed that redirects off-host is refused**, naming
 the host it actually served, because `example.com → www.example.com` followed silently files every
 path under an origin nobody named; a *page* redirecting off-host mid-crawl is just an outbound link.
@@ -120,6 +122,28 @@ bounded limitation (a `>` inside a quoted value ends that tag early), and a test
 exactly the pathological shape with a timeout as the assertion. It is CLI-shaped for SH268's
 settled reason and the manifest says so: `siteCapture: false` with
 `elsewhere.siteCapture = "shio clone <url>"`.
+
+**A long capture is followed, not watched (SH543).** `clone` writes its inventory once, at the end,
+and under `--render` a crawl can hold a 200-page ceiling with the per-page timeout spent on every
+one of them — so it was silent for the better part of two hours, and the silence read the same
+whether it was working or wedged. It was told apart once by sampling the browser's CPU with
+`Get-Process`, which is process forensics standing in for a status line. The channel is a **file and
+not stderr**, because the caller who starts a two-hour run backgrounds it and is not holding its
+pipe — and `| tail` buffers both channels until EOF anyway, which is how the silence was produced in
+the first place. Same mechanism `shio dev --content` already settled: append beside the artefact,
+and a lost log never stops the run it describes. Two files, because there are two questions and they
+cost differently. `shio/.shio/clone-progress.jsonl` grows one line per page or asset and answers
+**what failed**, by grep, keeping the *cost* of each — which the inventory does not, and which is
+the finding that ends a doomed run early. `shio/.shio/clone-status.json` is rewritten in place and
+answers **where is it** in one Read whose size never changes however long the crawl runs (P3);
+nothing in it accumulates. Its `startedAt`/`updatedAt` pair is the point — a count says how far a
+run got, only a heartbeat says whether it is still getting anywhere — and it carries `pid` and the
+**ceilings in force**, since `13 of 200 at 30 s each` is a decision to make now rather than in
+ninety minutes. `--no-progress` suppresses both. Two details are load-bearing and were both found by
+reading the first real run's own log: the timestamp field is `at`, so a step's path is `path` (they
+collided once, and the clock silently lost), and a message written for a terminal is **stripped of
+ANSI and folded to one line**, or Playwright's timeout spans four lines of a format whose premise is
+one line per unit and defeats the grep that would have found it.
 
 **`--assets` is the bytes, and it is a second opt-in pass so SH377's promise survives (SH378).**
 SH145 made an asset a path in the tree and `push --content` uploads whatever a `File` field names,

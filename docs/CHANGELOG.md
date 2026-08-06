@@ -193,6 +193,7 @@
 - **SH522 (--against capture)** — shio diff walks the capture's pages, asks the instance for each one and reads the served bytes with the same scanner that wrote the declared counts, so the comparison is arithmetic: links, assets, forms and prose declared against produced, a gained fact never a failure, and exit 1 on a loss. The proposal, the document and an earlier moment are refused by name.
 - **SH526** — audit reads the page's landmarks and headings from the browser and reports no-landmark and no-heading, printing the shape whether or not it found one; snapshot --against compares the same shape beside its pixel percentage, one-directionally, so a lost region is named whatever the number says.
 - **SH527** — A defect closes with an assertion carrying its id, and cli/test/assertion-debt.test.mjs computes whether it did: the ledger's shipped ids against the ids every suite names, the difference held as a named list rather than a ceiling. It reads 275 files and one ledger in under a second, and it is excluded from its own walk because its declaration is not an assertion.
+- **SH543** — A crawl now reports where it is to two files beside the inventory — a constant-size status with a heartbeat, ceilings and pid, and a per-unit jsonl keeping the cost the inventory drops — so a long run is followed from another turn instead of being diagnosed by sampling the browser's CPU.
 
 ### Block I follow-up
 

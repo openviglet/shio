@@ -15,6 +15,10 @@
 - 📋 **SH523** (deps: —) **A model change has no proposal, so its cost is discovered after it is made** — Content gets a reviewable plan and the model gets none, so which posts violate a field, which templates read a vanishing one and which keys no type declares are all unaskable. → §VIII.23
 - 📋 **SH524** (deps: SH523) **Nothing reports a declared field that no template renders** — The lint catches a template reading a field that does not exist and not the inverse, which produced four collection types drawn as a heading and a CTA nobody could repoint. → §VIII.24
 - 📋 **SH525** (deps: SH523) **Type inference from instances exists only for a stranger's markup** — propose derives a post-type with typed fields from captured pages, and the same question about my own content has no verb, so a model is written blind and rewritten after. → §VIII.25
+- 📋 **SH544** (deps: —) **A page title longer than the audit column loses the whole batch to a 500 that teaches nothing** — ShHistory.description is VARCHAR(255) and the row reads Created "<title>", so five of one site's 198 pages rolled back a 201-page conversion after 403 assets were already uploaded. → §VIII.26
+- 📋 **SH545** (deps: —) **Every published page reads DRAFT, so an agent cannot confirm the publish it just made** — The public route went 404 to 200 across the publish and a repeat publish answered noop, and /agent/read and /agent/find still say DRAFT on every Page of every site. → §VIII.27
+- 📋 **SH546** (deps: SH545) **Publishing exists at every tier except the CLI, the one that prints the instruction to publish** — MCP has shio_publish, REST has post.publish and the console has a button, while convert prints that publishing is a separate explicit call and the CLI it belongs to cannot make it. → §VIII.28
+- 📋 **SH547** (deps: —) **The apply endpoint refuses an ops document by teaching the ops grammar it does not accept** — A batch sent to /agent/apply answers empty-batch with post.upsert in allowed and an ops array in example, which is the shape /agent/batch takes and this endpoint does not. → §VIII.29
 
 ## Block K — Perception & verification loop
 
@@ -29,6 +33,7 @@
 - ⏳ **SH522** (deps: SH521 ✅) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
 - 📋 **SH528** (deps: SH527 ✅) **The fixture cannot exhibit the traits that broke every real replica** — It serves a page, a stylesheet, a font, an image and a favicon, so a query string, a relative depth, an overlay, an entity, an empty file and a script-made canvas are unreproducible offline. → §IX.37
 - 📋 **SH529** (deps: SH528) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38
+- 📋 **SH548** (deps: SH522 ✅) **The one command that caught the loss is the one no gate runs** — diff exited 1 naming 35 lost facts on a replica whose navigation was gone, while verify and audit exited 0 on the same site, and the gate order names neither diff nor a replica. → §IX.40
 
 ## Block I — Content as files (local-first authoring)
 

@@ -29,6 +29,7 @@ import {
   stripNonMarkup,
 } from "../src/clone.mjs";
 import { BEHAVIOUR, DOWNLOADABLE } from "../src/clone-assets.mjs";
+import { PROGRESS_LOG, STATUS_FILE } from "../src/clone-progress.mjs";
 import * as clone from "../src/commands/clone.mjs";
 
 function sink() {
@@ -505,6 +506,10 @@ function ctxWith(site = SITE, { onFetch, render } = {}) {
       async writeFile(path, body) {
         written[path.replace(/\\/g, "/")] = body;
       },
+      async appendFile(path, body) {
+        const key = path.replace(/\\/g, "/");
+        written[key] = (written[key] ?? "") + body;
+      },
       async readFile(path) {
         const error = new Error(`ENOENT: ${path}`);
         error.code = "ENOENT";
@@ -528,15 +533,156 @@ function response({ status = 200, body = "", type = "text/html; charset=utf-8", 
   };
 }
 
-test("the capture writes exactly one file, and it is not content", async () => {
+test("the capture writes one artefact and no content, whatever else it reports", async () => {
   const ctx = ctxWith();
   const result = await clone.run({}, ["https://x.test"], ctx);
 
   // The promise every later phase is built on. A capture that wrote a post would make the
   // conversion unreviewable — the thing it was supposed to let you review would already exist.
-  assert.deepEqual(Object.keys(ctx.written), [`/repo/${INVENTORY_FILE}`.replace(/\\/g, "/")]);
+  //
+  // SH543 loosened the letter of this and not the substance. The capture used to write exactly one
+  // file; it now also reports where it is, to two files under the same `.shio/` metadata directory.
+  // The invariant that matters was never the count — it is that nothing lands where content lives,
+  // which is why it is asserted as a prefix below rather than left implied by a list of three.
+  assert.deepEqual(Object.keys(ctx.written).sort(), [
+    `/repo/${PROGRESS_LOG}`,
+    `/repo/${STATUS_FILE}`,
+    `/repo/${INVENTORY_FILE}`,
+  ].map((path) => path.replace(/\\/g, "/")).sort());
+  for (const path of Object.keys(ctx.written)) {
+    assert.ok(path.startsWith("/repo/shio/.shio/"),
+      `${path} is outside the metadata directory, so the capture wrote something it promised not to`);
+  }
   assert.equal(result.exitCode, 0);
   assert.ok(result.inventory.pages.length > 3);
+});
+
+test("SH543 — the status says where a crawl is, and its size does not grow with the crawl", async () => {
+  const ctx = ctxWith();
+  await clone.run({ maxPages: "3" }, ["https://x.test"], ctx);
+
+  const status = JSON.parse(ctx.written[`/repo/${STATUS_FILE}`]);
+  // Terminal, and that is the whole reason a poller can stop: a status still reading `running`
+  // after the process is gone is the ambiguity the channel exists to remove.
+  assert.equal(status.state, "done");
+  assert.equal(status.phase, "crawl");
+  assert.equal(status.done, 3);
+  assert.equal(status.total, 3);
+  assert.equal(status.remaining, 0);
+  // The ceilings travel with it, because they are what a caller decides with — 13 of 200 at 30 s
+  // each is a decision to make now rather than in ninety minutes.
+  assert.equal(status.ceiling.maxPages, 3);
+  assert.equal(status.counts.ok, 3);
+  assert.ok(status.pid > 0);
+
+  // The heartbeat, which is the only field that separates a slow page from a wedged one. A count
+  // cannot: it reads the same at rest.
+  assert.ok(Date.parse(status.updatedAt) >= Date.parse(status.startedAt));
+
+  // Constant size is the P3 claim, and it is the reason there are two files rather than one: this
+  // is the one a caller re-reads, so nothing in it may accumulate.
+  assert.ok(!JSON.stringify(status).includes("["),
+    "the status carries no list, or re-reading it costs more each time");
+});
+
+test("SH543 — --depth 0 reports the total it knows, not the ceiling it will never reach", async () => {
+  const ctx = ctxWith();
+  await clone.run({ depth: 0 }, ["https://x.test"], ctx);
+
+  const status = JSON.parse(ctx.written[`/repo/${STATUS_FILE}`]);
+  // The seed and nothing else. Carrying the 200-page default here printed `1 of 200, 199 remaining`
+  // for a crawl that had already finished — an upper bound is the cautious choice everywhere the
+  // frontier is unknown, and simply the wrong number in the one place it is not.
+  assert.equal(status.total, 1);
+  assert.equal(status.done, 1);
+  assert.equal(status.remaining, 0);
+  assert.equal(status.ceiling.maxPages, 200);
+});
+
+test("SH543 — the log keeps the cost of a page, which the inventory does not", async () => {
+  const ctx = ctxWith({ ...SITE, "/about": { status: 500, body: "boom" } });
+  await clone.run({}, ["https://x.test"], ctx);
+
+  const all = ctx.written[`/repo/${PROGRESS_LOG}`].trim().split("\n").map((l) => JSON.parse(l));
+  // The last line is the terminal one and carries no `n`, which is how a reader tells a log whose
+  // run finished from one whose process was killed mid-crawl.
+  assert.equal(all.at(-1).state, "done");
+  assert.equal(all.at(-1).n, undefined);
+  const lines = all.filter((line) => line.n !== undefined);
+  assert.ok(lines.length > 3);
+  for (const line of lines) {
+    assert.equal(line.phase, "crawl");
+    assert.ok(typeof line.ms === "number", "a page's cost is the finding that ends a doomed run early");
+    assert.ok(line.path.startsWith("/"));
+    // `at` is the timestamp, as it is in `shio dev --content`'s event log. It once collided with the
+    // page's own path and the clock silently lost — a heartbeat that reads as a URL is not one.
+    assert.ok(Number.isFinite(Date.parse(line.at)), `at is not a timestamp: ${line.at}`);
+  }
+  // Greppable by outcome — the question the log answers that the status cannot, since the status
+  // keeps a count and not which page produced it.
+  const failed = lines.filter((line) => line.outcome === "failed");
+  assert.equal(failed.length, 1);
+  assert.equal(failed[0].path, "/about");
+  assert.match(failed[0].error, /HTTP 500/);
+});
+
+test("SH543 — a failure written for a terminal is rewritten for grep", async () => {
+  // Verbatim from Playwright, which is the failure this whole channel was built to surface: ANSI
+  // colour and a four-line call log, in a format whose premise is one line per unit. Found by
+  // reading the first real run's own log.
+  const render = () => ({
+    async goto() {
+      throw new Error(
+        "page.goto: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://x.test/\", "
+          + "waiting until \"networkidle\"\u001b[22m\n",
+      );
+    },
+    async content() {
+      return "";
+    },
+    async close() {},
+  });
+  const ctx = ctxWith(SITE, { render });
+  await clone.run({ render: true }, ["https://x.test"], ctx);
+
+  const log = ctx.written[`/repo/${PROGRESS_LOG}`];
+  const line = JSON.parse(log.trim().split("\n")[0]);
+  assert.equal(log.trim().split("\n").length, 2, "one line per unit, plus the terminal row");
+  assert.ok(!line.error.includes("\u001b"), `an escape sequence survived: ${JSON.stringify(line.error)}`);
+  assert.ok(!line.error.includes("\n"));
+  assert.match(line.error, /Timeout 8000ms exceeded\. Call log: - navigating to/);
+});
+
+test("SH543 — --no-progress writes the artefact and nothing else", async () => {
+  const ctx = ctxWith();
+  await clone.run({ noProgress: true }, ["https://x.test"], ctx);
+
+  assert.deepEqual(Object.keys(ctx.written), [`/repo/${INVENTORY_FILE}`.replace(/\\/g, "/")]);
+});
+
+test("SH543 — a crawl that throws does not leave a status reading `running`", async () => {
+  // The seed redirects off-origin, which `run` refuses by throwing — the one failure that happens
+  // after the channel is open and before a single page is walked.
+  const ctx = ctxWith({ "/": { status: 301, location: "https://elsewhere.test/" } });
+  await assert.rejects(() => clone.run({}, ["https://x.test"], ctx));
+
+  const status = JSON.parse(ctx.written[`/repo/${STATUS_FILE}`]);
+  assert.equal(status.state, "failed");
+  assert.match(status.error ?? "", /different host/);
+});
+
+test("SH543 — losing the channel does not lose the crawl", async () => {
+  const ctx = ctxWith();
+  ctx.fs.writeFile = async (path, body) => {
+    if (path.replace(/\\/g, "/").includes("clone-status")) throw new Error("disk full");
+    ctx.written[path.replace(/\\/g, "/")] = body;
+  };
+  const result = await clone.run({}, ["https://x.test"], ctx);
+
+  // The thing meant to make a run legible must not be the thing that ends it.
+  assert.equal(result.exitCode, 0);
+  assert.ok(result.inventory.pages.length > 3);
+  assert.match(ctx.stderr.text, /progress could not be written/);
 });
 
 test("--markup caches the HTML beside the inventory, and still writes no content (SH379)", async () => {
@@ -548,7 +694,11 @@ test("--markup caches the HTML beside the inventory, and still writes no content
   // Every other file is under `.shio/`, which is the derived-snapshot root — not `shio/content/`,
   // not `shio/assets/`. That is what keeps SH377's promise true with the flag on: the conversion is
   // still reviewable before anything reaches somebody's instance.
-  const cached = paths.filter((path) => path !== `/repo/${INVENTORY_FILE}`.replace(/\\/g, "/"));
+  // SH543's two files are under the same root and are not the markup cache, so they are named out
+  // rather than swept into the `cached` list this asserts a page-per-file over.
+  const reported = [`/repo/${STATUS_FILE}`, `/repo/${PROGRESS_LOG}`, `/repo/${INVENTORY_FILE}`]
+    .map((path) => path.replace(/\\/g, "/"));
+  const cached = paths.filter((path) => !reported.includes(path));
   assert.ok(cached.length > 3, `expected a file per page, got ${cached.length}`);
   for (const path of cached) assert.ok(path.startsWith(`/repo/${MARKUP_DIR}/`), path);
 

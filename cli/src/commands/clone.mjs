@@ -55,11 +55,24 @@ import {
   serializeInventory,
   settleRendered,
 } from "../clone.mjs";
+import { cloneProgress } from "../clone-progress.mjs";
 import { requireBrowser } from "../browser.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
 import { assetPathCollisions, siteDir } from "../content-files.mjs";
 
 const USER_AGENT = `${ROBOTS_AGENT} (+https://github.com/openviglet/shio)`;
+
+/**
+ * How a download's action reads as progress (SH543). A dedupe is not a failure and not work either:
+ * counting it `ok` would make a run of identical assets look like a productive one.
+ */
+const OUTCOME_OF_ACTION = {
+  wrote: "ok",
+  failed: "failed",
+  collision: "failed",
+  deduped: "skipped",
+  skipped: "skipped",
+};
 
 /**
  * What `shio clone --help` prints (SH435).
@@ -96,6 +109,15 @@ rests on: read the inventory before anything else happens.
                            without permission cannot later pass for one taken with it
   --delay <seconds>        Wait between requests (default: the site's own Crawl-delay)
   --timeout <ms>           Per-page timeout with --render (default 30000)
+  --no-progress            Write only what was asked for. By default the crawl reports where it
+                           is as it goes, to two files beside the inventory, because a long run
+                           is followed rather than watched:
+                             shio/.shio/clone-status.json    where it is now — one small Read,
+                                                             the same size however long it runs.
+                                                             startedAt/updatedAt is what tells a
+                                                             slow page from a wedged one
+                             shio/.shio/clone-progress.jsonl one line per page or asset, with
+                                                             what it cost — grep it for failures
   --out <file>             Inventory path (default shio/.shio/source-inventory.json)
   --json                   The inventory on stdout instead of the report
   --url <url>              The site to capture, when no positional is given. This is the ONE
@@ -105,6 +127,11 @@ rests on: read the inventory before anything else happens.
 Examples:
   shio clone https://acme.example.com --markup
   shio clone https://acme.example.com --markup --assets --site Acme --depth 2
+
+  A long one, followed rather than watched — this is the shape a caller wants for a real
+  site, where --render can spend the per-page timeout on every page of a 200-page ceiling:
+    shio clone https://acme.example.com --render --assets --site Acme > clone.log 2>&1 &
+    cat shio/.shio/clone-status.json      # where it is; safe to repeat, never grows
 `;
 
 export async function run(flags, positionals, ctx) {
@@ -168,9 +195,18 @@ export async function run(flags, positionals, ctx) {
   // keeping a stranger's HTML in the tree, not a second pass over their server.
   const keepMarkup = flags.markup === true;
 
+  // SH543 — opened before the browser is driven and after the ceilings are known, because the
+  // ceilings are half of what it reports: a run 13 pages into 200 at 30 s each is a decision to
+  // make now rather than in ninety minutes.
+  const progress = cloneProgress({
+    seed: String(seed),
+    ceiling: { depth, maxPages, rendered, timeoutMs: Number(flags.timeout ?? 30000) },
+    flags,
+  }, ctx);
+
   const page = rendered ? await renderer(flags, ctx, browser) : null;
   try {
-    const walk = await crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup }, ctx);
+    const walk = await crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup, progress }, ctx);
     notes.push(...walk.notes);
     const markup = keepMarkup ? planMarkup(walk.visited) : null;
     if (markup) await writeMarkup(markup, ctx);
@@ -183,7 +219,7 @@ export async function run(flags, positionals, ctx) {
       notes,
     });
     if (site) {
-      inventory = await download(inventory, { site, flags }, ctx);
+      inventory = await download(inventory, { site, flags, progress }, ctx);
     }
 
     const out = typeof flags.out === "string" ? flags.out : INVENTORY_FILE;
@@ -199,7 +235,17 @@ export async function run(flags, positionals, ctx) {
     }
     // A capture that reached nothing is not a capture. Exiting 0 on it would let a CI step that
     // wraps this read "0 pages" as "a site with no pages".
-    return { inventory, out, exitCode: inventory.pages.length ? 0 : 1 };
+    const exitCode = inventory.pages.length ? 0 : 1;
+    // SH543 — the terminal write, and the only reason a poller can stop. `done` is the command's own
+    // reckoning, so a capture that reached nothing settles `failed` here as well as exiting 1.
+    await progress.settle(exitCode === 0 ? "done" : "failed",
+      { pages: inventory.pages.length, out, exitCode });
+    return { inventory, out, exitCode };
+  } catch (error) {
+    // A status file left saying `running` after the process is gone is the exact ambiguity this
+    // channel exists to remove — so a throw is recorded before it is re-thrown.
+    await progress.settle("failed", { error: error?.message ?? String(error) });
+    throw error;
   } finally {
     await page?.close?.();
   }
@@ -250,7 +296,7 @@ async function writeMarkup(markup, ctx) {
  * deterministic — with concurrency, *which* of two identical assets becomes the file on disk depends
  * on which response arrived first (P5).
  */
-async function download(inventory, { site, flags }, ctx) {
+async function download(inventory, { site, flags, progress }, ctx) {
   const maxAssets = whole(flags.maxAssets, DEFAULT_MAX_ASSETS, "--max-assets", 1);
   const maxBytes = whole(flags.maxAssetBytes, DEFAULT_MAX_ASSET_BYTES, "--max-asset-bytes", 1);
   const origin = inventory?.source?.origin ?? "";
@@ -269,13 +315,31 @@ async function download(inventory, { site, flags }, ctx) {
   // that appeared halfway through the loop would have no outcome for half of it.
   const discovered = [];
   const known = new Set((inventory?.assets ?? []).map((asset) => asset.path));
+  // SH543 — a second phase, and it needs its own ceiling: `plan.length` is not `maxPages` and a
+  // status that carried the crawl's total into the download would read as a run going backwards.
+  // The total grows as stylesheets append to the plan, which is honest — the phase really did get
+  // longer — and is why it is re-reported on every step rather than fixed here.
+  progress?.phase("assets", plan.length);
+  // Every path below pushes exactly one row per item, so the step rides on the push rather than
+  // being repeated at each `continue` — one place that maps an action onto an outcome, and no way
+  // for a later branch to be added without one.
+  const record = (row) => {
+    results.push(row);
+    progress?.step({
+      path: row.file,
+      total: plan.length,
+      outcome: OUTCOME_OF_ACTION[row.action] ?? "skipped",
+      action: row.action,
+      ...(row.detail ? { detail: row.detail } : {}),
+    });
+  };
   // Indexed rather than `for…of`: a stylesheet appends to this list while it is being walked, which
   // is the whole mechanism — a stylesheet that imports another is followed by the same loop.
   for (let at = 0; at < plan.length; at += 1) {
     const item = plan[at];
     if (collisions.has(item.file)) {
       const group = collisions.get(item.file);
-      results.push({
+      record({
         action: "collision",
         source: item.source,
         file: item.file,
@@ -286,7 +350,7 @@ async function download(inventory, { site, flags }, ctx) {
     }
     const fetched = await fetchBytes(item, maxBytes, ctx);
     if (fetched.error) {
-      results.push({ action: "failed", source: item.source, file: item.file, detail: fetched.error });
+      record({ action: "failed", source: item.source, file: item.file, detail: fetched.error });
       continue;
     }
     const placed = placeAsset(state, {
@@ -296,7 +360,7 @@ async function download(inventory, { site, flags }, ctx) {
       contentType: fetched.contentType,
       kind: item.kind,
     });
-    results.push(placed);
+    record(placed);
     if (placed.action !== "wrote") continue;
     const target = join(ctx.cwd, ASSETS_DIR, item.file);
     await ctx.fs.mkdir(dirname(target), { recursive: true });
@@ -403,7 +467,9 @@ async function readRobots(origin, ctx) {
  * every run against an unchanged site. Without that, `--max-pages 50` would capture a different
  * fifty each time and the inventory could not be compared with itself.
  */
-async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup = false }, ctx) {
+async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup = false, progress },
+  ctx) {
+  const now = typeof ctx.clock === "function" ? ctx.clock : Date.now;
   const visited = [];
   const seen = new Set();
   const notes = [];
@@ -414,6 +480,14 @@ async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup 
   let truncated = false;
   let level = 0;
   const delay = Number(flags.delay ?? robots?.crawlDelay ?? 0) * 1000;
+
+  // SH543 — the ceiling, not the frontier, because the frontier is not known until the level above
+  // it has been walked. `total` is therefore an upper bound and so is everything derived from it;
+  // a crawl that ends at the site's edge finishes early rather than late, which is the safe way
+  // round for a number somebody decides with. `--depth 0` is the one case where it is not a bound
+  // but a fact — the seed and nothing else — and reporting 200 there is a wrong number, not a
+  // cautious one: it read `1 of 200, 199 remaining` for a crawl that was already over.
+  progress?.phase("crawl", depth === 0 ? 1 : maxPages);
 
   while (frontier.length && level <= depth) {
     const next = new Set();
@@ -430,12 +504,26 @@ async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup 
         notes.push(`robots.txt disallows ${path}, so it was not fetched`);
         continue;
       }
+      const startedMs = now();
       const fetched = await visit(
         url,
         { page, flags, keepMarkup, isSeed: level === 0 && visited.length === 0 },
         ctx,
       );
       visited.push({ ...fetched, depth: level, url: url.href });
+      // SH543 — after the push, so `done` and `visited.length` are the same number and the ceiling
+      // the status reports against is the one the loop above actually breaks on. The cost is here
+      // and nowhere else: the inventory keeps a page's outcome but not what it took to get it, and
+      // "every page is spending the full 30 s timeout" is the finding that ends a doomed run early.
+      progress?.step({
+        path,
+        depth: level,
+        outcome: fetched.error ? "failed" : "ok",
+        status: fetched.status ?? 0,
+        ms: now() - startedMs,
+        ...(fetched.rendered ? { rendered: true } : {}),
+        ...(fetched.error ? { error: fetched.error } : {}),
+      });
       // SH517 — accumulated as it goes, because the note below is the whole of "say what you
       // froze": a capture that silently gave a canvas back is the same undeclared cut as a
       // truncated crawl.
