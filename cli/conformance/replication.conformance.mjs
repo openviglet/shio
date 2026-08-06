@@ -166,9 +166,30 @@ describe("SH448 conformance: replication, from a served source to an installable
     assert.ok(hero, "the block that recurs on both captured pages is one candidate");
     assert.equal(hero.mode, "fidelity", "P7: nothing is authorable until somebody accepts it");
 
-    await propose.run({ accept: true }, [hero.id], ctx);
+    // SH465 — and a *collection-shaped* candidate, which is the half a scalar-only acceptance could
+    // not see. The fixture's `.features` block is two repeated cards, so it proposes as a
+    // SectionFeatureGrid whose `features` holds both titles and bodies. Accepting only the hero left
+    // every collection in the vocabulary unexercised end to end, which is how four of the seven
+    // section types came to render as a heading and nothing else with this file green.
+    const grid = proposal.candidates.find((row) => row.type === "SectionFeatureGrid");
+    assert.ok(
+      grid,
+      `SH465: the capture holds a collection-shaped block. Candidates: `
+        + `${proposal.candidates.map((row) => row.type).join(", ")}`,
+    );
+    assert.equal(
+      grid.fields.features?.length,
+      2,
+      "and the proposal captured both rows — the content was never the thing that was missing",
+    );
+
+    await propose.run({ accept: true }, [hero.id, grid.id], ctx);
     const plan = JSON.parse(await readFile(join(cwd, PLAN_FILE), "utf8"));
-    assert.deepEqual(plan.accepted.map((entry) => entry.block), [hero.id]);
+    const byId = (a, b) => a.localeCompare(b);
+    assert.deepEqual(
+      plan.accepted.map((entry) => entry.block).toSorted(byId),
+      [hero.id, grid.id].toSorted(byId),
+    );
 
     // ── the conversion, into a site that does not exist yet ───────────────────────────────
     // SH439: `--create-site` compiles to a `site.upsert` op, run first. Without it this refusal
@@ -209,6 +230,30 @@ describe("SH448 conformance: replication, from a served source to an installable
         + "vocabulary, which the renderer turns into data-shio-prop. Fidelity mode renders with ZERO "
         + "of them, because verbatim markup declares no sh-field, so the bridge loaded over a page "
         + "with nothing to offer. That is the other half of the same measurement.",
+    );
+
+    // ── SH465: and the collection fields are ON that page ─────────────────────────────────
+    //
+    // SH464's layout drew six scalar fields and no collection, and four of the seven section types
+    // are collection-shaped. So the accepted feature grid rendered its `heading` and stopped: the
+    // section post held both cards, `verify` was clean, the field was editable in the console, and
+    // the page a curator approves was missing half its content. That is worse than losing it at
+    // capture, because every instrument said it was there — which is why the assertion has to be
+    // about the *rendered bytes* and cannot be about the document, the post or the projection.
+    for (const card of ["Fast", "Measured, not asserted.", "Safe", "Draft by default."]) {
+      assert.ok(
+        authorableHtml.includes(card),
+        `SH465: the feature grid's rows are drawn. "${card}" is in the section post's features `
+          + `array and was not on the page. Body: ${authorableHtml.slice(0, 600)}`,
+      );
+    }
+    assert.match(
+      authorableHtml,
+      /data-shio-row="features"/,
+      "SH465: and each row says which collection it came from. It deliberately carries no sh-field: "
+        + "SH185 addresses a field as a flat prop on the post an sh-post ancestor names, so an "
+        + "annotated row would write data.body onto a SectionFeatureGrid that declares no such "
+        + "field. Rendered and curated in the console beats editable and silently lost (P7).",
     );
 
     const found = await agent.findAll({ site });

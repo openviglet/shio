@@ -172,6 +172,10 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
 {{#if body}}<div class="shio-body" sh-field="body">{{{body}}}</div>{{/if}}
 {{#if image}}<p class="shio-image"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
 {{#if ctaLabel}}<p class="shio-cta"><a class="shio-cta-link" sh-field="ctaLabel" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
+{{#if features}}<ul class="shio-features">{{#each features}}<li class="shio-feature" data-shio-row="features" data-shio-icon="{{icon}}">{{#if title}}<h3 class="shio-feature-title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
+{{#if questions}}<div class="shio-questions">{{#each questions}}<div class="shio-question" data-shio-row="questions">{{#if question}}<h3 class="shio-question-text">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
+{{#if logos}}<ul class="shio-logos">{{#each logos}}<li class="shio-logo" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
+{{#if quotes}}<div class="shio-quotes">{{#each quotes}}<blockquote class="shio-quote" data-shio-row="quotes">{{#if quote}}<p class="shio-quote-text">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-quote-avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite class="shio-quote-author">{{author}}</cite>{{/if}}{{#if role}}<span class="shio-quote-role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
 </section>
 {{/getRelation}}`;
 
@@ -224,6 +228,36 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
  * names renders without a template change. A field a section does not carry renders nothing.
  * `variant`, `align` and `columns` are presentation choices rather than prose, so they ride as
  * `data-` attributes for the theme's CSS to read instead of being printed as text.</p>
+ *
+ * <h3>And the collections, which were half the vocabulary rendering as a bare heading (SH465)</h3>
+ *
+ * <p>SH464's union drew six scalar fields and **no collection**, and four of the seven section types
+ * are collection-shaped: `SectionFeatureGrid.features`, `SectionFaq.questions`,
+ * `SectionLogoWall.logos` and `SectionTestimonial.quotes`. So those four rendered their heading and
+ * stopped, and `SectionLogoWall` — which has *only* `heading` and `logos` — rendered as a bare
+ * `<h2>`. Measured on a replica: the section post held both feature cards with their `title` and
+ * `body`, and the page contained the heading and none of the cards. That is worse than losing it at
+ * capture, because every instrument said it was there — `verify` clean, the post reading back
+ * complete, the field editable in the console — and the page a curator approves was missing half its
+ * content.</p>
+ *
+ * <p>The four are `Relator` widgets, and this is the one place the vocabulary's own shape had to be
+ * read rather than assumed: an SH95 `Relator` declares **nested fields**, so its value is an inline
+ * array of row objects living in the section's own `data` — not a list of references to other posts.
+ * That makes `{{#getRelation}}` the wrong helper (it resolves ids and friendly URLs, and would
+ * stringify a row map into nothing) and Handlebars' own `{{#each}}` the right one: `fieldsOf` already
+ * converts a JSON array into the `List<Map>` a section walks. One `{{#each}}` per collection, wrapped
+ * in `{{#if}}` so an absent one renders no empty container.</p>
+ *
+ * <p><b>A row carries no `sh-field`, and that is the deliberate half.</b> SH185's protocol addresses
+ * a field as a flat `prop` name on the post an `sh-post` ancestor names, so a row's `sh-field="body"`
+ * inside `<section sh-post="{{id}}">` would resolve its owner to the **section** and write
+ * `data.body` on a `SectionFeatureGrid` — a field that type does not declare — while a row's
+ * `title` would rename the post. The protocol has no form for "the third row's second field", the
+ * console's own relator widget is read-only for the same reason, and an annotation that lets a
+ * curator type into a row and silently lose it is precisely the surprise P7 forbids. So the rows
+ * render, are marked with `data-shio-row="<field>"` so the collection they came from is visible, and
+ * are curated in the console's form until the protocol grows an indexed address.</p>
  */
 function pageLayout(markup, site, hasTheme) {
   const lang = langOf(markup);

@@ -399,6 +399,21 @@ test("SH449: an accepted page composes sections and carries no verbatim copy of 
   );
   assert.equal(document.postTypeLayout.Page, layout.data.TITLE,
     "and the binding rides the document, because a layout nobody bound renders nothing");
+  // SH465 — the four collection fields of the SH95 vocabulary, which SH464's union left out. Four of
+  // the seven section types are collection-shaped, so they rendered a heading and stopped, and
+  // SectionLogoWall — heading and logos, nothing else — rendered as a bare <h2>. `{{#each}}` and not
+  // `{{#getRelation}}`: an SH95 Relator declares nested fields, so its value is an array of row
+  // objects in the section's own data rather than a list of references to other posts.
+  for (const collection of ["features", "questions", "logos", "quotes"]) {
+    assert.match(
+      layout.data.HTML,
+      new RegExp(`\\{\\{#each ${collection}\\}\\}`),
+      `SH465: the layout draws ${collection}. Whether it draws them *correctly* is asserted where `
+        + "the renderer is — ShConvertedLayoutRenderTest reads these bytes and runs them, and the "
+        + "coverage half of it reads the vocabulary rather than a list, so a section type or a field "
+        + "the model gains and this template never draws fails there by name",
+    );
+  }
 });
 
 test("SH417: no --site is refused before anything is read", async () => {

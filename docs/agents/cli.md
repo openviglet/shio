@@ -399,6 +399,34 @@ it. Four decisions worth keeping:
   what SH449's CLI tests did: they asserted the document's *shape* and could not see that the
   authorable branch wrote no layout at all. `ShConvertedLayoutRenderTest` slices those bytes out of
   this file and renders them through the real engine, so there is no second copy to drift (SH245).
+- **A collection is `{{#each}}`, never `{{#getRelation}}` (SH465).** SH464's union drew six *scalar*
+  fields and no collection, and four of the seven section types are collection-shaped:
+  `SectionFeatureGrid.features`, `SectionFaq.questions`, `SectionLogoWall.logos` and
+  `SectionTestimonial.quotes`. So those four rendered their heading and stopped, and
+  `SectionLogoWall` — which declares only `heading` and `logos` — rendered as a bare `<h2>`. The
+  distinction that decides the helper is the one place the vocabulary's own shape has to be read
+  rather than assumed: an SH95 `Relator` declares **nested fields**, so its value is an inline array
+  of row objects in the section's own `data`, *not* a list of references to other posts.
+  `getRelation` resolves ids and friendly URLs and would stringify a row map into nothing, while
+  `ShRenderModel.fieldsOf` already hands Handlebars the `List<Map>` that `{{#each}}` walks. One
+  `{{#each}}` per collection, wrapped in `{{#if}}` so an absent one renders no empty container.
+- **A row carries `data-shio-row`, deliberately not `sh-field` (SH465).** SH185 addresses a field as
+  a flat `prop` on the post the nearest `sh-post` ancestor names, and a row sits inside
+  `<section sh-post="{{id}}">` — so `sh-field="body"` on a feature row would write `data.body` onto a
+  `SectionFeatureGrid`, which declares no such field, and `sh-field="title"` would rename the post.
+  The protocol has no form for "the third row's second field", which is why the console's own relator
+  widget is read-only too. Rendered and curated in the console beats editable and silently lost (P7).
+  Growing an indexed address is a task of its own; until then the marker is what makes a row
+  traceable to the field that holds it.
+- **The coverage check reads the vocabulary, and that is why it works (SH465).** SH464's tests seeded
+  two section types by hand — "chosen because between them they cover every branch the union
+  renders" — and both are scalar-only, so this class was green while four types drew a heading and
+  nothing else. `ShConvertedLayoutRenderTest` now composes one section per `Section*` post-type **the
+  shipped blueprints declare**, with a sentinel in every declared field, renders the page and reports
+  the fields that are not on it. A section type or a field the model gains and this template never
+  draws fails by name, with nobody having to remember to come back (SH338). `File` fields are the one
+  exemption, and it is named in the test: `file_url` resolves a post id, so a sentinel is not a value
+  it can render.
 - **`{{{content}}}`, not one `Region` per block.** SH191's sidecar shape needs each block's own
   bytes and this pipeline cannot produce them: `buildTree` records no source offsets, so the only
   route back to markup is re-serializing a tree built from `stripNonMarkup`'s output, which has
