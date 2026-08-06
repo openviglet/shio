@@ -80,6 +80,8 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
+- 📋 **SH465** (deps: SH464 ✅) **The authorable layout draws no collection field, so four section types render as a heading** — features, questions, logos and quotes are Relator widgets the generated template never reads, so content that captured, converted and stored fine is never drawn. → §XVII.42
+
 ## Block F — Market positioning
 
 - 💭 **SH44** (deps: SH22 ✅) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited). → §VI.1

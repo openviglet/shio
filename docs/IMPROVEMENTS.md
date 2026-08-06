@@ -1474,3 +1474,29 @@ failure a replica has.
 Two gaps in the middle are not about replication at all: they are ordinary site features
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
+
+### XVII.42 Half the vocabulary renders as a bare heading (SH465)
+
+SH464's generated layout draws six fields per section — `heading`, `subheading`,
+`intro`, `body`, `image`, `ctaLabel`/`ctaHref` — and no collection. Four of the seven
+section types are collection-shaped, so for `SectionFeatureGrid` (`features`),
+`SectionFaq` (`questions`), `SectionLogoWall` (`logos`) and `SectionTestimonial`
+(`quotes`) the layout renders a heading and stops. `SectionLogoWall` has *only*
+`heading` and `logos`, so it renders as a bare `<h2>`.
+
+Measured on a replica of the captured page: `features` holds both cards with their
+`title` and `body` in the post, and the rendered page contains "Model Catalog" and none
+of "viglet.org", "vendor-neutral, kind-aware" or "Browse the catalog". The content was
+captured, converted, stored and addressed. It is never drawn.
+
+That is worse than losing it at capture, because every instrument says it is there.
+`verify` is clean, the section post reads back complete, the field is editable in the
+console — and the page a curator approves is missing half its content. The one check
+that would have caught it is a render assertion per section type, which is what SH464
+built the layout for.
+
+The vocabulary already says which fields these are: the four are `Relator` widgets, so
+the layout needs one `{{#getRelation}}` block per collection rather than a rule per
+type. The Universal Editor half comes with it — a row inside a collection needs
+`sh-post` for the editor to address it, which is the same annotation the section itself
+already carries.
