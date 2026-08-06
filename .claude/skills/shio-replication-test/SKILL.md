@@ -36,8 +36,15 @@ The preview's banner shifts every pixel, so a comparison there can never reach z
 
 ## Three scenarios, and a run must say which one it is
 
-**Test all three.** They fail differently, they are proved differently, and a number quoted
-without its scenario is meaningless.
+**A validation round is not complete until all three have run.** They fail differently, they
+are proved differently, and a number quoted without its scenario is meaningless.
+
+This rule is written down because it was broken twice, the same way both times: a round
+validated fidelity plus the conformance suite, reported green, and never touched authoring —
+so the task that had just shipped *for* the authorable path went unexercised, and the human
+had to ask. Fidelity is the pleasant one to test (it reaches 0.00% and looks finished), which
+is exactly why it is not evidence about the other two. Say which scenarios ran; if one did
+not, say that instead of reporting a round as done.
 
 ### 1. Fidelity — the site replicated inside Shio
 
@@ -57,8 +64,18 @@ annotates each field.
 
 *Proof:* `/preview/<site>/?editor=true` is 200 **and** carries `data-shio-prop` per field,
 `data-shio-post` per section, `_shio/editor.js` injected and `data-shio-editor-origin` set.
-Count the props against the fields the section types declare — collection fields were dropped
-entirely once (SH465), and every instrument said the content was there.
+
+**Count, do not eyeball.** Take the props the page emits and compare them against the fields
+each section type declares — **including the fields of every collection row**. Four of seven
+types are collection-shaped (`features`, `questions`, `logos`, `quotes`), so a page that looks
+annotated can be five props over a grid whose two cards carry none. Rendering is not
+annotation: the rows once did not draw at all (SH465), then drew with no `sh-post` and no
+`sh-field` (SH475), and the visible page looked reasonable at every stage.
+
+Read one extracted string against the source, too. An entity survives extraction as
+characters and is escaped again on render, so `&` becomes `&amp;` in the page *and in the
+editor field* (SH476) — invisible unless you compare.
+
 *Known limit:* unstyled. The captured classes are dropped, so the theme's CSS matches
 nothing. `propose.mjs` calls this "the pixels have moved".
 

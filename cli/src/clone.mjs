@@ -237,6 +237,17 @@ const RAW_TEXT = ["script", "style", "textarea", "template"];
 const FIELD_TAGS = new Set(["input", "select", "textarea", "button"]);
 
 /**
+ * The tags whose boundary is **not** a word boundary, and the whole of SH472's rule.
+ *
+ * <p>A capture has no computed style, so `display: inline` cannot be read; the tag name is the only
+ * evidence available, and this is the set a browser's `innerText` behaves as if it held. Everything
+ * absent from it — `div`, `p`, `li`, `td`, `br`, `svg`, `img` — separates. Erring towards separation
+ * is the safe side of the same argument SH468 made: splitting yields two words the source did
+ * contain, fusing invents one it did not, and only a *visually* fused pair is worth fusing.
+ */
+const INLINE_TAGS = new Set(["span", "em", "strong", "b", "i", "a", "code", "sup", "sub", "small"]);
+
+/**
  * Removes what would make a tag scanner lie: comments, and the bodies of elements whose content is
  * not markup. The **open tags survive** — `<script src>` and a `<textarea name>` are both facts the
  * inventory needs, and only the text between them is noise.
@@ -396,24 +407,34 @@ export function scanPage(html, pageUrl) {
   for (const token of tokenize(stripNonMarkup(html))) {
     if (token.type === "text") {
       if (inTitle && !doc.title) doc.title = collapse(token.text) || null;
-      // SH468 — a separator, because every append after the first crosses an element boundary: the
+      // SH468 — a separator, because an append after the first crosses an element boundary: the
       // tokenizer emits one text token per run, so two of them in one anchor were separated by a
-      // tag. Without it a 28×28 brand tile beside its label produced `DuDumont DEP`, `ShShio CMS`,
+      // tag. Without one a 48×48 brand tile beside its label produced `DuDumont DEP`, `ShShio CMS`,
       // `TuTuring ES` — a token the source never contained, and `collapse()` then normalised
       // whitespace that was never inserted. A fabricated word is worse than a dropped one: `Dumont
       // DEP` and `DuDumont DEP` both look like content, so nothing downstream — not `verify`, not a
       // digest, not a reviewer skimming a menu — can tell which one is the source's.
       //
-      // Unconditional rather than block-aware, and that is a real trade: an inline `<em>Open</em>Source`
-      // renders as one word in a browser and is extracted as two. Deterministic beats accurate here
-      // (P5) — the alternative is a list of inline tag names that CSS can contradict on any given
-      // page, and it would fail the same silent way this did. Splitting yields two words the source
-      // did contain; fusing invents one it did not.
-      if (anchor) anchor.text += ` ${token.text}`;
+      // SH472 — but only at a boundary the *eye* sees, which is what `anchor.gap` records. SH468
+      // separated unconditionally and named the trade; the trade turned out to be the bug, because
+      // the mark is `<span>D</span><span>u</span>` and two sibling runs inside one inline element
+      // are one word. `DuDumont DEP` became `D u Dumont DEP` — no fabricated token, and still not
+      // the source's label. `INLINE_TAGS` is the narrower rule, and it costs no determinism: the
+      // set is fixed, so the same bytes still yield the same record (P5). What it does concede is
+      // `<em>Open</em>Source` → `OpenSource`, and that concession is the point — it is one word to
+      // a reader, one word in `innerText`, and one word here.
+      if (anchor) {
+        anchor.text += anchor.gap ? ` ${token.text}` : token.text;
+        anchor.gap = false;
+      }
       doc.textChars += collapse(token.text).length;
       continue;
     }
     const { name } = token;
+    // SH472 — both directions, and before the `close` branch returns: a run ends at `</div>` as
+    // surely as the next one begins at `<p>`, and the anchor's own `<a>` cannot reach here because
+    // the switch below is what creates it.
+    if (anchor && !INLINE_TAGS.has(name)) anchor.gap = true;
     if (token.type === "close") {
       if (name === "title") inTitle = false;
       if (name === "nav") navDepth = Math.max(navDepth - 1, 0);
@@ -483,7 +504,15 @@ export function scanPage(html, pageUrl) {
         break;
       case "a":
         if (attrs.href) {
-          anchor = { href: attrs.href, text: "", nav: navDepth > 0 || String(attrs.role ?? "") === "navigation" };
+          anchor = {
+            href: attrs.href,
+            text: "",
+            // SH472 — `false`, so the first run never carries a leading separator. `collapse()`
+            // would eat it, but only because it eats every leading space; relying on that would
+            // make the flag mean two things.
+            gap: false,
+            nav: navDepth > 0 || String(attrs.role ?? "") === "navigation",
+          };
         }
         break;
       case "form":
