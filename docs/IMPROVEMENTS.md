@@ -1796,32 +1796,6 @@ should not be offered for a site whose pages hold sections — `init --site` kno
 site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
 than silently useless.
 
-### XVII.58 An overlay is chrome that is neither header nor footer (SH505)
-
-Three candidates on three different pages were proposed with the same `intro`: **"We
-respect your privacy"**. It is the cookie consent banner. In the captured markup it sits
-in `<div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50 …">`, out of flow at
-the bottom of every page, and its first paragraph was attributed to a `SectionFaq` on
-`/` and to a `SectionFeatureGrid` on `/dumont/`, `/turing/` and `/shio/`.
-
-So a curator opening the FAQ to edit "the intro" would be editing a consent notice, and
-the same string becomes content in three places at once — which is also the tell, since
-a field that repeats across unrelated sections is not that section's.
-
-`contentRoot` already excludes chrome, and the reasoning transfers exactly: a fixed
-overlay appears on every page, belongs to none of them, and is transient. It is simply
-neither header nor footer, so the existing exclusion does not reach it.
-
-A `--render` capture has the signals in hand, which is why this is findable rather than
-a guess: `position: fixed` (as a class here, `fixed inset-x-0 bottom-0 z-50`),
-`aria-live`, `role="dialog"` and `aria-modal`. Any one of them marks a region that is
-painted over the page rather than part of it.
-
-This is the authorable path's version of SH441. There, chrome assets belonged to no
-block and stranded; here, an overlay's text belongs to no block and is adopted by three.
-Excluding it is one predicate, and the assertion is that no field value appears on
-candidates that share no page.
-
 ### XVII.59 A candidate that is only a script (SH506)
 
 One of six candidates is a `<script>`. Its entry reads `"signature": "script"`, `"tag":

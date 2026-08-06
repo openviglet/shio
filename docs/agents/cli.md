@@ -303,6 +303,25 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**And an overlay is chrome that is neither header nor footer (SH505).** Three candidates on three
+different pages were proposed with the same `intro` — **"We respect your privacy"**, the cookie
+consent banner, which sits in `<div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50 …">` at
+the bottom of every page. Its first paragraph became a `SectionFaq`'s intro on `/` and a
+`SectionFeatureGrid`'s on `/dumont/`, `/turing/` and `/shio/`, so a curator opening the FAQ to edit
+"the intro" would have been editing a consent notice — and the same string was content in three
+places at once, *which is also the tell*. `contentRoot`'s reasoning transfers exactly (an overlay
+appears on every page, belongs to none, and is transient); it simply is neither header nor footer, so
+the existing exclusion could not reach it. This is the authorable path's version of SH441: there a
+chrome **asset** belonged to no block and stranded, here an overlay's **text** belonged to no block
+and was adopted by three. `isOverlay` is four signals, any one of which is enough — out-of-flow
+positioning as a class (`fixed`, Tailwind's, and the hand-written spellings) or as an inline
+declaration, `aria-live`, `role=dialog|alertdialog`, `aria-modal` — and `--render` is what puts them
+in the markup at all. **`sticky` is deliberately absent**: it is in flow and scrolls with the page
+until it pins, so a sticky sub-nav is content in a way a banner is not. The predicate excludes what
+this pass can recognise; a **note** reports the shape whatever produced it — a field value carried by
+candidates that *share no page*, which is the `everywhere` note one level down, at the unit a curator
+would actually edit.
+
 **Bytes in the tree that nothing references are their own finding (SH429).** Three right rules compose
 into a broken replica: SH378 downloads each referenced image into `shio/assets/<site>/…`, SH145 uploads
 an asset **only** when a `File` field names its path, and SH379 makes *fidelity* the default — where a

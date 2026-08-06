@@ -319,6 +319,9 @@ const SECTIONING = new Set(["section", "article", "aside", "nav", "header", "foo
  * candidate whose signature is the whole page, which is the same over-descent in the direction nobody
  * notices. And it applies only to *generic* units, or a theme's `<div class=row>` holding two
  * identically-built `<section>`s would collapse two blocks into one (`SECTIONING`).
+ *
+ * <p>SH505 added the fourth, and it is an exclusion rather than a boundary: an **overlay** is
+ * painted over the page and is not part of it. See `isOverlay`.
  */
 export function blocksOf(root) {
   const main = contentRoot(root);
@@ -331,7 +334,62 @@ export function blocksOf(root) {
     node = kids[0];
   }
   const blocks = node.children.filter((child) => isElement(child) && !isInline(child));
-  return [...pageHeader(root, main), ...blocks];
+  return [...pageHeader(root, main), ...blocks].filter((block) => !isOverlay(block));
+}
+
+/**
+ * The class names that mean "out of flow", as a class rather than as a declaration.
+ *
+ * <p>`fixed` is Tailwind's `position: fixed` and the one the measured page used
+ * (`fixed inset-x-0 bottom-0 z-50`). The rest are what hand-written CSS and the other frameworks
+ * call the same thing. A capture has no computed style — the stylesheet is a separate file and this
+ * pass reads markup — so the class name is the evidence available, exactly as `INLINE_TAGS` is in
+ * `clone.mjs` for the same reason.</p>
+ *
+ * <p>Deliberately not `sticky`: a sticky element is **in flow** and scrolls with the page until it
+ * pins, so a sticky sub-nav is content in a way a consent banner is not.</p>
+ */
+const OVERLAY_CLASSES = new Set(["fixed", "position-fixed", "is-fixed", "overlay", "modal", "backdrop"]);
+
+/**
+ * Whether a block is painted **over** the page rather than being part of it (SH505).
+ *
+ * <h3>The measurement</h3>
+ *
+ * <p>Three candidates on three different pages were proposed with the same `intro`: **"We respect
+ * your privacy"** — the cookie consent banner, which sits in
+ * `<div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50 …">` at the bottom of every page.
+ * Its first paragraph was attributed to a `SectionFaq` on `/` and to a `SectionFeatureGrid` on
+ * `/dumont/`, `/turing/` and `/shio/`. A curator opening the FAQ to edit "the intro" would have been
+ * editing a consent notice, and the same string would have become content in three places at once.</p>
+ *
+ * <h3>Why it is `contentRoot`'s rule and not a new one</h3>
+ *
+ * <p>`contentRoot` already excludes chrome, and the reasoning transfers exactly: an overlay appears
+ * on every page, belongs to none of them, and is transient. It is simply neither header nor footer,
+ * so the existing exclusion could not reach it. This is the authorable path's version of SH441 —
+ * there a chrome *asset* belonged to no block and stranded; here an overlay's *text* belongs to no
+ * block and was adopted by three.</p>
+ *
+ * <h3>Four signals, any one of which is enough</h3>
+ *
+ * <p>Out-of-flow positioning (as a class or as an inline declaration), `aria-live`, `role="dialog"`
+ * or `role="alertdialog"`, and `aria-modal`. Each one is a statement by the author that the region
+ * is announced or painted rather than read in order, and a page that carries any of them on a
+ * top-level block is describing chrome. `--render` is what makes them present — a consent banner
+ * that a script injects is in the markup only after hydration — which is why this is findable rather
+ * than a guess.</p>
+ */
+export function isOverlay(node) {
+  const attrs = node?.attrs ?? {};
+  if (attrs["aria-live"] || attrs["aria-modal"]) return true;
+  const role = String(attrs.role ?? "").toLowerCase().trim();
+  if (role === "dialog" || role === "alertdialog") return true;
+  if (/position\s*:\s*fixed/i.test(String(attrs.style ?? ""))) return true;
+  return String(attrs.class ?? "")
+    .toLowerCase()
+    .split(/\s+/)
+    .some((name) => OVERLAY_CLASSES.has(name));
 }
 
 /**
@@ -839,6 +897,20 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     );
   }
 
+  // SH505 — the tell, said out loud on every proposal. The predicate above excludes the overlays
+  // this pass can recognise; this reports the shape *whatever* produced it, because a field value
+  // that recurs on candidates sharing no page is not that section's content. It is the same
+  // reasoning one level up from `everywhere`: recurrence across pages is what chrome looks like,
+  // and a field is the unit a curator would edit.
+  const adopted = adoptedValues([...candidates.values()]);
+  if (adopted.length) {
+    notes.push(
+      `${adopted.length} field value(s) appear on candidates that share no page, which is what `
+        + "chrome looks like one level down — a consent banner, a floating widget, a toast. A field "
+        + `is one section's content or it is not content: ${adopted.slice(0, 3).join("; ")}`,
+    );
+  }
+
   const rows = [...candidates.values()]
     .map(({ index, ...rest }) => ({
       ...rest,
@@ -871,6 +943,46 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     notes: [...notes, ...(theme?.notes ?? [])],
   };
 }
+
+/**
+ * Field values carried by candidates that share no page (SH505).
+ *
+ * <p>Scalar fields only, and only values long enough to be prose: a `heading` of "Contact" on two
+ * sections is a coincidence a site is entitled to, and "We respect your privacy" attributed to a FAQ
+ * and to a feature grid is not. The floor is deliberately a length rather than a word list — the
+ * property is structural ("this value belongs to no one page"), and a list of known banner strings
+ * would be a list that only ever finds the sites somebody has already looked at.</p>
+ *
+ * @returns rows like `intro "We respect your privacy" — b1a2, c3d4`, sorted, at most one per value
+ */
+function adoptedValues(rows) {
+  const seen = new Map();
+  for (const row of rows) {
+    for (const [field, value] of Object.entries(row.fields ?? {})) {
+      if (typeof value !== "string" || value.trim().length < ADOPTED_FLOOR) continue;
+      // `\u0000` and not a space: the key is a pair, and a field name cannot hold a NUL
+      // while a value can hold anything - so it is the one separator that cannot be in it.
+      const key = `${field}\u0000${value.trim()}`;
+      seen.set(key, [...(seen.get(key) ?? []), row]);
+    }
+  }
+  const found = [];
+  for (const [key, carriers] of seen) {
+    if (carriers.length < 2) continue;
+    const pages = carriers.map((row) => new Set(row.pages));
+    // Disjoint across *every* pair: two sections of one page sharing a string is a duplication on
+    // that page, which is a different fact and one the reviewer can see for themselves.
+    const shared = pages.some((set, at) =>
+      pages.some((other, index) => index !== at && [...set].some((path) => other.has(path))));
+    if (shared) continue;
+    const [field, value] = key.split("\u0000");
+    found.push(`${field} ${JSON.stringify(preview(value))} — ${carriers.map((row) => row.id).sort(byText).join(", ")}`);
+  }
+  return found.sort(byText);
+}
+
+/** Below this many characters a repeated field value is a coincidence rather than an adoption. */
+const ADOPTED_FLOOR = 12;
 
 /**
  * The fields the target instance must declare before this proposal can be applied (SH436).

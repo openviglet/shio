@@ -983,6 +983,81 @@ test("SH438: the proposal records each page's blocks in source order, and its ti
   assert.deepEqual(proposal.pages.map((page) => page.blocks[0]), [hero.id, hero.id]);
 });
 
+test("SH505: an overlay is chrome, so its text never becomes a section's field", () => {
+  // The measurement: three candidates on three different pages proposed with the same `intro` —
+  // "We respect your privacy", the cookie banner, which sits in `<div aria-live="polite"
+  // class="fixed inset-x-0 bottom-0 z-50">` at the bottom of every page. Its first paragraph was
+  // attributed to a SectionFaq on / and to a SectionFeatureGrid on three others, so a curator
+  // opening the FAQ to edit "the intro" would have been editing a consent notice.
+  const withBanner = `<html><body><main>
+    <section class=hero><h1>Home</h1><p>Welcome.</p><a href=/go>Start</a></section>
+    <div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50 border-t bg-white p-4">
+      <p>We respect your privacy. We use cookies to improve your experience.</p>
+      <button>Accept</button>
+    </div>
+    </main></body></html>`;
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", withBanner]]),
+    html: HTML,
+  });
+
+  assert.equal(proposal.pages[0].blocks.length, 1, "the hero, and the banner is not a block");
+  assert.ok(
+    !JSON.stringify(proposal.candidates).includes("respect your privacy"),
+    "and no candidate carries a word of it — the value that was being adopted is the whole defect",
+  );
+});
+
+test("SH505: each of the four signals marks an overlay on its own", () => {
+  // `contentRoot` already excludes chrome and could not reach this one, because an overlay is
+  // neither header nor footer. A capture has no computed style, so these are the evidence: any one
+  // of them is the author saying the region is announced or painted rather than read in order.
+  const overlays = [
+    '<div class="fixed bottom-0"><p>Painted over the page below it.</p></div>',
+    '<div style="position: fixed; bottom: 0"><p>Painted over the page below it.</p></div>',
+    '<div aria-live="polite"><p>Announced rather than read in order.</p></div>',
+    '<div role="dialog" aria-modal="true"><p>A modal, which is not this page.</p></div>',
+  ];
+  for (const overlay of overlays) {
+    const page = `<html><body><main><section class=hero><h1>Home</h1><p>Copy.</p></section>${overlay}</main></body></html>`;
+    assert.deepEqual(
+      blocksOf(tree(page)).map((block) => block.tag),
+      ["section"],
+      `this one was proposed as content: ${overlay}`,
+    );
+  }
+  const sticky = '<html><body><main><section class=hero><h1>Home</h1><p>Copy.</p></section>'
+    + '<div class="sticky top-0"><h2>Contents</h2><p>Copy.</p></div></main></body></html>';
+  assert.deepEqual(
+    blocksOf(tree(sticky)).map((block) => block.tag),
+    ["section", "div"],
+    "and `sticky` is not in the set: a sticky sub-nav is IN FLOW and scrolls with the page until "
+      + "it pins, so it is content in a way a consent banner is not",
+  );
+});
+
+test("SH505: a field value on candidates that share no page is reported, whatever produced it", () => {
+  // The predicate above excludes the overlays this pass can recognise; the note reports the shape
+  // itself, which is what makes the property hold on a site nobody has looked at. Same reasoning as
+  // the `everywhere` note one level up — recurrence across pages is what chrome looks like — except
+  // that a field is the unit a curator would actually edit.
+  const banner = "<h2>Before you continue</h2><p>We use cookies to improve your experience here.</p>";
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/", "/about"]),
+    markup: new Map([
+      ["/", `<html><body><main><section class=a><h1>Home</h1><p>Welcome.</p></section><section class=b>${banner}</section></main></body></html>`],
+      ["/about", `<html><body><main><section class=c><h1>About</h1><p>Who.</p><a href=/x>Go</a></section><div class=d>${banner}</div></main></body></html>`],
+    ]),
+    html: HTML,
+  });
+
+  assert.ok(
+    proposal.notes.some((note) => /share no page/.test(note) && /cookies/.test(note)),
+    `the note names the value and the candidates carrying it. Notes: ${JSON.stringify(proposal.notes)}`,
+  );
+});
+
 test("SH520: a block's span cuts that block's own bytes out of the source, comments and all", () => {
   // The property everything in SH520 rests on. `buildTree` reads `stripNonMarkup`'s output, so a
   // span means something in the *source* only because that pass blanks what it removes instead of
