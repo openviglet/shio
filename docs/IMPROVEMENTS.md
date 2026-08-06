@@ -1622,31 +1622,125 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
-### XVII.60 The theme becomes payload (SH507)
+### XVII.60 The mode stops promising the source's appearance (SH507)
 
 The Universal Editor over an authorable replica of `www.viglet.org` shows a wall of
-unstyled text: every field annotated and outlined, and nothing to judge.
+unstyled text: the page is **1,066,436 bytes of which 99% is the inlined captured
+theme**, ~2,894 rules against 19 class attributes on 8 `shio-*` names, and no source
+class survives.
 
-The numbers say why, and they are worse than "the pixels have moved" implies. The page
-is **1,066,436 bytes, of which 1,062,141 — 99% — is the inlined theme**, defining
-roughly **2,894 rules**. The markup it is meant to style carries **19 class attributes**
-drawing on **8 distinct `shio-*` names**, and **zero** source classes survive. So the
-curator loads a megabyte of design and can apply none of it.
+**The decision is to stop promising the source's appearance here.** Two cheaper repairs were measured and
+rejected. Emitting the source's classes per field recovers 7 of the ~22 that style one heading — the
+other 15 sit on wrapper `div`s the generated layout does not have, so it buys typography and no layout.
+Translating them onto a `shio-*` layout contract is not a repair but a design system, one per replicated
+site.
 
-At the scale of a hand-written vocabulary that trade is defensible: a few classes lost,
-a plain page, the content readable. At Tailwind's scale it inverts — styling *is* the
-class attribute, so dropping classes drops the whole design while keeping its full
-weight. The captured theme becomes payload.
+So the promise changes rather than the implementation being patched. An authorable conversion yields
+**structured, editable content presented by a Shio theme** — deliberate, not a ruin of somebody else's.
+The source's appearance is what **fidelity** is for, and it reaches 0.00%. The reviewer's choice becomes
+"their look, or curate this" — two good answers, instead of a mode half-doing both.
 
-This breaks the product's premise rather than being cosmetic. "The human curates" means
-looking: approving a hero, judging a headline's length, seeing a card grid is balanced.
-A surface with no layout supports none of it, and the fidelity replica that *does* look
-right has no fields — so the two halves of the sentence are still in different sites.
+Three things follow. The captured theme is no longer inlined on an authorable page,
+because payload that cannot match is worse than none. A stylesheet for the section
+vocabulary ships with it. And `propose` stops reporting dropped classes as a loss to
+weigh — under this decision they are a property of the mode, and the sentence a reviewer
+reads has to say so.
 
-The conversion already knows what it dropped: `propose` counts it, per candidate, as
-`311 class name(s) — all styling`. Emitting them onto the section markup is the cheap
-direction. Whether a stranger's class names belong inside authorable content is the real
-question, and it is a decision.
+### XVII.61 A layout contract before a theme (SH508)
+
+The generated layout emits `section > h2 > ul > li` and eight `shio-*` names. No
+stylesheet can lay that out, because there is nothing to lay out with: no container to
+bound a measure, no stack to space siblings, no grid to put cards beside each other. The
+source needed five nested wrappers to place one heading — `max-w-5xl mx-auto`, a flex
+row, a `shrink-0`, a `flex-1 text-center md:text-left` — and the layout has none of
+those elements at all.
+
+So SH507's decision needs a tree before it needs a theme. This is that tree, and it is
+the vocabulary's own rather than a translation of anybody's: an outer bound, a vertical
+rhythm between sections, a rhythm inside one, and a grid whose column count comes from
+the field the section already declares (`SectionFeatureGrid.columns`).
+
+It is a contract, so it is worth naming as one. A theme written against it must keep
+working when a new section type ships, which means the class names describe *roles* —
+container, stack, grid, media, actions — and never a section type. `shio-section-<Type>`
+already exists for the per-type hook and stays; what is missing is the structural layer
+under it.
+
+Two properties the SH185 annotations impose. A wrapper must not sit between an annotated
+element and its `data-shio-post`, because resolution is nearest-ancestor and a wrapper
+that breaks that chain silently reassigns a field's owner. And a wrapper carries no
+`sh-field`: it is presentation, and a curator has nothing to edit in it.
+
+### XVII.62 The theme the vocabulary never had (SH509)
+
+SH507 decided a converted page is presented by a Shio theme. This is it: one stylesheet
+targeting SH508's layout contract, so a converted site looks deliberate rather than
+unstyled.
+
+Small on purpose: type scale, measure, vertical rhythm, a card, a button, and two colour
+roles — surface and ink. Not a design system competing with the front end's, but the
+answer to "a curator opened the editor and needs to see a page".
+
+**It is content, not a file.** `Theme` is a post-type, so this ships the way every other starting point
+does — a blueprint the conversion applies, editable afterwards by the same curator, and overridable by a
+site that has its own. A stylesheet compiled into the jar would be the one part of a converted site nobody
+can change, which is the shape SH183 rejected when it made the render model content.
+
+Two things it must not do. It must not assume a section type: SH508's names are roles,
+and a theme that styles `shio-section-SectionHero` specially breaks the next type that
+ships. And it must not inline alongside the captured theme — SH509 removes that, and the
+two together on one page would make the cascade depend on which came first, which is
+exactly the accident SH424 spent a task removing.
+
+The proof is a reader's, and the skill asks for it: open the editor on a converted page
+and judge whether a hero reads as a hero. A digest cannot answer that.
+
+### XVII.63 Stop sending what cannot match (SH510)
+
+An authorable page inlines the captured theme and cannot apply it: 1,062,141 bytes of
+the page's 1,066,436 are a stylesheet whose ~2,894 rules meet 8 `shio-*` names. Under
+SH507 that is no longer a defect to repair but a payload to stop sending.
+
+It is not a small saving. A megabyte on every page of a converted site, served on the
+public route with `max-age=300`, for rules that match nothing — and once SH509's theme
+arrives, two stylesheets on one page whose order decides the outcome. That is the
+accident SH424 spent a task removing, reintroduced by inclusion rather than by cascade.
+
+**The capture keeps it.** The `Theme` post is written exactly as today, because **fidelity** mode inlines
+it and reaches 0.00% with it — the same site converted the other way needs every byte. What changes is one
+decision in the authorable layout: it does not emit `{{theme.css}}`, and emits SH509's instead.
+
+So the two modes stop sharing a presentation and each gets the one that fits: verbatim
+markup with the source's own CSS, or the vocabulary with Shio's. A site that has been
+converted both ways holds both themes and uses one per layout, which the render model
+already supports — a `PageLayout` names its `THEME` by title.
+
+The measurement is the proof and it is cheap: the page's byte count drops by the size of
+the captured CSS, and the count of stylesheets on it is one.
+
+### XVII.64 A decision is not a loss (SH511)
+
+`propose` reports `loses: 311 class name(s) — all styling` per candidate, and
+`propose.mjs`'s own header says an authorable block means "the pixels have moved". Both
+frame the appearance as **damage a reviewer weighs**. Under SH507 it is the mode's
+contract, and a report that calls a decision a loss asks the reader to prevent something
+nobody intends to prevent.
+
+The distinction is what a reviewer is actually choosing between. Today the loss list
+reads as an argument for fidelity on every candidate, since 311 dropped classes always
+sounds worse than none — which is why this session accepted candidates and then went
+looking for the styling as though it should have survived. What the reviewer needs
+stated instead: fidelity keeps the source's appearance and offers no fields; authorable
+gives these fields, presented by the site's own theme.
+
+The losses that stay are the ones that are still losses. `loses: 114×<circle> 81×<path>
+48×<svg>` is content the conversion genuinely drops and a reviewer genuinely should
+weigh — an icon set is not presentation. So this is a split of one list into two, not a
+deletion: what the mode replaces, and what it discards.
+
+**And the two documents that carry the promise change with it.** `propose.mjs`'s header is the design's own
+statement of the two modes, and `shio-replication-test` calls the unstyled page a "known limit". A
+decision recorded only in a task is one that the next reader reads the old sentence for.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
