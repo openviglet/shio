@@ -172,11 +172,27 @@ land in the media library under a `.png` name that every later check reads as a 
 against what actually arrived, since a server that under-declares would otherwise walk straight past
 the ceiling whose whole job is not filling a disk.
 
+**The authorable mode presents with a Shio theme, and stops promising the source's appearance
+(SH507).** Measured on an authorable replica of `www.viglet.org`: the Universal Editor showed a wall
+of unstyled text over a page of **1,066,436 bytes, 99% of it the inlined captured theme** — ~2,894
+rules meeting 19 class attributes on 8 `shio-*` names, with no source class surviving. Two cheaper
+repairs were measured and **rejected**. Emitting the source's classes per field recovers 7 of the
+~22 that style one heading; the other 15 sit on wrapper `div`s the generated layout does not have,
+so it buys typography and no layout. Translating them onto a `shio-*` contract is not a repair but a
+design system, one per replicated site. So the *promise* changes rather than the implementation
+being patched: an authorable conversion yields **structured, editable content presented by a Shio
+theme** — deliberate, not a ruin of somebody else's. The source's appearance is what **fidelity** is
+for, and fidelity reaches 0.00%. The reviewer's choice becomes "their look, or curate this" — two
+good answers instead of one mode half-doing both. Four things follow: a structural layout contract
+for the vocabulary (SH508), the theme written against it (SH509), the captured theme no longer
+inlined on an authorable page (SH510), and a proposal that reports the replaced presentation as the
+mode's contract rather than as a loss (SH511).
+
 **`shio propose` is the convert phase, and what it ships is the *proposal* (SH379).** A captured
 block has two honest futures — verbatim markup in a `PageLayout` (renders identically, **nothing is
 authorable**: a curator editing "the hero headline" is editing an HTML file) or an SH95 section
-(authorable, and the pixels have moved) — so the deliverable is neither, it is the artefact between
-them. Per candidate: the pages it recurs on, the section type it looks like **and why**, the fields it
+(authorable: the fields become editable, and the presentation becomes Shio's — SH507) — so the
+deliverable is neither, it is the artefact between them. Per candidate: the pages it recurs on, the section type it looks like **and why**, the fields it
 would carry, and **what accepting it would lose**. `--accept <ids…>` writes one entry into
 `shio/conversion-plan.json` and **applies nothing** — no post, no post-type, no layout; an unaccepted
 block stays in fidelity mode, which is a decision rather than an omission (P7, P8). Six decisions,

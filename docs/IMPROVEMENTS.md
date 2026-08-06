@@ -1622,30 +1622,6 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
-### XVII.60 The mode stops promising the source's appearance (SH507)
-
-The Universal Editor over an authorable replica of `www.viglet.org` shows a wall of
-unstyled text: the page is **1,066,436 bytes of which 99% is the inlined captured
-theme**, ~2,894 rules against 19 class attributes on 8 `shio-*` names, and no source
-class survives.
-
-**The decision is to stop promising the source's appearance here.** Two cheaper repairs were measured and
-rejected. Emitting the source's classes per field recovers 7 of the ~22 that style one heading — the
-other 15 sit on wrapper `div`s the generated layout does not have, so it buys typography and no layout.
-Translating them onto a `shio-*` layout contract is not a repair but a design system, one per replicated
-site.
-
-So the promise changes rather than the implementation being patched. An authorable conversion yields
-**structured, editable content presented by a Shio theme** — deliberate, not a ruin of somebody else's.
-The source's appearance is what **fidelity** is for, and it reaches 0.00%. The reviewer's choice becomes
-"their look, or curate this" — two good answers, instead of a mode half-doing both.
-
-Three things follow. The captured theme is no longer inlined on an authorable page,
-because payload that cannot match is worse than none. A stylesheet for the section
-vocabulary ships with it. And `propose` stops reporting dropped classes as a loss to
-weigh — under this decision they are a property of the mode, and the sentence a reviewer
-reads has to say so.
-
 ### XVII.61 A layout contract before a theme (SH508)
 
 The generated layout emits `section > h2 > ul > li` and eight `shio-*` names. No
