@@ -93,9 +93,8 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH479** (deps: —) **`docs-shio` has no coverage gate, so a shipped subsystem nobody documented is invisible** — Turing maps every shipped block to a page or an explicit internal row, and Shio's docs have nothing that reports an orphan. → §XVIII.1
-- 📋 **SH480** (deps: SH479) **The landing page sells a JavaScript-rendering CMS and never mentions the agent** — index.mdx pins v2026.1 and its four capability cards are Nashorn rendering and Hazelcast, so the premise a reader meets first is the one the product left. → §XVIII.2
-- 📋 **SH482** (deps: SH479) **The sidebar names surfaces and offers no hub page a reader can land on** — Turing groups its pages under four narrative hubs with an .mdx landing page each, and Shio's eight flat categories say nothing about who does which job. → §XVIII.3
+- 📋 **SH480** (deps: SH479 ✅) **The landing page sells a JavaScript-rendering CMS and never mentions the agent** — index.mdx pins v2026.1 and its four capability cards are Nashorn rendering and Hazelcast, so the premise a reader meets first is the one the product left. → §XVIII.2
+- 📋 **SH482** (deps: SH479 ✅) **The sidebar names surfaces and offers no hub page a reader can land on** — Turing groups its pages under four narrative hubs with an .mdx landing page each, and Shio's eight flat categories say nothing about who does which job. → §XVIII.3
 - 📋 **SH483** (deps: SH482) **Six pages document a rendering engine Shio does not have** — Nashorn and shObject run through six pages while the renderer is Handlebars over page, layout and region with themes, so the whole website story is wrong. → §XVIII.4
 - 📋 **SH481** (deps: SH482) **Nothing published says Shio speaks MCP, so its primary operator surface is unfindable** — POST /mcp with its tools, resources and prompts and the Claude Code plugin are how the agent drives Shio, and the word MCP appears in none of the 19 pages. → §XVIII.5
 - 📋 **SH484** (deps: SH482) **The `/api/v2/agent` surface is undocumented, so the one call that replaces a session cannot be found** — The manifest, the context pack, find, read, verify, changes and diagnostics are what P2 promises, and no published page names any of them. → §XVIII.6
@@ -113,7 +112,7 @@
 - 📋 **SH496** (deps: SH482, SH490) **Content modelling and the delivery SDK pages describe a model and a client that changed** — Post types are one name-keyed surface now, addresses are the SH79 grammar, and the CDA pages predate the shapes the console itself reads, so a front-end reader is misled. → §XVIII.18
 - 📋 **SH497** (deps: SH484) **The one thing a buyer compares agent-native CMSs on, token cost, is unpublished** — Response budgets, terse mode and the build-a-site benchmark are Block M's measured product feature, and no page says what a call costs or how to spend less. → §XVIII.19
 - 📋 **SH498** (deps: SH491) **The diagrams directory carries fourteen Turing and Dumont sources and not one Shio diagram** — Every figure in docs-shio is inline mermaid the repo's conventions reserve for small ones, and the agent loop, the render pipeline and replication have no figure at all. → §XVIII.20
-- 💭 **SH499** (deps: SH479, SH487) **No published example is ever executed, so a renamed verb rots the docs silently** — This block writes CLI invocations, MCP calls and CDA requests, and nothing runs one against an instance, which is precisely how the 2018 pages became wrong. → §XVIII.21
+- 💭 **SH499** (deps: SH479 ✅, SH487) **No published example is ever executed, so a renamed verb rots the docs silently** — This block writes CLI invocations, MCP calls and CDA requests, and nothing runs one against an instance, which is precisely how the 2018 pages became wrong. → §XVIII.21
 
 ## Non-goals (do NOT add as tasks)
 

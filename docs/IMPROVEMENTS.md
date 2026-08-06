@@ -1568,26 +1568,6 @@ subsystem is exactly the defect class no page-by-page pass finds.
 (`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
 Shio-repo ship, and the vigletdocs page edit.
 
-### XVIII.1 The matrix before the pages (§XVIII.1) (SH479)
-
-Write `docs-shio/COVERAGE.md` in the shape `docs-turing/COVERAGE.md` already has: one
-row per shipped block or feature cluster from Shio's own `CHANGELOG.md` (Block 0, A
-through Q), each pointing at a page and anchor, or carrying an explicit 🔒 "deliberately
-internal" verdict, with 🔴 for an orphan.
-
-It lands **red on purpose**. Blocks H, I, J, K, L, M, N, O, P and Q have no published
-page at all, so the first run of this matrix is the audit that scopes every other task
-in this block, and the count it prints is the number this block is measured by. That is
-the SH338 order: the instrument that finds the next omission ships before the omissions
-are fixed, because a page-by-page pass finds only the pages somebody thought of.
-
-The file is a maintenance artefact, not a sidebar entry (Turing's carries the "not
-rendered in the sidebar" note and Docusaurus is told to ignore it). The rule it creates
-is the one the `shio-roadmap-docs` skill currently asks a human to run from memory after
-every ship: is this user-facing, and if so where does it live. Once the matrix exists,
-that decision has a file to answer in, and a shipped block with no row is a visible
-defect rather than a habit nobody kept.
-
 ### XVIII.2 The premise a reader meets first (§XVIII.2) (SH480)
 
 `docs-shio/index.mdx` exports `VERSION = "2026.1"`, and its four `FeatureCard`s are

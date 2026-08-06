@@ -148,12 +148,19 @@ The three `docs/` files above are the **internal** engineering roadmap. The
 D:\Git\viglet\vigletdocs\vigletdocs.github.io\docs-shio
 ```
 
-⚠️ **Shio has no `COVERAGE.md` gate yet** — Turing's `docs-turing/COVERAGE.md` is the
-matrix mapping every shipped feature to either an end-user page (with anchor) or an
-explicit "deliberately internal — no public page" row. Shio's `docs-shio` has no
-equivalent, so there is nothing that reports an orphan. Do not invent the file
-casually; **creating it is a task worth filing** (it is exactly the SH338 shape — a
-reachability defect with no instrument). Until it exists, run the decision by hand:
+**The gate is [`docs-shio/COVERAGE.md`](https://github.com/vigletdocs/vigletdocs.github.io/blob/main/docs-shio/COVERAGE.md)** (SH479), the matrix mapping every
+shipped block or feature cluster to either an end-user page **with an anchor**, or an
+explicit 🔒 "deliberately internal — no public page" row. It carries the same shape as
+Turing's `docs-turing/COVERAGE.md`, plus one verdict Turing does not need: ⚠️, *a page
+exists but describes a shape the product left* — because every page published before
+2026.3 predates the renderer. It is not in the sidebar; it is a maintenance artefact
+that still builds as an unlisted route.
+
+**The decision below has a file to answer in now.** A shipped block with no row is a
+visible defect rather than a habit nobody kept, so the row is part of shipping — not a
+later sweep. It landed red on purpose: **21 🔴 and 12 ⚠️ of 40 clusters**, which is what
+Block R is measured against, so expect to be *changing* a row from 🔴 to ✅ rather than
+adding one.
 
 **Every time a task ships, after the internal doc sync (rule 1):**
 
@@ -171,6 +178,10 @@ reachability defect with no instrument). Until it exists, run the decision by ha
    verbatim; match the surrounding page's tense, voice and structure.
 4. **Product name & brand.** User-facing text says **Viglet Shio**; public links point
    at the public `openviglet/shio` repo.
+5. **Record the verdict in `COVERAGE.md`** — the page + anchor you wrote (✅ / 🧩), or
+   the 🔒 row saying why there is no page, in the same commit as the page itself. A
+   verdict of "internal" is a *row*, not a silence: an absent row is indistinguishable
+   from a forgotten one, which is the defect the matrix exists to make visible.
 
 **Commit the docs separately.** `docs-shio` lives in a *different git repo*, so its
 changes are their own commit there (`cd` into the vigletdocs repo first —

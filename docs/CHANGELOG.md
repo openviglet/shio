@@ -1079,3 +1079,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
+- **SH479** — docs-shio/COVERAGE.md maps all 40 shipped clusters to a page and anchor or an explicit internal verdict, and lands red by design: 21 orphans with no page at all (Blocks H, I, J, K, L, M, O, P, Q reach a reader through none of the 19 pages), 12 pages describing a shape the product left, 7 correct - all seven delivery-side. Six clusters no Block R task had named (the console's own curator surfaces, SH13-SH15/SH51/SH55 lifecycle tools, the SH25 image-transform epic, SH12 webhooks, SH53 i18n, the developer guide's stack) were found only by building the matrix. Docusaurus builds it as an unlisted route, and the shio-roadmap-docs skill's per-ship decision now records its verdict in a row instead of a human's memory.
