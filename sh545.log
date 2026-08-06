@@ -1,0 +1,168 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] Shio CMS Master                                                    [pom]
+[INFO] Shio CMS Application                                               [jar]
+[INFO] 
+[INFO] ------------------------< com.viglet.shio:shio >------------------------
+[INFO] Building Shio CMS Master 2026.3                                    [1/2]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ shio ---
+[INFO] 
+[INFO] --- flatten:1.8.0:clean (flatten.clean) @ shio ---
+[INFO] Deleting D:\Git\viglet\shio\2026.3\.flattened-pom.xml
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (get-the-git-infos) @ shio ---
+[INFO] 
+[INFO] --- jacoco:0.8.15:prepare-agent (prepare-agent) @ shio ---
+[INFO] argLine set to -javaagent:C:\\Users\\alexa\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.15\\org.jacoco.agent-0.8.15-runtime.jar=destfile=D:\\Git\\viglet\\shio\\2026.3\\target\\jacoco.exec
+[INFO] 
+[INFO] --- flatten:1.8.0:flatten (flatten) @ shio ---
+[INFO] Generating flattened POM of project com.viglet.shio:shio:pom:2026.3...
+[INFO] 
+[INFO] ----------------------< com.viglet.shio:shio-app >----------------------
+[INFO] Building Shio CMS Application 2026.3                               [2/2]
+[INFO]   from shio-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ shio-app ---
+[INFO] Deleting D:\Git\viglet\shio\2026.3\shio-app\target
+[INFO] 
+[INFO] --- flatten:1.8.0:clean (flatten.clean) @ shio-app ---
+[INFO] Deleting D:\Git\viglet\shio\2026.3\shio-app\.flattened-pom.xml
+[INFO] 
+[INFO] --- git-commit-id:4.9.10:revision (get-the-git-infos) @ shio-app ---
+[INFO] 
+[INFO] --- jacoco:0.8.15:prepare-agent (prepare-agent) @ shio-app ---
+[INFO] argLine set to -javaagent:C:\\Users\\alexa\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.15\\org.jacoco.agent-0.8.15-runtime.jar=destfile=D:\\Git\\viglet\\shio\\2026.3\\shio-app\\target\\jacoco.exec
+[INFO] 
+[INFO] --- dependency:3.11.0:properties (resolve-agent-paths) @ shio-app ---
+[INFO] 
+[INFO] --- frontend:2.0.2:install-node-and-pnpm (react install node and pnpm) @ shio-app ---
+[INFO] Skipping execution.
+[INFO] 
+[INFO] --- frontend:2.0.2:pnpm (react install workspace deps (pnpm)) @ shio-app ---
+[INFO] Skipping execution.
+[INFO] 
+[INFO] --- frontend:2.0.2:pnpm (react compile) @ shio-app ---
+[INFO] Skipping execution.
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ shio-app ---
+[WARNING]  Parameter 'overwrite' is deprecated: Use changeDetection instead.
+[INFO] Copying 176 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- flatten:1.8.0:flatten (flatten) @ shio-app ---
+[INFO] Generating flattened POM of project com.viglet.shio:shio-app:jar:2026.3...
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ shio-app ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 439 source files with javac [debug deprecation parameters target 21] to target\classes
+[WARNING] /D:/Git/viglet/shio/2026.3/shio-app/src/main/java/com/viglet/shio/turing/ShTuringDocumentMapper.java:[147,17] isTextual() in tools.jackson.databind.JsonNode has been deprecated
+[INFO] /D:/Git/viglet/shio/2026.3/shio-app/src/main/java/com/viglet/shio/persistence/repository/object/ShObjectRepository.java: Some input files use unchecked or unsafe operations.
+[INFO] /D:/Git/viglet/shio/2026.3/shio-app/src/main/java/com/viglet/shio/persistence/repository/object/ShObjectRepository.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ shio-app ---
+[WARNING]  Parameter 'overwrite' is deprecated: Use changeDetection instead.
+[INFO] Copying 14 resources from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ shio-app ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 213 source files with javac [debug deprecation parameters target 21] to target\test-classes
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ shio-app ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest
+19:27:44.812 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest]: ShAgentSourceAttributionTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+19:27:45.154 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.viglet.shio.Shio for test class com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest
+19:27:45.322 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest]: ShAgentSourceAttributionTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+19:27:45.324 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.viglet.shio.Shio for test class com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest
+ __   ___      _     _     ___ _    _        ___ __  __ ___ 
+ \ \ / (_)__ _| |___| |_  / __| |_ (_)___   / __|  \/  / __|
+  \ V /| / _` | / -_)  _| \__ \ ' \| / _ \ | (__| |\/| \__ \
+   \_/ |_\__, |_\___|\__| |___/_||_|_\___/  \___|_|  |_|___/ 
+         |___/                                              
+
+:: Copyright (C) 2016-2026, Viglet Team <opensource@viglet.com> 
+
+:: Built with Spring Boot :: 4.1.0
+
+Widget catalog: created [Hidden, Text, Text Area, File, Ace Editor - Javascript, Ace Editor - HTML, Ace Editor - CSS, HTML Editor, Content Select, Relator, Combo Box, Form Configuration, Date, Multi Select, Tab, Check Box]
+First Time Configuration ...
+Configuration finished.
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+SH164 source attribution (target\agent-attribution.json):
+| task                     | path  | calls |  tokens | millis |
+|--------------------------|-------|-------|---------|--------|
+| addressing               | agent |     1 |      60 |    494 |
+| addressing               | naive |     2 |     664 |    360 |
+| batching                 | agent |     1 |     296 |    450 |
+| batching                 | naive |     5 |    1815 |    128 |
+| discovery                | agent |     1 |     694 |     81 |
+| discovery                | naive |     4 |     783 |     61 |
+| lint                     | agent |     1 |     107 |     92 |
+| lint                     | naive |     5 |    1642 |     57 |
+| projection               | agent |     1 |      40 |     25 |
+| projection               | naive |     1 |      60 |     14 |
+| addressing@scale         | agent |     1 |      62 |     17 |
+| addressing@scale         | naive |     2 |    3025 |     45 |
+| lint@scale               | agent |     1 |     109 |     58 |
+| lint@scale               | naive |    45 |   14933 |    430 |
+
+[ERROR] Tests run: 6, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 25.57 s <<< FAILURE! -- in com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest
+[ERROR] com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest.theScalingSourcesActuallyScale -- Time elapsed: 0.574 s <<< FAILURE!
+java.lang.AssertionError: 
+[addressing@scale: tokens saved by this idea alone.] 
+Expecting actual:
+  487
+to be greater than or equal to:
+  500
+
+	at com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest.assertSource(ShAgentSourceAttributionTest.java:430)
+	at com.viglet.shio.api.agent.benchmark.ShAgentSourceAttributionTest.theScalingSourcesActuallyScale(ShAgentSourceAttributionTest.java:381)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   ShAgentSourceAttributionTest.theScalingSourcesActuallyScale:381->assertSource:430 [addressing@scale: tokens saved by this idea alone.] 
+Expecting actual:
+  487
+to be greater than or equal to:
+  500
+
+[INFO] 
+[ERROR] Tests run: 6, Failures: 1, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Shio CMS Master 2026.3:
+[INFO] 
+[INFO] Shio CMS Master .................................... SUCCESS [  0.686 s]
+[INFO] Shio CMS Application ............................... FAILURE [ 54.674 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  55.561 s
+[INFO] Finished at: 2026-08-06T19:28:10-03:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.6:test (default-test) on project shio-app: There are test failures.
+[ERROR] 
+[ERROR] See D:\Git\viglet\shio\2026.3\shio-app\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :shio-app

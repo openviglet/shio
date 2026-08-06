@@ -146,10 +146,13 @@ public class ShAgentReadService {
                 : byFilters(sites, type);
 
         Set<String> folderIds = folderScope(sites, folder);
+        // SH545 — taken before `dedupe`, which is the only place both rows of a post are in hand.
+        // Asking per row afterwards would be one query per match on the cheapest read there is.
+        Set<String> live = publishedIds(matches);
         List<ShAgentFound.Row> rows = dedupe(matches).stream()
                 .filter(post -> folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> type == null || type.isBlank() || matchesType(post, type))
-                .map(post -> row(post, ids))
+                .map(post -> row(post, ids, live.contains(post.getId())))
                 .filter(row -> from == null || row.address().compareTo(from) > 0)
                 .sorted(Comparator.comparing(ShAgentFound.Row::address))
                 .toList();
@@ -297,7 +300,32 @@ public class ShAgentReadService {
                 ids ? post.getId() : null)
                 .withImpact(impact ? impactOf(post) : null)
                 .withLocale(nonDefaultLocale(post))
-                .withTranslationOf(anchorAddress(post));
+                .withTranslationOf(anchorAddress(post))
+                .withPublished(isPublished(post) ? Boolean.TRUE : null);
+    }
+
+    /**
+     * Whether this post is <b>live</b> (SH545) — which is not what {@code state} says.
+     *
+     * <p>{@code publish()} writes a second row and leaves the draft in place, and every read here
+     * prefers the draft, so a page that has been serving publicly for weeks reports
+     * {@code state: DRAFT}. The consequence was not cosmetic: an agent that has just published
+     * could confirm it in only three ways, and all three are bad — publish again (correctly
+     * answered {@code noop}), call the public route and read the state off an HTTP code, or report
+     * a failure that did not happen. P9 asks that a change be provable from text.</p>
+     *
+     * <p>One PK lookup, and only when the row read was the draft: a post read <em>as</em>
+     * {@code PUBLISHED} is one that has no draft (an SH38 uploaded file), so it is live by the
+     * fact of being that row.</p>
+     *
+     * <p>Reported only when {@code true} — see {@code ShAgentDoc.published} for the measurement
+     * that settled that, and the context pack's own first convention for why silence is an
+     * answer here and not a gap.</p>
+     */
+    private boolean isPublished(ShPostUnified post) {
+        return post.getState() == ShPostState.PUBLISHED
+                || shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.PUBLISHED)
+                        .isPresent();
     }
 
     /**
@@ -483,14 +511,29 @@ public class ShAgentReadService {
 
     // --- shaping ---
 
-    private ShAgentFound.Row row(ShPostUnified post, boolean ids) {
+    private ShAgentFound.Row row(ShPostUnified post, boolean ids, boolean live) {
         return new ShAgentFound.Row(
                 shAddressResolver.addressOf(post).toString(),
                 post.getShPostType() == null ? null : post.getShPostType().getName(),
                 post.getState() == null ? null : post.getState().name(),
                 post.getTitle(),
                 ids ? post.getId() : null,
-                nonDefaultLocale(post));
+                nonDefaultLocale(post),
+                live ? Boolean.TRUE : null);
+    }
+
+    /**
+     * The ids among {@code rows} that have a {@code PUBLISHED} row (SH545).
+     *
+     * <p>The walk fetches {@link #BOTH_STATES} and {@code dedupe} then throws the published row
+     * away, so publication is already in memory and this is the last moment it is. That is what
+     * makes the field free on {@code find}: no second query, and none per row.</p>
+     */
+    private static Set<String> publishedIds(List<ShPostUnified> rows) {
+        return rows.stream()
+                .filter(row -> row.getState() == ShPostState.PUBLISHED)
+                .map(ShPostUnified::getId)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     private static boolean matchesType(ShPostUnified post, String type) {

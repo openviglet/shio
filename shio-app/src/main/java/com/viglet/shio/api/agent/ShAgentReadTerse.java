@@ -53,6 +53,12 @@ public final class ShAgentReadTerse {
                     .word(row.address())
                     .attr("type", row.type())
                     .attr("state", row.state())
+                    // SH545 — a bare marker next to `state`, because it is the question `state`
+                    // looks like it answers and does not: `state=DRAFT published` is a live page
+                    // with a draft behind it, and both words are needed to read that. A flag
+                    // rather than `published=false` on every draft row: the JSON omits it for the
+                    // same measured reason, so the two forms say the same thing.
+                    .flag("published", Boolean.TRUE.equals(row.published()))
                     .attr("id", row.id())
                     .attr("locale", row.locale())
                     .attr("title", row.title())
@@ -74,6 +80,9 @@ public final class ShAgentReadTerse {
                     .word(doc.address())
                     .attr("type", doc.type())
                     .attr("state", doc.state())
+                    // SH545 — see `found` above: `state` says which row, this says whether the
+                    // page is live, and only one of the two is what a curator asked about.
+                    .flag("published", Boolean.TRUE.equals(doc.published()))
                     .attr("folder", doc.folder())
                     // SH348 — absent when it is the instance default, which the context pack
                     // publishes; `ShTerse.attr` already omits a null, so the conditional costs

@@ -25,13 +25,27 @@ import tools.jackson.databind.JsonNode;
  *
  * @param address the canonical {@code post:} address
  * @param type    post-type name — the vocabulary a write uses
- * @param state   {@code DRAFT} / {@code PUBLISHED}: which row this is
+ * @param state   {@code DRAFT} / {@code PUBLISHED}: which row this is — <b>not</b> whether the
+ *                post is live. Reads are DRAFT-preferred, so this is {@code DRAFT} for any post
+ *                that has a draft row, published or not; see {@code published}
  * @param folder  the containing folder's path, needed to create a sibling
  * @param fields  the field names actually returned when a projection was applied;
  *                {@code null} when the whole document is here. Stating it costs a few
  *                tokens and removes the "is this all of it?" round trip
  * @param data    field values keyed by post-type attribute name
  * @param id      omitted unless the caller asked for ids (SH121)
+ * @param published <b>is this page live</b> (SH545) — {@code true} when a {@code PUBLISHED} row
+ *                exists, and <b>absent otherwise</b>. {@code state} answers which row was read
+ *                and cannot answer this, because a published post keeps its draft and the read
+ *                prefers it; before SH545 every published page on every site reported
+ *                {@code DRAFT} and an agent had to call the public route and infer publication
+ *                from an HTTP code. Conditional rather than always-present because the
+ *                measurement said so: an unconditional key cost 2.6% of a single-address read
+ *                and dropped {@code attribution.addressing@scale.min-token-ratio} below its
+ *                floor. That makes it SH348's pattern (absent where it carries nothing) rather
+ *                than SH299's (present and zero), and it is the right one here — publication has
+ *                a knowable default, since P7 makes DRAFT what a write lands in and the context
+ *                pack states that on the first call a session makes
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -39,7 +53,8 @@ import tools.jackson.databind.JsonNode;
 @JsonInclude(Include.NON_NULL)
 public record ShAgentDoc(String address, String type, String state, String folder,
                          java.util.List<String> fields, JsonNode data, String id,
-                         Problem error, Impact impact, String locale, String translationOf) {
+                         Problem error, Impact impact, String locale, String translationOf,
+                         Boolean published) {
 
     /**
      * The nine-field form, before SH348 made a post's locale visible.
@@ -55,13 +70,13 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id,
                       Problem error, Impact impact) {
-        this(address, type, state, folder, fields, data, id, error, impact, null, null);
+        this(address, type, state, folder, fields, data, id, error, impact, null, null, null);
     }
 
     /** The same row with SH348's locale attached. */
     public ShAgentDoc withLocale(String postLocale) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                postLocale, translationOf);
+                postLocale, translationOf, published);
     }
 
     /**
@@ -78,25 +93,39 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withTranslationOf(String anchorAddress) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
-                anchorAddress);
+                anchorAddress, published);
     }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id) {
-        this(address, type, state, folder, fields, data, id, null, null, null, null);
+        this(address, type, state, folder, fields, data, id, null, null, null, null, null);
     }
 
     /** The eight-field form: SH171's failed row, before SH262 added the impact projection. */
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id, Problem error) {
-        this(address, type, state, folder, fields, data, id, error, null, null, null);
+        this(address, type, state, folder, fields, data, id, error, null, null, null, null);
+    }
+
+    /**
+     * The same row with SH545's publication state attached, when it is live.
+     *
+     * <p>Callers pass {@code null} for a draft rather than {@code FALSE}: absence is the answer,
+     * grounded in the convention the context pack states on a session's first call — <i>writes land
+     * in DRAFT; publishing is a separate, explicit call</i>. A {@link Problem} row carries nothing
+     * here either, and for a second reason: a read that could not resolve the post has no
+     * publication state to report, and {@code false} would assert one.</p>
+     */
+    public ShAgentDoc withPublished(Boolean live) {
+        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                locale, translationOf, live);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
-                locale, translationOf);
+                locale, translationOf, published);
     }
 
     /**

@@ -400,8 +400,13 @@ public class ShAgentContextService {
     private List<String> conventions(List<ShSite> sites, List<ShAgentContext.Type> model,
                                      boolean ids, String site) {
         List<String> conventions = new ArrayList<>();
+        // SH545 — the trailing clause is what makes an absent `published` an answer rather than a
+        // gap, and it is a clause rather than a sentence because the pack is what `discovery`
+        // measures: this line already establishes what a write lands in, so grounding the read
+        // convention costs eight words instead of restating the rule.
         conventions.add("Writes land in DRAFT. Publishing is a separate, explicit call "
-                + "(POST /api/v2/post-unified/{id}/publish) — nothing you write becomes visible on its own.");
+                + "(POST /api/v2/post-unified/{id}/publish) — nothing you write becomes visible on "
+                + "its own, and a read omits `published` until it is.");
         long managed = model.stream().filter(ShAgentContext.Type::managed).count();
         if (managed > 0) {
             conventions.add(managed + " post-type(s) are managed by code: edit shio/post-types/ and run "

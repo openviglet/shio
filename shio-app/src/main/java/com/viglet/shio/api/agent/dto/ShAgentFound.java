@@ -57,20 +57,33 @@ public record ShAgentFound(int count, boolean truncated, List<Row> results, List
     /**
      * @param address the canonical {@code post:} address — how you read or write it
      * @param type    post-type name
-     * @param state   {@code DRAFT} / {@code PUBLISHED}
+     * @param state   {@code DRAFT} / {@code PUBLISHED} — which row this is, not whether the page is
+     *                live. The walk is DRAFT-preferred, so it reads {@code DRAFT} for every post
+     *                that has a draft; {@code published} is the live question (SH545)
      * @param title   the post title, so the agent can choose without a second call
      * @param id      omitted unless the caller asked for ids (SH121)
      * @param locale  present only when it is <b>not</b> the instance default (SH348) — this is the
      *                row where a caller discovers a site has translations at all, and on a
      *                monolingual instance it costs nothing because {@code NON_NULL} omits it
+     * @param published {@code true} when this post has a {@code PUBLISHED} row, absent otherwise
+     *                (SH545) — the same conditional shape as {@code locale} beside it, and for the
+     *                measured reason recorded on {@code ShAgentDoc.published}. It costs no query
+     *                either: the walk already fetches both states and {@code dedupe} was discarding
+     *                the published one, so this is a fact that was in memory and being thrown away
      */
     @JsonInclude(Include.NON_NULL)
     public record Row(String address, String type, String state, String title, String id,
-                      String locale) {
+                      String locale, Boolean published) {
 
         /** The five-field form, before SH348 made a non-default locale visible. */
         public Row(String address, String type, String state, String title, String id) {
-            this(address, type, state, title, id, null);
+            this(address, type, state, title, id, null, null);
+        }
+
+        /** The six-field form, before SH545 made publication readable. */
+        public Row(String address, String type, String state, String title, String id,
+                   String locale) {
+            this(address, type, state, title, id, locale, null);
         }
     }
 }

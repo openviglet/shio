@@ -964,6 +964,32 @@ the next op's address query anyway, so without it a refused insert surfaces insi
 against the **changelog**, not the `@Column` annotation — `ddl-auto=none`, so asserting the entity
 agrees with itself proves nothing.
 
+**`state` is which row you got; `published` is whether the page is live (SH545).** A publish writes
+a second row and leaves the draft alone, and every agent read is DRAFT-preferred so the agent can
+see its own work — so `state` is `DRAFT` for a page that has been serving publicly for weeks, and
+the question a curator cares about most had **no word at all**. What that cost is worth stating,
+because it is P9 exactly: an agent that had just published could confirm it only by publishing again
+(correctly answered `noop`), by calling the public route and reading the state off an HTTP code, or
+by reporting a failure that had not happened. Repointing `state` was not available — it would then
+lie about where `data` came from — so `/agent/read` and `/agent/find` carry **`published`**, and
+after a publish `state` is still `DRAFT`, correctly. **On `find` it costs no query**: the walk
+already fetches both state rows and `dedupe` was throwing the published one away.
+
+**Two measurements decided its shape, and both refused the first design.** Present-on-every-row
+(`published: false` on a draft) cost 2.6% of a single-address read and dropped
+`attribution.addressing@scale.min-token-ratio` below its floor; grounding the convention in a full
+sentence on the context pack dropped `discovery` below its own. So it is **conditional** — present
+only when the page is live, an eight-word clause on the pack's existing *writes land in DRAFT* line
+making absence an answer rather than a gap — which is SH348's pattern (`locale`) and not SH299's
+(present and zero), and the right one because publication *has* a knowable default: P7 makes DRAFT
+what a write lands in. The one floor that did move is recorded in `token-budgets.properties` with
+the reason it is not an idea ceasing to pay: the baseline it is measured against
+(`GET /api/v2/post-unified/{id}`) has always returned `published`, so 53.1× was partly the agent
+read being cheaper by omitting a fact the console read carried, and the second call to the public
+route that bought it was never counted. **The sitemap's `Node.state` has the same ambiguity and is
+not fixed here** — it is a third surface with its own budget and an SH116 digest that a field would
+move, and confirming a publish is not what a structure map is read for.
+
 **A post's locale is on the read, and only when it is not the default (SH348).** `/agent/read` and
 `find`'s rows carry `locale` — before this the string appeared nowhere in `ShAgentReadService`, so
 `locales: true` advertised a capability no read reported the state of. **Absent means the instance

@@ -295,30 +295,6 @@ which is SH523's plan — inferring a type is only useful if applying it is revi
 The honest limit belongs in the report: three instances of a thing are evidence about
 those three. A proposal, not a conclusion — which is what `propose` already gets right.
 
-### VIII.27 A publish that landed and reads as if it did not (SH545)
-
-Three reads disagree and only one is wrong. A probe page answered 404 on the public
-route, was published, and answered 200 — so the publish landed. Publishing it a second
-time answered `noop`, so the server knows. And `/agent/read` and `/agent/find` report
-`state: DRAFT` for that page, for every page of the site converted beside it, and for
-fixtures that have been serving publicly for weeks.
-
-The cost is not cosmetic. P9 asks that a change be provable from text, and publication
-is the state transition a curator cares about most. An agent that cannot read it back
-has three bad options: publish again, which the server correctly declines to notice;
-call the public route and infer the state from an HTTP code, which is what this round
-did; or report that the publish failed, which is worse than saying nothing.
-
-Reading a post's state is the cheapest question on the surface and it is asked after
-every write, so the number of callers is not the problem — the field is. Either it
-reports the DRAFT variant of a two-variant object without saying which it read, or it
-reads publication from somewhere it is not written. The distinction matters for the fix
-and not for the finding: whichever it is, the surface has one word for a question with
-two answers.
-
-The assertion this closes with is the probe, since that sequence is what distinguishes a
-misreported state from a route that serves drafts.
-
 ### VIII.28 The rung of the ladder that cannot publish (SH546)
 
 P1 orders every capability MCP → files/CLI → REST → console, and publication is present
@@ -365,6 +341,27 @@ The fix is that `apply` answers for `apply` — a document with no `folders` and
 show that shape. The shared choke point is right; what is missing is that the error
 knows its caller. The assertion is one request per endpoint asserting the two refusals
 differ, which is cheap and would have caught this before it was written.
+
+### VIII.30 The sitemap still has the word SH545 replaced (SH553)
+
+`folderPosts` fetches both state rows, drops the published one and reports `state` from
+what is left, which is the same defect SH545 fixed on `/agent/read` and `/agent/find` —
+so a session that starts by reading the pack is told every page of a fully published
+site is a draft.
+
+It was left out of SH545 deliberately and the reason is a measurement, not caution. Two
+of that task's three designs were refused by benchmarks: an unconditional field cost
+`addressing@scale` its floor and a full convention sentence cost `discovery` its own.
+The sitemap is the token-heaviest of the three surfaces — one node per post — and it
+carries an SH116 digest, so a field there changes what a cached pack compares against,
+and that has to be measured before it is added rather than after.
+
+What makes it worth doing anyway is what the pack is for. P2 says one call replaces a
+session, and the call it names is this one: an agent that reads the pack to learn what a
+site holds learns the structure and is then misinformed about the state of every page in
+it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional shape
+SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
+there has to be asserted rather than assumed.
 
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
