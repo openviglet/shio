@@ -11,6 +11,8 @@
 - [/](https://shio.viglet.org/): what Shio is, one section per design law
 - [/claude-code](https://shio.viglet.org/claude-code): install the plugin or the bare MCP
   bridge, the three calls a session opens with, and the AGENT token scope
+- [/compare](https://shio.viglet.org/compare): agent-operability against Contentful,
+  Sanity, Strapi and WordPress, plus where each of them wins
 
 ## Start here
 

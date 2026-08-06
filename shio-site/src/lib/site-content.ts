@@ -536,6 +536,213 @@ export const COMPARISON: ComparisonRow[] = [
   { feature: "Self-host, your database", shio: "yes", headless: "no", diy: "yes" },
 ];
 
+/* ── /compare — the matrix, and where it loses ───────────────────────────── */
+
+export const COMPARE_COLUMNS = ["Shio", "Contentful", "Sanity", "Strapi", "WordPress"] as const;
+
+export interface CompareRow {
+  /** The capability, phrased so it can be checked rather than argued. */
+  feature: string;
+  /** One value per column in COMPARE_COLUMNS order. */
+  cells: string[];
+}
+
+export interface CompareGroup {
+  law: string;
+  title: string;
+  rows: CompareRow[];
+}
+
+/**
+ * The axis is agent-operability, because every headless CMS has content types
+ * and a delivery API and comparing those produces a tie. Each row is one of the
+ * ten laws turned into a question with a checkable answer.
+ *
+ * **How to read the competitor columns.** They say whether the product
+ * *documents the property as a guarantee*, not whether some path exists — an
+ * export command is not a file projection with a three-way merge, and an MCP
+ * server over an API designed for a browser is not a protocol designed for an
+ * agent. Where a product's answer is "you can build it", the cell says so.
+ * Verify against current vendor documentation before deciding; this reflects
+ * 2026.3.
+ */
+export const COMPARE_GROUPS: CompareGroup[] = [
+  {
+    law: "P2",
+    title: "Discovery — what does the agent's first call cost?",
+    rows: [
+      {
+        feature: "One call returns the model, the sitemap and the conventions",
+        cells: ["yes", "compose several", "compose several", "compose several", "compose several"],
+      },
+      {
+        feature: "A machine-readable capability manifest, with unshipped ones reported false",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+      {
+        feature: "A digest so a later session can skip re-reading it",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+    ],
+  },
+  {
+    law: "P4",
+    title: "Authoring — can the agent use its cheapest tools?",
+    rows: [
+      {
+        feature: "The whole site projected to files, with a three-way merge back",
+        cells: ["yes", "export only", "export only", "no", "no"],
+      },
+      {
+        feature: "Path addressing — no UUID carried between calls",
+        cells: ["yes", "partial", "partial", "partial", "partial"],
+      },
+      {
+        feature: "Idempotent desired-state apply (converge, don't script)",
+        cells: ["yes", "build it", "build it", "build it", "build it"],
+      },
+    ],
+  },
+  {
+    law: "P6",
+    title: "Failure — how expensive is a wrong call?",
+    rows: [
+      {
+        feature: "Every 4xx carries fix, allowed, didYouMean and example",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+      {
+        feature: "Every capability reachable without a browser session",
+        cells: ["yes", "partial", "partial", "partial", "partial"],
+      },
+    ],
+  },
+  {
+    law: "P7",
+    title: "Safety — what stops a wrong write?",
+    rows: [
+      {
+        feature: "Dry run: the plan before the batch, as the same document",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+      {
+        feature: "A confirm token on a destructive op",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+      {
+        feature: "Draft-default and a review queue",
+        cells: ["yes", "yes", "yes", "yes", "yes"],
+      },
+    ],
+  },
+  {
+    law: "P9",
+    title: "Proof — can the agent check its own work?",
+    rows: [
+      {
+        feature: "A textual render digest of a page's structure",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+      {
+        feature: "A content lint that also proves the route answers",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+    ],
+  },
+  {
+    law: "P3",
+    title: "Economy — is the protocol's cost a number?",
+    rows: [
+      {
+        feature: "Response token budgets with a ceiling the build enforces",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+    ],
+  },
+  {
+    law: "—",
+    title: "Operations — whose infrastructure, whose source?",
+    rows: [
+      {
+        feature: "Self-host on your own database",
+        cells: ["yes", "no", "no", "yes", "yes"],
+      },
+      { feature: "Open source", cells: ["yes", "no", "partial", "yes", "yes"] },
+      {
+        feature: "Capture an existing site into an authorable one",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
+    ],
+  },
+];
+
+export interface Rival {
+  name: string;
+  wins: string;
+  chooseIt: string;
+}
+
+/**
+ * Where each alternative genuinely wins. Turing's compare page earns its
+ * credibility this way and this one has to do the same, or the matrix above is
+ * worth nothing: a table where one column is all ticks is a table nobody reads
+ * twice.
+ */
+export const RIVALS: Rival[] = [
+  {
+    name: "Contentful",
+    wins: "The enterprise ecosystem — integrations, SLAs, a global CDN you do not operate, and an editor a marketing team already knows how to use.",
+    chooseIt:
+      "your buyer is procurement, the content team is large and non-technical, and nobody on staff wants to run a JVM.",
+  },
+  {
+    name: "Sanity",
+    wins: "The best structured-content editing experience in the category — real-time collaboration, a genuinely good query language, and a studio you shape to the model.",
+    chooseIt:
+      "editors are the primary operator and the depth of the editing experience is the thing you are buying.",
+  },
+  {
+    name: "Strapi",
+    wins: "The closest neighbour: open source, self-hosted, Node all the way down, and a plugin ecosystem that fits a JavaScript team's existing habits.",
+    chooseIt:
+      "your team is JS end to end, you want self-hosting, and you do not need an agent protocol — it is a shorter path to the same content API.",
+  },
+  {
+    name: "WordPress",
+    wins: "A plugin for everything and the largest talent pool on earth. For a content site with commodity requirements, nothing is cheaper to staff.",
+    chooseIt:
+      "the requirements are ordinary, the budget is small, and the people maintaining it in three years are not the people building it now.",
+  },
+];
+
+export interface Objection {
+  q: string;
+  a: string;
+}
+
+export const OBJECTIONS: Objection[] = [
+  {
+    q: "Everyone has an MCP server now. Isn't that the same thing?",
+    a: "An MCP server is a transport. Put one over an API designed for a browser and the agent gets that API's protocol quality — the same UUID plumbing, the same 400 with no instruction, the same discovery session. The difference this page is about is what the protocol guarantees underneath, which is why every row above is a property you can test rather than a feature you can be told about.",
+  },
+  {
+    q: "Do I have to use an agent?",
+    a: "No. There is a React console a curator works in, a delivery API with TypeScript SDKs, a Next.js starter and a visual editor that edits the rendered page. The agent-first ordering means every capability reaches the agent first — not that it reaches nobody else.",
+  },
+  {
+    q: "Java and Spring, in 2026?",
+    a: "One JVM service in a container, with the content engine, the agent gateway, the MCP server and the renderer in the same process. Rewriting it in Node is a standing non-goal: it is high cost, high risk and zero user-visible value. What you interact with is HTTP, a CLI and files.",
+  },
+  {
+    q: "What happens to my front end?",
+    a: "Nothing — it is headless. REST and GraphQL, a zero-dependency TypeScript client, a React SDK and a shared section vocabulary. The built-in renderer exists so a site can exist before a front end does, and so a draft has something to preview.",
+  },
+  {
+    q: "Is the agent going to publish something embarrassing?",
+    a: "Not without a person. Writes land as drafts, publishing is a separate explicit op, a destructive op needs a confirm token, a batch can be planned before it is applied, and every write carries attribution into a review queue. That is law P7, and it is on by default rather than configurable.",
+  },
+];
+
 /* ── Pillars, for the nav and the resources rail ─────────────────────────── */
 
 export interface Pillar {

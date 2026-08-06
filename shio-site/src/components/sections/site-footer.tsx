@@ -20,7 +20,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "What stops the agent", href: "/#human" },
       { label: "Blueprints", href: "/#blueprints" },
       { label: "Replicate a site", href: "/#replicate" },
-      { label: "Compare", href: "/#compare" },
+      { label: "Compare", href: "/compare" },
       { label: "Self-host", href: "/#self-host" },
     ],
   },

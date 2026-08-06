@@ -36,7 +36,7 @@ const NAV_GROUPS = [
     items: [
       { label: "What stops the agent", href: "/#human" },
       { label: "Replicate a site", href: "/#replicate" },
-      { label: "Compare", href: "/#compare" },
+      { label: "Compare", href: "/compare" },
       { label: "Self-host", href: "/#self-host" },
     ],
   },

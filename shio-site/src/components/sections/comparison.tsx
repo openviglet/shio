@@ -1,4 +1,5 @@
-import { Check, Minus, X } from "lucide-react";
+import { ArrowRight, Check, Minus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Container, SectionHeader, TableScroll } from "@/components/brand";
 import { COMPARISON, COMPARISON_COLUMNS } from "@/lib/site-content";
 
@@ -82,11 +83,18 @@ export function Comparison() {
         </TableScroll>
 
         <p className="mx-auto mt-6 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
-          Verify current vendor capabilities before deciding &mdash; this reflects
-          2026.3. The honest summary is one row: everywhere else an agent is a client
-          of an API designed for a browser, and the protocol quality it gets is
-          whatever fell out.
+          The honest summary is one row: everywhere else an agent is a client of an
+          API designed for a browser, and the protocol quality it gets is whatever
+          fell out.
         </p>
+        <div className="mt-6 flex justify-center">
+          <Button asChild variant="outline">
+            <a href="/compare">
+              The full matrix, named products, and where Shio loses
+              <ArrowRight className="size-4" />
+            </a>
+          </Button>
+        </div>
       </Container>
     </section>
   );

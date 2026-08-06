@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { LandingPage } from "@/pages/landing";
 import { ClaudeCodePage } from "@/pages/claude-code";
+import { ComparePage } from "@/pages/compare";
 
 /**
  * Routing is one table the prerender and the client both read — no react-router
@@ -15,6 +16,7 @@ import { ClaudeCodePage } from "@/pages/claude-code";
 export const ROUTES: Record<string, () => React.JSX.Element> = {
   "/": LandingPage,
   "/claude-code": ClaudeCodePage,
+  "/compare": ComparePage,
 };
 
 /**

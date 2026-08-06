@@ -1900,25 +1900,6 @@ The frame is P2, not arithmetic: the comparison that matters is one call against
 session of crawling REST endpoints it replaces, and the honest version of that
 comparison draws both bars.
 
-### XIX.5 The comparison, and where it loses (SH534)
-
-The interesting axis is not features, because every headless CMS has content types and a
-delivery API. It is agent-operability, and on that axis the rows are the ten laws made
-checkable: is there one call that replaces discovery, is content addressable as files an
-agent can `Grep`, are the 4xx bodies instructions, is there a dry run, is every
-capability reachable without a cookie, is the token cost of the protocol measured
-anywhere.
-
-Turing's compare page earns its credibility by naming where each alternative wins, and
-this one has to do the same or it is not worth publishing. Contentful and Sanity have
-ecosystems, editor tooling and hosted scale Shio does not; WordPress has a plugin for
-everything; a hand-rolled Git-backed stack has no CMS to run at all. The page says so,
-and then says what an agent pays for each of those choices.
-
-One row is the whole argument and it belongs at the top: on every other product an agent
-is a client of an API designed for a browser, and the protocol quality it gets is
-whatever fell out.
-
 ### XIX.6 Point it at a site you already have (SH535)
 
 Block Q's capture-convert-prove pipeline is the most demonstrable thing in the product,

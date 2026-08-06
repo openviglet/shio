@@ -30,6 +30,12 @@ export const routes: PrerenderRoute[] = [
     description:
       "Hand a Shio CMS instance to Claude Code in one command: the plugin (MCP server, skills, slash commands, AGENTS.md fragment) or a bare stdio bridge, the three calls a session opens with, and the AGENT token scope — which writes on the agent surface only and is deliberately not a superset of a write key.",
   },
+  {
+    path: "/compare",
+    title: "Shio vs Contentful, Sanity, Strapi and WordPress | Viglet Shio",
+    description:
+      "An honest comparison on the axis where headless CMSs actually differ: agent-operability. Seventeen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress are genuinely better at and when to pick them instead.",
+  },
 ];
 
 /**
