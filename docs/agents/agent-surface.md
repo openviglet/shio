@@ -400,6 +400,20 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   single past 5xx fail `shio verify` **forever** on content that is provably clean. `ok` is a
   statement about what the CMS can prove from inside itself *now*, and an incident already
   happened; a caller that wants to gate on them reads `warnings`.
+  **A `File` post's own `FILE` is a name, not an address (SH470).** `verify --site VigletOrg`
+  reported **84 errors** on a replica whose every asset answers 200, all of them one rule on one
+  field: `✗ dangling-reference · FILE — Field 'FILE' points at post
+  inter-greek-wght-normal-CkhJZR-_.woff2, which does not exist.` It does not exist because it is not
+  a post — the eighteen assets a capture uploads are eighteen `File` posts, each storing its own
+  filename there, which is what `fileNameOf` has always read it as. **Two readers of one field, and
+  the louder one was wrong.** A gate that cries wolf is worse than one that stays quiet, and this
+  crossed the line where a reader stops looking; on the replication path it is worse than noise,
+  since those checks exist so an agent can prove a replica *without* a human. The exemption is the
+  **field**, not the widget: `File` stays in `REFERENCE_WIDGETS` because a user field — the seeded
+  `Article.FILE`, or the `hero` the test asserts on — really does hold a file post's id, and it is
+  the only path to `missing-asset`. Dropping the widget would silence 84 false errors by deleting a
+  check that finds real ones. Both halves are asserted: the count on a fixture holding uploaded
+  assets, and that `missing-asset` still fires.
   **`folder=` / `address=` / `since=` scope the run** (SH143) — a subtree, comma-separated
   `post:` addresses, or an SH88 cursor; they union rather than intersect. A scoped run sets
   `partial` and describes itself in `scope` (both **absent** on a full pass), because `ok` over a

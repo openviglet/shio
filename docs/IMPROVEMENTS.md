@@ -374,31 +374,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.27 Eighty-four false errors on a replica that works (SH470)
-
-`verify --site VigletOrg` reports **84 errors** on a replica whose every asset answers
-200. All of them are one rule on one field:
-
-    ✗ dangling-reference · FILE
-      Field 'FILE' points at post inter-greek-wght-normal-CkhJZR-_.woff2, which does not exist.
-
-It does not exist because it is not a post. A `File` post stores its own filename in
-`FILE` — reading one back gives `{"FILE": "inter-greek-wght-normal-CkhJZR-_.woff2",
-"SHA256": …, "SIZE": 18996}` — and the rule treats every `FILE` value as an address to
-resolve. The eighteen assets a capture uploads are therefore eighteen posts × the fields
-the rule walks, and the count is large enough that the real findings on the same run are
-unreadable.
-
-The widget already says which is which. `File.FILE` is a File widget and a relation
-field is a Relator, so the rule has the distinction available and does not consult it.
-
-**A gate that cries wolf is worse than one that stays quiet**, and this one crossed the line where a
-reader stops looking: 84 errors, all false, on a run that also carried the true ones. It also inverts
-what `verify` is for on this path — the replication checks exist so an agent can prove a replica without
-a human, and an agent that cannot tell 84 false errors from a real one has to escalate every run.
-
-Skip File-widget fields, and assert the count on a replica whose assets resolve.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

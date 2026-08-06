@@ -23,7 +23,6 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
-- 📋 **SH470** (deps: SH429 ✅) **Every uploaded asset raises a dangling-reference error, so a clean replica reports 84** — The rule reads File.FILE as an address when it is the stored filename, and the widget that tells a File field from a Relator is available and unread. → §IX.27
 
 ## Block I — Content as files (local-first authoring)
 

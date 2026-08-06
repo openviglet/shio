@@ -42,6 +42,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
+import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.widget.ShSystemWidget;
 
 import jakarta.persistence.EntityManager;
@@ -121,6 +122,12 @@ class ShAgentVerifyTest {
             attr(postType, ShSystemWidget.HTML_EDITOR, "body", 2, (byte) 0);
             attr(postType, ShSystemWidget.CONTENT_SELECT, "related", 3, (byte) 0);
             attr(postType, ShSystemWidget.FILE, "hero", 4, (byte) 0);
+
+            // SH470 — the system `File` type, whose own `FILE` field is a File widget holding the
+            // stored filename. Created here rather than relied on from the seed, because what this
+            // fixture has to reproduce is a *capture's* eighteen uploads, and a shape borrowed from
+            // whatever the instance happens to have seeded is a fixture that can stop reproducing it.
+            filePostType();
         });
 
         base = "/verify-" + UUID.randomUUID().toString().substring(0, 8);
@@ -157,6 +164,16 @@ class ShAgentVerifyTest {
                         data(Map.of("headline", "Needs target", "related", targetId()))),
                 new Op(ShAgentBatchService.POST_UPSERT, post("/hero-missing"), postTypeName, base,
                         data(Map.of("headline", "Hero missing", "hero", targetId()))),
+                // SH470 — what a capture uploads: one `File` post per asset, each storing its own
+                // filename in `FILE`. Three rather than eighteen; the rule fires per row, so the
+                // count that matters is "more than zero", and eighteen would only make the fixture
+                // slower at saying the same thing.
+                new Op(ShAgentBatchService.POST_UPSERT, post("/inter.woff2"), ShSystemPostType.FILE,
+                        base, data(Map.of("FILE", "inter-greek-wght-normal-CkhJZR-_.woff2"))),
+                new Op(ShAgentBatchService.POST_UPSERT, post("/logo.svg"), ShSystemPostType.FILE,
+                        base, data(Map.of("FILE", "logo.svg"))),
+                new Op(ShAgentBatchService.POST_UPSERT, post("/hero.png"), ShSystemPostType.FILE,
+                        base, data(Map.of("FILE", "hero.png"))),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/needs-target"), null, null, null),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/broken-links"), null, null, null),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/fine"), null, null, null)));
@@ -175,6 +192,31 @@ class ShAgentVerifyTest {
                     .getResultStream().findFirst().orElseThrow();
         }
         return targetId;
+    }
+
+    /**
+     * The system {@code File} post-type, found or created (SH470).
+     *
+     * <p>Found first, because it is instance-wide and this suite shares a JVM with everything else
+     * that seeds it — a second row named {@code File} would make the type ambiguous for every other
+     * test rather than for this one.</p>
+     */
+    private void filePostType() {
+        ShPostType existing = entityManager
+                .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                .setParameter("name", ShSystemPostType.FILE)
+                .getResultStream().findFirst().orElse(null);
+        if (existing != null) {
+            return;
+        }
+        ShPostType type = new ShPostType();
+        type.setName(ShSystemPostType.FILE);
+        type.setTitle("File");
+        type.setSystem((byte) 1);
+        type.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+        type.setOwner("admin");
+        entityManager.persist(type);
+        attr(type, ShSystemWidget.FILE, "FILE", 1, (byte) 1);
     }
 
     private void attr(ShPostType postType, String widgetName, String name, int ordinal, byte required) {
@@ -245,6 +287,43 @@ class ShAgentVerifyTest {
             assertThat(finding.address()).isEqualTo(post("/dangling"));
             assertThat(finding.field()).isEqualTo("related");
         });
+    }
+
+    /**
+     * SH470 — the fixture now holds three {@code File} posts, and this is what they are for.
+     *
+     * <p>{@code verify --site VigletOrg} reported <b>84 errors</b> on a replica whose every asset
+     * answered 200: {@code ✗ dangling-reference · FILE — Field 'FILE' points at post
+     * inter-greek-wght-normal-CkhJZR-_.woff2, which does not exist.} It does not exist because it is
+     * not a post — a {@code File} post stores its own filename there, which is what
+     * {@code fileNameOf} has always read it as. A gate that cries wolf is worse than one that stays
+     * quiet, and 84 false errors on a run that also carried true ones is past the line where a
+     * reader stops looking. On this path it is worse than noise: the replication checks exist so an
+     * agent can prove a replica <em>without</em> a human, and an agent that cannot tell 84 false
+     * errors from a real one has to escalate every run.</p>
+     *
+     * <p>The assertion is the count, and it is exact rather than a lower bound: the test above
+     * already says the one real finding is right, so this one only has to say nothing joined it.</p>
+     */
+    @Test
+    @DisplayName("SH470: a File post's own name is not an address, so uploaded assets are not findings")
+    void aFilePostsOwnNameIsNotADanglingReference() {
+        assertThat(findings("content", "dangling-reference"))
+                .as("three uploaded assets, and the only finding is still the one post that "
+                        + "genuinely points at nothing")
+                .extracting(Finding::address)
+                .containsExactly(post("/dangling"));
+    }
+
+    @Test
+    @DisplayName("SH470: and the File widget still resolves a real reference, so missing-asset lives")
+    void theFileWidgetIsStillAReferenceWidget() {
+        // Why the exemption is the *field* and not the widget. Dropping `File` from
+        // REFERENCE_WIDGETS would silence the 84 by deleting the only path to `missing-asset`, which
+        // the test below asserts on a user field holding a real file post's id.
+        assertThat(findings("content", "missing-asset"))
+                .extracting(Finding::field)
+                .containsExactly("hero");
     }
 
     @Test

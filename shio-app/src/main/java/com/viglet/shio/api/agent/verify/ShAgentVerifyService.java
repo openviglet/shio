@@ -116,6 +116,16 @@ public class ShAgentVerifyService {
     private static final Set<String> REFERENCE_WIDGETS =
             Set.of(ShSystemWidget.CONTENT_SELECT, ShSystemWidget.FILE);
 
+    /**
+     * The field a {@code File} post keeps its own name in — the one exception to the line above.
+     *
+     * <p>Named once, because two readers depend on it meaning the same thing and for a while they
+     * did not: see {@link #isOwnFileName}. Spelled out rather than derived from
+     * {@code ShSystemWidget.FILE.toUpperCase()}, which is how {@link #fileNameOf} used to reach it —
+     * a widget's name and a field's name coinciding is a coincidence, not a rule.</p>
+     */
+    private static final String FILE_NAME_FIELD = "FILE";
+
     /** Widgets whose stored value is markup worth scanning for links and images. */
     /**
      * SH140 gave this set a second reader, so it lives in {@link ShPostLinks} — one definition of
@@ -1298,7 +1308,8 @@ public class ShAgentVerifyService {
             sectionFindings(check, post, address, field, value, attr, scan, findings);
             return;
         }
-        if (!REFERENCE_WIDGETS.contains(widget) || isEmpty(value) || !value.isString()) {
+        if (!REFERENCE_WIDGETS.contains(widget) || isEmpty(value) || !value.isString()
+                || isOwnFileName(post, field)) {
             return;
         }
         String targetId = value.asString().trim();
@@ -2134,9 +2145,43 @@ public class ShAgentVerifyService {
         return ShPostLinks.data(objectMapper, post);
     }
 
+    /**
+     * A {@code File} post's own {@code FILE} field, which is a name and not an address (SH470).
+     *
+     * <h2>Eighty-four false errors on a replica that works</h2>
+     *
+     * <p>{@code verify --site VigletOrg} reported <b>84 errors</b> on a replica whose every asset
+     * answers 200, and all of them were this one rule on this one field:
+     * {@code ✗ dangling-reference · FILE — Field 'FILE' points at post
+     * inter-greek-wght-normal-CkhJZR-_.woff2, which does not exist.} It does not exist because it is
+     * not a post. The eighteen assets a capture uploads are eighteen {@code File} posts, and each one
+     * stores its own filename here — {@link #fileNameOf} reads exactly this field as exactly that.
+     * So the two readers of one field disagreed, and the louder one was wrong.</p>
+     *
+     * <p><b>A gate that cries wolf is worse than one that stays quiet</b>, and 84 false errors on a
+     * run that also carried true ones is past the line where a reader stops looking. It also inverts
+     * what {@code verify} is for on this path: the replication checks exist so an agent can prove a
+     * replica without a human, and an agent that cannot tell 84 false errors from a real one has to
+     * escalate every run.</p>
+     *
+     * <h2>Why not drop {@code File} from {@code REFERENCE_WIDGETS}</h2>
+     *
+     * <p>Because the widget is genuinely used both ways. A user field — the seeded
+     * {@code Article.FILE}, or the {@code hero} this class's own test asserts on — holds a
+     * {@code File} post's <em>id</em>, and it is the only path to {@code missing-asset}. Dropping the
+     * widget would silence 84 false errors by deleting a check that finds real ones. What is narrow
+     * here is the case, so the exemption is narrow: the {@code File} post-type's own storage field.</p>
+     */
+    private static boolean isOwnFileName(ShPostUnified post, String field) {
+        return FILE_NAME_FIELD.equals(field)
+                && post != null
+                && post.getShPostType() != null
+                && ShSystemPostType.FILE.equals(post.getShPostType().getName());
+    }
+
     private String fileNameOf(ShPostUnified file) {
         JsonNode data = data(file);
-        JsonNode name = data.get(ShSystemWidget.FILE.toUpperCase(java.util.Locale.ROOT));
+        JsonNode name = data.get(FILE_NAME_FIELD);
         if (name != null && name.isString() && !name.asString().isBlank()) {
             return name.asString().trim();
         }
