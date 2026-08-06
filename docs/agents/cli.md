@@ -208,6 +208,29 @@ each of which a test pins:
   section cannot hold (an `<iframe>`, a `<video>`), **behaviour** (an `onclick`, a `data-*`, an `id` an
   anchor targets — the page still looks right and stops working), and **styling** as a count, because
   the section renders with the vocabulary's own markup so *all* of it goes.
+- **And two of those three are not the same kind of thing, which is what the report got wrong
+  (SH511).** `loses: 311 class name(s) — all styling` framed the appearance as **damage a reviewer
+  weighs**, and 311 dropped classes always sounds worse than none — so the line read as an argument
+  for fidelity on *every* candidate, which is how a session accepted candidates and then went looking
+  for the styling as though it should have survived. Under SH507 it is the mode's contract. So the one
+  list is **split in two, not deleted**: `discards:` is the elements and the behaviour — an icon set
+  is not presentation, and a reviewer genuinely should weigh `114×<circle> 81×<path> 48×<svg>` — and
+  `replaces: 311 class name(s) of the source's styling` is the count, which stays because a reviewer
+  is entitled to know how much is being set aside. **The label carries the meaning and the header
+  carries the sentence**, once: *fidelity keeps the source's appearance and offers no fields;
+  authorable gives these fields, presented by the site's own theme.* That placement is P2 and P3
+  rather than style, and the cost test is what settled it — `propose-cost.test.mjs` reads ≈99 tokens
+  per candidate against a baseline of ≈74, and **the ceiling moved to 105 with it, because a budget
+  sitting 60% above the measurement is not a budget**. Two intermediate drafts were measured and
+  rejected on the way: repeating the sentence per candidate cost ≈120 and landed exactly on the old
+  ceiling, and printing an empty half as `nothing` cost ≈109 to say twice that there was nothing to
+  say — so an empty half now prints no line, and a candidate that loses nothing at all still says so
+  on one. The **proposal data is unchanged** — `loss` always held `elements`, `behaviour` and
+  `classes` as separate keys, and only the presentation conflated them — so no version moves and no
+  plan file is invalidated. The two other documents that carried the old promise change with it:
+  `propose.mjs`' header no longer says "the pixels have moved", and the `shio-replication-test` skill
+  no longer calls an authorable page's appearance a *known limit* — it is the contract, and what is
+  now a defect there is finding the captured theme on the page.
 - **A candidate's id is a hash of its structure.** A positional id renumbers the moment the source
   adds a block, and every entry in the plan then names a candidate nobody reviewed — silently, since
   a plan file cannot tell. An id from an older run is *gone*, and the refusal says why.
@@ -699,8 +722,8 @@ a `TOKENS` field so the commonest change — the accent colour, the type scale, 
 edit rather than a stylesheet rewrite; a capture runs the other direction on the same argument, so
 concatenating the source's stylesheet into `CSS` throws away the palette it *contains* and the replica
 then looks right and cannot be changed. It reads the stylesheets `clone --assets` already put in the
-tree (no new request), and lands in the **same** proposal file: a candidate's loss line says "3 class
-names — all styling", and this is where that styling went. Six decisions:
+tree (no new request), and lands in the **same** proposal file: a candidate's `replaces` line names
+"3 class name(s) of the source's styling", and this is where that styling went. Six decisions:
 - **Two kinds of token, and they are not equally powerful — which the report says out loud.** A
   **declared** custom property is the strong case: the source's own CSS already says
   `var(--brand-primary)`, so lifting it makes it genuinely editable. A **recurring** literal (`#0b5533`

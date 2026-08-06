@@ -98,10 +98,17 @@ test("a candidate's marginal cost is a few dozen tokens, loss report included", 
       `(${proposal.candidates.length} candidates, ${cost} tokens)`,
   );
 
-  // Most of it is the field previews and the loss line, both of which are the *source's* choices —
+  // Most of it is the field previews and the loss lines, both of which are the *source's* choices —
   // a block with forty class names costs more to report than one with two, and that is the honest
   // answer rather than something to trim.
-  assert.ok(perCandidate <= 120, `each candidate costs ≈${perCandidate.toFixed(1)} tokens`);
+  //
+  // SH511 moved this number and the ceiling moves with it, because a budget sitting 60% above the
+  // measurement is not a budget. The split of `loses:` into `discards:` + `replaces:` took a
+  // candidate from ≈74 to ≈99 tokens; two intermediate drafts were measured and rejected on the way —
+  // repeating "presented by the site's own theme instead" per candidate cost ≈120 and landed exactly
+  // on the old ceiling, and printing an empty half as "nothing" cost ≈109 to say twice that there was
+  // nothing to say. What is left is the second label, which is the task's whole deliverable.
+  assert.ok(perCandidate <= 105, `each candidate costs ≈${perCandidate.toFixed(1)} tokens`);
 });
 
 test("--limit bounds the read, and the header still covers the whole run", () => {

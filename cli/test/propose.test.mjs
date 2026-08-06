@@ -501,7 +501,62 @@ test("the proposal names each candidate, the pages it recurs on and what it woul
   assert.equal(hero.fields.heading, "Home");
   assert.equal(hero.mode, "fidelity");
   assert.ok(proposal.candidates.some((row) => row.type === "SectionFeatureGrid"));
-  assert.ok(ctx.stdout.text.includes("loses:"));
+  assert.ok(ctx.stdout.text.includes("discards:"));
+});
+
+test("SH511: the report splits what the mode discards from what it replaces", async () => {
+  // `loses: 311 class name(s) — all styling` framed the appearance as damage a reviewer weighs, and
+  // 311 dropped classes always sounds worse than none — so the line read as an argument for fidelity
+  // on every candidate. Under SH507 it is the mode's contract, and a report that calls a decision a
+  // loss asks the reader to prevent something nobody intends to prevent.
+  const ctx = ctxWith();
+  await propose.run({}, [], ctx);
+  const text = ctx.stdout.text;
+
+  assert.ok(!text.includes("loses:"), "one line said both things and they are two conversations");
+  assert.ok(!text.includes("all styling"));
+  assert.match(
+    text, /^ {2}replaces: \d+ class name\(s\) of the source's styling$/m,
+    "the count stays - a reviewer is entitled to know how much of the source's styling is being set "
+      + "aside - and the label rather than a repeated sentence is what stops calling it a loss. The "
+      + "sentence is true of the MODE and not of this block, so it is in the header once (P2, P3): "
+      + "repeating it per candidate took the report from 74 to 120 tokens each",
+  );
+  assert.match(text, /^ {2}discards: /m, "and what is genuinely dropped keeps a line of its own");
+  assert.ok(
+    text.includes("fidelity keeps the source's appearance and offers no fields; authorable gives "
+      + "these fields, presented by the site's own theme"),
+    "the choice stated as two good answers rather than one with a penalty, which is what the loss "
+      + "list was being read as",
+  );
+});
+
+test("SH511: an empty half is omitted, and a candidate that loses nothing still says so", async () => {
+  const ctx = ctxWith();
+  const { proposal } = await propose.run({}, [], ctx);
+
+  // The fixture's own shape is the assertion's premise: if every candidate declared classes, the
+  // branch under test would never run and this would pass over nothing.
+  const bare = proposal.candidates.filter((row) => !row.loss.classes);
+  assert.ok(bare.length, "the fixture has to contain a block with no styling of its own");
+  assert.ok(proposal.candidates.some((row) => row.loss.classes),
+    "and one with styling, or `replaces` is never exercised");
+
+  const replaces = [...ctx.stdout.text.matchAll(/^ {2}replaces: /gm)];
+  assert.equal(
+    replaces.length, proposal.candidates.length - bare.length,
+    "a half with nothing in it prints no line at all: the split doubled the per-candidate cost, and "
+      + "paying it to say twice that there is nothing to say is the part of that with no reader (P3)",
+  );
+  assert.ok(
+    !/^ {2}(discards|replaces): *$/m.test(ctx.stdout.text),
+    "and never an empty one, which is the same cost with a worse reading",
+  );
+  assert.match(
+    ctx.stdout.text, /^ {2}discards: nothing this reader can see$/m,
+    "but a candidate that loses nothing at all still says so - two absent lines would be "
+      + "indistinguishable from an unreported candidate",
+  );
 });
 
 test("SH436: the proposal states the fields the target has to declare, before anything is written", async () => {

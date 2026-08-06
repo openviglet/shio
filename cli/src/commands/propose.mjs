@@ -23,7 +23,8 @@
  * ## Two halves, one artefact (SH380)
  *
  * The blocks are one question and the **theme** is the other, and they are read together: a
- * candidate's loss line says "3 class names — all styling", and the theme is where that styling went.
+ * candidate's `replaces` line says "3 class name(s) of the source's styling", and the theme is where
+ * that styling went.
  * So the stylesheets the SH378 download put in the tree are scanned here too, and the proposal carries
  * the DTCG token set beside the candidates rather than in a second file nobody would think to open.
  * Either half alone is a proposal worth having, which is why the refusal below is about having

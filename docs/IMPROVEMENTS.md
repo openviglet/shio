@@ -1645,30 +1645,6 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
-### XVII.64 A decision is not a loss (SH511)
-
-`propose` reports `loses: 311 class name(s) — all styling` per candidate, and
-`propose.mjs`'s own header says an authorable block means "the pixels have moved". Both
-frame the appearance as **damage a reviewer weighs**. Under SH507 it is the mode's
-contract, and a report that calls a decision a loss asks the reader to prevent something
-nobody intends to prevent.
-
-The distinction is what a reviewer is actually choosing between. Today the loss list
-reads as an argument for fidelity on every candidate, since 311 dropped classes always
-sounds worse than none — which is why this session accepted candidates and then went
-looking for the styling as though it should have survived. What the reviewer needs
-stated instead: fidelity keeps the source's appearance and offers no fields; authorable
-gives these fields, presented by the site's own theme.
-
-The losses that stay are the ones that are still losses. `loses: 114×<circle> 81×<path>
-48×<svg>` is content the conversion genuinely drops and a reviewer genuinely should
-weigh — an icon set is not presentation. So this is a split of one list into two, not a
-deletion: what the mode replaces, and what it discards.
-
-**And the two documents that carry the promise change with it.** `propose.mjs`'s header is the design's own
-statement of the two modes, and `shio-replication-test` calls the unstyled page a "known limit". A
-decision recorded only in a task is one that the next reader reads the old sentence for.
-
 ### XVII.65 A relative reference is worse than an absolute one (SH512)
 
 Replicating `vilt-group.com/en/` produced a page whose logo, hero background and

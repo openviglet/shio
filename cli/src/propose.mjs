@@ -10,15 +10,23 @@
  * A captured page can become two things. **Fidelity mode** writes its markup verbatim as a `Theme`
  * plus a `PageLayout` and its `Region`s (SH191 sidecars): it renders identically and *nothing about
  * it is authorable* — a curator editing "the hero headline" is editing an HTML file. **Authorable
- * mode** maps repeated markup onto the SH95 section vocabulary: the page becomes content, and the
- * pixels have moved. Both are defensible; neither is the answer, because which one is right is a
- * decision about *this block on this site* and nobody but the reviewer can make it.
+ * mode** maps repeated markup onto the SH95 section vocabulary: the page becomes content, presented
+ * by the site's own theme (SH507). Both are defensible; neither is the answer, because which one is
+ * right is a decision about *this block on this site* and nobody but the reviewer can make it.
+ *
+ * The sentence that used to end that paragraph was "and the pixels have moved", which framed the
+ * appearance as **damage a reviewer weighs**. Under SH507 it is the mode's *contract*: an authorable
+ * conversion yields structured, editable content presented by a Shio theme, and the source's
+ * appearance is what fidelity is for — it reaches 0.00%. So the choice this file puts in front of a
+ * reviewer is **their look, or curate this**, and a report that called one of the two a loss was
+ * asking the reader to prevent something nobody intends to prevent.
  *
  * So what ships is the artefact between them: for every candidate block, the pages it recurs on, the
- * section type it looks like, the fields it would carry, and — the half that makes it honest — **the
- * markup it would lose**. Entries are accepted one at a time; an unaccepted block stays in fidelity
- * mode. That is P7 and P8 in one file: the appliable unit is the accepted mapping, and a guess that
- * silently restructured somebody's homepage would be the worst surprise this product could produce.
+ * section type it looks like, the fields it would carry, and — the half that makes it honest — **what
+ * accepting it would discard, kept separate from what it replaces**. Entries are accepted one at a
+ * time; an unaccepted block stays in fidelity mode. That is P7 and P8 in one file: the appliable unit
+ * is the accepted mapping, and a guess that silently restructured somebody's homepage would be the
+ * worst surprise this product could produce.
  *
  * ## Why a real parser here, and only here
  *
@@ -823,8 +831,8 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     candidates: rows,
     accepted: rows.filter((row) => row.mode === "authorable").length,
     // SH380 — the theme is the same artefact's other half. A separate file would be a second thing to
-    // find, and the two are read together: a block's loss report says "3 class names — all styling",
-    // and the theme is where that styling went.
+    // find, and the two are read together: a block's `replaces` line names the source's styling, and
+    // the theme is where that styling went.
     ...(theme ? { theme } : {}),
     // SH389 — and the third half: the scripts SH377 found and nothing could hold. Computed from the
     // inventory alone, so it needs neither markup nor stylesheets and is present on every proposal a
@@ -1012,6 +1020,11 @@ export function describeProposal(proposal, options = {}) {
       `${unmatched} the vocabulary has no type for`,
   );
   lines.push("  an unaccepted block stays verbatim markup; accept one with --accept <id>");
+  // SH511 — the choice stated as two good answers rather than as one with a penalty. Without this
+  // the loss list reads as an argument for fidelity on every candidate, since dropped classes always
+  // sound worse than none.
+  lines.push("  fidelity keeps the source's appearance and offers no fields; authorable gives these "
+    + "fields, presented by the site's own theme");
 
   for (const row of proposal.candidates.slice(0, limit)) {
     const where = row.pages.length > 1
@@ -1033,8 +1046,17 @@ export function describeProposal(proposal, options = {}) {
           `${row.postType.fields.map((field) => `${field.name}:${field.kind}`).join(", ") || "no fields could be derived"}`,
       );
     }
-    const loss = describeLoss(row.loss);
-    lines.push(`  loses: ${loss}`);
+    // SH511 — two lines, because they are two conversations. `discards` is damage and the reviewer
+    // decides whether to accept it; `replaces` is the mode's contract and there is nothing to weigh.
+    // An empty half is omitted rather than printed as "nothing", and both empty is one line: the
+    // split doubled the per-candidate cost, and paying it to say twice that there is nothing to say
+    // is the part of that with no reader (P3).
+    const discarded = describeDiscarded(row.loss);
+    const replaced = describeReplaced(row.loss);
+    if (discarded || !replaced) {
+      lines.push(`  discards: ${discarded || "nothing this reader can see"}`);
+    }
+    if (replaced) lines.push(`  replaces: ${replaced}`);
   }
   if (total > limit) lines.push("", `… ${total - limit} more candidate(s) in ${options.out ?? PROPOSAL_FILE}`);
   if (proposal.theme) {
@@ -1087,7 +1109,15 @@ function describeScripts(scripts, options = {}) {
   return lines.join("\n");
 }
 
-function describeLoss(loss) {
+/**
+ * What accepting this block **discards** — the half that is still a loss (SH511).
+ *
+ * <p>One list became two, and this is the one a reviewer should weigh. `114×<circle> 81×<path>
+ * 48×<svg>` is content the conversion genuinely drops — an icon set is not presentation — and
+ * `behaviour: 3×onclick` is a page that still looks right and stops working. Neither is replaced by
+ * anything; both are gone.</p>
+ */
+function describeDiscarded(loss) {
   const parts = [];
   if (loss.elements.length) {
     parts.push(loss.elements.slice(0, 6).map((each) => `${each.count}×<${each.name}>`).join(" "));
@@ -1095,8 +1125,28 @@ function describeLoss(loss) {
   if (loss.behaviour.length) {
     parts.push(`behaviour: ${loss.behaviour.slice(0, 4).map((each) => `${each.count}×${each.name}`).join(" ")}`);
   }
-  if (loss.classes) parts.push(`${loss.classes} class name(s) — all styling`);
-  return parts.length ? parts.join("; ") : "nothing this reader can see";
+  return parts.join("; ");
+}
+
+/**
+ * What accepting it **replaces** — the mode's contract, stated as one rather than as damage (SH511).
+ *
+ * <p>`loses: 311 class name(s) — all styling` read as an argument for fidelity on **every** candidate,
+ * because 311 dropped classes always sounds worse than none. That is how a session accepted candidates
+ * and then went looking for the styling as though it should have survived. Under SH507 the source's
+ * appearance is not kept by this mode by design, so the count stays — a reviewer is entitled to know
+ * how much of the source's styling is being set aside — and the sentence around it stops calling a
+ * decision a loss.</p>
+ *
+ * <p><b>The line carries the count and the label does the rest</b>, and that is P3 rather than
+ * terseness for its own sake. The first draft repeated "presented by the site's own theme instead" on
+ * every candidate and took the report from ≈74 to ≈120 tokens per candidate — landing exactly on
+ * `propose-cost.test.mjs`' ceiling. What the sentence says is true of the *mode*, not of this block,
+ * so it belongs in the header once (P2). Repeating it N times is paying per candidate for a fact that
+ * does not vary.</p>
+ */
+function describeReplaced(loss) {
+  return loss.classes ? `${loss.classes} class name(s) of the source's styling` : "";
 }
 
 function preview(value) {

@@ -90,8 +90,11 @@ Read one extracted string against the source, too. An entity survives extraction
 characters and is escaped again on render, so `&` becomes `&amp;` in the page *and in the
 editor field* (SH476) — invisible unless you compare.
 
-*Known limit:* unstyled. The captured classes are dropped, so the theme's CSS matches
-nothing. `propose.mjs` calls this "the pixels have moved".
+*Not a limit — the contract (SH507).* The source's classes are dropped and the page is presented by
+a **Shio** theme: `<site> (Shio)`, written into the conversion beside the captured one, styling
+SH508's roles. So judge it as a page a curator would keep, not as a failed copy — does a hero read as
+a hero? The captured theme is **not** on an authorable page (SH510), and if you find it there, or
+find two stylesheets, that is the defect. The source's appearance is what scenario 1 is for.
 
 ### 3. Headless — the front end over the CDA
 
