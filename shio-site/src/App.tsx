@@ -3,6 +3,7 @@ import { LandingPage } from "@/pages/landing";
 import { ClaudeCodePage } from "@/pages/claude-code";
 import { ComparePage } from "@/pages/compare";
 import { ReplicatePage } from "@/pages/replicate";
+import { CuratorPage } from "@/pages/curator";
 
 /**
  * Routing is one table the prerender and the client both read — no react-router
@@ -19,6 +20,7 @@ export const ROUTES: Record<string, () => React.JSX.Element> = {
   "/claude-code": ClaudeCodePage,
   "/compare": ComparePage,
   "/replicate": ReplicatePage,
+  "/curator": CuratorPage,
 };
 
 /**

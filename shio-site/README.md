@@ -70,7 +70,7 @@ deploy at the custom domain.
 ## Backlog
 
 Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the transcript player
-(SH531), the plotted token budget (SH533), the curator's half (SH536), the
-markdown twins (SH537), the Pages workflow (SH538), the depth pages (SH539) and
-the public demo instance (SH540). The design behind each is `§XIX` in
+(SH531), the plotted token budget (SH533), the markdown twins (SH537), the Pages
+workflow (SH538), the depth pages (SH539) and the public demo instance (SH540).
+The design behind each is `§XIX` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).

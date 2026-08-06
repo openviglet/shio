@@ -1,0 +1,95 @@
+# SH538 — shio.viglet.org, built and published by CI.
+#
+# Until now every build of the public site was a local artefact: `pnpm run build:site`
+# produced a `dist/` on somebody's machine, and the domain resolved to whatever the last
+# person remembered to copy. This job is the whole publish path.
+#
+# `workflow_dispatch` only, on the same reasoning as `publish-js-sdk.yml`: a deploy that
+# fires on every push to a long-lived branch is one nobody can hold still while reviewing
+# it. The site is the one artefact where a defect is public immediately.
+#
+# The gates are the build's own, and both are real:
+#   * `tsc -b` is the first step of `shio-site`'s `build` script, so a type error fails
+#     here rather than shipping.
+#   * `scripts/prerender.mjs` patches the `<head>` with `replaceOrThrow` and checks
+#     `ROUTES` in App.tsx against the `routes` table in entry-server.tsx in both
+#     directions — a route with no page, or a page missing a title, is a red build
+#     instead of a page silently carrying another route's `<title>`.
+# Neither is repeated as a separate step: a gate that runs twice is a gate that can be
+# satisfied by the copy nobody kept current.
+#
+# `_site` is assembled rather than published straight from `shio-site/dist`, because the
+# tree is meant to grow siblings the way Turing's does — the React SDK's component docs
+# and the example sites mount beside the root site, not inside it. One `cp` today, one
+# more per surface later.
+#
+# Requires repo secret: GH_PKG_TOKEN (push rights to openviglet/shio-ce), the same token
+# `publish-docker.yml` uses for that repository.
+name: Publish GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and publish shio.viglet.org
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.8.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: "pnpm"
+
+      # The site is standalone — no SDK, no backend, no workspace package — but the
+      # install is the workspace's, because the lockfile is.
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
+      # tsc -b → vite build → vite build --ssr → prerender → og-image.
+      - name: Build the site
+        run: pnpm run build:site
+
+      - name: Assemble _site
+        run: |
+          # The prerendered site at the root: index.html per route, hashed assets, and
+          # the static files from shio-site/public (robots.txt, sitemap.xml, llms.txt,
+          # the favicon, og.svg and the CNAME). `dist-ssr/` is a build input and stays
+          # out of the published tree.
+          mkdir -p _site
+          cp -r shio-site/dist/* _site/
+
+          # Two files whose absence is silent rather than loud: a missing index.html
+          # publishes a directory listing, and a missing CNAME publishes the site under
+          # the *.github.io host with every canonical URL pointing somewhere else.
+          test -f _site/index.html || { echo "no index.html in the assembled site"; exit 1; }
+          test -f _site/CNAME     || { echo "no CNAME — public/CNAME is the source"; exit 1; }
+
+          find _site -name index.html | sort
+
+      - name: Deploy to openviglet/shio-ce (github-pages branch)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.GH_PKG_TOKEN }}
+          external_repository: openviglet/shio-ce
+          publish_branch: github-pages
+          publish_dir: ./_site
+          # Belt and braces with public/CNAME, and the one that matters: each publish
+          # overwrites the branch, so without a CNAME in the published root GitHub Pages
+          # drops the custom domain and it has to be re-added by hand.
+          cname: shio.viglet.org

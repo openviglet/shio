@@ -1900,24 +1900,6 @@ The frame is P2, not arithmetic: the comparison that matters is one call against
 session of crawling REST endpoints it replaces, and the honest version of that
 comparison draws both bars.
 
-### XIX.7 The curator's half (SH536)
-
-The objection every reader of an agent-native CMS arrives with is not "can the agent do
-it" - it is "what stops it". Answering that with the word governance is worth nothing;
-answering it with the mechanisms is the whole sale, and they exist: writes land as
-drafts, publishing is a separate explicit act, a destructive op needs a confirm token, a
-dry run prints what would change, every write carries attribution, and there is a queue
-a human works through.
-
-So the human half gets its own page rather than a paragraph. The console the curator
-actually uses, the Universal Editor's inline editing on the rendered page, preview links
-for a draft nobody has published, and the review queue - shown as what a person sees on
-a Tuesday, not as an architecture diagram.
-
-It is also where the product's shape is stated plainly for a non-engineer: the agent
-builds, the human curates, the CDA delivers. A reader who only ever sees the first of
-those three concludes, correctly, that nobody is minding the site.
-
 ### XIX.8 A site an agent can read (SH537)
 
 P4 says files beat APIs for authoring because `Edit`, `Write` and `Grep` are an agent's

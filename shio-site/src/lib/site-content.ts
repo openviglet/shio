@@ -536,6 +536,129 @@ export const COMPARISON: ComparisonRow[] = [
   { feature: "Self-host, your database", shio: "yes", headless: "no", diy: "yes" },
 ];
 
+/* ── /curator — the human half ───────────────────────────────────────────── */
+
+export interface CuratorMoment {
+  when: string;
+  title: string;
+  body: string;
+}
+
+/**
+ * What a curator's Tuesday actually looks like — deliberately a narrative and
+ * not an architecture diagram, because the reader this page is for does not
+ * want to know which service owns the review session.
+ */
+export const CURATOR_DAY: CuratorMoment[] = [
+  {
+    when: "Overnight",
+    title: "The agent worked, and published nothing",
+    body: "It read the model, wrote nine pages and proved them against the lint. Every one of them is a draft. The site your readers see has not changed.",
+  },
+  {
+    when: "09:10",
+    title: "A queue, not a diff to hunt through",
+    body: "“The agent proposed 9 changes.” One session, what each change touched, and two buttons that mean something: approve, or revert.",
+  },
+  {
+    when: "09:14",
+    title: "You open the page before anyone else can",
+    body: "A preview link opens the real rendered page, from a token that expires and is scoped to that one post — not a staging environment somebody has to keep in sync.",
+  },
+  {
+    when: "09:22",
+    title: "You fix the headline where you can see it",
+    body: "Inline, on the rendered page itself, through the visual editor — rather than hunting for the field in a form that looks nothing like the result.",
+  },
+  {
+    when: "09:30",
+    title: "You publish, or you schedule it",
+    body: "Publishing is its own act. Or set a date and let the sweep fire it — the same path, so anything listening for a publish hears the identical event.",
+  },
+];
+
+export interface Gate {
+  icon: LucideIcon;
+  title: string;
+  mechanism: string;
+  /** The design decision behind it, stated as the reason rather than the rule. */
+  because: string;
+}
+
+export const GATES: Gate[] = [
+  {
+    icon: Eye,
+    title: "Writing and publishing are different permissions",
+    mechanism:
+      "An agent's write lands in DRAFT, and whether a credential may publish at all is a property of the token rather than of the call.",
+    because:
+      "Anything able to write was previously able to publish, which made draft-by-default a convention instead of a gate.",
+  },
+  {
+    icon: Lock,
+    title: "A delete takes two calls",
+    mechanism:
+      "A delete, a folder delete or any prune that would remove something is refused once with a confirm digest over exactly those deletions; the real run has to present it back.",
+    because:
+      "A digest over the deletions means the second call cannot quietly cover more than the first one showed you.",
+  },
+  {
+    icon: GitCompareArrows,
+    title: "The plan is the same document as the write",
+    mechanism:
+      "Any batch can be sent as a dry run. What comes back is that batch annotated with what each op would change — not a summary of it.",
+    because:
+      "A preview in a different shape from the thing being previewed is a second implementation, and the two drift.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "The agent cannot approve its own work",
+    mechanism:
+      "The review queue is console-authenticated and deliberately not on the agent namespace at all. An agent token cannot reach the approve call.",
+    because:
+      "A credential that can both make a change and sign it off is not a review step, it is a log line.",
+  },
+  {
+    icon: Undo2,
+    title: "Deleting is reversible, and so is a folder",
+    mechanism:
+      "A deleted post goes to the trash with restore and purge as separate acts. A deleted folder leaves a trace that can be undone.",
+    because:
+      "A mis-click that loses content is the failure a curator cannot recover from, and the one nobody reports until much later.",
+  },
+  {
+    icon: ScrollText,
+    title: "Every change has a name and a time on it",
+    mechanism:
+      "The history is written and readable, with an Activity view in the console. A published post is an immutable snapshot beside the editable draft, so the diff is always available.",
+    because:
+      "Reviewing a change you cannot attribute is reviewing a rumour.",
+  },
+];
+
+export const LIFECYCLE = [
+  {
+    state: "DRAFT",
+    gloss: "The editable row. Every agent write lands here, and so does yours.",
+  },
+  {
+    state: "PREVIEW",
+    gloss: "An expiring, single-post token that opens the real rendered page.",
+  },
+  {
+    state: "PUBLISHED",
+    gloss: "An immutable snapshot beside the draft — which is what makes diff and restore cheap.",
+  },
+  {
+    state: "SCHEDULED",
+    gloss: "A publish or unpublish instant; a sweep fires it down the same path.",
+  },
+  {
+    state: "TRASH",
+    gloss: "Reversible. Restore and purge are separate acts, and purge is the one nobody does by accident.",
+  },
+];
+
 /* ── /replicate — capture, propose, convert, prove ───────────────────────── */
 
 export interface Phase {

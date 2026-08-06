@@ -42,6 +42,12 @@ export const routes: PrerenderRoute[] = [
     description:
       "Point shio clone at a site that already exists and get one a curator can edit: capture under robots.txt writing no content, a proposal that groups blocks by signature rather than by page, a conversion into drafts, and arithmetic at the end that says whether anything was lost. Fidelity keeps the source appearance; authorable gives editable fields.",
   },
+  {
+    path: "/curator",
+    title: "The human half — what stops the agent | Viglet Shio",
+    description:
+      "An agent wrote nine pages last night and nobody has seen them yet. The curator half of Shio: the review queue an agent token cannot reach, expiring preview links, inline editing on the rendered page, draft-published diff and restore, reversible deletes, and the six gates that are on by default rather than configurable.",
+  },
 ];
 
 /**

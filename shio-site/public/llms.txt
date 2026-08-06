@@ -15,6 +15,8 @@
   Sanity, Strapi and WordPress, plus where each of them wins
 - [/replicate](https://shio.viglet.org/replicate): capture an existing site with shio clone,
   the fidelity-versus-authorable decision, and the bounds the crawl keeps
+- [/curator](https://shio.viglet.org/curator): the human half - the review queue, preview
+  links, inline editing, and the six gates that stop an agent write
 
 ## Start here
 

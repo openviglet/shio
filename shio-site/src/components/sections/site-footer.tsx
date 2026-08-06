@@ -17,7 +17,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   {
     heading: "For the human",
     links: [
-      { label: "What stops the agent", href: "/#human" },
+      { label: "What stops the agent", href: "/curator" },
       { label: "Blueprints", href: "/#blueprints" },
       { label: "Replicate a site", href: "/replicate" },
       { label: "Compare", href: "/compare" },
