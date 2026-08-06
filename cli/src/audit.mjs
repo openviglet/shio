@@ -53,7 +53,24 @@ export const AUDIT_RULES = {
   "zero-size": "warn",
   collapsed: "warn",
   "font-fallback": "warn",
+  // SH526 — the two the other seven could not see. Every rule above measures what IS there, so a
+  // page that has lost most of itself has no overflow, perfect contrast, no collapsed box and
+  // nothing that fails to load.
+  "no-landmark": "warn",
+  "no-heading": "warn",
 };
+
+/**
+ * The elements a browser reports as landmarks, by tag and by explicit role (SH526).
+ *
+ * <p>The accessibility tree's cheapest useful subset. A full tree needs the platform's own
+ * mapping — computed roles, name calculation, presentation inheritance — and none of that is
+ * needed to answer the question this exists for: **is the page still made of regions**.</p>
+ */
+export const LANDMARKS = Object.freeze({
+  main: "main", nav: "navigation", header: "banner", footer: "contentinfo",
+  aside: "complementary", form: "form", section: "region", search: "search",
+});
 
 /**
  * Desktop and phone.
@@ -281,10 +298,22 @@ export function classify(observed, options = {}) {
     merge("console-error", item.text, item.width, {});
   }
 
+  // SH526 — the shape, read once. It does not vary with the viewport (a landmark is a landmark at
+  // every width), so it is taken from the first probe that reported one rather than merged.
+  const shape = (observed?.probes ?? []).find((probe) => probe.shape)?.shape ?? null;
+  if (shape) {
+    if (!Object.keys(shape.landmarks ?? {}).length) {
+      merge("no-landmark", "document", undefined, {});
+    }
+    if (!(shape.headings ?? []).length) {
+      merge("no-heading", "document", undefined, {});
+    }
+  }
+
   const findings = [...found.values()];
   for (const finding of findings) finding.widths.sort((a, b) => b - a);
   findings.sort(compare);
-  return { findings, capped, counts: count(findings) };
+  return { findings, capped, counts: count(findings), ...(shape ? { shape } : {}) };
 }
 
 /** Deterministic order: errors first, then by rule, then by the element named (P5). */
@@ -334,6 +363,10 @@ function detail(finding) {
       return `did not load, so the page fell back${finding.source === "font-face" ? " (@font-face errored)" : ""}`;
     case "request-failed":
       return finding.status ? `HTTP ${finding.status}` : `request failed: ${finding.failure ?? "unknown"}`;
+    case "no-landmark":
+      return "the page is not made of regions — no main, nav, header, footer or aside";
+    case "no-heading":
+      return "nothing on the page announces what it is";
     default:
       return "";
   }
@@ -345,7 +378,7 @@ function detail(finding) {
  * <p>`--limit` bounds what is printed, never what was counted: a cut this report did not declare
  * would read as a clean pass, which is the failure `shio verify`'s `notes` exist to prevent.
  */
-export function describe({ target, url, widths, findings, counts, capped }, options = {}) {
+export function describe({ target, url, widths, findings, counts, capped, shape }, options = {}) {
   const limit = Number.isFinite(Number(options.limit)) ? Number(options.limit) : Infinity;
   const shown = findings.slice(0, Math.max(limit, 0));
   const head =
@@ -354,6 +387,11 @@ export function describe({ target, url, widths, findings, counts, capped }, opti
       counts.warnings === 1 ? "" : "s"
     }) at ${widths.join(",")}px`;
   const lines = [head, `  page: ${url}`];
+  // SH526 — printed whether or not it produced a finding, because the shape IS the answer to "did
+  // this page keep its regions" and a number nobody prints is a fact nobody joins. One line: the
+  // intact page reads `main, navigation, contentinfo · 3 headings` and the emptied one
+  // `no landmark · 2 headings`, and that difference is the whole of what four instruments missed.
+  if (shape) lines.push(`  shape: ${describeShape(shape)}`);
   for (const finding of shown) lines.push(line(finding));
   if (shown.length < findings.length) {
     lines.push(`  (${findings.length - shown.length} more — raise --limit to see them)`);
@@ -365,6 +403,22 @@ export function describe({ target, url, widths, findings, counts, capped }, opti
     lines.push("  nothing to fix: no overflow, no failed request, no console error, contrast clears AA");
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * A page's shape in one line (SH526).
+ *
+ * <p>Landmarks by role and a heading count, which is what the accessibility tree makes cheap and
+ * what a pixel comparison cannot survive: a font substitution, an animation caught mid-frame and a
+ * different viewport all leave it identical, and a lost region does not.</p>
+ */
+export function describeShape(shape) {
+  const roles = Object.entries(shape?.landmarks ?? {})
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([role, count]) => (count > 1 ? `${role}×${count}` : role));
+  const headings = (shape?.headings ?? []).length;
+  return `${roles.length ? roles.join(", ") : "no landmark"} · `
+    + `${headings} heading${headings === 1 ? "" : "s"}`;
 }
 
 /**
@@ -399,6 +453,71 @@ export function describe({ target, url, widths, findings, counts, capped }, opti
  * the CSS says is visible whose box has no size — which is why the two are separated here rather
  * than collapsed into one rectangle test.
  */
+/**
+ * The page's shape, read in the browser (SH526).
+ *
+ * <h3>The blind spot four instruments shared</h3>
+ *
+ * <p>A page that had lost its hero, its product grid and its footer was passed by all four: `verify`
+ * said <b>ok</b>, `/agent/render` counted `links: 0` and said nothing, this command found <b>one</b>
+ * warning (a font fallback), and `snapshot` had no baseline to compare. Not four blind spots — one:
+ * every rule measures <b>what is there</b>, and an almost-empty page has no overflow, perfect
+ * contrast, no collapsed box and nothing that fails to load.</p>
+ *
+ * <p>The accessibility tree is the cheapest thing that would have caught it, and the browser already
+ * builds one. The intact page is a `main` with three headings, a `nav`, a `contentinfo` and eleven
+ * links; the emptied one is two headings and nothing else — a difference one sentence long, needing
+ * no reference image.</p>
+ *
+ * <h3>Why this and not a screenshot</h3>
+ *
+ * <p>A pixel diff answers "identical to a baseline", which is exactly right for **fidelity** — 0.00%
+ * is a real gate — and structurally useless for **authoring**, where a page built from a blueprint
+ * has no baseline at all. The tree survives what pixels cannot: a font substitution, an animation
+ * caught mid-frame, a different viewport.</p>
+ *
+ * <p>Serialized into the page like {@link probe}, and deliberately a **separate** evaluate rather
+ * than a line inside it. Two reasons, and the first is not a preference: a function handed to
+ * `page.evaluate` is serialized to source and runs with no module scope, so `probe` cannot call
+ * this one at all. The second is that `snapshot --against` wants the shape and none of the layout
+ * measurement, and a caller that had to run the whole probe to get one line would not.</p>
+ */
+export function readShape(landmarks) {
+  const counts = {};
+  const seen = new Set();
+  const add = (role) => {
+    counts[role] = (counts[role] ?? 0) + 1;
+  };
+  for (const element of document.querySelectorAll("[role]")) {
+    const role = String(element.getAttribute("role") || "").trim().toLowerCase();
+    if (Object.values(landmarks).includes(role)) {
+      seen.add(element);
+      add(role);
+    }
+  }
+  for (const [tag, role] of Object.entries(landmarks)) {
+    for (const element of document.querySelectorAll(tag)) {
+      // An explicit `role` wins over the tag, and counting both would report one region twice.
+      if (seen.has(element) || element.hasAttribute("role")) continue;
+      // A `<section>` or a `<form>` is a landmark only when it is named — that is the platform
+      // mapping, not a simplification, and without it every card on a page would be a region.
+      if ((tag === "section" || tag === "form")
+        && !element.getAttribute("aria-label") && !element.getAttribute("aria-labelledby")) {
+        continue;
+      }
+      add(role);
+    }
+  }
+  const headings = [];
+  for (const element of document.querySelectorAll("h1,h2,h3,h4,h5,h6,[role=heading]")) {
+    const level = Number(element.getAttribute("aria-level"))
+      || Number(String(element.tagName).slice(1))
+      || 2;
+    headings.push({ level, text: (element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80) });
+  }
+  return { landmarks: counts, headings };
+}
+
 export function probe(options) {
   const cap = options?.cap ?? 25;
   const contrastSampleChars = 40;

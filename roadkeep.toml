@@ -85,11 +85,10 @@ priority = [
   # resolved against the tree, so `ok` on a page that had lost most of itself was a fact the
   # instance already held and nobody joined to a judgement. Then the rest of "judge the artefact"
   # (SH522's declaration-vs-product join, part-shipped as `--against capture` and tracked by
-  # its own open line; SH526's accessibility tree), then the test-debt chain
+  # its own open line; SH526's accessibility tree, shipped), then the test-debt chain
   # that is computable and uncounted (SH527 names the gap, SH528 gives the fixture the traits to
   # reproduce it, SH529 draws the list), and last the model-proposal chain, which is the biggest
   # and adds a verb (SH523, then SH524 and SH525 on top of it).
-  "SH526",
   "SH527",
   "SH528",
   "SH529",

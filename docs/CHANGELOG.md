@@ -191,6 +191,7 @@
 - **SH516** — A page check renders each published page and resolves every reference on it against the URL that page is served at, so a link or an asset the site does not serve is an error rather than a clean tree. It reads references through the rewriter's own walk, which is what stops the gate and the page from disagreeing about what a reference is.
 - **SH521** — The page check judges the artefact on the two reads that already held the finding: a page rendering with no heading, no link, no image and almost no words is an error, and a page drawing with classes its own stylesheet does not define is a warning where it loads no other stylesheet and the answer is therefore knowable.
 - **SH522 (--against capture)** — shio diff walks the capture's pages, asks the instance for each one and reads the served bytes with the same scanner that wrote the declared counts, so the comparison is arithmetic: links, assets, forms and prose declared against produced, a gained fact never a failure, and exit 1 on a loss. The proposal, the document and an earlier moment are refused by name.
+- **SH526** — audit reads the page's landmarks and headings from the browser and reports no-landmark and no-heading, printing the shape whether or not it found one; snapshot --against compares the same shape beside its pixel percentage, one-directionally, so a lost region is named whatever the number says.
 
 ### Block I follow-up
 

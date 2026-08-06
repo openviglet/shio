@@ -24,12 +24,15 @@
 import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
+import { LANDMARKS, readShape } from "../audit.mjs";
 import { requireBrowser } from "../browser.mjs";
 import { resolveAdmin } from "../context.mjs";
 import {
   DEFAULT_WIDTH,
   SNAPSHOT_DIR,
   againstNames,
+  compareShapes,
+  describeShapes,
   compareSnapshots,
   describe,
   describeAgainst,
@@ -226,9 +229,18 @@ async function against(resolved, { slug, dir, widths, admin, flags, browser }, c
     };
     // The original first, so a failure fetching it is reported before the replica is photographed —
     // and so the two captures are as close together in time as the sequence allows.
-    const before = await capture(source, { ...flags, width }, ctx, null, browser);
-    const after = await capture(resolved.url, { ...flags, width }, ctx, credentials, browser);
+    const captured = {
+      source: shot(await capture(source, { ...flags, width }, ctx, null, browser)),
+      replica: shot(await capture(resolved.url, { ...flags, width }, ctx, credentials, browser)),
+    };
+    const before = captured.source.bytes;
+    const after = captured.replica.bytes;
     const result = compareSnapshots(before, after, { compare });
+    // SH526 — beside the percentage, never instead of it. A pixel diff answers "identical to a
+    // baseline", which is right for fidelity and cannot tell a lost footer from a re-cropped hero.
+    const shapes = captured.source.shape && captured.replica.shape
+      ? compareShapes(captured.source.shape, captured.replica.shape)
+      : null;
 
     await put(ctx, paths.source, before);
     await put(ctx, paths.replica, after);
@@ -245,6 +257,7 @@ async function against(resolved, { slug, dir, widths, admin, flags, browser }, c
       sourcePath: paths.source,
       replicaPath: paths.replica,
       diffPath,
+      ...(shapes ? { shapes } : {}),
     });
   }
 
@@ -253,6 +266,10 @@ async function against(resolved, { slug, dir, widths, admin, flags, browser }, c
     page: resolved.url,
     limit: flags.limit,
   })}\n`);
+  // SH526 — one line, from the first width that produced a shape: a landmark is a landmark at every
+  // viewport, so printing it per width would be the same sentence three times.
+  const compared = rows.find((row) => row.shapes)?.shapes ?? null;
+  if (compared) ctx.stdout.write(`${describeShapes(compared)}\n`);
   if (resolved.preview) {
     ctx.stdout.write(
       `  note: the replica side is the DRAFT through this instance's renderer, banner and all — `
@@ -341,6 +358,20 @@ async function siteUrls(flags, ctx) {
  * caller already resolved, because the refusal for a missing one has to happen before this command
  * opens anything.
  */
+/**
+ * A capture as `{bytes, shape}`, whichever form the producer used (SH526).
+ *
+ * <p>`ctx.capture` is the seam the tests drive and it hands back a Buffer, which was the whole
+ * contract before the shape existed. Tolerating both here rather than changing every fixture is
+ * what keeps this task from editing tests that are about something else — and a caller with no
+ * shape gets `null`, which the report reads as "not compared" rather than as "nothing lost".</p>
+ */
+function shot(captured) {
+  return captured && typeof captured === "object" && !Buffer.isBuffer(captured)
+    ? { bytes: captured.bytes, shape: captured.shape ?? null }
+    : { bytes: captured, shape: null };
+}
+
 async function capture(url, flags, ctx, credentials, playwright) {
   if (typeof ctx.capture === "function") {
     return ctx.capture(url, flags, credentials);
@@ -383,7 +414,11 @@ async function capture(url, flags, ctx, credentials, playwright) {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.evaluate(() => document.fonts?.ready);
-    return await page.screenshot({ fullPage: flags.viewportOnly !== true, type: "png" });
+    const bytes = await page.screenshot({ fullPage: flags.viewportOnly !== true, type: "png" });
+    // SH526 — the same page, the same moment, one more read inside the browser. A second load to
+    // get the shape would be comparing two moments, which is the mistake `--against` exists to
+    // avoid for the pixels and would be no less one here.
+    return { bytes, shape: await page.evaluate(readShape, LANDMARKS) };
   } finally {
     await browser.close();
   }

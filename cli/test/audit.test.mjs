@@ -17,6 +17,7 @@ import { test } from "node:test";
 
 import {
   AUDIT_RULES,
+  describeShape,
   CONTRAST_FLOOR,
   DEFAULT_WIDTHS,
   classify,
@@ -422,4 +423,73 @@ test("the probe closes over nothing but its own argument", () => {
     assert.ok(!source.includes(name), `probe references ${name} from module scope`);
   }
   assert.ok(probe.toString().startsWith("function probe(options)"));
+});
+
+// --- SH526: the shape of a page, not a picture of it ---
+
+/**
+ * Four instruments looked at a page that had lost its hero, its product grid and its footer, and
+ * all four passed it: `verify` said **ok**, `/agent/render` counted `links: 0` and said nothing,
+ * this command found **one** warning (a font fallback), and `snapshot` had no baseline to compare.
+ *
+ * <p>They share a blind spot rather than four separate ones: each measures **what is there**. An
+ * almost-empty page has no overflow, perfect contrast, no collapsed box and nothing that fails to
+ * load — so the seven rules above are all silent on the one defect that matters most.</p>
+ */
+test("SH526: a page with no region and no heading is two findings, from the tree", () => {
+  const { findings, shape } = classify({
+    probes: [{ width: 1280, shape: { landmarks: {}, headings: [] } }],
+  });
+
+  assert.deepEqual(
+    findings.map((finding) => finding.rule).sort(),
+    ["no-heading", "no-landmark"],
+    "the accessibility tree is the cheapest thing that would have caught it, and the browser "
+      + "already builds one",
+  );
+  assert.ok(findings.every((finding) => finding.severity === "warn"),
+    "a warning: an intact page can legitimately have neither, and a rule that failed the build on "
+      + "one would be the rule people wrap in || true");
+  assert.deepEqual(shape, { landmarks: {}, headings: [] },
+    "and the shape rides the result whether or not it produced a finding");
+});
+
+test("SH526: a page that kept its regions produces neither finding", () => {
+  const intact = {
+    landmarks: { main: 1, navigation: 1, contentinfo: 1 },
+    headings: [{ level: 1, text: "Acme" }, { level: 2, text: "Products" }, { level: 2, text: "Contact" }],
+  };
+
+  const { findings } = classify({ probes: [{ width: 1280, shape: intact }] });
+
+  assert.deepEqual(findings, []);
+  assert.equal(
+    describeShape(intact),
+    "contentinfo, main, navigation · 3 headings",
+    "the intact page in one line — the emptied one reads `no landmark · 2 headings`, and that "
+      + "difference is the whole of what the other four instruments could not see",
+  );
+});
+
+test("SH526: the shape is read once, not merged across widths", () => {
+  // A landmark is a landmark at every viewport, so a shape per width would be the same finding
+  // three times and a report three lines longer for nothing.
+  const { findings } = classify({
+    probes: [
+      { width: 1280, shape: { landmarks: {}, headings: [] } },
+      { width: 375, shape: { landmarks: {}, headings: [] } },
+    ],
+  });
+
+  assert.equal(findings.filter((finding) => finding.rule === "no-landmark").length, 1);
+  assert.deepEqual(findings[0].widths, [], "and it carries no width, because it has none");
+});
+
+test("SH526: a run with no shape at all reports nothing about it", () => {
+  // The pre-SH526 probe shape, which is what an older run of this command produced. Absent is not
+  // empty: reporting "no landmark" for a probe that never looked would be an invented finding.
+  const { findings, shape } = classify({ probes: [{ width: 1280, overflow: [] }] });
+
+  assert.deepEqual(findings, []);
+  assert.equal(shape, undefined);
 });

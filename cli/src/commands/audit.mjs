@@ -28,7 +28,7 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { requireBrowser } from "../browser.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { PER_RULE_CAP, classify, describe, parseWidths, probe } from "../audit.mjs";
+import { LANDMARKS, PER_RULE_CAP, classify, describe, parseWidths, probe, readShape } from "../audit.mjs";
 import { pageTarget, resolveUrl } from "../snapshot.mjs";
 
 /**
@@ -205,7 +205,11 @@ async function inspect(url, { widths, credentials, flags, browser: playwright },
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.evaluate(() => document.fonts?.ready);
         const result = await page.evaluate(probe, { cap: PER_RULE_CAP });
-        probes.push({ width, ...result });
+        // SH526 — its own evaluate, because a function handed to `page.evaluate` is serialized to
+        // source and runs with no module scope, so `probe` cannot call it. Same page, same moment,
+        // one more round trip inside the browser.
+        const shape = await page.evaluate(readShape, LANDMARKS);
+        probes.push({ width, ...result, shape });
       } finally {
         await page.close();
       }

@@ -475,32 +475,6 @@ that did not; counts the source recorded against counts the page shows.
 names the capture, the proposal names the inventory, the document names the proposal. Nothing has to be
 guessed or re-fetched — the chain is already written down and nobody has ever walked it.
 
-### IX.35 The shape of a page, not a picture of it (SH526)
-
-Four instruments looked at a page that had lost its hero, its product grid and its
-footer, and all four passed it. `verify` said **ok**. `/agent/render` counted `links: 0`
-and said nothing. `audit` — which drives a real browser — found **one** warning, a font
-fallback. `snapshot` had no baseline to compare.
-
-They share a blind spot rather than four separate ones: each measures **what is there**.
-An almost-empty page has no overflow, perfect contrast, no collapsed boxes and nothing
-that fails to load.
-
-The accessibility tree is the cheapest thing that would have caught it, and the browser
-already builds one. The intact page is a `main` with three headings, a `nav`, a
-`contentinfo` and eleven links; the emptied one is two headings and nothing else. That
-difference is a sentence long and needs no reference image.
-
-It is also the right *kind* of comparison for this work, where pixels are not. A
-screenshot diff answers "identical to a baseline", which is exactly right for fidelity —
-0.00% is a real gate — and structurally useless for authoring, where a page built from a
-blueprint has no baseline at all. The tree survives what pixels cannot: a font
-substitution, an animation caught mid-frame, a different viewport.
-
-So `audit` gains the landmark and heading shape as a finding, and `snapshot --against`
-gains a semantic comparison beside the pixel one — a replica whose tree lost a landmark
-has lost a region of the page, whatever the percentage says.
-
 ### IX.36 A defect closes with an assertion (SH527)
 
 Six times a correction shipped half of itself and the other half became a new task — SH452→455,

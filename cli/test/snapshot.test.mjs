@@ -16,7 +16,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  compareShapes,
   compareSnapshots,
+  describeShapes,
   describe as describeResult,
   pageTarget,
   resolveUrl,
@@ -629,4 +631,67 @@ test("SH450: a 2xx passes, and a 500 is refused without the credentials sentence
       return true;
     },
   );
+});
+
+// --- SH526: the shape beside the pixels ---
+
+/**
+ * Four instruments passed a page that had lost its hero, its grid and its footer — and this command
+ * was one of them, for a reason its own header states: it had **no baseline to compare**.
+ *
+ * <p>A pixel diff answers "identical to a baseline", which is exactly right for fidelity (0.00% is a
+ * real gate) and structurally useless for authoring, where a page built from a blueprint has no
+ * baseline at all. It also cannot tell a reader *which* large difference happened: an emptied page
+ * and a re-cropped hero both move a lot of pixels. The tree can, in a sentence — and it survives
+ * what pixels cannot: a font substitution, an animation caught mid-frame, a different viewport.</p>
+ */
+test("SH526: a replica missing a landmark has lost a region, whatever the percentage says", () => {
+  const source = {
+    landmarks: { main: 1, navigation: 1, contentinfo: 1 },
+    headings: [{ level: 1, text: "Acme" }, { level: 2, text: "Products" }, { level: 2, text: "Contact" }],
+  };
+  const replica = { landmarks: { main: 1 }, headings: [{ level: 2, text: "Acme" }] };
+
+  const comparison = compareShapes(source, replica);
+
+  assert.deepEqual(comparison.lost, ["contentinfo", "navigation"]);
+  assert.deepEqual(comparison.headings, { source: 3, replica: 1 });
+  assert.equal(comparison.ok, false);
+  assert.match(describeShapes(comparison), /lost contentinfo, navigation/);
+  assert.match(describeShapes(comparison), /3 heading\(s\) became 1/);
+});
+
+test("SH526: a landmark the replica GAINED is not a defect", () => {
+  // A Shio layout composes a `nav` the source built in script, so the comparison is one-directional
+  // — the same rule `shio diff` makes for counts, and for the same reason: a gate that called any
+  // difference damage would fire on every working conversion.
+  const comparison = compareShapes(
+    { landmarks: { main: 1 }, headings: [{ level: 1, text: "Acme" }] },
+    { landmarks: { main: 1, navigation: 1 }, headings: [{ level: 1, text: "Acme" }, { level: 2, text: "More" }] },
+  );
+
+  assert.deepEqual(comparison.lost, []);
+  assert.equal(comparison.ok, true);
+  assert.match(describeShapes(comparison), /every landmark the source has/);
+});
+
+test("SH526: --against prints the shape beside the percentage", async () => {
+  const { capture } = twoSites();
+  const ctx = ctxWith({
+    // The seam hands back `{bytes, shape}` the way the real capture now does; a fixture that hands
+    // back a bare Buffer is the pre-SH526 contract and still works, which is what the other tests
+    // in this file are.
+    capture: async (url, flags, credentials) => ({
+      bytes: await capture(url, flags, credentials),
+      shape: url.includes("acme.example.com")
+        ? { landmarks: { main: 1, contentinfo: 1 }, headings: [{ level: 1, text: "Acme" }] }
+        : { landmarks: { main: 1 }, headings: [{ level: 1, text: "Acme" }] },
+    }),
+  });
+
+  await snapshot.run({ against: "https://acme.example.com/" }, ["post:Blog/"], ctx);
+
+  assert.match(ctx.stdout.text, /% of pixels|differing/,
+    "the pixel answer is still there — the shape is beside it, never instead of it");
+  assert.match(ctx.stdout.text, /shape: lost contentinfo/);
 });

@@ -20,6 +20,28 @@ name `html` and bury the cause); **a hidden element is not a defect** while an e
 visible whose box has no size is, which is why `display:none` and `0×0` are separate tests; and **the
 preview banner is excluded** — `snapshot` deliberately keeps it so a baseline and a capture agree,
 but a finding is an instruction to fix, and nobody can fix Shio's injected banner from their content.
+**And the ninth and tenth rules are the shape, which the other seven could not see (SH526).** Four
+instruments looked at a page that had lost its hero, its product grid and its footer and *all four
+passed it*: `verify` said **ok**, `/agent/render` counted `links: 0` and said nothing, `audit` found
+**one** warning (a font fallback), and `snapshot` had no baseline to compare. One blind spot rather
+than four — **every rule measures what is there**, and an almost-empty page has no overflow, perfect
+contrast, no collapsed box and nothing that fails to load. The accessibility tree is the cheapest
+thing that would have caught it and the browser already builds one: the intact page is a `main` with
+three headings, a `nav`, a `contentinfo` and eleven links, and the emptied one is two headings and
+nothing else. `readShape` reads landmarks (by tag and by explicit `role`, an explicit one winning,
+and a `section`/`form` counting only when it is **named** — that is the platform mapping, without
+which every card is a region) plus the headings; `no-landmark` and `no-heading` are warnings, and
+**the shape prints whether or not it produced a finding**, because a fact nobody prints is a fact
+nobody joins. It is **its own `page.evaluate`** and not a line inside `probe`: a function handed to
+`evaluate` is serialized to source and runs with no module scope, so `probe` cannot call it — and
+`snapshot --against` wants the shape without the layout measurement. The shape is read once, not
+merged across widths, since a landmark is a landmark at every viewport. **`snapshot --against` gained
+the same comparison beside its percentage** (`compareShapes`): a pixel diff answers "identical to a
+baseline", which cannot tell an emptied page from a re-cropped hero and has no answer at all for a
+blueprint-built page with no baseline, while a lost `contentinfo` is a lost footer whatever the
+number says. One-directional, like `shio diff`'s counts — a landmark the replica **gained** is a
+`nav` the layout composed, not damage.
+
 **Errors are what a machine observed and they exit 1** (a 404, a thrown exception); **overflow,
 contrast, a collapsed box and a fallback font are warnings that exit 0**, because each is design
 intent often enough — a 0×0 tracking pixel, a signed-off brand colour — that gating on them makes

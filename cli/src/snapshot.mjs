@@ -171,6 +171,52 @@ export const DEFAULT_WIDTH = 1280;
  * settled for the markup cache: the file a run writes must not depend on what else the run was asked
  * to do.
  */
+/**
+ * What the two pages' shapes say, beside what their pixels say (SH526).
+ *
+ * <h3>Why a percentage was not enough</h3>
+ *
+ * <p>A screenshot diff answers "identical to a baseline", which is exactly right for **fidelity** —
+ * 0.00% is a real gate — and it is the wrong question for a page that lost a region: an emptied
+ * page differs from its source in a large number of pixels *and so does a page whose hero image was
+ * re-cropped*, and the percentage cannot tell a reader which happened. The tree can, in a sentence:
+ * a replica missing a `contentinfo` has lost the footer, whatever the number is.</p>
+ *
+ * <h3>Lost, not merely different</h3>
+ *
+ * <p>A landmark the replica **gained** is not a defect — a Shio layout composes a `nav` the source
+ * built in script — so the comparison is one-directional, the same rule `shio diff` makes for
+ * counts. What it reports is the region that was there and is not.</p>
+ *
+ * @returns `{lost: string[], headings: {source, replica}, ok: boolean}`
+ */
+export function compareShapes(source, replica) {
+  const before = source?.landmarks ?? {};
+  const after = replica?.landmarks ?? {};
+  const lost = Object.keys(before)
+    .filter((role) => (after[role] ?? 0) < before[role])
+    .sort((a, b) => (a < b ? -1 : 1));
+  const headings = {
+    source: (source?.headings ?? []).length,
+    replica: (replica?.headings ?? []).length,
+  };
+  return { lost, headings, ok: lost.length === 0 && headings.replica >= headings.source };
+}
+
+/** One line, printed beside the percentage — the shape is the half a number cannot carry. */
+export function describeShapes(comparison) {
+  const { lost, headings, ok } = comparison;
+  if (ok) {
+    return `  shape: every landmark the source has, ${headings.replica} of its ${headings.source} heading(s)`;
+  }
+  const parts = [];
+  if (lost.length) parts.push(`lost ${lost.join(", ")}`);
+  if (headings.replica < headings.source) {
+    parts.push(`${headings.source} heading(s) became ${headings.replica}`);
+  }
+  return `  shape: ${parts.join("; ")} — a region that is gone is gone whatever the percentage says`;
+}
+
 export function againstNames(slug, width) {
   const at = `${slug}@${width}`;
   return {
