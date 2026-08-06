@@ -536,6 +536,127 @@ export const COMPARISON: ComparisonRow[] = [
   { feature: "Self-host, your database", shio: "yes", headless: "no", diy: "yes" },
 ];
 
+/* ── /replicate — capture, propose, convert, prove ───────────────────────── */
+
+export interface Phase {
+  verb: string;
+  title: string;
+  command: string;
+  what: string;
+  /** The one promise this phase makes that the next one depends on. */
+  promise: string;
+}
+
+export const PHASES: Phase[] = [
+  {
+    verb: "clone",
+    title: "Capture",
+    command: "shio clone https://example.com --max-pages 50",
+    what: "Walks one origin under robots.txt and writes an inventory: the pages with titles and paths, the assets they reference, the locales and how each shows up in a URL, the forms and their fields, the navigation as the source spells it, and the third-party scripts.",
+    promise:
+      "It writes no content at all. The thing you are about to be asked to review does not already exist.",
+  },
+  {
+    verb: "propose",
+    title: "Propose",
+    command: "shio propose --site example",
+    what: "Reads the capture and reports candidates: for each, the pages it recurs on, the section type it looks like and why, the fields it would carry, and what accepting it would set aside. Accepting writes one line into a plan file.",
+    promise:
+      "It applies nothing — no post, no post type, no layout. Review and mutation in one command is the surprise law P7 forbids.",
+  },
+  {
+    verb: "convert",
+    title: "Convert",
+    command: "shio convert --site example --dry-run",
+    what: "Turns the accepted plan into the desired-state document that `shio apply` already takes, and sends it down that same path. One post per candidate, not per page — the hero that recurs on twelve pages is one section reused.",
+    promise:
+      "Every post lands in DRAFT, and `publish` is absent rather than false — so re-running can never unpublish a page a curator has since published.",
+  },
+  {
+    verb: "diff",
+    title: "Prove",
+    command: "shio diff --against capture --site example",
+    what: "Walks the capture's pages, asks the instance for each one, and reads the served bytes with the same scanner that wrote the declared counts. Internal links, external links, assets, forms and prose — arithmetic, not a second opinion.",
+    promise:
+      "A fact the replica gained is never a failure; a lost one exits 1. Every artefact carries the identity of what declared it, so nothing is guessed or re-fetched.",
+  },
+];
+
+export interface Mode {
+  name: string;
+  keeps: string;
+  offers: string;
+  pick: string;
+  accent: "fidelity" | "authorable";
+}
+
+/**
+ * The choice the whole pipeline exists to put in front of a reviewer, and the
+ * one thing on this page that took a measurement to get right (SH507): a mode
+ * that tried to be both delivered a wall of unstyled text, so the *promise*
+ * changed rather than the implementation being patched.
+ */
+export const MODES: Mode[] = [
+  {
+    name: "Fidelity",
+    keeps: "The source's appearance, exactly — the block's markup is written verbatim into a layout.",
+    offers: "No fields. A curator editing “the hero headline” is editing an HTML file.",
+    pick: "the page has to keep looking like it looks, and nobody is going to edit it.",
+    accent: "fidelity",
+  },
+  {
+    name: "Authorable",
+    keeps: "The content, as structured fields a curator edits in the console or on the page itself.",
+    offers: "The site's own theme. The source's styling is replaced, deliberately — not ruined.",
+    pick: "somebody is going to maintain this site, and the model matters more than the pixels.",
+    accent: "authorable",
+  },
+];
+
+/** The bounds, which are the reason the capture is credible rather than a caveat. */
+export const CLONE_BOUNDS = [
+  {
+    title: "One origin, and no further",
+    body: "Every off-host link is recorded and never followed. A seed that redirects off-host is refused, naming the host it actually served — because example.com → www.example.com followed silently files every path under an origin nobody named.",
+  },
+  {
+    title: "robots.txt decides, and the answer is recorded",
+    body: "An exact agent group beats * outright, the longest rule wins and Allow wins a tie. --ignore-robots is written into the inventory, so a capture taken without permission can never later look like one taken with it.",
+  },
+  {
+    title: "A ceiling marks the capture PARTIAL",
+    body: "No silent caps. A bounded capture read as a complete one is the failure the whole file exists to prevent, so --max-pages says so in the artefact rather than in your memory of the command you ran.",
+  },
+  {
+    title: "Assets are same-origin, and the rest are named",
+    body: "Mirroring a CDN's bytes into somebody's media library is a licensing decision this tool is not entitled to make — but somebody has to be able to, so the hosts left behind are listed rather than dropped.",
+  },
+  {
+    title: "Deterministic, so two runs can be diffed",
+    body: "Sequential over a sorted frontier, and no timestamp in the file — --max-pages 50 cuts the same fifty pages every run. The inventory exists to be compared with the next crawl, and a set that moves on its own makes every diff noise.",
+  },
+  {
+    title: "It is somebody's content",
+    body: "The tool records what it was allowed to do and refuses to guess about the rest. Capturing a site you do not own is a decision about their content, and it stays your decision.",
+  },
+];
+
+export const PROPOSE_OUTPUT = `$ shio propose --site example
+
+  fidelity keeps the source's appearance and offers no fields;
+  authorable gives these fields, presented by the site's own theme.
+
+  hero-a91c   Hero          on 12 pages
+              fields: heading, subheading, image, ctaLabel, ctaHref
+              discards: 3x<iframe>  1x onclick
+              replaces: 22 class name(s) of the source's styling
+
+  grid-4f02   CardGrid      on 6 pages
+              fields: title, items[].title, items[].href
+              replaces: 41 class name(s) of the source's styling
+
+  2 candidate(s) - accept with --accept hero-a91c grid-4f02`;
+
 /* ── /compare — the matrix, and where it loses ───────────────────────────── */
 
 export const COMPARE_COLUMNS = ["Shio", "Contentful", "Sanity", "Strapi", "WordPress"] as const;

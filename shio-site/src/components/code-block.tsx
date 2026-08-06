@@ -9,8 +9,16 @@ import { cn } from "@/lib/utils";
 //
 // The `(?<!:)` before `//` keeps URLs (https://…) out of the comment class;
 // `#` covers bash and YAML.
+//
+// Two bounds on the string class, both from real output on this site. A single
+// quote is only an opening quote when it does NOT follow a word character —
+// otherwise the apostrophe in "the source's appearance" opens a string that
+// runs to the next apostrophe several lines down, and a paragraph of prose in a
+// terminal snippet renders as one green literal. And neither quote may span a
+// newline: these snippets have no multi-line literals, so stopping at the line
+// end bounds the damage of an unbalanced quote to the line that has it.
 const SYNTAX_RE =
-  /(#[^\n]*|(?<!:)\/\/[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|\b(true|false|null|const|let|function|return|import|from|export|async|await|new)\b|(\b\d+(?:\.\d+)?\b)/g;
+  /(#[^\n]*|(?<!:)\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|(?<![\w'])'(?:[^'\\\n]|\\.)*')|\b(true|false|null|const|let|function|return|import|from|export|async|await|new)\b|(\b\d+(?:\.\d+)?\b)/g;
 
 // index 0..3 mirrors the regex capture groups: comment, string, keyword, number.
 const TOKEN_CLASS = [

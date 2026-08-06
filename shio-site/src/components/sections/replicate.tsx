@@ -1,3 +1,5 @@
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Container, Eyebrow } from "@/components/brand";
 import { CLONE_STEPS } from "@/lib/site-content";
 
@@ -57,6 +59,19 @@ export function Replicate() {
             <em>no content at all</em>, so the conversion you are asked to review does
             not already exist.
           </p>
+        </div>
+
+        <div className="mt-8 flex justify-center">
+          <Button
+            asChild
+            variant="outline"
+            className="h-auto max-w-full whitespace-normal px-5 py-2.5 text-center"
+          >
+            <a href="/replicate">
+              The four verbs, the two modes, and what the crawl refuses
+              <ArrowRight className="size-4" />
+            </a>
+          </Button>
         </div>
       </Container>
     </section>

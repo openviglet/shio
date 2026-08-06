@@ -36,6 +36,12 @@ export const routes: PrerenderRoute[] = [
     description:
       "An honest comparison on the axis where headless CMSs actually differ: agent-operability. Seventeen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress are genuinely better at and when to pick them instead.",
   },
+  {
+    path: "/replicate",
+    title: "Replicate an existing site into an editable one | Viglet Shio",
+    description:
+      "Point shio clone at a site that already exists and get one a curator can edit: capture under robots.txt writing no content, a proposal that groups blocks by signature rather than by page, a conversion into drafts, and arithmetic at the end that says whether anything was lost. Fidelity keeps the source appearance; authorable gives editable fields.",
+  },
 ];
 
 /**

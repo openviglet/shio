@@ -100,6 +100,23 @@
   }
 }
 
+@layer base {
+  /*
+   * JetBrains Mono ligates `--` into a single long dash. Everywhere else that
+   * is a nicety; here almost every monospaced string is a command somebody is
+   * about to copy, and `--site` rendering as `—site` is a flag that does not
+   * exist. Off for all monospaced text on the site.
+   */
+  code,
+  pre,
+  kbd,
+  samp,
+  .font-mono {
+    -webkit-font-variant-ligatures: none;
+    font-variant-ligatures: none;
+  }
+}
+
 @layer components {
   /* Faint grid used in the dark hero / CTA bands */
   .grid-bg {

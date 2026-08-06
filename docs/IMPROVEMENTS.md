@@ -1900,25 +1900,6 @@ The frame is P2, not arithmetic: the comparison that matters is one call against
 session of crawling REST endpoints it replaces, and the honest version of that
 comparison draws both bars.
 
-### XIX.6 Point it at a site you already have (SH535)
-
-Block Q's capture-convert-prove pipeline is the most demonstrable thing in the product,
-because the visitor supplies the input. `shio clone <url>` walks one origin under
-robots.txt and writes an inventory and no content; `--assets` fetches the bytes; a
-conversion proposes post-types inferred from the pages themselves; and what comes out is
-a site a curator can edit in the console rather than a mirror.
-
-The page is a walkthrough of exactly that, on a real public site, with the artefacts
-shown: the inventory, the proposed model, the diff, the replica. The reason it converts
-is that the alternative it displaces is a migration project, and the reason it is
-credible is that the pipeline is honest about its bounds - one origin, robots respected,
-a ceiling marks the capture PARTIAL, an off-host redirect refused by name.
-
-It carries the constraint the CLI already carries, in the reader's language rather than
-a flag's: capturing somebody else's site is a decision about their content, and the tool
-records what it was allowed to do, so a capture taken without permission cannot later
-look like one taken with it.
-
 ### XIX.7 The curator's half (SH536)
 
 The objection every reader of an agent-native CMS arrives with is not "can the agent do

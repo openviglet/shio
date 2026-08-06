@@ -13,6 +13,8 @@
   bridge, the three calls a session opens with, and the AGENT token scope
 - [/compare](https://shio.viglet.org/compare): agent-operability against Contentful,
   Sanity, Strapi and WordPress, plus where each of them wins
+- [/replicate](https://shio.viglet.org/replicate): capture an existing site with shio clone,
+  the fidelity-versus-authorable decision, and the bounds the crawl keeps
 
 ## Start here
 
