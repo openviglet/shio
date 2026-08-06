@@ -252,10 +252,19 @@ describe("SH448 conformance: replication, from a served source to an installable
     assert.match(
       authorableHtml,
       /data-shio-row="features"/,
-      "SH465: and each row says which collection it came from. It deliberately carries no sh-field: "
-        + "SH185 addresses a field as a flat prop on the post an sh-post ancestor names, so an "
-        + "annotated row would write data.body onto a SectionFeatureGrid that declares no such "
-        + "field. Rendered and curated in the console beats editable and silently lost (P7).",
+      "SH465: and each row says which collection it came from - the indexed path SH475 gave it "
+        + "repeats the collection, but a stylesheet and a reader cannot read one out of an sh-field.",
+    );
+    // SH503 — the count nothing was taking. `sh-field` declares what an element's *content* is, so
+    // one element declared one field and a link is two: the CTA's destination was captured, stored
+    // on the section and rendered into the href with no declaration, and a curator could rename the
+    // button and not repoint it. Asserted on the live render because that is where the gap was
+    // measured — the post, the projection and `verify` all read as complete.
+    assert.match(
+      authorableHtml,
+      /data-shio-prop-attr="ctaHref:href"/,
+      "SH503: a call to action's destination is addressable, and says which attribute holds it. "
+        + `Body: ${authorableHtml.slice(0, 600)}`,
     );
 
     const found = await agent.findAll({ site });

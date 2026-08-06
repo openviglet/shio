@@ -86,6 +86,28 @@ public class ShRegionComposer {
     public static final String FIELD_ATTR = "sh-field";
     public static final String POST_ATTR = "sh-post";
 
+    /**
+     * SH503 — a second field on the same element, and the attribute it is drawn into.
+     *
+     * <p>{@code sh-field} declares the element's <em>content</em>, so <b>one element declares one
+     * field</b> — and a link is two of them, its text and its target. The measured case is the call
+     * to action: {@code <a sh-field="ctaLabel" href="{{ctaHref}}">} annotates 9 of the vocabulary's
+     * 10 fields, and the one it cannot reach is the destination, so a curator could rename the
+     * button and not repoint it. {@code image} escapes the limit only by accident — its element is
+     * the {@code <img>} and the field it declares <em>is</em> the attribute.</p>
+     *
+     * <p>The form is {@code sh-field-attr="FIELD:ATTRIBUTE"}, space-separated for more than one
+     * pair, and the name says the order the value uses. The <b>alternative was to wrap the
+     * anchor</b> so the text and the href each own an element; that is the tail wagging the dog. A
+     * link is one thing to a curator, and splitting it into two boxes to satisfy the markup would
+     * put the protocol's limit into every template that has a link in it.</p>
+     *
+     * <p>Like {@link #FIELD_ATTR} the value is <b>copied verbatim</b> — the renderer has never
+     * parsed a prop and still does not. What splits the pair is the browser bridge, which is the
+     * side that has to read the attribute off the element anyway.</p>
+     */
+    public static final String ATTR_FIELD_ATTR = "sh-field-attr";
+
     private static final String ANNOTATION_NAME = "data-shio-region";
     private static final String ANNOTATION_POST = "data-shio-region-post";
     public static final String ANNOTATION_MISSING = "data-shio-region-missing";
@@ -120,6 +142,8 @@ public class ShRegionComposer {
             " shio: this layout names a Theme that does not exist; see data-shio-theme ";
     private static final String ANNOTATION_FIELD_POST = "data-shio-post";
     private static final String ANNOTATION_PROP = "data-shio-prop";
+    /** SH503 — the rendered form of {@link #ATTR_FIELD_ATTR}, same pairs, same order. */
+    private static final String ANNOTATION_PROP_ATTR = "data-shio-prop-attr";
     private static final String ANNOTATION_POST_TYPE = "data-shio-post-type";
 
     /**
@@ -281,6 +305,14 @@ public class ShRegionComposer {
      * without an owner rather than dropped: the editor renders it read-only and says why,
      * which is SH169's rule — a mistake the author can see beats markup that quietly is not
      * editable.</p>
+     *
+     * <h3>And one element may declare more than one field (SH503)</h3>
+     *
+     * <p>{@code sh-field} says what the element's <em>content</em> is, which makes one element one
+     * field — so a link's destination had nowhere to go, and was captured, stored and rendered with
+     * no declaration. {@link #ATTR_FIELD_ATTR} adds the pairs that live in the element's own
+     * attributes. Both are copied verbatim into their {@code data-} form and neither is parsed
+     * here.</p>
      */
     private void annotateEditable(Document document, String pagePostId, String pageType) {
         if (pagePostId != null && !pagePostId.isBlank()) {
@@ -301,6 +333,17 @@ public class ShRegionComposer {
                 continue;
             }
             field.attr(ANNOTATION_PROP, prop);
+        }
+        // SH503 — the same translation for the fields an element draws into its own attributes.
+        // Separate loop rather than a branch inside the one above, because the two declarations are
+        // independent: an <a> carries both (its text and its href), and an element may carry only
+        // this one — a row's `icon`, which is a `data-` attribute and no text at all.
+        for (Element field : document.select("[" + ATTR_FIELD_ATTR + "]")) {
+            String pairs = field.attr(ATTR_FIELD_ATTR).trim();
+            if (pairs.isEmpty()) {
+                continue;
+            }
+            field.attr(ANNOTATION_PROP_ATTR, pairs);
         }
     }
 

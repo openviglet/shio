@@ -173,10 +173,10 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
 {{#if intro}}<p class="shio-intro" sh-field="intro">{{intro}}</p>{{/if}}
 {{#if body}}<div class="shio-body" sh-field="body">{{{body}}}</div>{{/if}}
 {{#if image}}<p class="shio-image"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
-{{#if ctaLabel}}<p class="shio-cta"><a class="shio-cta-link" sh-field="ctaLabel" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
-{{#if features}}<ul class="shio-features">{{#each features}}<li class="shio-feature" data-shio-row="features" data-shio-icon="{{icon}}">{{#if title}}<h3 class="shio-feature-title" sh-field="features.{{@index}}.title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body" sh-field="features.{{@index}}.body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
+{{#if ctaLabel}}<p class="shio-cta"><a class="shio-cta-link" sh-field="ctaLabel" sh-field-attr="ctaHref:href" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
+{{#if features}}<ul class="shio-features">{{#each features}}<li class="shio-feature" data-shio-row="features" data-shio-icon="{{icon}}" sh-field-attr="features.{{@index}}.icon:data-shio-icon">{{#if title}}<h3 class="shio-feature-title" sh-field="features.{{@index}}.title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body" sh-field="features.{{@index}}.body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
 {{#if questions}}<div class="shio-questions">{{#each questions}}<div class="shio-question" data-shio-row="questions">{{#if question}}<h3 class="shio-question-text" sh-field="questions.{{@index}}.question">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-answer" sh-field="questions.{{@index}}.answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
-{{#if logos}}<ul class="shio-logos">{{#each logos}}<li class="shio-logo" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" sh-field="logos.{{@index}}.image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" sh-field="logos.{{@index}}.name" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name" sh-field="logos.{{@index}}.name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
+{{#if logos}}<ul class="shio-logos">{{#each logos}}<li class="shio-logo" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" sh-field="logos.{{@index}}.image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" sh-field="logos.{{@index}}.name" sh-field-attr="logos.{{@index}}.href:href" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name" sh-field="logos.{{@index}}.name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
 {{#if quotes}}<div class="shio-quotes">{{#each quotes}}<blockquote class="shio-quote" data-shio-row="quotes">{{#if quote}}<p class="shio-quote-text" sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-quote-avatar" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite class="shio-quote-author" sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span class="shio-quote-role" sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
 </section>
 {{/getRelation}}`;
@@ -271,6 +271,26 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
  * repeats but a stylesheet and a reader cannot read out of an `sh-field`. What a row still does not
  * get is a way to be **added, removed or reordered** — the path addresses a value, not a list — so
  * that stays the console form's job.</p>
+ *
+ * <h3>And the fields that are drawn into an attribute, which had nowhere to be declared (SH503)</h3>
+ *
+ * <p>Counting the annotations against the fields a section actually fills gave **9 of 10**, and the
+ * one missing was `ctaHref` — the destination of the call to action. `sh-field` declares what an
+ * element's *content* is, so **one element declares one field**, and a link is two: its text and its
+ * target. `sh-field="ctaLabel"` took the anchor, so the href was captured, stored, rendered into the
+ * page and never declared, and a curator could rename the button and not repoint it.</p>
+ *
+ * <p>`sh-field-attr="FIELD:ATTRIBUTE"` is the second declaration, and it lands on three elements
+ * here: the CTA link's `href`, a logo row's `href`, and a feature row's `icon` — which has no text
+ * node at all, it is a `data-` attribute the theme's CSS reads. `image` never had the problem only
+ * because its element is the `<img>` and the field it declares *is* the attribute.</p>
+ *
+ * <p>What is deliberately **not** declared is `align`, `variant` and `columns`. Those are drawn into
+ * attributes too, and they are `Combo Box` fields — a closed set of choices — while the bridge's
+ * edit surface is a text box. Offering a curator a box in which three strings work and the rest
+ * silently do nothing is worse than sending them to the console form, so they stay the form's job in
+ * the same way adding a row does. `ShConvertedLayoutRenderTest` holds that exemption and asserts its
+ * premise: a presentation field that becomes free text fails there rather than staying exempt.</p>
  */
 function pageLayout(markup, site, hasTheme) {
   const lang = langOf(markup);

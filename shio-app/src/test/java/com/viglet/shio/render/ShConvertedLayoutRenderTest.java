@@ -160,6 +160,33 @@ class ShConvertedLayoutRenderTest {
         boolean isRenderableAsText() {
             return !"File".equals(widget);
         }
+
+        /**
+         * A {@code Relator} is the <b>collection</b>, not a value — SH475's rule, one level up: the
+         * indexed path addresses a row's leaf, and adding, removing or reordering rows is the
+         * console form's job. Its own name is therefore not something a page can address.
+         */
+        boolean isList() {
+            return "Relator".equals(widget);
+        }
+
+        /**
+         * SH503 — the fields this coverage deliberately does not require, and the reason is the
+         * <b>widget</b> rather than a list of names.
+         *
+         * <p>{@code align}, {@code variant} and {@code columns} are drawn into attributes like
+         * {@code ctaHref} is, and they are {@code Combo Box} fields: a closed set of choices, while
+         * the bridge's edit surface is a text box. A box in which three strings work and every other
+         * one silently does nothing is worse than sending a curator to the console form, so they stay
+         * the form's job in the same way adding a row does.</p>
+         *
+         * <p>A predicate rather than the hand-kept set this replaces, because that is what stops the
+         * exemption from rotting (SH142): a presentation field that becomes free text stops being
+         * exempt the moment its declaration changes, with nobody having to remember to come back.</p>
+         */
+        boolean isClosedChoice() {
+            return "Combo Box".equals(widget);
+        }
     }
 
     @Autowired
@@ -364,15 +391,84 @@ class ShConvertedLayoutRenderTest {
     }
 
     /**
-     * A row field the template draws into an <b>attribute</b>, so there is no element to annotate.
+     * SH503 — the check the other three could not make, and the hole they left between them.
      *
-     * <p>The same line the scalar union already draws and for the same reason: {@code ctaHref} is
-     * the {@code href} of the link whose text is {@code ctaLabel}, and only the text carries an
-     * {@code sh-field}. Declared rather than silently skipped — a row field that stops being an
-     * attribute has to be annotated, and an entry here that no longer applies is a suppression that
-     * rotted (SH142's rule).</p>
+     * <h2>What was counted and what was not</h2>
+     *
+     * <p>SH465 counts the fields the page <b>draws</b> and SH475 the row fields it <b>addresses</b>,
+     * and {@code ctaHref} fell between the two: it is drawn — into the {@code href} of the link
+     * whose text is {@code ctaLabel}, which is why its sentinel is on the page and SH465 was green
+     * — and it was addressed by nothing, while SH475's loop skips a path with no dot in it. So the
+     * count that mattered was never taken: <b>9 of the vocabulary's 10 filled fields</b> carried an
+     * annotation, and the missing one was the destination of the call to action. A curator could
+     * rename the button and not repoint it.</p>
+     *
+     * <h2>Why the exemption is a predicate and not a list</h2>
+     *
+     * <p>What this replaces is a hand-kept {@code Set.of("features.icon", "logos.href")}, which is
+     * the shape SH142 warns about: it named the two row fields somebody had noticed and could not
+     * name the scalar nobody had. The rule is now asked of the <b>declaration</b> — a
+     * {@code Combo Box} is a closed set of choices and stays the console form's job, a
+     * {@code Relator} is the list rather than a value, and <b>everything else must be addressable
+     * in one of the two forms</b>. A field the model gains fails here by name.</p>
      */
-    private static final Set<String> ROW_FIELDS_DRAWN_AS_ATTRIBUTES = Set.of("features.icon", "logos.href");
+    @Test
+    @DisplayName("SH503: every declared field the layout fills is addressable, as text or as an attribute")
+    void everyDeclaredFieldIsAddressable() {
+        String html = shPageRenderService.render(siteName, VOCABULARY_URL, ShPostState.DRAFT).html();
+        Set<String> addressed = addressedFields(html);
+
+        List<String> checked = new ArrayList<>();
+        List<String> unaddressable = new ArrayList<>();
+        for (ShSectionType type : VOCABULARY) {
+            for (ShSectionField field : fieldsOf(type)) {
+                if (field.isList() || field.isClosedChoice()) {
+                    continue;
+                }
+                String prop = addressOf(field.path());
+                checked.add(type.name() + " → " + prop);
+                if (!addressed.contains(prop)) {
+                    unaddressable.add(type.name() + " → " + prop);
+                }
+            }
+        }
+
+        assertThat(checked)
+                .as("a predicate that excluded everything would make the next assertion pass over "
+                        + "nothing, which is the state SH465's own exemption list was drifting into")
+                .isNotEmpty()
+                .contains("SectionHero → ctaHref", "SectionFeatureGrid → features.0.icon",
+                        "SectionLogoWall → logos.0.href");
+        assertThat(unaddressable)
+                .as("""
+                        `sh-field` declares what an element's CONTENT is, so one element declared \
+                        one field — and a link is two of them, its text and its target. The value \
+                        was captured, stored on the section and rendered into the page; only the \
+                        declaration was absent, which is the one shape every other instrument reads \
+                        as working: the field is in the post, on the page, and editable in the \
+                        console form. `sh-field-attr="FIELD:ATTRIBUTE"` is where the second one \
+                        goes.""")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH503: and the destination is addressed as an attribute, which is the mechanism")
+    void anAttributeFieldIsDeclaredOnTheElementThatDrawsIt() {
+        String html = shPageRenderService.render(siteName, VOCABULARY_URL, ShPostState.DRAFT).html();
+
+        assertThat(attributeAddressedFields(html))
+                .as("""
+                        addressed in the form that says which attribute holds the value, because \
+                        that is what the bridge reads it out of and writes it back into. The \
+                        alternative SH503 rejected was wrapping the anchor so the text and the href \
+                        each own an element: a link is one thing to a curator, and splitting it into \
+                        two boxes to satisfy the markup is the tail wagging the dog.""")
+                .contains("ctaHref", "features.0.icon", "logos.0.href");
+        assertThat(html)
+                .as("the pair keeps the attribute name, and the renderer copies it verbatim — it "
+                        + "has never parsed a prop and this does not make it start")
+                .contains("data-shio-prop-attr=\"ctaHref:href\"");
+    }
 
     @Test
     @DisplayName("SH475: every collection row field is addressed by an indexed path, and the page carries it")
@@ -402,15 +498,17 @@ class ShConvertedLayoutRenderTest {
 
         List<String> missing = new ArrayList<>();
         List<String> checked = new ArrayList<>();
+        Set<String> asAttribute = attributeDeclaredFields();
         for (ShSectionType type : VOCABULARY) {
             for (ShSectionField field : fieldsOf(type)) {
                 int dot = field.path().indexOf('.');
-                if (dot < 0 || !field.isRenderableAsText()
-                        || ROW_FIELDS_DRAWN_AS_ATTRIBUTES.contains(field.path())) {
+                String prop = dot < 0 ? field.path() : addressOf(field.path());
+                // SH503 — a row field the template draws into an attribute is declared there
+                // instead, and asked of the template rather than of a list of names this file keeps:
+                // the two entries that list held were the ones somebody had noticed.
+                if (dot < 0 || !field.isRenderableAsText() || asAttribute.contains(prop)) {
                     continue;
                 }
-                String prop = field.path().substring(0, dot) + ".0."
-                        + field.path().substring(dot + 1);
                 checked.add(type.name() + " → " + prop);
                 if (!html.contains("data-shio-prop=\"" + prop + "\"")) {
                     missing.add(type.name() + " → " + prop);
@@ -635,6 +733,67 @@ class ShConvertedLayoutRenderTest {
     }
 
     /**
+     * The address the page would carry for a declared field's path: a row's index is always 0 here,
+     * because {@link #sentinelData} composes one row per collection.
+     */
+    private static String addressOf(String path) {
+        int dot = path.indexOf('.');
+        return dot < 0 ? path : path.substring(0, dot) + ".0." + path.substring(dot + 1);
+    }
+
+    /**
+     * Every field the <b>rendered page</b> addresses, in either of SH185's two forms.
+     *
+     * <p>Parsed out of the attribute values rather than asked with {@code contains}: a pair is one
+     * of a space-separated list, and a substring check would answer yes for {@code ctaHref} on a
+     * page whose only mention of it is inside {@code ctaHrefLegacy}.</p>
+     */
+    private static Set<String> addressedFields(String html) {
+        Set<String> found = new java.util.TreeSet<>(attributeAddressedFields(html));
+        Matcher text = Pattern.compile("data-shio-prop=\"([^\"]*)\"").matcher(html);
+        while (text.find()) {
+            found.add(text.group(1));
+        }
+        return found;
+    }
+
+    /** SH503 — only the half addressed as an attribute, so the mechanism can be asserted alone. */
+    private static Set<String> attributeAddressedFields(String html) {
+        return fieldsOfPairs(Pattern.compile("data-shio-prop-attr=\"([^\"]*)\"").matcher(html));
+    }
+
+    /**
+     * SH503 — the field half of every {@code sh-field-attr} pair the <b>template</b> declares, with
+     * {@code {{@index}}} resolved to the row the fixture composes.
+     */
+    private static Set<String> attributeDeclaredFields() {
+        Set<String> resolved = new java.util.TreeSet<>();
+        for (String declared : fieldsOfPairs(attrPairsIn(pageBodyHtml()))) {
+            resolved.add(declared.replace("{{@index}}", "0"));
+        }
+        return resolved;
+    }
+
+    /** Every {@code sh-field-attr} value in a stretch of template or rendered markup. */
+    private static Matcher attrPairsIn(String markup) {
+        return Pattern.compile(ShRegionComposer.ATTR_FIELD_ATTR + "=\"([^\"]*)\"").matcher(markup);
+    }
+
+    /** The {@code FIELD} of every {@code FIELD:ATTRIBUTE} pair in every match of a group-1 pattern. */
+    private static Set<String> fieldsOfPairs(Matcher matcher) {
+        Set<String> fields = new java.util.TreeSet<>();
+        while (matcher.find()) {
+            for (String pair : matcher.group(1).trim().split("\\s+")) {
+                int colon = pair.indexOf(':');
+                if (colon > 0) {
+                    fields.add(pair.substring(0, colon));
+                }
+            }
+        }
+        return fields;
+    }
+
+    /**
      * Every {@code sh-field} inside an {@code {{#each}}} block that is not that block's own indexed
      * path (SH475) — a block with none at all included, which is the SH465 state.
      *
@@ -657,6 +816,16 @@ class ShConvertedLayoutRenderTest {
                 found++;
                 if (!indexed.matcher(field.group(1)).matches()) {
                     wrong.add(collection + ": " + field.group(1));
+                }
+            }
+            // SH503 — and the fields the row draws into its attributes, which are addressed by the
+            // same path and can be misrouted in the same way. Asked here rather than in a test of
+            // its own: the question is the block's, and a second place to ask it is a second place
+            // for the next collection to be forgotten.
+            for (String attrField : fieldsOfPairs(attrPairsIn(block.group(2)))) {
+                found++;
+                if (!indexed.matcher(attrField).matches()) {
+                    wrong.add(collection + ": " + attrField);
                 }
             }
             if (found == 0) {

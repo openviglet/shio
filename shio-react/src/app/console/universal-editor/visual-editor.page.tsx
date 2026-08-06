@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { ROUTES } from "@/app/routes.const"
@@ -247,6 +248,26 @@ export default function VisualEditorPage() {
   // label for it) — the caller falls back to the name the bridge sent.
   const labelFor = (prop?: string | null) => (prop ? fieldLabels[prop] ?? "" : "")
 
+  /**
+   * SH503 — an edit to a field the page draws into an attribute.
+   *
+   * Two things happen, and the second is the one that is easy to leave out: the change joins the
+   * pending set exactly as an inline edit does — same key, same patch, same Save — and it is posted
+   * back into the frame so the page shows the new destination. Without that second half a curator
+   * repoints a button, sees the old link, and has no way to tell whether anything happened (P7).
+   */
+  const editAttrField = (
+    field: { prop: string; label: string }, value: string,
+  ) => {
+    const postId = selected?.postId
+    if (!postId) return
+    const change: ContentChange = {
+      postId, prop: field.prop, type: "attr", value, label: field.label,
+    }
+    setChanges((prev) => new Map(prev).set(`${postId}:${field.prop}`, change))
+    postToIframe("sh:field-set", { postId, prop: field.prop, value })
+  }
+
   const persist = async (publish: boolean) => {
     // SH335 — no token check. Saving is a console write on the curator's own session now; the
     // token that used to gate this authorized nothing the cookie did not already.
@@ -404,7 +425,23 @@ export default function VisualEditorPage() {
                     <div className="text-xs font-medium text-muted-foreground">
                       {labelFor(f.prop) || f.label || f.prop}
                     </div>
-                    <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
+                    {f.type === "attr" ? (
+                      <Input
+                        // SH503 — the one field kind that has to be edited here. A text field is
+                        // typed into on the page; a value drawn into an attribute has no text node
+                        // to carry a caret, which is why a link's destination was readable in this
+                        // panel and editable nowhere in the editor.
+                        //
+                        // Uncontrolled, keyed by prop: `selected` is a snapshot the bridge sent, and
+                        // re-rendering the panel from it would put the curator's cursor back to the
+                        // start of the box on every keystroke.
+                        defaultValue={f.value}
+                        className="mt-1 h-8 text-sm"
+                        onChange={(event) => editAttrField(f, event.target.value)}
+                      />
+                    ) : (
+                      <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
+                    )}
                   </div>
                 ))}
               </div>

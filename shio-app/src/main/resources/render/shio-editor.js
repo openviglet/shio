@@ -21,6 +21,7 @@
  *
  * console → page
  *   sh:mode-change       { mode: "edit"|"preview" } toggle affordances on and off
+ *   sh:field-set         { postId, prop, value }    write an attribute field the panel edited
  *
  * ── Origins ─────────────────────────────────────────────────────────────────────────────
  *
@@ -46,6 +47,16 @@
   }
 
   var FIELD = "[data-shio-prop]";
+  /**
+   * SH503 — the fields an element draws into its own attributes, `FIELD:ATTRIBUTE` per pair.
+   *
+   * `data-shio-prop` says what the element's *content* is, so one element declared one field and a
+   * link is two of them: `<a data-shio-prop="ctaLabel" href="…">` let a curator rename the button
+   * and not repoint it. The renderer copies the pairs verbatim — it has never parsed a prop — so
+   * splitting them is this side's job, which is the right side for it: reading the value means
+   * reading the attribute off the element anyway.
+   */
+  var ATTR_FIELD = "[data-shio-prop-attr]";
   var editing = false;
 
   function send(type, data) {
@@ -74,13 +85,39 @@
     return prop;
   }
 
+  /**
+   * The `FIELD:ATTRIBUTE` pairs an element declares (SH503), split — `[]` when it declares none.
+   *
+   * A pair missing its colon names no attribute, so there is nothing to read and nothing to write.
+   * Skipped rather than guessed: defaulting it to `href` would edit an attribute the template never
+   * declared, and a link is only the commonest case of this, not the rule.
+   */
+  function attrPairsOf(el) {
+    var raw = el.getAttribute("data-shio-prop-attr");
+    if (!raw) return [];
+    var pairs = [];
+    raw.split(/\s+/).forEach(function (pair) {
+      var cut = pair.indexOf(":");
+      if (cut > 0 && cut < pair.length - 1) {
+        pairs.push({ prop: pair.slice(0, cut), attr: pair.slice(cut + 1) });
+      }
+    });
+    return pairs;
+  }
+
   function describe(el) {
     var prop = el.getAttribute("data-shio-prop");
+    var pairs = attrPairsOf(el);
+    // An element may declare only attribute fields — a feature row's `icon` lives in a `data-`
+    // attribute and the row has no text of its own — and it is still selectable: the panel is the
+    // edit surface for those, so a selection that named nothing would leave them unreachable.
+    var type = prop || !pairs.length ? "text" : "attr";
+    if (!prop && pairs.length) prop = pairs[0].prop;
     return {
       postId: ownerOf(el),
       model: el.getAttribute("data-shio-region") || "",
       label: labelOf(prop),
-      type: "text",
+      type: type,
       prop: prop,
       // SH303 — the post-type travels with the selection so the console can resolve every
       // field's declared label in one fetch. It is the page's own type, from <body>, and since
@@ -100,17 +137,55 @@
   function fieldsOf(postId) {
     if (!postId) return [];
     var out = [];
-    document.querySelectorAll(FIELD).forEach(function (el) {
+    document.querySelectorAll(FIELD + "," + ATTR_FIELD).forEach(function (el) {
       if (ownerOf(el) !== postId) return;
       var prop = el.getAttribute("data-shio-prop");
-      out.push({ prop: prop, type: "text", label: labelOf(prop), value: el.innerHTML });
+      if (prop) {
+        out.push({ prop: prop, type: "text", label: labelOf(prop), value: el.innerHTML });
+      }
+      // SH503 — and the fields this element draws into its attributes, in declaration order. The
+      // attribute name travels with the field because the panel is the only place one of these can
+      // be edited, and what comes back is `sh:field-set` naming the prop rather than the element.
+      attrPairsOf(el).forEach(function (pair) {
+        out.push({
+          prop: pair.prop,
+          type: "attr",
+          attr: pair.attr,
+          label: labelOf(pair.prop),
+          value: el.getAttribute(pair.attr) || ""
+        });
+      });
     });
     return out;
+  }
+
+  /**
+   * SH503 — the console writing back a field it edited in the properties panel.
+   *
+   * A text field is edited in place and reports itself. An attribute field has no content to type
+   * into, so the panel is its edit surface — and without this the page would keep showing the old
+   * destination until a refresh, which is a curator saving a change and watching nothing happen.
+   *
+   * Addressed by post and prop, never by a selector: the console has no selector for the element,
+   * and the same field may be drawn on more than one of them.
+   */
+  function setField(data) {
+    if (!data || !data.postId || !data.prop) return;
+    var value = data.value == null ? "" : String(data.value);
+    document.querySelectorAll(ATTR_FIELD).forEach(function (el) {
+      if (ownerOf(el) !== data.postId) return;
+      attrPairsOf(el).forEach(function (pair) {
+        if (pair.prop === data.prop) el.setAttribute(pair.attr, value);
+      });
+    });
   }
 
   function onFieldInput(event) {
     var el = event.currentTarget;
     var postId = ownerOf(el);
+    // An attribute-only element has no `data-shio-prop` and cannot be typed into; a stray input
+    // event on one would report a change to a field that is not the one it names.
+    if (!el.getAttribute("data-shio-prop")) return;
     // A field whose owner cannot be resolved is left visible and read-only rather than
     // silently swallowing edits — the template is missing an `sh-post`, and reporting that
     // is more useful than a save that goes nowhere.
@@ -134,11 +209,13 @@
   function setMode(mode) {
     editing = mode === "edit";
     document.documentElement.setAttribute("data-shio-editing", editing ? "true" : "false");
-    document.querySelectorAll(FIELD).forEach(function (el) {
+    document.querySelectorAll(FIELD + "," + ATTR_FIELD).forEach(function (el) {
       var owned = !!ownerOf(el);
       // Only an owned field becomes editable. An unowned one still gets the outline, so the
-      // author can see that the annotation is there and incomplete.
-      el.contentEditable = editing && owned ? "true" : "false";
+      // author can see that the annotation is there and incomplete. And only a *text* field: an
+      // attribute field's value is in the markup, so there is nothing to type into (SH503).
+      var text = !!el.getAttribute("data-shio-prop");
+      el.contentEditable = editing && owned && text ? "true" : "false";
       el.setAttribute("data-shio-editable", owned ? "true" : "false");
     });
   }
@@ -191,7 +268,7 @@
   }
 
   function attach() {
-    document.querySelectorAll(FIELD).forEach(function (el) {
+    document.querySelectorAll(FIELD + "," + ATTR_FIELD).forEach(function (el) {
       el.addEventListener("input", onFieldInput);
       el.addEventListener("click", onFieldClick);
     });
@@ -213,7 +290,13 @@
     style.textContent =
       '[data-shio-editing="true"] [data-shio-prop]{outline:1px dashed #ea580c;outline-offset:2px;cursor:text}' +
       '[data-shio-editing="true"] [data-shio-prop]:hover{outline-style:solid;background:rgba(234,88,12,.06)}' +
-      '[data-shio-editing="true"] [data-shio-prop][data-shio-editable="false"]{outline-color:#9ca3af;cursor:not-allowed}';
+      '[data-shio-editing="true"] [data-shio-prop][data-shio-editable="false"]{outline-color:#9ca3af;cursor:not-allowed}' +
+      // SH503 — an element that declares only attribute fields is outlined too, and with a
+      // pointer rather than a caret: it is selectable and it is not typed into.
+      '[data-shio-editing="true"] [data-shio-prop-attr]:not([data-shio-prop])' +
+      '{outline:1px dashed #ea580c;outline-offset:2px;cursor:pointer}' +
+      '[data-shio-editing="true"] [data-shio-prop-attr]:not([data-shio-prop]):hover' +
+      '{outline-style:solid;background:rgba(234,88,12,.06)}';
     document.head.appendChild(style);
   }
 
@@ -223,6 +306,9 @@
     if (!msg || typeof msg.type !== "string") return;
     if (msg.type === "sh:mode-change") {
       setMode(msg.data && msg.data.mode);
+    }
+    if (msg.type === "sh:field-set") {
+      setField(msg.data);
     }
   });
 

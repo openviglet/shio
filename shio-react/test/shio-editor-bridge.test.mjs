@@ -155,6 +155,21 @@ const BODY_ATTRS = 'data-shio-post="page-1" data-shio-post-type="Page"';
  */
 const UNSTAMPED_PAGE = `<p data-shio-prop="ORPHAN">No owner declared</p>`;
 
+/**
+ * SH503 — a section whose fields are not all content.
+ *
+ * The call to action is the case the task was named for: `data-shio-prop` says what an element's
+ * *content* is, so one element declared one field, and a link is two — its text and its target. The
+ * feature row is the other shape, and the reason the mechanism is not "links": `icon` is a `data-`
+ * attribute the theme's CSS reads, on an element with no text of its own.
+ */
+const ATTR_PAGE = `
+  <section data-shio-post="section-1">
+    <a data-shio-prop="ctaLabel" data-shio-prop-attr="ctaHref:href" href="/signup">Start</a>
+    <li data-shio-prop-attr="features.0.icon:data-shio-icon" data-shio-icon="bolt"></li>
+  </section>
+`;
+
 test("it announces itself to the origin it was told, and never to \"*\"", async () => {
   const { posted } = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });
 
@@ -259,6 +274,71 @@ test("an edit to an owned field carries the post, the prop and the value", async
     value: "Edited",
     label: "TITLE",
   }]);
+});
+
+test("SH503: a field drawn into an attribute comes back with the attribute it lives in", async () => {
+  const { window, document, posted } = await pageWithBridge(ATTR_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  document.querySelector('[data-shio-prop="ctaLabel"]')
+    .dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+
+  const [selected] = messagesOfType(posted, "sh:element-selected");
+  assert.deepEqual(selected.fields, [
+    { prop: "ctaLabel", type: "text", label: "ctaLabel", value: "Start" },
+    { prop: "ctaHref", type: "attr", attr: "href", label: "ctaHref", value: "/signup" },
+    { prop: "features.0.icon", type: "attr", attr: "data-shio-icon", label: "features.0.icon",
+      value: "bolt" },
+  ], "the destination was captured, stored and rendered into the href and declared by nothing, so "
+    + "the panel had nine of the section's ten fields and not the one that repoints the button");
+});
+
+test("SH503: an attribute field is outlined and selectable, and never contenteditable", async () => {
+  const { window, document, posted } = await pageWithBridge(ATTR_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  const row = document.querySelector("[data-shio-prop-attr]:not([data-shio-prop])");
+  assert.equal(row.getAttribute("data-shio-editable"), "true");
+  assert.equal(row.contentEditable, "false",
+    "there is nothing to type into: the value is in the markup, not in a text node");
+
+  row.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+  const [selected] = messagesOfType(posted, "sh:element-selected");
+  assert.equal(selected.prop, "features.0.icon",
+    "an element declaring only attribute fields still names one when selected, or the panel that "
+    + "is its only edit surface can never be opened on it");
+  assert.equal(selected.type, "attr");
+});
+
+test("SH503: the console writes an attribute field back into the page", async () => {
+  const { window, document } = await pageWithBridge(ATTR_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  sendFromParent(window, {
+    type: "sh:field-set",
+    data: { postId: "section-1", prop: "ctaHref", value: "/pricing" },
+  });
+
+  assert.equal(document.querySelector('[data-shio-prop="ctaLabel"]').getAttribute("href"),
+    "/pricing",
+    "the panel is the edit surface for a field with no content, and without this the page keeps "
+    + "showing the old destination until a refresh — a curator changing something and watching "
+    + "nothing happen");
+});
+
+test("SH503: a write from another origin, or to another post, changes nothing", async () => {
+  const { window, document } = await pageWithBridge(ATTR_PAGE, { bodyAttrs: BODY_ATTRS });
+  const cta = document.querySelector('[data-shio-prop="ctaLabel"]');
+
+  sendFromParent(window, {
+    type: "sh:field-set",
+    data: { postId: "section-1", prop: "ctaHref", value: "https://attacker.example" },
+  }, "https://attacker.example");
+  assert.equal(cta.getAttribute("href"), "/signup", "the origin check guards this listener too");
+
+  sendFromParent(window, {
+    type: "sh:field-set",
+    data: { postId: "page-1", prop: "ctaHref", value: "/wrong" },
+  });
+  assert.equal(cta.getAttribute("href"), "/signup",
+    "and a field is addressed by post and prop, so the page's own post cannot write a section's");
 });
 
 test("a message from another origin cannot change the mode", async () => {

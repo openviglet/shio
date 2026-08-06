@@ -113,6 +113,55 @@ class ShEditorBridgeTest {
     }
 
     @Test
+    @DisplayName("SH503: one element may declare a second field, and the attribute it is drawn into")
+    void anElementCanDeclareAFieldItDrawsIntoAnAttribute() {
+        String html = composer.compose(
+                "<body><a sh-field=\"ctaLabel\" sh-field-attr=\"ctaHref:href\" href=\"/signup\">"
+                        + "Start</a></body>",
+                Map.of(), "page-1", "Page");
+
+        assertThat(html)
+                .as("""
+                        sh-field declares what the element's CONTENT is, so one element declared \
+                        one field — and a link is two, its text and its target. The destination was \
+                        captured, stored and rendered into the href with no declaration, so a \
+                        curator could rename the button and not repoint it.""")
+                .contains("data-shio-prop=\"ctaLabel\"")
+                .contains("data-shio-prop-attr=\"ctaHref:href\"")
+                .contains("sh-field-attr=\"ctaHref:href\"");
+    }
+
+    @Test
+    @DisplayName("SH503: the pairs are copied verbatim — the renderer still parses no prop")
+    void attributeFieldPairsAreNotParsed() {
+        String html = composer.compose(
+                "<body><li sh-field-attr=\"features.0.icon:data-shio-icon rows.0.href:href\" "
+                        + "data-shio-icon=\"bolt\"></li></body>",
+                Map.of(), "page-1", "Page");
+
+        assertThat(html)
+                .as("""
+                        an indexed path (SH475) and a list of more than one pair both pass through \
+                        untouched: what splits them is the browser bridge, which is the side that \
+                        has to read the value off the element anyway.""")
+                .contains("data-shio-prop-attr=\"features.0.icon:data-shio-icon rows.0.href:href\"");
+        assertThat(html)
+                .as("and an element may declare only attribute fields — a row's icon is a data- "
+                        + "attribute the theme reads and has no text node at all")
+                .doesNotContain("data-shio-prop=");
+    }
+
+    @Test
+    @DisplayName("SH503: an empty sh-field-attr is ignored, like an empty sh-field")
+    void anEmptyAttributeFieldDeclarationIsSkipped() {
+        String html = composer.compose(
+                "<body><a sh-field-attr=\"  \" href=\"/x\">Start</a></body>", Map.of(), "page-1",
+                "Page");
+
+        assertThat(html).doesNotContain("data-shio-prop-attr");
+    }
+
+    @Test
     @DisplayName("a page rendered without an id is not annotated — no owner is invented")
     void noPageIdMeansNoOwner() {
         assertThat(composer.compose("<body><h1 sh-field=\"TITLE\">Hi</h1></body>", Map.of()))

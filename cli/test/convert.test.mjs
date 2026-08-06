@@ -503,6 +503,17 @@ test("SH449: an accepted page composes sections and carries no verbatim copy of 
         + "the model gains and this template never draws fails there by name",
     );
   }
+  // SH503 — `sh-field` declares what an element's *content* is, so one element declared one field,
+  // and a link is two: its text and its target. The destination was captured, stored on the section
+  // and rendered into the href with no declaration at all, so a curator could rename the button and
+  // not repoint it. Which fields still lack one is counted where the renderer is, for the same
+  // reason the collections are.
+  assert.match(
+    layout.data.HTML,
+    /sh-field="ctaLabel" sh-field-attr="ctaHref:href"/,
+    "SH503: the call to action declares both of its fields - the label it draws as text and the "
+      + "destination it draws into the href",
+  );
 });
 
 test("SH417: no --site is refused before anything is read", async () => {

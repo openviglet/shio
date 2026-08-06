@@ -88,7 +88,13 @@ renderer over one body of content at a second address. See the section on it bel
   `<body>` so the common case needs no `sh-post`. **Ownership is the template's job and the
   engine never infers it** — a region renders against the *page's* model, so `{{TEXT}}` inside
   it is the page's while inside a `{{#query}}` block `{{title}}` is the listed post's, and the
-  rendered HTML records neither. Resolution is nearest-ancestor. Both attribute forms survive:
+  rendered HTML records neither. Resolution is nearest-ancestor. **`sh-field` declares the
+  element's *content*, so one element declared one field — and a link is two (SH503)**:
+  `sh-field-attr="FIELD:ATTRIBUTE"` → `data-shio-prop-attr` adds the ones an element draws into its
+  own attributes, space-separated for more than one pair, copied verbatim like a prop and split by
+  the bridge. Without it `ctaHref` was captured, stored and rendered into the `href` with no
+  declaration, so a curator could rename a button and not repoint it; an `attr` field is edited in
+  the properties panel and written back with `sh:field-set`. Both attribute forms survive:
   `sh-*` is a contract the content declares (SH192 lints it, SH193 will graph it), `data-*` is
   what the browser consumes. **Neither side of the bridge uses `"*"`, and since SH304 that is a test
   rather than a sentence** (`ShEditorBridgeTest`, over this script and the console's page) — it was

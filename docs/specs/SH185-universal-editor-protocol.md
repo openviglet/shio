@@ -35,6 +35,7 @@ reads.
 | `sh-post="<id>"` | `data-shio-post` | fields below here belong to that post |
 | `sh-field="NAME"` | `data-shio-prop` | this element renders that field |
 | `sh-field="COLL.N.LEAF"` | `data-shio-prop` | this element renders the `LEAF` of row `N` of the collection field `COLL` (SH475) |
+| `sh-field-attr="FIELD:ATTRIBUTE"` | `data-shio-prop-attr` | this element renders `FIELD` into its own `ATTRIBUTE`; space-separated for more than one pair (SH503) |
 | — | `data-shio-post-type` | on `<body>`: the page's post-type, so the editor can fetch a field schema without a second resolve |
 
 ### A row of a nested collection is a path, because it is not a post (SH475)
@@ -55,6 +56,40 @@ addresses a value, not a list. Those stay with the console's form.
 
 `sh-region` is not new. It is in `openviglet/bootstrap-site`, an export last touched in
 **2018**, and SH183 keeps it through the render for exactly this reason.
+
+### One element may declare more than one field, because a link is two (SH503)
+
+`sh-field` says what an element's **content** is, so one element declares one field — and a link is
+two of them, its text and its target:
+
+```hbs
+<a sh-field="ctaLabel" sh-field-attr="ctaHref:href" href="{{ctaHref}}">{{ctaLabel}}</a>
+```
+
+Without the second declaration `ctaHref` was captured, stored on the section and rendered into the
+page, and **only the declaration was absent** — so a curator could rename the button and not repoint
+it, while every other instrument said the field was fine. `image` never had the problem because its
+element is the `<img>` and the field it declares *is* the attribute (`sh-field="image"` on `src`), so
+the one-to-one holds there by accident rather than by design.
+
+The rejected alternative was **wrapping** the anchor so the text and the href each own an element. A
+link is one thing to a curator, and splitting it into two boxes to satisfy the markup is the tail
+wagging the dog — and it would put the protocol's limit into every template that has a link in it.
+
+Three things follow from the shape:
+
+- **The renderer still parses nothing.** The pairs are copied verbatim, exactly as a prop is; the
+  browser bridge splits them, which is the side that has to read the value off the element anyway.
+- **The field half takes any address `sh-field` takes**, the SH475 indexed path included — a feature
+  row's `icon` is `features.N.icon:data-shio-icon`, on an element with no text node at all.
+- **An `attr` field is edited in the properties panel, never in place**, and the console posts
+  `sh:field-set` back so the page shows the new value rather than the old one until a refresh.
+
+What deliberately does **not** get a declaration is a field drawn into an attribute from a *closed
+set of choices* — `align`, `variant`, `columns`. The bridge's edit surface is a text box, and one in
+which three strings work and the rest silently do nothing is worse than sending the curator to the
+console form. `ShConvertedLayoutRenderTest` states that as the widget predicate rather than a list of
+names, so it cannot rot into a suppression.
 
 ### Ownership is nearest-ancestor, and the page is the default
 
@@ -117,9 +152,9 @@ type SelectedElement = {
   postId: string | null      // null when the template forgot sh-post
   model: string              // the region name, when the field is inside one
   label: string
-  type: string               // "text"
+  type: string               // "text", or "attr" for a field drawn into an attribute (SH503)
   prop: string | null
-  fields?: Array<{ prop: string; type: string; label: string; value: string }>
+  fields?: Array<{ prop: string; type: string; label: string; value: string; attr?: string }>
 }
 
 type ContentChange = { postId: string; prop: string; type: string; value: string; label: string }
@@ -133,6 +168,7 @@ clicked, so the properties panel can show the whole set without a round trip.
 | Type | `data` | When |
 |---|---|---|
 | `sh:mode-change` | `{ mode: "edit" \| "preview" }` | the curator toggles the switch |
+| `sh:field-set` | `{ postId, prop, value }` | the panel edited an `attr` field, so the page can show it (SH503) |
 
 Preview mode restores the page exactly: the affordances are scoped under a
 `data-shio-editing` flag on `<html>`, because a curator switching to preview is asking to see
@@ -204,6 +240,7 @@ functional test can see.
 | `data-shio-post` | `<body>`, or any element | `ShRegionComposer` | fields below here belong to this post; `<body>` carries the page's own |
 | `data-shio-post-type` | `<body>` | `ShRegionComposer` | the page's post-type name; the bridge sends it with each selection so the console can label fields from the model (SH303) |
 | `data-shio-prop` | any element | `ShRegionComposer` | this element renders that field of the nearest `data-shio-post` |
+| `data-shio-prop-attr` | any element | `ShRegionComposer` | `FIELD:ATTRIBUTE` pairs, space-separated: fields this element renders into its **own attributes** rather than as content, so a link's destination can be edited and not only its text (SH503). Copied verbatim — the renderer parses a pair no more than it parses a prop |
 | `data-shio-preview` | the banner element | `ShPreviewBanner` | this node is Shio's own preview banner and not the page |
 | `data-shio-editor-origin` | the injected `<script>` | `ShEditorBridge` | the console origin the bridge may talk to (never `"*"`) |
 | `data-shio-preview-paths` | the injected `<script>` | `ShEditorBridge` | this site's own URLs, newline-separated, so a click on a **JS-built** link can be sent into the preview's address space while `/file_source/…` is left alone (SH336). Absent above `ShPreviewLinks.BRIDGE_URL_CAP`, which disables interception rather than shipping an index the page should not carry |
@@ -253,8 +290,10 @@ which is the external counterpart of the `data-shio-editor-origin` the server in
 - **Rich text is `innerHTML` of a `contenteditable`.** Adequate for a heading or a paragraph
   and not a rich-text editor; a field whose widget is `HTML Editor` deserves better, and that
   is a separate task.
-- **Only `text` is a field type.** `SelectedElement.type` exists so images, links and
-  references can join later without a protocol change.
+- **`text` and `attr` are the field types.** SH503 added the second, which is what
+  `SelectedElement.type` existed for; images and references can still join without a protocol
+  change. What an `attr` field gets is a text box in the properties panel, so a value from a closed
+  set of choices stays the console form's job.
 - **An external front end has to emit the annotations itself.** Nothing generates them for a
   Next.js project yet; `@viglet/shio-react-sdk` is where that would go, and it is the reason
   the annotations are specified here rather than described as "what the renderer happens to

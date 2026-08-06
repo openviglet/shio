@@ -454,9 +454,25 @@ it. Four decisions worth keeping:
   vocabulary, one level down: every nested field of every declared type must appear as
   `data-shio-prop="<collection>.0.<leaf>"` on the rendered page, and every `sh-field` inside an
   `{{#each}}` block must be that block's own indexed path — asked of the blocks rather than of the
-  four names, so the next collection inherits the rule. Two exemptions, both declared:
-  `features.icon` and `logos.href` are drawn into **attributes**, which is the line the scalar union
-  already draws between `ctaLabel` and `ctaHref`.
+  four names, so the next collection inherits the rule.
+- **One element declares one field, and a link is two (SH503).** `sh-field` says what an element's
+  *content* is, so `<a sh-field="ctaLabel" href="{{ctaHref}}">` annotated the label and left the
+  destination with nowhere to go: `ctaHref` was captured, stored on the section and rendered into the
+  page with **no declaration**, and a curator could rename the button and not repoint it.
+  `sh-field-attr="FIELD:ATTRIBUTE"` is the second declaration — the CTA's `href`, a logo row's
+  `href`, and a feature row's `icon`, which is a `data-` attribute with no text node at all. The
+  rejected alternative was wrapping the anchor so text and href each own an element; a link is one
+  thing to a curator. `image` never had the problem only because its element *is* the `<img>`.
+- **The instrument, and why its exemption is a predicate (SH503).** SH465 counted what the page
+  **draws** and SH475 what it **addresses**, and `ctaHref` fell between them — drawn into an `href`,
+  so its sentinel was on the page, and skipped by SH475's loop, which only looks at dotted paths. The
+  count that mattered had never been taken: **9 of the vocabulary's 10 filled fields**. It is taken
+  now, over scalars and rows together, and what it exempts is asked of the *declaration*: a
+  `Relator` is the list rather than a value, a `Combo Box` (`align`, `variant`, `columns`) is a
+  closed set of choices while the bridge's edit surface is a text box — and everything else must be
+  addressable in one of the two forms. That replaces a hand-kept
+  `Set.of("features.icon", "logos.href")`, which named the two fields somebody had noticed and could
+  not name the scalar nobody had (SH142).
 - **`{{{content}}}`, not one `Region` per block.** SH191's sidecar shape needs each block's own
   bytes and this pipeline cannot produce them: `buildTree` records no source offsets, so the only
   route back to markup is re-serializing a tree built from `stripNonMarkup`'s output, which has

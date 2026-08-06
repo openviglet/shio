@@ -59,5 +59,14 @@ export type SelectedElement = {
   prop: string | null
   /** SH303 — the page's post-type, so the labels can be looked up in one fetch. */
   postType?: string | null
-  fields?: Array<{ prop: string; type: string; label: string; value: string }>
+  /**
+   * Every editable field of the same post, so the panel needs no round trip.
+   *
+   * `type` is `"text"` for a field the page draws as content and `"attr"` for one it draws into an
+   * attribute (SH503) — a link's destination, a row's icon. An `attr` field carries the attribute it
+   * lives in, and is the one kind that *has* to be edited here: there is no inline affordance for a
+   * value that is not in a text node, which is why `ctaHref` was captured, stored and rendered while
+   * a curator could only rename the button.
+   */
+  fields?: Array<{ prop: string; type: string; label: string; value: string; attr?: string }>
 }
