@@ -84,6 +84,8 @@
 - 📋 **SH472** (deps: SH468 ✅) **The separator lands between every text node, so a two-letter mark becomes two letters** — SH468 removed the fused word and inserts at every node boundary, including sibling runs inside one inline element, so DuDumont DEP became D u Dumont DEP. → §XVII.48
 - 📋 **SH473** (deps: SH469 ✅) **The scripts flag reports the site's own bundle and still does not fetch it** — script is absent from the asset kinds, so a capture with --scripts leaves no .js in the tree and the replica serves one inline script and no src. → §XVII.49
 - 📋 **SH474** (deps: SH470 ✅) **Every uploaded asset stores four fields the File type does not declare** — SHA256 and SIZE come from SH429's uploader and WIDTH/HEIGHT from SH471, while File declares only FILE, so a clean replica reports 66 unknown-field errors. → §XVII.50
+- 📋 **SH475** (deps: SH465 ✅) **A collection row renders and carries no annotation, so its fields cannot be edited** — SH465 emits data-shio-row and no sh-post or sh-field on the item, so a curator can edit a grid's heading and neither of its cards. → §XVII.51
+- 📋 **SH476** (deps: SH379 ✅) **Text extracted into a field keeps its HTML entities, so the render escapes them twice** — The capture stores &amp; as five characters and the renderer escapes the ampersand again, so a reader sees the entity and the editor field holds it too. → §XVII.52
 
 ## Block F — Market positioning
 

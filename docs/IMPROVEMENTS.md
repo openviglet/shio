@@ -1571,3 +1571,56 @@ one was wrong, so the quieter and correct one was unreadable until the first was
 `verify` was red both times, and only the second red is worth acting on — which is why a
 gate's *first* run after a fix is worth reading in full rather than diffing against the
 count.
+
+### XVII.51 Drawn, and still not authorable (SH475)
+
+SH465 made the collection draw and stopped short of making it editable. The rows are
+there — `<li class="shio-feature" data-shio-row="features">` with the title and body of
+both cards — and the row carries **no `sh-field`, no `data-shio-prop` and no
+`sh-post`**. The editable count on the page is unchanged at five: the grid's own
+`heading`, and nothing inside it.
+
+So a curator can edit the heading above two cards and neither card. That is the shape
+SH464 was filed to end, one level down: rendered and not authorable, on the half of the
+vocabulary that holds the actual content. Four of seven section types are
+collection-shaped, so it is most of what a section-based replica says.
+
+SH465's own rationale names the missing piece — "with `sh-post` on the row so the editor
+can address it" — so this is the half that did not land rather than a decision.
+`data-shio-row="features"` is already emitted, which means the template knows it is in a
+row and only the annotation is absent.
+
+The protocol says what the row needs. A collection item is a post, so `sh-post="{{id}}"`
+addresses it and `sh-field` on each of its fields names them, exactly as the section
+itself already does — SH185's resolution is nearest-ancestor, so a row inside an
+annotated section resolves correctly once it declares its own post. The check is the
+same one SH465 shipped: count the annotated fields against what the type declares, and
+count *inside* a collection too.
+
+### XVII.52 An entity escaped twice is content nobody can repair (SH476)
+
+The source writes `rerank &amp; media models`, which a reader sees as `rerank & media
+models`. The authorable replica writes `rerank &amp;amp; media models`, which a reader
+sees as `rerank &amp; media models`. The entity is escaped twice.
+
+Extraction keeps `&amp;` as five literal characters instead of decoding it to `&`, and
+the renderer then escapes the `&` it finds — correctly, since it is emitting text into
+HTML. Neither step is wrong on its own; the missing one is the decode at the boundary
+where markup becomes content.
+
+It reaches everything a source spells with an entity: `&`, `&nbsp;`, `&mdash;`,
+`&quot;`, `&lt;`, and the numeric forms. A page that uses them heavily accumulates the
+corruption in every field, and each re-capture escapes what the last one stored — so it
+compounds rather than staying at one layer.
+
+**Fidelity mode is unaffected**, which is why this survived: verbatim markup keeps `&amp;` and renders
+it exactly once. Only the authorable path extracts text into a field, so only the mode nobody had
+finished testing carries it.
+
+The curator is the one who sees it, and cannot fix it in place — the editor field holds
+`&amp;` too, so typing the correction stores `&` and the next capture overwrites it.
+That makes it worse than a display bug: it is content a human cannot repair through the
+surface built for repairing content.
+
+Decode entities when text leaves the markup, and assert a round trip on a source that
+uses one.
