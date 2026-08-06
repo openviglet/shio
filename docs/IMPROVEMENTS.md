@@ -1918,24 +1918,6 @@ the site is discovered by.
 The test is one an agent can run: fetch the site, answer "what can this do and what
 would the first call be", and pay for one page rather than for a bundle.
 
-### XIX.9 Publishing it (SH538)
-
-Turing's site is deployed by a GitHub Pages workflow that assembles a `_site` tree from
-several builds - the marketing site at the root, the Storybook under `/react-sdk/`, the
-marketplace under `/marketplace/`. Shio needs the same job and has the same shape to
-assemble: the site at the root, and the room to mount the React SDK's component docs and
-the example sites beside it later.
-
-The workflow builds the workspace with the pinned pnpm and Node the other workflows
-already use, runs the two Vite passes and the prerender, writes the CNAME, and deploys.
-`workflow_dispatch` first, on the same reasoning the JS publish workflow uses: a deploy
-that fires on every push to a long-lived branch is one nobody can hold still while
-reviewing it.
-
-Two gates run before the upload, because a marketing site is the one artefact where a
-defect is public immediately: the typecheck has to pass, and the prerender already
-throws when the template drifts, which turns a silently untitled page into a red build.
-
 ### XIX.10 Depth pages per claim (SH539)
 
 The landing page is deliberately one screen per idea, which leaves every idea one click

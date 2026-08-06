@@ -67,10 +67,27 @@ Served from the site root, in [`public/`](public/): `robots.txt`, `sitemap.xml`,
 `llms.txt`, `favicon.svg`, `og.svg` and the `CNAME` that points the GitHub Pages
 deploy at the custom domain.
 
+## Publish
+
+[`.github/workflows/publish-github-pages.yml`](../.github/workflows/publish-github-pages.yml)
+is the whole path to [shio.viglet.org](https://shio.viglet.org/): it installs the
+workspace, runs `pnpm run build:site`, assembles `_site/` from `dist/` and pushes
+that to the `github-pages` branch of `openviglet/shio-ce`.
+
+It is **`workflow_dispatch` only**, like `publish-js-sdk.yml` — a deploy that
+fires on every push to a long-lived branch is one nobody can hold still while
+reviewing it. Run it from the Actions tab when the site is ready to go out.
+
+The build *is* the gate: `tsc -b` fails the job on a type error, and the
+prerender throws on a drifted template or on a route declared in only one of the
+two tables. `dist-ssr/` is a build input and never reaches the published tree.
+The job needs the `GH_PKG_TOKEN` secret, the same one `publish-docker.yml` uses
+for that repository.
+
 ## Backlog
 
 Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the transcript player
-(SH531), the plotted token budget (SH533), the markdown twins (SH537), the Pages
-workflow (SH538), the depth pages (SH539) and the public demo instance (SH540).
+(SH531), the plotted token budget (SH533), the markdown twins (SH537), the depth
+pages (SH539) and the public demo instance (SH540).
 The design behind each is `§XIX` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
