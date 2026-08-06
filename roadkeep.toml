@@ -77,9 +77,8 @@ ref_scheme = "outline"
 # both shipped), then
 # the capture's own honesty (SH505's overlay text becoming content and SH506's
 # script-as-block and SH517's baked canvas, all shipped), and last the two that only
-# cost time (SH513, SH514).
+# cost time (SH513, shipped, and SH514).
 priority = [
-  "SH513",
   "SH514",
   "Block R",
   "Block P",

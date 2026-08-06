@@ -15,6 +15,24 @@
  * nothing else, while the SH80 teaching body — which Shio always sends, and which names the
  * problem, the fix and the allowed values — sat unread on the error object. So the body is what
  * gets printed, and the URL moves behind `SHIO_DEBUG`: it is diagnostic detail, not the message.
+ *
+ * <h2>And a body that parses and teaches nothing is still what the server said (SH513)</h2>
+ *
+ * <p>`shio convert` on a real site died with one line — `shio: the server answered 400` — and a URL
+ * under `SHIO_DEBUG`. The endpoint had answered with Spring's default body
+ * (`{"timestamp":…,"status":400,"error":"Bad Request","path":"/api/v2/staticfile/upload"}`), which
+ * is valid JSON holding **none** of the six keys below, so it parsed into `problem`, took the
+ * `title ?? "the server answered 400"` branch, and every other line was skipped. The raw-body
+ * fallback could not reach it either — that branch fires only when the body does not parse. So the
+ * one shape this module could not print was a JSON body that is not a teaching document, which is
+ * exactly the shape a defect produces: `path` and `error` were on the wire and nobody saw them.</p>
+ *
+ * <p>Diagnosing that cost a log (a 400 is a client error and is not logged), a hand-built probe
+ * against an endpoint whose contract I guessed wrong, and finally a byte-size listing. P6 is why it
+ * is a defect rather than terseness: every 4xx in Shio carries a fix because an agent is the reader,
+ * and a teaching error the CLI discards is a teaching error nobody receives — the endpoint pays for
+ * it and the caller sees `400`. It reaches every write the CLI makes, since `convert`, `push`,
+ * `apply`, `init` and the batch surface all speak the same convention.</p>
  */
 export function formatError(err, { debug = false } = {}) {
   const status = err && typeof err === "object" ? err.status : undefined;
@@ -40,7 +58,40 @@ export function formatError(err, { debug = false } = {}) {
     lines.push(`  allowed: ${problem.allowed.join(", ")}`);
   }
   if (problem.fix) lines.push(`  fix: ${problem.fix}`);
+  // SH513 — the body parsed and taught nothing, so print what it *did* say. Without this the whole
+  // document is discarded on exactly the failures that are hardest to diagnose: a refusal outside
+  // the SH80 convention has no `title` and no `fix`, and its `error` and `path` are the only
+  // evidence there is.
+  if (!TEACHES.some((key) => carries(problem, key))) {
+    lines.push(...saidBy(problem));
+  }
   if (debug) lines.push(`  url: ${err.url}`);
   return `${lines.join("\n")}\n`;
+}
+
+/** The SH80 keys. A body holding one of them is a teaching document and prints as one. */
+const TEACHES = ["title", "detail", "at", "didYouMean", "allowed", "fix"];
+
+const carries = (problem, key) =>
+  Array.isArray(problem[key]) ? problem[key].length > 0 : Boolean(problem[key]);
+
+/**
+ * A non-teaching body, as the lines it holds (SH513).
+ *
+ * <p>Its scalar fields, in the order the server sent them, which for Spring's default is
+ * `timestamp`, `status`, `error`, `path` — and `path` is the one that names the endpoint that
+ * refused. Nested values are skipped rather than serialized: this is a last resort for a document
+ * nobody designed for a reader, and printing a stack trace or a `_embedded` tree into a terminal
+ * would bury the four lines that matter. Capped for the same reason, with the cut declared, because
+ * a silently shortened error is the shape this whole module exists to remove.</p>
+ */
+function saidBy(problem) {
+  const rows = Object.entries(problem)
+    .filter(([, value]) => value !== null && value !== "" && typeof value !== "object");
+  const shown = rows.slice(0, 8).map(([key, value]) => `  ${key}: ${value}`);
+  if (rows.length > shown.length) {
+    shown.push(`  … ${rows.length - shown.length} more field(s) in the body`);
+  }
+  return shown.length ? shown : ["  the body carried no field this could print"];
 }
 

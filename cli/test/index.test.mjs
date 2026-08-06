@@ -129,6 +129,52 @@ test("formatError falls back to the status when there is no teaching body", asyn
   assert.match(out, /the server answered 502/);
 });
 
+/**
+ * SH513 — the one body shape this module could not print, and it is the shape a defect produces.
+ *
+ * <p>`shio convert` on a real site died with one line: `shio: the server answered 400`. The endpoint
+ * had answered with Spring's default body, which is valid JSON carrying none of the six SH80 keys —
+ * so it parsed, took the `title ?? …` branch, and skipped every other line, while the raw-body
+ * fallback fires only when the body does *not* parse. `path` and `error` were on the wire and
+ * nobody saw them. Diagnosing it took a log a 400 never reaches, a probe against an endpoint whose
+ * contract I guessed wrong, and a byte-size listing.</p>
+ */
+test("SH513: a body that parses and teaches nothing still prints what the server said", async () => {
+  const { formatError } = await import("../src/format-error.mjs");
+  const err = Object.assign(new Error("boom"), {
+    status: 400,
+    url: "http://shio.test/api/v2/staticfile/upload",
+    body: JSON.stringify({
+      timestamp: "2026-08-06T12:00:00.000+00:00",
+      status: 400,
+      error: "Bad Request",
+      path: "/api/v2/staticfile/upload",
+    }),
+  });
+
+  const out = formatError(err);
+
+  assert.match(out, /path: \/api\/v2\/staticfile\/upload/,
+    "the field that names the endpoint that refused, which is the whole of the diagnosis");
+  assert.match(out, /error: Bad Request/);
+  assert.match(out, /the server answered 400/, "and the status still leads, since nothing titled it");
+});
+
+test("SH513: a teaching body is unchanged — the fallback is a fallback", async () => {
+  const { formatError } = await import("../src/format-error.mjs");
+  const out = formatError(Object.assign(new Error("boom"), {
+    status: 400,
+    url: "http://x",
+    // `status` and `path` ride along on a real SH80 problem too (it is RFC 7807-shaped), so a rule
+    // that printed the scalars unconditionally would append noise to every teaching error there is.
+    body: JSON.stringify({ title: "No site named 'Acme'", fix: "Create it.", status: 400, path: "/x" }),
+  }));
+
+  assert.match(out, /No site named 'Acme'/);
+  assert.match(out, /fix: Create it\./);
+  assert.doesNotMatch(out, /path: \/x/, "a body that taught is printed as a teaching document");
+});
+
 test("formatError leaves an ordinary error alone", async () => {
   const { formatError } = await import("../src/format-error.mjs");
   assert.equal(formatError(new Error("no content files under shio/content")),

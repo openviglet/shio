@@ -1796,31 +1796,6 @@ should not be offered for a site whose pages hold sections — `init --site` kno
 site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
 than silently useless.
 
-### XVII.66 A teaching error the caller never sees (SH513)
-
-`shio convert` on a real site died with one line: `shio: the server answered 400`, plus
-a URL under `SHIO_DEBUG`. The server's answer was a problem document with `title`,
-`detail`, `fix` and sometimes `allowed` and `example` — the CLI printed none of it.
-
-Diagnosing what should have been one read took the log (a 400 is a client error and is
-not logged), a hand-built probe against an endpoint whose contract I guessed wrong, and
-finally a byte-size listing that found the cause. Minutes, on a path the project
-designed to take seconds.
-
-P6 is the reason this is a defect rather than terseness. Every 4xx in Shio carries a fix
-because an agent is the reader, and the agent's own tool is where that fix has to
-arrive. A teaching error the CLI discards is a teaching error nobody receives — the
-endpoint pays for it and the caller sees `400`.
-
-It reaches every write the CLI makes, not this one endpoint. `convert`, `push`, `apply`,
-`init` and the batch surface all speak to the same problem-document convention, so any
-refusal any of them meets reads as a status code. This session hit it once and lost the
-time once; a user hitting it has no log to read.
-
-Print what the body says: `title`, then `detail`, then `fix`, then `allowed` when
-present — which is the shape the CLI already uses for its own refusals, so the two would
-finally look alike.
-
 ### XVII.67 The one refusal that does not teach (SH514)
 
 `POST /api/v2/staticfile/upload` refused a zero-byte file with Spring's default body:
