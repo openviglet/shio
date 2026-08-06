@@ -145,6 +145,16 @@ if "%DO_BUMP%"=="1" (
     if errorlevel 1 ( popd & echo [ERROR] root npm version patch failed. & exit /b 1 )
     popd
     call :stamp || exit /b 1
+
+    REM The bump changes what `emit` composes. `emit.mjs` writes
+    REM `rangeFor(name) ?? ^<workspace version>` for a needed package, and while
+    REM @viglet/shio-sections is unpublished rangeFor answers null - so the emitted
+    REM range IS the workspace version, which just moved. Skipping this leaves the
+    REM three blueprint packages stale and emit.test.mjs red on a drift nobody
+    REM caused by editing anything.
+    echo [INFO] Re-emitting the blueprint packages ...
+    call "%PNPM%" -C "%ROOT%\create-shio-app" run emit
+    if errorlevel 1 ( echo [ERROR] emit failed. & exit /b 1 )
 )
 
 call :read_version || exit /b 1
@@ -251,7 +261,6 @@ REM ===========================================================================
 REM  Stamp the root's version into every workspace package.
 REM  --allow-same-version is what makes it idempotent: the root is already there.
 :stamp
-call "%PNPM%" -C "%ROOT%" -r --include-workspace-root exec -- npm version %VERSION_UNUSED% --no-git-tag-version --allow-same-version >nul 2>&1
 call :read_version || exit /b 1
 call "%PNPM%" -C "%ROOT%" -r --include-workspace-root exec -- npm version %VERSION% --no-git-tag-version --allow-same-version
 if errorlevel 1 ( echo [ERROR] stamping the workspace version failed. & exit /b 1 )
@@ -271,10 +280,14 @@ REM  rather than from a list in this file - a package added tomorrow is covered,
 REM  which is how @viglet/shio-editor-cors sat outside the release for two
 REM  versions without anything saying so.
 :assert_one_version
-call "%PNPM%" -C "%ROOT%" ls -r --depth -1 --json > "%TEMP%\shio-ws-%RANDOM%.json" 2>nul
-for /f "usebackq delims=" %%f in (`dir /b /o-d "%TEMP%\shio-ws-*.json"`) do ( set "WSJSON=%TEMP%\%%f" & goto :got_ws )
-:got_ws
-node -e "const fs=require('fs');const want=require('%ROOT:\=/%/package.json').version;const off=JSON.parse(fs.readFileSync(process.argv[1],'utf8')).filter(p=>p.version!==want);if(!off.length){console.log('[INFO] all workspace packages at '+want);process.exit(0);}for(const p of off)console.error('[ERROR] '+p.name+' is at '+p.version+', not '+want);process.exit(1);" "%WSJSON%"
+set "WSJSON=%TEMP%\shio-ws-versions.json"
+call "%PNPM%" -C "%ROOT%" ls -r --depth -1 --json > "%WSJSON%" 2>nul
+REM  Not one exclamation mark in the node source below, and that is not style:
+REM  `setlocal enabledelayedexpansion` is on for the temp-.npmrc block, and it eats
+REM  `!` inside a quoted argument. `p.version!==want` reached node as `p.version`
+REM  with the rest swallowed - a SyntaxError that read like a broken assert rather
+REM  than a quoting bug. Hence `===want?false:true` and `length===0`.
+node -e "const fs=require('fs');const want=require('%ROOT:\=/%/package.json').version;const off=JSON.parse(fs.readFileSync(process.argv[1],'utf8')).filter(p=>p.version===want?false:true);if(off.length===0){console.log('[INFO] all workspace packages at '+want);process.exit(0);}for(const p of off)console.error('[ERROR] '+p.name+' is at '+p.version+', not '+want);process.exit(1);" "%WSJSON%"
 set "RC=%errorlevel%"
 del /q "%WSJSON%" 2>nul
 if not "%RC%"=="0" (

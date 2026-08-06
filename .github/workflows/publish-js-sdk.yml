@@ -136,6 +136,22 @@ jobs:
             });
           "
 
+      # ── Re-emit the carried front-end files, because the bump changes them ──
+      #
+      # `emit` composes the three blueprint packages from `create-shio-app/template/`
+      # and `shio-sections/front-end/`, and the range it writes for a *needed*
+      # package is `rangeFor(name) ?? ^<workspace version>` (emit.mjs). While
+      # `@viglet/shio-sections` is unpublished `rangeFor` answers `null`, so the
+      # fallback applies and the emitted range **is** the workspace version — which
+      # the bump just changed. Without this step the committed tree is stale the
+      # moment the release commits, and `emit.test.mjs` turns the next run of the
+      # suite red on a drift nobody introduced by editing anything.
+      #
+      # It runs after the assert so it composes from a workspace that is already on
+      # one version, and before the build so a failure here costs no publish.
+      - name: Re-emit the blueprint packages
+        run: pnpm -C create-shio-app run emit
+
       # ── What the release deliberately does NOT touch: the scaffold's ranges ──
       #
       # This step used to rewrite `create-shio-app/template/package.json` to
@@ -209,6 +225,7 @@ jobs:
           # packages here would reintroduce exactly the hand-maintained list the bump
           # step just got rid of, and leave a newly added package's bump uncommitted.
           # node_modules is gitignored, so it cannot be swept in.
-          git add ':(glob)**/package.json' package.json
+          git add ':(glob)**/package.json' package.json \
+                  shio-app/src/main/resources/blueprints
           git commit -m "chore: release JS packages v${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
           git push

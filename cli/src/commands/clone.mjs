@@ -53,6 +53,7 @@ import {
   sameOrigin,
   scanPage,
   serializeInventory,
+  settleRendered,
 } from "../clone.mjs";
 import { requireBrowser } from "../browser.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
@@ -406,6 +407,8 @@ async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup 
   const visited = [];
   const seen = new Set();
   const notes = [];
+  /** SH517 — what `--render` baked and this capture gave back, summed over the crawl. */
+  const froze = {};
   let frontier = [pathOf(origin) === "/" ? new URL("/", origin).href : origin.href];
   seen.add(frontier[0]);
   let truncated = false;
@@ -433,6 +436,12 @@ async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup 
         ctx,
       );
       visited.push({ ...fetched, depth: level, url: url.href });
+      // SH517 — accumulated as it goes, because the note below is the whole of "say what you
+      // froze": a capture that silently gave a canvas back is the same undeclared cut as a
+      // truncated crawl.
+      for (const [what, count] of Object.entries(fetched.froze ?? {})) {
+        froze[what] = (froze[what] ?? 0) + count;
+      }
       if (fetched.doc && level < depth) {
         for (const link of fetched.doc.links) {
           const resolved = resolveHref(link.href, url.href);
@@ -455,10 +464,25 @@ async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup 
         `inventory is a bounded sample and every count in it is a lower bound`,
     );
   }
+  const gave = Object.entries(froze).filter(([, count]) => count > 0);
+  if (gave.length) {
+    notes.push(
+      `--render bakes the DOM a script produced, which is right for content and wrong for `
+        + `machinery: ${gave.map(([what, count]) => `${count} ${FROZE_NAMES[what] ?? what}`).join(", ")} `
+        + "were given back, so the replica is not frozen mid-animation",
+    );
+  }
   return { visited, notes, truncated };
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** What each SH517 counter is, in a sentence a reader can act on. */
+const FROZE_NAMES = {
+  canvas: "canvas element(s) a script had created",
+  style: "empty style attribute(s) a script left behind",
+  classes: "framework state class(es) caught mid-scroll",
+};
 
 /**
  * Fetches one page and scans it, or explains why it could not.
@@ -522,12 +546,18 @@ async function visit(url, { page, flags, keepMarkup, isSeed }, ctx) {
 /** The `--render` path: the same scanner, over the DOM the page's own JavaScript produced. */
 async function renderOne(url, page, flags, keepMarkup) {
   try {
-    await page.goto(url.href, { waitUntil: "networkidle", timeout: Number(flags.timeout ?? 30000) });
-    const html = await page.content();
+    const response = await page.goto(url.href,
+      { waitUntil: "networkidle", timeout: Number(flags.timeout ?? 30000) });
+    // SH517 — the *unrendered* body, which is the evidence for what a script created rather than
+    // what the page was served with. It costs no request: these are the bytes the navigation has
+    // already transferred, and `page.content()` below is the DOM after they ran.
+    const source = await response?.text?.().catch(() => "") ?? "";
+    const { html, froze } = settleRendered(await page.content(), source);
     return {
       status: 200,
       doc: scanPage(html, url.href),
       rendered: true,
+      froze,
       ...(keepMarkup ? { html } : {}),
     };
   } catch (error) {

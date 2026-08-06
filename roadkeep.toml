@@ -76,10 +76,9 @@ ref_scheme = "outline"
 # the two that broke a replica on sight (SH512's relative refs, SH515's uncollected ones,
 # both shipped), then
 # the capture's own honesty (SH505's overlay text becoming content and SH506's
-# script-as-block, both shipped;
-# SH517's baked canvas), and last the two that only cost time (SH513, SH514).
+# script-as-block and SH517's baked canvas, all shipped), and last the two that only
+# cost time (SH513, SH514).
 priority = [
-  "SH517",
   "SH513",
   "SH514",
   "Block R",

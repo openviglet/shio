@@ -1845,35 +1845,6 @@ Whichever, the count belongs in the report. `59 uploaded, 1 with no bytes` is wh
 caller needs to see, not a stack of one failed request — and it is a line the conversion
 already knows how to print.
 
-### XVII.69 Baking content is right, baking machinery is not (SH517)
-
-The hero's background animation is dead, and the markup says why. The source has `<div
-id="particles"></div>` — empty, filled at runtime by a particles library. The replica
-has `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas
-width="1480" height="770">`: `--render` baked the canvas the script had just created,
-sized for the capture's viewport, and nothing paints on it. The library itself is not
-among the captured scripts.
-
-So `--render`'s value and its cost are the same mechanism. Baking the DOM a script
-produced is right when that DOM is **content** — it is what turned a blank SPA capture
-into six readable pages. It is wrong when the DOM is **machinery**: a canvas is
-meaningless without the loop that draws on it, and baking one also prevents a library
-from creating its own.
-
-The same freeze is elsewhere on the page and quieter. Three `uk-scrollspy-inview`, one
-`aria-hidden="false"`, two empty `style=""` and fifty-nine `uk-active` —
-scroll-triggered states captured mid-flight, so a replica opens with its animations
-already finished and its first slide already chosen.
-
-Three candidate rules, and the first two are cheap. A `<canvas>` produced by script
-carries nothing and can be emptied. A `style` attribute a script wrote is runtime state,
-not authored markup. And a class a known framework toggles — UIkit's `uk-*-inview`,
-`uk-active` — is a state, not content, though that one needs a list and is the arguable
-half.
-
-Whatever the rule, the report has to name it: a capture that freezes behaviour should
-say what it froze.
-
 ### XVII.70 The generator is on the wrong path (SH518)
 
 `shio apply --blueprint marketing-site --site X` writes what it promises: 8 post-types,

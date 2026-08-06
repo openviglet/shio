@@ -303,6 +303,28 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**Baking content is right, baking machinery is not (SH517).** The source has
+`<div id="particles"></div>` — empty, filled at runtime by a particles library — and the replica had
+`<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas width="1480"
+height="770">`: `--render` baked the canvas the script had just created, sized for the capture's
+viewport, with nothing painting on it and the library itself not among the captured scripts. **The
+value of `--render` and its cost are the same mechanism** — baking a script's DOM is right when that
+DOM is *content* (it is what turned a blank SPA capture into six readable pages) and wrong when it is
+*machinery*, since a canvas is meaningless without the loop that draws on it and baking one also
+prevents the library from creating its own. The same freeze was quieter elsewhere: three
+`uk-scrollspy-inview`, two empty `style=""` and **fifty-nine** `uk-active`, so the replica opened
+with its animations finished and its first slide chosen. `settleRendered` gives three things back,
+and each is **evidence rather than a guess**: a `<canvas>` *the response body did not have* (free —
+`page.goto` returns the untransformed bytes the navigation already transferred, so an authored
+`<canvas>` with its fallback children is kept and only the surplus goes); an **empty** `style=""`,
+which no author writes and a script that set and cleared a property leaves (a style attribute with a
+declaration in it stays — there is no way to tell one a script wrote from one an author did, and
+SH515 has just made the references inside it reachable); and a framework's own state class
+(`STATE_CLASSES`, the arguable half, a list because there is no structural way to tell `uk-active`
+from a class somebody wrote — every entry names a framework's documented convention and a wrong one
+costs a class attribute, not content). **The counts go in a note**, because a capture that silently
+gave a canvas back is the same undeclared cut as a truncated crawl.
+
 **And an overlay is chrome that is neither header nor footer (SH505).** Three candidates on three
 different pages were proposed with the same `intro` — **"We respect your privacy"**, the cookie
 consent banner, which sits in `<div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50 …">` at

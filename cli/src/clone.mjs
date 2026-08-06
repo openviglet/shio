@@ -301,6 +301,79 @@ export function styleBlocks(html) {
 }
 
 /**
+ * Class-name patterns a framework toggles as a page scrolls — state, not content (SH517).
+ *
+ * <p>The arguable half of the task, and it is a list because it has to be: there is no structural
+ * way to tell `uk-active` from a class an author wrote. What makes a list defensible here is that
+ * every entry names a **framework's own** state convention, documented by that framework, and the
+ * cost of a wrong entry is one class attribute rather than any content. Measured on the page that
+ * produced this: three `uk-scrollspy-inview` and **fifty-nine** `uk-active`, so a replica opened
+ * with its animations already finished and its first slide already chosen.</p>
+ */
+const STATE_CLASSES = [
+  /^uk-(?:scrollspy-)?inview$/,   // UIkit scrollspy, both spellings
+  /^uk-active$/,                  // UIkit's current slide / current nav item
+  /^aos-animate$/,                // AOS, after the element has entered
+  /^is-inview$/, /^in-view$/,     // Locomotive and the hand-written convention
+  /^wow\b.*animated$/,            // WOW.js
+];
+
+/**
+ * What a rendered capture has to give back before its markup is content (SH517).
+ *
+ * <h3>The measurement, and why it is the same mechanism as `--render`'s value</h3>
+ *
+ * <p>The source has `<div id="particles"></div>` — empty, filled at runtime by a particles library.
+ * The replica had `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas
+ * width="1480" height="770">`: `--render` baked the canvas the script had just created, sized for
+ * the capture's viewport, and nothing paints on it. So baking the DOM a script produced is **right
+ * when that DOM is content** — it is what turned a blank SPA capture into six readable pages — and
+ * **wrong when it is machinery**. A canvas is meaningless without the loop that draws on it, and
+ * baking one also prevents the library from creating its own.</p>
+ *
+ * <h3>Three rules, and each one is evidence rather than a guess</h3>
+ *
+ * <p><b>A canvas the source did not have</b> was made by a script, and the response body is the
+ * evidence — it costs no request, being the bytes the navigation already transferred. An
+ * <em>authored</em> `<canvas>` is left exactly where it is: it is markup somebody wrote, and its
+ * children are fallback content. Only the surplus goes.</p>
+ *
+ * <p><b>An empty `style=""`</b> is residue: no author writes one, and a script that set and cleared
+ * an inline property leaves exactly that. Deliberately narrow — a style attribute with a
+ * *declaration* in it is kept, because there is no way to tell one a script wrote from one an
+ * author did, and SH515 has just finished making the references inside it reachable.</p>
+ *
+ * <p><b>A framework's state class</b> (`STATE_CLASSES`) is a scroll position frozen mid-flight.</p>
+ *
+ * @returns `{html, froze}` — the settled markup and what was given back, because a capture that
+ *   freezes behaviour has to say what it froze
+ */
+export function settleRendered(html, source = "") {
+  const froze = { canvas: 0, style: 0, classes: 0 };
+  let out = String(html ?? "");
+  if (!/<canvas\b/i.test(String(source ?? ""))) {
+    out = out.replace(/<canvas\b[^>]*>[\s\S]*?<\/canvas\s*>/gi, () => {
+      froze.canvas += 1;
+      return "";
+    });
+  }
+  out = out.replace(/\s+style\s*=\s*(?:""|''|"\s+"|'\s+')/gi, () => {
+    froze.style += 1;
+    return "";
+  });
+  out = out.replace(/\bclass\s*=\s*"([^"]*)"/gi, (whole, names) => {
+    const kept = names.split(/\s+/).filter((name) => {
+      const state = name && STATE_CLASSES.some((pattern) => pattern.test(name));
+      if (state) froze.classes += 1;
+      return name && !state;
+    });
+    if (kept.length === names.trim().split(/\s+/).filter(Boolean).length) return whole;
+    return kept.length ? `class="${kept.join(" ")}"` : "";
+  });
+  return { html: out, froze };
+}
+
+/**
  * The bodies of a page's inline `<script>` blocks, in source order (SH515).
  *
  * <p>`styleBlocks`' twin, and it exists for the same reason: `stripNonMarkup` blanks these before

@@ -24,6 +24,7 @@ import {
   resolveHref,
   robotsAllows,
   scanPage,
+  settleRendered,
   serializeInventory,
   stripNonMarkup,
 } from "../src/clone.mjs";
@@ -773,6 +774,71 @@ test("--render uses the browser's DOM through the same scanner", async () => {
   assert.equal(inventory.pages[0].title, "Hydrated");
   assert.equal(inventory.pages[0].rendered, true);
   assert.deepEqual(seen, ["https://x.test/"]);
+});
+
+test("SH517: --render gives back the machinery it baked, and keeps the content", () => {
+  // The measurement: the source has `<div id="particles"></div>` — empty, filled at runtime by a
+  // particles library — and the replica had `<div id="particles" style="margin-left: -740px">
+  // <canvas width="1480" height="770">`, a dead canvas sized for the capture's viewport with
+  // nothing painting on it. Baking the DOM a script produced is right when that DOM is CONTENT and
+  // wrong when it is MACHINERY, and the same mechanism does both.
+  const source = '<html><body><div id="particles"></div>'
+    + '<section class="uk-section uk-active"><h1>Real</h1></section></body></html>';
+  const baked = '<html><body><div id="particles" style="margin-left: -740px; margin-top: -385px;">'
+    + '<canvas width="1480" height="770"></canvas></div>'
+    + '<section class="uk-section uk-active uk-scrollspy-inview" style="">'
+    + '<h1>Real</h1><p style="color:red">Kept.</p></section></body></html>';
+
+  const { html, froze } = settleRendered(baked, source);
+
+  assert.ok(!/<canvas/i.test(html), "a canvas the source did not have was made by a script, and a "
+    + "canvas is meaningless without the loop that draws on it — baking one also prevents the "
+    + "library from creating its own");
+  assert.ok(!/class="[^"]*uk-active/.test(html), "and a framework's state class is a scroll "
+    + "position caught mid-flight: the replica opened with its first slide already chosen");
+  assert.match(html, /class="uk-section"/, "while the classes an author wrote are untouched");
+  assert.ok(!/style=""/.test(html), "an empty style attribute is residue — no author writes one");
+  assert.match(html, /style="color:red"/, "but a style with a declaration in it stays: there is no "
+    + "way to tell one a script wrote from one an author did, and SH515 made its url() reachable");
+  assert.match(html, /<h1>Real<\/h1>/, "and the content --render exists to capture is all still here");
+  assert.deepEqual(froze, { canvas: 1, style: 1, classes: 2 },
+    "counted, because the note that says what was frozen is the whole of the reporting half");
+});
+
+test("SH517: a canvas the source itself declares is authored markup and is kept", () => {
+  // The evidence is the response body, which costs no request — it is the bytes the navigation
+  // already transferred. An authored `<canvas>` is markup somebody wrote and its children are
+  // fallback content; only the surplus goes.
+  const source = '<html><body><canvas id="chart">Your browser cannot draw.</canvas></body></html>';
+  const { html, froze } = settleRendered(
+    '<html><body><canvas id="chart" width="800" height="600"></canvas></body></html>', source);
+
+  assert.match(html, /<canvas id="chart"/);
+  assert.equal(froze.canvas, 0);
+});
+
+test("SH517: the crawl says what it froze, because an undeclared cut reads as a clean capture", async () => {
+  const source = '<html lang="en"><head><title>App</title></head><body><div id="particles"></div>'
+    + `<p>${"text ".repeat(60)}</p></body></html>`;
+  const baked = source.replace('<div id="particles"></div>',
+    '<div id="particles"><canvas width="1480" height="770"></canvas></div>');
+  const browserPage = {
+    async goto() {
+      return { text: async () => source };
+    },
+    async content() {
+      return baked;
+    },
+    async close() {},
+  };
+  const ctx = ctxWith(SITE, { render: () => browserPage });
+
+  const { inventory } = await clone.run({ render: true, depth: 0 }, ["https://x.test"], ctx);
+
+  assert.ok(
+    inventory.notes.some((note) => /given back/.test(note) && /canvas/.test(note)),
+    `a capture that freezes behaviour has to say what it froze. Notes: ${JSON.stringify(inventory.notes)}`,
+  );
 });
 
 test("a thin page is a note pointing at --render, not a silent miss", () => {

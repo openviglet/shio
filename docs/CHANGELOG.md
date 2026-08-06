@@ -986,6 +986,7 @@
 - **SH515** — The capture and the render-time rewriter read one list: the collector gained the style attribute's url() and the fetch() literals in inline scripts, the rewriter gained the fetch() literals, and one fixture read from both languages asserts they resolve the same set. A fetched data file is behaviour, taken with --scripts alongside the bundle that asks for it.
 - **SH505** — A block that is painted over the page is not a candidate: out-of-flow positioning, aria-live, role=dialog or aria-modal each mark it, and sticky deliberately does not. The proposal also reports any field value carried by candidates that share no page, which is the same shape wherever it comes from.
 - **SH506** — A block whose own tag is script, style, link, meta, noscript or template is not a candidate, and a post-type with no derivable field is not proposed at all whatever the tag - the key is absent rather than empty. Both exclusions are counted in a note, so the shorter list of candidates is a stated cut.
+- **SH517** — A rendered capture gives back what a script created rather than what the page was served with: a canvas the response body did not have, an empty style attribute, and a framework's own state classes - and the counts go in a note, so a capture that froze behaviour says what it froze.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
