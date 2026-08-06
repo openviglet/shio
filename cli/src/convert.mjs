@@ -799,7 +799,13 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
   if (document.posts.length > limit) {
     lines.push(`  … ${document.posts.length - limit} more in the document`);
   }
-  lines.push("  every post lands in DRAFT — publishing is a separate, explicit call (P7)");
+  // SH546 — the instruction now names the command that performs it. It said the true thing and
+  // left the caller to find the verb, which for two blocks meant leaving the CLI: the tier this
+  // binary *is* had no publish, so the step after the longest command in it was raw HTTP.
+  lines.push(
+    "  every post lands in DRAFT — publishing is a separate, explicit call (P7): " +
+      `shio publish --site ${document.site ?? "<name>"} --all`,
+  );
   for (const row of requires) {
     lines.push(`  requires: ${row.postType}.${row.field} — ${row.why}`);
   }

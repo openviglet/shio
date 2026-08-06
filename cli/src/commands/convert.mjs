@@ -53,7 +53,8 @@ Turns the blocks you accepted with shio propose --accept into posts, plus the ca
 theme and scripts. It reads the capture and the plan, and writes through the same
 desired-state path shio apply uses, so running it twice changes nothing the second time.
 
-Every post lands in DRAFT. Publishing is a separate, explicit call.
+Every post lands in DRAFT. Publishing is a separate, explicit call: shio publish --site <name>
+--all, which is the step after this one (SH546).
 
   --site <name>        The site to write into (required)
   --create-site        Create the site (blank) if it does not exist, as the first step

@@ -67,6 +67,10 @@ const BOOLEANS = [
   // two-hour crawl is not watching its pipe. `--no-progress` is for a run that must write only what
   // it was asked for.
   "no-progress",
+  // SH546: `publish` names its targets, and `--all` is the flag that says "name them from a find
+  // instead of from my argv" — a decision, so a flag. `--unpublish` is the same verb inverted,
+  // spelled the way `shio_publish` spells it rather than as a second command.
+  "all", "unpublish",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -81,6 +85,7 @@ const COMMANDS = {
   resolve: () => import("./commands/resolve.mjs"),
   impact: () => import("./commands/impact.mjs"),
   apply: () => import("./commands/apply.mjs"),
+  publish: () => import("./commands/publish.mjs"),
   import: () => import("./commands/import.mjs"),
   blueprints: () => import("./commands/blueprints.mjs"),
   verify: () => import("./commands/verify.mjs"),
@@ -124,6 +129,8 @@ Commands:
   import <file>  Clone an SH68 exchange package (.zip) into this instance — the way to accept
                  a site somebody hands you (export it with GET /api/v2/site/{id}/export)
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
+  publish [addr] Make drafts live, or take live pages down (--unpublish)
+                 (--site <name> --all names every post the site holds; --dry-run first)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from (--since, --cursor)
   report         The human handoff: what changed, preview links, open questions

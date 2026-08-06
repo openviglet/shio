@@ -295,29 +295,6 @@ which is SH523's plan — inferring a type is only useful if applying it is revi
 The honest limit belongs in the report: three instances of a thing are evidence about
 those three. A proposal, not a conclusion — which is what `propose` already gets right.
 
-### VIII.28 The rung of the ladder that cannot publish (SH546)
-
-P1 orders every capability MCP → files/CLI → REST → console, and publication is present
-at three of the four. `grep post.publish cli/src/` returns nothing and there is no
-`--publish` flag on any command.
-
-The gap is visible from inside the product. `shio convert` ends by printing *every post
-lands in DRAFT — publishing is a separate, explicit call (P7)*, which is correct and is
-the right thing to say. The binary that prints it cannot make that call. So the step
-immediately after the longest command in the CLI drops out of the tier and into raw
-HTTP: this round published a conversion by reading `/agent/find`, composing a batch
-document in Python, and posting it with curl — three tools and a hand-written document
-to perform the one op the previous command just told me to perform.
-
-This is worth stating as a P1 defect rather than a missing flag, because the shape
-recurs. A capability that lands at MCP and REST looks complete from both ends: the tool
-list has it, the API has it, and the tier in between is the one nobody reads to check.
-SH244 records the same shape for copy, which exists only as a console PUT.
-
-The verb is small — `shio publish --site X [--all|<address>]`, and its inverse — and the
-argument for it is not convenience. It is that the CLI is the tier P4 calls the agent's
-cheapest surface, and a conversion cannot be finished there.
-
 ### VIII.29 A refusal that teaches the other endpoint's grammar (SH547)
 
 `POST /api/v2/agent/apply` takes a desired-state document. Sent an ops batch, it answers

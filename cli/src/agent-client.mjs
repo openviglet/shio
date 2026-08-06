@@ -130,6 +130,20 @@ export class ShioAgentClient {
   }
 
   /**
+   * POST /api/v2/agent/batch (SH81) — N addressed ops in one transaction.
+   *
+   * The op surface, as opposed to `plan`/`apply`'s desired-state document. `shio publish` (SH546)
+   * is what needed it: publishing an existing post is an op and not a state to converge to, and
+   * expressing it as a document would mean restating content the run is not there to change.
+   *
+   * @param {{ dryRun?: boolean, ops: object[], confirm?: string }} document
+   * @param {{ ids?: boolean }} [options]
+   */
+  async batch(document, options = {}) {
+    return this.#post("batch", document, options);
+  }
+
+  /**
    * Apply, doing SH108's two-step when the document could delete something.
    *
    * A destructive apply needs a `confirm` token from its own plan, and the promise behind

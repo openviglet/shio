@@ -71,6 +71,7 @@
 - **SH463** — site.delete removes a site and everything in it with the SH108 confirm token, saying in its plan line that it is purged rather than trashed — and the instrument half landed with it: a siteDelete feature key forces the P1 classification, and an AGENT_EQUIVALENT entry now names the HTTP verbs its agent form covers, which found two more undeclared decisions on its first run.
 - **SH544** — an audit description is bounded where it is built, and a database refusal reaches the wire as a teaching 400/409 naming the op instead of a 500
 - **SH545** — an agent read reports whether a page is live in a published field, conditional and measured, so state can keep meaning which row was returned
+- **SH546** — shio publish makes drafts live from the CLI, --all names every post from a find, and the batch ceiling comes from the refusal rather than a constant
 
 ## Block K — Perception & verification loop (SH74)
 
