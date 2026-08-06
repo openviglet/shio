@@ -1804,6 +1804,30 @@ stays a declaration of content.
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
 
+### XVII.71 A page is not one mode (SH520)
+
+Replicating `viglet.org` authorably gives **106 annotated fields across five of six
+pages**, and every one draws unstyled. The site holds both themes, `VigOrg (captured)`
+at 1,061,479 bytes and `VigOrg (Shio)` at 2,289, and one layout: `VigOrg (fidelity)`,
+whose `THEME` is the captured one. The Shio theme is written and never bound.
+
+The cause is that **a page is not one mode**. `propose` accepts per *block*, so a real
+page holds both — here four candidates were recognised and two were not, and every page
+therefore mixes accepted sections with verbatim markup. SH509 and SH510 settled the pure
+cases: all-accepted gets the Shio layout and 6 KB, all-fidelity keeps the captured theme
+and reaches 0.00%. Mixed gets the fidelity layout, so the sections render through
+`shio-container`, `shio-heading` and `shio-feature` with nothing that styles them,
+inside a megabyte of CSS for the verbatim parts.
+
+Mixing is the normal case, not the exception. Six candidates on a real site and four in
+the vocabulary is a good hit rate; a site where every block maps is the unusual one, and
+it is the only site the current binding serves correctly.
+
+So the layout a mixed page uses has to carry both, captured first and Shio after — the
+order is the whole of it, since the later rule wins at equal specificity, which is the
+lesson SH424 already paid for. The check is a page with an accepted section and a
+verbatim block: the section's own classes must match a rule.
+
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against

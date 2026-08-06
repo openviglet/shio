@@ -93,6 +93,7 @@
 - 📋 **SH514** (deps: SH437 ✅) **A zero-byte asset is refused with Spring's default 400, so a conversion dies unexplained** — The source serves an empty stylesheet legitimately and the capture writes it faithfully, and the upload's only answer is a body with no title, detail or fix. → §XVII.67
 - 📋 **SH515** (deps: SH473 ✅) **The rewriter rebases references the collector never fetched, so the page asks for what is not there** — A style attribute's url() and a fetch() string are rebased and never downloaded, so two images 404 and a JSON crash follows on a run that uploaded every asset. → §XVII.68
 - 📋 **SH517** (deps: SH469 ✅) **A rendered capture bakes a script's canvas and its transient classes, freezing behaviour as content** — The source's particles div is empty and the replica holds a dead canvas sized for the capture viewport, alongside scrollspy and active states caught mid-flight. → §XVII.69
+- 📋 **SH520** (deps: SH510 ✅) **A page that mixes accepted sections with verbatim blocks never binds the Shio theme** — propose accepts per block so a real page holds both modes, and a mixed page takes the fidelity layout, leaving 106 annotated fields drawn by nothing. → §XVII.71
 
 ## Block F — Market positioning
 
