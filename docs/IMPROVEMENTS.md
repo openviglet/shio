@@ -1570,6 +1570,33 @@ should not be offered for a site whose pages hold sections — `init --site` kno
 site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
 than silently useless.
 
+### XVII.57 A link is two fields on one element (SH503)
+
+Counting the annotations against the fields the content actually fills gives **9 of
+10**. The one missing is `ctaHref` — the destination of the call to action. The element
+is
+
+    <a class="shio-cta-link" sh-field="ctaLabel" href="https://…/model-catalog/" data-shio-prop="ctaLabel">
+
+so a curator can rename the button and cannot repoint it. The value is captured, stored
+on the section and rendered into the page; only the declaration is absent.
+
+The cause is a limit of the annotation, not an oversight in the template: **one element
+declares one field**, and a link is two — its text and its target. `sh-field="ctaLabel"`
+takes the anchor, so `ctaHref` has nowhere left to go. `image` does not have the problem
+because its element is the `<img>` and the field it declares *is* the attribute
+(`sh-field="image"` on `src`), so the one-to-one holds there.
+
+It reaches every pairing of that shape in the vocabulary. `SectionCta` has `ctaLabel`
+and `ctaHref` too, and any future field that qualifies another on the same element will
+land here.
+
+Two ways out, and the choice is the protocol's rather than this template's. Either an
+element may declare more than one field — a second attribute naming the field and the
+attribute it edits — or the anchor is wrapped so the text and the href each own an
+element. The first is the honest one: a link is one thing to a curator, and splitting it
+into two boxes to satisfy the markup is the tail wagging the dog.
+
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against
@@ -1591,76 +1618,6 @@ subsystem is exactly the defect class no page-by-page pass finds.
 `docs-shio` lives in a different git repository
 (`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
 Shio-repo ship, and the vigletdocs page edit.
-
-### XVIII.8 Content as files (§XVIII.8) (SH486)
-
-Write the page from `docs/agents/content-files.md`: the `shio/content/**`,
-`shio/folders/**`, `shio/assets/**` and `shio/post-types/*.json` layout, what a sidecar
-file carries, the `content-base.json` three-way merge and what happens when both sides
-changed, `movedFrom`, and how an asset is projected and pushed back.
-
-The argument the page has to make first is why files exist at all: an agent's cheapest
-tools are `Edit`, `Write` and `Grep`, and a projection to disk turns every content
-operation into one of them. The second thing it has to make unmissable is that the merge
-is what makes it safe: a pull, an edit and a push do not silently overwrite what a human
-changed in the console meanwhile.
-
-Byte-identical serialization and stable ordering (P5) are part of the contract and
-belong on the page, because a reader diffing two pulls needs to know that a no-op pull
-is a no-op diff. Show a real tree, a real sidecar and a real merge conflict rather than
-describing them.
-
-### XVIII.9 The CLI page (§XVIII.9) (SH487)
-
-`docs-turing/cli.md` documents `turing` verb by verb, with flags, exit codes and the CI
-use of each. Shio's `shio` binary has no equivalent page, although it is how content is
-pulled, pushed, applied, verified, reported on, replicated and photographed.
-
-Write it from `docs/agents/cli.md`: install, authentication and instance selection, then
-one section per verb with its flags and a copyable invocation. Include the **CI gate
-order**, which is the part a reader cannot reconstruct: which verb runs before which,
-and what a red gate means.
-
-Two honest notes belong on the page. `shio --help` is 14 KB and unbudgeted while the MCP
-tool list is capped and measured, so a reader choosing between the two surfaces should
-know which one costs what. And a verb's output is designed to be read by an agent, so
-the page should show what a machine consumes, not only what a terminal prints.
-
-### XVIII.10 Blueprints (§XVIII.10) (SH488)
-
-Write the page from `docs/agents/blueprints.md`: what a blueprint is (an appliable unit,
-not a prose recipe), what `blueprint.json` declares, the parameters an apply takes, the
-first-party packages that ship, the local package directory and its trust model, and
-what an apply reports.
-
-The reason the concept exists is worth one paragraph up front: an agent asked to build a
-blog should not rediscover a blog's shape, and a recipe in prose is something it
-re-derives every time. A package is the difference between a plan and a starting point.
-
-Two limits the page must state rather than let a reader discover: applying a first-party
-package today yields content whose design is the labelled fallback, because no package
-ships a theme, a layout and a binding yet (SH395 is open); and the local package
-directory is cached on first access, so a package dropped in is invisible until the
-process restarts (SH219 is open). Both are the kind of fact a reader forgives when the
-page says it and resents when it does not.
-
-### XVIII.11 The Universal Editor (§XVIII.11) (SH489)
-
-The Universal Editor is the console's answer to "the agent built this and it is nearly
-right". Write the page from `docs/specs/SH185-universal-editor-protocol.md`,
-`docs/agents/renderer.md` and the two Universal Editor sections of
-`docs/agents/console-ui.md`: how a rendered page carries `data-shio-*` annotations, what
-a curator can click and edit, the three states the iframe has, and that the save goes
-through the session rather than a token.
-
-What a page author must produce for the editor to work is the half a reader most needs:
-a template that emits `sh-post` and `sh-field` on the elements a curator should be able
-to edit, and what happens when it does not (the element is simply not editable,
-silently, which is the defect shape SH475 records for collection rows).
-
-Keep it about the curator's experience, with the authoring requirements as a clearly
-marked second section, and link the preview and publishing story rather than restating
-it.
 
 ### XVIII.12 What Shio is, from the beginning (§XVIII.12) (SH490)
 
@@ -1701,24 +1658,6 @@ all: an agent write from `batch` to a rendered page, a curator's correction thro
 Universal Editor, a CDA read, a files pull-edit-push round trip, and a replicated site
 being served. Deployment topologies stay, corrected for what actually needs to be
 co-located.
-
-### XVIII.14 Replication (§XVIII.14) (SH492)
-
-Block Q is the block with the clearest sales story and no published page: point Shio at
-a site that already exists, capture it, and get back a site a curator can edit. Write it
-from the `shio-replication-test` skill and `cli/conformance/`.
-
-The page has to separate the two modes it offers, because choosing wrong wastes a run:
-**fidelity** reproduces the source as captured, **authorable** extracts fields and
-regions a human can edit, and the second is the one that makes the replica a CMS site
-rather than a copy. Then the pipeline in order: `clone` with its asset and script flags,
-`propose`, `convert`, publish, and what `/sites/**` serves.
-
-Include how to judge a replica: `snapshot --against`, the conformance run, and what a
-red run usually means. And state the current boundaries rather than let a reader find
-them: the instance does not run a browser (a declared non-goal), so a JS-rendered source
-has limits; and a captured page carries residues the conformance suite is still
-catching, which is why the suite exists and is worth pointing a reader at.
 
 ### XVIII.15 Tenancy and the operator's pages (§XVIII.15) (SH493)
 
