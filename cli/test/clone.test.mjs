@@ -105,59 +105,80 @@ test("navigation is <nav> only, in source order, with the label the source gives
 });
 
 /**
- * SH468's measured case: a nav whose anchors hold a brand tile before the label.
+ * SH468's measured case, re-measured for SH472: a nav whose anchors hold a brand tile.
  *
- * <p>The real markup, reduced to the part that matters — a 28×28 `<div>` carrying a two-letter mark
- * and its own `<span>`, then the label as a sibling text node. The capture read `DuDumont DEP`.</p>
+ * <p>The tile is the real one this time, rendered from `www.viglet.org` — a `<div>` carrying the
+ * mark, and the mark is **two `<span>`s**, one letter each, because each letter has its own glow
+ * animation delay. That is the detail SH468's reduction dropped and the reason its fix looked
+ * right: with `<span>Du</span>` an unconditional separator yields `Du Dumont DEP`, and with the
+ * markup the site actually serves it yields `D u Dumont DEP`.</p>
  */
 const BRANDED_NAV = `<!doctype html>
 <html><head><title>Products</title></head><body>
 <nav>
-  <a href="/dumont"><div class="tile" aria-label="Du"><span>Du</span></div>Dumont DEP</a>
-  <a href="/shio"><div class="tile" aria-label="Sh"><span>Sh</span></div>Shio CMS</a>
+  <a href="/dumont"><div class="tile" aria-label="Du"><span><span>D</span><span>u</span></span></div>Dumont DEP</a>
+  <a href="/shio"><div class="tile" aria-label="Sh"><span><span>S</span><span>h</span></span></div>Shio CMS</a>
   <a href="/oss"><em>Open</em>Source</a>
   <a href="/plain">  Plain  label  </a>
+  <a href="/card"><p>Line</p><p>Two</p></a>
 </nav>
 <p>Body copy long enough that this reads like a page a person wrote rather than a shell of one.</p>
 </body></html>`;
 
-test("SH468: an element boundary inside a link is a separator, not nothing", () => {
+test("SH472: the separator lands at an element boundary the eye sees, and nowhere else", () => {
   const doc = scanPage(BRANDED_NAV, "https://x.test/");
   const labels = new Map(doc.nav.map((item) => [item.href, item.label]));
 
   assert.equal(
     labels.get("/dumont"),
     "Du Dumont DEP",
-    "`anchor.text += token.text` inserted nothing between nodes, so the mark fused onto the "
-      + "label's first word and `collapse()` normalised whitespace that was never there",
+    "the mark's two letters are two sibling `<span>`s inside one element, so they are one word; "
+      + "the `</div>` before the label is the only boundary in this anchor that separates",
   );
   assert.equal(labels.get("/shio"), "Sh Shio CMS");
   assert.equal(
     labels.get("/oss"),
-    "Open Source",
-    "the trade this fix accepts: an inline element renders as one word in a browser and is "
-      + "extracted as two. Two words the source contained beats one it never did",
+    "OpenSource",
+    "and this is the concession SH472 makes and SH468 refused: an inline element is one word to "
+      + "a reader, one word to `innerText`, and now one word here",
   );
   assert.equal(
     labels.get("/plain"),
     "Plain label",
-    "and a label with no elements in it is untouched — `collapse()` still squeezes, so the "
-      + "separator never shows up as a doubled or leading space",
+    "a label with no elements in it is untouched — `collapse()` still squeezes, so the separator "
+      + "never shows up as a doubled or leading space",
+  );
+  assert.equal(
+    labels.get("/card"),
+    "Line Two",
+    "`<p>` is not inline, so a two-paragraph link is still two words — the SH468 case survives",
   );
 });
 
 /**
- * The independent oracle, and the reason this is a check rather than four assertions (SH468).
+ * The independent oracle, and the reason this is a check rather than five assertions (SH468).
  *
  * <p>A fabricated token is invisible to everything downstream precisely because it looks like
  * content: `verify` cannot see it, a digest cannot, and a reviewer skimming a menu cannot. What
  * *can* see it is the source's own bytes — a word the capture emits that the page never spelled.
  * Stripping tags is a different mechanism from accumulating text tokens, so this fails on the next
  * fusion whatever introduces it.</p>
+ *
+ * <p>SH472 moved the line the oracle draws, and it had to: "a word of the page" now means a run
+ * between two boundaries a reader sees, so an inline tag is deleted rather than replaced. `a` is
+ * the exception, replaced like a block — the accumulator never carries text across `</a>`, so two
+ * adjacent anchors are two labels however the source spaces them.</p>
  */
+const ORACLE_INLINE = /<\/?(?:span|em|strong|b|i|code|sup|sub|small)\b[^>]*>/gi;
+
 function wordsOf(html) {
   return new Set(
-    html.replace(/<[^>]*>/g, " ").replace(/&[a-z]+;/gi, " ").split(/\s+/).filter(Boolean),
+    html
+      .replace(ORACLE_INLINE, "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&[a-z]+;/gi, " ")
+      .split(/\s+/)
+      .filter(Boolean),
   );
 }
 

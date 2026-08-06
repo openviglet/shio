@@ -1500,29 +1500,6 @@ a capture fix's clothes.
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
 
-### XVII.48 A separator at the wrong boundary (SH472)
-
-SH468 replaced the fused token with a spaced one. The nav label was `DuDumont DEP`; it
-is now `D u Dumont DEP`. The fabrication is gone — no word exists that the source did
-not contain — and the label is still not the source's.
-
-The separator went in between **every** text node, and the brand tile's two letters are
-two nodes, so `D` and `u` were parted. A separator at an element boundary is right; a
-separator between sibling text runs inside one element is not, and the tokenizer does
-not distinguish them today.
-
-The narrower rule is the one the DOM already implies: insert at the boundary of an
-element that is not `display: inline`, or — since the capture has no computed style — at
-the boundary of an element whose tag is not in the inline set (`span`, `em`, `strong`,
-`b`, `i`, `a`, `code`, `sup`, `sub`, `small`). That is what a browser's `innerText`
-does, and it is the behaviour a reader expects: `<span>Du</span>Dumont` is one word to
-the eye and two nodes to the parser.
-
-The mark itself is the second half and still open: `Du` is a logo, and its presence in a
-menu label is wrong however it is spaced. The tile carries `aria-label="Du"` equal to
-its own visible text, which is the signal that it is decorative — a rule worth having,
-because a nav label becomes a menu entry in the replica and a curator reads it.
-
 ### XVII.49 The report shipped ahead of the fetch, again (SH473)
 
 `--scripts` exists, its help says "take this site's own `<script src>` too", and the
@@ -1624,3 +1601,25 @@ surface built for repairing content.
 
 Decode entities when text leaves the markup, and assert a round trip on a source that
 uses one.
+
+### XVII.53 A mark that labels itself is not a label (SH477)
+
+SH472 spaced the mark correctly and left it in place. A product card on `www.viglet.org`
+is labelled `Du Dumont DEP`, and `Du` is a logo — a 48×48 tile whose two letters are
+drawn, not written. However it is spaced, it is not part of the label, and a nav label
+becomes a menu entry in the replica that a curator reads and has to delete by hand.
+
+The signal is in the markup and needs no heuristic: the tile carries `aria-label="Du"`
+and its own visible text is `Du`. An accessible name that merely repeats what is already
+on screen is the author saying the element is decorative — that is what `aria-label` is
+for on a graphic, and a text run duplicating it adds nothing a reader would want twice.
+
+So the rule is narrow: inside an anchor, a text run whose collapsed value equals the
+`aria-label` of an element enclosing it contributes nothing to the label. It is not
+"drop short runs" and not "drop uppercase runs" — both would eat real content, and `DEP`
+is the counter-example sitting in the same string.
+
+What has to be measured first is how often the pattern is real. One site is one site,
+and a rule that fires on a single fixture is a rule that fires on nobody else's markup.
+The capture already holds the anchors, so counting the runs that match across a crawl's
+pages is the first deliverable and the drop is the second.

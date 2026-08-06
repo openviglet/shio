@@ -867,15 +867,27 @@ heading carries the same corruption unnoticed, and those become post titles. **A
 in the source is worse than a dropped one** — `Dumont DEP` and `DuDumont DEP` both look like content,
 so nothing downstream can tell which is the source's: not `verify`, not a digest, not a reviewer
 skimming a menu, and the capture is supposed to be evidence about somebody else's bytes.
-**Unconditional, not block-aware, and that is a stated trade**: an inline `<em>Open</em>Source` renders
-as one word in a browser and is now extracted as two. Determinism beats accuracy here (P5) — the
-alternative is a list of inline tag names that CSS can contradict per page, and it would fail the same
-silent way. Splitting yields two words the source did contain; fusing invents one it did not.
-**The instrument is an independent oracle**, not four assertions: `clone.test.mjs` strips the fixture's
-tags and asserts that every word of every extracted label is a word the page actually spelled — a
-different mechanism from accumulating text tokens, so it fails on the next fusion whatever causes it.
+SH468 separated **unconditionally** and named the alternative — a list of inline tag names — as a
+heuristic CSS could contradict per page. **The instrument is an independent oracle**, not four
+assertions: `clone.test.mjs` strips the fixture's tags and asserts that every word of every extracted
+label is a word the page actually spelled — a different mechanism from accumulating text tokens, so it
+fails on the next fusion whatever causes it.
+
+**The stated trade was the bug, and the narrower rule is the one the DOM already implies (SH472).**
+`DuDumont DEP` became `D u Dumont DEP`: the mark is not `<span>Du</span>` but
+`<span><span>D</span><span>u</span></span>`, one span per letter because each carries its own glow
+delay, and two sibling runs inside one inline element are one word. So `INLINE_TAGS` —
+`span em strong b i a code sup sub small` — and `anchor.gap`, a flag set by any open **or** close tag
+outside that set and cleared by the append it separates. A capture has no computed style, so the tag
+name is the only evidence there is; the set is fixed, so the same bytes still yield the same record
+(P5), and the determinism SH468 was protecting is not what a tag list costs. What it does concede is
+`<em>Open</em>Source` → `OpenSource`, which is the point rather than the price: one word to a reader,
+one word to `innerText`, one word here. **The oracle moved with it** — "a word of the page" now means a
+run between two boundaries a reader sees, so it deletes inline tags rather than replacing them, with
+`a` the exception, because the accumulator never carries text across `</a>`. Measured on a rendered
+`www.viglet.org`: the nav reads `Dumont DEP`, and the product cards read `Du Dumont DEP …`.
 Left open on purpose, as the task framed it: whether a mark whose `aria-label` equals its own visible
-text should be in a label at all is a decorative-content question, not a boundary one.
+text should be in a label at all is a decorative-content question, not a boundary one — SH477.
 
 **One test drives the whole pipeline, and it is the only one that can (SH422).** Block Q shipped as
 eleven tasks, each thoroughly tested in isolation — and every phase hands an artefact to the next, so
