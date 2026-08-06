@@ -66,7 +66,25 @@ ref_scheme = "outline"
 # appear in zero of its 19 pages while Nashorn and shObject appear in six — so every block
 # below has shipped into a documentation set that contradicts it. The matrix (SH479) is first
 # within the block for the SH338 reason: it lands red and its count scopes the rest.
+# The fifth replication run, ordered by what the next test can even see. SH520 leads because it
+# is the only one that loses content: accepting one block drops the rest of the page, so every
+# authorable measurement after it describes a page that is mostly gone — including the 106
+# annotated fields this round reported as a success. SH516 is second for the same reason one
+# level up: the gate said `ok` on that page, so until it fetches what it approved, a green run
+# is not evidence and each round is hand-measured with a resolver I have got wrong twice. Then
+# the two that break a replica on sight (SH512's relative refs, SH515's uncollected ones), then
+# the capture's own honesty (SH505's overlay text becoming content, SH506's script-as-block,
+# SH517's baked canvas), and last the two that only cost time (SH513, SH514).
 priority = [
+  "SH520",
+  "SH516",
+  "SH512",
+  "SH515",
+  "SH505",
+  "SH506",
+  "SH517",
+  "SH513",
+  "SH514",
   "Block R",
   "Block P",
   "Block H",
