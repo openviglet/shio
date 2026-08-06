@@ -114,10 +114,13 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     posts.push(scriptsPost(proposal.scripts, site));
     extras.push("SiteScripts");
   }
-  // SH449 — the layout, and only when a page actually needs one. A conversion in which every page
-  // composed accepted sections is the authorable path and has no verbatim markup to serve.
-  if (verbatim) {
-    posts.push(fidelityLayout(markup, site, extras.includes("Theme")));
+  // SH449 wrote the layout only for a verbatim page, and SH464 is what that cost: the authorable
+  // path wrote sections, a Page and a Theme and NO PageLayout, so `/preview/<site>/` answered
+  // **400 — binds no layout for post-type 'Page'**. Block Q is named "an existing site becomes an
+  // authorable Shio site" and neither of its two modes produced one. Every page needs a layout,
+  // because the renderer resolves one per post-type; the layout below serves both modes.
+  if (pages.length) {
+    posts.push(pageLayout(markup, site, extras.includes("Theme")));
     extras.push("PageLayout");
   }
 
@@ -134,7 +137,7 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
       ...(createSite ? { createSite: true } : {}),
       // SH449 — the edge that turns a layout into a rendered page. Written only when there is a
       // layout to bind, so a document that does not need it is the same bytes it was before (P5).
-      ...(verbatim ? { postTypeLayout: { [PAGE_TYPE]: fidelityLayoutTitle(site) } } : {}),
+      ...(pages.length ? { postTypeLayout: { [PAGE_TYPE]: fidelityLayoutTitle(site) } } : {}),
       folders: folders.map((path) => ({ path })),
       posts,
     },
@@ -147,7 +150,44 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
 }
 
 /**
- * The shell every fidelity page renders through (SH449).
+ * The layout's `<body>`, verbatim and with **no interpolation** (SH464).
+ *
+ * <p>Its own constant for one reason: it is the half a **Java** test has to be able to read. The
+ * seam this task closes is between a template this file writes and a renderer in another language
+ * that has to annotate it, and every earlier failure of that kind was a copy of one side asserted
+ * against itself — SH245's standing lesson. `ShConvertedLayoutRenderTest` extracts these bytes from
+ * this file and renders them through the real engine, so "the layout works" is a measurement rather
+ * than a claim, and there is no second copy to drift.</p>
+ *
+ * <p>Nothing here interpolates, which is what makes the extraction a slice between two backticks
+ * rather than a JavaScript parser.</p>
+ */
+export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
+{{#unless content}}<h1 class="shio-page-title" sh-field="title">{{title}}</h1>{{/unless}}
+{{#getRelation sections}}
+<section class="shio-section shio-section-{{type}}" sh-post="{{id}}" data-shio-section="{{type}}" data-shio-align="{{align}}" data-shio-variant="{{variant}}" data-shio-columns="{{columns}}">
+{{#if heading}}<h2 class="shio-heading" sh-field="heading">{{heading}}</h2>{{/if}}
+{{#if subheading}}<p class="shio-subheading" sh-field="subheading">{{subheading}}</p>{{/if}}
+{{#if intro}}<p class="shio-intro" sh-field="intro">{{intro}}</p>{{/if}}
+{{#if body}}<div class="shio-body" sh-field="body">{{{body}}}</div>{{/if}}
+{{#if image}}<p class="shio-image"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
+{{#if ctaLabel}}<p class="shio-cta"><a class="shio-cta-link" sh-field="ctaLabel" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
+</section>
+{{/getRelation}}`;
+
+/**
+ * The shell every page of a converted site renders through (SH449, SH464).
+ *
+ * <h3>One layout, both modes — because the renderer allows exactly one</h3>
+ *
+ * <p>A layout is resolved through `site.postTypeLayout`, which is keyed by **post-type**, so every
+ * `Page` of a site renders through one template and "a layout per mode" is not a shape that exists.
+ * SH449 wrote this one only when a page had verbatim markup; SH464 measured what that left: the
+ * authorable path wrote sections, a Page and a Theme and no layout at all, so `/preview/<site>/`
+ * answered **400 — binds no layout for post-type 'Page'**, and the console — which frames the site's
+ * front end or, failing that, that same preview — had nothing to frame either. A mixed conversion
+ * was worse than either: the fidelity layout rendered `{{{content}}}` and a section page has none,
+ * so it served a blank body and reported success.</p>
  *
  * <h3>What is verbatim and what cannot be</h3>
  *
@@ -164,10 +204,28 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
  * `buildTree` records no source offsets, so the only route back to markup is re-serializing a tree
  * built from `stripNonMarkup`'s output — which has already dropped the comments and the raw-text
  * bodies. "Verbatim" and "re-serialized" are different claims, and writing the second while the
- * documentation promised the first is the defect this task exists to fix, not a shape to reproduce
- * one level down. A curator can still lift a block into a Region by hand; nothing here prevents it.
+ * documentation promised the first is the defect SH449 exists to fix, not a shape to reproduce one
+ * level down. A curator can still lift a block into a Region by hand; nothing here prevents it.</p>
+ *
+ * <h3>And the authorable half, which is the one that makes a replica editable</h3>
+ *
+ * <p>`{{#getRelation sections}}` walks the `Page.sections` list in order — SH247's helper, which
+ * takes the field's *value* rather than its name and so needs no access to the post-type. Each row
+ * carries the section's own fields plus its `id` and `type`, which is what lets one template serve
+ * the whole SH95 vocabulary: `sh-post="{{id}}"` binds the block to the **section** post rather than
+ * to the page, and `sh-field` on each element is what the renderer turns into `data-shio-prop` for
+ * SH185's editor bridge. That pairing is the whole of SH464 — fidelity mode already proved the
+ * renderer annotates whatever the template declares, and verbatim markup declares nothing, so it
+ * rendered with **zero** `data-shio-prop` and the editor loaded over a page with nothing to offer.</p>
+ *
+ * <p>The fields are rendered as a **union with a guard each**, not branched on `{{type}}`: the
+ * vocabulary is closed (seven section types, `heading` in every one of them), the engine registers a
+ * closed helper set with no equality helper, and a union means a new section type that reuses these
+ * names renders without a template change. A field a section does not carry renders nothing.
+ * `variant`, `align` and `columns` are presentation choices rather than prose, so they ride as
+ * `data-` attributes for the theme's CSS to read instead of being printed as text.</p>
  */
-function fidelityLayout(markup, site, hasTheme) {
+function pageLayout(markup, site, hasTheme) {
   const lang = langOf(markup);
   return {
     url: FIDELITY_LAYOUT_URL,
@@ -187,7 +245,7 @@ function fidelityLayout(markup, site, hasTheme) {
 <style>{{theme.css}}</style>
 </head>
 <body>
-{{{content}}}
+${PAGE_BODY_HTML}
 </body>
 </html>
 `,

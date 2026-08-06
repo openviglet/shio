@@ -80,8 +80,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH464** (deps: SH449 ✅) **Neither conversion mode yields a replica that both renders and can be edited** — Fidelity renders with zero data-shio-prop and authorable writes no PageLayout, so /preview 400s and the Universal Editor has nothing to frame in either. → §XVII.41
-
 ## Block F — Market positioning
 
 - 💭 **SH44** (deps: SH22 ✅) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited). → §VI.1

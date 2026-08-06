@@ -370,6 +370,35 @@ it. Four decisions worth keeping:
   where its CSS comes from — the source links a stylesheet at the source's origin, the replica
   inlines the captured `Theme` through `{{theme.css}}`, which is what makes SH424's token edits reach
   the page. `lang` is carried over only when every captured page agreed on one.
+- **One layout, both modes, and every conversion with a page gets it (SH464).** A layout is resolved
+  through `site.postTypeLayout`, which is keyed by **post-type**, so there is exactly one per site
+  and "a layout per mode" is not a shape that exists. SH449 wrote it only for a verbatim page, and
+  what that left is what Block Q is named after: the authorable path wrote sections, a Page and a
+  Theme and **no PageLayout**, so `/preview/<site>/` answered **400 — binds no layout for post-type
+  `Page`**, and the console (which frames the site's front end or, failing that, that same preview)
+  had nothing to frame either. A *mixed* conversion was worse than either — the fidelity layout
+  renders `{{{content}}}` and a section page has none, so it served a blank body and reported
+  success. The template now branches: `{{{content}}}` when the page has it, and
+  `{{#getRelation sections}}` when it has sections.
+- **The authorable half is `sh-field` per field of the closed SH95 vocabulary (SH464).**
+  `{{#getRelation sections}}` walks `Page.sections` in order — SH247's helper takes the field's
+  *value* rather than its name, so it needs no post-type — and each row carries the section's fields
+  plus its `id` and `type`. `sh-post="{{id}}"` binds the block to the **section** post rather than to
+  the page (without it, editing a heading writes the field onto the Page, which loses content
+  silently) and `sh-field` is what `ShRegionComposer` turns into `data-shio-prop`. That pairing is
+  the whole of the task: fidelity mode already proved the renderer annotates whatever the template
+  declares, and verbatim markup declares nothing — so it rendered with **zero** `data-shio-prop` and
+  the editor loaded over a page with nothing to offer. The fields are a **union with a guard each**
+  rather than a branch on `{{type}}`: the vocabulary is closed, the engine registers no equality
+  helper, and a union means a new section type reusing these names renders without a template
+  change. `variant`, `align` and `columns` are presentation choices, so they ride as `data-`
+  attributes for the theme's CSS instead of being printed as text.
+- **`PAGE_BODY_HTML` is an export with no interpolation, and that is a test seam (SH464).** The
+  layout is written here in JavaScript and annotated by `ShRegionComposer` in the JVM, so a Java
+  test with its own copy of the template would go green while the shipped one was broken — which is
+  what SH449's CLI tests did: they asserted the document's *shape* and could not see that the
+  authorable branch wrote no layout at all. `ShConvertedLayoutRenderTest` slices those bytes out of
+  this file and renders them through the real engine, so there is no second copy to drift (SH245).
 - **`{{{content}}}`, not one `Region` per block.** SH191's sidecar shape needs each block's own
   bytes and this pipeline cannot produce them: `buildTree` records no source offsets, so the only
   route back to markup is re-serializing a tree built from `stripNonMarkup`'s output, which has

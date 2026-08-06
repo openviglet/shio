@@ -278,9 +278,10 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     assert.equal(conversion.site, "Acme");
     assert.deepEqual(
       conversion.posts.map((post) => post.url),
-      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured"],
+      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured", "/theme/layout"],
       "the accepted block's id addresses the section, a Page composes it on each source path it "
-        + "appeared on (SH438), and the theme rides the same document",
+        + "appeared on (SH438), the theme rides the same document, and since SH464 so does the "
+        + "layout - a Page with none is a Page the renderer answers 400 for",
     );
     assert.equal(
       conversion.posts[0].data.heading,

@@ -378,11 +378,27 @@ test("SH449: an accepted page composes sections and carries no verbatim copy of 
   const page = document.posts.find((post) => post.type === "Page");
   assert.deepEqual(page.data.sections, [`${SECTIONS_FOLDER}/${id}`]);
   assert.ok(!("content" in page.data), "composed, so there is nothing verbatim to keep");
-  assert.ok(
-    !document.posts.some((post) => post.type === "PageLayout"),
-    "and no fidelity layout: it exists to serve verbatim markup, and there is none",
+  // SH464 inverts what SH449 asserted here, and the inversion is the task. "No layout when nothing
+  // is verbatim" was written as a saving and measured as the reason `/preview/<site>/` answered
+  // **400 - binds no layout for post-type 'Page'** on every authorable replica: the renderer resolves
+  // one layout per post-type, so a Page with no layout is a Page that does not render, and the block
+  // named "an existing site becomes an authorable Shio site" shipped neither half of that.
+  const layout = document.posts.find((post) => post.type === "PageLayout");
+  assert.ok(layout, "an authorable conversion needs a layout too - a Page renders through one");
+  assert.match(
+    layout.data.HTML,
+    /\{\{#getRelation sections\}\}/,
+    "and the layout walks Page.sections, which is the half that makes the sections visible",
   );
-  assert.ok(!("postTypeLayout" in document), "so the document is the bytes it was before SH449 (P5)");
+  assert.match(
+    layout.data.HTML,
+    /sh-post="\{\{id\}\}"[\s\S]*sh-field="heading"/,
+    "SH464: sh-post binds the block to the SECTION post and sh-field is what the renderer turns "
+      + "into data-shio-prop - fidelity mode renders with zero of them, so the editor loads over a "
+      + "page with nothing to offer",
+  );
+  assert.equal(document.postTypeLayout.Page, layout.data.TITLE,
+    "and the binding rides the document, because a layout nobody bound renders nothing");
 });
 
 test("SH417: no --site is refused before anything is read", async () => {
@@ -563,8 +579,9 @@ test("SH438: each captured page becomes a Page composing its sections, in source
   );
   assert.deepEqual(
     document.folders,
-    [{ path: SECTIONS_FOLDER }, { path: "/" }],
-    "and the site root is declared, because that is where a page lives",
+    [{ path: SECTIONS_FOLDER }, { path: "/" }, { path: "/theme" }],
+    "the site root is declared, because that is where a page lives — and since SH464 /theme is "
+      + "too, because every conversion with a page now carries the layout that renders it",
   );
 });
 

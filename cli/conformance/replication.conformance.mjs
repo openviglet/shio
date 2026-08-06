@@ -184,6 +184,33 @@ describe("SH448 conformance: replication, from a served source to an installable
         + "answered 404, and every test was green because none of them asked an instance",
     );
 
+    // ── SH464: and the authorable replica RENDERS, which is the half the block was named for ──
+    //
+    // The line above proves the home page *exists*; it existed before SH464 too. What it could not
+    // ask is whether a visitor gets it: `convert` wrote sections, a Page and a Theme and no
+    // PageLayout, so `/preview/<site>/` answered **400 - binds no layout for post-type 'Page'**, and
+    // the console frames the site's front end or, failing that, that same preview - so the editor
+    // had nothing to frame either. Block Q is named "an existing site becomes an authorable Shio
+    // site" and neither of its two modes produced one. Resolving an address and rendering a page are
+    // different questions, and only the second one had the wrong answer.
+    const authorable = await fetch(`${conn.baseUrl}/preview/${encodeURIComponent(site)}/`, {
+      headers: { Authorization: basicOf(conn) },
+    });
+    const authorableHtml = await authorable.text();
+    assert.equal(
+      authorable.status,
+      200,
+      `SH464: an authorable replica renders. Body: ${authorableHtml.slice(0, 300)}`,
+    );
+    assert.match(
+      authorableHtml,
+      /data-shio-prop="heading"/,
+      "SH464: and the editor has props to bind - the layout declares sh-field per field of the SH95 "
+        + "vocabulary, which the renderer turns into data-shio-prop. Fidelity mode renders with ZERO "
+        + "of them, because verbatim markup declares no sh-field, so the bridge loaded over a page "
+        + "with nothing to offer. That is the other half of the same measurement.",
+    );
+
     const found = await agent.findAll({ site });
     const urls = found.results.map((row) => row.address ?? row.url ?? "");
     assert.ok(
