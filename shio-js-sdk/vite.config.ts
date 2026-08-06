@@ -4,7 +4,7 @@ import { resolve } from "path";
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, "src/shio-editor-cors.ts"),
+      entry: resolve(import.meta.dirname, "src/shio-editor-cors.ts"),
       name: "ShioEditorCors",
       formats: ["es", "umd", "iife"],
       fileName: (format) => {

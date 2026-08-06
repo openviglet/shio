@@ -416,6 +416,11 @@ automatically — which is why the order is load-bearing, since `shio-sections` 
 - Proxy: `/api` and `/logout` and `/csrf` → `http://localhost:2710`
 - Path alias: `@` → `./src`
 - Chunk splitting: vendor-ui (radix), vendor-lib (other node_modules)
+- **`import.meta.dirname`, never `__dirname` (SH542).** Every package here is `"type": "module"`, so
+  the CJS global only works because Vite's default `bundle` config loader rewrites it — Vite 8 warns,
+  and under `configLoader: 'native'` (planned to become the default) it is a `ReferenceError` at
+  config load, which fails `compile:build` and so `mvn package`. All nine configs use the ESM form
+  and `cli/test/vite-config-esm.test.mjs` walks the repo to keep it that way.
 
 ### Static Resources (Spring)
 - `/store/**` → file_source parent directory
