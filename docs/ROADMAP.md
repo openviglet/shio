@@ -86,6 +86,7 @@
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH505** (deps: SH426 ✅) **A fixed overlay's text is adopted as the intro of three unrelated sections** — The consent banner sits out of flow on every page and contentRoot excludes only header and footer chrome, so its first paragraph became content on three pages at once. → §XVII.58
 - 📋 **SH506** (deps: SH425 ✅) **A script element is proposed as a content block, with a post-type that has no fields** — It recurs on all six pages so the walker promotes it, and the proposal offers Block1 with an empty field list, which can hold nothing and would enter the model. → §XVII.59
+- 📋 **SH507** (deps: SH464 ✅) **An authorable replica is 99% theme and applies none of it, so there is nothing to curate** — Dropping the source's classes drops the whole design at Tailwind scale: 2894 rules inlined, 8 shio-* names to match, and zero source classes surviving. → §XVII.60
 
 ## Block F — Market positioning
 

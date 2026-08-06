@@ -1622,6 +1622,32 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
+### XVII.60 The theme becomes payload (SH507)
+
+The Universal Editor over an authorable replica of `www.viglet.org` shows a wall of
+unstyled text: every field annotated and outlined, and nothing to judge.
+
+The numbers say why, and they are worse than "the pixels have moved" implies. The page
+is **1,066,436 bytes, of which 1,062,141 — 99% — is the inlined theme**, defining
+roughly **2,894 rules**. The markup it is meant to style carries **19 class attributes**
+drawing on **8 distinct `shio-*` names**, and **zero** source classes survive. So the
+curator loads a megabyte of design and can apply none of it.
+
+At the scale of a hand-written vocabulary that trade is defensible: a few classes lost,
+a plain page, the content readable. At Tailwind's scale it inverts — styling *is* the
+class attribute, so dropping classes drops the whole design while keeping its full
+weight. The captured theme becomes payload.
+
+This breaks the product's premise rather than being cosmetic. "The human curates" means
+looking: approving a hero, judging a headline's length, seeing a card grid is balanced.
+A surface with no layout supports none of it, and the fidelity replica that *does* look
+right has no fields — so the two halves of the sentence are still in different sites.
+
+The conversion already knows what it dropped: `propose` counts it, per candidate, as
+`311 class name(s) — all styling`. Emitting them onto the section markup is the cheap
+direction. Whether a stranger's class names belong inside authorable content is the real
+question, and it is a decision.
+
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against
