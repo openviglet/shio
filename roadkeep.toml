@@ -80,6 +80,22 @@ ref_scheme = "outline"
 # cost time (SH513 and SH514). The fifth run is spent: nine tasks, nine commits, and the
 # order held - SH520 and SH516 first made every measurement after them worth reading.
 priority = [
+  # The sixth run, on instruction (2026-08-06): SH521 through SH529, dependency-ordered rather
+  # than by id. SH521 led for SH516's reason one level along and has shipped - every check
+  # resolved against the tree, so `ok` on a page that had lost most of itself was a fact the
+  # instance already held and nobody joined to a judgement. Then the rest of "judge the artefact"
+  # (SH522's declaration-vs-product join, SH526's accessibility tree), then the test-debt chain
+  # that is computable and uncounted (SH527 names the gap, SH528 gives the fixture the traits to
+  # reproduce it, SH529 draws the list), and last the model-proposal chain, which is the biggest
+  # and adds a verb (SH523, then SH524 and SH525 on top of it).
+  "SH522",
+  "SH526",
+  "SH527",
+  "SH528",
+  "SH529",
+  "SH523",
+  "SH524",
+  "SH525",
   "Block R",
   "Block P",
   "Block H",

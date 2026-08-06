@@ -460,6 +460,21 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   the one attribute the rewriter reads and it does not. Subjects are the post-types the site binds
   a layout for (`postTypeLayout` *is* the definition of "is a page"), bounded at 50 pages, one
   finding per distinct path per page, and both the cut and the count go in `notes`.
+  **And the group judges the artefact on two reads that already held the finding (SH521).**
+  `verify` answered **ok** on a page that had lost its hero, its grid and its footer while
+  `GET /agent/render` answered `links: 0, images: 0` — the intact version answers `links: 11,
+  images: 1` — and listed nine classes the page draws with and nothing styles. *Shio knew.* Not a
+  missing fact: a fact nobody joined to a judgement, `unstyledClasses` being a finding written as a
+  list and `links: 0` one written as a number. Both are computed from the bytes the group has just
+  rendered, so each is a **threshold, not an analysis**. `page-empty` (error) is four conditions at
+  once — no heading, no link, no image and under 20 words — because any one alone is a page somebody
+  may have meant (a landing page that is one image, a notice that is one block of prose) and all
+  four together is the SH520 symptom. `page-unstyled` (warning) reports `unstyledClasses` **only
+  when the page loads no external stylesheet**: `ShHtmlAppearance` keeps that list advisory for a
+  right reason — the 2018 `bootstrap-site` package draws with CDN classes this instance has never
+  seen — and the guard is what makes the same list a finding without inheriting the false positives,
+  since the document's own CSS is then the whole of what styles it. It also retires the join that
+  was being rebuilt in Python every round and got wrong twice.
   **`checks=delivery` proves a route instead of resolving it (SH141)** — the one group that
   leaves the process. It fetches each published page and each unresolved link from the site's own
   URL through `ShAgentDeliveryProbe`, the single guarded fetch path SH101 built, and turns "the

@@ -189,6 +189,7 @@
 - **SH500** — The guard reads the commit first and a match at HEAD ends the question, so a clean tree at HEAD runs; the timestamp is now the fallback for a commit that is not HEAD or a tree with tracked changes, and the decision is asserted over all four commit x tree combinations.
 - **SH501** — url-missing is exempted for the File post type, so a fidelity replica's uploaded assets stop reporting three errors and the fix that would have given a File a friendly URL is gone; find's id: note makes the same exemption, and a content post with no furl is still an error.
 - **SH516** — A page check renders each published page and resolves every reference on it against the URL that page is served at, so a link or an asset the site does not serve is an error rather than a clean tree. It reads references through the rewriter's own walk, which is what stops the gate and the page from disagreeing about what a reference is.
+- **SH521** — The page check judges the artefact on the two reads that already held the finding: a page rendering with no heading, no link, no image and almost no words is an error, and a page drawing with classes its own stylesheet does not define is a warning where it loads no other stylesheet and the answer is therefore knowable.
 
 ### Block I follow-up
 

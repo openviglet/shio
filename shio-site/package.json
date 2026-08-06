@@ -1,0 +1,39 @@
+{
+  "name": "shio-site",
+  "private": true,
+  "version": "2026.3.1",
+  "type": "module",
+  "description": "Viglet Shio — public site (shio.viglet.org). The CMS whose primary operator is a coding agent.",
+  "scripts": {
+    "dev": "vite",
+    "preview": "vite preview",
+    "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs && node scripts/og-image.mjs",
+    "build:client": "vite build",
+    "build:ssr": "vite build --ssr src/entry-server.tsx --outDir dist-ssr",
+    "prerender": "node scripts/prerender.mjs",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
+    "@radix-ui/react-slot": "^1.3.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.27.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.16"
+  }
+}

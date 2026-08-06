@@ -452,32 +452,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.33 A fact nobody joined to a judgement (SH521)
-
-`verify` answered **ok** on a page that had lost its hero, grid and footer. At the same
-moment `GET /agent/render` answered `links: 0, images: 0` — the intact version answers
-`links: 11, images: 1` — and `appearance.unstyledClasses` listed nine classes the page
-draws with and nothing styles.
-
-Shio knew. Two reads held the finding and the gate consults neither, because every
-`verify` check resolves against the **tree**: does a furl exist, is a File addressable,
-does a layout name a theme. All true of a page that is empty.
-
-That is the shape of every defect this work has produced. Not a missing fact — a fact
-nobody joined to a judgement: `unstyledClasses` is a finding written as a list, `links:
-0` one written as a number.
-
-So the change is small and structural: **the gate reads the artefact, not only the
-store.** `/agent/render` already computes what it needs, so this is a join and a
-threshold, not an analysis — a page whose `unstyledClasses` is non-empty has a theme
-that does not reach it, and a replicated page with fewer links than its capture recorded
-has lost content.
-
-It also ends the part of my own work that keeps going wrong. Every round I rebuild that
-join in Python and I have got it wrong twice — once reporting zero broken references on
-a page with a missing logo, once counting 106 editable fields on a page that was mostly
-gone.
-
 ### IX.34 Both sides are held and never compared (SH522)
 
 Shio holds both sides of every comparison it does not make. A capture is a **declaration

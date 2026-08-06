@@ -1097,8 +1097,12 @@ class ShPageRenderTest {
                     "<a href=\"second\">a page this site publishes</a>"
                             + "<a href=\"../missing\">a page it does not</a>"
                             + "<img src=\"img/nope.png\">"), when);
-            published(owner, root, pageType, "Second", "/second",
-                    json("TEXT", "<p>Two</p>"), when);
+            // Real content on purpose: SH521's `page-empty` reports a published page with no
+            // heading, no link, no image and almost no words, and it is right to — this fixture is
+            // about resolving references, so its second page has to be a page.
+            published(owner, root, pageType, "Second", "/second", json("TEXT",
+                    "<h1>Second</h1><p>Enough prose on this page that it is a page somebody wrote "
+                            + "rather than an empty one the gate ought to be reporting.</p>"), when);
         });
 
         com.viglet.shio.api.agent.verify.dto.ShAgentReport tree = verifyService.verify(site, "content,routes", 100);
@@ -1133,6 +1137,104 @@ class ShPageRenderTest {
                 .as("a check that reports nothing has to say what it read, or a clean pass and an "
                         + "unrun pass are the same output (SH138)")
                 .anySatisfy(note -> assertThat(note).contains("rendered 2 page(s)"));
+    }
+
+    /**
+     * SH521 — the fact was already computed and nobody joined it to a judgement.
+     *
+     * <p>{@code verify} answered <b>ok</b> on a page that had lost its hero, its grid and its
+     * footer, while {@code GET /agent/render} answered {@code links: 0, images: 0} at the same
+     * moment and listed nine classes the page draws with and nothing styles. Shio knew. Both reads
+     * are computed from the bytes the check has just rendered, so this is a threshold rather than
+     * an analysis — and it ends the join I keep rebuilding by hand and have got wrong twice.</p>
+     */
+    @Test
+    @DisplayName("SH521: a page that renders to nothing is a finding, and so is one nothing styles")
+    void theGateJudgesTheArtefactRatherThanTheStore() {
+        String site = "sh521-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh521Page" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH521_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            // The layout carries its own stylesheet and loads no other, which is the one state in
+            // which "this class is styled by nothing" is knowable rather than advisory.
+            published(owner, root, layoutType, layoutTitle, "/l", json("HTML",
+                    "<html><head><style>.shio-page{margin:0}</style></head>"
+                            + "<body class=\"shio-page\">{{{TEXT}}}</body></html>"), when);
+            published(owner, root, pageType, "Gone", "/", json("TEXT", ""), when);
+            published(owner, root, pageType, "Unstyled", "/unstyled", json("TEXT",
+                    "<h1 class=\"hero-title\">Still here</h1>"
+                            + "<p class=\"lead\">Prose enough that this page is not the empty one, "
+                            + "which is the other half of what this test tells apart.</p>"), when);
+        });
+
+        List<com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding> findings =
+                verifyService.verify(site, "page", 100).findings();
+
+        assertThat(findings)
+                .extracting(com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding::rule,
+                        com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding::address)
+                .as("a page with no heading, no link, no image AND almost no words is empty in "
+                        + "every sense a reader has — any one of those alone is a page somebody "
+                        + "may have meant, and all four at once is the SH520 symptom")
+                .contains(tuple("page-empty", "post:" + site + "/"))
+                .contains(tuple("page-unstyled", "post:" + site + "/unstyled"));
+        assertThat(findings)
+                .filteredOn(finding -> "page-unstyled".equals(finding.rule()))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.message()).contains("hero-title", "lead");
+                    assertThat(finding.severity()).isEqualTo("warning");
+                });
+    }
+
+    @Test
+    @DisplayName("SH521: a page loading a stylesheet this instance never saw is not judged on it")
+    void anExternalStylesheetMakesTheUnstyledListUnknowable() {
+        String site = "sh521x-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh521xPage" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH521X_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            published(owner, root, layoutType, layoutTitle, "/l", json("HTML",
+                    "<html><head><style>.shio-page{margin:0}</style>"
+                            + "<link rel=\"stylesheet\" href=\"https://cdn.test/bootstrap.css\">"
+                            + "</head><body class=\"shio-page\">{{{TEXT}}}</body></html>"), when);
+            published(owner, root, pageType, "Bootstrapped", "/", json("TEXT",
+                    "<h1 class=\"display-4\">Styled elsewhere</h1>"
+                            + "<p class=\"lead\">The 2018 bootstrap-site package is exactly this "
+                            + "page, and a rule over it would fire dozens of times.</p>"), when);
+        });
+
+        assertThat(verifyService.verify(site, "page", 100).findings())
+                .as("ShHtmlAppearance keeps `unstyledClasses` advisory because a page may load a "
+                        + "stylesheet this instance has never seen, and that reasoning is right. "
+                        + "The guard is what makes the same list a finding without inheriting the "
+                        + "false positives: only where the document's own CSS is the whole of what "
+                        + "styles it")
+                .noneMatch(finding -> "page-unstyled".equals(finding.rule()));
     }
 
     /** A published row — the state the SH516 check reads, and the fixture default is DRAFT. */

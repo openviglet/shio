@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="headline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffb59a" />
+      <stop offset="45%" stop-color="#ff7a5c" />
+      <stop offset="100%" stop-color="#ffcf8f" />
+    </linearGradient>
+    <radialGradient id="orb" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff6347" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#ff6347" stop-opacity="0" />
+    </radialGradient>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1" />
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="#150e0c" />
+  <rect width="1200" height="630" fill="url(#grid)" />
+  <circle cx="150" cy="90" r="320" fill="url(#orb)" />
+  <circle cx="1080" cy="560" r="260" fill="url(#orb)" />
+
+  <!-- The Sh mark -->
+  <g transform="translate(80, 80)">
+    <rect x="0" y="0" width="88" height="88" rx="11" fill="#FF6347" stroke="#FFDEAD" stroke-width="4" />
+    <text x="70" y="26" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="12" font-weight="300" fill="#FFDEAD" fill-opacity="0.85" text-anchor="end" letter-spacing="1.2">CMS</text>
+    <text x="14" y="72" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="41" font-weight="900" fill="#FFDEAD">Sh</text>
+  </g>
+  <text x="192" y="140" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="30" font-weight="800" fill="#f6ece8">Viglet Shio</text>
+
+  <!-- Headline -->
+  <text x="80" y="300" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="#f6ece8">The CMS whose operator</text>
+  <text x="80" y="378" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="url(#headline)">is Claude Code.</text>
+
+  <text x="80" y="436" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="27" font-weight="500" fill="#c9b6ae">Your agent builds the site. You approve it.</text>
+
+  <!-- The command, in a terminal pill -->
+  <g transform="translate(80, 480)">
+    <rect x="0" y="0" width="770" height="62" rx="12" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5" />
+    <text x="24" y="40" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="22" fill="#ff8a6b">$</text>
+    <text x="50" y="40" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="22" fill="#ede2dd">claude mcp add shio -- npx @viglet/shio mcp</text>
+  </g>
+
+  <text x="80" y="588" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="19" fill="#8d7b74">shio.viglet.org &#183; open source &#183; self-hosted &#183; MCP-native</text>
+</svg>

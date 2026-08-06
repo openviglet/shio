@@ -1783,6 +1783,10 @@ public class ShAgentVerifyService {
                             + "answers with the same problem document, which names the repair."));
             return 0;
         }
+        // SH521 — the two reads that already held the finding, joined to a judgement. Both are
+        // computed from the bytes just rendered, so this is a threshold rather than an analysis.
+        emptyPage(check, address, html, findings);
+        unstyledPage(check, address, html, findings);
         Set<String> published = scan.publishedByUrl()
                 .getOrDefault(site.getId(), Map.of()).keySet();
         Set<String> seen = new LinkedHashSet<>();
@@ -1827,6 +1831,85 @@ public class ShAgentVerifyService {
                         + "(shio remember " + ShFrontEndRoutes.MEMORY_KEY + " \"" + path
                         + "\" --site " + site.getName() + ")."));
     }
+
+    /**
+     * A published page that renders to nothing (SH521).
+     *
+     * <h2>The fact nobody joined to a judgement</h2>
+     *
+     * <p>{@code verify} answered <b>ok</b> on a page that had lost its hero, its product grid and
+     * its footer. At the same moment {@code GET /agent/render} answered {@code links: 0, images: 0}
+     * where the intact version answers {@code links: 11, images: 1}. <b>Shio knew.</b> The read held
+     * the finding and the gate consulted neither, because every check resolved against the
+     * <em>tree</em> — does a furl exist, is a {@code File} addressable, does a layout name a theme —
+     * and all of that is true of a page that is empty.</p>
+     *
+     * <p>That is the shape of every defect this run produced: not a missing fact, a fact nobody
+     * joined to a judgement. {@code unstyledClasses} is a finding written as a list and
+     * {@code links: 0} one written as a number, and {@link ShHtmlOutline} computes both already.</p>
+     *
+     * <h2>The threshold, and why it is four conditions rather than one</h2>
+     *
+     * <p>A page with no heading, no link, no image <b>and</b> almost no words is empty in every
+     * sense a reader has. Any one of those alone is a page somebody may have meant: a landing page
+     * that is one image, a legal notice that is one block of prose. All four at once is the SH520
+     * symptom — a `Page` holding a title and nothing else — and nothing else produces it.</p>
+     */
+    private static void emptyPage(String check, String address, String html, List<Finding> findings) {
+        ShHtmlOutline.Outline outline = ShHtmlOutline.of(html);
+        if (!outline.headings().isEmpty() || !outline.links().isEmpty()
+                || !outline.images().isEmpty() || outline.words() >= EMPTY_PAGE_WORDS) {
+            return;
+        }
+        findings.add(Finding.error(check, "page-empty", address, null,
+                "This page is published and renders with no heading, no link, no image and "
+                        + outline.words() + " word(s) — there is nothing on it to read.",
+                "Check what composes it: a Page with `sections` the site does not hold, or a "
+                        + "layout whose slots resolve to nothing, renders exactly this. "
+                        + "GET /api/v2/agent/render?address=" + address + " shows the same counts."));
+    }
+
+    /**
+     * A page drawing with class names its own stylesheet does not define (SH521).
+     *
+     * <h2>Advisory in the read, a finding only where it is knowable</h2>
+     *
+     * <p>{@link ShHtmlAppearance} deliberately reports {@code unstyledClasses} as advisory rather
+     * than as a lint, and its reasoning is exactly right: a page may load a stylesheet this instance
+     * has never seen — the 2018 {@code bootstrap-site} package is full of CDN Bootstrap classes —
+     * so a rule over it would fire dozens of times on the one real example in the repository.</p>
+     *
+     * <p>The guard is what makes the same list a finding without inheriting that: <b>only when the
+     * page loads no external stylesheet at all</b>. Then the CSS the document carries is the whole
+     * of what styles it, and a class it does not define is provably drawn by nothing. That is the
+     * measured case — an authorable replica whose 1,062,141 bytes of captured theme met eight
+     * {@code shio-*} names, and a page carrying nine classes nothing styled while the gate said
+     * ok — and it is the one case where the answer is certain.</p>
+     *
+     * <p>A <b>warning</b>, not an error: the premise is provable and the consequence is
+     * presentational, and a class used only by a script is a real thing to have. That is the line
+     * this service's own doctrine draws, applied honestly rather than in the safe direction.</p>
+     */
+    private static void unstyledPage(String check, String address, String html,
+                                     List<Finding> findings) {
+        ShHtmlAppearance.Appearance appearance = ShHtmlAppearance.of(html);
+        if (!appearance.externalStylesheets().isEmpty() || appearance.unstyledClasses().isEmpty()) {
+            return;
+        }
+        List<String> named = appearance.unstyledClasses().stream().limit(6).toList();
+        findings.add(Finding.warning(check, "page-unstyled", address, null,
+                "This page draws with " + appearance.unstyledClasses().size()
+                        + " class name(s) its own stylesheet does not define, and it loads no other: "
+                        + String.join(", ", named)
+                        + (appearance.unstyledClasses().size() > named.size() ? ", …" : "") + ".",
+                "Either the layout names a theme written for a different markup, or the markup was "
+                        + "written against class names the theme does not have. "
+                        + "GET /api/v2/agent/render?address=" + address
+                        + " returns the whole list under appearance.unstyledClasses."));
+    }
+
+    /** Below this many words, with no heading, link or image, a page has nothing on it. */
+    private static final int EMPTY_PAGE_WORDS = 20;
 
     /** A resolved reference without its query string or fragment — what a route is keyed by. */
     private static String pathOnly(String path) {

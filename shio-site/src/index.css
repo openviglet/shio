@@ -1,0 +1,188 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/*
+ * Shio brand: tomato (#FF6347 — the Viglet product colour the `Sh` mark already
+ * carries) on a WARM neutral, against Turing's royal blue on cold navy. The two
+ * sites are siblings on purpose: same type pair, same section grammar, opposite
+ * temperature.
+ *
+ * The light-mode primary is deliberately darker than #FF6347 itself: tomato
+ * under white text is ~2.9:1, which fails AA on every filled button. The brand
+ * tomato appears at full strength on dark surfaces, where it is the text colour
+ * rather than the background.
+ */
+:root {
+  --radius: 0.75rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.17 0.015 40);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.17 0.015 40);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0.015 40);
+  --primary: oklch(0.56 0.19 31);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.97 0.008 55);
+  --secondary-foreground: oklch(0.26 0.03 35);
+  --muted: oklch(0.97 0.008 55);
+  --muted-foreground: oklch(0.52 0.02 40);
+  --accent: oklch(0.96 0.02 45);
+  --accent-foreground: oklch(0.32 0.07 33);
+  --destructive: oklch(0.58 0.24 27);
+  --border: oklch(0.92 0.01 50);
+  --input: oklch(0.92 0.01 50);
+  --ring: oklch(0.62 0.17 32);
+}
+
+.dark {
+  --background: oklch(0.15 0.012 40);
+  --foreground: oklch(0.96 0.005 60);
+  --card: oklch(0.19 0.015 38);
+  --card-foreground: oklch(0.96 0.005 60);
+  --popover: oklch(0.19 0.015 38);
+  --popover-foreground: oklch(0.96 0.005 60);
+  --primary: oklch(0.72 0.17 34);
+  --primary-foreground: oklch(0.16 0.02 35);
+  --secondary: oklch(0.24 0.015 38);
+  --secondary-foreground: oklch(0.96 0.005 60);
+  --muted: oklch(0.24 0.015 38);
+  --muted-foreground: oklch(0.7 0.015 45);
+  --accent: oklch(0.28 0.04 35);
+  --accent-foreground: oklch(0.96 0.005 60);
+  --destructive: oklch(0.7 0.19 22);
+  --border: oklch(0.29 0.018 38);
+  --input: oklch(0.29 0.018 38);
+  --ring: oklch(0.65 0.15 33);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+    /* Clear the sticky nav (h-16 = 4rem) so anchored sections aren't hidden. */
+    scroll-padding-top: 4.5rem;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  /* Faint grid used in the dark hero / CTA bands */
+  .grid-bg {
+    background-image: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.05) 1px,
+        transparent 1px
+      ),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(120% 90% at 50% 0%, #000 35%, transparent 78%);
+    mask-image: radial-gradient(120% 90% at 50% 0%, #000 35%, transparent 78%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(110deg, #ffb59a, #ff7a5c 45%, #ffcf8f);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* The scanline sheen on a terminal panel — one pixel row every three. */
+  .scanlines::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.022) 0 1px,
+      transparent 1px 3px
+    );
+  }
+}
+
+@keyframes orb-float-a {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(40px, 30px);
+  }
+}
+@keyframes orb-float-b {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-40px, 40px);
+  }
+}
+.animate-orb-a {
+  animation: orb-float-a 14s ease-in-out infinite;
+}
+.animate-orb-b {
+  animation: orb-float-b 16s ease-in-out infinite;
+}
+
+/* The block cursor at the end of the hero transcript. */
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.animate-caret {
+  animation: caret-blink 1.1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-orb-a,
+  .animate-orb-b,
+  .animate-caret {
+    animation: none;
+  }
+}

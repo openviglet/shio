@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- The Viglet "Sh" product mark: tomato square, navajowhite rule and letters. -->
+  <rect x="2" y="2" width="60" height="60" rx="8" fill="#FF6347" stroke="#FFDEAD" stroke-width="3" />
+  <text
+    x="8"
+    y="48"
+    font-family="'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif"
+    font-size="30"
+    font-weight="900"
+    fill="#FFDEAD"
+  >Sh</text>
+</svg>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Viglet Shio — the CMS whose operator is Claude Code</title>
+    <meta name="description" content="An open-source, self-hosted headless CMS designed for a coding agent: MCP-native, one call replaces a discovery session, content lives as files, every 4xx carries the fix, and every write lands as a draft a human approves." />
+    <meta name="theme-color" content="#FF6347" />
+    <meta property="og:title" content="Viglet Shio — the CMS whose operator is Claude Code" />
+    <meta property="og:description" content="Your agent builds the site. You approve it. Open source, self-hosted, MCP-native." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://shio.viglet.org/" />
+    <meta property="og:image" content="https://shio.viglet.org/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="canonical" href="https://shio.viglet.org/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://shio.viglet.org/og.png" />
+    <!-- anti-FOUC: apply the stored theme class before first paint (the prerendered HTML paints before the bundle) -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("shio-site-theme") || "system";
+          var dark =
+            t === "dark" ||
+            (t === "system" &&
+              globalThis.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          /* storage blocked — fall back to the default (light) theme */
+        }
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
