@@ -1,5 +1,5 @@
 {
-  "name": "create-shio-app",
+  "name": "@viglet/create-shio-app",
   "version": "2026.3.1",
   "description": "Scaffold a Next.js (App Router) site wired to the Shio CMS Content Delivery API. The flagship 'JS dev, zero Java' starter.",
   "type": "module",

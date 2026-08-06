@@ -89,7 +89,14 @@ class ShSilentCatchInventoryTest {
             // not the one asking, at a moment (context refresh) when the diagnostics window is not
             // yet the place anybody reads. Same shape as SH389's finding: reported, in the medium
             // the caller is already reading. Counted rather than exempted, so it stays a diff.
-            "api", 55,
+            // 57 since SH516, and the two are the two shapes this list already holds, one of each.
+            // `ShAgentVerifyService.onePage` catches a teaching exception from the renderer and
+            // *adds a Finding* naming the page that does not render — SH389's shape, reporting of
+            // the strongest kind here, and invisible to a lint that keys on incidents. And it
+            // catches `ShPageRedirectException` to skip the page, which is SH385's shape one layer
+            // along: a `Redirect` post is a working route with no page to read, so the catch IS the
+            // handling. Counted rather than exempted, so the population stays a diff.
+            "api", 57,
             "tenant", 4,
             "blueprint", 2,
             "exchange", 2,

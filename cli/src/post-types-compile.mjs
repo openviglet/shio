@@ -13,7 +13,7 @@
  * file already `import`s `@viglet/shio-model` and calls `postType(...)`, so the
  * value we collect is a plain `ShPostTypeDef` — the CLI needs no DSL runtime of
  * its own. `.ts` is loaded via the project's own TS toolchain (Node type
- * stripping / the loader `create-shio-app` ships) — no new bundler in the CLI.
+ * stripping / the loader `@viglet/create-shio-app` ships) — no new bundler in the CLI.
  */
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";

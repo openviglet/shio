@@ -14,8 +14,8 @@
     "conformance": "node --test --test-force-exit --test-concurrency=1 \"conformance/*.conformance.mjs\""
   },
   "dependencies": {
-    "@viglet/shio-client": "workspace:*",
-    "create-shio-app": "workspace:*"
+    "@viglet/create-shio-app": "workspace:*",
+    "@viglet/shio-client": "workspace:*"
   },
   "keywords": [
     "shio",

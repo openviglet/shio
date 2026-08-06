@@ -9,6 +9,7 @@
 package com.viglet.shio.render;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
@@ -104,6 +105,9 @@ class ShPageRenderTest {
     private ShPreviewLinks previewLinks;
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    /** SH516 — the gate, asked about the page this fixture can actually render. */
+    @Autowired
+    private com.viglet.shio.api.agent.verify.ShAgentVerifyService verifyService;
     @Autowired
     private tools.jackson.databind.ObjectMapper objectMapper;
     @Autowired
@@ -1043,6 +1047,102 @@ class ShPageRenderTest {
                 .as("SH259 will need `?q=`, and a rewrite that ate it would be a defect nobody "
                         + "looked for until then")
                 .contains("href=\"/preview/" + siteName + "/?q=1#top\"");
+    }
+
+    // --- SH516: the gate reads the page it approved ---
+
+    /**
+     * The check that closes the gap every defect of this session lived in.
+     *
+     * <p>{@code verify --site VILT} said <b>ok — 0 errors, 17 warnings</b> over a page with 38
+     * broken links of 39 and 43 broken references, because every check resolves against the content
+     * graph: does a furl exist, is a {@code File} post addressable. All of that was true, and the
+     * page still did not work. So the fixture below is a site whose content is <em>internally
+     * consistent</em> — nothing points at a post that is missing — and whose rendered page asks for
+     * two things this site does not serve. {@code content,routes} has to answer {@code ok} on it,
+     * or the test is asserting nothing; {@code page} has to name both.</p>
+     */
+    @Test
+    @DisplayName("SH516: the tree says ok and the page check names what the page actually asks for")
+    void thePageCheckResolvesTheRenderedPagesOwnReferences() {
+        String site = "sh516-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh516Page" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH516_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            published(owner, root, layoutType, layoutTitle, "/l",
+                    json("HTML", "<html><body>{{{TEXT}}}</body></html>"), when);
+            // Relative, and that is deliberate: the strings a real capture leaves behind are
+            // relative, and a check that filtered references on a leading slash would report zero
+            // here — which is the mistake the hand-measurement made before this existed.
+            published(owner, root, pageType, "Home", "/", json("TEXT",
+                    "<a href=\"second\">a page this site publishes</a>"
+                            + "<a href=\"../missing\">a page it does not</a>"
+                            + "<img src=\"img/nope.png\">"), when);
+            published(owner, root, pageType, "Second", "/second",
+                    json("TEXT", "<p>Two</p>"), when);
+        });
+
+        com.viglet.shio.api.agent.verify.dto.ShAgentReport tree = verifyService.verify(site, "content,routes", 100);
+        assertThat(tree.ok())
+                .as("the content is self-consistent — this is the answer the gate has been giving "
+                        + "about pages whose every link is broken")
+                .isTrue();
+
+        com.viglet.shio.api.agent.verify.dto.ShAgentReport page = verifyService.verify(site, "page", 100);
+        assertThat(page.findings())
+                .extracting(com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding::rule,
+                        com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding::address)
+                .as("one finding per broken reference, addressed to the PAGE that emits it — which "
+                        + "is the artefact somebody edits, not the path that is missing. And the "
+                        + "one the site does publish is silent: `second` resolves to /second from "
+                        + "a page served at /")
+                .containsExactlyInAnyOrder(
+                        tuple("page-link-broken", "post:" + site + "/"),
+                        tuple("page-reference-broken", "post:" + site + "/"));
+        assertThat(page.findings())
+                .extracting(com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding::message)
+                .as("and each one quotes the string the page carries beside the path it resolves "
+                        + "to, because the repair is made in the markup and found by the path")
+                .anySatisfy(message -> assertThat(message).contains("'../missing'", "/missing"))
+                .anySatisfy(message -> assertThat(message)
+                        .contains("'img/nope.png'", "/img/nope.png"));
+        assertThat(page.ok())
+                .as("and they are errors: the route table this judged against belongs to the "
+                        + "process that will serve the request, so it is proved rather than guessed")
+                .isFalse();
+        assertThat(page.notes())
+                .as("a check that reports nothing has to say what it read, or a clean pass and an "
+                        + "unrun pass are the same output (SH138)")
+                .anySatisfy(note -> assertThat(note).contains("rendered 2 page(s)"));
+    }
+
+    /** A published row — the state the SH516 check reads, and the fixture default is DRAFT. */
+    private void published(ShSite site, ShFolder folder, ShPostType type, String title, String furl,
+                           String data, Instant when) {
+        ShPostUnified post = new ShPostUnified();
+        post.setId(UUID.randomUUID().toString());
+        post.setState(ShPostState.PUBLISHED);
+        post.setShSite(site);
+        post.setShFolder(folder);
+        post.setShPostType(type);
+        post.setTitle(title);
+        post.setFurl(furl);
+        post.setData(data);
+        post.setDate(when);
+        post.setOwner("admin");
+        entityManager.persist(post);
     }
 
     /**

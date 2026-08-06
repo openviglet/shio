@@ -11,6 +11,7 @@ package com.viglet.shio.render;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
@@ -264,26 +265,106 @@ public class ShPreviewLinks {
         // source document, so forty `<img>` tags sharing one sprite is the ordinary case and a query
         // per attribute would make the rewrite cost the page rather than the assets.
         Map<String, Boolean> assets = new HashMap<>();
-        for (String attribute : ASSET) {
-            rewriteAttribute(document, attribute, value -> rewriteAsset(value, prefix, page, assets, base));
-        }
-        rewriteAttribute(document, "srcset", value -> rewriteSrcset(value, prefix, page, assets, base));
-        rewriteAttribute(document, "style", value -> rewriteCss(value, prefix, page, assets, base));
-        rewriteStylesheets(document, prefix, page, assets, base);
-        for (String attribute : NAVIGABLE) {
-            rewriteAttribute(document, attribute, value -> rewriteOne(value, prefix, base));
-        }
+        walk(document, (reference, asset) -> asset
+                ? rewriteAsset(reference, prefix, page, assets, base)
+                : rewriteOne(reference, prefix, base));
         return document.html();
     }
 
+    /**
+     * What this pass does to one reference: a replacement, or {@code null} to leave it alone.
+     *
+     * <p>{@code asset} says which of the two rules applies — bytes this site serves, or a
+     * navigation into it — because that is the only thing the two callers below need to tell
+     * apart.</p>
+     */
+    @FunctionalInterface
+    interface Rule {
+        String apply(String reference, boolean asset);
+    }
+
+    /**
+     * Every reference the page carries, visited once — the <b>one list</b> (SH516).
+     *
+     * <p>{@link #rewriteInto} and {@link #referencesIn} are two shapes over this method rather than
+     * two walks, and that is the whole of what makes the gate's answer trustworthy: a check that
+     * looked for references in its own list would go green on the one attribute the rewriter reads
+     * and it does not. Whatever this rebases is exactly what that reports.</p>
+     */
+    private static void walk(Document document, Rule rule) {
+        for (String attribute : ASSET) {
+            eachAttribute(document, attribute, value -> rule.apply(value, true));
+        }
+        eachAttribute(document, "srcset", value -> eachSrcsetCandidate(value, rule));
+        eachAttribute(document, "style", value -> eachCssUrl(value, rule));
+        for (Element style : document.select("style")) {
+            String rewritten = eachCssUrl(style.data(), rule);
+            if (rewritten != null) {
+                // `Element#text` on a <style> writes a DataNode, which Jsoup emits unescaped — the
+                // one thing this pass must not undo, since an escaped url() is half the defect it
+                // exists for.
+                style.text(rewritten);
+            }
+        }
+        for (String attribute : NAVIGABLE) {
+            eachAttribute(document, attribute, value -> rule.apply(value, false));
+        }
+    }
+
     /** One attribute across the document, left exactly as it was wherever the rule answers null. */
-    private static void rewriteAttribute(Document document, String attribute, UnaryOperator<String> rule) {
+    private static void eachAttribute(Document document, String attribute, UnaryOperator<String> rule) {
         for (Element element : document.select("[" + attribute + "]")) {
             String rewritten = rule.apply(element.attr(attribute));
             if (rewritten != null) {
                 element.attr(attribute, rewritten);
             }
         }
+    }
+
+    /**
+     * Every reference the page carries, as paths in this site's space (SH516).
+     *
+     * <p>The read half of {@link #walk}, and the answer to the question {@code verify} could not
+     * ask: its checks resolve against the content graph — does a furl exist, is a {@code File} post
+     * addressable — and all of that can be true of a page whose every string still misses.
+     * Measured: {@code verify --site VILT} answered <b>ok, 0 errors, 17 warnings</b> over a page with
+     * 38 broken links of 39 and 43 broken references.</p>
+     *
+     * <p>{@link #INSTANCE_ROUTES} is filtered out here as it is there: those paths belong to the
+     * instance and are nobody's to judge as a site's content. Duplicates are kept — the caller knows
+     * whether it wants one finding per element or per distinct path.</p>
+     *
+     * @param basePath the URL the page is served at, in the site's own space
+     */
+    public static List<Reference> referencesIn(String html, String basePath) {
+        if (html == null || html.isBlank()) {
+            return List.of();
+        }
+        Document document = Jsoup.parse(html);
+        document.outputSettings().prettyPrint(false);
+        String base = basePath == null || basePath.isBlank() ? "/" : basePath;
+        List<Reference> found = new ArrayList<>();
+        walk(document, (reference, asset) -> {
+            String path = toSitePath(reference, base);
+            if (path != null && !isInstanceRoute(path)) {
+                found.add(new Reference(reference.trim(), path, asset));
+            }
+            // Never a replacement: this shape reads, and a `referencesIn` that edited its own copy
+            // of the document would be a second rewriter nobody asked for.
+            return null;
+        });
+        return List.copyOf(found);
+    }
+
+    /**
+     * One reference on a page: as the author wrote it, and as it resolves.
+     *
+     * @param raw   the attribute's own value, for a finding to quote
+     * @param path  where it lands in this site's URL space
+     * @param asset whether it asks for bytes ({@code src}, {@code srcset}, {@code poster},
+     *              {@code url()}) rather than a navigation
+     */
+    public record Reference(String raw, String path, boolean asset) {
     }
 
     /**
@@ -406,32 +487,16 @@ public class ShPreviewLinks {
      * and its bytes are served by whoever owns them. Shio's own theme is <em>inlined</em> by the
      * layout through {@code {{theme.css}}} (SH183), which is exactly why there is a {@code <style>} to
      * walk — and why walking it is enough.</p>
-     */
-    private void rewriteStylesheets(Document document, String prefix,
-                                    ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen,
-                                    String basePath) {
-        for (Element style : document.select("style")) {
-            String css = style.data();
-            String rewritten = rewriteCss(css, prefix, page, seen, basePath);
-            if (rewritten != null) {
-                // `Element#text` on a <style> writes a DataNode, which Jsoup emits unescaped —
-                // the one thing this pass must not undo, since an escaped url() is half the
-                // defect it exists for.
-                style.text(rewritten);
-            }
-        }
-    }
-
-    /**
-     * Every {@code url()} in a chunk of CSS, or {@code null} when none of them moved.
      *
-     * <p>The same method for a {@code <style>} element and for a {@code style} <b>attribute</b>
-     * (SH512): {@code style="background-image:url('img/hero.png')"} is a reference on the page and
-     * breaks exactly the way the stylesheet's did — measured as a missing hero background on a
-     * replica whose every asset had uploaded.</p>
+     * <h2>The same method for the {@code style} attribute (SH512)</h2>
+     *
+     * <p>{@code style="background-image:url('img/hero.png')"} is a reference on the page and breaks
+     * exactly the way the stylesheet's did — measured as a missing hero background on a replica
+     * whose every asset had uploaded. One method, so the two cannot come to differ.</p>
+     *
+     * @return the rewritten CSS, or {@code null} when no {@code url()} in it moved
      */
-    private String rewriteCss(String css, String prefix, ShPageRenderService.ShRenderedPage page,
-                              Map<String, Boolean> seen, String basePath) {
+    private static String eachCssUrl(String css, Rule rule) {
         // `(` and not `url(`: the pattern is case-insensitive, and a guard that is not would
         // skip a stylesheet written with `URL(` — legal CSS, and the kind of asymmetry that
         // makes one instance's replica render and another's not.
@@ -443,7 +508,7 @@ public class ShPreviewLinks {
         while (urls.find()) {
             String quote = quoteOf(urls);
             String raw = valueOf(urls).trim();
-            String served = rewriteAsset(raw, prefix, page, seen, basePath);
+            String served = rule.apply(raw, true);
             urls.appendReplacement(out, Matcher.quoteReplacement(
                     "url(" + quote + (served == null ? raw : served) + quote + ")"));
         }
@@ -505,9 +570,7 @@ public class ShPreviewLinks {
      * attribute holding one is left entirely alone — the honest answer, since a {@code data:} URI is
      * not a reference this pass has anything to do to.</p>
      */
-    private String rewriteSrcset(String value, String prefix,
-                                 ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen,
-                                 String basePath) {
+    private static String eachSrcsetCandidate(String value, Rule rule) {
         if (value == null || value.isBlank() || value.contains("data:")) {
             return null;
         }
@@ -521,7 +584,7 @@ public class ShPreviewLinks {
             int space = firstWhitespace(entry);
             String reference = space < 0 ? entry : entry.substring(0, space);
             String descriptor = space < 0 ? "" : entry.substring(space);
-            String rewritten = rewriteAsset(reference, prefix, page, seen, basePath);
+            String rewritten = rule.apply(reference, true);
             moved |= rewritten != null;
             out.append(out.isEmpty() ? "" : ", ")
                     .append(rewritten == null ? reference : rewritten).append(descriptor);

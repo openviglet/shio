@@ -436,6 +436,30 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   `link-unresolved` for every link out of the scope and miss the duplicate whose twin is
   outside. A `folder=` that is not a folder is a teaching **400**: a scope that covered nothing
   while answering `ok` is the worst false green there is.
+  **`checks=page` reads the page the reader gets, which is the gap every other group shares
+  (SH516)** — `verify --site VILT` answered **ok — 0 errors, 17 warnings** over a page with **38
+  broken links of 39** and **43 broken references**; it had found 12 of the 38 and none of the 43.
+  Not a missing rule: every check resolves a reference against the **content graph** — does this
+  furl exist, is that `File` post addressable, does the layout name a theme — and all of it was
+  true, while the page came out served four segments deep so its relative strings resolved
+  elsewhere (SH512) and its query-stringed paths missed (SH515). *The content was self-consistent
+  and the page did not work.* Six defects survived a green gate in one session (SH455, SH461,
+  SH462, SH512, SH515 and the two that produced this), all six in that gap, each found by hand —
+  and the hand was wrong once, reporting *0 broken* on the page with the missing logo because it
+  filtered references on a leading slash instead of resolving them. So the group **renders each
+  published page and resolves every reference on it against that page's own URL**:
+  `page-link-broken` for a path the site publishes nothing at, `page-reference-broken` for bytes it
+  does not serve, `page-unrendered` for a published page that does not compose — **errors**, not
+  `link-unresolved`'s warning, because the route table judged against belongs to the process that
+  will serve the request (`ShFrontEndRoutes` stays the exemption, for a site somebody else
+  delivers). Two things make it cheap and honest: it **composes the page in-process** rather than
+  fetching — `/sites/**` is that same render plus `ShPreviewLinks`, so it is the same bytes with no
+  network, no `allow-fetch` and no request-forgery surface, which is why it is in the default set
+  — and it reads references through **`ShPreviewLinks.referencesIn`, the same walk the rewriter
+  uses**. That last one is the whole guarantee: a check with a list of its own would go green on
+  the one attribute the rewriter reads and it does not. Subjects are the post-types the site binds
+  a layout for (`postTypeLayout` *is* the definition of "is a page"), bounded at 50 pages, one
+  finding per distinct path per page, and both the cut and the count go in `notes`.
   **`checks=delivery` proves a route instead of resolving it (SH141)** — the one group that
   leaves the process. It fetches each published page and each unresolved link from the site's own
   URL through `ShAgentDeliveryProbe`, the single guarded fetch path SH101 built, and turns "the

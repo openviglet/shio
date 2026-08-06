@@ -14,13 +14,13 @@
  * Parameter substitution happens *here* rather than server-side, on purpose. A carried
  * file's placeholders are about the project — its npm name, the directory it lives in —
  * and the machine that knows those is this one. The rule itself is imported from
- * `create-shio-app` rather than re-implemented, because a package whose `{{param}}` the
+ * `@viglet/create-shio-app` rather than re-implemented, because a package whose `{{param}}` the
  * server fills in content and the client leaves standing in source would be the worst of
  * both.
  */
 import { dirname, join } from "node:path";
 
-import { substituteParams } from "create-shio-app/scaffold";
+import { substituteParams } from "@viglet/create-shio-app/scaffold";
 
 /**
  * Write `files` into `ctx.cwd`.

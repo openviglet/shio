@@ -49,7 +49,10 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.render.ShPageRenderService;
+import com.viglet.shio.render.ShPreviewLinks;
 import com.viglet.shio.render.ShRenderPostTypes;
+import com.viglet.shio.render.ShSiteAssets;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
@@ -140,6 +143,17 @@ public class ShAgentVerifyService {
     /** The public path the SH38 subsystem serves stored bytes on. */
     private static final String FILE_SOURCE_PREFIX = "/file_source/";
 
+    /**
+     * How many pages the SH516 check renders before it stops.
+     *
+     * <p>A bound rather than the whole site, for the reason {@code delivery} has one: this is the
+     * only group whose cost is per page rather than per row, and a gate that takes a minute is a
+     * gate somebody moves out of CI. Fifty is enough for the defect it exists for — the six that
+     * survived a green gate were all on the first page of their site — and the cut is reported,
+     * because a shortened list of defects reads exactly like a shorter list of defects.</p>
+     */
+    private static final int MAX_PAGES = 50;
+
     private final ShAgentSiteAccess siteAccess;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -153,6 +167,8 @@ public class ShAgentVerifyService {
     private final ShAgentMemoryService shAgentMemoryService;
     private final ShTemplateFieldLint templateFieldLint;
     private final ShTemplateGraph templateGraph;
+    private final ShPageRenderService pageRenderService;
+    private final ShSiteAssets siteAssets;
 
     public ShAgentVerifyService(ShAgentSiteAccess siteAccess,
                                 ShFolderRepository shFolderRepository,
@@ -166,7 +182,9 @@ public class ShAgentVerifyService {
                                 ShAgentDeliveryProbe deliveryProbe,
                                 ShAgentMemoryService shAgentMemoryService,
                                 ShTemplateFieldLint templateFieldLint,
-                                ShTemplateGraph templateGraph) {
+                                ShTemplateGraph templateGraph,
+                                ShPageRenderService pageRenderService,
+                                ShSiteAssets siteAssets) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -180,6 +198,8 @@ public class ShAgentVerifyService {
         this.shAgentMemoryService = shAgentMemoryService;
         this.templateFieldLint = templateFieldLint;
         this.templateGraph = templateGraph;
+        this.pageRenderService = pageRenderService;
+        this.siteAssets = siteAssets;
     }
 
     /** The whole instance — what CI asks for, and the shape every rule was written against. */
@@ -227,6 +247,11 @@ public class ShAgentVerifyService {
         }
         if (proving) {
             delivery(scan, findings, notes, unproven, explicitlyAsked(checks));
+        }
+        // SH516 — after routes, because it asks the strictly larger question about the same site:
+        // routes reads the content graph, this reads the page that graph produces.
+        if (requested.contains(ShAgentCheck.PAGE)) {
+            pages(scan, findings, notes, declared);
         }
         if (requested.contains(ShAgentCheck.DIAGNOSTICS)) {
             diagnostics(findings);
@@ -1649,6 +1674,166 @@ public class ShAgentVerifyService {
                     "Re-upload it with POST /api/v2/staticfile/upload and point the "
                             + "markup at the returned post's URL."));
         }
+    }
+
+    // --- SH516: the page a reader gets ---------------------------------------
+
+    /**
+     * Renders each published page and resolves every reference on it against its own URL.
+     *
+     * <h2>The gap, which is a reader rather than a rule</h2>
+     *
+     * <p>{@code verify --site VILT} said <b>ok — 0 errors, 17 warnings</b>. Fetching the page it
+     * approved and resolving what it asks for gave <b>38 broken links of 39</b> and <b>43 broken
+     * references</b>; {@code verify} had found 12 of the 38 and none of the 43. Every check resolves
+     * a reference against the content graph — does this furl exist, is that {@code File} post
+     * addressable, does the layout name a theme — and every one of those was true. The page came out
+     * served four segments deep, so its relative strings resolved elsewhere (SH512), its
+     * query-stringed paths missed (SH515), and its links pointed at pages nobody captured. <b>The
+     * content was self-consistent and the page did not work.</b></p>
+     *
+     * <p>Six defects survived a green gate in one session — SH455, SH461, SH462, SH512, SH515 and
+     * the two that produced this check — and all six live in that gap. Each was found by hand, and
+     * the hand was wrong once: a first pass reported <em>0 broken</em> on the page with a missing
+     * logo, because it filtered references on a leading slash instead of resolving them.</p>
+     *
+     * <h2>Composed here rather than fetched, which is the same bytes</h2>
+     *
+     * <p>{@code /sites/**} renders through {@link ShPageRenderService} and rewrites through
+     * {@link ShPreviewLinks}, and returns the result. So composing the page in this process is what
+     * the reader gets, minus a network hop this instance would be making to itself — which is also
+     * what lets the group be in the default set with no {@code allow-fetch} property and no
+     * request-forgery surface. Reachability from <em>outside</em> is a different question and
+     * {@code delivery} is where it is asked.</p>
+     *
+     * <h2>Judged against this instance's own routes, and the one exemption</h2>
+     *
+     * <p>A path reaches a page if the site publishes that furl, or an asset if
+     * {@link ShSiteAssets} serves it — the two things {@code /sites/**} answers with, in that order.
+     * These are <b>errors</b> and not {@code link-unresolved}'s warning, and the difference is what
+     * can be proved: that rule cannot see a front end it does not host, while this one reads the
+     * route table of the process that will serve the request. The exemption is the same declaration
+     * ({@link ShFrontEndRoutes}), because a site delivered by somebody else's front end is exactly
+     * the case that memory exists to state.</p>
+     *
+     * <p>Bounded at {@link #MAX_PAGES} in a deterministic order, with a note when it cuts — a
+     * shortened list of defects reads exactly like a shorter list of defects (SH138) — and a note on
+     * a clean pass, because a check that reports nothing has to say what it read.</p>
+     */
+    private void pages(Scan scan, List<Finding> findings, List<String> notes,
+                       ShFrontEndRoutes declared) {
+        String check = ShAgentCheck.PAGE.wireName();
+        // `site.postTypeLayout` names the types that are *pages* — the renderer's own definition,
+        // read rather than guessed. Without it the subjects would include every `File` post (which
+        // has a furl by design) and every section a listing composes, and each would be reported as
+        // a page that does not render: fifty findings about the check rather than about the site.
+        Map<String, Map<String, String>> bindings = new HashMap<>();
+        List<ShPostUnified> subjects = scan.published().stream()
+                .filter(post -> post.getShSite() != null && !isBlank(post.getFurl()))
+                .filter(post -> isPage(post, bindings))
+                .sorted(Comparator.comparing(ShAgentVerifyService::address))
+                .toList();
+        List<ShPostUnified> read = subjects.size() > MAX_PAGES
+                ? subjects.subList(0, MAX_PAGES)
+                : subjects;
+        int references = 0;
+        for (ShPostUnified post : read) {
+            references += onePage(check, post, scan, findings, declared);
+        }
+        if (subjects.size() > read.size()) {
+            notes.add("The page check read " + read.size() + " of " + subjects.size()
+                    + " published page(s) and stopped at the cap — the rest were not checked.");
+        }
+        if (!read.isEmpty()) {
+            notes.add("The page check rendered " + read.size() + " page(s) and resolved "
+                    + references + " reference(s) against the URL each page is served at.");
+        }
+    }
+
+    /** Whether this post's type is one the site binds a layout for, i.e. one that is a page. */
+    private boolean isPage(ShPostUnified post, Map<String, Map<String, String>> bindings) {
+        String type = post.getShPostType() == null ? null : post.getShPostType().getName();
+        return type != null && bindings
+                .computeIfAbsent(post.getShSite().getId(),
+                        id -> pageRenderService.layoutBindings(post.getShSite()))
+                .containsKey(type);
+    }
+
+    /** One page: rendered, walked, and every reference of it resolved. Returns how many. */
+    private int onePage(String check, ShPostUnified post, Scan scan, List<Finding> findings,
+                        ShFrontEndRoutes declared) {
+        ShSite site = post.getShSite();
+        String address = address(post);
+        String url = ShAddress.normalizePath(post.getFurl());
+        String html;
+        try {
+            html = pageRenderService.render(site.getId(), url, ShPostState.PUBLISHED).html();
+        } catch (ShPageRenderService.ShPageRedirectException redirect) {
+            // SH385's `Redirect` post: a 3xx is a working route with no page to read, so there is
+            // nothing here to resolve and nothing wrong. Caught before the clause below, or every
+            // preserved old path would be reported as a page that does not render.
+            return 0;
+        } catch (ShTeachingException cannotRender) {
+            // A published page that does not compose is broken for every visitor, and it was
+            // invisible: `routes` proves the furl resolves, which is a different claim from "and
+            // then something comes out". The renderer's own sentence is the useful one here.
+            findings.add(Finding.error(check, "page-unrendered", address, null,
+                    "This page is published and does not render: " + cannotRender.getMessage(),
+                    "Open /sites/" + site.getFurl() + "/default/en-us" + url + " — the route "
+                            + "answers with the same problem document, which names the repair."));
+            return 0;
+        }
+        Set<String> published = scan.publishedByUrl()
+                .getOrDefault(site.getId(), Map.of()).keySet();
+        Set<String> seen = new LinkedHashSet<>();
+        int references = 0;
+        for (ShPreviewLinks.Reference reference : ShPreviewLinks.referencesIn(html, url)) {
+            // Per distinct resolved path: the same broken logo in a header on one page is one fact,
+            // and forty copies of it is a report nobody reads.
+            if (!seen.add(reference.asset() + " " + reference.path())) {
+                continue;
+            }
+            references += 1;
+            brokenReference(check, address, reference, site, published, declared)
+                    .ifPresent(findings::add);
+        }
+        return references;
+    }
+
+    /** The finding for one reference, or nothing when this instance would serve it. */
+    private Optional<Finding> brokenReference(String check, String address,
+                                              ShPreviewLinks.Reference reference, ShSite site,
+                                              Set<String> published, ShFrontEndRoutes declared) {
+        String path = pathOnly(reference.path());
+        boolean asset = siteAssets.findInSite(site.getId(), path, ShPostState.PUBLISHED).isPresent();
+        if (asset) {
+            return Optional.empty();
+        }
+        if (reference.asset()) {
+            return Optional.of(Finding.error(check, "page-reference-broken", address, null,
+                    "The rendered page asks for '" + reference.raw() + "', which resolves to "
+                            + path + " — and this site serves nothing there.",
+                    "Upload the bytes at that path (shio convert uploads a capture's assets at the "
+                            + "source's own paths), or fix the reference in the markup that emits it."));
+        }
+        if (published.contains(path) || published.contains(ShAddress.normalizePath(path))
+                || declared.declares(site.getName(), path)) {
+            return Optional.empty();
+        }
+        return Optional.of(Finding.error(check, "page-link-broken", address, null,
+                "The rendered page links to '" + reference.raw() + "', which resolves to " + path
+                        + " — and this site publishes no page there.",
+                "Publish the target, fix the link, or declare the path as the front end's "
+                        + "(shio remember " + ShFrontEndRoutes.MEMORY_KEY + " \"" + path
+                        + "\" --site " + site.getName() + ")."));
+    }
+
+    /** A resolved reference without its query string or fragment — what a route is keyed by. */
+    private static String pathOnly(String path) {
+        int query = path.indexOf('?');
+        int fragment = path.indexOf('#');
+        int cut = query < 0 ? fragment : (fragment < 0 ? query : Math.min(query, fragment));
+        return cut < 0 ? path : path.substring(0, cut);
     }
 
     // --- SH141: proof from the delivery side ---------------------------------

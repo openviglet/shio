@@ -452,29 +452,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.31 Fetch the page the reader gets (SH516)
-
-`verify --site VILT` says **ok — 0 errors, 17 warnings**. Fetching the page it approved
-and resolving what it asks for gives **38 broken links of 39** and **43 broken
-references**. `verify` found 12 of the 38 and none of the 43.
-
-The gap is not a missing rule but a missing *reader*. Every check resolves a reference
-against the tree: does a friendly URL exist, is a File post addressable, does a layout
-name a theme. All true here — and the page that comes out is served four segments deep,
-so its relative strings resolve elsewhere (SH512), its query-stringed paths miss
-(SH515), and its links point at pages nobody captured. The content is self-consistent
-and the page does not work.
-
-**Every defect that survived a green gate this session lives in that gap**, and there have been six:
-SH455, SH461, SH462, SH512, SH515 and the two that produced this line. Each was found by hand, and the hand
-was wrong once — a first pass reported *0 broken* on the page with a missing logo, because it filtered
-references on a leading slash instead of resolving them.
-
-So the instrument is one check that fetches the served page and resolves everything
-against **its own URL**: `<a href>`, `src`, `srcset`, `<link>`, `url()` in stylesheets
-*and* style attributes, and the strings a `fetch(` names. It is what a reader does by
-opening the page, which is why it keeps being the thing that finds what the tree cannot.
-
 ### IX.33 A fact nobody joined to a judgement (SH521)
 
 `verify` answered **ok** on a page that had lost its hero, grid and footer. At the same

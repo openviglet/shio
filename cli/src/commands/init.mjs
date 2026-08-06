@@ -6,21 +6,21 @@
  * `shio init` — scaffold a Next.js site wired to the Shio CDA.
  *
  * Two sources for one starter (SH119). By default the tree comes from the bundled
- * `create-shio-app` template, so `shio init` and `npm create shio-app` produce identical
+ * `@viglet/create-shio-app` template, so `shio init` and `npm create @viglet/shio-app` produce identical
  * projects and neither needs a running instance. With `--blueprint <name>` it comes from
  * the instance instead: the package's carried `files` are written into the project and —
  * when a `--site` is named — its content half is applied at the same time, so one command
  * leaves both a front end and the pages it renders.
  *
  * The `nextjs-starter` blueprint *is* the bundled template, generated from it by
- * `create-shio-app`'s `emit` with a drift test behind it. So the choice is about where the
+ * `@viglet/create-shio-app`'s `emit` with a drift test behind it. So the choice is about where the
  * bytes come from and whether content comes with them — never about which starter you get.
  */
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 
-import { scaffold } from "create-shio-app/scaffold";
-import { unpublished } from "create-shio-app/published";
+import { scaffold } from "@viglet/create-shio-app/scaffold";
+import { unpublished } from "@viglet/create-shio-app/published";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import {
@@ -226,7 +226,7 @@ async function requireSite(client, blueprint, site) {
  * ## Why it is a courtesy check that swallows every read failure
  *
  * Without `--blueprint` this command needs **no running instance** — that is SH119's whole point,
- * since `shio init` and `npm create shio-app` must produce identical projects. So an unreachable
+ * since `shio init` and `npm create @viglet/shio-app` must produce identical projects. So an unreachable
  * instance, a missing credential or an older surface leaves the run exactly as it was: the same
  * bargain `requireSite` strikes one path over, for the same reason.
  */

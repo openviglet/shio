@@ -61,6 +61,27 @@ public enum ShAgentCheck {
     ROUTES,
 
     /**
+     * SH516 — the page a reader gets, with every reference on it resolved against its own URL.
+     *
+     * <p>The gap {@link #ROUTES} and {@link #CONTENT} share rather than a rule either was missing:
+     * both resolve a reference against the content graph — does this furl exist, is that
+     * {@code File} post addressable — and all of it can be true of a page whose every string still
+     * misses. Measured: {@code verify --site VILT} answered <b>ok, 0 errors, 17 warnings</b> over a
+     * page with 38 broken links of 39 and 43 broken references, because the page is served four
+     * segments deep and its relative strings resolved elsewhere.</p>
+     *
+     * <p>So this one renders each published page and reads <em>its</em> references — {@code href},
+     * {@code src}, {@code srcset}, {@code poster}, and {@code url()} in a stylesheet and in a style
+     * attribute — through {@code ShPreviewLinks.referencesIn}, which is the same walk the rewriter
+     * uses. A check with a list of its own would go green on the one attribute the rewriter reads
+     * and it does not, which is how the six defects before this one survived a green gate.</p>
+     *
+     * <p>In the default set and it needs no network: the page is composed in this process, which is
+     * the same composition the {@code /sites/**} route returns.</p>
+     */
+    PAGE,
+
+    /**
      * SH103 — recent asynchronous failures (webhooks, transforms, scheduled publishes,
      * 5xx). Included by default because the failures it reports are invisible
      * everywhere else, and on a healthy instance it reports nothing and costs nothing.

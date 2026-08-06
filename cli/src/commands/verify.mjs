@@ -64,11 +64,14 @@ images with no bytes, two pages on one URL, links that resolve to nothing. Error
 warnings are printed and counted.
 
   --site <idOrName>    Scope to one site
-  --checks <groups>    projection,replication,content,routes,diagnostics,delivery
+  --checks <groups>    projection,replication,content,routes,page,diagnostics,delivery
                        (default: all that can run). projection and replication read the
                        file tree only — no instance, no credentials — so
                        --checks projection,replication is the cheapest gate there is and
-                       belongs first in CI
+                       belongs first in CI. page renders each published page and resolves
+                       every reference on it against the URL that page is served at, which
+                       is the question the other groups answer from the content graph and
+                       therefore cannot answer at all
   --delivery           Also prove each published route by fetching it from the site's own
                        origin; turns "the front end does not serve this" into an error
   --strict             Fail on warnings too (off by default — a gate that fails on "this
