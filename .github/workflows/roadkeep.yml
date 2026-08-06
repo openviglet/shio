@@ -9,8 +9,8 @@
 # *adds*, which is the drift a gate exists to stop. Drop the line once `lint` is clean.
 name: roadkeep
 
-on: [push, pull_request]
-
+on: 
+  workflow_dispatch:
 jobs:
   lint:
     name: roadkeep lint

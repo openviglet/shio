@@ -475,28 +475,6 @@ that did not; counts the source recorded against counts the page shows.
 names the capture, the proposal names the inventory, the document names the proposal. Nothing has to be
 guessed or re-fetched — the chain is already written down and nobody has ever walked it.
 
-### IX.36 A defect closes with an assertion (SH527)
-
-Six times a correction shipped half of itself and the other half became a new task — SH452→455,
-SH429→437, SH469→473, SH468→472, SH465→475, SH470→474. Three of those shipped the *report* and left the
-*behaviour*. At 246 commits in seven days, with verification being a person asking an agent to look
-afterwards, that is the system's expected output rather than bad luck.
-
-The rule that changes it is one line: **a defect closes with an assertion carrying its
-id.** Not a unit test of the fix's internals — the assertion that would have caught it,
-at the boundary it crossed. SH448 already proved the shape: run first, it was red by
-construction and found two defects seven tasks before the queue would have.
-
-It needs a reader, because a rule nobody can check is a preference. The suite knows
-which ids it asserts and the ledger knows which shipped, so the difference is
-computable: shipped tasks with no assertion, listed. That number is the debt, and it
-only goes down when somebody pays it.
-
-**And it has to stay fast enough to run every round.** Thirty-six seconds today, of which one install test
-is nearly thirty; a suite that grows a case per defect and never sheds one becomes the suite people skip,
-which is the failure mode that produced this backlog in the first place. So the assertion is cheap by
-construction — a served fixture, no network — and the expensive kinds say why they earn it.
-
 ### IX.37 The fixture as a catalogue of what breaks a replica (SH528)
 
 Every defect this work found came from a real site, and none of them can be reproduced

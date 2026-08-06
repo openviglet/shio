@@ -189,6 +189,20 @@ neither is written here), and **`ShStatelessReachabilityLintTest`** asks
 the narrower question — of 25 mutating paths, which 8 an agent can write to without
 a cookie. Before "fix the thirteen instances", ask what would have failed.
 
+**And a defect closes with an assertion carrying its id (SH527).** Not a unit test of
+the fix's internals — *the assertion that would have caught it*, at the boundary it
+crossed, naming the id so the loop can be closed from either end. Six corrections
+shipped half of themselves and the other half became a new task (SH452→455, SH429→437,
+SH469→473, SH468→472, SH465→475, SH470→474), three of them shipping the *report* and
+leaving the *behaviour*; at 246 commits in seven days that is the expected output, not
+bad luck. A rule nobody can check is a preference, so
+**`cli/test/assertion-debt.test.mjs`** computes it — the ledger knows what shipped, the
+suites know which ids they assert, and the difference is the **debt**, held as a named
+list rather than a ceiling (a ceiling lets one task pay it and the next spend it). It
+prints both counts on every run, and it is excluded from its own walk, which is not
+housekeeping: on the first run its own declaration made all forty entries read as
+asserted and the debt came back as three.
+
 ### Committing
 
 **When a task is done, commit by running `run-commit.cmd` from the repo root.**

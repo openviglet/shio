@@ -86,10 +86,9 @@ priority = [
   # instance already held and nobody joined to a judgement. Then the rest of "judge the artefact"
   # (SH522's declaration-vs-product join, part-shipped as `--against capture` and tracked by
   # its own open line; SH526's accessibility tree, shipped), then the test-debt chain
-  # that is computable and uncounted (SH527 names the gap, SH528 gives the fixture the traits to
+  # that is computable and uncounted (SH527 named the gap and has shipped - 43 shipped tasks carry no assertion, listed; SH528 gives the fixture the traits to
   # reproduce it, SH529 draws the list), and last the model-proposal chain, which is the biggest
   # and adds a verb (SH523, then SH524 and SH525 on top of it).
-  "SH527",
   "SH528",
   "SH529",
   "SH523",
