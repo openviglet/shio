@@ -494,6 +494,26 @@ it. Four decisions worth keeping:
   route back to markup is re-serializing a tree built from `stripNonMarkup`'s output, which has
   already dropped the comments and the raw-text bodies. *Verbatim* and *re-serialized* are different
   claims, and making the second while the docs promise the first is the defect being fixed.
+- **A structural layer under the fields, named by role (SH508).** SH507's decision needs a tree
+  before it needs a theme, and there was none: the layout emitted `section > h2 > ul > li` and eight
+  `shio-*` names, with **no container to bound a measure, no stack to space siblings, no grid to put
+  cards beside each other**. The source needed five nested wrappers to place one heading
+  (`max-w-5xl mx-auto`, a flex row, a `shrink-0`, a `flex-1 text-center md:text-left`) and the
+  layout had none of those elements. `LAYOUT_ROLES` is the contract — `shio-page` on `<body>` (the
+  rhythm *between* sections, which needs no wrapper because the sections are body's own children),
+  `shio-container` (the outer bound, so a section can still go full bleed), `shio-stack` (the rhythm
+  *inside* one), `shio-grid`, `shio-card`, `shio-media`, `shio-actions`, `shio-button`. **Roles, so a
+  theme survives the next section type**: `shio-section-<Type>` is the per-type hook and stays, and a
+  structural class that named a type would make the theme a list of types. The **column count is not
+  a role** — it is `SectionFeatureGrid.columns`, already on the section as `data-shio-columns`, so a
+  theme reads `[data-shio-columns="3"] .shio-grid` and the template writes the number once.
+  `WRAPPER_ROLES` is the three that are pure wrappers, and SH185 imposes two properties on them that
+  `convert.test.mjs` holds: **no `sh-post`**, because ownership resolves to the nearest annotated
+  ancestor and a wrapper that declared one would silently reassign every field under it, and **no
+  `sh-field`**, because a wrapper is presentation and a curator has nothing to edit in it. The rule
+  names three roles rather than eight *and the test asserts why*: `shio-card` and `shio-media` land
+  on elements that do declare fields — a feature row is a card and draws its `icon` into an
+  attribute — so a rule written over all eight would be false rather than strict.
 - **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
   layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
   `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after

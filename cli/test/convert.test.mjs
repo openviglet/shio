@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  SECTIONS_FOLDER, THEME_FOLDER, buildConversion, withResolvedFileFields,
+  LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER, WRAPPER_ROLES, buildConversion, withResolvedFileFields,
 } from "../src/convert.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import { INVENTORY_FILE, MARKUP_DIR, markupFileFor } from "../src/clone.mjs";
@@ -513,6 +513,94 @@ test("SH449: an accepted page composes sections and carries no verbatim copy of 
     /sh-field="ctaLabel" sh-field-attr="ctaHref:href"/,
     "SH503: the call to action declares both of its fields - the label it draws as text and the "
       + "destination it draws into the href",
+  );
+});
+
+// --- SH508: the layout contract a theme lays out with ---
+
+/**
+ * Every start tag in the layout, with its classes — enough to ask what an element *declares*.
+ *
+ * A regex rather than a parser: the questions below are all "does this tag carry that attribute",
+ * the template is a sibling file's own bytes, and no attribute value in it contains a `>`. A closing
+ * tag never matches, because `</` is not `<[a-z]`.
+ */
+function layoutElements(html) {
+  return [...html.matchAll(/<([a-z][a-z0-9]*)\b([^>]*)>/g)].map(([, tag, attrs]) => ({
+    tag,
+    attrs,
+    classes: (/class="([^"]*)"/.exec(attrs)?.[1] ?? "").split(/\s+/).filter(Boolean),
+  }));
+}
+
+test("SH508: the layout carries a structural contract, named by role and owned by nobody", () => {
+  // SH507 decided a converted page is presented by a Shio theme. This is the tree that theme lays
+  // out: the layout emitted `section > h2 > ul > li` and eight names, with no container to bound a
+  // measure, no stack to space siblings and no grid to put cards beside each other.
+  const { document } = buildConversion({
+    proposal: {
+      candidates: [candidate("b1a2")],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+  const html = document.posts.find((post) => post.type === "PageLayout").data.HTML;
+  const elements = layoutElements(html);
+  const used = new Set(elements.flatMap((element) => element.classes));
+
+  assert.deepEqual(
+    LAYOUT_ROLES.filter((role) => !used.has(role)), [],
+    "every role the contract declares has to be somewhere in the layout - a role a theme can style "
+      + "and the template never emits is a rule that matches nothing",
+  );
+  const body = elements.find((element) => element.tag === "body");
+  assert.ok(
+    body?.classes.includes("shio-page"),
+    "the rhythm *between* sections needs no wrapper at all: the sections are body's own children, "
+      + "and body is the one element both modes already have",
+  );
+  const section = elements.find((element) => element.classes.includes("shio-section"));
+  assert.match(
+    section.attrs, /data-shio-columns="\{\{columns\}\}"/,
+    "the grid's column count is SectionFeatureGrid.columns and not a role: a theme reads "
+      + "[data-shio-columns=\"3\"] .shio-grid, so the contract has both ends and the template writes "
+      + "the number once",
+  );
+
+  // The two properties SH185 imposes, and the reason the rule names three roles rather than eight.
+  const wrappers = elements.filter((element) =>
+    element.classes.some((name) => WRAPPER_ROLES.includes(name)));
+  assert.ok(
+    wrappers.length >= 4,
+    "a filter that matched nothing would make both rules below pass over nothing",
+  );
+  for (const wrapper of wrappers) {
+    assert.ok(
+      !/\bsh-post=/.test(wrapper.attrs),
+      `<${wrapper.tag} class="${wrapper.classes.join(" ")}"> declares an owner. Ownership resolves `
+        + "to the nearest annotated ancestor, so a wrapper that declared one would silently reassign "
+        + "every field under it to the wrong post",
+    );
+    assert.ok(
+      !/\bsh-field(-attr)?=/.test(wrapper.attrs),
+      `<${wrapper.tag} class="${wrapper.classes.join(" ")}"> is editable. A wrapper is presentation, `
+        + "and a curator has nothing to edit in it",
+    );
+  }
+  assert.ok(
+    elements.some((element) =>
+      element.classes.some((name) => LAYOUT_ROLES.includes(name) && !WRAPPER_ROLES.includes(name))
+      && /\bsh-field(-attr)?=/.test(element.attrs)),
+    "and the premise of that scoping: a role outside WRAPPER_ROLES does land on an element that "
+      + "declares a field - a feature row is a card and draws its icon into an attribute - so a rule "
+      + "written over all eight would be false rather than strict",
+  );
+
+  assert.deepEqual(
+    [...used].filter((name) => name !== "shio-section-{{type}}" && name.includes("Section")), [],
+    "shio-section-{{type}} is the per-type hook and stays; a *structural* class that named a type "
+      + "would make the theme a list of types and break on the eighth one that ships",
   );
 });
 

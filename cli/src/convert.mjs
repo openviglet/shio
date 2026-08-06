@@ -152,6 +152,49 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
 }
 
 /**
+ * The structural layer a theme lays out with — named by **role**, never by section type (SH508).
+ *
+ * <p>SH507 decided a converted page is presented by a Shio theme. A theme needs something to lay
+ * out, and the generated layout had nothing: `section > h2 > ul > li` and eight `shio-*` names, with
+ * no container to bound a measure, no stack to space siblings and no grid to put cards beside each
+ * other. The source needed five nested wrappers to place one heading — `max-w-5xl mx-auto`, a flex
+ * row, a `shrink-0`, a `flex-1 text-center md:text-left` — and this layout had none of those
+ * elements at all. So the tree comes before the stylesheet, and it is the vocabulary's own rather
+ * than a translation of anybody's.</p>
+ *
+ * <p><b>Roles, because a theme has to survive the next section type.</b> `shio-section-<Type>` is
+ * the per-type hook and stays; every name here describes what an element *does* — bound, space,
+ * arrange, carry an image, hold the actions — so a theme written against them keeps working when an
+ * eighth type ships. A structural class that named a type would make the theme a list of types.</p>
+ *
+ * <p>The column count is not a role: it is `SectionFeatureGrid.columns`, already on the section as
+ * `data-shio-columns`, so a theme reads `[data-shio-columns="3"] .shio-grid` and the contract has
+ * both ends without the template writing the number twice.</p>
+ */
+export const LAYOUT_ROLES = Object.freeze([
+  "shio-page",       // <body> — the vertical rhythm *between* sections
+  "shio-container",  // the outer bound: one measure, centred, so a section can still go full bleed
+  "shio-stack",      // the vertical rhythm *inside* one section
+  "shio-grid",       // columns, counted from the nearest `data-shio-columns`
+  "shio-card",       // one bounded unit of a grid or a stack
+  "shio-media",      // an image and nothing else
+  "shio-actions",    // where a call to action lives
+  "shio-button",     // and what it looks like
+]);
+
+/**
+ * The three roles that are **pure wrappers** — they bound, space or arrange, and nothing else.
+ *
+ * <p>Two properties SH185 imposes on them, both held by `convert.test.mjs`. A wrapper carries no
+ * `sh-post`: ownership resolves to the nearest annotated ancestor, so a wrapper that declared one
+ * would silently reassign every field under it to the wrong post. And a wrapper carries no
+ * `sh-field` — it is presentation, and a curator has nothing to edit in it. The other five roles are
+ * *not* in this list on purpose: `shio-card` and `shio-media` land on elements that do declare
+ * fields (a feature row draws its `icon` into an attribute), and the rule would be false of them.</p>
+ */
+export const WRAPPER_ROLES = Object.freeze(["shio-container", "shio-stack", "shio-grid"]);
+
+/**
  * The layout's `<body>`, verbatim and with **no interpolation** (SH464).
  *
  * <p>Its own constant for one reason: it is the half a **Java** test has to be able to read. The
@@ -165,19 +208,21 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
  * rather than a JavaScript parser.</p>
  */
 export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
-{{#unless content}}<h1 class="shio-page-title" sh-field="title">{{title}}</h1>{{/unless}}
+{{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
 {{#getRelation sections}}
 <section class="shio-section shio-section-{{type}}" sh-post="{{id}}" data-shio-section="{{type}}" data-shio-align="{{align}}" data-shio-variant="{{variant}}" data-shio-columns="{{columns}}">
+<div class="shio-container shio-stack">
 {{#if heading}}<h2 class="shio-heading" sh-field="heading">{{heading}}</h2>{{/if}}
 {{#if subheading}}<p class="shio-subheading" sh-field="subheading">{{subheading}}</p>{{/if}}
 {{#if intro}}<p class="shio-intro" sh-field="intro">{{intro}}</p>{{/if}}
 {{#if body}}<div class="shio-body" sh-field="body">{{{body}}}</div>{{/if}}
-{{#if image}}<p class="shio-image"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
-{{#if ctaLabel}}<p class="shio-cta"><a class="shio-cta-link" sh-field="ctaLabel" sh-field-attr="ctaHref:href" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
-{{#if features}}<ul class="shio-features">{{#each features}}<li class="shio-feature" data-shio-row="features" data-shio-icon="{{icon}}" sh-field-attr="features.{{@index}}.icon:data-shio-icon">{{#if title}}<h3 class="shio-feature-title" sh-field="features.{{@index}}.title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body" sh-field="features.{{@index}}.body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
-{{#if questions}}<div class="shio-questions">{{#each questions}}<div class="shio-question" data-shio-row="questions">{{#if question}}<h3 class="shio-question-text" sh-field="questions.{{@index}}.question">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-answer" sh-field="questions.{{@index}}.answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
-{{#if logos}}<ul class="shio-logos">{{#each logos}}<li class="shio-logo" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" sh-field="logos.{{@index}}.image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" sh-field="logos.{{@index}}.name" sh-field-attr="logos.{{@index}}.href:href" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name" sh-field="logos.{{@index}}.name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
-{{#if quotes}}<div class="shio-quotes">{{#each quotes}}<blockquote class="shio-quote" data-shio-row="quotes">{{#if quote}}<p class="shio-quote-text" sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-quote-avatar" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite class="shio-quote-author" sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span class="shio-quote-role" sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
+{{#if image}}<p class="shio-image shio-media"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
+{{#if ctaLabel}}<p class="shio-cta shio-actions"><a class="shio-cta-link shio-button" sh-field="ctaLabel" sh-field-attr="ctaHref:href" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
+{{#if features}}<ul class="shio-features shio-grid">{{#each features}}<li class="shio-feature shio-card" data-shio-row="features" data-shio-icon="{{icon}}" sh-field-attr="features.{{@index}}.icon:data-shio-icon">{{#if title}}<h3 class="shio-feature-title" sh-field="features.{{@index}}.title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body" sh-field="features.{{@index}}.body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
+{{#if questions}}<div class="shio-questions shio-stack">{{#each questions}}<div class="shio-question shio-card" data-shio-row="questions">{{#if question}}<h3 class="shio-question-text" sh-field="questions.{{@index}}.question">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-answer" sh-field="questions.{{@index}}.answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
+{{#if logos}}<ul class="shio-logos shio-grid">{{#each logos}}<li class="shio-logo shio-media" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" sh-field="logos.{{@index}}.image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" sh-field="logos.{{@index}}.name" sh-field-attr="logos.{{@index}}.href:href" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name" sh-field="logos.{{@index}}.name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
+{{#if quotes}}<div class="shio-quotes shio-grid">{{#each quotes}}<blockquote class="shio-quote shio-card" data-shio-row="quotes">{{#if quote}}<p class="shio-quote-text" sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-quote-avatar" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite class="shio-quote-author" sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span class="shio-quote-role" sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
+</div>
 </section>
 {{/getRelation}}`;
 
@@ -311,7 +356,7 @@ function pageLayout(markup, site, hasTheme) {
 <title>{{post.title}}</title>
 <style>{{theme.css}}</style>
 </head>
-<body>
+<body class="shio-page">
 ${PAGE_BODY_HTML}
 </body>
 </html>
