@@ -1862,31 +1862,6 @@ stays a declaration of content.
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
 
-### XVII.76 One brace between a stylesheet and a browser (SH555)
-
-SH549 made the theme a per-page choice, and the mechanism is a second `<style>` in the
-generated layout:
-
-    <style>{{theme.css}}</style>
-    {{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}
-
-The first is the layout's named theme and renders raw. The second is a plain field read
-inside a relation block, so Handlebars escapes it. The stored `Theme` post is clean —
-1,061,481 characters, zero entities — and the page it produces carries 378, including
-`src:url(&quot;/assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2&quot;)`.
-
-What follows is not cosmetic. `verify` reports ten `page-reference-broken` errors on the
-one verbatim page of an otherwise clean site, each naming a path beginning with a
-literal `&quot;`, and the gate exits 1. Every `@font-face`, every quoted `content:` and
-every quoted `url()` in a captured stylesheet is affected, so a mixed conversion's
-verbatim pages lose their webfonts and their background images while rendering 200 with
-a megabyte of CSS attached.
-
-The fidelity path is unaffected and that is the useful contrast: it emits the same theme
-through the layout's own `theme.css`, and the served page carries sixty clean `url()`
-and no entity at all. So the defect is not in the capture, the store or the renderer's
-escaping rule — it is that one of the two emissions was written as a field read.
-
 ### XVII.77 Two class vocabularies, one of them styled (SH556)
 
 `Theme (Shio)` defines thirteen selectors — `shio-actions`, `shio-body`, `shio-button`,

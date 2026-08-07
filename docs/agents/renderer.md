@@ -621,6 +621,24 @@ renderer over one body of content at a second address. See the section on it bel
   so entity escaping is not that context's encoding; what it bought was a defence against `</style>`
   in a `Theme` written by whoever also writes the `PageLayout` that emits it through `{{{content}}}`
   three lines below — no privilege boundary, so nothing to defend.
+- **And on a row too, because SH549 added a second emission of the same stylesheet (SH555)** —
+  a converted site's verbatim pages get the captured CSS *per page*, through
+  `{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}`.
+  That one reads a plain field off a `getRelation` row, which `themeFrame` never touches, so the
+  stored `Theme` was clean at 1,061,481 characters and zero entities while the page it produced
+  carried **378** — `src:url(&quot;/assets/inter-…-BOeWTOD4.woff2&quot;)`. Not cosmetic: ten
+  `page-reference-broken` errors on the one verbatim page of an otherwise clean site, each naming a
+  path beginning with a literal `&quot;`, and the gate exits 1. The fidelity path is the contrast
+  that locates it — same theme, emitted through `theme.css`, sixty clean `url()` and no entity at
+  all — so the defect was in neither the capture, the store nor the escaping rule: **one of the two
+  emissions was written as a field read**. `ShRenderHelpers.rawTextFields` gives it SH461's answer,
+  keyed by **(post-type, field)** rather than by field name: `Theme.CSS`, `Theme.JAVASCRIPT`,
+  `Region.JAVASCRIPT`, `PageLayout.JAVASCRIPT` — the four the product declares as
+  `Ace Editor - CSS/JavaScript` and a template can only emit into a raw-text element. An `Article`
+  whose author happens to add a field called `CSS` keeps escaping, which is the case escaping is
+  for. The fixture is half the lesson: SH549's sentinel was `.sh549-captured-marker{color:#123456}`
+  — no `"`, no `&` — so it survived escaping unchanged and passed on a page whose every `url()` had
+  been destroyed. It carries an `@font-face` now.
 - **Both render-model verbs are ops, not just routes (SH186, SH326)** — `render.provision` is
   addressless and idempotent; **`data.reconcile:true`** on it reaches SH289's repair, which had
   stayed HTTP-only, so an MCP client could *diagnose* an old instance (`untitled-template`) and

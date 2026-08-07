@@ -1007,6 +1007,7 @@
 - **SH549** — the layout names the vocabulary theme whenever any page composes sections, and the captured CSS reaches the verbatim pages through a per-page reference instead of the whole site
 - **SH552** — propose publishes the chrome finding as rows, convert drops those field values instead of writing them, and the command that performed the cut is the one that prints it
 - **SH551** — a details unit's summary is the question, and a row field the markup offered that no row carries is reported as a statement about the extractor
+- **SH555** — a getRelation row's raw-text fields are Handlebars.SafeString — Theme.CSS/JAVASCRIPT, Region.JAVASCRIPT, PageLayout.JAVASCRIPT, keyed by (post-type, field) so every other field keeps escaping — which is SH461's answer applied to SH549's second emission; the captured stylesheet now reaches the browser with its url() quotes intact and the ten page-reference-broken errors are gone
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

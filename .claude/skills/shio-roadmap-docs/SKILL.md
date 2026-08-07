@@ -1,6 +1,6 @@
 ---
 name: shio-roadmap-docs
-description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule and the end-user documentation decision (vigletdocs docs-shio). Use whenever adding a new task, marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, or picking the next SH-number. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, and batching under /loop.
+description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule, the per-task end-user documentation decision (vigletdocs docs-shio), and the block-completion sweep — when a block's last task ships, docs-shio + shio-site + README.md are brought up to date in one pass. Use whenever adding a new task, marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, picking the next SH-number, or finishing a block. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, COVERAGE.md, sidebars-shio.ts, site-content.ts, and batching under /loop.
 ---
 
 # Roadmap & docs maintenance
@@ -81,7 +81,8 @@ real maximum block letter** — grep it to confirm before creating a block.
    for an epic is **retired**: the tool deletes the line, and a line the tool cannot write is
    one somebody hand-edits into a file the hook defends. A follow-up names its shipped parent
    in `(deps: SH22)`, which `roadkeep deps` resolves. **Then run the end-user-docs decision**
-   (below).
+   (below), and **then ask whether that was the block's last task** — `stats` answers it,
+   see "When a block completes".
 2. **When you add a new task, two commands and the anchor is yours.** This project numbers
    its rationale by hand (`ref_scheme = "outline"`), so the pointer is **not** derived and
    `add` refuses without it:
@@ -192,3 +193,138 @@ code + internal `docs/` sync. Keep `-m` titles ASCII.
 runs per task, but it is fine to accumulate several small page edits and land them in
 one focused vigletdocs commit at a natural boundary (e.g. once a whole block ships)
 rather than a trivial commit per task.
+
+---
+
+## When a block completes — the sweep across the three public surfaces
+
+The per-task decision above keeps a *page* honest. It cannot keep the **shape** of
+the product honest, because the thing a reader meets first — the docs hub, the
+public site, the README's surface table — describes a *block*, not a task. Ten
+tasks each correctly folded into an existing anchor still leave the landing pages
+describing the product as it was before the block existed. So the block boundary
+gets its own pass.
+
+### The trigger is measured, not remembered
+
+**After every `ship`, ask `stats` whether the shipped task's block is now empty.**
+
+```
+python -m roadkeep.cli stats          # or: roadkeep stats
+```
+
+A block printing **`0`** with no markers has no open lines left — that is the
+completion signal, and today's output shows exactly one (`Block I 0`). Do not
+infer completion from "I finished the tasks the user listed": a block routinely
+holds lines nobody named in this session, and `stats` is the only thing that
+counts them. Two corollaries:
+
+- **`block drop <x>` is the roadkeep half.** A heading standing over nothing is
+  what that verb removes, and it is the only thing allowed to remove it — the
+  guard denies the hand-edit. Do it in the same commit as the sweep, and remember
+  `CHANGELOG.md` keeps the block forever, which is why it (not `ROADMAP.md`) is
+  authoritative for the highest block letter.
+- **A block emptied by `retire`/`defer` still completes.** The sweep is about what
+  the public documents claim, and a retired line changes that claim as much as a
+  shipped one — usually by removing a promise.
+
+### The four surfaces, in this order
+
+The order is deliberate: the docs page is the deepest and most correct text, so
+write it first and let the site and the README quote *it* rather than the other
+way round.
+
+**1. `docs-shio` — the block's COVERAGE rows go green, all of them.**
+
+```
+D:\Git\viglet\vigletdocs\vigletdocs.github.io\docs-shio
+```
+
+Grep `COVERAGE.md` for `**Block <x>**` and resolve **every** row to ✅ / 🧩 / 🔒.
+When a block completes there may be **no 🔴 and no ⚠️ row left mentioning it** —
+that is the definition of the sweep being done, and it is the one check worth
+re-running before committing.
+
+- **⚠️ is a rewrite, not an addition.** It means a page exists and describes a
+  shape the product left; a new section under it makes the page *contradict
+  itself*. Fix the stale prose first, then add.
+- **A new page needs a sidebar row or it does not exist.** Add it to
+  [`sidebars-shio.ts`](../../../../../vigletdocs/vigletdocs.github.io/sidebars-shio.ts)
+  under the hub the COVERAGE section names — the matrix is grouped by *who does
+  the job* (agent builds it / human curates it / CDA delivers it), and since SH482
+  those four hubs **are** the sidebar. A page absent from it builds as an unlisted
+  route and no reader ever reaches it.
+- **The hub's own landing page** (`agent-builds-it.mdx`, `human-curates-it.mdx`,
+  `cda-delivers-it.mdx`, `run-it.mdx`) is what most block completions actually
+  change: it is the text that summarises the capability, and it is the text a
+  per-task edit never touches.
+- Gate: `npm run build` in the vigletdocs root — Docusaurus fails on a broken
+  internal link or an unknown sidebar id, which is exactly the mistake this step
+  invites.
+
+**2. `shio-site` — only if the block changed a claim the site makes.**
+
+The site is a marketing surface with a hard rule: **every claim is about a real
+surface**. So the question is not "is the block big" but "does
+[`src/lib/site-content.ts`](../../../shio-site/src/lib/site-content.ts) now say
+something untrue" — a tool count, a CLI verb list, a guardrail, a phase, a
+comparison row, a mode. All page copy lives in that one file; the components in
+`src/components/sections/` only render it.
+
+- **Never type a measured number.** `scripts/token-budgets.mjs` generates them
+  from `shio-app/src/test/resources/token-budgets.properties` on every build. If
+  the block moved a budget, the properties file is the edit and the site picks it
+  up.
+- **A new route is two rows, and the build enforces both**: `ROUTES` in
+  `src/App.tsx` and the `routes` entry (title + description) in
+  `src/entry-server.tsx`. `routesAreDeclared()` throws at import time if they
+  disagree in either direction.
+- **Update the README's `## Backlog` section** in
+  [`shio-site/README.md`](../../../shio-site/README.md) — it names the block the
+  site is currently waiting on, so a completed block leaves it wrong by
+  construction.
+- Gate: `pnpm --filter shio-site build` (typecheck + prerender + the `.md` twins)
+  and `pnpm --filter shio-site test`.
+
+**3. Root [`README.md`](../../../README.md) — the surface table and the counts.**
+
+The README is the repo's front door and it carries hard numbers that a block
+completion is the usual cause of going stale. Check these, and only these, unless
+the block genuinely added a section:
+
+| What | Where |
+|---|---|
+| MCP tool count and the `shio_*` list | `## What is Shio?` surface table |
+| CLI verb count (`26 verbs: …`) | same table |
+| The six surfaces themselves | same table — a new surface is a new row |
+| `## Packages` | a block that published or renamed a package |
+| `## The ten design laws` | only if a law's *instrument* changed |
+| `## Quick start` / `## Build from source` | a block that changed a command |
+
+There are **no roadkeep markers in this README** — `export --readme` is not wired
+here, so these are ordinary edits and nothing derives them. That is also why they
+rot: nothing fails when they do. If a count in that table can be derived from a
+test or a manifest, wiring that is a better deliverable than fixing the number
+(SH338: the instrument is the deliverable).
+
+**4. Commit — two repos, two commits, and the block drop goes with the code.**
+
+- **Shio repo:** `README.md` + `shio-site/**` + `block drop <x>` + any
+  `docs/agents/` update, one commit from the repo root:
+  `run-commit.cmd -m "docs(block-<x>): <ascii title>"`.
+- **vigletdocs repo:** `cd` into
+  `D:\Git\viglet\vigletdocs\vigletdocs.github.io` first (`run-commit.cmd` stages
+  relative to CWD) and commit the pages + `COVERAGE.md` there.
+
+### What the sweep is not
+
+- **Not permission to batch.** Rule 8 still holds: the block's *tasks* ran one
+  per `/loop` iteration with a commit each. The sweep is a **separate,
+  final** unit of work at the boundary — one more iteration, not a merge of the
+  previous ten.
+- **Not a rewrite of shipped pages.** Fold into existing anchors (per-task rule
+  2). The new text a block earns is almost always a hub-page paragraph and a
+  COVERAGE row flip, not a new page.
+- **Not a place for rationale.** `IMPROVEMENTS.md` prose is never pasted into an
+  end-user page or the site. The block's *why* stays internal; the public text
+  says what the reader can now do.
