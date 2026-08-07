@@ -106,7 +106,6 @@
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
 - 📋 **SH572** (deps: SH558 ✅) **A template relating an address the site has not got renders nothing and reports nothing** — SH297 proves a missing THEME field but no rule reads a getRelation literal, so a typo is a silent else branch on every page. → §XV.35
 - 📋 **SH573** (deps: SH559 ✅) **A generated layout's title claims a mode that one layout has not determined since SH464** — convert.mjs still mints <site> (fidelity) for the layout every mode renders through, and SH559 could only quote it because the title is a postTypeLayout key. → §XV.36
-- 📋 **SH593** (deps: SH421) **Every conversion produces the same two warnings on the layout it generates, and no run can clear them** — head-no-canonical and head-no-description fire on the generated layout of every replica, so the warning list a reader should scan opens with two entries nobody can act on. → §XV.37
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

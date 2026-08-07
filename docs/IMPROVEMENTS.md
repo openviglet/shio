@@ -1913,34 +1913,6 @@ emits, or as something that carries the existing ones across. The second needs a
 statement about what `convert` may rewrite on a site that already exists, which the
 product has not made anywhere else.
 
-### XV.37 A lint that scolds the generator's own output (SH593)
-
-Every replica this work produced ends the same way:
-
-    ! head-no-canonical    post:<site>/theme/layout · HTML
-    ! head-no-description  post:<site>/theme/layout · HTML
-
-Both are correct. SH337 put `post.canonical` on the model precisely so a template can
-emit it, and the generated layout does not. But that layout is written by `shio
-convert`, not by a human, so the finding is Shio telling itself off — and it is
-unclearable by construction: the next conversion regenerates the same file and reports
-the same two.
-
-The cost is not the two lines. It is that a warning list is read for as long as it is
-actionable, and these have headed every list for twelve rounds. In round twelve the
-whole report was `0 error(s), 2 warning(s)` — the first fully green verify on a real
-replica — and the two were these. A reader who learns that the top of the list is always
-noise stops reading the list, which is where SH421's warning about a legitimately
-script-free layout also lives.
-
-Two repairs, and the first is plainly right: the generator emits `<link rel="canonical"
-href="{{post.canonical}}">` and a `<meta name="description">` from the page's own field,
-because both values are on the model and the template is ours to change. That closes it
-at the source and leaves the lint sharp for a layout somebody wrote by hand.
-
-SH421 is the same shape from the other side — a lint that cannot be satisfied by a
-deliberate omission — and the pair is worth reading together.
-
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none

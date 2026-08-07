@@ -434,6 +434,32 @@ who stops at `nothing lost` should not be told only the true half — and per pa
 still printed, because a fact removed from the report is a fact nobody can find. It also breaks the
 `as declared` shortcut, which is the line the whole defect used to appear as.
 
+**A lint that scolded the generator's own output (SH593).** Every replica this work produced ended
+with the same two lines against `post:<site>/theme/layout` — `head-no-canonical` and
+`head-no-description`. Both **correct**: SH337 put `post.canonical` on the model precisely so a
+template can emit it, and the generated layout did not. But that layout is written by `shio convert`,
+so the finding was Shio telling itself off, and it was **unclearable by construction** — the next
+conversion regenerates the same file and reports the same two. The cost was never the two lines: a
+warning list is read for as long as it is actionable, and these headed every list for twelve rounds,
+including the round whose whole report was `0 error(s), 2 warning(s)` — the first fully green
+`verify` on a real replica, whose entire remaining output was noise nobody could act on. A reader
+who learns the top of the list is always noise stops reading the list, which is where SH421's
+warning about a legitimately script-free layout also lives. So `pageLayout` emits
+`<meta name="description" content="{{post.summary}}">` and
+`<link rel="canonical" href="{{post.canonical}}">`. **`{{post.summary}}` rather than
+`{{description}}`**, though the `Page` this chain writes against declares a `description` field with
+`isSummary: true` and the words *"used as the page summary and the meta description"* in its own
+definition: `post.summary` is a key of the render frame, present whatever the type declares, so the
+tag is empty on a hand-built `Page` instead of the render failing — and on the standard type it *is*
+that field. **The other half is what makes the tag carry something:** `composePages` now writes the
+`description` the capture already scanned off the source's own head and dropped, so the meta tag is
+the source's, not an empty string. Emitting a tag that can only ever be blank would be
+lint-satisfying theatre, which one level up is the same defect as the warning. **The assertion reads
+the generator's bytes**, not a copy: the rule lives in the JVM and the layout is written in
+JavaScript, so `HEAD_CONVENTIONS_HTML` is its own no-interpolation export (SH464's seam) and
+`ShHeadConventionsTest` runs the real lint over it — and checks both halves are interpolated, since a
+literal description satisfies the absence check while being the sixty-pages-one-description defect.
+
 **A constant is not a coincidence (SH590).** The paragraph above says *twenty-two pages, exactly
 three each, identical on every one* — and that sentence is the finding. It was on screen in round
 eight, read as two ordinary shortfalls, and again in round twelve before anybody fetched a page and

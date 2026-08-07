@@ -10,6 +10,11 @@ package com.viglet.shio.api.agent.verify;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -188,5 +193,83 @@ class ShHeadConventionsTest {
         assertThat(rulesOf(messy)).containsExactly(
                 "head-no-canonical", "head-no-description", "head-noindex",
                 "head-relative-og-image", "head-static-title");
+    }
+
+    /**
+     * SH593 — the lint that scolded the generator's own output.
+     *
+     * <p>Every replica this work produced ended with the same two lines against
+     * {@code post:<site>/theme/layout}: {@code head-no-canonical} and {@code head-no-description}.
+     * Both were <b>correct</b> — SH337 put {@code post.canonical} on the model precisely so a
+     * template can emit it — and both were <b>unclearable by construction</b>, because the layout
+     * they scold is written by {@code shio convert} and the next run regenerates the same file and
+     * reports the same two. Shio telling itself off.</p>
+     *
+     * <p>The cost was never the two lines. A warning list is read for as long as it is actionable,
+     * and these headed every list for twelve rounds — including the round whose whole report was
+     * {@code 0 error(s), 2 warning(s)}, the first fully green verify on a real replica, whose entire
+     * remaining output was noise nobody could act on. A reader who learns the top of the list is
+     * always noise stops reading the list.</p>
+     *
+     * <p><b>The assertion reads the generator's bytes rather than a copy of them.</b> The rule lives
+     * in this JVM and the layout is written in JavaScript, so the only honest check is this lint run
+     * over what {@code convert.mjs} actually emits — SH464's seam. A second copy here would pass
+     * forever after that line changed, which is the failure mode of every inventory that lives
+     * beside the thing it describes rather than inside it.</p>
+     */
+    @Test
+    @DisplayName("SH593: the head shio convert generates clears the lint that used to scold it")
+    void theGeneratedHeadClearsTheLint() {
+        String generated = headConventionsHtml();
+
+        assertThat(rulesOf("<html><head><title>{{post.title}}</title>" + generated
+                + "</head><body></body></html>"))
+                .as("""
+                        these two warnings headed every replication report for twelve rounds and \
+                        no run could clear them, because the layout they scold is generated. If \
+                        this goes red, `shio convert` is once again writing a layout its own lint \
+                        refuses — and the reader who has to ignore it is the next agent.""")
+                .isEmpty();
+
+        // Not vacuous: the fragment has to be the real one, and both halves have to be
+        // interpolated. A literal description is `head-static-description`, which is the
+        // sixty-pages-one-description defect and would satisfy the absence check while being wrong.
+        assertThat(generated)
+                .contains("{{post.canonical}}")
+                .contains("{{post.summary}}");
+    }
+
+    /**
+     * {@code HEAD_CONVENTIONS_HTML} from {@code cli/src/convert.mjs} — the slice between two single
+     * quotes.
+     *
+     * <p>A missing file or a renamed export is a <b>failure</b> and never a skip: this exists to
+     * assert a cross-language contract, and one that quietly stops checking it is worse than
+     * none.</p>
+     */
+    private static String headConventionsHtml() {
+        Path convert = Path.of("..", "cli", "src", "convert.mjs");
+        String source;
+        try {
+            source = Files.readString(convert, StandardCharsets.UTF_8);
+        } catch (IOException cannotRead) {
+            throw new UncheckedIOException(
+                    "cli/src/convert.mjs is where the generated layout's head is written; this test "
+                            + "reads it rather than keeping a second copy (SH245/SH464). If it "
+                            + "moved, move this with it.",
+                    cannotRead);
+        }
+        String marker = "export const HEAD_CONVENTIONS_HTML =";
+        int start = source.indexOf(marker);
+        assertThat(start)
+                .as("HEAD_CONVENTIONS_HTML is the export this test reads; if it was renamed or "
+                        + "inlined, the contract it pins has no reader left")
+                .isGreaterThanOrEqualTo(0);
+        int open = source.indexOf('\'', start);
+        int close = source.indexOf('\'', open + 1);
+        assertThat(close).as("the string literal is unterminated").isGreaterThan(open);
+        // The literal carries an escaped newline between the two tags, which is a separator in the
+        // rendered file and has to be one here too.
+        return source.substring(open + 1, close).replace("\\n", "\n");
     }
 }

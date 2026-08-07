@@ -590,6 +590,31 @@ function layoutTheme({ site, captured, authorable }) {
  * node at all, it is a `data-` attribute the theme's CSS reads. `image` never had the problem only
  * because its element is the `<img>` and the field it declares *is* the attribute.</p>
  *
+ * <h3>And the two lines the lint asked for on every replica this ever produced (SH593)</h3>
+ *
+ * <p>Every conversion ended with `head-no-canonical` and `head-no-description` against
+ * `post:<site>/theme/layout`. Both findings were **correct** — SH337 put `post.canonical` on the
+ * model precisely so a template can emit it — and both were <b>unclearable by construction</b>,
+ * because the layout they scold is written by this function and the next run regenerates the same
+ * file and reports the same two. Shio telling itself off. The cost was never the two lines: a
+ * warning list is read for as long as it is actionable, and these headed every list for twelve
+ * rounds, including the round whose whole report was `0 error(s), 2 warning(s)` — the first fully
+ * green verify on a real replica, whose entire remaining output was noise nobody could act on.
+ * SH421 is the same shape from the other side, and the pair is worth reading together.</p>
+ *
+ * <p><b>`{{post.summary}}` rather than `{{description}}`</b>, though the standard `Page` declares a
+ * `description` field with `isSummary: true` and the words "used as the page summary and the meta
+ * description" in its own definition. `post.summary` is a key of the render frame itself, present
+ * whatever the type declares, so the tag is empty on a `Page` somebody built by hand instead of the
+ * write failing — and on the type this chain actually writes against, `post.summary` <i>is</i> that
+ * field. A layout that renders for one shape of `Page` and 500s for another would be a worse defect
+ * than the warning it removes.</p>
+ *
+ * <p>What makes the tag carry something is the other half: `composePages` now writes the
+ * `description` the capture already recorded. The value was scanned, stored in the inventory and
+ * dropped at the conversion, so the meta tag would have been honestly empty on every page — which
+ * is lint-satisfying theatre, and one level up it is the same defect as the warning.</p>
+ *
  * <p>What is deliberately **not** declared is `align`, `variant` and `columns`. Those are drawn into
  * attributes too, and they are `Combo Box` fields — a closed set of choices — while the bridge's
  * edit surface is a text box. Offering a curator a box in which three strings work and the rest
@@ -614,6 +639,7 @@ function pageLayout(markup, site, theme, capturedFor = false) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{post.title}}</title>
+${HEAD_CONVENTIONS_HTML}
 <style>{{theme.css}}</style>
 ${capturedFor ? `${CAPTURED_STYLE_HTML}\n` : ""}</head>
 <body class="shio-page">
@@ -657,6 +683,18 @@ ${PAGE_BODY_HTML}
  * by the half that would fail. The URL is therefore spelled here rather than interpolated from
  * `CAPTURED_THEME_URL`, and `convert.test.mjs` asserts the two agree.</p>
  */
+/**
+ * The two tags the head lint asked for on every replica this ever produced (SH593).
+ *
+ * <p>Its own export, and a single-quoted literal with no interpolation, for SH464's reason: the
+ * rule this satisfies is enforced by `ShHeadConventions` in the **JVM**, so the only honest
+ * assertion is the Java one running that lint over *these bytes*. A second copy in a test would
+ * pass forever after this line changed, which is the failure mode of every inventory that lives
+ * beside the thing it describes rather than inside it.</p>
+ */
+export const HEAD_CONVENTIONS_HTML =
+  '<meta name="description" content="{{post.summary}}">\n<link rel="canonical" href="{{post.canonical}}">';
+
 export const CAPTURED_STYLE_HTML =
   '{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}';
 
@@ -869,6 +907,12 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
       // than the site name: it is what makes two untitled pages two rows a human can tell apart.
       data: {
         title: titleOf(page),
+        // SH593 — the capture read this off the source's own `<meta name="description">` and the
+        // conversion dropped it. `description` is `isSummary` on the `Page` this chain writes
+        // against, so it is what `{{post.summary}}` renders into the layout's meta tag. Absent when
+        // the source declared none, because an empty key is a value and "the source said nothing"
+        // is not one.
+        ...(page.description ? { description: page.description } : {}),
         ...(sections.length ? { sections } : {}),
         ...(body === null ? {} : { content: body }),
       },
