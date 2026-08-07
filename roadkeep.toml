@@ -128,15 +128,18 @@ priority = [
   # says rather than by what a page looks like. SH560's corpus grew four groups this round —
   # fidelity (the mode nothing ran), the six checklist rules that were declared and read by
   # nothing, navigation, and a coverage check over the declarations themselves — and it now
-  # reports 22 assertions, 9 red, 6 owners, 49 declared keys and 1 inert. SH579 leads because
+  # reports 22 assertions, 9 red, 6 owners, 49 declared keys and 1 inert. SH579 led because
   # it is about all of the others: two suites are red at HEAD and nineteen commits landed over
-  # them, so nothing below is worth fixing until a red run obliges something. Then SH577 and
+  # them, so nothing below was worth fixing until a red run obliges something. **It shipped
+  # first, and it changed the premise of the rest of this queue**: one of those two reds was a
+  # reader blind to `shio-site/scripts` rather than a defect, so the ordering argument now
+  # rests on one real red — SH577's — which is the next line and is the ledger's only declared
+  # exception (`red-suites.json`, expiring 2026-08-14). Then SH577 and
   # SH578, the two halves of the judge — one standard applied to three modes, and the one fact
   # where a loss hides inside a gain. Then the two the corpus holds as debt: SH575's missing
   # navigation, which is every authorable conversion and not one source, and SH576's missing
   # home page. SH555 rides along and is not a re-open: it shipped on the render side and the
   # CLI still writes `{{CSS}}`, which is why the corpus holds a red case under a closed id.
-  "SH579",
   "SH577",
   "SH578",
   "SH575",

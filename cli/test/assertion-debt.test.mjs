@@ -52,6 +52,22 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
  * <p>A glob over the whole repository would count an id mentioned in a source comment as an
  * assertion, which is exactly the thing this exists to distinguish: SH512's own docstring names
  * SH512, and a rule that accepted that would report zero debt for ever.</p>
+ *
+ * <p><b>An entry may narrow to a file pattern, and SH579 is why.</b> Every tree above holds
+ * nothing but suites, so the directory was the whole selector — until `shio-site` grew its first
+ * two, which sit in `scripts/` <i>beside the scripts they test</i>. Taking that directory whole
+ * credits `prerender.mjs`, `markdown.mjs` and `token-budgets.mjs` for the ids their comments
+ * name — three of them on the declared debt below, paid off by a source file mentioning them,
+ * which is the exact false credit the paragraph above refuses. So the entry names the files.
+ * (Measured: the first version of this note quoted those three ids in prose, outside the
+ * declaration markers, and thereby credited all three itself. A reader that reads itself has to
+ * be careful what it says out loud.)</p>
+ *
+ * <p>The blind spot cost eight commits. SH566 and SH571 each shipped two assertions, both in
+ * `shio-site/scripts`, and this reader could not see either — so it reported them as debt and was
+ * red at HEAD from the commit after it shipped. The alarm was wrong and nobody looked, which is
+ * the case §IX.52 is actually about: an undeclared red suite teaches people that red means
+ * nothing, and it does that whether or not the red is true.</p>
  */
 const SUITES = [
   "claude-plugin/test",
@@ -63,6 +79,7 @@ const SUITES = [
   "shio-model/test",
   "shio-react/test",
   "shio-sections/test",
+  { tree: "shio-site/scripts", only: /\.test\.mjs$/ },
 ];
 
 const READABLE = new Set([".mjs", ".js", ".ts", ".tsx", ".java"]);
@@ -117,8 +134,11 @@ const DEBT = [
   // is gone, the way `ShIdeCompiledClassLintTest` asserts a state rather than a behaviour — and
   // nothing here does it, so a re-introduction would be silent.
   "SH20", "SH21", "SH60",
-  // The public site in `shio-site/`, which has no test tree at all. That is the cheapest group to
-  // fix and the one whose absence is least defensible: it is code in this repository.
+  // The public site in `shio-site/`. When this reader shipped the note here read "no test tree at
+  // all"; SH566 and SH571 have since put two suites in `scripts/`, and neither covers these ten —
+  // they are the prerender, the token budgets and the copy, and each is assertable beside the
+  // script that owns it. Still the cheapest group and still the least defensible: it is code in
+  // this repository, and there is now a place to put the assertions.
   "SH530", "SH531", "SH532", "SH533", "SH534", "SH535", "SH536", "SH537", "SH538", "SH539",
   // Conventions and process, where the assertion is a lint over the repository rather than a test
   // of a behaviour: a mutating test forcing its precondition (SH296), `noRollbackFor` on the class
@@ -152,7 +172,9 @@ async function assertedIds() {
   const found = new Set();
   let files = 0;
   for (const suite of SUITES) {
-    for (const path of walk(join(ROOT, suite))) {
+    const { tree, only } = typeof suite === "string" ? { tree: suite, only: null } : suite;
+    for (const path of walk(join(ROOT, tree))) {
+      if (only && !only.test(path)) continue;
       files += 1;
       const body = withoutDeclaration(await readFile(path, "utf8"));
       for (const id of body.match(/\bSH\d+\b/g) ?? []) found.add(id);

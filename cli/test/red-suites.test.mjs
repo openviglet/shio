@@ -1,0 +1,236 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0.
+ *
+ * SH579 — a red suite is a stop, and this is the only thing that may say otherwise.
+ *
+ * ## The measurement
+ *
+ * At `6bc4ba8`, clean tree: `pnpm conformance` failed one of five and `pnpm -C cli test` failed one
+ * of 1148. Eleven commits landed over the first and eight over the second. **No commit message
+ * mentions either**, and neither red run stopped anything.
+ *
+ * Both alarms were working — and one of them was *wrong*, which is the part that matters. The
+ * conformance failure was a real finding (SH577). The debt failure was `assertion-debt.test.mjs`
+ * blind to `shio-site/scripts`, so it named two tasks that had shipped two assertions each. Nobody
+ * found that out for eight commits, because nobody looked. That is what an undeclared red teaches:
+ * red means nothing, whether or not the red is true.
+ *
+ * ## The rule, and why it needs somewhere to live
+ *
+ * One line: **a red suite either blocks the next commit or is a declared, dated exception.** The
+ * first half is free — it is what a gate already means. The second half is the one that needed
+ * building, because without it the rule is unusable: a finding you have just filed as its own task
+ * (SH577) is a legitimate reason to keep working, and a rule with no room for it gets ignored on the
+ * first honest case rather than the first lazy one.
+ *
+ * So `red-suites.json` is that room, and it is deliberately hostile to living in:
+ *
+ * - **Time-boxed.** At most fourteen days from `declared`, and an expired entry fails *here*. A
+ *   forgotten exception becomes red rather than quiet, which is the failure mode this whole task is
+ *   about.
+ * - **Tied to open work.** `task` must be a task the roadmap still lists and the ledger does not.
+ *   When SH577 ships, this file goes red until the entry is deleted — so the exception cannot
+ *   outlive its reason, and the deletion lands in the same commit as the fix.
+ * - **Reasoned in a diff somebody reviews.** Same contract `assertion-debt.test.mjs` uses for its
+ *   DEBT list and `ShSilentCatchInventoryTest` for its inventory: the escape hatch is a named list
+ *   with the reason beside each entry, never a ceiling. A ceiling lets one task pay it and the next
+ *   spend it.
+ *
+ * ## Why `problems()` is a pure function and the ledger is an argument
+ *
+ * A check that has only ever been run against a file that satisfies it has not been shown to check
+ * anything — which is precisely the shape of the defect this task was filed about, one directory
+ * up. So the rules take their world (the ledger, the two docs, the date) as arguments, and the
+ * second half of this file feeds them entries that must fail. The real ledger is then one more
+ * caller.
+ *
+ * ## What this file cannot do
+ *
+ * It cannot run the suites — it is one of them, and it must stay cheap enough to run on every
+ * change. It asserts the *ledger*, not the colour. Making red visible without somebody choosing to
+ * look is the other half, and that is `.github/workflows/suites.yml`.
+ */
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { test } from "node:test";
+
+const LEDGER = new URL("../../red-suites.json", import.meta.url);
+const ROADMAP = new URL("../../docs/ROADMAP.md", import.meta.url);
+const CHANGELOG = new URL("../../docs/CHANGELOG.md", import.meta.url);
+const BUILD_DOC = new URL("../../docs/agents/build.md", import.meta.url);
+
+/**
+ * The suites this rule is about, and the command each one is.
+ *
+ * <p>A closed set on purpose. "Suite" as free text would let an exception be declared against
+ * something nobody runs, which is a way of declaring an exception against nothing. The commands
+ * are here rather than only in the doc so the last test can hold the two in agreement.</p>
+ */
+const SUITES = {
+  java: "./mvnw -pl shio-app -am clean test -Dskip.npm=true",
+  js: "pnpm test",
+  conformance: "pnpm conformance",
+};
+
+/** An exception is temporary by construction. Fourteen days is the whole of it. */
+const MAX_DAYS = 14;
+
+/** A reason short enough to fit in this is not a reason. Every other rule here passes a shrug. */
+const MIN_WHY = 120;
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Everything wrong with one declared exception, as sentences a reader can act on.
+ *
+ * @param entry one element of `red-suites.json`'s `exceptions`
+ * @param world `{ roadmap, changelog, today }` — the two documents as text and `YYYY-MM-DD`
+ * @returns the problems; empty means the exception is well-formed and still live
+ */
+export function problems(entry, { roadmap, changelog, today }) {
+  const out = [];
+  const say = (message) => out.push(message);
+
+  if (!Object.hasOwn(SUITES, entry.suite)) {
+    say(`\`suite\` is one of ${Object.keys(SUITES).join(", ")} — got ${JSON.stringify(entry.suite)}. `
+      + "An exception against a suite nobody runs is an exception against nothing.");
+  }
+  for (const field of ["test", "task", "declared", "expires", "why"]) {
+    if (typeof entry[field] !== "string" || entry[field].trim().length === 0) {
+      say(`\`${field}\` is required and must say something`);
+    }
+  }
+  if (out.length) return out; // Everything below reads those fields; one message beats five.
+
+  if (!/^SH\d+$/.test(entry.task)) say("`task` names the task that removes this red, as SH<n>");
+  if (!DATE.test(entry.declared)) say("`declared` is YYYY-MM-DD");
+  if (!DATE.test(entry.expires)) say("`expires` is YYYY-MM-DD");
+  if (out.length) return out;
+
+  const span = (Date.parse(`${entry.expires}T00:00:00Z`)
+    - Date.parse(`${entry.declared}T00:00:00Z`)) / 86_400_000;
+  if (span <= 0) {
+    say("`expires` must be after `declared`");
+  } else if (span > MAX_DAYS) {
+    say(`an exception runs for at most ${MAX_DAYS} days and this one asks for ${span}. If the red `
+      + "will outlive that, it is not an exception — it is the state of the project, and it "
+      + "belongs in the roadmap rather than here.");
+  }
+
+  if (entry.why.length < MIN_WHY) {
+    say(`\`why\` is ${entry.why.length} characters. Say what is red, what the failure actually `
+      + "shows, and why it is safe to keep committing over it — the next person's only way to "
+      + "judge this entry is what you wrote in it.");
+  }
+
+  if (entry.expires < today) {
+    say(`this expired on ${entry.expires} and today is ${today}. It was declared on `
+      + `${entry.declared} against ${entry.task}. Either that task ships, or the red is fixed, or `
+      + "somebody re-declares it with a new date and a reason the first fourteen days were not "
+      + "enough. What must not happen is the fourth thing, which is nothing.");
+  }
+
+  const open = new RegExp(`^- .*\\*\\*${entry.task}\\*\\*`, "m").test(roadmap);
+  const shipped = new RegExp(`^- \\*\\*${entry.task}\\b`, "m").test(changelog);
+  if (shipped || !open) {
+    say(`${entry.task} is ${shipped ? "shipped" : "not an open task"}, so this exception has `
+      + "outlived its reason. Delete the entry — in the same commit as the fix, which is the point "
+      + "of tying it to the task rather than to a date alone.");
+  }
+
+  return out;
+}
+
+/** Today in UTC, as the same `YYYY-MM-DD` the ledger writes. */
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function world() {
+  return {
+    roadmap: await readFile(ROADMAP, "utf8"),
+    changelog: await readFile(CHANGELOG, "utf8"),
+    today: today(),
+  };
+}
+
+test("SH579: every exception declared in red-suites.json is one this rule allows", async () => {
+  const { exceptions } = JSON.parse(await readFile(LEDGER, "utf8"));
+  assert.ok(Array.isArray(exceptions), "red-suites.json must carry an `exceptions` array");
+
+  const where = await world();
+  const bad = exceptions
+    .map((entry, i) => [`exceptions[${i}] (${entry.task ?? "no task"})`, problems(entry, where)])
+    .filter(([, found]) => found.length);
+
+  // Printed on every run, the way SH527 prints the debt: a number somebody sees beats a number a
+  // file holds. Zero is the normal state and the one worth noticing when it changes.
+  console.log(`SH579: ${exceptions.length} declared red-suite exception(s) at ${where.today}`
+    + exceptions.map((e) => `\n  ${e.suite} — ${e.task}, expires ${e.expires}`).join(""));
+
+  assert.deepEqual(
+    bad,
+    [],
+    "A red suite either blocks the next commit or is a declared, dated exception. These entries "
+      + "are neither — see docs/agents/build.md.",
+  );
+});
+
+test("SH579: the rules fire — every one of them, on an entry built to break it", async () => {
+  const where = await world();
+  const ok = {
+    suite: "conformance",
+    test: "capture over a socket → convert into the instance → pull it back → gate it",
+    task: "SH577",
+    declared: "2026-08-07",
+    expires: "2026-08-14",
+    why: "x".repeat(MIN_WHY),
+  };
+  // The premise: without it, every case below would pass for the wrong reason. Dates are fixed
+  // rather than derived from `today`, so this asserts against a world where SH577 is still open.
+  assert.deepEqual(problems(ok, { ...where, today: "2026-08-10" }), []);
+
+  const fires = (patch, expected) => {
+    const found = problems({ ...ok, ...patch }, { ...where, today: "2026-08-10" });
+    assert.ok(
+      found.some((m) => m.includes(expected)),
+      `${JSON.stringify(patch)} should have been refused for ${expected}; got ${JSON.stringify(found)}`,
+    );
+  };
+
+  fires({ suite: "the one on my machine" }, "exception against nothing");
+  fires({ why: undefined }, "`why` is required");
+  fires({ task: "577" }, "as SH<n>");
+  fires({ expires: "next friday" }, "`expires` is YYYY-MM-DD");
+  fires({ expires: "2026-08-06" }, "must be after");
+  fires({ expires: "2026-09-30" }, "at most 14 days");
+  fires({ why: "flaky" }, "the next person's only way to judge");
+  fires({ declared: "2026-07-01", expires: "2026-07-08" }, "expired on 2026-07-08");
+  // The two halves of "tied to open work", which fail identically and for opposite reasons.
+  fires({ task: "SH99999" }, "not an open task");
+  fires({ task: "SH527" }, "SH527 is shipped");
+});
+
+test("SH579: the ledger and the doc that explains it can each find the other", async () => {
+  const { note, doc } = JSON.parse(await readFile(LEDGER, "utf8"));
+  const build = await readFile(BUILD_DOC, "utf8");
+
+  assert.ok(note?.includes("SH579"), "red-suites.json carries a `note` saying what it is for");
+  assert.equal(doc, "docs/agents/build.md", "`doc` points at the file that states the rule");
+  assert.ok(
+    build.includes("red-suites.json"),
+    "docs/agents/build.md must name the ledger. An escape hatch nobody can find from the rule is "
+      + "an escape hatch nobody uses, and the rule then gets broken silently instead — which is "
+      + "the state this task was filed about.",
+  );
+  // Not vacuous: the doc gives the command for every suite this rule covers, so an exception's
+  // `suite` key is a thing a reader can actually run.
+  for (const [name, command] of Object.entries(SUITES)) {
+    assert.ok(
+      build.includes(command),
+      `docs/agents/build.md does not give the command for the \`${name}\` suite (${command})`,
+    );
+  }
+});

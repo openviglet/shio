@@ -3,6 +3,59 @@
 > Split out of the repo-root `agents.md` (see its routing table for the index).
 > Read this before touching the area it covers. Detail here is authoritative.
 
+## A red suite is a stop (SH579)
+
+**A suite that is red either blocks the next commit or is a declared, dated exception in
+[`red-suites.json`](../../red-suites.json). There is no third state, and "I did not know" was
+the third state for nineteen commits.**
+
+Three suites are gates, and each one is a command a person types:
+
+| Key | Command | What it needs |
+|---|---|---|
+| `java` | `./mvnw -pl shio-app -am clean test -Dskip.npm=true` | nothing |
+| `js` | `pnpm test` | `pnpm install` at the root |
+| `conformance` | `pnpm conformance` | a **running instance** built from HEAD |
+
+### What this is for
+
+Measured at `6bc4ba8`, clean tree: conformance failed one of five and `pnpm -C cli test` failed
+one of 1148. **Eleven commits landed over the first and eight over the second, and no commit
+message mentions either.** Neither red stopped anything, and nothing anywhere said it should.
+
+The instructive part is that one of those two alarms was *wrong*. The conformance failure was a
+real finding and became SH577. The other was `assertion-debt.test.mjs` unable to see
+`shio-site/scripts`, so it reported two tasks as unasserted that had shipped two assertions each
+— a reader defect, fixed in three lines, and it sat there for eight commits because a red nobody
+is obliged to answer is a red nobody reads. **An undeclared red teaches people that red means
+nothing, and it teaches that whether or not the red is true.** That is the cost, and it is paid
+by every *later* alarm, not by the one being ignored.
+
+### Declaring one
+
+`red-suites.json` is the only place an exception may live, and it is deliberately hostile:
+
+- **Time-boxed** — at most fourteen days from `declared`, and an expired entry fails
+  `cli/test/red-suites.test.mjs`. A forgotten exception goes red rather than quiet.
+- **Tied to open work** — `task` must be a task `ROADMAP.md` still lists and `CHANGELOG.md`
+  does not. The day the task ships, the ledger goes red until the entry is deleted, so the
+  exception cannot outlive its reason and the deletion lands in the same commit as the fix.
+- **Reasoned** — `why` is the whole review surface, and the check enforces a length because a
+  shrug passes every other rule in the file. Say what is red, what the failure actually shows,
+  and why it is safe to keep committing over it.
+
+This is the contract `assertion-debt.test.mjs` uses for its DEBT list and
+`ShSilentCatchInventoryTest` for its inventory: a named list with a reason beside each entry,
+never a ceiling. A ceiling lets one task pay the debt and the next spend it.
+
+### And red has to be visible without somebody choosing to look
+
+[`.github/workflows/suites.yml`](../../.github/workflows/suites.yml) runs `js` and
+`conformance` on every push to the working branch and on every pull request — the conformance
+job builds the jar from the commit under test and boots it, which is the only way that suite
+can run at all. That is the JS half of what SH241/SH284's rationale asked for; the Maven build's
+own push-versus-pull-request question is still SH241's.
+
 ## Build & Deploy
 
 ### JavaScript workspace (pnpm)
@@ -22,7 +75,8 @@ dependency: it runs the served `render/shio-editor.js` in a real DOM, which is t
 to test it (every function in it *is* DOM behaviour, and evaluating it from the Java suite is closed by
 the no-script-engine non-goal). **These do not run under `./mvnw test`** — the Maven gate is Java only,
 so a rule that must never regress silently also belongs in `ShEditorBridgeTest` as a textual guard.
-Running the JS suite in CI is SH241/SH284's open work.
+**They run in CI since SH579** (`.github/workflows/suites.yml`, on push and on pull request); what
+SH241 still owns is the Maven build's own trigger.
 **The conformance suite is a second glob, and the glob is the opt-in (SH448).**
 `cli/conformance/*.conformance.mjs` — run with `pnpm conformance` at the root (or
 `pnpm --filter @viglet/shio run conformance`), never by `pnpm test`, because it needs a

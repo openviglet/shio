@@ -149,6 +149,16 @@ Run the **full** suite, not a single `-Dtest` class. JS workspace: `pnpm install
 once at the repo root, **Node ≥26**. Detail — Maven/frontend-plugin wiring, Vite,
 publishing — is in [docs/agents/build.md](docs/agents/build.md).
 
+**A red suite is a stop (SH579).** Three commands are gates — `./mvnw … clean test`,
+`pnpm test`, `pnpm conformance` — and a red one either blocks the next commit or is a
+dated, time-boxed entry in [`red-suites.json`](red-suites.json) naming the open task
+that removes it. There is no third state, and the third state cost nineteen commits over
+two red suites that nobody mentioned. This is here rather than only in the area file
+because it is a rule you have to know *before* you decide whether to read anything;
+`cli/test/red-suites.test.mjs` enforces the ledger and
+[`.github/workflows/suites.yml`](.github/workflows/suites.yml) runs two of the three on
+every push, so red is visible without somebody choosing to look.
+
 **`clean test` is the command; the ITs are opt-in and you ask for them (SH415).** The
 line above is the whole validation for almost every task — it never invoked failsafe,
 and since SH415 `verify` does not either (`skipITs` defaults to true). Add

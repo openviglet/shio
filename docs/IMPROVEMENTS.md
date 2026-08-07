@@ -816,29 +816,6 @@ a stylesheet references are two facts, and the theme's are the same on every pag
 site, so counting them once at the site level says more than counting them thirteen
 times. The assertion is a page whose own references shrink while its theme's grow.
 
-### IX.52 A suite that is red at HEAD is not a gate (SH579)
-
-Measured at `6bc4ba8`, clean tree, nothing of this round applied: `pnpm -C cli run
-conformance` fails one of five tests, and `pnpm -C cli test` fails one of 1148 — `SH527:
-every shipped task carries an assertion`, naming SH566 and SH571.
-
-Both are the instruments working. The conformance failure is SH577, a real question
-asked of the wrong mode; the debt failure is SH527 catching what it was built to catch,
-two commits after it shipped. Neither is a false alarm, and that is the point: the
-alarms are right and the work went on regardless. Eleven commits landed over the first
-and eight over the second, and no commit message mentions either.
-
-The rule this breaks is not written down, which is probably why. `agents.md` is firm
-that a run's count is authoritative and that a red run leaves a record, and it never
-says what a red run *obliges*. So the honest state is that these suites are reports
-rather than gates, and calling conformance "the gate" in `SKILL.md` is currently false.
-
-Two repairs, independent of each other. The narrow one: run both in the workflow that
-runs on a push, so red is visible without somebody choosing to look — SH241 says none
-runs on the branch this work happens on. The wider one: name the obligation. A red suite
-either blocks the next commit or is a declared, dated exception, and the second needs
-somewhere to live before anybody uses it.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

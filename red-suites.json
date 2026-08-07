@@ -1,0 +1,14 @@
+{
+  "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
+  "doc": "docs/agents/build.md",
+  "exceptions": [
+    {
+      "suite": "conformance",
+      "test": "capture over a socket → convert into the instance → pull it back → gate it",
+      "task": "SH577",
+      "declared": "2026-08-07",
+      "expires": "2026-08-14",
+      "why": "The chain runs propose --accept all and then requires SH548's diff to report zero loss, so the one assertion that can see a gutted replica is aimed at the one conversion mode whose purpose is to drop the source's chrome: 4 facts lost across two pages, every one of them a nav link or a theme asset an authorable page is designed not to keep. The question is right and the mode is wrong; the other four tests in the suite are green. SH577 is the fix."
+    }
+  ]
+}

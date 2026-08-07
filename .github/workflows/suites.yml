@@ -1,0 +1,130 @@
+# SH579 — the two suites that were red at HEAD, run where nobody has to choose to look.
+#
+# Measured at `6bc4ba8`: `pnpm conformance` failed one of five and `pnpm -C cli test` failed one of
+# 1148. Eleven commits landed over the first and eight over the second, and no commit message
+# mentions either. Every other workflow in this directory is `workflow_dispatch`, so a red run was
+# only ever visible to somebody who had already decided to run it locally — which is the same thing
+# as not being visible.
+#
+# One of those two alarms turned out to be wrong (a reader blind to `shio-site/scripts`), and that
+# is the argument for this file rather than against it: a false alarm nobody answers is how a
+# suite's colour stops meaning anything, and the next true one is then also unread.
+#
+# The rule these jobs enforce is in docs/agents/build.md — a red suite either blocks the next
+# commit or is a dated entry in red-suites.json. This workflow does not know about that ledger and
+# should not: an exception is a licence to keep *committing*, never a licence to make CI green.
+name: Suites
+
+on:
+  push:
+    branches: ["2026.3", "main"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: suites-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The whole JS workspace: cli, client, model, sections, create-shio-app, the plugin, the console
+  # and the public site. No instance, no browser, no registry — that is what `pnpm test` is for, and
+  # why it is the job that runs on every pull request in a couple of minutes.
+  js:
+    name: pnpm test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.8.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install the workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Build what the suites import
+        # shio-sections' tests import .ts directly, but shio-react and the examples resolve the
+        # built SDK. Cheaper than discovering that as a test failure with no line of ours in it.
+        run: pnpm run build:sdk && pnpm run build:sections
+
+      - run: pnpm test
+
+  # The opt-in suite, and the reason it is a separate job: it needs a running instance built from
+  # the commit under test. `requireInstance` compares the manifest's commit against `git log -1`
+  # before any scenario builds anything (SH460/SH500), so a job that boots a jar it did not build
+  # from this checkout would fail on staleness rather than on the code — which is exactly the
+  # behaviour that gate exists for, and exactly why this job builds first.
+  conformance:
+    name: pnpm conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SHIO_USER: admin
+      SHIO_PASSWORD: shio-conformance
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: "zulu"
+          cache: maven
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.8.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install the workspace
+        run: pnpm install --frozen-lockfile
+
+      # The suite's harness imports @viglet/shio-client, which resolves to `dist/` — a fresh clone
+      # has none, and the failure that produces names no file of this suite.
+      - name: Build what the suite imports
+        run: pnpm run build:sdk
+
+      # -DskipTests: the Java suite is not this job's question and paying for it twice would make
+      # this the job people disable. `package` writes git.properties, which is where the manifest's
+      # `commit` comes from.
+      - name: Build the app
+        run: ./mvnw -B -DskipTests package
+
+      - name: Boot the app
+        run: |
+          nohup java -jar shio-app/target/viglet-shio.jar > "$RUNNER_TEMP/shio.log" 2>&1 &
+          for i in $(seq 1 120); do
+            if curl -sf -o /dev/null "http://localhost:2710/api/v2/setup"; then
+              echo "up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "the app did not come up"; tail -100 "$RUNNER_TEMP/shio.log"; exit 1
+
+      # A clean instance creates admin with no password; first-access setup sets it. 403 means a
+      # password is already set, which is the state this step wants to reach either way.
+      - name: Set the admin password
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            -H 'Content-Type: application/json' \
+            -d "{\"password\":\"$SHIO_PASSWORD\"}" \
+            http://localhost:2710/api/v2/setup)
+          case "$code" in 200|201|204|403) echo "setup → $code";; *) echo "setup → $code"; exit 1;; esac
+
+      - run: pnpm conformance
+
+      # The suite seeds `ShioConf…` sites and removes them in `after`; what is worth keeping is the
+      # server's side of a failure, because half of this suite's findings are 500s with no body.
+      - name: App log
+        if: failure()
+        run: tail -300 "$RUNNER_TEMP/shio.log"

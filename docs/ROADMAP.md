@@ -41,7 +41,6 @@
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
 - 📋 **SH577** (deps: SH554 ✅) **The gate asserts a replica lost nothing, on the one conversion mode whose purpose is to drop things** — The chain accepts candidates and then requires diff to report zero loss, so the suite has been red for two rounds over chrome an authorable page is designed not to keep. → §IX.50
 - 📋 **SH578** (deps: SH554 ✅) **The asset count reads the page's own references on one side and the inlined theme's on the other** — A fidelity replica reported plus thirty assets on every page, which is the theme's url() counted only on the produced side, so a page that lost assets can read as a gain. → §IX.51
-- 📋 **SH579** (deps: SH527 ✅) **Two suites are red at HEAD and work kept landing on top of both** — The conformance chain has failed for two rounds and assertion-debt names two tasks that shipped without one, and neither red run stopped a commit or was mentioned in one. → §IX.52
 
 ## Block I — Content as files (local-first authoring)
 

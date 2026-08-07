@@ -10,6 +10,13 @@ half a suite cannot do: driving a real external site through the chain and decid
 whether what came out is a replica. Every rule below was paid for by a defect that shipped
 green.
 
+**"The gate" is a claim with an obligation behind it since SH579**: a red run either blocks
+the next commit or is a dated entry in `red-suites.json` naming the open task that removes
+it, and the suite runs on every push (`.github/workflows/suites.yml`). Before this it was
+red for two rounds while nineteen commits landed over it, which made the sentence above
+false — a suite nobody is obliged to answer is a report, not a gate. See
+[docs/agents/build.md](../../../docs/agents/build.md).
+
 ## Before anything: is the instance the code you are testing?
 
 ```
