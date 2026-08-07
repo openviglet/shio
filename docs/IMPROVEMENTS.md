@@ -1144,6 +1144,31 @@ publishes the templates it wrote, because a draft-only layout is the state that 
 One command, one visible site — and the packages become the place the render conventions
 are *demonstrated* rather than described.
 
+### XI.18 The fourth registry is the one that is published (SH604)
+
+Measured at `0f4a906f`. The MCP server registers **11 tools** and **7 resources**.
+`claude-plugin/README.md` states 10 and 4. Missing: `shio_remember`, and the
+`shio://diagnostics`, `shio://ops` and `shio://blueprint/` resources.
+
+The two it is wrong about are the two that cost the most: `remember` is where a
+convention survives a session, `diagnostics` is what SH596 shipped precisely so a plugin
+user could read a 5xx. Both landed within three commits of the README, and the README is
+the artefact a new installation reads first.
+
+So SH599's three registries are four, and the fourth is the published one — the only one
+whose reader cannot check it against the source.
+
+The rule is not "regenerate the list". It is that **naming a tool to teach a rule is
+teaching, and enumerating tools is a copy**. The AGENTS fragment naming `shio_apply`
+while stating what apply guarantees is the first kind and should stay. README lines
+28–29 are an inventory of a surface the reader can ask the instance for, and every one
+of those is a copy with a half-life.
+
+Two moves, in order: assert the enumeration equals the server's, so the build fails when
+a tool ships; then delete the enumeration in favour of routing to `shio://manifest`, so
+there is nothing left to assert. The leak guard added for internal ids is the same shape
+and the same file — one more walk over the published artefacts.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

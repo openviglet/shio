@@ -61,6 +61,7 @@
 - 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — The plan and dryRun paths are write-free and nothing enforces it, so the next feature needing to resolve what it would create can reintroduce a write. → §XI.15
 - 📋 **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — No first-party package ships a theme, a layout or a binding, so applying one yields content whose design is the labelled fallback and an agent finishes the job by hand. → §XI.16
 - 📋 **SH518** (deps: SH509 ✅) **A blueprint-built site cannot be seen, because the layout generator only runs on the replication path** — apply --blueprint writes 13 authorable posts and no PageLayout or Theme, so /preview answers 400 while convert writes both. → §XVII.70
+- 📋 **SH604** (deps: SH599) **The plugin's prose enumerates the tool surface, so it is a copy that drifts the moment one ships** — Its README lists ten tools and four resources against a server carrying eleven and seven, so remember and diagnostics both shipped and the plugin never learned either. → §XI.18
 
 ## Block L — Agent safety & human-in-the-loop
 
