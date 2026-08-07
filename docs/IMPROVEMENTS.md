@@ -316,6 +316,99 @@ it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional sh
 SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
 there has to be asserted rather than assumed.
 
+### VIII.32 Discovery has fixes and no grep (SH598)
+
+SH338 states the rule: when a review finds a design law being broken, the instrument
+that finds every *other* break lands before the fixes. P1 obeyed it —
+`ShAgentP1ConformanceTest` classifies every manifest `features` key and holds the
+unreachable ones as an asserted list, and it named four that no task had.
+
+P2 did the opposite. Three breaks were found by hand, one per round, and each was fixed
+alone: a capability named by four documents and no command (SH587), an onboarding
+command that never read the manifest (SH595), a feature reachable by REST, CLI and
+console and by neither MCP list (SH596). Three fixes, no grep. So the honest count of P2
+breaks today is *three that somebody happened to notice*.
+
+The question P1 asks is **is every feature reachable**. The question P2 asks is
+different and it is assertable: **is every capability reachable from the entry point, in
+one call, without prior knowledge of its name**. Concretely — every manifest feature
+that is `true` is named by at least one of {tool, resource, command, CLI verb}, and the
+path from `startHere` to it is bounded.
+
+The asserted-list shape is the one to copy, not a ceiling: the run prints how many are
+reachable and how many are held, and a task that closes one cannot quietly open another.
+SH597 lands first, because the instrument says *which* are unreachable and the benchmark
+says *what that costs*.
+
+### VIII.33 One capability, three lists, no join (SH599)
+
+A capability in Shio is declared in three unrelated places: a boolean in the manifest's
+`features`, a path in its `endpoints`, and a tool or resource in the MCP listing.
+Nothing joins them. SH596 was one instance — `diagnostics` was `true` in the first,
+present in the second, and in neither MCP list — and it was found because a run needed
+it, not because anything checked.
+
+This is also where P1's cost shows up. Every capability lands in four places by law (MCP
+→ files/CLI → REST → console), which is a 4x maintenance multiplier on a surface that
+only grows. The laws create the surface; nothing yet bounds it. Four ledgers (SH594)
+keep what is knowingly wrong visible, but they are human-in-the-loop devices and they do
+not catch a capability that was simply never added to one list.
+
+The fix is not a fourth list. One of the three becomes the source — `features` is the
+candidate, since it is the one an agent reads first and the one already asserted by
+`ShAgentP1ConformanceTest` — and the others are derived from it or asserted equal to it.
+A capability then cannot exist in the manifest and be absent from MCP, because the
+absence is a build failure rather than a discovery somebody makes in round thirteen.
+
+Out of scope: making the derivation clever. A test that fails naming the missing entry
+is enough, and it is the part that cannot be argued.
+
+### VIII.34 The projection that answers nothing, with a 200 (SH600)
+
+`?include=identity` is a reasonable-looking way to ask the manifest a narrow question.
+It returns 200. It also removes every one of the 57 `features`, the `limits` and
+`startHere` — that is, everything P2 exists to deliver.
+
+A procedure written against that call teaches it to every run that follows. That is what
+happened here: a skill's first line carried `?include=identity`, and for twelve rounds
+the manifest was called and the capability list was never seen. The cost was proposing
+to build two shipped features and diagnosing a 5xx from a server log while `diagnostics:
+true` sat two lines away in a response nobody had asked for.
+
+P6 says errors are instructions, and it is scoped to the 4xx. The failure here has no
+error. A caller who narrows a *discovery* surface is, by construction, a caller who does
+not yet know what is there, so a silent projection is the one place a 200 misleads worse
+than a 404: a 404 would have been read.
+
+The rule to add: a discovery response that has been narrowed states what the narrowing
+removed — a count and the key names, not the content. `features: 57 omitted
+(include=identity)` is a handful of tokens and it converts a silent projection into a
+pointer. It costs nothing on the full response, because there is nothing to report.
+
+Small, and it is the cheapest of the P2 tasks by a wide margin.
+
+### VIII.35 Inventory is not routing (SH601)
+
+The manifest is complete. That is the finding, and it is the uncomfortable one: every
+round that lost time to discovery lost it holding a correct and complete list.
+Completeness was never the constraint.
+
+What a reader arrives with is an **intent** — *this run failed with a 500*, *I need to
+know what conventions this instance already has*, *I want a page like the one over
+there*. What the manifest offers is 57 booleans, 28 paths and a `limits` object. Mapping
+the first onto the second is the work, it is unbudgeted, and it is exactly where the
+errors were: `diagnostics` is discoverable to a reader who already suspects it exists.
+
+So P2's second half is routing. `startHere` exists and lists; it does not branch. A
+version that did would answer *given this intent, here is the one call*, for a small
+closed set of intents that covers what runs actually arrive with — a failure to explain,
+a convention to learn, a job that may already have a blueprint, a claim to prove.
+
+Two cautions. It must not become a fifth registry (SH599 is the opposite direction). And
+the intent set has to come from measurement, not from introspection: SH597's fixture is
+precisely a list of intents with a known right first move, so the benchmark and the
+router want the same table. Build the table once, score against it, then route with it.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -847,6 +940,53 @@ they agreed only by accident. Four ledgers agree about what is knowingly broken 
 while nobody's debt is anybody else's. The question is not whether to merge the files —
 their scopes are genuinely different — but whether one reader can answer *what is this
 repository knowingly carrying, and which of it has an owner who has already gone*.
+
+### IX.59 The findings nobody narrated (SH602)
+
+Twelve rounds produced roughly forty tasks. Every one of them came from the same place:
+a session ended, somebody read it back, and a pattern was noticed. That is an expensive
+and lossy collector, and it only ever runs when a human asks for it.
+
+The instance already has the parts. Durable incidents record what failed
+(`durableIncidents`), `diagnostics` explains a 5xx, `shio remember` survives a session,
+and `open-findings.json` is the ledger a finding lands in. What is missing is between
+them: the cheap signals that are not incidents. A 404 on a path an agent constructed. A
+4xx whose `didYouMean` fired. A capability asked for under a name that does not exist. A
+command run with a flag the notes had already recommended. None of those is a failure
+worth an incident, and together they are the whole discovery-friction record.
+
+The shape: the instance counts them, keyed by what was *asked for* rather than by what
+broke, and `diagnostics` reports the top of that list. A key asked for often and
+answered never is a missing capability with a name attached — which is strictly better
+evidence than anything a transcript review produces, because it is the reader's own
+vocabulary rather than a summariser's.
+
+This is the task that converts "we will find out by using it" from a hope into a
+pipeline. It matters most for readers who are not this one: nobody is going to narrate a
+stranger's session.
+
+### IX.60 One reader, one instance, one shape (SH603)
+
+The strongest evidence this project has about its own protocol is twelve replication
+rounds. They are also its narrowest: one agent, one instance, one family of sources, and
+a corpus that the same reader helped design. The verification loop closes entirely
+inside the project — the laws are enforced by lints written by the people who wrote the
+laws, and scored by a reader who knows where everything is.
+
+That is enough to find defects. It cannot distinguish a protocol that is genuinely
+discoverable from one a familiar reader has memorised, and it says nothing at all about
+the shapes replication never exercises: building a content model from nothing, migrating
+from another CMS, a locale added after the fact, a run that is mostly curation rather
+than authoring. Whatever P2 costs in those, the number today is unknown, and no amount
+of further analysis produces it.
+
+So the deliverable is a second task shape driven end to end and scored with SH597's
+metric — build a small site from an empty instance, no capture, no corpus, following
+only what the instance and the plugin say. The value is not the site. It is the delta
+between the two numbers: if discovery costs the same in a shape nothing was tuned for,
+P2 is real; if it does not, the tuning is what was being measured all along.
+
+Run it before believing any P2 improvement generalises.
 
 ## X. Content as files (Block I)
 
