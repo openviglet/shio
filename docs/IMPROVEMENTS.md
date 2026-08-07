@@ -771,30 +771,6 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
-### IX.53 The head one side counts and the other does not have (SH581)
-
-SH578 split an asset a page references from an asset a stylesheet references, and it was
-the right cut. A second one is still uncut, on a different axis: the declared side is the
-**whole captured document** and the produced side is the **body span a Page stores**.
-
-`/partner/` is the fidelity page of an otherwise authorable conversion. The capture
-declares `assets: {own: 33, style: 0}`; the replica serves five; `diff` calls it `-28`
-and exits 1. What actually went missing is the source's `<head>` — nine `<link>`
-elements, of which the stylesheet is inlined by the layout, leaving favicons and a
-manifest. The captured markup is 155,881 characters and the stored `content` is 60,322:
-the head is not lost, it belongs to the layout, and a replica is not supposed to carry
-the source's.
-
-So the number is wrong in both directions at once. It overstates by 28 what is a loss of
-about four, and it would understate a body-side loss that a head-side count happened to
-cover.
-
-`diff` already suspects it. Its own footer prints *the pages disagree about this number,
-which a single theme cannot explain* — an instrument reporting an inconsistency in its
-own reading, which is the best place to start and the reason this is one task rather
-than a guess. The cut is head versus body, the same shape as SH578's, and the assertion
-is a fidelity page whose body is unchanged and whose head is the layout's.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

@@ -182,9 +182,12 @@ const FACTS = [
   },
   {
     // SH578 — the page's **own** references. What a stylesheet references is the other fact, and it
-    // is reported once at the site level: see `THEME_ASSETS` below.
-    name: "assets",
-    of: (page) => page.assets?.own,
+    // is reported once at the site level: see `themeAssets` below.
+    // SH581 — and of those, the ones its **body** references. The head is the layout's on every
+    // replica of every mode, so it is reported beside the theme rather than scored: two facts a
+    // page cannot be held to, both counted, neither hidden inside a number that is a page's.
+    name: "body assets",
+    of: bodyAssets,
     verbatimOnly: true,
     why: "the captured theme is deliberately not on an authorable page (SH510) and the favicon "
       + "link is chrome, so a page keeps only the assets its accepted sections carry",
@@ -197,6 +200,17 @@ const FACTS = [
       + "a reviewer can accept",
   },
 ];
+
+/**
+ * The assets a page's own **body** references (SH581).
+ *
+ * <p>`own` minus `head`, and one function so the declared side and the produced side cannot compute
+ * it differently — the property SH554 established for `links` and SH578 for the theme, asked once
+ * more of the same fact. `assertComparable` is what guarantees both operands are there.</p>
+ */
+function bodyAssets(page) {
+  return page.assets?.own - page.assets?.head;
+}
 
 /**
  * The shape check that would have caught SH554 at the boundary it crossed.
@@ -234,6 +248,21 @@ function assertComparable(page, side) {
         + "       own images and gained thirty theme url() reports a GAIN.\n"
         + "  note: a capture written before SH578 is version 3 — re-run `shio clone` to get one\n"
         + "       this can read, rather than have it scored on a shape it does not have.",
+    );
+  }
+  // SH581 — the same refusal on the other axis, and it needs its own because a version-4 row has
+  // `own` and no `head`: the check above passes, `own - undefined` is NaN, and every comparison
+  // against NaN is false — so a page that lost every image would report nothing at all. Silence is
+  // the worst of the three readings this fact has had.
+  if (page?.assets !== undefined && typeof page.assets?.head !== "number") {
+    throw new Error(
+      `shio diff: the ${side} side carries no head asset count, so a page's body cannot be `
+        + "separated from the layout's head (SH581).\n"
+        + "  fix: re-read it with countAssets(doc.assets), which returns {own, head, style}.\n"
+        + "  why: `own` is the whole captured document and a replica page is the body span it\n"
+        + "       stores under a layout that owns the head. Measured at -28 on one fidelity page\n"
+        + "       whose body was unchanged and whose head held nine <link> elements.\n"
+        + "  note: a capture written before SH581 is version 4 — re-run `shio clone`.",
     );
   }
 }
@@ -293,6 +322,8 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
     unaddressable,
     modes: counted,
     theme: themeAssets(declared, produced),
+    // SH581 — the other fact a page cannot be held to, counted the same way and for the same reason.
+    head: headAssets(declared, produced),
     lost: pages.reduce((total, page) => total + page.lost, 0),
     byDesign: pages.reduce((total, page) => total + page.byDesign, 0),
   };
@@ -328,6 +359,30 @@ function themeAssets(declared, produced) {
 }
 
 /**
+ * What each side's `&lt;head&gt;` references, for the whole site, once (SH581).
+ *
+ * <p>Same shape and same argument as `themeAssets` one fact along, and it is deliberately **not**
+ * scored. A replica's head is the layout's on every page of every mode, so the source's favicons,
+ * its manifest and its stylesheet link have no page to be missing from — but the numbers are still
+ * worth a line, because "the source's head carried nine and the replica's carries three" is a fact
+ * about the *layout*, and the way it used to be reported was as damage on each page's own count.</p>
+ *
+ * <p>The <b>max</b> rather than a sum, and `uniform` beside it: a head that differs page to page is
+ * the interesting case — an alternate, a canonical, a page-specific preload — and smoothing it into
+ * an average would invent a number no page has.</p>
+ */
+function headAssets(declared, produced) {
+  const headOf = (page) => (typeof page?.assets?.head === "number" ? page.assets.head : 0);
+  const producedRows = [...declared].map((page) => produced.get(page.path)).filter(Boolean);
+  return {
+    declared: Math.max(0, ...declared.map(headOf)),
+    produced: Math.max(0, ...producedRows.map(headOf)),
+    uniform: new Set(producedRows.map(headOf)).size <= 1,
+    pages: producedRows.length,
+  };
+}
+
+/**
  * What a reader sees, and it leads with the answer rather than with the table.
  *
  * <p>The question is "is this what it was supposed to be", so the first line answers it. A page that
@@ -335,7 +390,7 @@ function themeAssets(declared, produced) {
  * nobody reads to the end (SH138's rule, applied to a comparison instead of to a cut).</p>
  */
 export function describeDiff(comparison, options = {}) {
-  const { pages, missing, unaddressable = [], lost, byDesign = 0, modes, theme } = comparison;
+  const { pages, missing, unaddressable = [], lost, byDesign = 0, modes, theme, head } = comparison;
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   const lines = [
     `shio diff: ${pages.length} page(s) compared with the capture that declared them`
@@ -405,6 +460,17 @@ export function describeDiff(comparison, options = {}) {
         + (theme.uniform
           ? ""
           : "; and the pages disagree about this number, which a single theme cannot explain"),
+    );
+  }
+  // SH581 — and the head, on the same terms. The line exists because the alternative is not silence:
+  // it is these references counted into every page's own total, where a shortfall of nine reads as
+  // nine images a page lost.
+  if (head && (head.declared || head.produced)) {
+    lines.push(
+      `  head: ${head.declared} → ${head.produced} reference(s) in the document head, across `
+        + `${head.pages} page(s) — the layout's on every replica, counted once and never scored. `
+        + "A page's BODY references are the `body assets` fact above"
+        + (head.uniform ? "" : "; and the pages disagree, which one layout cannot explain"),
     );
   }
   lines.push(

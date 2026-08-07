@@ -70,8 +70,12 @@ const LIMIT = 20;
  * array and nothing else. It is tracked anyway because the alternative is worse than silence: a
  * reader left at 3 answers `version > READS_VERSION` on every capture `shio clone` now writes, and
  * warns that the run is under-informed about a field it never reads.</p>
+ *
+ * <p>**5 since SH581**, on the same terms as 4 and for the same reason: that bump added `head` beside
+ * `own` so `shio diff` can score a page's body against a layout that owns the head, and this group
+ * still reads only `path` and the capture's top-level `assets` array. Tracked, not acted on.</p>
  */
-export const READS_VERSION = 4;
+export const READS_VERSION = 5;
 
 /**
  * Lints a replication's coverage against the capture it came from.

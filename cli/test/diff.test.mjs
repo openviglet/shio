@@ -100,13 +100,13 @@ test("SH522: a page that lost its content is named fact by fact", async () => {
   const [page] = result.pages;
   assert.deepEqual(
     page.rows.filter((row) => row.delta < 0).map((row) => row.fact).sort(),
-    ["assets", "internal links"],
+    ["body assets", "internal links"],
     "the hero image and every link the nav and footer carried",
   );
   assert.equal(page.text.lost, true, "and the prose, which is the fact SH520 removed and every "
     + "instrument called a success");
   assert.match(ctx.out.text, /internal links: 3 → 0/);
-  assert.match(ctx.out.text, /assets: 1 → 0/);
+  assert.match(ctx.out.text, /body assets: 1 → 0/);
 });
 
 test("SH522: a replica that matches its capture says so in one line and exits zero", async () => {
@@ -125,7 +125,7 @@ test("SH522: a replica that matches its capture says so in one line and exits ze
 test("SH522: a fact the replica gained is not a loss", () => {
   // A Shio layout adds links — a skip link, a nav the theme composes — so a gate that called any
   // difference damage would fire on every working conversion. Counted apart and never failing.
-  const declared = [{ path: "/", title: "Home", links: { internal: 2, external: 0 }, assets: { own: 1, style: 0 }, forms: 0, textChars: 400 }];
+  const declared = [{ path: "/", title: "Home", links: { internal: 2, external: 0 }, assets: { own: 1, head: 0, style: 0 }, forms: 0, textChars: 400 }];
   const produced = new Map([["/", scannedAt(
     '<html><head><title>Home</title></head><body><a href="/a">a</a><a href="/b">b</a>'
       + '<a href="/c">c</a><img src="/img/hero.png" alt=""><p>'
@@ -140,7 +140,7 @@ test("SH522: a fact the replica gained is not a loss", () => {
 });
 
 test("SH522: a path the replica does not serve is one absence, not four lost facts", () => {
-  const declared = [{ path: "/gone", title: "Gone", links: { internal: 3, external: 1 }, assets: { own: 2, style: 0 }, forms: 1, textChars: 900 }];
+  const declared = [{ path: "/gone", title: "Gone", links: { internal: 3, external: 1 }, assets: { own: 2, head: 0, style: 0 }, forms: 1, textChars: 900 }];
 
   const comparison = compareCapture(declared, new Map());
 
@@ -221,7 +221,7 @@ test("SH554: a replica that keeps its off-host links is not reported as having l
 test("SH554: an unclassified side is refused rather than scored", () => {
   // The boundary the defect crossed. The wrong shape did not throw — it produced four believable
   // numbers, which is why nothing caught it for a whole release.
-  const declared = [{ path: "/", title: "Home", links: { internal: 3, external: 2 }, assets: { own: 1, style: 0 }, forms: 0, textChars: 400 }];
+  const declared = [{ path: "/", title: "Home", links: { internal: 3, external: 2 }, assets: { own: 1, head: 0, style: 0 }, forms: 0, textChars: 400 }];
   const raw = scanPage(MIXED, "https://x.test/");
 
   assert.throws(
@@ -494,13 +494,13 @@ test("SH578: a page whose own references shrink while its theme's grow is a LOSS
   // which is right and is exactly what made this the fact where a real loss disappears.
   assert.equal(result.exitCode, 1, "three images gone. The old reading netted them off against four "
     + "theme url() and called the page fine");
-  const assets = result.pages[0].rows.find((row) => row.fact === "assets");
+  const assets = result.pages[0].rows.find((row) => row.fact === "body assets");
   assert.deepEqual(
     { declared: assets.declared, produced: assets.produced, delta: assets.delta },
     { declared: 3, produced: 0, delta: -3 },
     "the page's OWN references, at both ends — the question the declared side was always asking",
   );
-  assert.match(ctx.out.text, /assets: 3 → 0 {2}\(-3\)/);
+  assert.match(ctx.out.text, /body assets: 3 → 0 {2}\(-3\)/);
 });
 
 test("SH578: and the theme is one artefact, reported once at the site level and never scored",
@@ -542,5 +542,116 @@ test("SH578: a capture written before the split is refused, not scored", () => {
   assert.throws(
     () => compareCapture(declared, new Map([["/", scannedAt(THEME_INLINED, "https://x.test/")]])),
     /declared side carries assets as a number[\s\S]*SH578[\s\S]*countAssets[\s\S]*re-run `shio clone`/,
+  );
+});
+
+// --- SH581: the head one side counts and the other does not have ---
+
+/**
+ * The source as captured: a head that declares nine references, and a body that declares two.
+ *
+ * <p>The measured shape. `/partner/` on a real conversion declared `assets: {own: 33}` and the
+ * replica served five — a `-28` that exits the gate — while the captured markup was 155,881
+ * characters against a stored body of 60,322. The head was never the page's to lose.</p>
+ */
+const HEAVY_HEAD = `<html lang="en"><head><title>Home</title>
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="shortcut icon" href="/favicon-16.png">
+  <link rel="apple-touch-icon" href="/touch-120.png">
+  <link rel="apple-touch-icon" href="/touch-180.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="preload" href="/fonts/a.woff2">
+  <link rel="preload" href="/fonts/b.woff2">
+  <link rel="preload" href="/fonts/c.woff2"></head><body>
+  <img src="/img/hero.png" alt="Hero"><img src="/img/logo.png" alt="Logo">
+  <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p>
+  </body></html>`;
+
+/** The replica: the same body, verbatim, under a Shio layout whose head declares one thing. */
+const OWN_HEAD = `<html lang="en"><head><title>Home</title>
+  <link rel="stylesheet" href="/theme.css"></head><body>
+  <img src="/img/hero.png" alt="Hero"><img src="/img/logo.png" alt="Logo">
+  <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p>
+  </body></html>`;
+
+test("SH581: a fidelity page whose body is unchanged and whose head is the layout's loses nothing",
+  async () => {
+    const ctx = ctxWith({ served: { "/": OWN_HEAD }, inventory: inventoryOf(HEAVY_HEAD) });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    // The old reading: 11 declared against 3 produced, `-8`, exit 1 — on a page that lost nothing.
+    assert.equal(result.exitCode, 0, "the head belongs to the layout on every replica of every mode, "
+      + "so counting it into the page's own total scores a shortfall the replica never suffered");
+    const assets = result.pages[0].rows.find((row) => row.fact === "body assets");
+    assert.deepEqual(
+      { declared: assets.declared, produced: assets.produced, delta: assets.delta },
+      { declared: 2, produced: 2, delta: 0 },
+      "the body at both ends, which is the span a Page stores",
+    );
+  });
+
+test("SH581: and a body-side loss no longer hides behind a head-side count", async () => {
+  const lostBody = OWN_HEAD.replace('<img src="/img/logo.png" alt="Logo">', "");
+  const ctx = ctxWith({ served: { "/": lostBody }, inventory: inventoryOf(HEAVY_HEAD) });
+
+  const result = await diff.run({ site: "Acme" }, [], ctx);
+
+  // The other direction of the same defect, and the one that matters more: under the old reading
+  // this page reported `assets: 11 → 2`, which is the same kind of number a healthy page reported,
+  // so the one image it actually lost was indistinguishable from the eight it never had.
+  assert.equal(result.exitCode, 1);
+  const assets = result.pages[0].rows.find((row) => row.fact === "body assets");
+  assert.deepEqual({ declared: assets.declared, produced: assets.produced }, { declared: 2, produced: 1 });
+});
+
+test("SH581: the head is one layout's, reported once at the site level and never scored", async () => {
+  const ctx = ctxWith({ served: { "/": OWN_HEAD }, inventory: inventoryOf(HEAVY_HEAD) });
+
+  const result = await diff.run({ site: "Acme" }, [], ctx);
+
+  assert.deepEqual(
+    result.head,
+    { declared: 9, produced: 1, uniform: true, pages: 1 },
+    "counted, named and outside the arithmetic — the same terms SH578 gave the theme",
+  );
+  assert.equal(result.pages[0].gained, 0);
+  assert.match(ctx.out.text, /head: 9 → 1 reference\(s\) in the document head, across 1 page\(s\)/);
+});
+
+test("SH581: a capture written before the head split is refused, not scored", () => {
+  // The failure mode is worse than SH578's, which is why it gets its own refusal rather than being
+  // folded into that one: a version-4 row passes the `own` check, and `own - undefined` is NaN, so
+  // every comparison is false and a page that lost every image reports nothing at all.
+  const declared = [{
+    path: "/", title: "Home", links: { internal: 0, external: 0 },
+    assets: { own: 33, style: 0 }, forms: 0, textChars: 400,
+  }];
+
+  assert.throws(
+    () => compareCapture(declared, new Map([["/", scannedAt(OWN_HEAD, "https://x.test/")]])),
+    /declared side carries no head asset count[\s\S]*SH581[\s\S]*countAssets[\s\S]*re-run `shio clone`/,
+  );
+});
+
+test("SH581: the scanner records which half of the document a reference is in", () => {
+  // The boundary the fact crosses, asserted where it is produced rather than only where it is
+  // compared: `where` is what `countAssets` reads, and a rule that stopped marking the head would
+  // make every test above pass with the numbers silently back to the source's whole document.
+  const doc = scanPage(HEAVY_HEAD, "https://x.test/");
+
+  assert.deepEqual(countAssets(doc.assets), { own: 11, head: 9, style: 0 });
+  // No `<head>` at all is a fragment, and calling all of it body is the strict reading — the one
+  // that keeps a reference scored rather than excused into a fact nothing judges.
+  assert.deepEqual(
+    countAssets(scanPage('<img src="/a.png"><link rel="icon" href="/f.ico">', "https://x.test/").assets),
+    { own: 2, head: 0, style: 0 },
+  );
+  // And `<body>` closes the head even when the source never wrote `</head>`, which real markup
+  // routinely does not.
+  assert.deepEqual(
+    countAssets(scanPage('<head><link rel="icon" href="/f.ico"><body><img src="/a.png">', "https://x.test/").assets),
+    { own: 2, head: 1, style: 0 },
   );
 });

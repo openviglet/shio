@@ -64,8 +64,15 @@ import { FETCH_CALL, URL_CALL, kindForUrl } from "./clone-assets.mjs";
  * number rather than scoring it, because that is the failure mode: a version-3 row read as `{own}`
  * would compare a page's markup against a replica's markup-plus-inlined-theme and report a gain on
  * a page that lost images.
+ *
+ * <p>**5 since SH581**, which cut the same fact on the other axis. `own` covered the whole captured
+ * document, head and body, while a replica's page is the **body span** it stores under a layout that
+ * owns the head. So `{own, head, style}`, and `shio diff` scores `own - head`. Refused rather than
+ * scored for SH578's exact reason, one axis along: a version-4 row has no `head`, reading it as `0`
+ * says every one of the source's favicons and its manifest lives in the page's body, and the
+ * shortfall that produces — measured at **-28 on one page** — is not a loss the replica suffered.
  */
-export const INVENTORY_VERSION = 4;
+export const INVENTORY_VERSION = 5;
 
 /** Where the inventory lives: beside `content-base.json`, which is the other derived snapshot. */
 export const INVENTORY_FILE = "shio/.shio/source-inventory.json";
@@ -222,18 +229,40 @@ export function countLinks(links, pageUrl, originUrl = pageUrl) {
  * a site — so `shio diff` compares `own` per page and reports `style` once at the site level, where
  * thirteen identical numbers say less than one.</p>
  *
- * @param {{from?: string}[]} assets `scanPage`'s `assets`
+ * <h3>And the same fact on the other axis (SH581)</h3>
+ *
+ * <p>`own` is the whole captured **document**. A replica's page is the **body span** a `Page` stores,
+ * presented by a layout that owns the head — so the source's nine `&lt;link&gt;` elements, of which
+ * the stylesheet is inlined by the layout and the rest are favicons and a manifest, have no page to
+ * be missing from. Measured on `/partner/`, the fidelity page of an otherwise authorable conversion:
+ * the capture declares `own: 33`, the replica serves 5, `diff` calls it **-28** and exits 1, and the
+ * captured markup is 155,881 characters against a stored body of 60,322.</p>
+ *
+ * <p>Wrong in both directions at once, which is what makes it worth a number rather than an
+ * exemption: it overstates a loss of about four as 28, and it would hide a real body-side loss behind
+ * a head-side count that happened to cover it. So `head` is carried beside `own` and `shio diff`
+ * scores the difference — the same shape as the split above, and for the same reason.</p>
+ *
+ * @param {{from?: string, where?: string}[]} assets `scanPage`'s `assets`
  */
 export function countAssets(assets) {
   let own = 0;
+  let head = 0;
   let style = 0;
   for (const asset of assets ?? []) {
     // A row with no `from` predates this split. It is the page's own reference far more often than
     // not, and calling it `own` is the strict reading: it keeps the fact judged rather than excused.
-    if (asset?.from === "style") style += 1;
-    else own += 1;
+    if (asset?.from === "style") {
+      style += 1;
+      continue;
+    }
+    own += 1;
+    // And `where` is the strict reading of the second split, in the other direction: a row that does
+    // not say it is in the head is counted as body, so an unmarked reference stays scored rather
+    // than being excused into a fact nothing judges.
+    if (asset?.where === "head") head += 1;
   }
-  return { own, style };
+  return { own, head, style };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -617,11 +646,22 @@ export function scanPage(html, pageUrl) {
   let form = null;
   let anchor = null;
   let inTitle = false;
+  // SH581 — which half of the document the loop is in. A replica stores a page's **body** and gets
+  // its head from the layout, so a reference in the source's head is not a fact about the page.
+  // Closed by `</head>` *or* by `<body>`, because real markup omits the closer constantly, and it
+  // starts false: a document with no `<head>` at all is a fragment, and calling all of it body is
+  // the strict reading — the one that keeps a reference scored rather than excused.
+  let inHead = false;
   const addAsset = (href, tag, attrs) => {
     const url = resolveHref(href, pageUrl);
     if (!url) return;
     // `from` — which of the three passes below found this reference (SH578). See `countAssets`.
-    doc.assets.push({ url: url.href, kind: assetKind(tag, url, attrs), from: "markup" });
+    doc.assets.push({
+      url: url.href,
+      kind: assetKind(tag, url, attrs),
+      from: "markup",
+      ...(inHead ? { where: "head" } : {}),
+    });
   };
 
   // SH455 — the `url()` calls inside the page's own `<style>` blocks, which `stripNonMarkup` removed
@@ -692,6 +732,7 @@ export function scanPage(html, pageUrl) {
     if (anchor && !INLINE_TAGS.has(name)) anchor.gap = true;
     if (token.type === "close") {
       if (name === "title") inTitle = false;
+      if (name === "head") inHead = false;
       if (name === "nav") navDepth = Math.max(navDepth - 1, 0);
       if (name === "form" && form) {
         doc.forms.push(form);
@@ -718,6 +759,12 @@ export function scanPage(html, pageUrl) {
     switch (name) {
       case "html":
         if (attrs.lang) doc.lang = attrs.lang.trim();
+        break;
+      case "head":
+        inHead = true;
+        break;
+      case "body":
+        inHead = false;
         break;
       case "title":
         inTitle = true;

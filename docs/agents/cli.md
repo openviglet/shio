@@ -465,6 +465,31 @@ mode here has never been a crash. `READS_VERSION` in `verify-replication.mjs` mo
 even though that group reads neither half — a reader left behind answers "this capture is newer than
 I read" on every capture `clone` now writes.
 
+**And the same fact on the other axis — `INVENTORY_VERSION` is 5 (SH581).** SH578 cut a page's own
+references from its stylesheet's and was right; a second cut was still uncut, one axis along. The
+declared side is the **whole captured document** and the produced side is the **body span a Page
+stores** under a layout that owns the head. Measured on `/partner/`, the fidelity page of an otherwise
+authorable conversion: the capture declares `own: 33`, the replica serves 5, `diff` calls it **-28**
+and exits 1 — and the captured markup is 155,881 characters against a stored body of 60,322. What
+actually went missing is nine `<link>` elements in the source's head, of which the stylesheet is
+inlined by the layout, leaving favicons and a manifest.
+
+**Wrong in both directions at once**, which is what earns it a number rather than an exemption: it
+overstates a loss of about four as 28, and it would hide a real body-side loss behind a head-side
+count that happened to cover it. `diff` had already said as much in its own footer — *the pages
+disagree about this number, which a single theme cannot explain* — an instrument reporting an
+inconsistency in its own reading. So `scanPage` tags a markup reference with `where: "head"` while the
+scan is inside `<head>` (closed by `</head>` **or** by `<body>`, because real markup omits the closer,
+and false to begin with so a fragment counts as body — the strict reading, which keeps a reference
+scored rather than excused). `countAssets` returns `{own, head, style}`, the fact `diff` scores is
+**`own - head`** and is named `body assets`, and the head is reported once at the site level on
+exactly SH578's terms — `head: 9 → 1 reference(s) in the document head`, max not sum, `uniform` when
+the pages disagree. `assertComparable` gets its **own** refusal naming SH581 rather than folding into
+SH578's: a version-4 row passes the `own` check, `own - undefined` is `NaN`, and every comparison
+against `NaN` is false — so a page that lost every image would report nothing at all, which is the
+worst of the three readings this fact has had. `READS_VERSION` moves to 5 with it, tracked and not
+acted on, for the reason 4 was.
+
 **Baking content is right, baking machinery is not (SH517).** The source has
 `<div id="particles"></div>` — empty, filled at runtime by a particles library — and the replica had
 `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas width="1480"
