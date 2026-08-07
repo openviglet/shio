@@ -2039,29 +2039,6 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
-### XVII.81 The one address the grammar does not spell, unwritten (SH576)
-
-`post:<site>/` is a site's home page — the address form SH433 exists because the grammar
-does not spell it. A source that answers `/` gives the conversion one for free. A source
-that does not gives it nothing, and nothing is what gets written.
-
-The `locale-prefixed` archetype is the case: every page lives under `/en-us/` or
-`/pt-br/`, `/` is a 404 at the source, and the conversion document holds pages at
-`/en-us/` and `/pt-br/` and no page at `/`. The replica therefore has no front door —
-`/sites/<site>/default/en-us/` answers nothing, which is the first URL anybody opens and
-the one the console frames.
-
-It is not obvious what should be there, and that is the task rather than an obstacle to
-it. Three answers are defensible: redirect to the locale the source's own root
-redirected to, write a home page that lists the locales, or refuse the conversion and
-say which locale to pass. What is not defensible is the current one, which is to write
-neither a page nor a note: the run reports the pages it wrote, every one of them
-correct, and the site it produced has no root.
-
-The archetype was built for SH459 and SH433 and this is a third id on the same trait,
-which is the argument for a corpus rather than a fixture: the source was already written
-and the assertion cost four lines.
-
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against

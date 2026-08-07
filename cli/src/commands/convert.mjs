@@ -58,6 +58,9 @@ Every post lands in DRAFT. Publishing is a separate, explicit call: shio publish
 
   --site <name>        The site to write into (required)
   --create-site        Create the site (blank) if it does not exist, as the first step
+  --home <path>        Redirect / to one of the captured pages, for a source that answers
+                       nothing at its own root. Without it a home page is written listing
+                       the replica's pages
   --dry-run            Print the plan the instance would apply, and write nothing
   --check              Drift guard: plan, and exit non-zero if anything would change
   --out <file>         Write the desired-state document to a file and apply nothing
@@ -73,6 +76,7 @@ Examples:
   shio convert --site Acme --dry-run
   shio convert --site Acme --create-site
   shio convert --site Acme --out conversion.json
+  shio convert --site Acme --home /en-us/
 `;
 
 export async function run(flags, positionals, ctx) {
@@ -91,7 +95,7 @@ export async function run(flags, positionals, ctx) {
   // The plan file and the proposal computed from the capture NOW: the pair is the whole point, since
   // an acceptance is only checkable against the candidates the current markup produces.
   const { proposal, plan, markup, inventory } = await proposalFor(flags, ctx, "convert");
-  const { document, stale, sections, pages, verbatim, mixed, extras, dropped } = buildConversion({
+  const { document, stale, sections, pages, verbatim, mixed, extras, dropped, home } = buildConversion({
     proposal,
     plan,
     site,
@@ -100,6 +104,9 @@ export async function run(flags, positionals, ctx) {
     // is written verbatim, and this is where the bytes come from; without it the fidelity half of
     // the two documented modes has no source and the command falls back to SH438's behaviour.
     markup,
+    // SH576 — a source with no document at `/` produced a site whose root answered nothing, and
+    // the run said so nowhere. `buildConversion` writes a front door either way; this is which.
+    home: typeof flags.home === "string" && flags.home.trim() ? flags.home.trim() : null,
   });
   if (stale.length) {
     throw new Error(staleMessage(stale, typeof flags.out === "string" ? flags.out : null));
@@ -118,7 +125,7 @@ export async function run(flags, positionals, ctx) {
 
   if (typeof flags.out === "string" && flags.out) {
     await write(join(ctx.cwd, flags.out), `${JSON.stringify(document, null, 2)}\n`, ctx);
-    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped },
+    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home },
       flags));
     ctx.stdout.write(`  document: ${flags.out} (nothing was applied)\n`);
     return { document, applied: false, exitCode: 0 };
@@ -132,7 +139,7 @@ export async function run(flags, positionals, ctx) {
     await requirePostTypeFields(proposal.requires ?? [], { baseUrl, user, password }, ctx);
   }
 
-  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped },
+  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home },
     flags));
 
   // SH437/SH471 — the bytes, which are not content and so cannot ride the document. **Before** the

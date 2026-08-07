@@ -75,6 +75,16 @@ export const PAGES_FOLDER = "/";
 export const PAGE_TYPE = "Page";
 
 /**
+ * The system post-type a `--home <path>` front door is written as (SH576).
+ *
+ * <p>`Redirect` is SH385's, and the renderer resolves it on the read that already ran: a post whose
+ * `url` is the path it answers and whose `TO` is where it sends the reader. So a front door needs no
+ * route, no rewrite rule and no second addressing scheme — it is one post at `/`.</p>
+ */
+export const REDIRECT_TYPE = "Redirect";
+export const REDIRECT_TO = "TO";
+
+/**
  * The document that makes an accepted plan true.
  *
  * @param {object} input
@@ -87,7 +97,9 @@ export const PAGE_TYPE = "Page";
  *   which is what makes `shio apply conversion.json` mean what `shio convert` meant
  * @returns {{document: object|null, stale: string[], sections: object[], extras: string[]}}
  */
-export function buildConversion({ proposal, plan = {}, site, createSite = false, markup = new Map() }) {
+export function buildConversion({
+  proposal, plan = {}, site, createSite = false, markup = new Map(), home = null,
+}) {
   const accepted = (plan.accepted ?? []).map((entry) => ({ ...entry }));
   const byId = new Map((proposal?.candidates ?? []).map((row) => [row.id, row]));
   const stale = accepted.filter((entry) => !byId.has(entry.block)).map((entry) => entry.block).sort();
@@ -115,6 +127,9 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     .sort((a, b) => (a.url < b.url ? -1 : 1));
 
   const pages = composePages(proposal, new Set(sections.map((post) => post.url)), markup);
+  // SH576 — the one address the grammar does not spell, written when the source gave us none.
+  const frontDoor = homePost(pages, site, home);
+  if (frontDoor) pages.unshift(frontDoor.post);
   const held = pages.filter((page) => typeof page.data.content === "string");
   // Two counts, because they are two different pages (SH520). `verbatim` is a page nobody accepted
   // anything on — fidelity, whole. `mixed` is a page that kept some blocks and authored others, and
@@ -123,6 +138,9 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
   const mixed = held.length - verbatim;
 
   const extras = [];
+  // The Redirect post-type has to exist on the target before a `--home` redirect can be written,
+  // the same way `Theme` and `SiteScripts` do. A home *page* is a `Page` and needs nothing.
+  if (frontDoor?.home.as === "redirect") extras.push("Redirect");
   const posts = [...sections, ...pages];
   if (proposal?.theme?.rows?.length) {
     posts.push(themePost(proposal.theme, site));
@@ -192,6 +210,11 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     verbatim,
     mixed,
     extras,
+    // SH576 — `{written, from}` when this run had to invent a front door, absent when the source
+    // had one. Returned rather than only printed, because `describeConversion` is not the only
+    // reader: the corpus asserts it, and a note a caller cannot query is one only a person can act
+    // on (P9).
+    ...(frontDoor ? { home: frontDoor.home } : {}),
     // SH552 — what this command cut, so the command that performed the cut is the one that states
     // it. Sorted, so two runs over one capture report the same lines (P5).
     dropped: dropped.sort((a, b) => (`${a.section}${a.field}` < `${b.section}${b.field}` ? -1 : 1)),
@@ -667,6 +690,101 @@ function langOf(markup) {
  * @param {Map<string, string>} markup path → the page's captured HTML, the same cache the proposal
  *   was computed from. Empty for a caller that has none, which yields exactly SH438's behaviour.
  */
+/**
+ * The site's front door, when the source did not have one (SH576).
+ *
+ * <h3>What was measured</h3>
+ *
+ * <p>`post:<site>/` is a site's home page — the one address SH433 exists for because the SH79
+ * grammar does not spell it. A source that answers `/` gives the conversion a home page for free. A
+ * source that does not gives it nothing, **and nothing is what was written**. The `locale-prefixed`
+ * archetype is the case and it is an ordinary shape rather than an exotic one: every page lives
+ * under `/en-us/` or `/pt-br/`, `/` is a 404 at the source, and the conversion wrote pages at both
+ * prefixes and no page at `/`. So `/sites/<site>/default/en-us/` — the first URL anybody opens, and
+ * the one the console frames — answered nothing, while the run reported every page it wrote and
+ * every one of them was correct.</p>
+ *
+ * <h3>Three answers were defensible; the current one was not</h3>
+ *
+ * <p>XVII.81 named them: redirect to whatever the source's own root redirected to, write a home page
+ * that lists what is there, or refuse and say which page to make the front door. **Writing neither a
+ * page nor a note is the one that is not**, and that is what this replaces.</p>
+ *
+ * <p>The first is unavailable rather than rejected: `buildInventory` drops the `redirectedTo` that
+ * `visit` returns, which is its own open task — so "the locale the source redirected to" is not a
+ * fact this run holds, and inventing it from the first path would be a guess wearing a redirect's
+ * clothes.</p>
+ *
+ * <p>So the default is the second and `--home` is the third, **turned from a refusal into an
+ * instruction** (P6). A refusal would stop a conversion in which every page is right over a page the
+ * source never had; the note names the flag instead, and a run nobody reads still produces a site
+ * with a root.</p>
+ *
+ * <h3>Why an empty page is a real front door and not a stub</h3>
+ *
+ * <p>A `Page` with a title, no `content` and no `sections` renders the layout's `{{#unless content}}`
+ * branch — which since SH575 is the site's own navigation over `{{#query type="Page"}}`. So the
+ * generated home page lists every page of the replica and is a place a reader can start from, with
+ * no content invented on the source's behalf: P7's rule, since the alternative shapes all put words
+ * on a page nobody wrote.</p>
+ *
+ * @param pages the composed pages, before this
+ * @param site the site name, which is the only title this can honestly give a page nobody wrote
+ * @param home the reviewer's `--home <path>`, or null
+ * @returns `{post, home}` when one had to be written, `null` when the source already answers `/`
+ */
+function homePost(pages, site, home) {
+  if (pages.some((page) => page.url === PAGES_FOLDER)) return null;
+  if (!pages.length) return null; // Nothing to be the front door *of*.
+
+  if (home) {
+    // Matched on the path with a trailing slash ignored, and the **page's own** spelling is what
+    // gets written: a source's paths are its own (`/en-us/` carries the slash) and a redirect to a
+    // path that differs from the post's friendly URL by one character is a redirect to nothing.
+    const asked = trimPath(home);
+    const target = pages.find((page) => trimPath(page.url) === asked)?.url;
+    if (!target) {
+      throw new Error(
+        `shio convert: --home ${home} is not a page this conversion writes.\n`
+          + `  allowed: ${pages.map((page) => page.url).slice(0, 12).join(", ")}`
+          + `${pages.length > 12 ? `, … ${pages.length - 12} more` : ""}\n`
+          + "  why: the front door redirects to one of the replica's own pages, and a redirect to a\n"
+          + "       path nothing serves is a 404 with an extra hop. Omit --home to get a home page\n"
+          + "       listing the site's pages instead.",
+      );
+    }
+    return {
+      post: {
+        url: PAGES_FOLDER,
+        type: REDIRECT_TYPE,
+        folder: PAGES_FOLDER,
+        // Not permanent: a reviewer's first answer to "which page is the front door" is a decision
+        // they may revise, and a 301 is the one redirect a browser caches past the correction.
+        data: { title: `${site} (home)`, [REDIRECT_TO]: target },
+      },
+      home: { as: "redirect", to: target },
+    };
+  }
+  return {
+    post: {
+      url: PAGES_FOLDER,
+      type: PAGE_TYPE,
+      folder: PAGES_FOLDER,
+      // No `content` and no `sections`: the layout's own `{{#unless content}}` branch is the page.
+      data: { title: site },
+    },
+    // `+ 1` for itself: the nav is `{{#query type="Page"}}` over the folder this page is in, so the
+    // home page is one of its own rows. A count that excluded it would be a number the reader can
+    // see is wrong the moment they open the page.
+    home: { as: "page", lists: pages.length + 1 },
+  };
+}
+
+/** `en-us`, `/en-us` and `/en-us/` are one request — the leading slash and the trailing one off. */
+function trimPath(path) {
+  return `/${String(path).trim().replace(/^\/+/, "").replace(/\/+$/, "")}`;
+}
+
 function composePages(proposal, sectionUrls, markup = new Map()) {
   const pages = [];
   for (const page of proposal?.pages ?? []) {
@@ -908,7 +1026,7 @@ function scriptsPost(scripts, site) {
  * can work at all (SH436).
  */
 export function describeConversion({ document, sections, pages = [], verbatim = 0, mixed = 0, extras,
-                                     requires = [], dropped = [] }, options = {}) {
+                                     requires = [], dropped = [], home = null }, options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   lines.push(
@@ -941,6 +1059,20 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
   const theme = document.posts.find((post) => post.type === "PageLayout")?.data?.THEME;
   if (theme) {
     lines.push(`  presented by ${theme} — the one stylesheet the layout names`);
+  }
+  // SH576 — the note whose absence was the defect. Every page of a locale-prefixed source is written
+  // correctly and none of them is at `/`, so a run that says only what it wrote describes a complete
+  // success and produces a site with no root. P7: the one page here that the source did not have is
+  // the one the reviewer has to be told about.
+  if (home?.as === "page") {
+    lines.push(
+      `  the source answers nothing at / — a home page was written, listing the ${home.lists} page(s)`
+        + " this replica serves. It is the site's front door and the console frames it; edit it, or"
+        + " re-run with --home <path> to redirect / to one of the pages instead",
+    );
+  }
+  if (home?.as === "redirect") {
+    lines.push(`  the source answers nothing at / — / redirects to ${home.to} (--home)`);
   }
   // SH552 — the same cut, stated by the command that performed it. `propose` reported the finding and
   // nothing acted on it for six blocks running (SH452, SH469, SH429 among them): the diagnosis

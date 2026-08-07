@@ -224,6 +224,12 @@ function siteOf(entry) {
   return `Corpus${entry.id.replace(/[^A-Za-z0-9]/g, "")}`;
 }
 
+/** A path with its trailing slash off, so `/en-us/` and `/en-us` are one address (SH576). */
+function trimSlash(path) {
+  const trimmed = String(path ?? "").replace(/\/+$/, "");
+  return trimmed || "/";
+}
+
 /** A note pattern as a stable assertion key. Regex punctuation is not a key. */
 function slug(value) {
   return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -573,7 +579,21 @@ describe("SH560 group H: the mode that accepts nothing, judged in the same docum
         // The defining property, and the one SH520 proved is worth asserting: fidelity keeps the
         // page. A Page carrying `sections` and no `content` is the authorable shape, and the run
         // that shipped it measured 106 annotated fields on a page that was mostly gone.
-        for (const page of pages) {
+        //
+        // SH576 — over the pages the SOURCE declared, which is what this rule was always about. A
+        // source with no document at `/` gets a front door written for it, and that page has no
+        // verbatim markup because there is nothing verbatim to give it: the source served a 404
+        // there. Requiring `content` on it would demand a pixel comparison against a page that does
+        // not exist, and the honest scope of "fidelity keeps the page" is the pages there were.
+        const declared = new Set((entry.declaration.addressable ?? []).map(trimSlash));
+        const fromSource = pages.filter((row) => declared.has(trimSlash(row.url)));
+        assert.ok(
+          fromSource.length,
+          `${entry.id}: no converted page matches an addressable path this archetype declares, so `
+            + "the rule below would pass over nothing — which is the shape a scoping change breaks "
+            + `silently.\n  declared: ${[...declared].join(" ")}\n  wrote: ${pages.map((p) => p.url).join(" ")}`,
+        );
+        for (const page of fromSource) {
           assert.ok(
             page.data?.content,
             `SH520 / ${entry.id}: ${page.url} was converted with nothing accepted and carries no `

@@ -1016,6 +1016,42 @@ it. Four decisions worth keeping:
   a template that compiled and listed nothing would pass every check in JavaScript, so
   `ShConvertedLayoutRenderTest` renders the seeded replica and reads the sibling pages' friendly URLs
   off the page — and reads the verbatim and mixed pages to confirm they get none.
+- **The one address the grammar does not spell, unwritten (SH576).** `post:<site>/` is a site's home
+  page — the address form SH433 exists for *because* SH79 does not spell it. A source that answers
+  `/` gives the conversion one for free; a source that does not gave it **nothing, and nothing is
+  what was written**. The `locale-prefixed` archetype is the case and it is ordinary rather than
+  exotic: every page under `/en-us/` or `/pt-br/`, `/` a 404 at the source, and the document held
+  pages at both prefixes and none at `/`. The replica's root — the first URL anybody opens and the
+  one the console frames — answered nothing, while the run reported every page it wrote and every
+  one of them was correct.
+  XVII.81 named three defensible answers (redirect to whatever the source's root redirected to;
+  write a home page listing what is there; refuse and say which page to make the front door) and
+  one that is not, which is what shipped: **neither a page nor a note.** The first is *unavailable*
+  rather than rejected — `buildInventory` drops the `redirectedTo` that `visit` returns, its own
+  open task — so "the locale the source redirected to" is not a fact the run holds, and deriving it
+  from the first path would be a guess wearing a redirect's clothes. So the default is the second
+  and `--home` is the third, **turned from a refusal into an instruction** (P6): a refusal would
+  stop a conversion in which every page is right, over a page the source never had.
+  - **The written home page carries a title and nothing else**, which is not a stub: no `content`
+    and no `sections` is the layout's `{{#unless content}}` branch, and since SH575 that branch *is*
+    the site's own navigation. So the front door lists every page of the replica with no words
+    invented on the source's behalf (P7), and a curator edits it like any other page.
+  - **`--home <path>` writes a `Redirect` at `/`** — SH385's post-type, resolved on the read that
+    already ran, so a front door needs no route and no rewrite rule. Not permanent: the first answer
+    to "which page is the front door" is one a reviewer may revise, and a 301 is the redirect a
+    browser caches past the correction. `en-us`, `/en-us` and `/en-us/` are one request and the
+    **page's own** spelling is what gets written; a path the conversion does not write is refused
+    with the list, because a redirect to nothing is a 404 with an extra hop.
+  - **The note is the deliverable as much as the page is.** A run that says only what it wrote
+    describes a complete success and produces a site with no root, so `convert` now names the one
+    page here that the source did not have — and `buildConversion` returns `home` rather than only
+    printing it, since the corpus is a reader too (P9).
+
+  One scoping change came with it: SH560's fidelity group asserted every converted `Page` carries
+  `content`, and now runs over the pages the **source declared**. A front door has no verbatim
+  markup because the source served a 404 there, and demanding a pixel comparison against a page that
+  does not exist is the rule read past its own meaning — with a guard that the narrowed filter still
+  matches something, since a scoping change that silently matches nothing is the failure it invites.
 - **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
   layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
   `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after

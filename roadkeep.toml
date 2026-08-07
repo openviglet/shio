@@ -140,10 +140,15 @@ priority = [
   # debt, and they are about the conversion rather than about the judge. SH575 shipped fourth:
   # the layout emits `{{#query type="Page"}}` under `{{#unless content}}`, and `{{#navigation}}` —
   # which XVII.80 named as the cheapest — turned out to be the wrong helper, since it lists the
-  # site's top-level folders and a conversion writes its pages into the root. What is left is
-  # SH576's missing home page. SH555 rides along and is not a re-open: it shipped on the render side and the
+  # site's top-level folders and a conversion writes its pages into the root. SH576 closed the run:
+  # a conversion now writes a front door — a home page listing the replica's pages, or a Redirect
+  # when `--home <path>` names one. **The ninth run is spent: five tasks, five commits, and the
+  # order held for the reason it was chosen.** SH579 came first because it was about all the
+  # others, and it changed the premise of the queue rather than confirming it — one of the two red
+  # suites was a reader blind to `shio-site/scripts` and not a defect. SH577 then closed the only
+  # real red, and SH578, SH575 and SH576 each landed with the corpus itself demanding its own
+  # bookkeeping: three of them went green on a held finding, and the suite fails on that. SH555 rides along and is not a re-open: it shipped on the render side and the
   # CLI still writes `{{CSS}}`, which is why the corpus holds a red case under a closed id.
-  "SH576",
   "SH528",
   "SH529",
   "SH523",

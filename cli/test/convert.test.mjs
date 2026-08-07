@@ -1331,7 +1331,10 @@ test("SH438: an untitled page falls back to its path, because Page.title is requ
     site: "Acme",
   });
 
-  assert.equal(pages[0].data.title, "/quiet", "the path, not the site name: two untitled pages must "
+  // By url and not by index since SH576: this capture answers nothing at `/`, so the conversion now
+  // writes a front door and it sorts first. The page under test is still the one the source had.
+  const quiet = pages.find((page) => page.url === "/quiet");
+  assert.equal(quiet.data.title, "/quiet", "the path, not the site name: two untitled pages must "
     + "still be two rows a human can tell apart");
 });
 
@@ -1468,4 +1471,97 @@ test("SH575: the class it draws is in the vocabulary and the theme styles it", (
   assert.match(VOCABULARY_THEME_CSS, /\.shio-nav a\{/,
     "the links are styled by element, the way `.shio-card h3` is — a second class per leaf would be "
       + "two more names for the theme to define and the diff to carry");
+});
+
+/*
+ * SH576 — the one address the grammar does not spell, unwritten.
+ *
+ * `post:<site>/` is a site's home page: the address form SH433 exists for because SH79's grammar
+ * does not spell it. A source that answers `/` gives the conversion one for free; a source that does
+ * not gave it nothing, and nothing is what was written. Measured on the `locale-prefixed` archetype
+ * — every page under `/en-us/` or `/pt-br/`, `/` a 404 at the source — the document held pages at
+ * both prefixes and none at `/`, so the replica's root, the first URL anybody opens and the one the
+ * console frames, answered nothing while the run reported every page it wrote as correct.
+ */
+
+const LOCALE_PAGES = () => composed(
+  [{ path: "/en-us/", title: "Home", blocks: ["hero1"] },
+    { path: "/pt-br/", title: "Início", blocks: ["hero1"] }],
+  [candidate("hero1")],
+);
+const ACCEPT_HERO = { accepted: [{ block: "hero1", type: "SectionHero" }] };
+
+test("SH576: a source with no page at / gets a front door, and it lists the site's pages", () => {
+  const built = buildConversion({ proposal: LOCALE_PAGES(), plan: ACCEPT_HERO, site: "Acme" });
+
+  const home = built.pages.find((page) => page.url === "/");
+  assert.ok(home, `no page at /. wrote: ${built.pages.map((page) => page.url).join(" ")}`);
+  assert.equal(home.type, "Page");
+  assert.equal(home.data.title, "Acme");
+  // No `content` and no `sections` on purpose: that is the layout's `{{#unless content}}` branch,
+  // which since SH575 is the site's own navigation over `{{#query type="Page"}}`. So the page a
+  // reader lands on lists every page of the replica, with no words invented on the source's behalf.
+  assert.deepEqual(Object.keys(home.data), ["title"]);
+  assert.deepEqual(built.home, { as: "page", lists: 3 });
+  assert.equal(built.pages[0].url, "/", "and it sorts first, which is where composePages would "
+    + "have put it — two runs over one capture must write the same document (P5)");
+});
+
+test("SH576: and the run says so, which is the half that was missing", () => {
+  const built = buildConversion({ proposal: LOCALE_PAGES(), plan: ACCEPT_HERO, site: "Acme" });
+
+  const report = describeConversion(built);
+
+  // The defect was not only the absent page. Every page this run wrote is correct, so a report that
+  // says what it wrote describes a complete success and produces a site with no root: the one page
+  // here that the source did not have is the one the reviewer has to be told about (P7).
+  assert.match(report, /the source answers nothing at \//);
+  assert.match(report, /--home <path>/, "and the flag that chooses differently, because a refusal "
+    + "would stop a conversion in which every page is right over a page the source never had — an "
+    + "instruction is what P6 asks for instead");
+});
+
+test("SH576: --home makes one of the captured pages the front door, as a Redirect", () => {
+  const built = buildConversion({
+    proposal: LOCALE_PAGES(), plan: ACCEPT_HERO, site: "Acme", home: "en-us",
+  });
+
+  const home = built.pages.find((page) => page.url === "/");
+  assert.equal(home.type, "Redirect", "SH385's post-type: a post whose url is the path it answers "
+    + "and whose TO is where it sends the reader, resolved on the read that already ran — so a "
+    + "front door needs no route and no rewrite rule");
+  assert.equal(home.data.TO, "/en-us/",
+    "the PAGE's own spelling, not the reviewer's: `--home en-us` and `/en-us` are the same request, "
+    + "and a redirect differing from the friendly URL by one character is a redirect to nothing");
+  assert.ok(!home.data.permanent, "not a 301 — a reviewer's first answer to \"which page is the "
+    + "front door\" is one they may revise, and a permanent redirect is the one a browser caches "
+    + "past the correction");
+  assert.ok(built.extras.includes("Redirect"), "and the post-type has to exist on the target, the "
+    + "same way Theme and SiteScripts do");
+  assert.match(describeConversion(built), /\/ redirects to \/en-us\//);
+});
+
+test("SH576: --home naming a page the conversion does not write is refused, with the list", () => {
+  assert.throws(
+    () => buildConversion({
+      proposal: LOCALE_PAGES(), plan: ACCEPT_HERO, site: "Acme", home: "/fr-fr/",
+    }),
+    /--home \/fr-fr\/ is not a page[\s\S]*allowed: \/en-us\/, \/pt-br\/[\s\S]*404 with an extra hop/,
+  );
+});
+
+test("SH576: a source that answers / is untouched — no invented page, no note", () => {
+  // The other side of the condition, and the one that must stay byte-identical: almost every source
+  // has a home page, and a conversion that started writing a second one over it would be this defect
+  // inverted, on every site instead of on the few.
+  const built = buildConversion({
+    proposal: composed([{ path: "/", title: "Home", blocks: ["hero1"] }], [candidate("hero1")]),
+    plan: ACCEPT_HERO,
+    site: "Acme",
+  });
+
+  assert.equal(built.pages.filter((page) => page.url === "/").length, 1);
+  assert.equal(built.pages[0].data.title, "Home", "the source's own page, not one named after the site");
+  assert.equal(built.home, undefined);
+  assert.ok(!describeConversion(built).includes("answers nothing at /"));
 });
