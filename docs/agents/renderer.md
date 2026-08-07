@@ -12,6 +12,23 @@ guards that keep it that way are deliberate: a distinct route, `no-store` + `X-R
 (a freshness lifetime is how a preview quietly becomes infrastructure), authentication, and a banner
 the page's own stylesheet cannot hide because it is inline-styled rather than classed.
 
+**The banner reports how the page is made, from the page (SH559).** It used to end with
+`layout <site> (fidelity)`, and on a converted site that string was the *only* statement anywhere
+about how the page had been produced — so on an authorable conversion (eleven pages of section
+lists, a home page with sixteen annotated fields) it named the other mode. The title was accurate
+when one layout served one mode; **SH464 made a single generated layout serve all three** and the
+name kept the word it was born with. Nothing downstream reads it, which is why it survived: the only
+reader is a person or an agent looking at the page — and it cost exactly that reader a wrong
+inference, since `layout R6Aut (fidelity)` beside an unstyled page argued for a mode mix-up when the
+cause was a site-wide theme switch. **A label that is wrong is worse than no label**, because it is
+evidence and it points somewhere. `ShRenderedPage.composition` is now `verbatim` / `authorable` /
+`mixed`, computed by `ShPageRenderService.compositionOf` from the page's own `content` and
+`sections` — the same two fields `PAGE_BODY_HTML` branches on, so the banner and the page cannot
+disagree (SH281). **`null` where the page holds neither**, because this route renders every post
+type and calling an `Article` "authorable" is the same defect one type over. The layout title stays
+but is **quoted**, which marks it as a name rather than a claim: renaming it is a
+`site.postTypeLayout` key change, so that is a migration and not a label fix.
+
 **And since SH451 there is a second route, which is the same renderer with every one of those guards
 inverted** — `ShSitesAPI`, `GET /sites/<site>/<format>/<locale>/<path…>`. "Production delivery is
 Next.js over the CDA" was true and was also the only option, and the option did not work: `/preview`

@@ -45,6 +45,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.render.ShPageRenderService.ShRenderedPage;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -114,6 +115,8 @@ class ShConvertedLayoutRenderTest {
     private static final String ENTITY_URL = "/entities";
     /** SH549 — a page that kept the source's markup, so it needs the source's stylesheet. */
     private static final String VERBATIM_URL = "/verbatim";
+    /** SH559 — a page that is both, which is the shape the layout's title can least describe. */
+    private static final String MIXED_URL = "/mixed";
     /** The sentinel the captured theme's CSS carries, so its presence on a page is unambiguous. */
     private static final String CAPTURED_RULE = ".sh549-captured-marker{color:#123456}";
     /**
@@ -291,6 +294,13 @@ class ShConvertedLayoutRenderTest {
             post(site, root, pageType, "Verbatim", VERBATIM_URL,
                     "{\"title\":\"Verbatim\",\"content\":\"<section class=\\\"features\\\">"
                             + "<p>Kept</p></section>\"}",
+                    when);
+            // SH559 — the third shape, on a page of its own so SH464's counts on `/` are untouched.
+            // One layout serves all three since SH464, which is exactly why its title cannot say
+            // which one a reader is looking at.
+            post(site, root, pageType, "Mixed", MIXED_URL,
+                    "{\"title\":\"Mixed\",\"content\":\"<section class=\\\"features\\\">"
+                            + "<p>Kept</p></section>\",\"sections\":[\"/sections/prose\"]}",
                     when);
 
             // SH476 — the render half of the round trip: a field holding the characters the source
@@ -939,6 +949,64 @@ class ShConvertedLayoutRenderTest {
                 .as("and the whole of the theme survived, not just the half without quotes — "
                         + "SH549's sentinel passed on a page whose every url() had been destroyed")
                 .contains(CAPTURED_RULE);
+    }
+
+    /**
+     * SH559 — the banner reports how the page is made, and stops inferring it from a name.
+     *
+     * <h2>The label that stopped describing what it labels</h2>
+     *
+     * <p>The fixture is the measured situation exactly: one layout, titled
+     * {@code Sh464 (fidelity)}, serving an authorable page at {@code /}, a verbatim one and a mixed
+     * one. On the real site — eleven pages of section lists, a home page carrying sixteen annotated
+     * fields — {@code layout <site> (fidelity)} was the only statement anywhere about how the page
+     * had been produced, and it named the other mode. The name was accurate when one layout served
+     * one mode; SH464 made a single generated layout serve all three and the title kept the word it
+     * was born with. Nothing downstream reads it, which is why it survived.</p>
+     *
+     * <p>It cost a wrong inference in the work that found it: reading {@code layout R6Aut
+     * (fidelity)} beside a page that had lost its styling, the first hypothesis was that an
+     * authorable conversion had been handed a fidelity layout, and the real cause — a site-wide
+     * theme switch — took a detour to find. <b>A label that is wrong is worse than no label</b>,
+     * because it is evidence and it points somewhere.</p>
+     */
+    @Test
+    @DisplayName("SH559: the mode comes from the page, on the three shapes one layout serves")
+    void theCompositionIsReadFromThePageAndNotFromTheLayoutName() {
+        assertThat(LAYOUT_TITLE)
+                .as("the premise: the one layout all three of these render through claims a mode "
+                        + "in its title, and it is the wrong one for two of them")
+                .contains("fidelity");
+
+        assertThat(shPageRenderService.render(siteName, "/", ShPostState.DRAFT).composition())
+                .as("""
+                        a page whose `sections` compose it is authorable, whatever its layout is \
+                        called — this is the exact string that read `fidelity` on eleven pages.""")
+                .isEqualTo("authorable");
+        assertThat(shPageRenderService.render(siteName, VERBATIM_URL, ShPostState.DRAFT).composition())
+                .isEqualTo("verbatim");
+        assertThat(shPageRenderService.render(siteName, MIXED_URL, ShPostState.DRAFT).composition())
+                .as("both fields, which is the shape no single word in a layout title can carry")
+                .isEqualTo("mixed");
+    }
+
+    @Test
+    @DisplayName("SH559: the banner states the mode and quotes the layout title as a name")
+    void theBannerStatesTheModeItReadFromThePage() {
+        ShRenderedPage page = shPageRenderService.render(siteName, "/", ShPostState.DRAFT);
+
+        String banner = new ShPreviewBanner().wrap(page);
+
+        assertThat(banner)
+                .as("the fact, read from the page's own fields — the same two the generated layout "
+                        + "branches on, so the banner and the page cannot disagree (SH281's rule)")
+                .contains("authorable page");
+        assertThat(banner)
+                .as("""
+                        and the title is still there, because "which layout rendered this" is a \
+                        real question — but quoted, which marks it as a name rather than a claim. \
+                        Renaming it is a `postTypeLayout` key change and therefore a migration.""")
+                .contains("layout \"" + LAYOUT_TITLE + "\"");
     }
 
     @Test

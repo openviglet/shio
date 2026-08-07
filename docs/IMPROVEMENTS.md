@@ -1599,28 +1599,6 @@ intentional in the content rather than in a suppression file, at the cost of one
 field on a system post-type. The second is probably right for the same reason SH385 put
 a redirect's source on the post rather than in a side table.
 
-### XV.34 The label that stopped describing what it labels (SH559)
-
-The preview banner ends with `layout <site> (fidelity)`. On a site converted with
-`--accept all`, whose eleven pages hold section lists and whose home page carries
-sixteen annotated fields, that string is the only statement anywhere about how the page
-was produced, and it names the other mode.
-
-The name was accurate when one layout served one mode. SH464 then made a single
-generated layout serve all three — verbatim, mixed and authorable — and the title kept
-the word it was born with. Nothing downstream reads it, which is why it survived; the
-only reader is a person or an agent looking at the page.
-
-It cost a wrong inference in this work. Reading `layout R6Aut (fidelity)` beside a page
-that had lost its styling, the first hypothesis was that an authorable conversion had
-been handed a fidelity layout, and the real cause — a site-wide theme switch — took a
-detour to find. A label that is wrong is worse than no label for exactly this reason: it
-is evidence, and it points somewhere.
-
-Either the title stops claiming a mode, or the banner reports the mode from what the
-page actually holds, which it can see. The second is more useful and barely more work:
-it already reads the post to draw the banner.
-
 ### XV.35 The reference the graph can now see, and still cannot check (SH572)
 
 SH558 taught `ShTemplateGraph` to read the literal address in a `getRelation` block,
@@ -1644,6 +1622,31 @@ one instance. Every other layout in the product gets nothing.
 
 The rule reads the same literals SH558 extracts and reports the ones that resolve to no
 post in the site, at whatever severity SH297 uses for its field twin.
+
+### XV.36 The other half of the label, and the migration inside it (SH573)
+
+SH559 fixed the reader's problem: the preview banner now states `verbatim`, `authorable`
+or `mixed`, computed from the page's own fields, so nobody has to infer a mode from a
+name. It deliberately did not fix the name, and this is that half.
+
+`convert.mjs` still calls the one generated layout `<site> (fidelity)`. That was
+accurate when one layout served one mode. SH464 made a single layout serve all three, so
+the word has been decoration since — decoration that looks like a fact, which is why
+SH559 had to *quote* the title rather than print it. A quoted wrong name is a smaller
+defect, not a closed one.
+
+The reason it was left is the whole content of this task. The title is the key in
+`site.postTypeLayout`: `convert` writes the binding and the post's `TITLE` from one
+constant, so a new conversion is self-consistent the moment that constant changes. A
+site converted *before* is not — its stored binding names the old title, and re-running
+`convert` rewrites both, which is a write nobody asked for on a site somebody may have
+edited since.
+
+So the decision is not what to call it. It is whether the rename ships as a constant
+change only new conversions see, leaving old sites bound to a name the code no longer
+emits, or as something that carries the existing ones across. The second needs a
+statement about what `convert` may rewrite on a site that already exists, which the
+product has not made anywhere else.
 
 ## XVI. The human half (Block O) — what reading the console next found
 

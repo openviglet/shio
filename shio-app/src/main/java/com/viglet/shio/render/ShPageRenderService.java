@@ -9,6 +9,7 @@
 package com.viglet.shio.render;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -251,7 +252,11 @@ public class ShPageRenderService {
                 slots,
                 state,
                 page.getId(),
-                site.getId());
+                site.getId(),
+                // SH559 — from the page's own fields, which is the only place the answer is. The
+                // layout's title used to be the banner's only statement about how a page was made,
+                // and since SH464 one layout serves all three modes, so it named the wrong one.
+                compositionOf(stable));
     }
 
     /**
@@ -784,9 +789,68 @@ public class ShPageRenderService {
      *               asking the render service for the site again would be a second resolution of
      *               something this call already holds
      */
+    /**
+     * @param composition how this page is made — {@code verbatim}, {@code authorable},
+     *                    {@code mixed}, or {@code null} where the page holds neither field
+     *                    (SH559). Read from the page, never from the layout's name.
+     */
     public record ShRenderedPage(String html, String site, String url, String layout,
                                  List<String> regions, ShPostState state, String postId,
-                                 String siteId) {
+                                 String siteId, String composition) {
+    }
+
+    /**
+     * Which of the three shapes a page actually is (SH559).
+     *
+     * <h3>The label that stopped describing what it labels</h3>
+     *
+     * <p>The preview banner ended with {@code layout <site> (fidelity)}. On a site converted with
+     * {@code --accept all} — eleven pages holding section lists, a home page carrying sixteen
+     * annotated fields — that string was the only statement anywhere about how the page was
+     * produced, and it named <b>the other mode</b>. The name was accurate when one layout served
+     * one mode; SH464 then made a single generated layout serve all three and the title kept the
+     * word it was born with. Nothing downstream reads it, which is why it survived: the only reader
+     * is a person or an agent looking at the page.</p>
+     *
+     * <p>It cost a wrong inference in the work that found it. Reading {@code layout R6Aut
+     * (fidelity)} beside a page that had lost its styling, the first hypothesis was that an
+     * authorable conversion had been handed a fidelity layout, and the real cause — a site-wide
+     * theme switch — took a detour to find. <b>A label that is wrong is worse than no label</b> for
+     * exactly that reason: it is evidence, and it points somewhere.</p>
+     *
+     * <h3>The same two fields the layout branches on</h3>
+     *
+     * <p>{@code content} is the source's own markup and {@code sections} is the list a page
+     * composes from, which is precisely what {@code PAGE_BODY_HTML} tests with
+     * {@code {{#if content}}} and {@code {{#getRelation sections}}}. Reading them here means the
+     * banner and the page cannot come to disagree — SH281's rule, the same one that has
+     * {@code themeTitleOf} read through the renderer.</p>
+     *
+     * <p>{@code null} rather than a guess when the page holds neither: this route renders every
+     * post type, and most of them are not conversions. A banner that called an {@code Article}
+     * "authorable" would be the same defect one type over.</p>
+     */
+    private static String compositionOf(Map<String, Object> model) {
+        boolean verbatim = present(model.get("content"));
+        boolean composed = present(model.get("sections"));
+        if (verbatim && composed) {
+            return "mixed";
+        }
+        if (verbatim) {
+            return "verbatim";
+        }
+        return composed ? "authorable" : null;
+    }
+
+    /** A field that holds something — an empty list and a blank string are both absent. */
+    private static boolean present(Object value) {
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof Collection<?> items) {
+            return !items.isEmpty();
+        }
+        return !value.toString().isBlank();
     }
 
     // --- teaching errors (SH80) ---------------------------------------------

@@ -1264,6 +1264,6 @@ class ShPageRenderTest {
                 .setParameter("name", siteName)
                 .getSingleResult();
         return new ShRenderedPage("", siteName, "/", "layout", List.of(),
-                ShPostState.DRAFT, "post-id", siteId);
+                ShPostState.DRAFT, "post-id", siteId, null);
     }
 }

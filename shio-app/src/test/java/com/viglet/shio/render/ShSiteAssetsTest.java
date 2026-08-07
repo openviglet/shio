@@ -307,7 +307,7 @@ class ShSiteAssetsTest {
     /** Built rather than rendered: the unit under test is the rewrite, not this fixture's layout. */
     private ShPageRenderService.ShRenderedPage pageOfThisSite() {
         return new ShPageRenderService.ShRenderedPage("", siteName, "/", "layout", List.of(),
-                ShPostState.DRAFT, "post-id", site.getId());
+                ShPostState.DRAFT, "post-id", site.getId(), null);
     }
 
     @Test

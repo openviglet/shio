@@ -174,7 +174,7 @@ public class ShRenderAPI {
                 pathWithin(siteKey, request));
         ShRenderedPage page = new ShRenderedPage(walkable, rendered.site(), rendered.url(),
                 rendered.layout(), rendered.regions(), rendered.state(), rendered.postId(),
-                rendered.siteId());
+                rendered.siteId(), rendered.composition());
         String body = editor
                 ? editorBridge.inject(banner.wrap(page), originOf(request),
                         previewLinks.pathsForBridge(rendered))

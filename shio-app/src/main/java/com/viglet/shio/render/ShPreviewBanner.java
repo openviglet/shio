@@ -74,11 +74,37 @@ public class ShPreviewBanner {
         return document.html();
     }
 
+    /**
+     * SH559 — how the page is made comes from the page, and the layout's title is quoted as a name.
+     *
+     * <p>This line ended with {@code layout <site> (fidelity)} and that was, on a converted site,
+     * the only statement anywhere about how the page had been produced. Since SH464 one generated
+     * layout serves all three modes, so on an authorable conversion — eleven pages of section
+     * lists, a home page carrying sixteen annotated fields — it named <b>the other one</b>. Nothing
+     * downstream reads that title, which is why it survived: the only reader is a person or an
+     * agent looking at the page, and it cost them a wrong inference in the work that found it.</p>
+     *
+     * <p>So the mode is now read from {@code composition}, which {@link ShPageRenderService}
+     * computes from the page's own {@code content} and {@code sections} — the same two fields the
+     * generated layout branches on. The title stays, because "which layout rendered this" is a real
+     * question and a title is the answer to it, but it is <b>quoted</b>: that marks it as a name
+     * rather than a claim, which is what it always was and stopped looking like.</p>
+     *
+     * <p>Renaming the layout is the other half and is deliberately not done here: the title is the
+     * key in {@code site.postTypeLayout}, so changing it moves a binding, and a binding change on
+     * sites that already exist is a migration rather than a label fix.</p>
+     */
     private String label(ShRenderedPage page) {
         String what = page.state() == ShPostState.DRAFT
                 ? "Draft preview — not what visitors see"
                 : "Published preview — rendered by Shio, not by this site's front end";
+        String composition = page.composition() == null
+                // Every post type renders through this route and most are not conversions. A page
+                // holding neither field gets no claim at all, because "authorable" on an Article
+                // would be this same defect one type over.
+                ? ""
+                : " · " + page.composition() + " page";
         return "Shio preview · " + what + " · " + page.site() + page.url()
-                + " · layout " + page.layout();
+                + composition + " · layout \"" + page.layout() + "\"";
     }
 }
