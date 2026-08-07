@@ -1,8 +1,15 @@
 # @viglet/create-shio-app
 
-Scaffold a **Next.js (App Router)** site wired to the **Shio CMS Content Delivery
-API**. The flagship "JS dev, zero Java" starter — a JavaScript/TypeScript
-developer builds a full site against Shio without ever touching the Java backend.
+[![npm](https://img.shields.io/npm/v/@viglet/create-shio-app?logo=npm)](https://www.npmjs.com/package/@viglet/create-shio-app)
+[![License](https://img.shields.io/npm/l/@viglet/create-shio-app)](https://github.com/openviglet/shio/blob/HEAD/LICENSE)
+[![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
+
+Scaffold a **Next.js (App Router)** site wired to the Content Delivery API of
+**[Viglet Shio](https://shio.viglet.org/)**, the open source **headless CMS built
+for coding agents**.
+
+The flagship "JS dev, zero Java" starter — a JavaScript/TypeScript developer
+builds a full site against Shio without ever touching the Java backend.
 
 ## Usage
 
@@ -51,12 +58,41 @@ my-site/
 The generated project depends on [`@viglet/shio-client`](https://www.npmjs.com/package/@viglet/shio-client)
 and talks only to the stable CDA contract (`/api/v2/cda/**`).
 
+## Next steps
+
+```bash
+npx @viglet/shio types     # generate a .d.ts so post.attrs.* autocompletes
+npx @viglet/shio dev       # types + dev server + model watch
+npx @viglet/shio pull --content   # the whole site as Markdown on disk
+```
+
+Driving the CMS from [Claude Code](https://claude.com/claude-code)? Add the MCP
+server and the agent gets the same surface:
+
+```bash
+claude mcp add shio -- npx -y @viglet/shio mcp
+```
+
 ## Develop this generator
 
 ```bash
 npm test   # node:test — scaffolds into a temp dir and asserts the output
 ```
 
+## Related packages
+
+| Package | For |
+|---|---|
+| [`@viglet/shio`](https://www.npmjs.com/package/@viglet/shio) | The Shio CLI — content as files, type generation, and the MCP bridge |
+| [`@viglet/shio-client`](https://www.npmjs.com/package/@viglet/shio-client) | Zero-dependency Content Delivery API client (what the scaffold uses) |
+| [`@viglet/shio-react-sdk`](https://www.npmjs.com/package/@viglet/shio-react-sdk) | React hooks and render components |
+| [`@viglet/shio-sections`](https://www.npmjs.com/package/@viglet/shio-sections) | The page-section vocabulary |
+| [`@viglet/shio-model`](https://www.npmjs.com/package/@viglet/shio-model) | Author the content model as typed code |
+| [`@viglet/shio-editor-cors`](https://www.npmjs.com/package/@viglet/shio-editor-cors) | Inline visual editing with the Universal Editor |
+
 ## License
 
-Apache-2.0
+Apache-2.0 — [Viglet Shio](https://shio.viglet.org/) ·
+[github.com/openviglet/shio](https://github.com/openviglet/shio) ·
+[docs.viglet.org/shio](https://docs.viglet.org/shio/) ·
+part of the [Viglet](https://www.viglet.org) open source family.

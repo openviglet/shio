@@ -2,6 +2,15 @@
   "name": "@viglet/create-shio-app",
   "version": "2026.3.1",
   "description": "Scaffold a Next.js (App Router) site wired to the Shio CMS Content Delivery API. The flagship 'JS dev, zero Java' starter.",
+  "homepage": "https://shio.viglet.org/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openviglet/shio.git",
+    "directory": "create-shio-app"
+  },
+  "bugs": {
+    "url": "https://github.com/openviglet/shio/issues"
+  },
   "type": "module",
   "bin": {
     "create-shio-app": "src/index.mjs"
@@ -21,17 +30,29 @@
   },
   "keywords": [
     "shio",
+    "viglet",
     "cms",
-    "headless",
+    "headless-cms",
+    "content-management-system",
+    "agent",
+    "ai",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
     "nextjs",
     "starter",
     "create",
-    "scaffold"
+    "scaffold",
+    "react",
+    "headless"
   ],
   "engines": {
     "node": ">=26",
     "npm": ">=11"
   },
-  "author": "Viglet Team",
+  "author": {
+    "name": "Viglet Team",
+    "url": "https://www.viglet.org"
+  },
   "license": "Apache-2.0"
 }

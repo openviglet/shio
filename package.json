@@ -3,6 +3,14 @@
   "private": true,
   "version": "2026.3.1",
   "description": "Shio CMS JavaScript workspace — console (shio-react), CDA client, React SDK, the page-section vocabulary, Universal Editor bridge, the Next.js starter generator and the example sites.",
+  "homepage": "https://shio.viglet.org/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openviglet/shio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/openviglet/shio/issues"
+  },
   "type": "module",
   "packageManager": "pnpm@11.8.0",
   "engines": {
@@ -33,5 +41,9 @@
     "pngjs": "^7.0.0",
     "rimraf": "^6.0.1"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Viglet Team",
+    "url": "https://www.viglet.org"
+  }
 }

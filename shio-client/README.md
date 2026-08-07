@@ -1,11 +1,18 @@
 # @viglet/shio-client
 
-Framework-agnostic TypeScript client for the **Shio CMS Content Delivery API (CDA)**.
+[![npm](https://img.shields.io/npm/v/@viglet/shio-client?logo=npm)](https://www.npmjs.com/package/@viglet/shio-client)
+[![License](https://img.shields.io/npm/l/@viglet/shio-client)](https://github.com/openviglet/shio/blob/HEAD/LICENSE)
+[![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
+
+Framework-agnostic **TypeScript client** for the Content Delivery API (CDA) of
+**[Viglet Shio](https://shio.viglet.org/)**, the open source **headless CMS built
+for coding agents**.
 
 - **Zero runtime dependencies** — just `fetch`.
 - Runs in **Node, the browser, edge runtimes, Next.js server components, Astro, Vue, Svelte** and plain scripts.
 - Targets the stable, read-only CDA contract (`/api/v2/cda/**`) — no Java, no legacy console API.
-- This is the **base** SDK; `@viglet/shio-react-sdk` is one consumer of it.
+- This is the **base** SDK; [`@viglet/shio-react-sdk`](https://www.npmjs.com/package/@viglet/shio-react-sdk) is one consumer of it.
+- Pair it with [`@viglet/shio`](https://www.npmjs.com/package/@viglet/shio) — `shio types` generates a `.d.ts` from your live content model, so `post.attrs.*` autocompletes.
 
 ## Install
 
@@ -95,6 +102,20 @@ npm run typecheck  # tsc --noEmit
 npm test           # node:test, no network (injected fetch)
 ```
 
+## Related packages
+
+| Package | For |
+|---|---|
+| [`@viglet/shio`](https://www.npmjs.com/package/@viglet/shio) | The Shio CLI — content as files, type generation, and the MCP bridge for [Claude Code](https://claude.com/claude-code) |
+| [`@viglet/shio-react-sdk`](https://www.npmjs.com/package/@viglet/shio-react-sdk) | React hooks and render components built on this client |
+| [`@viglet/shio-sections`](https://www.npmjs.com/package/@viglet/shio-sections) | The page-section vocabulary |
+| [`@viglet/shio-model`](https://www.npmjs.com/package/@viglet/shio-model) | Author the content model as typed code |
+| [`@viglet/shio-editor-cors`](https://www.npmjs.com/package/@viglet/shio-editor-cors) | Inline visual editing with the Universal Editor |
+| [`@viglet/create-shio-app`](https://www.npmjs.com/package/@viglet/create-shio-app) | Next.js starter generator |
+
 ## License
 
-Apache-2.0
+Apache-2.0 — [Viglet Shio](https://shio.viglet.org/) ·
+[github.com/openviglet/shio](https://github.com/openviglet/shio) ·
+[docs.viglet.org/shio](https://docs.viglet.org/shio/) ·
+part of the [Viglet](https://www.viglet.org) open source family.

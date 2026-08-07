@@ -1,14 +1,32 @@
 # @viglet/shio-model
 
-Typed TypeScript DSL for the **Shio CMS** content model (SH62). Author your
-post-types as code and compile to the canonical Shio post-type JSON that the
-[`shio` CLI](../cli) (`shio push`) applies. It is the authoring **inverse** of
-[`@viglet/shio-client`](../shio-client)'s type generation (SH11): SH11 turns the
-live model *into* types for **consuming** content; this turns typed code *into*
-the model for **authoring** it.
+[![npm](https://img.shields.io/npm/v/@viglet/shio-model?logo=npm)](https://www.npmjs.com/package/@viglet/shio-model)
+[![License](https://img.shields.io/npm/l/@viglet/shio-model)](https://github.com/openviglet/shio/blob/HEAD/LICENSE)
+[![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
+
+Typed **TypeScript DSL** for the content model of
+**[Viglet Shio](https://shio.viglet.org/)**, the open source **headless CMS built
+for coding agents** (SH62). Author your post-types **as code** — `postType()`,
+`text()`, `comboBox()`, `relator()`, … — and compile to the canonical Shio
+post-type JSON that the [`shio` CLI](https://www.npmjs.com/package/@viglet/shio)
+(`shio push`) applies.
+
+It is the authoring **inverse** of
+[`@viglet/shio-client`](https://www.npmjs.com/package/@viglet/shio-client)'s type
+generation (SH11): SH11 turns the live model *into* types for **consuming**
+content; this turns typed code *into* the model for **authoring** it. Content
+model as code means the model is reviewable in a pull request and appliable from
+CI — a **GitOps** workflow, and the shape an AI agent driving Shio from
+[Claude Code](https://claude.com/claude-code) writes in.
 
 Zero runtime dependencies. The `tsserver` already running in your editor gives
 autocomplete, rename and compile-time validation — no VSCode extension needed.
+
+## Install
+
+```bash
+npm install @viglet/shio-model
+```
 
 ## Example
 
@@ -45,13 +63,31 @@ coexist in `shio/post-types/`.
 
 The DSL is an **optional authoring layer**, not the sole source of truth — JSON
 stays canonical and the console GUI editor stays a legitimate writer. See
-[docs/specs/SH62-post-types-dsl.md](../docs/specs/SH62-post-types-dsl.md) and
-[IMPROVEMENTS.md §II.7](../docs/IMPROVEMENTS.md).
+[docs/specs/SH62-post-types-dsl.md](https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH62-post-types-dsl.md)
+and [IMPROVEMENTS.md §II.7](https://github.com/openviglet/shio/blob/HEAD/docs/IMPROVEMENTS.md).
 
 ## Status
 
 ✅ **SH63 shipped** — DSL core, the `widgetSettings` codec (encode + symmetric
 decode), and the canonical serialization shared with the CLI are complete (see
-[CHANGELOG.md](../docs/CHANGELOG.md) Block B). The CLI compile step (SH64), CI
-drift guard (SH65) and console "managed by code" lock (SH66) are tracked in the
-[roadmap](../docs/ROADMAP.md) Block B.
+[CHANGELOG.md](https://github.com/openviglet/shio/blob/HEAD/docs/CHANGELOG.md)
+Block B). The CLI compile step (SH64), CI drift guard (SH65) and console "managed
+by code" lock (SH66) are tracked in the
+[roadmap](https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md) Block B.
+
+## Related packages
+
+| Package | For |
+|---|---|
+| [`@viglet/shio`](https://www.npmjs.com/package/@viglet/shio) | The Shio CLI — compiles this DSL and pushes it (`shio push`, `shio build`) |
+| [`@viglet/shio-sections`](https://www.npmjs.com/package/@viglet/shio-sections) | The page-section vocabulary, authored with this DSL |
+| [`@viglet/shio-client`](https://www.npmjs.com/package/@viglet/shio-client) | Zero-dependency Content Delivery API client |
+| [`@viglet/shio-react-sdk`](https://www.npmjs.com/package/@viglet/shio-react-sdk) | React hooks and render components |
+| [`@viglet/create-shio-app`](https://www.npmjs.com/package/@viglet/create-shio-app) | Next.js starter generator |
+
+## License
+
+Apache-2.0 — [Viglet Shio](https://shio.viglet.org/) ·
+[github.com/openviglet/shio](https://github.com/openviglet/shio) ·
+[docs.viglet.org/shio](https://docs.viglet.org/shio/) ·
+part of the [Viglet](https://www.viglet.org) open source family.

@@ -2,6 +2,15 @@
   "name": "shio-react",
   "private": true,
   "version": "2026.3.1",
+  "homepage": "https://shio.viglet.org/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openviglet/shio.git",
+    "directory": "shio-react"
+  },
+  "bugs": {
+    "url": "https://github.com/openviglet/shio/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -77,5 +86,25 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.66.0",
     "vite": "^8.2.0"
+  },
+  "keywords": [
+    "shio",
+    "viglet",
+    "cms",
+    "headless-cms",
+    "content-management-system",
+    "agent",
+    "ai",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "console",
+    "admin",
+    "react",
+    "shadcn"
+  ],
+  "author": {
+    "name": "Viglet Team",
+    "url": "https://www.viglet.org"
   }
 }
