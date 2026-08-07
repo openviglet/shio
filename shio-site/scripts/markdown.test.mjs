@@ -83,7 +83,7 @@ test("an icon and a decorative element leave nothing behind", () => {
 });
 
 test("an empty overlay button gives a step a click target and costs the twin nothing", () => {
-  // SH567 — the transcript's steps became clickable. A <button> is dropped whole,
+  // SH571 — the transcript's steps became clickable. A <button> is dropped whole,
   // children included, which is right for the CTA and would have deleted all six
   // calls from every twin had the text moved inside it. The affordance therefore
   // sits beside the text, not around it, and this is the assertion that says so:

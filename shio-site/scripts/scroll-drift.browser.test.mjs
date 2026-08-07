@@ -89,7 +89,7 @@ test("the hero player never scrolls the window (SH566)", async (t) => {
   }
 });
 
-test("clicking a step selects it and shows what that call produced (SH567)", async (t) => {
+test("clicking a step selects it and shows what that call produced (SH571)", async (t) => {
   if (!URL_UNDER_TEST) return t.skip("set SHIO_SITE_URL to a running site");
   const chromium = await browser();
   if (!chromium) return t.skip("playwright is not installed: pnpm add -D playwright");
@@ -124,6 +124,17 @@ test("clicking a step selects it and shows what that call produced (SH567)", asy
       await page.locator("button[aria-label^='Show call'][aria-current='step']").count(),
       1
     );
+
+    // And the point of clicking it: the artefact pane shows *that* call's output.
+    // Asserted as a round trip rather than against a literal, because the copy
+    // lives in site-content.ts and a test that repeats it is a second place for
+    // it to go stale — away and back must land on the same bytes.
+    const artefact = page.locator(".scanlines pre");
+    const fourth = await artefact.innerText();
+    await steps.nth(0).click();
+    assert.notEqual(await artefact.innerText(), fourth, "a different call, a different artefact");
+    await steps.nth(3).click();
+    assert.equal(await artefact.innerText(), fourth, `re-selecting ${tool} restores its output`);
   } finally {
     await instance.close();
   }

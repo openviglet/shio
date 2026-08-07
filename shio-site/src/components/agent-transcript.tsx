@@ -36,7 +36,7 @@ function overflowWithin(box: DOMRect, item: DOMRect): number {
  *    controls still working, which is a better answer than a frozen animation.
  * 4. **The copy is content, not markup.** The steps and their artefacts live in
  *    `site-content.ts`, so re-scripting the session never touches this file.
- * 5. **The step itself is the control** (SH567). A reader who wants call four
+ * 5. **The step itself is the control** (SH571). A reader who wants call four
  *    clicks call four; the transport arrows and the progress dots are the
  *    fallback, not the only way in. What that costs is below the `<ol>`.
  *
@@ -194,7 +194,7 @@ export function AgentTranscript({ className }: { className?: string }) {
         {TRANSCRIPT.map((s, i) => (
           <li key={s.tool} className="relative">
             {/*
-             * The step's own click target (SH567), and it is deliberately empty.
+             * The step's own click target (SH571), and it is deliberately empty.
              * Wrapping the three lines in the button would have been the obvious
              * markup and would have deleted the call from every `.md` twin:
              * `markdown.mjs` drops a `<button>` whole, children included, which
@@ -202,9 +202,15 @@ export function AgentTranscript({ className }: { className?: string }) {
              * label and the affordance, the text stays outside it, and the
              * transcript survives constraint 2 above.
              *
-             * It is positioned, so it paints and hit-tests above the static
-             * paragraphs regardless of source order — which lets it sit first
-             * and drive the hover state of what follows as a `peer`.
+             * `z-10` is load-bearing and was not obvious. A positioned element
+             * outranks static text on its own, so the button sitting first in
+             * source — which is what lets it drive the following `peer` styles —
+             * looked sufficient. It is not: the wrapper below is dimmed with
+             * `opacity`, and an opacity under 1 makes a stacking context, so the
+             * *dimmed* items painted over their own click target while the lit
+             * one (opacity 1, no context) stayed clickable. Every step was
+             * clickable exactly when it was already selected. The browser test
+             * found it; nothing else would have.
              */}
             <button
               type="button"
@@ -212,7 +218,7 @@ export function AgentTranscript({ className }: { className?: string }) {
               onKeyDown={onKeyDown}
               aria-label={`Show call ${i + 1}: ${s.tool}`}
               aria-current={i === current ? "step" : undefined}
-              className="peer absolute -inset-x-2 -inset-y-1 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#ff8a6b]"
+              className="peer absolute -inset-x-2 -inset-y-1 z-10 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#ff8a6b]"
             />
             <div
               className={cn(
