@@ -57,6 +57,7 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.tenant.ShTenantQuotaService;
+import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.utils.ShStableMap;
 
 import tools.jackson.core.JacksonException;
@@ -1659,9 +1660,9 @@ public class ShAgentBatchService {
         if (isPending(site)) {
             return Optional.empty();
         }
-        // Both leading-slash spellings, mirroring ShAddressResolver so an address means
-        // the same post here as it does on the read side.
-        for (String candidate : furlCandidates(address.path())) {
+        // SH583 — the shared generator. This used to be a private copy of ShAddressResolver's
+        // private copy, which is how a write and the read that follows it come to disagree.
+        for (String candidate : ShFurlSpellings.candidates(address.path())) {
             Optional<ShPostUnified> row = shPostUnifiedRepository
                     .findByShSite_IdAndFurlAndState(site.getId(), candidate, state);
             if (row.isPresent()) {
@@ -1941,13 +1942,6 @@ public class ShAgentBatchService {
             return List.of();
         }
         return Arrays.stream(path.split("/")).filter(segment -> !segment.isBlank()).toList();
-    }
-
-    private static List<String> furlCandidates(String path) {
-        String normalized = ShAddress.normalizePath(path);
-        return normalized.length() > 1
-                ? List.of(normalized, normalized.substring(1))
-                : List.of(normalized);
     }
 
     private static String nullSafe(String value) {

@@ -56,6 +56,7 @@ import com.viglet.shio.render.ShSiteAssets;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.widget.ShSystemWidget;
 
 import tools.jackson.core.JacksonException;
@@ -2306,14 +2307,26 @@ public class ShAgentVerifyService {
      * <p>Draft-preferred is not what matters here — existence is — so both states are asked for,
      * and the repository is asked directly rather than the scan, because the scan holds only what
      * this credential may read (see the class note on the allow-list).</p>
+     *
+     * <p>SH583 — every spelling, through the shared generator. This is the reader whose
+     * disagreement is hardest to see: a link that resolves in {@code /preview} and misses here
+     * reports {@code page-link-broken} against a page that exists, which reads as damage the
+     * conversion caused.</p>
      */
     private Optional<ShPostUnified> referenced(String siteId, String url) {
         if (siteId == null) {
             return Optional.empty();
         }
-        return shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url, ShPostState.DRAFT)
-                .or(() -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url,
-                        ShPostState.PUBLISHED));
+        for (String candidate : ShFurlSpellings.candidates(url)) {
+            Optional<ShPostUnified> found = shPostUnifiedRepository
+                    .findByShSite_IdAndFurlAndState(siteId, candidate, ShPostState.DRAFT)
+                    .or(() -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId,
+                            candidate, ShPostState.PUBLISHED));
+            if (found.isPresent()) {
+                return found;
+            }
+        }
+        return Optional.empty();
     }
 
     /**

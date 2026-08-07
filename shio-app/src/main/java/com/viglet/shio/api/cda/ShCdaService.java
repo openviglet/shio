@@ -45,6 +45,7 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
+import com.viglet.shio.url.ShFurlSpellings;
 
 /**
  * Content Delivery API (CDA) read service (SH1). The read state is a
@@ -167,7 +168,7 @@ public class ShCdaService {
         if (!siteAllowed(siteId)) {
             return Optional.empty();
         }
-        for (String candidate : urlCandidates(url)) {
+        for (String candidate : ShFurlSpellings.candidates(url)) {
             for (ShPostState state : readStates()) {
                 Optional<ShPostUnified> found = (locale != null && !locale.isBlank())
                         ? shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(siteId, candidate, state, locale)
@@ -466,17 +467,6 @@ public class ShCdaService {
         return shFolderRepository.findRootFolder(site)
                 .map(ShFolder::getId)
                 .orElse(null);
-    }
-
-    /** Tolerate stored furls with or without a leading slash. */
-    private List<String> urlCandidates(String url) {
-        if (url == null) {
-            return List.of();
-        }
-        if (url.startsWith("/")) {
-            return List.of(url, url.substring(1));
-        }
-        return List.of(url, "/" + url);
     }
 
     private static Pageable pageable(int page, int size) {

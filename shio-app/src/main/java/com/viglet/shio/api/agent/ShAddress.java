@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.url.ShFurlSpellings;
 
 /**
  * A content address (SH79) — a stable, human-readable way to name a site, folder or
@@ -191,19 +192,15 @@ public record ShAddress(Kind kind, String site, String path) {
      * hand; a second normalization written next to either of them would eventually
      * disagree with this one, and the symptom would be a lint that reports a defect that
      * is not there.</p>
+     *
+     * <p><b>SH583 moved the body to {@link ShFurlSpellings#canonical}</b> — three had been
+     * written by then, which is the paragraph above happening. The collapser and the
+     * generator that decides which <em>other</em> spellings mean the same post now live in
+     * one class, because SH467 is about to store a trailing slash and they have to agree on
+     * purpose rather than by accident. This stays as the name the address grammar uses.</p>
      */
     public static String normalizePath(String path) {
-        if (path == null || path.isBlank()) {
-            return "/";
-        }
-        String collapsed = path.trim().replaceAll("/{2,}", "/");
-        if (!collapsed.startsWith("/")) {
-            collapsed = "/" + collapsed;
-        }
-        while (collapsed.length() > 1 && collapsed.endsWith("/")) {
-            collapsed = collapsed.substring(0, collapsed.length() - 1);
-        }
-        return collapsed;
+        return ShFurlSpellings.canonical(path);
     }
 
     /** The canonical form — round-trips through {@link #parse}. */

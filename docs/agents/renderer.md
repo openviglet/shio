@@ -563,6 +563,26 @@ renderer over one body of content at a second address. See the section on it bel
   render, copy/move) would become slash-sensitive, and an agent typing a stray slash would create a
   second post rather than update the first. That is a P5 identity change, not a capture fix, and it
   is worth deciding on its own evidence.
+- **One generator decides what a spelling is, and it landed before anything stored one (SH583)** —
+  the paragraph above says nine lookups would become slash-sensitive. Measured at `077b115` it is
+  **thirteen, across seven classes**, and the tolerance meant to bridge `/shio` and `/shio/` was not
+  one function: `ShAddressResolver.furlCandidates`, `ShAgentBatchService.furlCandidates` (a private
+  copy of it), `ShCdaService.urlCandidates` under a third name, and this route's own redirect rule.
+  They agreed by **accident** — nothing was ever stored with a trailing slash, so all four were asked
+  the same question. `normalizePath`'s javadoc had predicted exactly this and named the instrument
+  that did not exist. Now `com.viglet.shio.url.ShFurlSpellings` is the one place: `canonical` (the
+  body `ShAddress.normalizePath` used to carry, which now delegates), `candidates` (the four
+  spellings of a path, **requested one first** so a stored `/x/` is not resolved to a stale `/x`),
+  and `otherSlashForm` (what this route's 301 asks). Six readers route through it — resolver, batch,
+  CDA, `verify`, `/agent/render` and copy/move — and `pageWithFurl` is the one deliberate
+  *non*-tolerant reader, because tolerating both here would serve one page at two URLs, which is the
+  split SH467 exists to close; the tolerance is the redirect. `ShFurlSpellingLintTest` fails on a
+  fifth generator and on a post-`furl` reader that does not ask this one, with folder and site
+  `furl`s named in its exclusions as the different namespace they are (SH79).
+  `ShFurlSpellingAgreementTest` persists the row SH467 will write and asserts the readers agree
+  about it — the assertion that
+  would have caught the failure mode, which is a page that renders in `/preview`, answers **404** on
+  the CDA and **verifies clean**.
 - **A verbatim `href` is a hardcoded base, so the fallback is inverted (SH466)** — SH336's rule was
   *rewrite only what the index resolves, leave the rest alone*, and what it produced is a page
   carrying two kinds of `href` where one works. A replicated page held `href="/turing/"` — the

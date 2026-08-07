@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.render.ShPageRenderService;
+import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.widget.ShSystemWidget;
 
 import tools.jackson.core.JacksonException;
@@ -303,14 +304,27 @@ public class ShAgentRenderService {
         return attr.getShWidget() == null ? "" : attr.getShWidget().getName();
     }
 
-    /** The post a URL names in this site, either state — existence is what matters. */
+    /**
+     * The post a URL names in this site, either state — existence is what matters.
+     *
+     * <p>SH583 — every spelling, through the shared generator. An href written {@code /x} has to
+     * find the post SH467 stored at {@code /x/}, or a replica whose links are the source's own
+     * verifies as {@code page-reference-broken} against content that is there.</p>
+     */
     private Optional<ShPostUnified> referenced(String siteId, String url) {
         if (siteId == null) {
             return Optional.empty();
         }
-        return shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url, ShPostState.DRAFT)
-                .or(() -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url,
-                        ShPostState.PUBLISHED));
+        for (String candidate : ShFurlSpellings.candidates(url)) {
+            Optional<ShPostUnified> found = shPostUnifiedRepository
+                    .findByShSite_IdAndFurlAndState(siteId, candidate, ShPostState.DRAFT)
+                    .or(() -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId,
+                            candidate, ShPostState.PUBLISHED));
+            if (found.isPresent()) {
+                return found;
+            }
+        }
+        return Optional.empty();
     }
 
     /** Escapes the four characters that would otherwise change the synthetic markup's shape. */

@@ -37,6 +37,7 @@ import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.render.ShRegionComposer.ShRenderedRegion;
 import com.viglet.shio.render.ShRenderModel.ShThemeAssets;
+import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.utils.ShStableMap;
 
 import tools.jackson.core.JacksonException;
@@ -420,11 +421,12 @@ public class ShPageRenderService {
      */
     private Optional<ShPageRedirectException> canonicalSlashRedirect(ShSite site, String furl,
                                                                      ShPostState state) {
-        if (furl.length() <= 1) {
-            return Optional.empty();
-        }
-        String other = furl.endsWith("/") ? furl.substring(0, furl.length() - 1) : furl + "/";
-        return pageWithFurl(site, other, state)
+        // SH583 — the other spelling comes from the shared generator, not from a fourth private
+        // rule. This route is the one deliberate *non*-tolerant reader: `pageWithFurl` matches the
+        // stored spelling exactly, because tolerating both here would serve one page at two URLs
+        // and that is the URL-space split SH467 exists to close. The tolerance is the 301.
+        return ShFurlSpellings.otherSlashForm(furl)
+                .flatMap(other -> pageWithFurl(site, other, state))
                 .map(found -> new ShPageRedirectException(found.getFurl(), true));
     }
 

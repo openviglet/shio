@@ -31,6 +31,7 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
+import com.viglet.shio.url.ShFurlSpellings;
 
 /**
  * Resolves a {@link ShAddress} to a concrete object (SH79).
@@ -164,9 +165,9 @@ public class ShAddressResolver {
         if (site.isEmpty()) {
             return Optional.empty();
         }
-        // Both leading-slash spellings, mirroring the CDA's own furl candidates so an
-        // address and a delivery URL never disagree about the same post.
-        for (String candidate : furlCandidates(address.path())) {
+        // SH583 — the shared generator, not a private copy of it: an address and a delivery URL
+        // never disagree about the same post because they ask one function, not four.
+        for (String candidate : ShFurlSpellings.candidates(address.path())) {
             List<ShPostUnified> rows = BOTH_STATES.stream()
                     .flatMap(state -> shPostUnifiedRepository
                             .findByShSite_IdAndFurlAndStateOrderByIdAsc(
@@ -359,13 +360,6 @@ public class ShAddressResolver {
                 .filter(row -> row.getState() == ShPostState.DRAFT)
                 .findFirst()
                 .orElse(rows.get(0));
-    }
-
-    private static List<String> furlCandidates(String path) {
-        String normalized = ShAddress.normalizePath(path);
-        return normalized.length() > 1
-                ? List.of(normalized, normalized.substring(1))
-                : List.of(normalized);
     }
 
     private static List<String> segments(String path) {
