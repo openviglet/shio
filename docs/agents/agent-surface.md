@@ -1082,6 +1082,25 @@ one-call promise not holding), and the printed table names the rung that answere
 **Two of the six cost ~3.7× the rest** because `startHere` names neither `/agent/diagnostics`
 nor `/agent/changes`, so the only route to them is the ~2400-token index. That is the finding,
 not drift to budget around.
+**And P2 has a grep now, not only a price (SH598).** `ShAgentP2ConformanceTest` is P1's
+instrument for the other law: discoverability — *named in a response already received* — is
+**graph reachability**, so it seeds with an entry point's response, opens every **door** that
+response names, and repeats to a fixed point. No model, no tokens, no judgement. Both cold
+starts are walked, because the product has two: `GET /agent/context` and MCP `initialize`
+(SH596 is the break only the second walk sees, SH595 the one only a *walk* sees at all — the
+endpoint existed, the manifest named it, and the path from the entry point did not close).
+The population is taken from the registries, never listed: 11 tools, 7 resources, 4 prompts,
+28 declared routes, 11 batch ops, 10 `elsewhere` pointers. **All 71 are named from both
+entry points, and the empty gap list is the result rather than a formality** — manufacturing
+entries so the deliverable looked like P1's would have been the one dishonest thing available.
+The finding is the **depth**, which is asserted beside the list because a capability can stay
+findable and still get further away: the MCP surface sits at **depth 3** from HTTP (pack →
+manifest → `POST /mcp` → a list), the HTTP index at **depth 2** from MCP through
+`shio://manifest`, and the op vocabulary at depth 2 from HTTP because `include=ops` is a
+projection nothing names until the manifest arrives. One finding was about the walk itself and
+the comment is left in place: leaving `resources/templates/list` shut reported
+`shio://blueprint/{name}` unreachable from an entry point that had already been told where to
+look — a reachability check models the protocol or it reports its own gaps as the product's.
 **And the render sweep is measured in queries, not milliseconds (SH264).**
 `ShRenderSweepBenchmarkTest` counts Hibernate statements — a timing ceiling on a shared machine is a
 flake, and SH250's rule is that a flake is worse than a break. It prints on every run. The measured answer,

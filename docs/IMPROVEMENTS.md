@@ -316,30 +316,6 @@ it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional sh
 SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
 there has to be asserted rather than assumed.
 
-### VIII.32 Discovery has fixes and no grep (SH598)
-
-SH338 states the rule: when a review finds a design law broken, the instrument that
-finds every *other* break lands before the fixes. P1 obeyed it —
-`ShAgentP1ConformanceTest` classifies every manifest `features` key and holds the
-unreachable ones as an asserted list, naming four no task had.
-
-P2 did the opposite. Three breaks were found by hand, one per round, each fixed
-alone: a capability named by four documents and no command (SH587), an onboarding
-command that never read the manifest (SH595), a feature reachable by REST, CLI and
-console and by neither MCP list (SH596). So the honest count of P2 breaks today is
-*three that somebody happened to notice*.
-
-**The measure is computable without an agent.** Discoverability, defined as *named
-in a response already received*, is graph reachability: seed the known set with the
-entry point's response, expand by every name it contains, repeat. A capability is
-reachable at depth N or it is not reachable at all. No LLM, no tokens, no
-judgement — a sibling of `ShAgentNaiveClientBenchmarkTest` (SH340), which is
-already naive about *keys* and not about *what exists*.
-
-Assert it as P1's asserted list rather than a ceiling: the run prints how many are
-reachable and how many held, so closing one cannot quietly open another. SH597 lands
-first — the walk says *which* are unreachable, the benchmark says *what that costs*.
-
 ### VIII.33 One capability, three lists, no join (SH599)
 
 A capability in Shio is declared in three unrelated places: a boolean in the manifest's

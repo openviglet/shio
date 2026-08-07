@@ -16,10 +16,9 @@
 - 📋 **SH524** (deps: SH523) **Nothing reports a declared field that no template renders** — The lint catches a template reading a field that does not exist and not the inverse, which produced four collection types drawn as a heading and a CTA nobody could repoint. → §VIII.24
 - 📋 **SH525** (deps: SH523) **Type inference from instances exists only for a stranger's markup** — propose derives a post-type with typed fields from captured pages, and the same question about my own content has no verb, so a model is written blind and rewritten after. → §VIII.25
 - 📋 **SH553** (deps: SH545 ✅) **The context pack's sitemap says DRAFT for every page, including the live ones** — SH545 gave read and find a published field and left Node.state as the third surface with one word for two questions, because a field there moves the SH116 digest and the pack's own budget. → §VIII.30
-- 📋 **SH598** (deps: SH597 ✅) **P2 is the only law with three shipped fixes and no instrument** — P1 got a conformance test the moment a review found it broken and P2 got SH587, SH595 and SH596 one at a time, which is the order SH338 exists to forbid. → §VIII.32
-- 📋 **SH599** (deps: SH598, SH596 ✅) **Three capability registries, and nothing reconciles them** — The manifest names 57 features, the endpoint list 28 paths and MCP 11 tools with 4 resources, so a capability can land in one and be absent from another with nothing failing. → §VIII.33
+- 📋 **SH599** (deps: SH598 ✅, SH596 ✅) **Three capability registries, and nothing reconciles them** — The manifest names 57 features, the endpoint list 28 paths and MCP 11 tools with 4 resources, so a capability can land in one and be absent from another with nothing failing. → §VIII.33
 - 📋 **SH600** (deps: —) **A narrowed discovery response does not say what it dropped** — include=identity answers 200 with all 57 feature flags projected away, so a caller who asked one question is handed a manifest that answers none, and P6 covers the 4xx only. → §VIII.34
-- 📋 **SH601** (deps: SH597 ✅, SH598) **startHere is an inventory, so the one call leaves the choosing undone** — P2 promises one call replaces a session and what arrives is a list of everything, so a reader still has to map an intent onto it, which is the mapping that failed every round. → §VIII.35
+- 📋 **SH601** (deps: SH597 ✅, SH598 ✅) **startHere is an inventory, so the one call leaves the choosing undone** — P2 promises one call replaces a session and what arrives is a list of everything, so a reader still has to map an intent onto it, which is the mapping that failed every round. → §VIII.35
 
 ## Block K — Perception & verification loop
 
@@ -60,7 +59,7 @@
 - 📋 **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — No first-party package ships a theme, a layout or a binding, so applying one yields content whose design is the labelled fallback and an agent finishes the job by hand. → §XI.16
 - 📋 **SH518** (deps: SH509 ✅) **A blueprint-built site cannot be seen, because the layout generator only runs on the replication path** — apply --blueprint writes 13 authorable posts and no PageLayout or Theme, so /preview answers 400 while convert writes both. → §XVII.70
 - 📋 **SH604** (deps: SH599) **The plugin's prose enumerates the tool surface, so it is a copy that drifts the moment one ships** — Its README lists ten tools and four resources against a server carrying eleven and seven, so remember and diagnostics both shipped and the plugin never learned either. → §XI.18
-- 📋 **SH605** (deps: SH598, SH604) **Nothing proves the published artefacts alone carry the path, since every run so far had the repo beside it** — Twelve rounds read agents.md, docs/agents and a repo-local skill without noticing, so a stranger gets a surface nobody has driven without its source tree. → §XI.19
+- 📋 **SH605** (deps: SH598 ✅, SH604) **Nothing proves the published artefacts alone carry the path, since every run so far had the repo beside it** — Twelve rounds read agents.md, docs/agents and a repo-local skill without noticing, so a stranger gets a surface nobody has driven without its source tree. → §XI.19
 
 ## Block L — Agent safety & human-in-the-loop
 
