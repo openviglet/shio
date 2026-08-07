@@ -2040,6 +2040,55 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
+### XVII.84 One candidate generator, before anything stores a slash (SH583)
+
+Measured at `077b115`: thirteen post-`furl` lookups across seven classes, every one
+comparing by exact equality through `findByShSite_IdAndFurlAndState`. The tolerance
+meant to bridge `/shio` and `/shio/` is not one function — it is
+`ShAddressResolver:364`'s private `furlCandidates`, `ShAgentBatchService:1946`'s private
+duplicate of it, `ShCdaService:472`'s `urlCandidates` under a third name, and
+`ShPageRenderService.canonicalSlashRedirect`, which is SH467's own shipped route half.
+
+They agree today by accident, because nothing is ever stored with a trailing slash so
+all four are asked the same question and give the same answer. SH467 stores one. From
+that commit they have to agree **on purpose**, and the failure mode is the worst kind: a
+page that renders in `/preview`, answers 404 on the CDA and verifies clean, because
+three readers disagreed about which spellings match one stored value.
+
+`ShAddress.normalizePath`'s own javadoc predicted it — *a second normalization written
+next to either of them would eventually disagree with this one, and the symptom would be
+a lint that reports a defect that is not there*. There are three, and the lint it names
+does not exist.
+
+So this is the SH322 order and it is not optional here: one generator, every post-`furl`
+comparison routed through it, and a lint that fails on the next bypass. Folder and site
+`furl`s are a different namespace and belong in the exclusions, named rather than
+assumed. Design: `docs/specs/SH467-canonical-slash.md`.
+
+### XVII.85 A bound the run chose, reported as damage (SH584)
+
+`shio clone --depth 2` over `openviglet.github.io` recorded `unfollowed: 22` — the model
+catalogue's vendor pages, one level past the ceiling, each with the path and its
+reference count. That is the crawl being honest about its own bound, and it is written
+down before anything is converted.
+
+Twelve minutes and three commands later, `shio verify` exits 1 with **22
+`page-link-broken` errors**, one per unfollowed path, on a replica whose only other
+error is SH467's. Reading the run, twenty-three errors look like a broken conversion. It
+took opening `source-inventory.json` and matching the lists one to one to learn that
+twenty-two of them are a flag I chose.
+
+The instance cannot know this — it has never seen the capture — so the phase that can
+say it is the one that already holds both halves. `convert` reads the inventory and
+writes the pages; it is one join away from *22 link(s) on the pages being converted
+point at pages this crawl did not follow, so they will verify as broken: raise
+`--depth`, or accept them with `shio verify --accept`*.
+
+This is SH557's shape and its second instance, which is what makes it worth a rule
+rather than a fix: a fact the chain establishes at phase one and states at phase five,
+in the vocabulary of damage. SH557 was a source trait; this is a bound the operator
+chose. Both are knowable early and both currently arrive as a red gate.
+
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against

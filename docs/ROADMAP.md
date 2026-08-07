@@ -98,11 +98,13 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- ⏳ **SH467** (deps: SH385 ✅) **The mirrored canonical slash breaks every document-relative reference on a directory page** — The route half answers both forms now, but the grammar still collapses the declared slash, so the replica serves /shio as canonical and 301s /shio/ — the source does the opposite. → §XVII.44
+- ⏳ **SH467** (deps: SH385 ✅, SH583) **The mirrored canonical slash breaks every document-relative reference on a directory page** — The route half answers both forms, but the grammar still collapses the declared slash, so a page served without it resolves a relative ./y.js one level too high. → §XVII.44
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
+- 📋 **SH583** (deps: —) **Five places decide what a trailing slash means and none of them is shared** — Two private furlCandidates, a third urlCandidates and a bespoke route rule agree only because nothing is ever stored with a trailing slash, which is what SH467 is about to change. → §XVII.84
+- 📋 **SH584** (deps: SH557 ✅) **The capture records a link it chose not to follow and the gate reports it as a surprise at the end** — A crawl left 22 pages unfollowed and verify answered with 22 page-link-broken errors, so a bound the run chose reads as damage the replica caused. → §XVII.85
 
 ## Block F — Market positioning
 

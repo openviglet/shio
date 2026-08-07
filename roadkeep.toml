@@ -177,8 +177,28 @@ priority = [
   # was carried as a 301 cost and the measurement makes it a correctness defect, because the
   # mirrored slash means `./app/main.js` resolves to `/model-catalog/app/main.js` at the source
   # and `/app/main.js` at the replica. It is the only reference error on that run.
-  "SH582",
+  #
+  # SH582, SH580 and SH581 shipped, and the retest says all three landed: the proposal now
+  # prints what an acceptance would keep (`9 candidate(s) would carry less than 50% of their
+  # own text`) and what it declines and why (`3 candidate(s) would leave a REQUIRED field
+  # empty … --accept all declines these and leaves the block verbatim`), and `diff` grew a
+  # `head:` line for the references a layout owns. Both gates are green: conformance 5 of 5,
+  # 1182 of 1183.
+  #
+  # What is left of SH467 is now a design that is settled and unbuilt, written up in
+  # `docs/specs/SH467-canonical-slash.md` because it was scoped twice and the second pass
+  # reached a different answer. Neither option that was on the table is right — a fourth
+  # component on `ShAddress` splits the identity that `normalizePath` exists to keep single,
+  # and `data.furl` is `ShSite`'s, not a post's, with SH168 refusing an undeclared post key.
+  # The spelling is a write-shaped field like `folder`, and SH348's `translationOf` is the
+  # precedent for adding one. **SH583 goes first and that is the whole point of it**: five
+  # places decide what a trailing slash means (two duplicate private `furlCandidates`, a third
+  # `urlCandidates`, and the render route's own rule), and they agree today only because
+  # nothing is ever stored with one. SH584 rides at the back — a crawl's own `unfollowed: 22`
+  # came back as 22 red `page-link-broken`, which is SH557's shape a second time.
+  "SH583",
   "SH467",
+  "SH584",
   "SH580",
   "SH581",
   "SH528",
