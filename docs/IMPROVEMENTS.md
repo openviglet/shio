@@ -547,6 +547,31 @@ It is also the honest end of my part in this. I have been the verification for f
 rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
 me looking.
 
+### IX.41 The judge whose two sides are not the same shape (SH554)
+
+`diff` claims in its own header comment that both sides come from `scanPage`, so nothing
+is derived. They do not. The declared side reads an inventory row shaped `links:
+{internal, external}`; the produced side reads a live scan whose `links` is an array.
+`FACTS` then reads `page.links?.internal ?? page.links?.length` and
+`page.links?.external`, so on the produced side internal falls back to the **total** and
+external is `undefined`, counted as zero.
+
+Measured on a fidelity replica of vilt-group.com: the served page carries nine absolute
+external links, identical to the nine the source serves, and `diff` reports `external
+links: 9 → 0` on that page and on every other. The internal count reads 67 against a
+declared 44, and 67 is exactly the total number of `href` attributes on the page. Every
+replica therefore reports a loss it did not suffer and hides an internal-link loss
+behind an apparent gain.
+
+The cost is not the wrong number. SH548 put this command in the CI gate on the argument
+that it is the only instrument holding an expectation, which was right, and the
+conformance suite is now red at HEAD on its own fixture — four facts lost across two
+pages that lost nothing. An instrument that cries wolf in the gate is worse than one
+outside it, because the next red run is the one nobody reads.
+
+The assertion is one page scanned both ways with the same counts asserted equal, which
+is the invariant the comment already states.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1375,6 +1400,50 @@ intentional in the content rather than in a suppression file, at the cost of one
 field on a system post-type. The second is probably right for the same reason SH385 put
 a redirect's source on the post rather than in a side table.
 
+### XV.33 A binding the lint does not know how to read (SH558)
+
+`unused-theme` asks which `Theme` posts no layout names, and it answers by reading the
+`THEME` field. Since SH549 a generated layout names one theme and reaches the other
+through `{{#getRelation "/theme/captured"}}`, so the captured theme has no binding and
+is reported unused — on a site where it is rendering, measurably, at a megabyte a page.
+
+The lint is not wrong about what it read. It is wrong about what a reference is, in the
+same way SH516 was: it reads the tree and the page is what decides. `getRelation` is a
+first-class helper with a literal address argument, so the reference is present in the
+template source and static — this is not a case that needs the page rendered to see.
+
+Two costs, and the second is the one that matters. The immediate one is a warning that
+cannot be cleared, on the file every conversion writes, which is how a warning list
+stops being read. The wider one is that the reverse question — *is this theme reachable*
+— now has a wrong answer, so a future cleanup that trusts it would delete a theme that
+eleven pages are using.
+
+The repair is that the rule reads the same reference set the renderer resolves. The
+assertion is a layout that names one theme and relates another, asserted to leave
+neither unused.
+
+### XV.34 The label that stopped describing what it labels (SH559)
+
+The preview banner ends with `layout <site> (fidelity)`. On a site converted with
+`--accept all`, whose eleven pages hold section lists and whose home page carries
+sixteen annotated fields, that string is the only statement anywhere about how the page
+was produced, and it names the other mode.
+
+The name was accurate when one layout served one mode. SH464 then made a single
+generated layout serve all three — verbatim, mixed and authorable — and the title kept
+the word it was born with. Nothing downstream reads it, which is why it survived; the
+only reader is a person or an agent looking at the page.
+
+It cost a wrong inference in this work. Reading `layout R6Aut (fidelity)` beside a page
+that had lost its styling, the first hypothesis was that an authorable conversion had
+been handed a fidelity layout, and the real cause — a site-wide theme switch — took a
+detour to find. A label that is wrong is worse than no label for exactly this reason: it
+is evidence, and it points somewhere.
+
+Either the title stops claiming a mode, or the banner reports the mode from what the
+page actually holds, which it can see. The second is more useful and barely more work:
+it already reads the post to draw the banner.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
@@ -1741,6 +1810,77 @@ stays a declaration of content.
 
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
+
+### XVII.76 One brace between a stylesheet and a browser (SH555)
+
+SH549 made the theme a per-page choice, and the mechanism is a second `<style>` in the
+generated layout:
+
+    <style>{{theme.css}}</style>
+    {{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}
+
+The first is the layout's named theme and renders raw. The second is a plain field read
+inside a relation block, so Handlebars escapes it. The stored `Theme` post is clean —
+1,061,481 characters, zero entities — and the page it produces carries 378, including
+`src:url(&quot;/assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2&quot;)`.
+
+What follows is not cosmetic. `verify` reports ten `page-reference-broken` errors on the
+one verbatim page of an otherwise clean site, each naming a path beginning with a
+literal `&quot;`, and the gate exits 1. Every `@font-face`, every quoted `content:` and
+every quoted `url()` in a captured stylesheet is affected, so a mixed conversion's
+verbatim pages lose their webfonts and their background images while rendering 200 with
+a megabyte of CSS attached.
+
+The fidelity path is unaffected and that is the useful contrast: it emits the same theme
+through the layout's own `theme.css`, and the served page carries sixty clean `url()`
+and no entity at all. So the defect is not in the capture, the store or the renderer's
+escaping rule — it is that one of the two emissions was written as a field read.
+
+### XVII.77 Two class vocabularies, one of them styled (SH556)
+
+`Theme (Shio)` defines thirteen selectors — `shio-actions`, `shio-body`, `shio-button`,
+`shio-card`, `shio-container`, `shio-grid`, `shio-heading`, `shio-intro`, `shio-media`,
+`shio-page`, `shio-page-title`, `shio-stack`, `shio-subheading` — which is SH508's role
+list and is a coherent thing to style.
+
+The section templates in `convert.mjs` emit those and then sixteen more: `shio-section`,
+`shio-section-SectionFeatureGrid`, `shio-features`, `shio-feature`,
+`shio-feature-title`, `shio-feature-body`, `shio-questions`, `shio-question`,
+`shio-question-text`, `shio-answer`, `shio-quotes`, `shio-quote`, `shio-quote-text`,
+`shio-quote-avatar`, `shio-quote-author`, `shio-quote-role`. None is defined anywhere.
+
+So SH521's lint fires on all eleven authorable pages of a converted site, and it is
+right: *this page draws with 5 class name(s) its own stylesheet does not define, and it
+loads no other*. The site is 8 KB a page instead of a megabyte, which SH549 achieved,
+and the classes that carry the shape of a feature grid still resolve to nothing.
+
+Which list should move is a real choice and not obvious. The templates could emit only
+roles, which loses the per-type hook a curator's own CSS would want; or the theme could
+grow the sixteen, which makes it a component stylesheet rather than a role one. What is
+not defensible is shipping both and letting the lint report the gap on every page.
+
+### XVII.78 The pages a path-addressed replica cannot hold (SH557)
+
+vilt-group.com paginates case studies as `/en/case-study?p=2` through `?p=24`, in five
+locales. The crawl followed them and recorded them as pages, `convert` wrote 204
+objects, and the replica serves none of them: a post is addressed by path, and a query
+string is not part of one.
+
+`shio diff` is where this surfaces — *107 page(s) compared, 91 the replica does not
+serve* — and it surfaces as a loss, which is the wrong shape for it. A loss is something
+that should have arrived and did not. This is a source trait the target cannot
+represent, and it was knowable at capture: the inventory holds the paths, and 91 of them
+carry a `?`.
+
+The cost of learning it late is that everything in between is wasted and looks fine.
+`clone` reported 198 pages and printed six notes, none of them this. `propose` counted
+candidates over pages that will never exist. `convert` wrote and published them. Only
+the last command in the chain says anything, and it says it in the vocabulary of damage.
+
+Two things would fix it independently, and both are cheap: the capture counts
+query-string pages and names them in a note, and `diff` separates *the replica cannot
+address this* from *the replica lost this*. The second matters more, because the first
+is advice and the second is what the gate reads.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 

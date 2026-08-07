@@ -104,16 +104,28 @@ priority = [
   # overlay text), then SH551's dropped FAQ labels, then SH548 which puts `diff` in the gate,
   # and last SH547, the cheapest and the least harmful. SH543 rides along: a 200-page render pass
   # that prints nothing for minutes was mistaken for a hang by the human watching this run.
-  "SH544",
-  "SH545",
-  "SH546",
-  "SH550",
-  "SH549",
-  "SH552",
-  "SH551",
-  "SH548",
-  "SH547",
-  "SH543",
+  # The seventh run is spent: ten tasks, ten commits, and it did what it was ordered to do —
+  # a 198-page conversion that ended in a 500 now writes 204 objects, the CLI publishes, an
+  # authorable page went from 1,066,770 bytes to 8,204 with sixteen annotated fields instead
+  # of ten, and `verify` exits 1 on a site it used to pass.
+  #
+  # The eighth run, on instruction (2026-08-07). It leads with SH554 for a reason the sixth
+  # run's own argument makes: SH548 put `diff` in the gate because it is the only instrument
+  # holding an expectation, and the two sides of that comparison are not the same shape, so
+  # it reports `external links: 9 → 0` on a page carrying all nine and the conformance suite
+  # is red at HEAD on its own fixture. Every judgement below is read through it. Then the two
+  # SH549 left behind, worst first: SH555's escaped stylesheet (ten broken references on the
+  # one verbatim page, a one-brace defect) and SH556's two class vocabularies (thirteen roles
+  # styled, sixteen drawn, every authorable page unstyled). Then SH557, which is not a defect
+  # in any command but a source trait no command names until the last one calls it damage.
+  # SH558 and SH559 last: a lint that cannot read a `getRelation` binding, and a banner that
+  # says `fidelity` over an authorable page — both cheap, both cost a wrong inference here.
+  "SH554",
+  "SH555",
+  "SH556",
+  "SH557",
+  "SH558",
+  "SH559",
   "SH528",
   "SH529",
   "SH523",

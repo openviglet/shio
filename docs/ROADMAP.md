@@ -30,6 +30,7 @@
 - ⏳ **SH522** (deps: SH521 ✅) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
 - 📋 **SH528** (deps: SH527 ✅) **The fixture cannot exhibit the traits that broke every real replica** — It serves a page, a stylesheet, a font, an image and a favicon, so a query string, a relative depth, an overlay, an entity, an empty file and a script-made canvas are unreproducible offline. → §IX.37
 - 📋 **SH529** (deps: SH528) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38
+- 📋 **SH554** (deps: SH548 ✅) **The instrument now in the gate reports a loss on every page that has lost nothing** — diff reads links.external on the produced side where the scan supplies an array, so every page reports its external links gone and its internal links as the total, and the suite is red at HEAD. → §IX.41
 
 ## Block I — Content as files (local-first authoring)
 
@@ -84,6 +85,8 @@
 - 📋 **SH419** (deps: SH384 ✅) **A listing loads the whole folder to render ten rows** — Measured at 213 rows per 10 rendered: limit and page are an in-memory window over a whole-folder read, so a 5000-post archive pays 5000 rows for page one. → §XV.30
 - 📋 **SH420** (deps: SH384 ✅) **A nested listing clobbers the outer block's @last** — Measured: an outer row reading {{#if @last}} after an inner query renders twice, because both blocks write @index and @last into one shared data scope. → §XV.31
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
+- 📋 **SH558** (deps: SH549 ✅) **A theme a layout renders through getRelation is reported as unused** — The rule reads the THEME binding only, so the captured theme SH549 pulls in for a verbatim page is called unused while a megabyte of it is on the page. → §XV.33
+- 📋 **SH559** (deps: SH549 ✅) **The preview banner names the layout that rendered and the name no longer says which mode it is** — An authorable site whose pages are sections is banner-labelled fidelity, which is the one line that claims to say how the page was produced. → §XV.34
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
@@ -91,6 +94,9 @@
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
+- 📋 **SH555** (deps: SH549 ✅) **The captured stylesheet reaches a verbatim page HTML-escaped, so the browser cannot parse it** — The layout pulls that theme through getRelation and emits it with a double brace, so every url() arrives entity-escaped and verify counts ten broken references. → §XVII.76
+- 📋 **SH556** (deps: SH549 ✅) **The vocabulary theme and the section templates were written against different class names** — The theme defines thirteen role classes and the templates draw sixteen more, so every authorable page is page-unstyled including the ones whose only section renders correctly. → §XVII.77
+- 📋 **SH557** (deps: SH548 ✅) **A source whose pages differ only by a query string cannot be replicated and nothing says so until the end** — 91 of 107 captured pages were query strings the replica cannot address, reported by diff as pages it serves nothing at rather than by the capture as a limit. → §XVII.78
 
 ## Block F — Market positioning
 
