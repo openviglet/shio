@@ -2039,6 +2039,32 @@ differ only by the slash". Or a filename convention, cheaper to read and worse t
 The first deliverable either way is SH583's: count the `normalizeUrl` readers that must
 agree, because they were written to be interchangeable.
 
+### XVII.87 A replica whose links go home (SH586)
+
+`https://openviglet.github.io/model-catalog/models/azure/` writes three of its own links
+as absolute URLs on its own origin. The replica serves them verbatim, so clicking *model
+catalog* on the copy leaves for the original. Measured across the whole replica:
+twenty-two pages, exactly three each, and the pattern is identical on every one —
+`internal links: 9 → 6 (-3)` beside `external links: 3 → 6 (+3)`.
+
+The total is conserved, which is what makes it invisible. Nothing is missing; three
+links per page changed side. `shio verify` exits **0** on that replica — check 2 of
+`SKILL.md`'s seven, *no href carries the source's base*, is a rule a person runs and not
+one the gate holds. SH466 rebases root-relative hrefs at render and deliberately leaves
+an absolute one alone, which is right for a genuinely off-site link and wrong for the
+one case where the absolute URL **is** the source's own origin — a distinction the
+render knows, because the capture recorded what that origin was.
+
+SH564 already holds the field version of this: `SectionHero.ctaHref` carrying
+`https://awkward.test/docs/guia`, red in the corpus. This is the verbatim-markup version
+on the fidelity path, which is the mode whose whole claim is that the replica is the
+site.
+
+Two halves, and the second is why it went unseen for eleven rounds. Rebase an absolute
+href whose origin is the capture's; and have `diff` name the flip — *3 link(s) now point
+at the source* rather than three lost and three gained, which reads as two unrelated
+numbers.
+
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against

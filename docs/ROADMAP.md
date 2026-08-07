@@ -103,6 +103,7 @@
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
 - 📋 **SH585** (deps: SH467 ✅) **A pull cannot write the canonical slash SH467 stores, so the tree stops being a complete description of the site** — A post's file path in shio/content is its URL, so /x and /x/ are one filename and normalizeUrl drops the slash on both read and write. → §XVII.86
+- 📋 **SH586** (deps: SH467 ✅) **A source's own absolute links are served verbatim, so every page of the replica links back to the site it copied** — Twenty-two fidelity pages each carry three hrefs on the source's origin, reported by diff as three internal lost and three external gained while verify exits 0. → §XVII.87
 
 ## Block F — Market positioning
 

@@ -196,6 +196,27 @@ priority = [
   # `urlCandidates`, and the render route's own rule), and they agree today only because
   # nothing is ever stored with one. SH584 rides at the back — a crawl's own `unfollowed: 22`
   # came back as 22 red `page-link-broken`, which is SH557's shape a second time.
+  #
+  # That run is spent, and the retest is the strongest reading this work has produced: the
+  # replica now mirrors the source's canonical exactly (`/model-catalog/` 200 and
+  # `/model-catalog` 301, both sides), `shio verify` exits **0 with 0 errors** over 51 objects
+  # on a 25-page replica — the first fully green verify on a real replicated site — and the
+  # 885 links a `--depth 3` crawl left unfollowed are stated by `convert` before the gate ever
+  # sees them. SH583's one generator held: nothing disagreed about a slash after one was
+  # finally stored.
+  #
+  # The eleventh run, on instruction (2026-08-07), and it is one task, because the round found
+  # one thing. With every gate green, `diff` still exits 1, and the shape is the same on
+  # twenty-two of twenty-five pages: `internal links -3` beside `external links +3`. The total
+  # is conserved, so nothing is lost and three links per page **changed side** — the source
+  # writes three of its own links as absolute URLs on its own origin, and the replica serves
+  # them verbatim. Clicking one leaves for the site that was copied. That is SH586, and the
+  # reason it is first and alone is that it survived eleven rounds of a checklist whose second
+  # of seven checks is *no href carries the source's base*: `verify` does not hold that rule,
+  # and `diff` reports it as two numbers that read as unrelated. SH585 follows it — the
+  # projection has no filename for a trailing slash, which is why SH467 is honoured on create
+  # only.
+  "SH586",
   "SH585",
   "SH528",
   "SH529",
