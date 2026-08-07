@@ -133,14 +133,13 @@ priority = [
   # them, so nothing below was worth fixing until a red run obliges something. **It shipped
   # first, and it changed the premise of the rest of this queue**: one of those two reds was a
   # reader blind to `shio-site/scripts` rather than a defect, so the ordering argument now
-  # rests on one real red — SH577's — which is the next line and is the ledger's only declared
-  # exception (`red-suites.json`, expiring 2026-08-14). Then SH577 and
-  # SH578, the two halves of the judge — one standard applied to three modes, and the one fact
+  # rested on one real red — SH577's — which shipped second and closed it: `diff` reads the mode
+  # off the plan, the conformance suite is green 5 of 5, and `red-suites.json` is empty again.
+  # SH578 is the other half of the judge — the one fact
   # where a loss hides inside a gain. Then the two the corpus holds as debt: SH575's missing
   # navigation, which is every authorable conversion and not one source, and SH576's missing
   # home page. SH555 rides along and is not a re-open: it shipped on the render side and the
   # CLI still writes `{{CSS}}`, which is why the corpus holds a red case under a closed id.
-  "SH577",
   "SH578",
   "SH575",
   "SH576",

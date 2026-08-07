@@ -178,22 +178,28 @@ test("SH579: every exception declared in red-suites.json is one this rule allows
   );
 });
 
-test("SH579: the rules fire — every one of them, on an entry built to break it", async () => {
-  const where = await world();
+test("SH579: the rules fire — every one of them, on an entry built to break it", () => {
+  // A world of four lines rather than the real backlog, because the real one moves: an id that is
+  // open when this is written is shipped a task later, and a rules test that went red for *that*
+  // would be one more red nobody can act on. The real files are the previous test's subject.
+  const where = {
+    roadmap: "- 📋 **SH901** (deps: SH900 ✅) **Still open** — the entry an exception may name.\n",
+    changelog: "- **SH902** — already shipped, so an exception naming it has outlived its reason.\n",
+    today: "2026-08-10",
+  };
   const ok = {
     suite: "conformance",
     test: "capture over a socket → convert into the instance → pull it back → gate it",
-    task: "SH577",
+    task: "SH901",
     declared: "2026-08-07",
     expires: "2026-08-14",
     why: "x".repeat(MIN_WHY),
   };
-  // The premise: without it, every case below would pass for the wrong reason. Dates are fixed
-  // rather than derived from `today`, so this asserts against a world where SH577 is still open.
-  assert.deepEqual(problems(ok, { ...where, today: "2026-08-10" }), []);
+  // The premise: without it, every case below would pass for the wrong reason.
+  assert.deepEqual(problems(ok, where), []);
 
   const fires = (patch, expected) => {
-    const found = problems({ ...ok, ...patch }, { ...where, today: "2026-08-10" });
+    const found = problems({ ...ok, ...patch }, where);
     assert.ok(
       found.some((m) => m.includes(expected)),
       `${JSON.stringify(patch)} should have been refused for ${expected}; got ${JSON.stringify(found)}`,
@@ -202,15 +208,15 @@ test("SH579: the rules fire — every one of them, on an entry built to break it
 
   fires({ suite: "the one on my machine" }, "exception against nothing");
   fires({ why: undefined }, "`why` is required");
-  fires({ task: "577" }, "as SH<n>");
+  fires({ task: "901" }, "as SH<n>");
   fires({ expires: "next friday" }, "`expires` is YYYY-MM-DD");
   fires({ expires: "2026-08-06" }, "must be after");
   fires({ expires: "2026-09-30" }, "at most 14 days");
   fires({ why: "flaky" }, "the next person's only way to judge");
   fires({ declared: "2026-07-01", expires: "2026-07-08" }, "expired on 2026-07-08");
   // The two halves of "tied to open work", which fail identically and for opposite reasons.
-  fires({ task: "SH99999" }, "not an open task");
-  fires({ task: "SH527" }, "SH527 is shipped");
+  fires({ task: "SH999" }, "not an open task");
+  fires({ task: "SH902" }, "SH902 is shipped");
 });
 
 test("SH579: the ledger and the doc that explains it can each find the other", async () => {

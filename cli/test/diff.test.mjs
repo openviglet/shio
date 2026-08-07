@@ -327,3 +327,135 @@ test("SH522: no capture is a refusal naming the command that writes one", async 
   await assert.rejects(() => diff.run({ site: "Acme" }, [], ctx),
     /no capture at[\s\S]*shio clone/);
 });
+
+/*
+ * SH577 — one standard, three modes.
+ *
+ * The gate asserted `lost === 0` on a chain that runs `propose --accept all`, so it held an
+ * authorable page to the fidelity claim and was red at HEAD for two rounds over chrome the section
+ * vocabulary exists to drop. The standard is unchanged — an artefact is judged against what its
+ * mode claims — and the mode is read off what the chain already wrote down.
+ */
+
+/** The two pages of the fixture shape: a nav, a hero and a footer, minus what a conversion keeps. */
+const AUTHORABLE = `<html lang="en"><head><title>Home</title></head><body>
+  <section class="shio-section"><h1>Acme</h1>
+    <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p></section>
+  </body></html>`;
+
+/** A ctx that also carries the two artefacts the chain writes: the plan and the proposal. */
+function ctxWithPlan({ served, accepted = [], composition = [], proposal = true }) {
+  const ctx = ctxWith({ served });
+  const inner = ctx.fs.readFile;
+  const files = new Map([
+    [norm("/repo/shio/conversion-plan.json"), JSON.stringify({ accepted })],
+    ...(proposal
+      ? [[norm("/repo/shio/.shio/conversion-proposal.json"), JSON.stringify({ pages: composition })]]
+      : []),
+  ]);
+  ctx.fs.readFile = async (at, encoding) => files.get(norm(at)) ?? inner(at, encoding);
+  return ctx;
+}
+
+test("SH577: an authorable page's chrome is not a loss, and the count is still on the report",
+  async () => {
+    const ctx = ctxWithPlan({
+      served: { "/": AUTHORABLE },
+      accepted: [{ block: "b1", type: "SectionHero" }],
+      composition: [{ path: "/", blocks: ["b1"] }],
+    });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    assert.equal(result.exitCode, 0, "this is the red the gate carried for two rounds: the source's "
+      + "nav and footer links and its hero image, on a page composed from the vocabulary that "
+      + "exists to drop them");
+    assert.equal(result.lost, 0);
+    assert.equal(result.byDesign, 2, "internal links and assets — counted, not discarded");
+    assert.equal(result.pages[0].mode, "authorable");
+    // The number stays visible, because it is the number SH575's missing navigation was read off. A
+    // fact removed from the report is a fact nobody can find.
+    assert.match(ctx.out.text, /internal links: 3 → 0.*by design/);
+    assert.match(ctx.out.text, /the mode does not claim/);
+  });
+
+test("SH577: and its prose is still a loss, because the content is what every mode claims",
+  async () => {
+    const ctx = ctxWithPlan({
+      served: { "/": '<html><head><title>Home</title></head><body><h1>Acme</h1></body></html>' },
+      accepted: [{ block: "b1", type: "SectionHero" }],
+      composition: [{ path: "/", blocks: ["b1"] }],
+    });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    assert.equal(result.exitCode, 1, "an authorable page that dropped its body copy is damage in "
+      + "every mode — narrowing the claim to the content is not narrowing it to nothing");
+    assert.equal(result.pages[0].text.lost, true);
+  });
+
+test("SH577: the mode is per page, because a page is not one mode (SH520)", async () => {
+  const ctx = ctxWithPlan({
+    served: { "/": AUTHORABLE, "/about": AUTHORABLE },
+    accepted: [{ block: "b1", type: "SectionHero" }],
+    // `/about` holds a block nobody accepted, so `convert` keeps its body verbatim — which means
+    // the capture's counts ARE a claim about it, and a whole-run mode would have excused them.
+    composition: [{ path: "/", blocks: ["b1"] }, { path: "/about", blocks: ["b9"] }],
+    // A second declared page, so the inventory has one to compare.
+  });
+  ctx.fs.readFile = ((inner) => async (at, encoding) => {
+    if (norm(at).endsWith(norm(INVENTORY_FILE))) {
+      const one = JSON.parse(await inner(at, encoding));
+      return JSON.stringify({ ...one, pages: [one.pages[0], { ...one.pages[0], path: "/about" }] });
+    }
+    return inner(at, encoding);
+  })(ctx.fs.readFile);
+
+  const result = await diff.run({ site: "Acme" }, [], ctx);
+
+  assert.deepEqual(result.modes, { fidelity: 1, mixed: 0, authorable: 1 });
+  assert.equal(result.lost, 2, "the fidelity page is still judged on every fact — its links and "
+    + "its image really are gone, and nothing in the plan says they were meant to be");
+  assert.equal(result.exitCode, 1);
+});
+
+test("SH577: --mode wins over the plan, for a replica whose plan is not in this directory",
+  async () => {
+    const ctx = ctxWithPlan({
+      served: { "/": AUTHORABLE },
+      accepted: [{ block: "b1", type: "SectionHero" }],
+      composition: [{ path: "/", blocks: ["b1"] }],
+    });
+
+    const result = await diff.run({ site: "Acme", mode: "fidelity" }, [], ctx);
+
+    assert.equal(result.exitCode, 1, "the escape hatch is the strict direction, so it can never "
+      + "hide a loss");
+    assert.equal(result.byDesign, 0);
+  });
+
+test("SH577: a mode this cannot judge is refused by name, headless included", async () => {
+  await assert.rejects(
+    () => diff.run({ site: "Acme", mode: "headless" }, [], ctxWith()),
+    /not a conversion mode[\s\S]*allowed: fidelity, mixed, authorable[\s\S]*another origin/,
+    "the Next.js front end is a real scenario and a real thing this command cannot reach, so it is "
+      + "named rather than left out of the allowed list with no explanation (P6)",
+  );
+  await assert.rejects(
+    () => diff.run({ site: "Acme", mode: "strict" }, [], ctxWith()),
+    /allowed: fidelity, mixed, authorable/,
+  );
+});
+
+test("SH577: no plan on disk is fidelity, which is what this command was before it could tell",
+  async () => {
+    const ctx = ctxWith({ served: { "/": AUTHORABLE } });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    assert.equal(result.exitCode, 1, "an empty plan means nothing was accepted, so every captured "
+      + "fact is a claim — read from the plan rather than assumed, and identical to the old rule");
+    assert.equal(result.pages[0].mode, "fidelity");
+    assert.match(ctx.out.text, /internal links: 3 → 0 {2}\(-3\)$/m,
+      "and no by-design note, because there is nothing to explain away");
+  });

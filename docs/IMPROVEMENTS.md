@@ -771,28 +771,6 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
-### IX.50 One standard applied to three modes (SH577)
-
-`shio diff` compares a replica with the capture that declared it, which is exactly the
-question fidelity answers: every fact still there, and the bar is 0.00%. It is not the
-question an authorable conversion answers. Composing a page out of sections drops the
-source's nav, its favicon link and its stylesheet tag by design — that is what the
-vocabulary is for.
-
-The conformance chain accepts its candidates and then asserts `comparison.lost === 0`.
-On the fixture that is `internal links: 2 → 1` and `assets: 3 → 0` per page, four facts
-across two pages, and the suite has now been red at HEAD for two consecutive rounds.
-SH554 fixed one half of the count and the remainder is not a counting defect: those
-facts really are gone, and an authorable page is not supposed to have them.
-
-So the gate is asking the wrong question of the right command. Either the chain runs the
-fidelity mode where `lost === 0` is the claim, or `diff` learns the mode and judges an
-authorable page on what it should keep — the content — rather than on the chrome.
-
-The cost of leaving it is the one SH554's own section states: an instrument that cries
-wolf in the gate is worse than one outside it. Two rounds is already long enough that
-the red run stopped being read, and a real loss inside it would not have been noticed.
-
 ### IX.51 The one fact where a loss can hide inside a gain (SH578)
 
 SH554 split the two sides of `diff` through one function so a link stopped being counted

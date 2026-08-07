@@ -408,6 +408,37 @@ the fixture makes explicit: a replica that kept the source's *absolute same-host
 serving a link that leaves the site, so counting that as an internal link lost is the correct
 reading and not a regression of this fix.
 
+**One standard, three modes — `--mode` (SH577).** SH554 fixed one half of the count and the gate
+stayed red for two more rounds, because the remainder was not a counting defect: those facts really
+were gone, and **an authorable page is not supposed to have them.** Composing a page out of the SH95
+vocabulary drops the source's nav, its favicon link and its stylesheet tag by design, the captured
+theme is deliberately not on it (SH510), and only what a reviewer *accepted* is composed at all
+(SH520). The chain runs `propose --accept all` and then asserted `lost === 0`, so the gate was
+asking the fidelity question of an authorable replica — the shape SH554's own paragraph warns
+about, one round later and in the other direction.
+
+The standard does not change: **an artefact is judged against what its mode claims.** What changes
+is the claim. `MODES` in `diff.mjs` declares three — `fidelity` (nothing accepted on this page;
+every captured fact is a claim), `mixed` and `authorable` — and each fact in `FACTS` carries
+`verbatimOnly` with the reason beside it. What **every** mode claims is *the content*: the
+proportional text floor, and that the route serves the page at all. So an authorable page that
+dropped its body copy still exits 1, and one that dropped the source's nav does not.
+
+Three things about the shape, each of which is the defect it avoids:
+
+- **The mode is read, never inferred.** It comes from `shio/conversion-plan.json` (which blocks a
+  reviewer accepted) joined with the proposal's composition (which blocks each page is made of) —
+  the same join `composePages` does in `convert`. Deciding it from the served bytes would be the
+  second opinion SH522's design exists to refuse.
+- **Per page, because a page is not one mode (SH520).** Accepting one block keeps the rest of the
+  page verbatim, so a run is routinely a mix; a whole-run mode would hold a fidelity page to the
+  authorable standard, which is this same defect mirrored.
+- **A by-design shortfall is reclassified, never removed.** It is counted (`byDesign`), printed with
+  its reason (`internal links: 16 → 0 by design — …`) and named on the headline. That line is how
+  SH575's missing navigation was found, and a fact dropped from the report is a fact nobody can
+  find. `--mode fidelity` forces the strict reading; `headless` is refused by name, since those
+  pages are served from an origin this command never asks.
+
 **Baking content is right, baking machinery is not (SH517).** The source has
 `<div id="particles"></div>` — empty, filled at runtime by a particles library — and the replica had
 `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas width="1480"

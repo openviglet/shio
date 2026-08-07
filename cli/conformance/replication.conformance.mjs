@@ -315,9 +315,33 @@ describe("SH448 conformance: replication, from a served source to an installable
     assert.equal(
       comparison.lost,
       0,
-      `SH548: every fact the capture declared is still on the pages the replica serves. This is the `
-        + `only check here that can fail on a page that renders, returns 200 and has lost most of `
+      `SH548: every fact the capture declared **and this page's mode claims** is still on the pages `
+        + `the replica serves. This is the only check here that can fail on a page that renders, `
+        + `returns 200 and has lost most of `
         + `itself: ${JSON.stringify(comparison.pages?.filter((page) => page.lost) ?? [])}`,
+    );
+
+    // SH577 — and the mode it applied, because the line above passing for the wrong reason is
+    // exactly what this chain did for two rounds in the other direction. Every block on both pages
+    // was accepted above, so both are authorable, and `lost === 0` is a statement about the content
+    // rather than a claim the source's chrome survived. Asserting the mode is what stops a future
+    // regression that judges an authorable page as fidelity — or one that quietly excuses a
+    // fidelity page — from reading as this same green line.
+    assert.deepEqual(
+      comparison.modes,
+      { fidelity: 0, mixed: 0, authorable: 2 },
+      "SH577: the mode is read off the plan and the proposal — the two artefacts this chain has "
+        + "already written — and not from the served bytes, which would be the second opinion "
+        + `SH522's whole design refuses. Pages: ${JSON.stringify(comparison.pages?.map(
+          (page) => [page.path, page.mode]) ?? [])}`,
+    );
+    assert.ok(
+      comparison.byDesign > 0,
+      "SH577: and the chrome the vocabulary dropped is still COUNTED, not discarded. This suite's "
+        + "fixture loses the source's `/about` link and all three of its assets on an authorable "
+        + "page, and a comparison reporting zero of both would mean the facts had been removed from "
+        + "the report rather than reclassified — which is how SH575's missing navigation would have "
+        + `become invisible. Reported: ${JSON.stringify(comparison.byDesign)}`,
     );
     assert.deepEqual(
       comparison.missing ?? [],
