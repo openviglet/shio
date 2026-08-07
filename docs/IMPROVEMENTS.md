@@ -2040,30 +2040,6 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
-### XVII.83 An acceptance that writes what the gate will refuse (SH582)
-
-`propose --accept all` on `openviglet.github.io` accepted fifteen of twenty-one
-candidates. Three of them became sections whose `heading` — a required field on their
-post-type — is empty, so `shio verify` exits 1 with three `required-field-empty` errors
-on a replica that is otherwise the best this chain has produced: one fact lost, both
-other pages keeping all their text, navigation, sixteen annotated fields.
-
-The proposal already knows which fields a candidate would fill. It lists them per
-candidate — `['heading', 'features', 'intro']` on one, `['ctaLabel', 'ctaHref']` on
-another, and `[]` on the six it declines — so the fields it derives are a fact it holds
-at proposal time, and whether a derived set covers the type's *required* fields is one
-comparison against the post-type it is proposing.
-
-SH551 is the same shape one level in: a field no row fills is a finding, and this is a
-field no *instance* fills. The difference is who it costs. SH551's empty question label
-rendered as nothing; this one makes the gate red, so the run cannot be handed over
-without somebody opening three sections and typing a heading the source may not have.
-
-Two honest outcomes and the proposal can pick either: decline a candidate whose required
-fields it cannot fill, or accept it and say so — `2 of 15 accepted blocks leave a
-required field empty` in the same note that already counts what was cut. What it cannot
-keep doing is producing content that its own gate refuses.
-
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against

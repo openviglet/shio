@@ -29,6 +29,7 @@ import {
   keepsFor,
   keptShare,
   lossFor,
+  missingRequired,
   repeatedUnits,
   signature,
 } from "../src/propose.mjs";
@@ -1359,12 +1360,20 @@ test("SH580: every candidate carries what accepting it would keep, and the repor
   assert.match(report, /^b[0-9a-f]{8} {2}SectionHero {2}\[fidelity] {2}keeps \d+% {2}on /m);
 });
 
+/**
+ * The one the walk could not improve on: it keeps almost nothing, and `--accept all` would take it.
+ *
+ * <p>The heading is there so this stays a test about SH580's *score* — without one the candidate is
+ * also SH582-incomplete, `--accept all` declines it, and the assertion below would be passing for the
+ * other task's reason.</p>
+ */
+const THIN = "<main><div class=wrap><h2>Grid</h2>"
+  + "<div><span>Some text with no paragraph to live in.</span></div>"
+  + "<div><span>And a second one exactly like it, so they read as repeated units.</span></div>"
+  + "</div></main>";
+
 test("SH580: a candidate that would drop most of its text is a note, before anything is written", () => {
-  // The one the walk could not improve on: it keeps nothing, and it is exactly the block `--accept
-  // all` would take. The proposal says so rather than leaving it to `shio diff` after the publish.
-  const html = "<main><div class=wrap><div><span>Some text with no paragraph to live in.</span></div>"
-    + "<div><span>And a second one exactly like it, so they read as repeated units.</span></div>"
-    + "</div></main>";
+  const html = THIN;
   const proposal = buildProposal({
     inventory: inventoryFor(["/"]),
     markup: new Map([["/", html]]),
@@ -1373,19 +1382,98 @@ test("SH580: a candidate that would drop most of its text is a note, before anyt
 
   const note = proposal.notes.find((each) => /less than 50% of their\s+own text/.test(each));
   assert.ok(note, `no thin-candidate note in ${JSON.stringify(proposal.notes)}`);
-  assert.match(note, /keeps 0% of \d+ chars/);
+  assert.match(note, /keeps \d+% of \d+ chars/);
 });
 
 test("SH580: accepting a thin candidate says so, because --accept all reads none of the proposal", async () => {
-  const html = "<main><div class=wrap><div><span>Some text with no paragraph to live in.</span></div>"
-    + "<div><span>And a second one exactly like it, so they read as repeated units.</span></div>"
-    + "</div></main>";
-  const ctx = ctxWith({ inventory: inventoryFor(["/"]), site: { "/": html } });
+  const ctx = ctxWith({ inventory: inventoryFor(["/"]), site: { "/": THIN } });
 
   await propose.run({ accept: true }, ["all"], ctx);
 
   // Named, not refused: a thin block is still a decision a reviewer is entitled to make, and P7 asks
   // only that it not be a surprise.
-  assert.match(ctx.stdout.text, /keeps 0% of its \d+ characters of text — the rest has no field to live in/);
+  assert.match(ctx.stdout.text, /keeps \d+% of its \d+ characters of text — the rest has no field to live in/);
   assert.equal(JSON.parse(ctx.written[norm(`/repo/${PLAN_FILE}`)]).accepted.length, 1);
+});
+
+// --- SH582: an acceptance that writes what the gate will refuse ---
+
+/**
+ * A page whose second block matches a type and gives it no `heading`.
+ *
+ * <p>The measured shape: `propose --accept all` on `openviglet.github.io` accepted fifteen of
+ * twenty-one candidates, three of them became sections with an empty `heading`, and `shio verify`
+ * exited 1 with three `required-field-empty` errors on a replica that was otherwise the best the
+ * chain had produced. The hero here fills what its type requires; the grid does not.</p>
+ */
+const NO_HEADING = "<html><body><main>"
+  + "<section class=hero><h1>Home</h1><p>Welcome.</p><a href=/signup>Start</a></section>"
+  + "<section class=cards><div><p>A card with prose and no heading at all.</p></div>"
+  + "<div><p>A second card built exactly the same way, so they are units.</p></div></section>"
+  + "</main></body></html>";
+
+const incompleteIn = (proposal) => proposal.candidates.filter((row) => row.missing?.length);
+
+test("SH582: a required field the derivation cannot fill is on the candidate, at proposal time", () => {
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", NO_HEADING]]),
+    html: HTML,
+  });
+
+  // The proposal already held every fact needed to answer this — it lists the fields each candidate
+  // would fill — so whether a derived set covers the type's required fields is one comparison.
+  const grid = proposal.candidates.find((row) => row.type === "SectionFeatureGrid");
+  assert.deepEqual(grid.missing, ["heading"]);
+  assert.deepEqual(missingRequired("SectionFeatureGrid", grid.fields), ["heading"]);
+  const hero = proposal.candidates.find((row) => row.type === "SectionHero");
+  assert.equal(hero.missing, undefined,
+    "absent rather than empty on a healthy candidate: nothing is missing, and a key saying so on "
+      + "every row is bytes every reader pays for");
+  assert.ok(proposal.notes.some((note) => /would leave a REQUIRED field empty/.test(note)));
+  assert.match(describeProposal(proposal, {}), /missing \(required\): heading — --accept all declines this/);
+});
+
+test("SH582: --accept all declines it and says so, and the block stays verbatim", async () => {
+  const ctx = ctxWith({ inventory: inventoryFor(["/"]), site: { "/": NO_HEADING } });
+  const { proposal } = await propose.run({}, [], ctx);
+  const grid = proposal.candidates.find((row) => row.type === "SectionFeatureGrid");
+
+  const after = await propose.run({ accept: true }, ["all"], ctx);
+
+  const plan = JSON.parse(ctx.written[norm(`/repo/${PLAN_FILE}`)]);
+  assert.ok(!plan.accepted.some((entry) => entry.block === grid.id),
+    "a conversion that writes content its own gate refuses is not a smaller conversion, it is the "
+      + "wrong one — and an unaccepted block keeps its content as verbatim markup");
+  assert.ok(plan.accepted.some((entry) => entry.type === "SectionHero"), "the rest is still accepted");
+  assert.equal(after.proposal.candidates.find((row) => row.id === grid.id).mode, "fidelity");
+  assert.match(ctx.stdout.text, /1 declined — a REQUIRED field the derivation could not fill/);
+  assert.match(ctx.stdout.text, new RegExp(`${grid.id} SectionFeatureGrid has no heading`));
+});
+
+test("SH582: naming the id still accepts it, because that is a reviewer's decision", async () => {
+  const ctx = ctxWith({ inventory: inventoryFor(["/"]), site: { "/": NO_HEADING } });
+  const { proposal } = await propose.run({}, [], ctx);
+  const grid = proposal.candidates.find((row) => row.type === "SectionFeatureGrid");
+
+  const after = await propose.run({ accept: true }, [grid.id], ctx);
+
+  // P7 asks that it not be a surprise, not that it be denied. The one thing it cannot do is happen
+  // silently, which is what the three `required-field-empty` errors were.
+  assert.equal(after.proposal.candidates.find((row) => row.id === grid.id).mode, "authorable");
+  assert.match(
+    ctx.stdout.text,
+    new RegExp(`${grid.id} was accepted with no heading — shio verify will report required-field-empty`),
+  );
+});
+
+test("SH582: a healthy proposal declines nothing and prints no line about it", async () => {
+  const ctx = ctxWith();
+
+  await propose.run({ accept: true }, ["all"], ctx);
+
+  // The note and the per-candidate line both fire only where there is a finding, which is what keeps
+  // them off the token budget of every working run (`propose-cost.test.mjs` measures exactly that).
+  assert.ok(!/declined/.test(ctx.stdout.text));
+  assert.ok(!/missing \(required\)/.test(ctx.stdout.text));
 });

@@ -143,6 +143,38 @@ export const SECTION_TYPES = {
  * `<img src="">`. `ShConvertedLayoutRenderTest` reads the blueprints and asserts this list is exactly
  * their `File` fields, so the drift is a red build naming the field.</p>
  */
+/**
+ * Which of those fields the model declares `required: true` (SH582).
+ *
+ * <h3>The measurement</h3>
+ *
+ * <p>`propose --accept all` on `openviglet.github.io` accepted **fifteen of twenty-one** candidates,
+ * and three of them became sections whose `heading` is empty — so `shio verify` exits 1 with three
+ * `required-field-empty` errors on a replica that is otherwise the best the chain has produced. The
+ * proposal already knew: it lists the fields each candidate would fill, so whether a derived set
+ * covers the type's required fields is one comparison it holds every fact for.</p>
+ *
+ * <h3>A third list rather than a `required` flag on `SECTION_TYPES`</h3>
+ *
+ * <p>Same split as `SECTION_FILE_FIELDS`, and the same reason: `SECTION_TYPES` says what a block maps
+ * *into*, and this says what the model on the other side refuses to store without. Keeping them apart
+ * is what lets `propose` — which applies nothing and may run before the model exists — stay a reader
+ * of markup.</p>
+ *
+ * <h3>And the duplication is closed by a check, not by a comment</h3>
+ *
+ * <p>`ShConvertedLayoutRenderTest` reads the blueprints and asserts this list is exactly their
+ * `required: true` fields, the way it already does for the `File` ones. A blueprint that makes a
+ * field required and a list that does not know it is a conversion that writes what the gate refuses,
+ * which is the defect this whole entry is.</p>
+ */
+export const SECTION_REQUIRED = {
+  SectionCta: ["heading"],
+  SectionFeatureGrid: ["heading"],
+  SectionHero: ["heading"],
+  SectionRichText: ["body"],
+};
+
 export const SECTION_FILE_FIELDS = {
   SectionHero: { fields: ["image"], rows: {} },
   SectionLogoWall: { fields: [], rows: { logos: ["image"] } },
@@ -918,9 +950,27 @@ export function keptShare(keeps) {
   return keeps?.of ? Math.round((keeps.chars / keeps.of) * 100) : 0;
 }
 
+/**
+ * The required fields a derivation left empty (SH582), sorted.
+ *
+ * <p>Read against `SECTION_REQUIRED` rather than against the keys `fieldsFor` produced, for SH551's
+ * reason one level up: `fieldsFor` writes a key only when it found a value, so a required field it
+ * could not fill is *absent* from the object rather than empty in it, and asking the object what it
+ * holds would find nothing. The model is what declares the obligation, so the model is what is
+ * asked.</p>
+ */
+export function missingRequired(type, fields) {
+  return (SECTION_REQUIRED[type] ?? []).filter((name) => blank(fields?.[name])).sort(byText);
+}
+
 /** One thin candidate as the note spells it — the one place that sentence is built (SH580). */
 function describeThin(row) {
   return `${row.id} keeps ${keptShare(row.keeps)}% of ${row.keeps.of} chars`;
+}
+
+/** One incomplete candidate as the note and the refusal both spell it (SH582). */
+export function describeIncomplete(row) {
+  return `${row.id} ${row.type} has no ${row.missing.join(", ")}`;
 }
 
 /** Tags that carry no content of their own — losing a `<div>` loses nothing but its class. */
@@ -1145,6 +1195,21 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     );
   }
 
+  // SH582 — the candidates whose derivation leaves a field the post-type refuses to store without.
+  // Counted here rather than left to the acceptance, because the reader's question is about the
+  // proposal ("what of this is appliable") and the answer is the same whichever id they name.
+  const incomplete = [...candidates.values()]
+    .filter((row) => row.missing?.length)
+    .sort((a, b) => byText(a.id, b.id));
+  if (incomplete.length) {
+    notes.push(
+      `${incomplete.length} candidate(s) would leave a REQUIRED field empty, so the section they `
+        + "write is content `shio verify` refuses (`required-field-empty`) — `--accept all` declines "
+        + "these and leaves the block verbatim; accepting one by id is still allowed and says so: "
+        + `${incomplete.slice(0, 4).map(describeIncomplete).join("; ")}`,
+    );
+  }
+
   const rows = [...candidates.values()]
     // SH551 — `offered` is dropped here with `index`: both are working state this module computes and
     // no consumer of the artefact reads. Serializing it would put a list on every candidate to support
@@ -1356,6 +1421,7 @@ function describe(block, guess, index) {
     };
   }
   const { fields, consumed, offered } = fieldsFor(guess.type, block);
+  const missing = missingRequired(guess.type, fields);
   return {
     type: guess.type,
     evidence: guess.evidence,
@@ -1365,6 +1431,10 @@ function describe(block, guess, index) {
     // rather than from a second extraction, so the number cannot disagree with the values printed
     // above it.
     keeps: keepsFor(block, fields),
+    // SH582 — the required fields this derivation could not fill. Absent when there are none, which
+    // is the honest reading of an empty list here (unlike `postType`, where `{fields: []}` reads as
+    // an offer): nothing is missing, and a key saying so on every healthy candidate is bytes.
+    ...(missing.length ? { missing } : {}),
     // SH551 — which row fields the markup gave this pass something to read. Not serialized (see
     // `buildProposal`'s row mapping): it is the input to one check inside this module, and a
     // per-candidate list on the artefact would be bytes every reader pays for and none reads.
@@ -1510,6 +1580,11 @@ export function describeProposal(proposal, options = {}) {
     const fields = Object.entries(row.fields);
     if (fields.length) {
       lines.push(`  fields: ${fields.map(([name, value]) => `${name}=${preview(value)}`).join("  ")}`);
+    }
+    // SH582 — only where it is a finding, which is why it costs nothing on a healthy proposal: a
+    // candidate that fills what its type requires prints no line at all.
+    if (row.missing?.length) {
+      lines.push(`  missing (required): ${row.missing.join(", ")} — --accept all declines this`);
     }
     if (row.postType) {
       lines.push(

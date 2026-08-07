@@ -47,6 +47,7 @@ import {
   PLAN_FILE,
   PROPOSAL_FILE,
   buildProposal,
+  describeIncomplete,
   describeProposal,
   keptShare,
   serializePlan,
@@ -104,6 +105,9 @@ export async function run(flags, positionals, ctx) {
     });
     return finish(after, flags, ctx, {
       accepted: accepting,
+      // SH582 — computed from the proposal `all` was resolved against, so the count the reader sees
+      // and the set the plan holds are the same decision rather than two readings of it.
+      declined: accepting.includes("all") ? incomplete(proposal) : [],
       out: typeof flags.out === "string" ? flags.out : PROPOSAL_FILE,
     });
   }
@@ -166,13 +170,31 @@ export async function proposalFor(flags, ctx, command = "propose") {
   return { inventory, plan, proposal, markup, theme };
 }
 
-async function finish(proposal, flags, ctx, { out, accepted = [] }) {
+async function finish(proposal, flags, ctx, { out, accepted = [], declined = [] }) {
   await write(join(ctx.cwd, out), serializeProposal(proposal), ctx);
   if (flags.json) {
     ctx.stdout.write(serializeProposal(proposal));
   } else {
     if (accepted.length) {
       ctx.stdout.write(`shio propose: accepted ${accepted.join(" ")} into ${PLAN_FILE}\n`);
+      // SH582 — what `all` did NOT take, and why. A shortened set of acceptances reads exactly like
+      // a shorter set of candidates (SH138), and the reviewer's next question is whether the block
+      // was lost: it was not, it stayed verbatim, which is the sentence this line has to carry.
+      if (declined.length) {
+        ctx.stdout.write(
+          `  ${declined.length} declined — a REQUIRED field the derivation could not fill, so the `
+            + "section would be content shio verify refuses. Each stays verbatim markup; accept one "
+            + `by id to take it anyway: ${declined.map(describeIncomplete).join("; ")}\n`,
+        );
+      }
+      // SH582 — and the same fact for a candidate somebody named on purpose. Not refused: `--accept
+      // <id>` is a reviewer's decision, and P7 asks that it not be a surprise, not that it be denied.
+      for (const row of incomplete(proposal).filter((each) => each.mode === "authorable")) {
+        ctx.stdout.write(
+          `  ${row.id} was accepted with no ${row.missing.join(", ")} — shio verify will report `
+            + "required-field-empty on the section it writes\n",
+        );
+      }
       // SH580 — the acceptance says what it accepted. The proposal already scored every candidate,
       // and `--accept all` is one keystroke that reads none of it: on viglet.org that wrote eleven
       // pages keeping 12 to 35 percent of their text, and the first thing that said so was `shio
@@ -203,6 +225,21 @@ function thin(proposal) {
   return proposal.candidates.filter(
     (row) => row.mode === "authorable" && row.keeps?.of && row.keeps.chars < row.keeps.of * KEEP_FLOOR,
   );
+}
+
+/**
+ * The candidates whose derivation leaves a required field empty (SH582), in id order.
+ *
+ * <p>Mode-blind on purpose, and the two callers narrow it differently: `--accept all` needs the set
+ * it is about to *decline*, which is every one of them, and the acceptance report needs the ones that
+ * ended up in the plan anyway, which is the authorable subset. One predicate for "incomplete", so a
+ * line that says a block was declined and a line that says it was accepted cannot disagree about
+ * which blocks those are.</p>
+ */
+function incomplete(proposal) {
+  return proposal.candidates
+    .filter((row) => row.missing?.length)
+    .sort((a, b) => (a.id < b.id ? -1 : 1));
 }
 
 /**
@@ -242,8 +279,15 @@ function acceptIds(flags, positionals = []) {
  */
 function accept(proposal, plan, ids, flags) {
   const byId = new Map(proposal.candidates.map((row) => [row.id, row]));
+  // SH582 — `all` declines a candidate whose derivation leaves a required field empty. Measured on
+  // `openviglet.github.io`: fifteen of twenty-one accepted, three of them sections with no `heading`,
+  // and `shio verify` exiting 1 with three `required-field-empty` errors on a replica that was
+  // otherwise the best the chain had produced. An unaccepted block stays verbatim, which is the
+  // outcome that keeps the content — so the declined ones are not a smaller conversion, they are the
+  // one that does not write what its own gate refuses. Naming an id explicitly still accepts it: that
+  // is a reviewer's decision, and P7 asks only that it not be silent.
   const wanted = ids.includes("all")
-    ? proposal.candidates.filter((row) => row.type).map((row) => row.id)
+    ? proposal.candidates.filter((row) => row.type && !row.missing?.length).map((row) => row.id)
     : ids;
   const accepted = [...(plan.accepted ?? [])];
   const held = new Set(accepted.map((entry) => entry.block));

@@ -631,6 +631,39 @@ says nothing about how much of a page's *reading* survives.
   `keeps: 34% of this block's text (1408 of 4102 chars)` line per candidate — cost ≈13 each and said
   the same thing.
 
+**An acceptance that writes what the gate will refuse (SH582).** `propose --accept all` on
+`openviglet.github.io` accepted **fifteen of twenty-one** candidates, and three of them became
+sections whose `heading` — `required: true` on their post-type — is empty, so `shio verify` exits 1
+with three `required-field-empty` errors on a replica that is otherwise the best this chain has
+produced: one fact lost, both other pages keeping all their text, navigation, sixteen annotated
+fields. **The proposal already knew**: it lists the fields each candidate would fill, so whether a
+derived set covers the type's required ones is a comparison it holds every fact for. SH551 is the
+same shape one level in — a field no *row* fills is a finding, this is a field no *instance* fills —
+and the difference is who it costs: SH551's empty label rendered as nothing, this one makes the gate
+red.
+
+- **`SECTION_REQUIRED` is a third deliberate copy of the model**, beside `SECTION_TYPES` (what a
+  block maps into) and `SECTION_FILE_FIELDS` (which of those the blueprint stores as a file). Same
+  reason as the first: `propose` runs before the model exists. `missingRequired` reads it rather than
+  the keys `fieldsFor` produced — a required field the extraction could not fill is **absent** from
+  the object, not empty in it, so asking the object would find nothing (SH551's rule, one level up).
+- **`--accept all` declines them; naming an id still takes it.** An unaccepted block stays verbatim
+  markup, so declining is not a smaller conversion — it is the one that keeps the content instead of
+  writing a section the gate refuses. An explicit `--accept <id>` is a reviewer's decision and P7 asks
+  only that it not be silent, so it accepts and prints `was accepted with no heading — shio verify
+  will report required-field-empty`. What `all` left behind prints too, with the reason and the fact
+  that the block is still there: a shortened set of acceptances reads exactly like a shorter set of
+  candidates (SH138).
+- **`missing` is on the candidate and absent when empty**, so a healthy proposal pays nothing — the
+  note, the per-candidate `missing (required):` line and the declined line all fire only where there
+  is a finding, which is what keeps `propose-cost.test.mjs` unmoved by this task.
+- **The duplication is closed by a check with teeth, in both directions.**
+  `ShConvertedLayoutRenderTest.theCliKnowsWhichFieldsAreRequired` **parses** the export into a map and
+  compares sets, rather than searching it as text the way the `File` check does — a substring check
+  can only notice an entry that is missing, and the other drift (a list requiring what the blueprint
+  no longer does) silently declines candidates that were appliable. Both reads share one `exportBody`
+  reader, so there is one answer to "where does the CLI's copy of the model live".
+
 **And a candidate that is only a `<script>` (SH506).** One of six candidates on a real site read
 `"signature": "script"`, `"fields": {}`, `"loss": {"elements":[{"name":"script","count":1}]}` — the
 loss line naming the whole of the block — and proposed the post-type `{"name":"Block1","fields":[]}`.

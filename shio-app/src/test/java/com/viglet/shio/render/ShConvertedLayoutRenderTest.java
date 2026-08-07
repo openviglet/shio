@@ -17,7 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -736,22 +739,95 @@ class ShConvertedLayoutRenderTest {
         }
     }
 
+    /**
+     * SH582 — the CLI's required-field list is the blueprints' own, and this is what says so.
+     *
+     * <h2>What the duplication costs when it drifts</h2>
+     *
+     * <p>{@code propose --accept all} on a real source accepted fifteen of twenty-one candidates, and
+     * three of them became sections whose {@code heading} — {@code required: true} here — is empty, so
+     * {@code shio verify} exited 1 with three {@code required-field-empty} errors on a replica that
+     * was otherwise the best that chain had produced. The proposal now declines a candidate whose
+     * derivation cannot fill a required field, and it can only know which fields those are from
+     * {@code SECTION_REQUIRED} — a third deliberate copy of the model, for the reason
+     * {@code SECTION_TYPES} is the first: {@code propose} runs before the model exists.</p>
+     *
+     * <h2>Both directions, unlike the File check above</h2>
+     *
+     * <p>A blueprint that makes a field required and a list that does not know it writes content the
+     * gate refuses — the defect itself. A list naming a field the blueprint stopped requiring declines
+     * a candidate that was appliable, which is the same drift making the conversion quietly smaller.
+     * So the sets are compared, not searched.</p>
+     */
+    @Test
+    @DisplayName("SH582: the CLI's SECTION_REQUIRED is exactly the blueprints' required fields")
+    void theCliKnowsWhichFieldsAreRequired() {
+        Map<String, List<String>> declared = sectionRequiredSource();
+
+        assertThat(declared)
+                .as("SECTION_REQUIRED is what --accept all reads to decline an incomplete candidate; "
+                        + "an empty parse would make every assertion below pass over nothing")
+                .isNotEmpty();
+
+        for (ShSectionType type : VOCABULARY) {
+            List<String> required = new ArrayList<>();
+            for (JsonNode field : type.declaration().path("fields")) {
+                if (field.path("required").asBoolean(false)) {
+                    required.add(field.path("name").asString(""));
+                }
+            }
+            Collections.sort(required);
+            assertThat(declared.getOrDefault(type.name(), List.of()))
+                    .as("%s declares %s as required in the %s blueprint; cli/src/propose.mjs must "
+                            + "agree, or a conversion either writes what the gate refuses or declines "
+                            + "a candidate it could have applied",
+                            type.name(), required, type.blueprint())
+                    .containsExactlyElementsOf(required);
+        }
+    }
+
+    /**
+     * The body of `SECTION_REQUIRED` in `cli/src/propose.mjs`, parsed rather than remembered.
+     *
+     * <p>Parsed into a map instead of searched as text, which is what lets the assertion above run in
+     * both directions: a substring check can only ever notice an entry that is missing.</p>
+     */
+    private static Map<String, List<String>> sectionRequiredSource() {
+        String body = exportBody("export const SECTION_REQUIRED = {");
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        Matcher rows = Pattern.compile("(\\w+):\\s*\\[([^]]*)]").matcher(body);
+        while (rows.find()) {
+            List<String> names = new ArrayList<>();
+            Matcher each = Pattern.compile("\"([^\"]+)\"").matcher(rows.group(2));
+            while (each.find()) {
+                names.add(each.group(1));
+            }
+            Collections.sort(names);
+            out.put(rows.group(1), List.copyOf(names));
+        }
+        return out;
+    }
+
     /** The body of `SECTION_FILE_FIELDS` in `cli/src/propose.mjs`, read rather than remembered. */
     private static String sectionFileFieldsSource() {
+        return exportBody("export const SECTION_FILE_FIELDS = {");
+    }
+
+    /** One `export const NAME = {` block of `cli/src/propose.mjs`, read rather than remembered. */
+    private static String exportBody(String marker) {
         Path propose = Path.of("..", "cli", "src", "propose.mjs");
         String source;
         try {
             source = Files.readString(propose, StandardCharsets.UTF_8);
         } catch (IOException cannotRead) {
             throw new UncheckedIOException(
-                    "cli/src/propose.mjs declares which section fields are File widgets; this test "
-                            + "reads it rather than keeping a third copy (SH245).", cannotRead);
+                    "cli/src/propose.mjs declares what the CLI knows about the section model; this "
+                            + "test reads it rather than keeping a third copy (SH245).", cannotRead);
         }
-        String marker = "export const SECTION_FILE_FIELDS = {";
         int start = source.indexOf(marker);
         assertThat(start)
-                .as("SECTION_FILE_FIELDS is the export this test reads; renamed or inlined, the "
-                        + "duplication it closes has no reader left")
+                .as("%s is the export this test reads; renamed or inlined, the duplication it "
+                        + "closes has no reader left", marker)
                 .isGreaterThanOrEqualTo(0);
         int end = source.indexOf("\n};", start);
         assertThat(end).isGreaterThan(start);
