@@ -2,18 +2,6 @@
   "note": "The corpus's assertions that are red at HEAD, each owned by an open task. This is a NAMED LIST and deliberately not a ceiling: a ceiling lets one task pay the debt and the next task spend it, which is the reasoning cli/test/assertion-debt.test.mjs was built on. Every entry here is a case source-corpus.test.mjs reports rather than fails on — so the suite can live in the gate without crying wolf (docs/agents/cli.md) while still holding the assertion the SH338 order says must land before the fix. The list is checked in BOTH directions: an entry whose assertion has gone green FAILS the run, naming the id to delete. That is what stops the list becoming the place findings go to be forgotten.",
   "findings": [
     {
-      "id": "SH557",
-      "archetype": "query-pages",
-      "assertion": "capture-notes-query-string",
-      "what": "The capture records three pages whose paths no friendly URL can hold and its notes do not say so. On a real source this was 91 of 107, reported by `diff` after 403 assets had been uploaded."
-    },
-    {
-      "id": "SH557",
-      "archetype": "query-pages",
-      "assertion": "unaddressable-named-at-capture",
-      "what": "The same finding at the phase that can still stop the run, rather than at the phase that reports the damage."
-    },
-    {
       "id": "SH555",
       "archetype": "theme-heavy",
       "assertion": "layout-raw-field-CSS",

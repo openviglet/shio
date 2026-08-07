@@ -36,6 +36,7 @@
 - 📋 **SH563** (deps: SH560) **A page reached through a redirect is stored with no record that it was one** — visit returns redirectedTo and buildInventory never copies it into the page row, so both spellings are captured as two pages and the replica reproduces neither. → §IX.44
 - 📋 **SH564** (deps: SH560, SH466 ✅) **A section field holding a link keeps the source's own host, so an accepted block's button leaves the replica** — SH466 rebases root-relative hrefs at render and rightly leaves an absolute one alone, so ctaHref keeps the source's host and nothing tells it from outbound. → §IX.45
 - 📋 **SH565** (deps: SH560, SH476 ✅, SH550 ✅) **A page title carrying an entity is stored undecoded, so every replicated title doubles it** — SH476 decodes text as it becomes a field and SH550 decodes attributes, and scanPage reads title into the row through neither, so & renders as &amp; on both paths. → §IX.46
+- 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 
 ## Block I — Content as files (local-first authoring)
 
@@ -99,7 +100,7 @@
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
-- 📋 **SH557** (deps: SH548 ✅) **A source whose pages differ only by a query string cannot be replicated and nothing says so until the end** — 91 of 107 captured pages were query strings the replica cannot address, reported by diff as pages it serves nothing at rather than by the capture as a limit. → §XVII.78
+- 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
 
 ## Block F — Market positioning
 

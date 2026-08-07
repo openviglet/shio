@@ -32,7 +32,7 @@
  */
 import { join } from "node:path";
 
-import { countLinks, INVENTORY_FILE, scanPage } from "../clone.mjs";
+import { addressablePath, countLinks, INVENTORY_FILE, scanPage } from "../clone.mjs";
 import { compareCapture, describeDiff } from "../diff.mjs";
 import { resolveAdmin } from "../context.mjs";
 
@@ -104,6 +104,10 @@ export async function run(flags, positionals, ctx) {
   const produced = new Map();
   const unreachable = [];
   for (const page of pages) {
+    // SH557 — not asked for at all. A path carrying a `?` has no friendly URL, so there is nothing
+    // to request; asking anyway spends 91 round trips on a real source to be told 404 ninety-one
+    // times, and `compareCapture` reports it from the path alone.
+    if (!addressablePath(page.path)) continue;
     const url = `${baseUrl.replace(/\/+$/, "")}/preview/${encodeURIComponent(site)}${page.path}`;
     let response;
     try {

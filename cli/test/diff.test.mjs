@@ -228,6 +228,94 @@ test("SH554: an unclassified side is refused rather than scored", () => {
   );
 });
 
+test("SH557: a path no friendly URL can hold is not reported as a page the replica lost", async () => {
+  // The measured run: *107 page(s) compared, 91 the replica does not serve* — which reads as a
+  // catastrophic replication failure and is not one. `/en/case-study?p=2`…`?p=24` in five locales
+  // were never addressable: `post:<site>/<friendly-url>` has no room for a `?`. Reporting a source
+  // trait the target cannot represent in the vocabulary of damage is the defect here, not the
+  // number.
+  const inventory = inventoryOf(SOURCE);
+  inventory.pages.push(
+    { path: "/list?page=2", title: "Page 2", links: { internal: 3, external: 0 }, assets: 1, forms: 0, textChars: 400 },
+    { path: "/list?page=3", title: "Page 3", links: { internal: 3, external: 0 }, assets: 1, forms: 0, textChars: 400 },
+    { path: "/gone", title: "Gone", links: { internal: 3, external: 0 }, assets: 1, forms: 0, textChars: 400 },
+  );
+  const ctx = ctxWith({ inventory, served: { "/": SOURCE } });
+
+  const result = await diff.run({ site: "Acme" }, [], ctx);
+
+  assert.deepEqual(result.unaddressable, ["/list?page=2", "/list?page=3"]);
+  assert.deepEqual(result.missing, ["/gone"],
+    "`/gone` is the real absence and stays one — separating the two is the whole task, not "
+      + "reclassifying every absence as somebody else's problem");
+  assert.equal(result.exitCode, 0,
+    "and the gate does not fire on a trait of the source: nothing was lost, so nothing failed");
+  assert.match(ctx.out.text, /2 no friendly URL can address/);
+  assert.match(ctx.out.text, /never addressable, not lost/);
+});
+
+test("SH557: an unaddressable path is not even requested", async () => {
+  // 91 round trips to be told 404 ninety-one times, on a run whose limit was decidable from the
+  // inventory before it started.
+  const asked = [];
+  const inventory = inventoryOf(SOURCE);
+  inventory.pages.push({ path: "/list?page=2", title: "Page 2", links: { internal: 0, external: 0 }, assets: 0, forms: 0, textChars: 400 });
+  const ctx = ctxWith({ inventory, served: { "/": SOURCE } });
+  const fetched = ctx.fetch;
+  ctx.fetch = (url, init) => { asked.push(url); return fetched(url, init); };
+
+  await diff.run({ site: "Acme" }, [], ctx);
+
+  assert.equal(asked.length, 1, `asked for ${asked.join(" ")}`);
+  assert.ok(!asked.some((url) => url.includes("page=2")));
+});
+
+test("SH557: the capture names the limit at the phase that can still stop the run", () => {
+  // The half that matters most for cost. `clone` reported 198 pages and six notes, none of them
+  // this; `propose` then counted candidates over pages that would never exist, and `convert` wrote
+  // and published 204 objects. Everything between the capture and the diff was wasted and looked
+  // fine, and the inventory held the paths the whole time.
+  const origin = "https://x.test";
+  const page = (path) => ({
+    url: `${origin}${path}`,
+    doc: scanPage(`<html><head><title>T</title></head><body><p>Words here.</p></body></html>`, `${origin}${path}`),
+    status: 200,
+    depth: 1,
+  });
+
+  const inventory = buildInventory({
+    origin,
+    seed: `${origin}/`,
+    visited: [page("/"), page("/list?page=2"), page("/list?page=3")],
+    robots: { present: true },
+  });
+
+  const said = (inventory.notes ?? []).find((note) => /query string/i.test(note));
+  assert.ok(said, `no note names the limit: ${JSON.stringify(inventory.notes)}`);
+  assert.match(said, /2 of 3/, "the proportion is the decision — 91 of 107 is a source that cannot "
+    + "be replicated, and 2 of 107 is a footnote");
+  assert.match(said, /"\?"/);
+});
+
+test("SH557: a capture no query string touches gains no note", () => {
+  const origin = "https://x.test";
+  const inventory = buildInventory({
+    origin,
+    seed: `${origin}/`,
+    visited: [{
+      url: `${origin}/`,
+      doc: scanPage("<html><head><title>T</title></head><body><p>Words.</p></body></html>", `${origin}/`),
+      status: 200,
+      depth: 0,
+    }],
+    robots: { present: true },
+  });
+
+  assert.ok(!(inventory.notes ?? []).some((note) => /query string/i.test(note)),
+    "a note that fires on every capture is one a reader learns to skip, and this one has to be "
+      + "read: it is the only one that says the run should not continue");
+});
+
 test("SH522: no capture is a refusal naming the command that writes one", async () => {
   const ctx = ctxWith();
   ctx.fs.readFile = async () => {

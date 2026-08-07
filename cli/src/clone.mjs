@@ -112,6 +112,28 @@ export function resolveHref(href, pageUrl) {
   }
 }
 
+/**
+ * Whether a captured path is one a replica can be addressed at (SH557).
+ *
+ * <p>`post:<site>/<friendly-url>` (SH79) has no room for a `?`: the character terminates the
+ * address and everything after it is a query on the request that carries it. So a captured path
+ * containing one names a page the target **cannot represent** — not a page it might fail to
+ * produce, a page there is no name for.</p>
+ *
+ * <p>The point of deciding it *here* is the phase. On vilt-group.com, 91 of 107 captured pages were
+ * `/en/case-study?p=2`…`?p=24` across five locales; `clone` reported 198 pages and six notes, none
+ * of them this, `propose` counted candidates over pages that would never exist, `convert` wrote and
+ * published 204 objects, and `shio diff` — the last command in the chain — said *107 page(s)
+ * compared, 91 the replica does not serve*. Everything in between was wasted and looked fine. The
+ * inventory holds the paths and this is a regex, so the limit was knowable before any of it ran.</p>
+ */
+export function addressablePath(path) {
+  return ADDRESSABLE_PATH.test(String(path ?? ""));
+}
+
+/** A friendly URL's grammar, as the SH79 address forms allow it. */
+const ADDRESSABLE_PATH = /^\/[A-Za-z0-9\-._~/]*$/;
+
 /** The path an inventory records: everything after the origin, query included. */
 export function pathOf(url) {
   const parsed = typeof url === "string" ? new URL(url) : url;
@@ -1167,6 +1189,19 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
   }
   if (options.markup && !markup.size && pages.length) {
     collected.push("--markup was passed but no page's markup could be cached, so shio propose has nothing to read");
+  }
+  // SH557 — the one note that can stop a run rather than qualify it. Ordered before `<base href>`
+  // because it is not advice about how to read the inventory: it is how much of this source the
+  // target can hold at all, and a reader who stops after the first note should have this one.
+  const unaddressable = pages.filter((page) => !addressablePath(page.path));
+  if (unaddressable.length) {
+    collected.push(
+      `${unaddressable.length} of ${pages.length} captured page(s) differ only by a query string, ` +
+        `and no friendly URL can hold a "?" — the replica cannot be addressed at those paths and ` +
+        `will serve nothing there. Decide now whether this source can be replicated: converting ` +
+        `them writes posts no route reaches (first: ` +
+        `${unaddressable.slice(0, 3).map((page) => page.path).join(" ")})`,
+    );
   }
   const withBase = pages.filter((page) => page.baseHref);
   if (withBase.length) {

@@ -701,6 +701,26 @@ escapes what the last one stored.
 Its assertion is `source-corpus.test.mjs` group D, on the `awkward` archetype, red,
 comparing the stored title against the source's own bytes.
 
+### IX.47 The reader does not read the tree it names (SH567)
+
+SH527's reader holds a named DEBT list, and one of its groups is *the public site in
+`shio-site/`, which has no test tree at all — the cheapest group to fix and the one
+whose absence is least defensible*. That sentence is now false: SH566 shipped
+`shio-site/scripts/scroll-ownership.test.mjs` and an opt-in browser test beside it, both
+naming their id.
+
+The reader still walks 285 suite files and none of them is in that tree, so SH566
+arrived in `+ actual` on the next run and the suite went red on a task that had done
+exactly what the rule asks. The debt read 44 where it should read 43, and the fix a
+reviewer is steered toward is the wrong one: adding SH566 to DEBT would record *this
+task cannot carry an assertion* about a task that carries two.
+
+The comment already names the remedy and calls it cheap. What it did not anticipate is
+that the list would go wrong in this direction — an entry earned by a tree the reader
+cannot see is indistinguishable, at the assertion, from an entry earned by a fix nobody
+tested. The nine SH530–SH539 entries in the same group should be re-judged in the same
+pass: some of them may now be asserted too.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1940,28 +1960,29 @@ stays a declaration of content.
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
 
-### XVII.78 The pages a path-addressed replica cannot hold (SH557)
+### XVII.79 An assertion that names the fix instead of the defect (SH568)
 
-vilt-group.com paginates case studies as `/en/case-study?p=2` through `?p=24`, in five
-locales. The crawl followed them and recorded them as pages, `convert` wrote 204
-objects, and the replica serves none of them: a post is addressed by path, and a query
-string is not part of one.
+SH560's corpus holds its red assertions as a named list, and every entry is checked in
+both directions — an entry gone green fails the run, which is what stops the list
+becoming where findings go to be forgotten. That design is right and one entry defeats
+it.
 
-`shio diff` is where this surfaces — *107 page(s) compared, 91 the replica does not
-serve* — and it surfaces as a loss, which is the wrong shape for it. A loss is something
-that should have arrived and did not. This is a source trait the target cannot
-represent, and it was knowable at capture: the inventory holds the paths, and 91 of them
-carry a `?`.
+`theme-heavy/layout-raw-field-CSS` reads: *the generated layout emits the CSS field with
+two braces inside the getRelation block*. That is a statement about the **template**,
+and it presumes the fix is a third brace. SH555 did not add one, because SH461 had
+already decided this exact question and written the reason down: the cure belongs where
+the value is built, *or every hand-written layout in the product keeps the defect and
+only the generated one is cured*. So SH555 marked the row's raw-text fields
+`Handlebars.SafeString`, and the served page now carries its `url()` quotes intact — the
+defect is closed, the corpus's own group D goes green on the rendered document, and this
+assertion stays red forever.
 
-The cost of learning it late is that everything in between is wasted and looks fine.
-`clone` reported 198 pages and printed six notes, none of them this. `propose` counted
-candidates over pages that will never exist. `convert` wrote and published them. Only
-the last command in the chain says anything, and it says it in the vocabulary of damage.
-
-Two things would fix it independently, and both are cheap: the capture counts
-query-string pages and names them in a note, and `diff` separates *the replica cannot
-address this* from *the replica lost this*. The second matters more, because the first
-is advice and the second is what the gate reads.
+The finding is not that the entry is stale. It is that an assertion phrased as *the code
+does not do X* pins one implementation of a fix, and the both-directions check then
+converts a **correct** repair into a permanent red — the same failure SH554 named one
+block over, an instrument in a gate reporting a loss on something that lost nothing. The
+entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
+page, whichever brace count produces that.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 

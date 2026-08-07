@@ -39,6 +39,8 @@
  * the second, because the wrong shape did not crash here: it scored, plausibly, as a total lost.
  */
 
+import { addressablePath } from "./clone.mjs";
+
 /**
  * What a page declared and what it produced, per fact (SH522).
  *
@@ -124,13 +126,17 @@ export const TEXT_FLOOR = 0.6;
 export function compareCapture(declared, produced) {
   const pages = [];
   const missing = [];
+  const unaddressable = [];
   for (const page of [...declared].sort((a, b) => (a.path < b.path ? -1 : 1))) {
     const now = produced.get(page.path);
     if (!now) {
-      // Not a comparison at all: the page is absent, which `verify --checks replication` already
-      // reports as `source-page-missing`. Named here rather than counted as "everything lost", or
-      // one absent page would read as four separate defects.
-      missing.push(page.path);
+      // SH557 — two different claims, and only one of them is about the replica. A path carrying a
+      // `?` is one no friendly URL can hold (SH79), so the replica was never going to serve it: that
+      // is a **source trait the target cannot represent**, and reporting it as an absence puts it in
+      // the vocabulary of damage. Measured on vilt-group.com: *107 page(s) compared, 91 the replica
+      // does not serve* — 91 paginated case-study query strings, read by everyone who saw it as a
+      // catastrophic replication failure. It is one fact about the source, knowable at capture.
+      (addressablePath(page.path) ? missing : unaddressable).push(page.path);
       continue;
     }
     const { rows, lost, gained } = comparePage(page, now);
@@ -149,6 +155,7 @@ export function compareCapture(declared, produced) {
   return {
     pages,
     missing,
+    unaddressable,
     lost: pages.reduce((total, page) => total + page.lost, 0),
   };
 }
@@ -160,11 +167,12 @@ export function compareCapture(declared, produced) {
  * matched prints one line, because a report whose clean rows are as long as its broken ones is one
  * nobody reads to the end (SH138's rule, applied to a comparison instead of to a cut).</p>
  */
-export function describeDiff({ pages, missing, lost }, options = {}) {
+export function describeDiff({ pages, missing, unaddressable = [], lost }, options = {}) {
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   const lines = [
     `shio diff: ${pages.length} page(s) compared with the capture that declared them`
       + `${missing.length ? `, ${missing.length} the replica does not serve` : ""}`
+      + `${unaddressable.length ? `, ${unaddressable.length} no friendly URL can address` : ""}`
       + ` — ${lost ? `${lost} fact(s) lost` : "nothing lost"}`,
   ];
   for (const page of pages.slice(0, limit)) {
@@ -192,6 +200,23 @@ export function describeDiff({ pages, missing, lost }, options = {}) {
   }
   for (const path of missing.slice(0, limit)) {
     lines.push(`  ${path}  the replica serves nothing here`);
+  }
+  // SH557 — after the losses and in its own words, because it is not one. These paths were never
+  // going to be served: a `?` cannot appear in a friendly URL, so there is no address to serve them
+  // at, and the run that produced them was doomed before `convert` wrote its first object.
+  for (const path of unaddressable.slice(0, limit)) {
+    lines.push(`  ${path}  no friendly URL can hold a "?" — never addressable, not lost`);
+  }
+  if (unaddressable.length > limit) {
+    lines.push(`  … ${unaddressable.length - limit} more unaddressable page(s)`);
+  }
+  if (unaddressable.length) {
+    lines.push(
+      `  ${unaddressable.length} of ${pages.length + missing.length + unaddressable.length} `
+        + "captured page(s) cannot be addressed at all. That is a trait of the SOURCE, not a defect "
+        + "in the replica, and `shio clone` says it too — a limit learned here has already cost a "
+        + "proposal, an upload and a publish",
+    );
   }
   lines.push(
     "  a fact the replica GAINED is not a loss — a layout adds links, and a gate that called "

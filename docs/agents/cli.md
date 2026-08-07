@@ -372,6 +372,22 @@ the replica does not serve is *one absence* rather than four lost facts, because
 earlier moment>` are the three §IX.34 also names and **none is built**: the refusal says so rather
 than answering approximately, and the capture is the one both hand-errors were about.
 
+**A page the target cannot represent is not a page the replica lost (SH557).** vilt-group.com
+paginates case studies as `/en/case-study?p=2` … `?p=24` in five locales. The crawl followed them,
+`convert` wrote 204 objects, and the replica serves none — a post is addressed by path and
+`post:<site>/<friendly-url>` has no room for a `?`. `diff` was the only command that said anything:
+*107 page(s) compared, 91 the replica does not serve* — reported as a **loss**, which is the wrong
+shape. A loss is something that should have arrived and did not; this is a **trait of the source**,
+and it was decidable at capture from a regex over paths the inventory already held. The cost of
+learning it last is that everything before it is wasted and looks fine: `clone` reported 198 pages
+and six notes, none of them this, `propose` counted candidates over pages that would never exist,
+and `convert` published them. Both halves shipped because they fail differently: `addressablePath`
+(`clone.mjs`, the SH79 grammar as one regex) drives a **capture note** that says how much of the
+source can be replicated *before* a proposal is built, and `compareCapture` splits `unaddressable`
+out of `missing` so the gate reads only real damage — `diff` prints them apart, in their own words,
+and **does not request them at all** (91 round trips to be told 404 ninety-one times). The note is
+the advice; the split is what the gate reads, which is why the split matters more.
+
 **And one function was not enough (SH554).** "Both sides come out of `scanPage`" was true and
 insufficient: `scanPage`'s `links` is an array of raw hrefs, an inventory row's is
 `{internal, external}`, and the split between them lived inline in `buildInventory` — so it ran on
@@ -1586,3 +1602,30 @@ after its assertions, so one wrong expectation left a `setInterval` holding the 
 stdin had nothing to do with it. `--test-force-exit` is in the `test` script so the next leak
 reports and exits instead of burning a CI timeout with no diagnostic.
 
+
+**The source corpus (SH560) — `fixtures/source-sites/`, at the repo root and not under `cli/`.**
+One directory per **source archetype**: bytes under `site/`, plus an `expectations.json` that
+declares what a capture of it should contain and the task ids the archetype exists to catch.
+`corpus.mjs` builds one route table per archetype and serves it two ways — `injectedFetch` for the
+fast tier, `serve` (a real `node:http`) for the live one — so a divergence between the tiers is a
+statement about the boundary rather than about the fixture. `cli/test/source-corpus.test.mjs`
+iterates the corpus and runs the offline chain (`clone` → `propose --accept all` → `convert --out`)
+once per archetype, reading a declaration where the other two suites read a constant.
+
+Why a corpus and not a bigger `fixture-site.mjs`: **a trait can be a property of the site rather
+than of a page**, and those do not compose into one server. A source with no home at `/` cannot
+also be the one that answers `/`; a source that is client-rendered end to end cannot also be the
+one whose markup is complete; a source whose every page is a query string cannot also be the one
+whose paths address cleanly. SH528's per-page catalogue stays in the single fixture; only site
+traits earn a directory here, and `trait: "site"|"page"` is asserted so the split does not drift.
+
+**Its red cases are a named list, not a suppression.** `open-findings.json` holds
+`(archetype, assertion) → task id`, and `holding()` reports those instead of failing — the reason
+being the rule two paragraphs up: *an instrument that cries wolf in the gate is worse than one
+outside it*, while SH338 requires the assertion to land before the fix. Read **both** directions:
+a held case that goes green **fails**, naming the id to delete, and a held key no assertion
+exercises fails too. Every run prints the count and the owners, the way
+`assertion-debt.test.mjs` does, and for the same reason — a ceiling lets one task pay the debt and
+the next task spend it. Its first run held six red cases owned by five open tasks, three of which
+(SH563, SH564, SH565) it found: a redirect `buildInventory` drops, an absolute href stored in a
+section field, and a `<title>` nobody decodes.

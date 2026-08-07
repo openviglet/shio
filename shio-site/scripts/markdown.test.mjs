@@ -82,6 +82,20 @@ test("an icon and a decorative element leave nothing behind", () => {
   assert.doesNotMatch(md('<div aria-hidden="true"><p>Decoration</p></div><p>Kept</p>'), /Decoration/);
 });
 
+test("an empty overlay button gives a step a click target and costs the twin nothing", () => {
+  // SH567 — the transcript's steps became clickable. A <button> is dropped whole,
+  // children included, which is right for the CTA and would have deleted all six
+  // calls from every twin had the text moved inside it. The affordance therefore
+  // sits beside the text, not around it, and this is the assertion that says so:
+  // label in the button, content still in the list.
+  const out = md(
+    '<ol><li><button aria-label="Show call 1: shio_context"></button>' +
+      "<div><p>&gt; shio_context</p><p>P2</p></div></li></ol>"
+  );
+  assert.match(out, /shio_context/);
+  assert.doesNotMatch(out, /Show call 1/);
+});
+
 test("an unknown tag degrades to its text rather than losing it", () => {
   // The failure this refuses: a converter that drops what it does not know is a
   // converter that loses content nobody notices.

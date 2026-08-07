@@ -36,6 +36,9 @@ function overflowWithin(box: DOMRect, item: DOMRect): number {
  *    controls still working, which is a better answer than a frozen animation.
  * 4. **The copy is content, not markup.** The steps and their artefacts live in
  *    `site-content.ts`, so re-scripting the session never touches this file.
+ * 5. **The step itself is the control** (SH567). A reader who wants call four
+ *    clicks call four; the transport arrows and the progress dots are the
+ *    fallback, not the only way in. What that costs is below the `<ol>`.
  *
  * Autoplay starts only in an effect and only once the panel is on screen, so
  * the server and the client's first render agree, and a visitor who scrolls
@@ -189,28 +192,50 @@ export function AgentTranscript({ className }: { className?: string }) {
         className="max-h-[15rem] space-y-3.5 overflow-y-auto px-4 py-3.5 font-mono text-[0.78rem] leading-relaxed"
       >
         {TRANSCRIPT.map((s, i) => (
-          <li
-            key={s.tool}
-            className={cn(
-              "transition-opacity duration-500",
-              i === current ? "opacity-100" : "opacity-35"
-            )}
-          >
-            <p className="flex gap-2 text-[#c9b6ae]">
-              <span className="shrink-0 select-none text-[#ff8a6b]">&gt;</span>
-              <span className="min-w-0">{s.call}</span>
-            </p>
-            <p className="mt-1 flex gap-2">
-              <span className="shrink-0 select-none text-[#7dd3a0]">&#9679;</span>
-              <span className="min-w-0 break-words text-[#ffb08a]">{s.tool}</span>
-              <span className="ml-auto shrink-0 rounded border border-[#ff6347]/30 bg-[#ff6347]/10 px-1.5 text-[0.62rem] font-bold text-[#ff9478]">
-                {s.law}
-              </span>
-            </p>
-            <p className="mt-0.5 flex gap-2 pl-[1.1rem] text-[#8d7b74]">
-              <CornerDownRight className="mt-0.5 size-3 shrink-0" aria-hidden />
-              <span className="min-w-0 break-words">{s.result}</span>
-            </p>
+          <li key={s.tool} className="relative">
+            {/*
+             * The step's own click target (SH567), and it is deliberately empty.
+             * Wrapping the three lines in the button would have been the obvious
+             * markup and would have deleted the call from every `.md` twin:
+             * `markdown.mjs` drops a `<button>` whole, children included, which
+             * is right for the CTA and fatal here. So the button carries the
+             * label and the affordance, the text stays outside it, and the
+             * transcript survives constraint 2 above.
+             *
+             * It is positioned, so it paints and hit-tests above the static
+             * paragraphs regardless of source order — which lets it sit first
+             * and drive the hover state of what follows as a `peer`.
+             */}
+            <button
+              type="button"
+              onClick={() => goTo(i)}
+              onKeyDown={onKeyDown}
+              aria-label={`Show call ${i + 1}: ${s.tool}`}
+              aria-current={i === current ? "step" : undefined}
+              className="peer absolute -inset-x-2 -inset-y-1 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#ff8a6b]"
+            />
+            <div
+              className={cn(
+                "-mx-2 -my-1 rounded-lg px-2 py-1 transition-all duration-500 peer-hover:bg-white/5",
+                i === current ? "opacity-100" : "opacity-35 peer-hover:opacity-80"
+              )}
+            >
+              <p className="flex gap-2 text-[#c9b6ae]">
+                <span className="shrink-0 select-none text-[#ff8a6b]">&gt;</span>
+                <span className="min-w-0">{s.call}</span>
+              </p>
+              <p className="mt-1 flex gap-2">
+                <span className="shrink-0 select-none text-[#7dd3a0]">&#9679;</span>
+                <span className="min-w-0 break-words text-[#ffb08a]">{s.tool}</span>
+                <span className="ml-auto shrink-0 rounded border border-[#ff6347]/30 bg-[#ff6347]/10 px-1.5 text-[0.62rem] font-bold text-[#ff9478]">
+                  {s.law}
+                </span>
+              </p>
+              <p className="mt-0.5 flex gap-2 pl-[1.1rem] text-[#8d7b74]">
+                <CornerDownRight className="mt-0.5 size-3 shrink-0" aria-hidden />
+                <span className="min-w-0 break-words">{s.result}</span>
+              </p>
+            </div>
           </li>
         ))}
       </ol>
