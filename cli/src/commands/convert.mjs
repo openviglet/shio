@@ -95,7 +95,9 @@ export async function run(flags, positionals, ctx) {
   // The plan file and the proposal computed from the capture NOW: the pair is the whole point, since
   // an acceptance is only checkable against the candidates the current markup produces.
   const { proposal, plan, markup, inventory } = await proposalFor(flags, ctx, "convert");
-  const { document, stale, sections, pages, verbatim, mixed, extras, dropped, home } = buildConversion({
+  const {
+    document, stale, sections, pages, verbatim, mixed, extras, dropped, home, unfollowed,
+  } = buildConversion({
     proposal,
     plan,
     site,
@@ -107,6 +109,9 @@ export async function run(flags, positionals, ctx) {
     // SH576 — a source with no document at `/` produced a site whose root answered nothing, and
     // the run said so nowhere. `buildConversion` writes a front door either way; this is which.
     home: typeof flags.home === "string" && flags.home.trim() ? flags.home.trim() : null,
+    // SH584 — the capture's own `unfollowed` list, joined here against the pages being written so
+    // the bound this run inherited is stated by the run rather than by the gate twelve minutes on.
+    inventory,
   });
   if (stale.length) {
     throw new Error(staleMessage(stale, typeof flags.out === "string" ? flags.out : null));
@@ -125,7 +130,7 @@ export async function run(flags, positionals, ctx) {
 
   if (typeof flags.out === "string" && flags.out) {
     await write(join(ctx.cwd, flags.out), `${JSON.stringify(document, null, 2)}\n`, ctx);
-    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home },
+    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home, unfollowed },
       flags));
     ctx.stdout.write(`  document: ${flags.out} (nothing was applied)\n`);
     return { document, applied: false, exitCode: 0 };
@@ -139,7 +144,7 @@ export async function run(flags, positionals, ctx) {
     await requirePostTypeFields(proposal.requires ?? [], { baseUrl, user, password }, ctx);
   }
 
-  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home },
+  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home, unfollowed },
     flags));
 
   // SH437/SH471 — the bytes, which are not content and so cannot ride the document. **Before** the

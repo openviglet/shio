@@ -40,6 +40,7 @@
  * the publish state alone", so re-running this cannot unpublish a page a curator has since published.
  */
 
+import { normalizeUrl } from "./content-files.mjs";
 import { SECTION_FILE_FIELDS } from "./propose.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_SLUG, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
@@ -98,7 +99,7 @@ export const REDIRECT_TO = "TO";
  * @returns {{document: object|null, stale: string[], sections: object[], extras: string[]}}
  */
 export function buildConversion({
-  proposal, plan = {}, site, createSite = false, markup = new Map(), home = null,
+  proposal, plan = {}, site, createSite = false, markup = new Map(), home = null, inventory = null,
 }) {
   const accepted = (plan.accepted ?? []).map((entry) => ({ ...entry }));
   const byId = new Map((proposal?.candidates ?? []).map((row) => [row.id, row]));
@@ -136,6 +137,9 @@ export function buildConversion({
   // it is the shape that used to be silently the first one minus everything it did not accept.
   const verbatim = held.filter((page) => !page.data.sections).length;
   const mixed = held.length - verbatim;
+
+  // SH584 — computed here rather than in the report, because `--json` and the corpus read it too.
+  const unfollowed = unfollowedTargets(inventory, pages);
 
   const extras = [];
   // The Redirect post-type has to exist on the target before a `--home` redirect can be written,
@@ -218,6 +222,53 @@ export function buildConversion({
     // SH552 — what this command cut, so the command that performed the cut is the one that states
     // it. Sorted, so two runs over one capture report the same lines (P5).
     dropped: dropped.sort((a, b) => (`${a.section}${a.field}` < `${b.section}${b.field}` ? -1 : 1)),
+    // SH584 — the bound the operator chose, joined to the pages this run is writing. Returned and
+    // not only printed, for SH576's reason one line up: the corpus asserts it, and `--json` is a
+    // caller too.
+    ...(unfollowed ? { unfollowed } : {}),
+  };
+}
+
+/**
+ * The links this conversion writes that point at pages the crawl never followed (SH584).
+ *
+ * <h3>The fact is established at phase one and stated at phase five, as damage</h3>
+ *
+ * <p>`shio clone --depth 2` over `openviglet.github.io` recorded `unfollowed: 22` — the model
+ * catalogue's vendor pages, one level past the ceiling, each with its path and reference count.
+ * That is the crawl being honest about its own bound, and it is written down before anything is
+ * converted. Twelve minutes and three commands later `shio verify` exits 1 with **22
+ * `page-link-broken` errors**, one per unfollowed path, on a replica whose only other error was
+ * SH467's. Reading the run, twenty-three errors look like a broken conversion; it took opening
+ * `source-inventory.json` and matching the lists one to one to learn that twenty-two of them were
+ * a flag somebody chose.</p>
+ *
+ * <p>The instance cannot know this — it has never seen the capture — so the phase that says it is
+ * the one already holding both halves. This is SH557's shape and its second instance, which is why
+ * it is worth a rule and not only a fix: SH557 was a trait of the source, this is a bound of the
+ * run, and both were knowable at phase one and arrived as a red gate at phase five.</p>
+ *
+ * <h3>Why it is a join and not a copy of `inventory.unfollowed`</h3>
+ *
+ * <p>An unfollowed target can still end up written — `--home` redirects one, and a later crawl at a
+ * higher `--depth` covers others — so echoing the capture's own count would report a page this run
+ * serves as a page it does not. Subtracting what is being written makes the number the one
+ * `verify` will produce, which is the only version of it worth printing.</p>
+ */
+function unfollowedTargets(inventory, pages) {
+  const rows = Array.isArray(inventory?.unfollowed) ? inventory.unfollowed : [];
+  if (!rows.length || !pages.length) return null;
+  const written = new Set(pages.map((page) => normalizeUrl(page.url)));
+  const outstanding = rows
+    .filter((row) => typeof row?.path === "string" && row.path)
+    // A query string never survives into a friendly URL (SH557), and the target is the path.
+    .map((row) => ({ path: row.path.split("?")[0], refs: Number(row.refs) || 0 }))
+    .filter((row) => row.path && !written.has(normalizeUrl(row.path)));
+  if (!outstanding.length) return null;
+  return {
+    paths: outstanding.length,
+    refs: outstanding.reduce((total, row) => total + row.refs, 0),
+    first: outstanding.slice(0, 3).map((row) => row.path),
   };
 }
 
@@ -1026,7 +1077,8 @@ function scriptsPost(scripts, site) {
  * can work at all (SH436).
  */
 export function describeConversion({ document, sections, pages = [], verbatim = 0, mixed = 0, extras,
-                                     requires = [], dropped = [], home = null }, options = {}) {
+                                     requires = [], dropped = [], home = null, unfollowed = null },
+                                   options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   lines.push(
@@ -1088,6 +1140,18 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
     for (const row of dropped.slice(0, 3)) {
       lines.push(`    ${row.section}.${row.field} ${preview(row.value)}`);
     }
+  }
+  // SH584 — the bound this run inherited, in the run that inherits it. Said here rather than left
+  // to `verify` because only this phase holds both halves: the instance has never seen the capture,
+  // so at the gate these are indistinguishable from links the conversion broke. Phrased as a
+  // prediction and not as a finding — nothing is wrong yet, and the two answers are both legitimate.
+  if (unfollowed) {
+    lines.push(
+      `  ${unfollowed.refs} link(s) on the pages being converted point at ${unfollowed.paths} page(s) `
+        + "this crawl did not follow, so they will verify as `page-link-broken`: raise --depth and "
+        + "capture again, or accept them with shio verify --accept. It is a bound this run chose, "
+        + `not damage the replica caused (first: ${unfollowed.first.join(" ")})`,
+    );
   }
   for (const post of document.posts.slice(0, limit)) {
     const title = Object.values(post.data).find((value) => typeof value === "string" && value.trim());

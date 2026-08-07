@@ -2014,30 +2014,6 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
-### XVII.85 A bound the run chose, reported as damage (SH584)
-
-`shio clone --depth 2` over `openviglet.github.io` recorded `unfollowed: 22` — the model
-catalogue's vendor pages, one level past the ceiling, each with the path and its
-reference count. That is the crawl being honest about its own bound, and it is written
-down before anything is converted.
-
-Twelve minutes and three commands later, `shio verify` exits 1 with **22
-`page-link-broken` errors**, one per unfollowed path, on a replica whose only other
-error is SH467's. Reading the run, twenty-three errors look like a broken conversion. It
-took opening `source-inventory.json` and matching the lists one to one to learn that
-twenty-two of them are a flag I chose.
-
-The instance cannot know this — it has never seen the capture — so the phase that can
-say it is the one that already holds both halves. `convert` reads the inventory and
-writes the pages; it is one join away from *22 link(s) on the pages being converted
-point at pages this crawl did not follow, so they will verify as broken: raise
-`--depth`, or accept them with `shio verify --accept`*.
-
-This is SH557's shape and its second instance, which is what makes it worth a rule
-rather than a fix: a fact the chain establishes at phase one and states at phase five,
-in the vocabulary of damage. SH557 was a source trait; this is a bound the operator
-chose. Both are knowable early and both currently arrive as a red gate.
-
 ### XVII.86 The tree cannot spell what the instance now stores (SH585)
 
 SH467 stores the trailing slash a source declared, so an instance can hold a post whose

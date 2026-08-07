@@ -1565,3 +1565,81 @@ test("SH576: a source that answers / is untouched — no invented page, no note"
   assert.equal(built.home, undefined);
   assert.ok(!describeConversion(built).includes("answers nothing at /"));
 });
+
+/**
+ * SH584 — a bound the run chose, reported as damage.
+ *
+ * `shio clone --depth 2` over `openviglet.github.io` recorded `unfollowed: 22`, the model
+ * catalogue's vendor pages one level past the ceiling. Twelve minutes and three commands later
+ * `shio verify` exited 1 with 22 `page-link-broken` errors, one per unfollowed path, on a replica
+ * whose only other error was SH467's. Reading the run, twenty-three errors look like a broken
+ * conversion; it took opening `source-inventory.json` and matching the lists one to one to learn
+ * that twenty-two of them were a flag somebody chose.
+ *
+ * The instance cannot know this — it has never seen the capture — so the phase that says it is the
+ * one already holding both halves. SH557's shape, second instance.
+ */
+
+const CAPTURE_WITH_CEILING = {
+  unfollowed: [
+    { path: "/vendors/acme", refs: 12 },
+    { path: "/vendors/globex", refs: 8 },
+    { path: "/vendors/initech?ref=nav", refs: 2 },
+  ],
+};
+
+test("SH584: convert says the links a depth ceiling will make verify call broken", () => {
+  const built = buildConversion({
+    proposal: composed([{ path: "/", title: "Home", blocks: ["hero1"] }], [candidate("hero1")]),
+    plan: ACCEPT_HERO,
+    site: "Acme",
+    inventory: CAPTURE_WITH_CEILING,
+  });
+
+  assert.deepEqual(built.unfollowed, {
+    paths: 3,
+    refs: 22,
+    first: ["/vendors/acme", "/vendors/globex", "/vendors/initech"],
+  }, "returned and not only printed — --json is a caller, and so is the corpus");
+
+  const report = describeConversion(built);
+  assert.match(report, /22 link\(s\).*point at 3 page\(s\).*did not follow/);
+  assert.match(report, /page-link-broken/, "the rule name verify will use, so the two runs join");
+  assert.match(report, /raise --depth/);
+  assert.match(report, /shio verify --accept/);
+  assert.match(report, /bound this run chose, not damage the replica caused/);
+});
+
+test("SH584: a target this run does write is not counted — it is a join, not a copy", () => {
+  // Echoing `inventory.unfollowed` would report a page the replica serves as a page it does not.
+  // The number printed has to be the one `verify` will produce, or it is worse than silence.
+  const built = buildConversion({
+    proposal: composed(
+      [{ path: "/", title: "Home", blocks: ["hero1"] },
+        { path: "/vendors/acme/", title: "Acme", blocks: ["hero1"] }],
+      [candidate("hero1")],
+    ),
+    plan: ACCEPT_HERO,
+    site: "Acme",
+    inventory: CAPTURE_WITH_CEILING,
+  });
+
+  assert.equal(built.unfollowed.paths, 2, "a page written at /vendors/acme/ answers /vendors/acme");
+  assert.equal(built.unfollowed.refs, 10);
+  assert.ok(!built.unfollowed.first.includes("/vendors/acme"));
+});
+
+test("SH584: a capture with no ceiling says nothing, and a pre-SH387 one does not crash", () => {
+  // The note has to be absent on the ordinary run, or it becomes the line everybody skips. And
+  // `unfollowed` arrived in inventory version 2, so a capture on disk may simply not have it.
+  for (const inventory of [{ unfollowed: [] }, {}, null, { unfollowed: "not a list" }]) {
+    const built = buildConversion({
+      proposal: composed([{ path: "/", title: "Home", blocks: ["hero1"] }], [candidate("hero1")]),
+      plan: ACCEPT_HERO,
+      site: "Acme",
+      inventory,
+    });
+    assert.equal(built.unfollowed, undefined);
+    assert.ok(!describeConversion(built).includes("did not follow"));
+  }
+});

@@ -389,6 +389,23 @@ out of `missing` so the gate reads only real damage — `diff` prints them apart
 and **does not request them at all** (91 round trips to be told 404 ninety-one times). The note is
 the advice; the split is what the gate reads, which is why the split matters more.
 
+**A bound the run chose is not damage the replica caused (SH584).** SH557's shape, second instance,
+which is what makes it a rule rather than a fix: `shio clone --depth 2` over `openviglet.github.io`
+recorded **`unfollowed: 22`** — the model catalogue's vendor pages, one level past the ceiling, each
+with its path and reference count, written down before anything was converted. Twelve minutes and
+three commands later `shio verify` exited 1 with **22 `page-link-broken` errors**, one per
+unfollowed path, on a replica whose only other error was SH467's. Twenty-three errors read as a
+broken conversion; it took opening `source-inventory.json` and matching the lists one to one to
+learn that twenty-two were a flag somebody chose. The instance cannot know this — it has never seen
+the capture — so the phase that says it is the one already holding both halves.
+`buildConversion` joins `inventory.unfollowed` against the pages it is writing and returns
+`{paths, refs, first}`; `describeConversion` prints it naming **the rule `verify` will use**, so the
+two runs join by the reader's own grep. **A join and not a copy of `unfollowed`**: a target this run
+does write — `--home` redirects one, a deeper re-crawl covers others — is subtracted, because the
+number printed has to be the number the gate will produce or it is worse than silence. Phrased as a
+prediction rather than a finding, and with both answers named (`--depth`, or
+`shio verify --accept`), because nothing is wrong yet and either is legitimate.
+
 **And one function was not enough (SH554).** "Both sides come out of `scanPage`" was true and
 insufficient: `scanPage`'s `links` is an array of raw hrefs, an inventory row's is
 `{internal, external}`, and the split between them lived inline in `buildInventory` — so it ran on
