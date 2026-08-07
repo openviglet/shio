@@ -23,6 +23,7 @@
  * file, and resolvable by the front end with one CDA call per section.
  */
 import {
+  aceHtml,
   comboBox,
   file,
   htmlEditor,
@@ -98,6 +99,22 @@ export const page = (): ShPostTypeDef =>
         // open on purpose: the values resolve to posts that carry their own type, and the front
         // end dispatches on it.
         references: "post",
+      }),
+      // SH607 — markup the page carries itself, rendered around its sections. Added because it
+      // was already being written: `shio convert` emits `title`, `description`, `sections` AND
+      // `content` on every page, and three `Page` definitions shipped without one that could hold
+      // all four — this one had no `content` and the SH71 bootstrap starter's has no `sections`.
+      // So the type every conversion has ever been written against matched no file in the repo,
+      // and the chain worked only on instances carrying a hand-made hybrid.
+      //
+      // An Ace HTML editor rather than the WYSIWYG one: this holds a whole page body captured
+      // from somebody else's site, so it is code a curator inspects, and SH191 then projects it
+      // to an `.html` sidecar instead of inlining a megabyte into the content file.
+      aceHtml("content", {
+        label: "Content",
+        description:
+          "Markup this page carries itself, rendered around its sections. A conversion writes "
+          + "the source's own body here for the blocks nobody made authorable.",
       }),
     ],
   });

@@ -37,6 +37,7 @@ import com.viglet.shio.api.error.ShDataIntegrityProblem;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.render.ShTemplateTitles;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.post.type.ShVocabularyPostTypes;
 import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.render.ShTemplateValidator;
 import com.viglet.shio.render.ShTemplateValidator.ShTemplateProblem;
@@ -176,6 +177,8 @@ public class ShAgentBatchService {
     private final ShTemplateValidator shTemplateValidator;
     private final ShTemplateTitles shTemplateTitles;
     private final ShRenderPostTypes shRenderPostTypes;
+    /** SH607 — the SH95 vocabulary, so `render.provision` can install what a conversion writes. */
+    private final ShVocabularyPostTypes shVocabularyPostTypes;
     private final ShPostLinks shPostLinks;
 
     public ShAgentBatchService(ShAgentSiteAccess siteAccess,
@@ -192,6 +195,7 @@ public class ShAgentBatchService {
                                ShTemplateValidator shTemplateValidator,
                                ShTemplateTitles shTemplateTitles,
                                ShRenderPostTypes shRenderPostTypes,
+                               ShVocabularyPostTypes shVocabularyPostTypes,
                                ShPostLinks shPostLinks) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
@@ -207,6 +211,7 @@ public class ShAgentBatchService {
         this.shTemplateValidator = shTemplateValidator;
         this.shTemplateTitles = shTemplateTitles;
         this.shRenderPostTypes = shRenderPostTypes;
+        this.shVocabularyPostTypes = shVocabularyPostTypes;
         this.shPostLinks = shPostLinks;
     }
 
@@ -319,6 +324,40 @@ public class ShAgentBatchService {
             return union.size() == sites.size() ? this : new Declared(union, postTypes);
         }
 
+        /**
+         * This declaration, plus every vocabulary type the run would create by its own
+         * {@code render.provision} (SH607).
+         *
+         * <p>The post-type twin of {@link #withSitesFrom}, and it exists for the same reason SH153
+         * gave the original: without it a <b>dry run</b> of a document that provisions {@code Page}
+         * and then writes one fails on the first post, so planning a conversion into a bare instance
+         * — the case the whole thing is for — is the case that cannot be planned. Read off the run's
+         * own ops rather than promised by a caller, so it can never make a plan greener than the
+         * apply it predicts, and a hand-written batch gets it too.</p>
+         *
+         * <p>An unknown name is left alone: {@code render.provision} raises the teaching error with
+         * the {@code allowed} list when it runs, and a second refusal raised from here would report
+         * one defect twice with less context.</p>
+         *
+         * @param fieldsOf the catalogue, as a lookup — empty for a name it does not carry
+         */
+        Declared withPostTypesFrom(List<ShAgentBatch.Op> ops,
+                                   java.util.function.Function<String, Set<String>> fieldsOf) {
+            Map<String, Set<String>> union = new LinkedHashMap<>(postTypes);
+            for (ShAgentBatch.Op op : ops) {
+                if (!RENDER_PROVISION.equals(op.op())) {
+                    continue;
+                }
+                for (String name : strings(op.data(), "types")) {
+                    Set<String> fields = fieldsOf.apply(name);
+                    if (!fields.isEmpty()) {
+                        union.putIfAbsent(name, fields);
+                    }
+                }
+            }
+            return union.size() == postTypes.size() ? this : new Declared(sites, union);
+        }
+
         private boolean declaresSite(String nameOrId) {
             if (nameOrId == null) {
                 return false;
@@ -388,7 +427,10 @@ public class ShAgentBatchService {
         // the three entry points so the blueprint path gets it too: a package may carry a
         // `site.upsert` its manifest never declared, and that is the same plan failing the same way.
         // Honoured on a dry run only, by `Session` — the record is a planning aid, never a write.
-        Declared declared = givenDeclared.withSitesFrom(ops);
+        // SH607 — and the same for the vocabulary types the run's own `render.provision` installs,
+        // so a dry run of a conversion into a bare instance can be planned at all.
+        Declared declared = givenDeclared.withSitesFrom(ops)
+                .withPostTypesFrom(ops, shVocabularyPostTypes::fieldNames);
         // SH107 — publishing is a capability, not a default. Checked before anything runs and
         // on a dryRun too: an agent that cannot publish should learn that while planning, not
         // after it has built twelve pages around the assumption.
@@ -573,6 +615,11 @@ public class ShAgentBatchService {
         List<String> missing = ShRenderPostTypes.NAMES.stream()
                 .filter(name -> !already.contains(name))
                 .toList();
+        // SH607 — `data.types` names SH95 vocabulary types this run is about to write against.
+        // Resolved before anything is created, so an unknown name refuses the batch instead of
+        // half-installing a model: `requireKnown` checks the whole list first.
+        List<String> vocabulary = strings(op.data(), "types");
+        List<String> vocabularyMissing = shVocabularyPostTypes.missing(vocabulary);
         // The row's address is the op's own when it named one — an agent provisioning while building a
         // site has `site:<name>` in hand and a row that echoes it reads in place. Otherwise the model
         // is the subject and there is no SH79 form for it, so the field is absent rather than invented:
@@ -586,30 +633,57 @@ public class ShAgentBatchService {
         // instance able to render" — asked of a new instance and of an old one.
         boolean alsoReconcile = flag(op.data(), "reconcile");
         List<String> repairs = alsoReconcile ? shRenderPostTypes.reconcile(true) : List.of();
-        if (missing.isEmpty() && repairs.isEmpty()) {
+        if (missing.isEmpty() && repairs.isEmpty() && vocabularyMissing.isEmpty()) {
             return new Change(op.op(), address, Change.NOOP,
-                    alsoReconcile ? "all three render post-types exist and none is missing a field"
-                            : "all three render post-types exist", null);
+                    nothingToDo(alsoReconcile, vocabulary), null);
         }
         if (session.dryRun) {
-            return new Change(op.op(), address, Change.CREATE, planned(missing, repairs), null);
+            return new Change(op.op(), address, Change.CREATE,
+                    planned(missing, repairs, vocabularyMissing), null);
         }
         if (!missing.isEmpty()) {
             shRenderPostTypes.ensure();
         }
+        // SH607 — after the render five, because a vocabulary type is content and the five are the
+        // machinery that renders it; a run that failed between the two leaves the cheaper half done.
+        List<String> vocabularyCreated = vocabularyMissing.isEmpty()
+                ? List.of() : shVocabularyPostTypes.ensure(vocabulary);
         if (alsoReconcile) {
             // Re-run for effect. The plan above was the dry pass, and reading it twice is what
             // keeps the reported lines the ones that were actually applied — `ensure` may have
             // just created a type that then needs nothing.
             repairs = shRenderPostTypes.reconcile(false);
         }
-        return new Change(op.op(), address, Change.CREATE, applied(missing, repairs), null);
+        return new Change(op.op(), address, Change.CREATE,
+                applied(missing, repairs, vocabularyCreated), null);
     }
 
-    private static String planned(List<String> missing, List<String> repairs) {
+    /**
+     * The noop sentence, which has to say what it looked at (SH607).
+     *
+     * <p>"the render post-types exist" is a true answer to a question the caller may not have asked:
+     * a run that named {@code data.types} wants to know about <em>those</em>, and a report that
+     * mentions only the render five reads as though the list was ignored — which is exactly what it
+     * used to be. It also stopped saying "all three": there have been five since SH385/SH389, and a
+     * count in prose is a thing that goes stale silently.</p>
+     */
+    private static String nothingToDo(boolean alsoReconcile, List<String> vocabulary) {
+        String render = alsoReconcile
+                ? "the render post-types exist and none is missing a field"
+                : "the render post-types exist";
+        return vocabulary.isEmpty()
+                ? render
+                : render + ", and so does " + String.join(", ", vocabulary);
+    }
+
+    private static String planned(List<String> missing, List<String> repairs,
+                                  List<String> vocabulary) {
         List<String> parts = new ArrayList<>();
         if (!missing.isEmpty()) {
             parts.add("would create " + String.join(", ", missing));
+        }
+        if (!vocabulary.isEmpty()) {
+            parts.add("would create " + String.join(", ", vocabulary));
         }
         if (!repairs.isEmpty()) {
             parts.add("would add " + String.join("; ", repairs));
@@ -617,15 +691,43 @@ public class ShAgentBatchService {
         return String.join("; ", parts);
     }
 
-    private static String applied(List<String> missing, List<String> repairs) {
+    private static String applied(List<String> missing, List<String> repairs,
+                                  List<String> vocabulary) {
         List<String> parts = new ArrayList<>();
         if (!missing.isEmpty()) {
             parts.add("created " + String.join(", ", missing));
+        }
+        if (!vocabulary.isEmpty()) {
+            parts.add("created " + String.join(", ", vocabulary));
         }
         if (!repairs.isEmpty()) {
             parts.add("added " + String.join("; ", repairs));
         }
         return parts.isEmpty() ? "nothing to do" : String.join("; ", parts);
+    }
+
+    /**
+     * A string-array field of an op's {@code data}, empty when absent (SH607).
+     *
+     * <p>Non-string entries are dropped rather than refused, for the reason {@link #bindingsOf}
+     * gives: a malformed value is simply not a name, and the refusal that matters — a name this
+     * instance does not ship — is the catalogue's to make, with the {@code allowed} list attached.</p>
+     */
+    private static List<String> strings(JsonNode data, String field) {
+        if (data == null || !data.isObject()) {
+            return List.of();
+        }
+        JsonNode node = data.get(field);
+        if (node == null || !node.isArray()) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        for (JsonNode entry : node) {
+            if (entry != null && entry.isString() && !entry.stringValue().isBlank()) {
+                values.add(entry.stringValue().trim());
+            }
+        }
+        return List.copyOf(values);
     }
 
     /** A boolean field of an op's {@code data}, false when absent or not a boolean. */

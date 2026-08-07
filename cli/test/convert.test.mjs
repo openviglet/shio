@@ -63,6 +63,52 @@ test("SH417: an accepted candidate becomes one section post, in DRAFT", () => {
       + "page a curator has since published — and P7's draft-default is why a human is in this loop",
   );
   assert.deepEqual(document.folders, [{ path: SECTIONS_FOLDER }]);
+  assert.deepEqual(
+    document.postTypes,
+    ["SectionHero"],
+    "SH607: the type that section is written as, declared so the run installs it. There is no `Page` "
+      + "here because this proposal composes none, which is the same rule the folders follow — a "
+      + "document declares what it writes and nothing else (P5)",
+  );
+});
+
+test("SH607: the declaration is sorted and de-duplicated, so one capture converts to one document", () => {
+  // P5: two candidates of one type produce one name, and the order is the sort's rather than the
+  // plan's. `--out` writes this to disk and a human diffs two runs of it, so a set whose order came
+  // from the acceptance order would show a change where the conversion made none.
+  const { document } = buildConversion({
+    proposal: {
+      candidates: [
+        candidate("b1a2", { type: "SectionRichText" }),
+        candidate("c3d4"),
+        candidate("e5f6"),
+      ],
+    },
+    plan: {
+      accepted: [
+        { block: "e5f6", type: "SectionHero" },
+        { block: "b1a2", type: "SectionRichText" },
+        { block: "c3d4", type: "SectionHero" },
+      ],
+    },
+    site: "Acme",
+  });
+
+  assert.deepEqual(document.postTypes, ["SectionHero", "SectionRichText"]);
+});
+
+test("SH607: a type the vocabulary has no definition for is left for the instance to refuse", () => {
+  // SH379 turns an unmatched block into a `Block*` post-type of its own, which this catalogue was
+  // never going to carry. Naming it here would trade the instance's honest `No post-type named
+  // 'BlockPricing'` — which says exactly what to create — for a refusal about a vocabulary the
+  // caller never asked for.
+  const { document } = buildConversion({
+    proposal: { candidates: [candidate("b1a2", { type: "BlockPricing" })] },
+    plan: { accepted: [{ block: "b1a2", type: "BlockPricing" }] },
+    site: "Acme",
+  });
+
+  assert.equal(document.postTypes, undefined);
 });
 
 test("SH417: a stale acceptance refuses the whole document rather than writing part of it", () => {
@@ -360,6 +406,15 @@ test("SH449: nothing accepted writes the page verbatim, which is what fidelity m
     { Page: "Acme (fidelity)" },
     "SH328/SH449: the binding rides the document. A layout nobody bound renders nothing, and this "
       + "is the one edge no post.upsert can express — without it --out would be un-appliable",
+  );
+  assert.deepEqual(
+    document.postTypes,
+    ["Page"],
+    "SH607: and the model the binding names, because nothing else was going to create it. Fidelity "
+      + "mode accepts nothing and still writes a `Page`, so this is the mode that proves the gap "
+      + "was never about sections: a bare instance ships File, PageLayout, Redirect, Region, "
+      + "SiteScripts and Theme, and every one of the other types this document writes is one of "
+      + "them — which is exactly why the omission was invisible until CI booted an empty database",
   );
   assert.match(ctx.stdout.text, /1 of 1 page\(s\) in fidelity mode/);
 });

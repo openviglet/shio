@@ -177,6 +177,16 @@ public class ShAgentDesiredStateService {
         }
 
         List<ShAgentBatch.Op> ops = new ArrayList<>();
+        // SH607 — the model before anything written against it, which is the order
+        // `ShBlueprintWriteService` already applies for the same reason: a document that declares
+        // its post-types and writes a post of one is one intention, and splitting it into two calls
+        // is what made `shio convert` unable to run against a fresh instance at all. Compiled to
+        // `render.provision` rather than taught to this class, which is P10 and also what gives the
+        // dry run its answer — `Declared.withPostTypesFrom` reads this very op.
+        if (desired.postTypes() != null && !desired.postTypes().isEmpty()) {
+            ops.add(op(ShAgentBatchService.RENDER_PROVISION, null, null, null,
+                    postTypeData(desired.postTypes())));
+        }
         // SH439 — `createSite` first, before the folder a post needs. It is the whole flag: the op
         // is `site.upsert`, so an apply creates the site and a *plan* resolves against it too,
         // because SH329's `withSitesFrom` reads the sites a run would create off the run's own ops.
@@ -458,6 +468,27 @@ public class ShAgentDesiredStateService {
                 layout.put(entry.getKey(), entry.getValue());
             }
         }
+        return data;
+    }
+
+    /**
+     * SH607 — `{"types": [...]}` for the provision op, as the JSON literal the op reads.
+     *
+     * <p>Sorted and de-duplicated here rather than trusted from the document: this list ends up in
+     * an op row a caller diffs between runs, and two conversions of one capture must produce the
+     * same bytes (P5). Blanks are dropped for {@link #bindingData}'s reason — a value the op would
+     * silently skip is one the caller learns about from a later failure.</p>
+     */
+    private static tools.jackson.databind.JsonNode postTypeData(List<String> postTypes) {
+        tools.jackson.databind.node.ObjectNode data = tools.jackson.databind.node.JsonNodeFactory
+                .instance.objectNode();
+        tools.jackson.databind.node.ArrayNode types = data.putArray("types");
+        postTypes.stream()
+                .filter(name -> name != null && !name.isBlank())
+                .map(String::trim)
+                .distinct()
+                .sorted()
+                .forEach(types::add);
         return data;
     }
 

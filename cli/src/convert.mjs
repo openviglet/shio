@@ -41,7 +41,7 @@
  */
 
 import { normalizeUrl } from "./content-files.mjs";
-import { SECTION_FILE_FIELDS } from "./propose.mjs";
+import { SECTION_FILE_FIELDS, SECTION_TYPES } from "./propose.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_SLUG, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
 } from "./vocabulary-theme.mjs";
@@ -200,6 +200,15 @@ export function buildConversion({
     ...(pages.length ? [PAGES_FOLDER] : []),
     ...(extras.length ? [THEME_FOLDER] : []),
   ];
+  // SH607 — the SH95 types this document writes posts of, sorted so two conversions of one capture
+  // are the same bytes (P5). Filtered to the vocabulary on purpose: a block the vocabulary has no
+  // type for is proposed as a `Block*` post-type of its own (SH379), and naming one here would
+  // trade its honest `No post-type named 'BlockPricing'` for a refusal about a catalogue that was
+  // never going to carry it.
+  const vocabulary = [
+    ...(pages.length ? [PAGE_TYPE] : []),
+    ...new Set(sections.map((post) => post.type).filter((type) => type in SECTION_TYPES)),
+  ].sort((a, b) => (a < b ? -1 : 1));
   return {
     document: {
       site,
@@ -211,6 +220,12 @@ export function buildConversion({
       // It rides in the document a human can read *before* the run, so `shio site rm --scratch`
       // removing it later is not the surprise P7 forbids — the declaration preceded the content.
       ...(createSite && scratch ? { scratch: true } : {}),
+      // SH607 — the model this conversion writes against, installed before it writes. Every other
+      // type a conversion emits is a *system* one the instance provisions on demand (`Theme`,
+      // `SiteScripts`, `Redirect`, `PageLayout`, `File`), which is why the omission was invisible:
+      // the two that are not — `Page` and the SH95 sections — shipped only inside a blueprint, so
+      // the whole chain failed on a bare instance and passed on every instance anybody tried it on.
+      ...(vocabulary.length ? { postTypes: vocabulary } : {}),
       // SH449 — the edge that turns a layout into a rendered page. Written only when there is a
       // layout to bind, so a document that does not need it is the same bytes it was before (P5).
       ...(pages.length ? { postTypeLayout: { [PAGE_TYPE]: fidelityLayoutTitle(site) } } : {}),

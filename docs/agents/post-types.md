@@ -66,6 +66,28 @@ next upload is the trigger, so an instance nobody uploads to stays as it was. `A
 the instruction was wrong for exactly the case that produced the findings (P6). It now branches on
 the `system` flag and says what actually works.
 
+**A bare instance ships six types, and the SH95 vocabulary is not among them (SH607).** `File`,
+`PageLayout`, `Region`, `Theme`, `Redirect` and `SiteScripts` are created on demand; everything
+else is a user's, an import's or a blueprint's. `Page` and the seven `Section*` are a blueprint's —
+which is why `shio convert`, whose posts are `Page` and `Section*`, answered 400 on a Shio nobody
+had used, on *every* mode including fidelity, with every suite green because a development instance
+had applied a blueprint months earlier. **`render.provision` now takes `data.types`**, a list of
+names resolved against `classpath:/post-types/vocabulary/*.json` — emitted from
+`shio-sections/src/post-types.ts` by `pnpm -C shio-sections run emit` alongside the two blueprint
+copies, with `emit.test.mjs` failing the build when the three disagree. Names and never
+definitions: a caller that could send a def would have a second way to redefine `Page` underneath
+somebody's site, so an unknown name is a 400 listing the catalogue rather than a type it invents.
+The desired-state document's `postTypes` compiles to that op **first**, the order
+`ShBlueprintWriteService` already uses against this same failure, and `Declared.withPostTypesFrom`
+reads it off the run's own ops so a **dry run** into a bare instance resolves — SH153's problem
+from the conversion side. Provision-never-upsert throughout (SH152), so a curator who added a field
+to their `SectionHero` keeps it and a re-conversion changes no model.
+**And the `Page` it installs is wider than any that shipped.** Three definitions existed and none
+held the four keys `buildConversion` writes: the SH71 starter has `title`/`content` and no
+`sections`, the blueprints had `title`/`description`/`sections` and no `content`. `content` is an
+`Ace Editor - HTML` — it holds a whole captured page body, so it is code a curator inspects and
+SH191 projects it to an `.html` sidecar rather than inlining a megabyte into the content file.
+
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
 SH71 bootstrap template. A token with an SH2 site allow-list is **refused** — inventing a site

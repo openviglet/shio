@@ -44,6 +44,7 @@ import { fileURLToPath } from "node:url";
 
 import { unpublished } from "@viglet/create-shio-app/published";
 
+import { ShioAdminClient } from "../src/admin-client.mjs";
 import { ShioAgentClient } from "../src/agent-client.mjs";
 import { INVENTORY_FILE, MARKUP_DIR } from "../src/clone.mjs";
 import { ASSETS_DIR } from "../src/content-assets.mjs";
@@ -198,6 +199,29 @@ describe("SH448 conformance: replication, from a served source to an installable
     // SH439: `--create-site` compiles to a `site.upsert` op, run first. Without it this refusal
     // was the one a reader could not act on — the resolver named a verb the command did not take.
     await convert.run({ site, createSite: true }, [], ctx);
+
+    // SH607 — the conversion installed the model it writes against, which is the step that was
+    // never there. Every other type this document emits is a *system* one the instance provisions
+    // on demand (Theme, SiteScripts, Redirect, PageLayout, File); `Page` and the SH95 sections
+    // shipped only inside a blueprint, so on a bare instance `apply` answered 400 with
+    // `allowed: [File, PageLayout, Redirect, Region, SiteScripts, Theme]` and every replication
+    // scenario failed — fidelity included. This file was green throughout, because a development
+    // instance had the types from an earlier console site or blueprint apply. Asserting the types
+    // exist *after* a conversion is what makes the claim independent of which instance this is.
+    const admin = new ShioAdminClient(conn);
+    for (const declared of ["Page", "SectionHero", "SectionFeatureGrid"]) {
+      assert.ok(
+        await admin.getPostTypeDef(declared),
+        `SH607: the conversion provisioned ${declared}. A capture cannot be replicated into a Shio `
+          + `that has never been used, which is the only kind of Shio a new operator has`,
+      );
+    }
+    assert.ok(
+      (await admin.getPostTypeDef("Page")).fields.some((field) => field.name === "content"),
+      "SH607: and it is the Page a conversion can actually write — three definitions shipped and "
+        + "none held all four keys `buildConversion` emits, so the type every green run wrote "
+        + "against matched no file in the repository",
+    );
 
     const agent = new ShioAgentClient(conn);
     const resolved = await agent.resolve(`post:${site}/`);

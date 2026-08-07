@@ -709,7 +709,10 @@ renderer over one body of content at a second address. See the section on it bel
   not fix it — and that finding's own `fix` named the route, the SH328 shape again. Opt-in and
   never implied by `ensure`: SH289's division is that `ensure` creates what is absent and is safe
   unattended, while reconcile **changes a type the instance already has**. One op rather than a
-  tenth name, because a vocabulary is paid for by every caller that reads it (P3).
+  tenth name, because a vocabulary is paid for by every caller that reads it (P3). **SH607 added
+  `data.types` on the same argument** — the SH95 vocabulary by name, so a conversion can install
+  the `Page` and `Section*` a bare instance does not ship. Detail in
+  [post-types.md](post-types.md).
 - **Two URLs per frame, and the pair is the point (SH337)** — the model carries
   `post.url` / `site.url` (the fields as content spells them) *and* `post.canonical` /
   `site.baseUrl` (the same two facts through `ShSiteFrontEnd`, SH184). The raw pair could not

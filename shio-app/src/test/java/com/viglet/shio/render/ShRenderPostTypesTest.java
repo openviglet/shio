@@ -84,7 +84,9 @@ class ShRenderPostTypesTest {
                 new com.viglet.shio.api.agent.dto.ShAgentBatch(false, List.of(provision)), false, "tester");
         assertThat(again.results()).singleElement().satisfies(row -> {
             assertThat(row.action()).isEqualTo("noop");
-            assertThat(row.detail()).contains("all three render post-types exist");
+            // SH607 dropped the count from the sentence: there have been five since SH385/SH389,
+            // and "all three" had been wrong in prose for two tasks with this line green.
+            assertThat(row.detail()).contains("the render post-types exist");
         });
         assertThat(again.changed()).isZero();
     }

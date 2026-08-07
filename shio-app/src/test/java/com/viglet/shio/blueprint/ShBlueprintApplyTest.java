@@ -274,7 +274,17 @@ class ShBlueprintApplyTest {
                 .singleElement()
                 .satisfies(postType -> {
                     assertThat(postType.action()).isEqualTo("exists");
-                    assertThat(postType.missing()).containsExactly("description", "sections");
+                    // `contains` rather than `containsExactly`, and the reason is the finding
+                    // SH607 is about. `missing()` is relative to the **live** type, and a
+                    // post-type is instance-wide: whichever `Page` this database already carries
+                    // decides the tail of this list. The suite shares one database, so an earlier
+                    // test that provisioned the SH71 bootstrap starter — whose `Page` is
+                    // title+content — leaves `content` present and only these two missing, while
+                    // this test alone leaves all three. Both are correct answers to "what does
+                    // the package expect that this type does not have"; the assertion this test
+                    // owns is that the mismatch is *reported*, not how long it is. The canonical
+                    // field list is asserted where it belongs, in ShVocabularyCatalogTest.
+                    assertThat(postType.missing()).contains("description", "sections");
                 });
         // SH168: and the content half of the same answer — the plan says which writes the
         // missing fields will break, rather than reporting `update` and failing on apply.

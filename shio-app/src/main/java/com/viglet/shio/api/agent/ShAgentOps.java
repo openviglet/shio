@@ -164,7 +164,9 @@ public final class ShAgentOps {
                             + "idempotently. Do this once before writing a layout: post.upsert "
                             + "cannot create a system type, and until they exist /preview has "
                             + "nothing to compose. `data.reconcile:true` also adds fields an "
-                            + "older instance's render types are missing. Takes no address."));
+                            + "older instance's render types are missing. `data.types` installs "
+                            + "SH95 vocabulary types by name (Page, SectionHero) - a bare "
+                            + "instance ships none. Takes no address."));
 
     private ShAgentOps() {
         // utility

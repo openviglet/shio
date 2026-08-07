@@ -1,0 +1,58 @@
+{
+  "name": "Page",
+  "title": "Page",
+  "namePlural": "Pages",
+  "description": "A page composed of sections. `sections` lists section friendly URLs in render order.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "title",
+      "label": "Title",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "description",
+      "label": "Description",
+      "description": "Used as the page summary and the meta description.",
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "sections",
+      "label": "Sections",
+      "description": "Friendly URLs of the section posts, in render order — e.g. /sections/home/hero.",
+      "widget": "Multi Select",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
+      "fields": []
+    },
+    {
+      "name": "content",
+      "label": "Content",
+      "description": "Markup this page carries itself, rendered around its sections. A conversion writes the source's own body here for the blocks nobody made authorable.",
+      "widget": "Ace Editor - HTML",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

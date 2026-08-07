@@ -41,6 +41,18 @@
       "ordinal": 3,
       "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
       "fields": []
+    },
+    {
+      "name": "content",
+      "label": "Content",
+      "description": "Markup this page carries itself, rendered around its sections. A conversion writes the source's own body here for the blocks nobody made authorable.",
+      "widget": "Ace Editor - HTML",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
     }
   ]
 }

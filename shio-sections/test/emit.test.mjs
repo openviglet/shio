@@ -44,7 +44,12 @@ test("the section vocabulary reaches every package that claims to compose sectio
   // a decision, and it should look like one in this list.
   assert.deepEqual(
     TARGETS.map((path) => path.split(/[\\/]/).at(-2)),
-    ["marketing-site", "landing"],
+    // SH607 added the third, and it is the one that is not a package: `post-types/vocabulary` is
+    // the instance's catalogue, so `render.provision` can install a type into an instance that
+    // applied no blueprint. That is the case `shio convert` is, and the case that did not work.
+    // `at(-2)` is a package name for the first two and the resource root for the third, which is
+    // the difference itself: `post-types/vocabulary` is not a package.
+    ["marketing-site", "landing", "post-types"],
   );
 });
 

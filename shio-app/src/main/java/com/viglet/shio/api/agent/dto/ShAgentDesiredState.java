@@ -78,6 +78,19 @@ import tools.jackson.databind.JsonNode;
  *                than folded into it: it began as a workaround for a create branch that
  *                dropped bindings, and since SH453 fixed that it is a choice — this field is
  *                settable without {@code createSite}, so one op serves both cases
+ * @param postTypes SH95 vocabulary post-type names this document's posts are written against,
+ *                installed before anything else runs (SH607). Compiles to the
+ *                {@code render.provision} op, which is idempotent, so a document may declare
+ *                them on every run. <b>Names, never definitions</b>: the model is the
+ *                instance's, shipped at {@code post-types/vocabulary/}, and a document that
+ *                could carry a def would be a second way to change the content model — one an
+ *                agent could use to redefine {@code Page} underneath somebody's site. A name
+ *                this instance does not ship is a 400 listing the ones it does. What this
+ *                closes: {@code shio convert} wrote {@code Page} and {@code Section*} posts and
+ *                nothing provisioned them, so the whole replication chain — fidelity included —
+ *                failed on a bare instance with {@code allowed: [File, PageLayout, Redirect,
+ *                Region, SiteScripts, Theme]}, and passed everywhere it was tried because a
+ *                development instance had accumulated the types from an earlier blueprint
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -85,37 +98,46 @@ import tools.jackson.databind.JsonNode;
 public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                   List<Move> moves, boolean prune, String confirm,
                                   boolean createSite, Map<String, String> postTypeLayout,
-                                  boolean scratch) {
+                                  boolean scratch, List<String> postTypes) {
+
+    /** The nine-field form: every caller before SH607 wrote against a model somebody else made. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
+                               List<Move> moves, boolean prune, String confirm,
+                               boolean createSite, Map<String, String> postTypeLayout,
+                               boolean scratch) {
+        this(site, folders, posts, moves, prune, confirm, createSite, postTypeLayout, scratch,
+                null);
+    }
 
     /** The eight-field form: every caller before SH591 made a site declarable as disposable. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                List<Move> moves, boolean prune, String confirm,
                                boolean createSite, Map<String, String> postTypeLayout) {
-        this(site, folders, posts, moves, prune, confirm, createSite, postTypeLayout, false);
+        this(site, folders, posts, moves, prune, confirm, createSite, postTypeLayout, false, null);
     }
 
     /** The four-field form: every document that does not prune, and every pre-SH108 caller. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts, boolean prune) {
-        this(site, folders, posts, null, prune, null, false, null, false);
+        this(site, folders, posts, null, prune, null, false, null, false, null);
     }
 
     /** The five-field form: pre-SH150 callers, which never moved anything. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                boolean prune, String confirm) {
-        this(site, folders, posts, null, prune, confirm, false, null, false);
+        this(site, folders, posts, null, prune, confirm, false, null, false, null);
     }
 
     /** The six-field form: pre-SH439 callers, which never created the site they wrote into. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                List<Move> moves, boolean prune, String confirm) {
-        this(site, folders, posts, moves, prune, confirm, false, null, false);
+        this(site, folders, posts, moves, prune, confirm, false, null, false, null);
     }
 
     /** The seven-field form: pre-SH449 callers, which never bound a layout. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                List<Move> moves, boolean prune, String confirm,
                                boolean createSite) {
-        this(site, folders, posts, moves, prune, confirm, createSite, null, false);
+        this(site, folders, posts, moves, prune, confirm, createSite, null, false, null);
     }
 
     /**
