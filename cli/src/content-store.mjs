@@ -20,6 +20,7 @@ import {
   filePathFor,
   folderMarkerPathFor,
   normalizeUrl,
+  storedUrl,
   parseFolderMarker,
   parsePost,
   projectedPost,
@@ -832,7 +833,10 @@ export function fromAgentDoc(doc) {
   if (slash < 0) return null;
   return {
     site: rest.slice(0, slash),
-    url: normalizeUrl(rest.slice(slash)),
+    // SH585 — the stored spelling when the read reports one, the address's path otherwise. The
+    // read omits `url` whenever the two agree, which is every post that does not carry a trailing
+    // slash, so this falls back for almost all of them and the tree is byte-identical to before.
+    url: doc.url ? storedUrl(doc.url) : normalizeUrl(rest.slice(slash)),
     type: doc.type ?? null,
     folder: doc.folder == null ? null : normalizeUrl(doc.folder),
     // SH348 — the read reports a locale only when it is not the instance default, so this is

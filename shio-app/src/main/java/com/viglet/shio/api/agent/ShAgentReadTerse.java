@@ -89,6 +89,10 @@ public final class ShAgentReadTerse {
                     // nothing here and a monolingual instance's line is byte-identical.
                     .attr("locale", doc.locale())
                     .attr("translationOf", doc.translationOf())
+                    // SH585 — the stored spelling, absent whenever the address already says it.
+                    // Here as well as in the JSON because a terse reader is the one that cannot
+                    // ask a second time: it is the projection a `pull` uses.
+                    .attr("url", doc.url())
                     .attr("id", doc.id())
                     .attr("fields", doc.fields() == null ? null : String.join(",", doc.fields()))
                     .build());

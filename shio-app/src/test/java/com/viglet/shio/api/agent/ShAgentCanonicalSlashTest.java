@@ -81,6 +81,8 @@ class ShAgentCanonicalSlashTest {
     @Autowired
     private ShAddressResolver resolver;
     @Autowired
+    private ShAgentReadService readService;
+    @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -202,6 +204,39 @@ class ShAgentCanonicalSlashTest {
                 null, data("Pricing"), null, null, null, "/somewhere-else/"));
 
         assertThat(furlOf("/pricing")).isEqualTo("/pricing");
+    }
+
+    @Test
+    @DisplayName("SH585: the read reports the stored spelling, so a pull can write it down")
+    void theReadReportsTheStoredSpelling() {
+        // SH467 made the spelling storable and nothing could read it back: `address` is the
+        // identity and collapses, so the one fact SH467 preserved was invisible to every reader
+        // downstream. A `shio pull` of a replica therefore produced a tree that, re-applied to an
+        // empty instance, rebuilt every directory-style page one character short — Block I's
+        // promise that the tree describes a site whole, quietly false.
+        apply("/downloads/", "Downloads");
+
+        assertThat(readService.read(List.of("post:" + siteName + "/downloads"), List.of(), false))
+                .singleElement()
+                .satisfies(doc -> {
+                    assertThat(doc.address())
+                            .as("the address is unchanged — it is the identity, and it collapses")
+                            .isEqualTo("post:" + siteName + "/downloads");
+                    assertThat(doc.url()).isEqualTo("/downloads/");
+                });
+    }
+
+    @Test
+    @DisplayName("SH585: and says nothing when the address already says it")
+    void theReadIsSilentWhenThereIsNothingToAdd() {
+        // P3, and a stronger version of `locale`'s argument: the default is not merely knowable,
+        // it is already on the row. A key repeating the address's own path is one every reader
+        // pays for on every post and none of them uses.
+        apply("/contact", "Contact");
+
+        assertThat(readService.read(List.of("post:" + siteName + "/contact"), List.of(), false))
+                .singleElement()
+                .satisfies(doc -> assertThat(doc.url()).isNull());
     }
 
     // --- helpers ---

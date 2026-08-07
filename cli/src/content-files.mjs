@@ -307,6 +307,36 @@ export function normalizeUrl(url) {
 }
 
 /**
+ * A post's **stored** URL: the same collapsing, with the trailing slash kept (SH585).
+ *
+ * <h3>Why a second function and not a flag on the first</h3>
+ *
+ * SH467 made an instance able to store `/model-catalog/`, and a filename cannot carry that — a
+ * post's path on disk *is* its URL, which is Block I's whole economy, so `/x` and `/x/` are one
+ * file. The spelling therefore has to live in the front matter, and reading it back needs a form
+ * that does not collapse.
+ *
+ * The count is what decided the shape, which is SH583's habit applied to the other codebase.
+ * `normalizeUrl` has **33 call sites**, and they are not interchangeable even though they were
+ * written as if they were: about half normalize a **folder** chain, which is a different namespace
+ * (SH79) that SH467 does not touch and that must *never* keep a trailing slash; six derive a URL
+ * from a **path**, where there is no slash to keep; and the rest compare two URLs, where collapsing
+ * is exactly right — `shio convert`'s SH584 join asks "is this path written" and a page written at
+ * `/x/` does answer `/x`. Teaching one function to sometimes keep the slash would have changed all
+ * 33 to fix 3. So `normalizeUrl` is untouched and this is the narrow one, used only where the
+ * question is *what did the instance store*.
+ *
+ * It is the same pair the server keeps, deliberately named to match: `ShFurlSpellings.canonical`
+ * is `normalizeUrl` and `ShFurlSpellings.stored` is this.
+ */
+export function storedUrl(url) {
+  const raw = String(url ?? "");
+  const collapsed = normalizeUrl(raw);
+  // Only a non-root path has another spelling — `/` is already the root and `//` is not a page.
+  return collapsed !== "/" && /\/\s*$/.test(raw) ? `${collapsed}/` : collapsed;
+}
+
+/**
  * Serializes one post to its file contents.
  *
  * @param {object} doc
@@ -334,7 +364,10 @@ export function serializePost(doc, bodyField = null, sidecarFields = []) {
       : null;
   const meta = {
     site: doc.site,
-    url: normalizeUrl(doc.url),
+    // SH585 — the stored spelling, which the filename cannot carry: `/x` and `/x/` are one file,
+    // so this key is where the fact SH467 preserved has to live. `storedUrl` collapses everything
+    // else, so a tree with no directory-style page is byte-identical to before.
+    url: storedUrl(doc.url),
     type: doc.type ?? null,
     folder: doc.folder == null ? null : normalizeUrl(doc.folder),
     // SH348 — written only when the server reported one, which it now does only for a *non-default*
@@ -535,7 +568,11 @@ export function parsePost(relPath, text) {
   const fromPath = relPath ? locationOf(relPath) : {};
 
   const site = meta.site ?? fromPath.site;
-  const url = meta.url ? normalizeUrl(meta.url) : fromPath.url;
+  // SH585 — the declared spelling wins over the path-derived one, and the refusal below is what
+  // bounds how far they may differ: both sides are compared collapsed, so `url: /x/` over
+  // `x.md` passes and `url: /y` over `x.md` still does not. "May differ only by the trailing
+  // slash" is therefore the existing rule, not a new one.
+  const url = meta.url ? storedUrl(meta.url) : fromPath.url;
   if (!site) throw fault(relPath, "it has no `site:` and its path does not name one");
   if (!url) throw fault(relPath, "it has no `url:` and its path does not imply one");
   if (meta.url && fromPath.url && normalizeUrl(meta.url) !== fromPath.url) {

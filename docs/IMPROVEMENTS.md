@@ -2014,31 +2014,6 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
-### XVII.86 The tree cannot spell what the instance now stores (SH585)
-
-SH467 stores the trailing slash a source declared, so an instance can hold a post whose
-canonical URL is `/model-catalog/`. `shio pull` writes it to
-`shio/content/<site>/model-catalog.md`, and no other filename is available: a post's
-**path on disk is its URL**, which is Block I's whole economy.
-
-So `normalizeUrl` drops the slash going out and coming back, and both are correct in
-isolation. What is lost is which spelling is canonical. Block I promises the tree is a
-**complete description** of a site, and after SH467 it is not: a `pull` produces a tree
-that, re-applied to an empty instance, rebuilds every directory-style page one character
-short and reintroduces the defect SH467 closed.
-
-Nothing is broken by it today, which is why this is a task and not a follow-up commit.
-SH467 honours the spelling on **create only**, so a `push` sends the collapsed URL,
-`findPost` resolves it through SH583's candidates and reports NOOP. The tree cannot
-un-do the slash; it cannot state it, and that surfaces one rebuild later, on a machine
-that no longer has the capture.
-
-Two shapes, and a count decides rather than taste. A front-matter `url:` — which exists,
-and is already refused when it disagrees with its filename, so the rule becomes "may
-differ only by the slash". Or a filename convention, cheaper to read and worse to type.
-The first deliverable either way is SH583's: count the `normalizeUrl` readers that must
-agree, because they were written to be interchangeable.
-
 ### XVII.87 A replica whose links go home (SH586)
 
 `https://openviglet.github.io/model-catalog/models/azure/` writes three of its own links

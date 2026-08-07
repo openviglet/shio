@@ -217,7 +217,6 @@ priority = [
   # projection has no filename for a trailing slash, which is why SH467 is honoured on create
   # only.
   "SH586",
-  "SH585",
   "SH528",
   "SH529",
   "SH523",

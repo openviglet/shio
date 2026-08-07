@@ -46,6 +46,15 @@ import tools.jackson.databind.JsonNode;
  *                than SH299's (present and zero), and it is the right one here — publication has
  *                a knowable default, since P7 makes DRAFT what a write lands in and the context
  *                pack states that on the first call a session makes
+ * @param url     the post's <b>stored</b> friendly URL, and <b>absent whenever it is the address's
+ *                own path</b> — which is every post that does not carry a trailing slash (SH585).
+ *                SH467 made the declared spelling storable and this is the read half of it:
+ *                {@code address} is the identity and collapses {@code /x/} to {@code /x}, so
+ *                without this the one fact SH467 preserved is invisible to every reader, and a
+ *                {@code shio pull} rebuilds the site one character short. Conditional for
+ *                {@code locale}'s reason and with a stronger version of its argument: the default
+ *                is not merely knowable, it is <em>already on the row</em> — a reader holding
+ *                {@code address} and no {@code url} has the answer in its hand
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -54,7 +63,33 @@ import tools.jackson.databind.JsonNode;
 public record ShAgentDoc(String address, String type, String state, String folder,
                          java.util.List<String> fields, JsonNode data, String id,
                          Problem error, Impact impact, String locale, String translationOf,
-                         Boolean published) {
+                         Boolean published, String url) {
+
+    /** The twelve-field form, before SH585 made the stored spelling readable. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, null);
+    }
+
+    /**
+     * The same row with SH585's stored spelling attached, or unchanged when there is nothing to
+     * say — {@code declared} equal to the address's own path is the overwhelming case, and a key
+     * repeating what is already on the row is one every reader pays for and none of them uses.
+     */
+    public ShAgentDoc withUrl(String declared) {
+        if (declared == null || declared.isBlank() || address == null) {
+            return this;
+        }
+        int slash = address.indexOf('/');
+        String path = slash < 0 ? null : address.substring(slash);
+        return declared.equals(path)
+                ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, declared);
+    }
 
     /**
      * The nine-field form, before SH348 made a post's locale visible.
@@ -76,7 +111,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     /** The same row with SH348's locale attached. */
     public ShAgentDoc withLocale(String postLocale) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                postLocale, translationOf, published);
+                postLocale, translationOf, published, url);
     }
 
     /**
@@ -93,7 +128,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withTranslationOf(String anchorAddress) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
-                anchorAddress, published);
+                anchorAddress, published, url);
     }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
@@ -119,13 +154,13 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withPublished(Boolean live) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                locale, translationOf, live);
+                locale, translationOf, live, url);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
-                locale, translationOf, published);
+                locale, translationOf, published, url);
     }
 
     /**

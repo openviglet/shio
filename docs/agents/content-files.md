@@ -30,6 +30,30 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   cannot collide; the folder travels in frontmatter because SH79 keeps the two namespaces
   apart. A file whose path and `url:` **disagree** is an error — a half-done rename is a
   move on one side and a create on the other (SH134's lesson).
+  **Except by the trailing slash, and that exception is what `url:` is now for (SH585).** SH467
+  made an instance able to store `/model-catalog/`, and a filename has no room for it: `/x` and
+  `/x/` are one path, which is this economy's whole point. So for one commit Block I's promise was
+  false — a `pull` produced a tree that, re-applied to an empty instance, rebuilt every
+  directory-style page one character short and reintroduced the reference defect SH467 closed.
+  Nothing was *broken* by it, which is why it was a task and not a follow-up: SH467 honours the
+  spelling on create only, so a push sent the collapsed URL and `findPost` resolved it through
+  SH583's candidates. The tree could not un-do the slash; it could not state it, and that surfaces
+  one rebuild later on a machine that no longer has the capture.
+  Three parts. The read reports it — **`ShAgentDoc.url`**, absent whenever it equals the address's
+  own path, which is `locale`'s P3 shape with a stronger argument: the default is not merely
+  knowable, it is *already on the row*. The format carries it — `serializePost` writes
+  `url: storedUrl(...)` while `urlToPath` is untouched, so the file is still `model-catalog.md`.
+  And the disagreement refusal above needed **no change at all**: it compares both sides collapsed,
+  so `url: /x/` over `x.md` already passed and `url: /y` over `x.md` already did not. "May differ
+  only by the slash" was the existing rule, discovered rather than written.
+  **`normalizeUrl` was not touched, and the count is why.** It has 33 call sites and they were
+  written as if interchangeable: about half normalize a **folder** chain — a different namespace
+  SH467 does not touch, which must *never* keep a slash — six derive a URL from a path where there
+  is no slash to keep, and the rest compare two URLs, where collapsing is right (`convert`'s SH584
+  join asks "is this path written", and a page written at `/x/` does answer `/x`). Teaching one
+  function to sometimes keep the slash would have changed 33 to fix 3. So `storedUrl` is the narrow
+  second one, named to match the pair the server already keeps: `ShFurlSpellings.canonical` is
+  `normalizeUrl`, and `ShFurlSpellings.stored` is this.
 - **Only the DRAFT projects.** `publish:` in a file is an *instruction* push forwards, not
   state pull writes back — the merge deliberately ignores it.
 - **Losslessness beats prettiness:** a value that would not survive the round trip stays in

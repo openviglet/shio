@@ -301,7 +301,13 @@ public class ShAgentReadService {
                 .withImpact(impact ? impactOf(post) : null)
                 .withLocale(nonDefaultLocale(post))
                 .withTranslationOf(anchorAddress(post))
-                .withPublished(isPublished(post) ? Boolean.TRUE : null);
+                .withPublished(isPublished(post) ? Boolean.TRUE : null)
+                // SH585 — the stored spelling, when the address does not already say it. SH467
+                // made it storable and nothing could read it back: `address` collapses, so a
+                // `shio pull` of a replica rebuilt every directory-style page one character short
+                // and Block I's promise that the tree describes a site whole stopped being true.
+                // `withUrl` drops it when it equals the address's path, which is almost every post.
+                .withUrl(post.getFurl());
     }
 
     /**

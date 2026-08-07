@@ -29,6 +29,7 @@ import {
   sidecarFieldsFor,
   sidecarNameFor,
   sidecarsOf,
+  storedUrl,
   urlToPath,
 } from "../src/content-files.mjs";
 
@@ -493,4 +494,67 @@ test("SH402: an ordinary URL still projects, including dots inside a segment", (
   assert.equal(filePathFor({ site: "Blog", url: "/blog/v1.2" }), "Blog/blog/v1.2.md");
   assert.equal(filePathFor({ site: "Blog", url: "/blog/hello" }), "Blog/blog/hello.md");
   assert.equal(filePathFor({ site: "Blog", url: "/" }), "Blog/index.md");
+});
+
+/**
+ * SH585 — the tree can spell what the instance stores.
+ *
+ * SH467 made an instance able to store `/model-catalog/`, and a filename cannot carry that: a
+ * post's path on disk *is* its URL, so `/x` and `/x/` are one file. Block I promises the tree is a
+ * complete description of a site, and between SH467 and this it was not — a pull produced a tree
+ * that, re-applied to an empty instance, rebuilt every directory-style page one character short
+ * and reintroduced the reference defect SH467 closed.
+ */
+
+test("SH585: storedUrl keeps the trailing slash and normalizeUrl still drops it", () => {
+  // The pair, asserted together, because the whole design is that they are two functions. The
+  // count said so: of 33 normalizeUrl call sites, about half normalize a FOLDER chain — a
+  // different namespace (SH79) that must never keep a slash — so teaching one function to
+  // sometimes keep it would have changed all 33 to fix 3.
+  assert.equal(storedUrl("/model-catalog/"), "/model-catalog/");
+  assert.equal(storedUrl("/model-catalog"), "/model-catalog");
+  assert.equal(storedUrl("model-catalog/"), "/model-catalog/");
+  assert.equal(storedUrl("/blog//hello/"), "/blog/hello/");
+  assert.equal(storedUrl("/"), "/", "the root has no other spelling");
+  assert.equal(storedUrl(""), "/");
+  assert.equal(storedUrl(null), "/");
+});
+
+test("SH585: a pull writes the declared spelling into the frontmatter, not into the filename", () => {
+  const file = serializePost({ ...DOC, url: "/model-catalog/" });
+
+  assert.match(file, /^url: \/model-catalog\/$/m, "the one place the fact can live");
+  assert.equal(
+    urlToPath("/model-catalog/"), "model-catalog.md",
+    "the filename is unchanged and must be: /x and /x/ are one path, which is why the "
+      + "frontmatter carries it instead",
+  );
+});
+
+test("SH585: and the parse gives it back, so the round trip is exact", () => {
+  // A pull that wrote the slash and a push that dropped it would rebuild the site one character
+  // short — the defect this closes, one step later in the same chain.
+  const parsed = parsePost("Blog/model-catalog.md", serializePost({ ...DOC, url: "/model-catalog/" }));
+
+  assert.equal(parsed.url, "/model-catalog/");
+});
+
+test("SH585: url: may differ from its path only by the slash — anything else is still refused", () => {
+  // Not a new rule: the disagreement check compares both sides collapsed, so it already tolerated
+  // exactly this difference and nothing wider. The refusal it guards is a file renamed without its
+  // frontmatter, which is a move on one side and a create on the other.
+  assert.equal(
+    parsePost("Blog/model-catalog.md", "---\nsite: Blog\nurl: /model-catalog/\n---\n").url,
+    "/model-catalog/",
+  );
+  assert.throws(
+    () => parsePost("Blog/model-catalog.md", "---\nsite: Blog\nurl: /vendors\n---\n"),
+    /disagrees with its path/,
+  );
+});
+
+test("SH585: a post with no declared slash serializes byte-identically to before", () => {
+  // The overwhelming case, and the one that must not move: the whole tree would show a diff.
+  assert.equal(serializePost(DOC), serializePost({ ...DOC, url: "/blog/hello" }));
+  assert.match(serializePost(DOC), /^url: \/blog\/hello$/m);
 });
