@@ -26,6 +26,8 @@ import {
   describeProposal,
   fieldsFor,
   idFor,
+  keepsFor,
+  keptShare,
   lossFor,
   repeatedUnits,
   signature,
@@ -1289,4 +1291,101 @@ test("SH438: a page with no cached markup is in `read` and in `pages` neither", 
   assert.ok(!proposal.pages.some((page) => page.path === "/pricing"),
     "a page nothing was read from composes nothing, and claiming otherwise would put an empty Page "
       + "at a URL the replica cannot serve");
+});
+
+// --- SH580: one block a page, and the rest of the page ---
+
+/**
+ * The shape that produced the finding: a source whose body is one root `<div>`.
+ *
+ * <p>viglet.org is a React SPA, so `blocksOf`'s wrapper walk stops at the app root — its children are
+ * repeated generic units, which is exactly the case SH425 taught it to treat as one block — and the
+ * page yielded a single candidate whose span was the whole document. The cards below carry three
+ * paragraphs each, and a `SectionFeatureGrid` row holds one, which is where the missing text goes.</p>
+ */
+const SPA = "<html><body><div id=root><div class=app>"
+  + "<div class=card><h3>Fast</h3><p>Measured in milliseconds on every request we serve.</p>"
+  + "<p>The second paragraph nobody has a field for, and it is most of the card.</p>"
+  + "<p>A third one, longer still, describing the thing at the length a real page does.</p></div>"
+  + "<div class=card><h3>Safe</h3><p>Audited every release by somebody who is not the author.</p>"
+  + "<p>The second paragraph nobody has a field for, and it is most of this card too.</p>"
+  + "<p>A third one, longer still, describing the thing at the length a real page does.</p></div>"
+  + "</div></div></body></html>";
+
+test("SH580: a block whose fields would drop most of its text is walked into, not accepted", () => {
+  const blocks = blocksOf(tree(SPA));
+
+  // Before the descent this was one block — `div.app`, the whole body — matching SectionFeatureGrid
+  // and keeping a heading and one paragraph per card. The walk now hands back the cards, and each of
+  // them is prose the vocabulary can hold whole.
+  assert.deepEqual(blocks.map((block) => block.attrs.class), ["card", "card"]);
+  for (const block of blocks) {
+    const guess = classify(block, {});
+    assert.equal(guess.type, "SectionRichText");
+    assert.ok(keptShare(keepsFor(block, fieldsFor(guess.type, block).fields)) >= 90,
+      "the block the walk stopped at keeps its own text");
+  }
+});
+
+test("SH580: the descent has to keep more text, or the block stays whole", () => {
+  // Two units of text no vocabulary type has a field for, so the parent keeps nothing — and so would
+  // the children. A threshold alone would descend here and yield a candidate per <div>; the rule is a
+  // comparison, so a split that keeps no more is not taken. This is over-descent in the direction
+  // nobody notices: a longer candidate list reads as a more thorough one.
+  const html = "<main><div class=wrap><div><span>Some text with no paragraph to live in.</span></div>"
+    + "<div><span>And a second one exactly like it, so they read as repeated units.</span></div>"
+    + "</div></main>";
+  const blocks = blocksOf(tree(html));
+
+  assert.deepEqual(blocks.map((block) => block.attrs.class), ["wrap"]);
+});
+
+test("SH580: every candidate carries what accepting it would keep, and the report prints it", () => {
+  const proposal = buildProposal({
+    inventory: inventoryFor(),
+    markup: new Map(Object.entries(SITE)),
+    html: HTML,
+  });
+
+  // The complement of `loss`, and a different unit on purpose: an element count says nothing about
+  // how much of a page's reading survives, which is the fact SH577's text floor judges it on.
+  for (const row of proposal.candidates) {
+    assert.equal(typeof row.keeps.chars, "number");
+    assert.equal(row.keeps.of, row.keeps.chars + (row.keeps.of - row.keeps.chars));
+    assert.ok(row.keeps.chars <= row.keeps.of, "a block cannot keep more text than it has");
+  }
+  const report = describeProposal(proposal, {});
+  assert.match(report, /keeps N% is how much of a block's own text/);
+  assert.match(report, /^b[0-9a-f]{8} {2}SectionHero {2}\[fidelity] {2}keeps \d+% {2}on /m);
+});
+
+test("SH580: a candidate that would drop most of its text is a note, before anything is written", () => {
+  // The one the walk could not improve on: it keeps nothing, and it is exactly the block `--accept
+  // all` would take. The proposal says so rather than leaving it to `shio diff` after the publish.
+  const html = "<main><div class=wrap><div><span>Some text with no paragraph to live in.</span></div>"
+    + "<div><span>And a second one exactly like it, so they read as repeated units.</span></div>"
+    + "</div></main>";
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", html]]),
+    html: HTML,
+  });
+
+  const note = proposal.notes.find((each) => /less than 50% of their\s+own text/.test(each));
+  assert.ok(note, `no thin-candidate note in ${JSON.stringify(proposal.notes)}`);
+  assert.match(note, /keeps 0% of \d+ chars/);
+});
+
+test("SH580: accepting a thin candidate says so, because --accept all reads none of the proposal", async () => {
+  const html = "<main><div class=wrap><div><span>Some text with no paragraph to live in.</span></div>"
+    + "<div><span>And a second one exactly like it, so they read as repeated units.</span></div>"
+    + "</div></main>";
+  const ctx = ctxWith({ inventory: inventoryFor(["/"]), site: { "/": html } });
+
+  await propose.run({ accept: true }, ["all"], ctx);
+
+  // Named, not refused: a thin block is still a decision a reviewer is entitled to make, and P7 asks
+  // only that it not be a surprise.
+  assert.match(ctx.stdout.text, /keeps 0% of its \d+ characters of text — the rest has no field to live in/);
+  assert.equal(JSON.parse(ctx.written[norm(`/repo/${PLAN_FILE}`)]).accepted.length, 1);
 });

@@ -2064,31 +2064,6 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
-### XVII.82 One block a page, and the rest of the page (SH580)
-
-`propose` walks a captured page and offers its top-level blocks as candidates. On
-viglet.org it offers exactly **one** per page — the span is 84,252 characters, the whole
-document body — because the source is a React SPA whose body is one root `<div>`. That
-one block matches a single vocabulary type, so the page converts to one section, and
-every word the section's fields do not name is gone.
-
-Measured with SH577's mode-aware `diff`, which is the first run that scores this
-honestly: eleven of twelve authorable pages fall below the text floor.
-`/turing/release-notes/` keeps 1,408 characters of 11,436; `/turing/` keeps 827 of
-6,445; `/` keeps 2,463 of 7,068. The chrome losses beside them are marked *by design*
-and these are not, which is the boundary working.
-
-The proposal already knows. Each candidate carries a `loss` block naming the elements it
-would drop — 114 `circle`, 81 `path`, 10 `a`, 8 `h3` on the `/partner/` candidate — and
-nothing reads it, so `--accept all` accepts a block that discards most of its own
-content without the acceptance saying so.
-
-Two directions, and they are not exclusive. Descend: a block that matches one type and
-drops 80% of its text is a block to walk into, not to accept. And report: `propose`
-should score what an acceptance keeps, so the choice is made before the write rather
-than measured after the publish. The second is cheap and makes the first arguable with
-numbers.
-
 ### XVII.83 An acceptance that writes what the gate will refuse (SH582)
 
 `propose --accept all` on `openviglet.github.io` accepted fifteen of twenty-one

@@ -108,7 +108,15 @@ test("a candidate's marginal cost is a few dozen tokens, loss report included", 
   // repeating "presented by the site's own theme instead" per candidate cost ≈120 and landed exactly
   // on the old ceiling, and printing an empty half as "nothing" cost ≈109 to say twice that there was
   // nothing to say. What is left is the second label, which is the task's whole deliverable.
-  assert.ok(perCandidate <= 105, `each candidate costs ≈${perCandidate.toFixed(1)} tokens`);
+  //
+  // SH580 moved it again, ≈99 → ≈108, and the split is worth recording because only one half is a
+  // per-candidate cost. `keeps N%` on each candidate's first line is ≈3 tokens; the legend that makes
+  // the number mean anything is ≈14 tokens **once**, which on this four-candidate fixture reads as
+  // ≈4 more per candidate and on a real site amortizes to nothing. The alternative measured on the
+  // way — a `keeps: 34% of this block's text (1408 of 4102 chars)` line per candidate — cost ≈13
+  // tokens each and said the same thing, so what is here is the number on the line the reader is
+  // already on and the sentence in the header (P2).
+  assert.ok(perCandidate <= 110, `each candidate costs ≈${perCandidate.toFixed(1)} tokens`);
 });
 
 test("--limit bounds the read, and the header still covers the whole run", () => {

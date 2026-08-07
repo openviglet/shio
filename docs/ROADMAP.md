@@ -104,7 +104,6 @@
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
-- 📋 **SH580** (deps: SH577 ✅) **A page becomes one section, so most of its text has no field to live in** — Every page of a real source proposed exactly one top-level block, and the eleven authorable pages kept 12 to 35 percent of their text — 11436 characters became 1408 on the worst. → §XVII.82
 - 📋 **SH582** (deps: SH551 ✅) **Accepting every candidate writes sections whose required field is empty, so the gate refuses the conversion** — Three of fifteen accepted blocks produced a section with no heading, and verify exits 1 with required-field-empty on a replica whose content is otherwise complete. → §XVII.83
 
 ## Block F — Market positioning

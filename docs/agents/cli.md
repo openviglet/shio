@@ -267,7 +267,8 @@ each of which a test pins:
   authorable gives these fields, presented by the site's own theme.* That placement is P2 and P3
   rather than style, and the cost test is what settled it — `propose-cost.test.mjs` reads ≈99 tokens
   per candidate against a baseline of ≈74, and **the ceiling moved to 105 with it, because a budget
-  sitting 60% above the measurement is not a budget**. Two intermediate drafts were measured and
+  sitting 60% above the measurement is not a budget** (SH580 moved both again — see below; the test
+  is the authority on the current number). Two intermediate drafts were measured and
   rejected on the way: repeating the sentence per candidate cost ≈120 and landed exactly on the old
   ceiling, and printing an empty half as `nothing` cost ≈109 to say twice that there was nothing to
   say — so an empty half now prints no line, and a candidate that loses nothing at all still says so
@@ -567,6 +568,43 @@ each time the somebody was a **command**. So the fix is not another exclusion ru
   the eighth instance instead of the last one. The end-to-end assertion is deliberately end-to-end for
   the same reason: a unit test of the drop passes with the two commands still disconnected, which is
   precisely the state the three tasks above shipped in.
+
+**One block a page, and the rest of the page (SH580).** `propose` offered **exactly one** candidate
+per page on viglet.org — the span was 84,252 characters, the whole document body, because the source
+is a React SPA whose body is one root `<div>` and `blocksOf`'s SH425 rule ("a node whose children are
+repeated generic units *is* the block") is right about it. That one block matched one vocabulary type,
+so every word its fields did not name had nowhere to live: measured with SH577's mode-aware `diff`,
+**eleven of twelve authorable pages fell below the text floor** — `/turing/release-notes/` kept 1,408
+characters of 11,436, `/` kept 2,463 of 7,068. Nothing was broken, which is why nothing reported it:
+the block matched, the fields filled, and `loss` counts **elements** (`114×<circle>`), a unit that
+says nothing about how much of a page's *reading* survives.
+
+- **The score is the first deliverable, and it is what makes the descent arguable.** Every candidate
+  now carries `keeps: {chars, of}` — how much of the block's own visible text the fields would hold,
+  computed from the `fields` already in hand rather than from a second extraction, so the number and
+  the values printed above it cannot disagree. `URL_FIELDS` is excluded (`ctaHref`, `image`, `icon`,
+  `avatar`, `href`): `text()` never sees an `href`, so counting one would put characters in the
+  numerator that are not in the denominator and score a hero above 100%.
+- **The walk descends only when the split keeps strictly more.** A threshold alone would be
+  over-descent in the direction nobody notices — a candidate per paragraph, and a longer list reads as
+  a more thorough one, which is `GENERIC`'s own argument inverted. So `descend` compares: below
+  `KEEP_FLOOR` (0.5), it asks what the children's fields would carry of the *same* text, and takes the
+  step only if that is more. Bounded at `MAX_DESCENT` (4), because "keeps more" is satisfiable by
+  ever-smaller improvements and a proposal is something somebody reads. A `NON_CONTENT` child is
+  pushed to `excluded` **only if the cut was taken** — an exclusion that changed nothing is a note
+  about a block that stayed whole.
+- **What the walk cannot improve becomes a note, and `--accept all` says it out loud.** The residue is
+  candidates the vocabulary matches and mostly cannot hold; the proposal names them before anything is
+  written, and `shio propose --accept` prints each thin candidate it left in the plan. Named, never
+  refused — a thin block is still a decision a reviewer is entitled to make, and P7 asks only that it
+  not be a surprise. `PROPOSAL_VERSION` is **4** for the sharpest of the three version reasons so far:
+  a consumer scoring an acceptance on `keeps` reads an absent field as `undefined`, and every
+  comparison against a floor then answers "below it" for every candidate in a version-3 file.
+- **The report cost moved ≈99 → ≈108 tokens per candidate and the ceiling moved with it**, as SH511's
+  did. Only ≈3 of that is per-candidate (`keeps N%` on the line the reader is already on); the ≈14-token
+  legend is printed **once** (P2) and amortizes to nothing on a real site. The rejected draft — a
+  `keeps: 34% of this block's text (1408 of 4102 chars)` line per candidate — cost ≈13 each and said
+  the same thing.
 
 **And a candidate that is only a `<script>` (SH506).** One of six candidates on a real site read
 `"signature": "script"`, `"fields": {}`, `"loss": {"elements":[{"name":"script","count":1}]}` — the

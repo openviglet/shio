@@ -43,10 +43,12 @@ import {
 } from "../clone.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
 import {
+  KEEP_FLOOR,
   PLAN_FILE,
   PROPOSAL_FILE,
   buildProposal,
   describeProposal,
+  keptShare,
   serializePlan,
   serializeProposal,
 } from "../propose.mjs";
@@ -171,12 +173,36 @@ async function finish(proposal, flags, ctx, { out, accepted = [] }) {
   } else {
     if (accepted.length) {
       ctx.stdout.write(`shio propose: accepted ${accepted.join(" ")} into ${PLAN_FILE}\n`);
+      // SH580 — the acceptance says what it accepted. The proposal already scored every candidate,
+      // and `--accept all` is one keystroke that reads none of it: on viglet.org that wrote eleven
+      // pages keeping 12 to 35 percent of their text, and the first thing that said so was `shio
+      // diff` after the publish. Named rather than refused — a thin block is still a decision a
+      // reviewer is entitled to make, and P7 asks only that it not be a surprise.
+      for (const row of thin(proposal)) {
+        ctx.stdout.write(
+          `  ${row.id} keeps ${keptShare(row.keeps)}% of its ${row.keeps.of} characters of text — `
+            + `the rest has no field to live in, and the page will read short in shio diff\n`,
+        );
+      }
     }
     ctx.stdout.write(describeProposal(proposal, { ...flags, out }));
   }
   // A capture with pages but no candidate block is not a failure — a site of one-off pages is a
   // real site, and the answer "nothing here recurs, keep it all verbatim" is the proposal.
   return { proposal, out, exitCode: 0 };
+}
+
+/**
+ * The accepted candidates whose fields would carry less than half their own text (SH580).
+ *
+ * <p>Read off `mode` rather than off the ids this run named, and deliberately: `--accept all` passes
+ * the literal `all`, and a plan is cumulative — the reviewer's question at this moment is what the
+ * plan now holds, not which subset of it today's keystroke added.</p>
+ */
+function thin(proposal) {
+  return proposal.candidates.filter(
+    (row) => row.mode === "authorable" && row.keeps?.of && row.keeps.chars < row.keeps.of * KEEP_FLOOR,
+  );
 }
 
 /**

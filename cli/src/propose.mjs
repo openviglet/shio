@@ -68,8 +68,14 @@ import { describeTheme } from "./theme.mjs";
  * five candidates. `convert` recomputes the proposal in-process (`proposalFor`) rather than reading
  * this file, so nothing is refused on the number; it is here because the artefact on disk is read by
  * people and by tools that are not `convert`.
+ *
+ * <p>**4 since SH580**, which added `keeps`: how much of a block's own text an acceptance would carry.
+ * The number moves for the same reason again, and this one is the sharpest of the three — a consumer
+ * scoring an acceptance on `keeps` reads an absent field as `undefined`, and any comparison against a
+ * floor then answers "below it" for every candidate in a version-3 file. So the whole proposal is
+ * refused as thin rather than one field being unavailable, which is the wrong way round.
  */
-export const PROPOSAL_VERSION = 3;
+export const PROPOSAL_VERSION = 4;
 
 /** Where the proposal lands: derived, beside the inventory it is computed from. */
 export const PROPOSAL_FILE = "shio/.shio/conversion-proposal.json";
@@ -342,11 +348,61 @@ export function blocksOf(root, excluded = []) {
     node = kids[0];
   }
   const blocks = node.children.filter((child) => isElement(child) && !isInline(child));
-  return [...pageHeader(root, main), ...blocks].filter((block) => {
+  const content = [...pageHeader(root, main), ...blocks].filter((block) => {
     const why = notContent(block);
     if (why) excluded.push({ tag: block.tag, why });
     return !why;
   });
+  return content.flatMap((block, index) => descend(block, index === 0, excluded, 0));
+}
+
+/** Below this share of its own text carried by fields, a block is one to walk into, not to accept. */
+export const KEEP_FLOOR = 0.5;
+
+/** How far the walk below may go past a top-level block before it stops asking. */
+const MAX_DESCENT = 4;
+
+/**
+ * A block that keeps most of its own text, or the blocks inside it that keep more (SH580).
+ *
+ * <h3>The measurement this exists for</h3>
+ *
+ * <p>Every page of viglet.org proposed **exactly one** top-level block — the source is a React SPA
+ * whose body is one root `&lt;div&gt;`, so the span is 84,252 characters and the whole document. That
+ * one block matched a single vocabulary type, and eleven of the twelve authorable pages then fell
+ * below SH577's text floor: `/turing/release-notes/` kept 1,408 characters of 11,436. Nothing was
+ * broken — the block *did* match, the fields *were* filled, and everything the fields did not name
+ * had nowhere to live.</p>
+ *
+ * <h3>Why the rule is a comparison and not a threshold</h3>
+ *
+ * <p>Descending is not free: over-descent yields a candidate per paragraph, and it is the direction
+ * nobody notices because a longer candidate list reads as a more thorough one (`GENERIC`'s docstring
+ * makes the same argument in the other direction). So a low score alone is not permission to walk in.
+ * The walk descends only when the children's fields would carry **strictly more** of the same text
+ * than the parent's do, which makes the step self-justifying: there is a number that says the split
+ * was worth taking, and when there is not, the block stays whole and the score says why.</p>
+ *
+ * <p>Bounded at `MAX_DESCENT`, because "keeps more" can be satisfied by ever-smaller improvements and
+ * a proposal is an artefact somebody reads.</p>
+ */
+function descend(block, first, excluded, depth) {
+  if (depth >= MAX_DESCENT) return [block];
+  const total = text(block).length;
+  const mine = keptChars(block, first);
+  if (!total || mine >= total * KEEP_FLOOR) return [block];
+  const kids = block.children.filter((child) => isElement(child) && !isInline(child));
+  const inside = kids.filter((child) => !notContent(child));
+  if (!inside.length) return [block];
+  const theirs = inside.reduce((sum, kid, index) => sum + keptChars(kid, first && index === 0), 0);
+  if (theirs <= mine) return [block];
+  // Only now, because a cut that was never taken is not a cut: reporting the `<script>` inside a
+  // block the walk left whole would name an exclusion that changed nothing.
+  for (const kid of kids) {
+    const why = notContent(kid);
+    if (why) excluded.push({ tag: kid.tag, why });
+  }
+  return inside.flatMap((kid, index) => descend(kid, first && index === 0, excluded, depth + 1));
 }
 
 /**
@@ -812,6 +868,61 @@ export function lossFor(block, consumed) {
   };
 }
 
+/**
+ * Fields whose value is a URL rather than the page's visible text.
+ *
+ * <p>`keeps` is a proportion of what `text()` returns, and `text()` never sees an `href` or a `src` —
+ * so counting one would put characters in the numerator that are not in the denominator, and a hero
+ * whose CTA points at a long URL would score above 100%.</p>
+ */
+const URL_FIELDS = new Set(["ctaHref", "href", "image", "icon", "avatar"]);
+
+/**
+ * How much of a block's visible text the fields of a mapping would carry (SH580).
+ *
+ * <p>The complement of `lossFor`, and deliberately a different unit. The loss report counts
+ * **elements** — `114×&lt;circle&gt;` is the right unit for an icon set — and an element count says
+ * nothing about how much of a page's *reading* survives, which is the fact SH577's text floor judges
+ * a converted page on. So the two numbers answer the two halves of "what would accepting this do",
+ * and this is the half that was missing at the moment of the decision rather than after the publish.</p>
+ *
+ * <p>Whitespace-collapsed on both sides, so it compares the same characters `text()` produced.</p>
+ */
+export function keepsFor(block, fields) {
+  const of = text(block).length;
+  // Clamped, because a field may legitimately hold text `text()` collapsed differently — an `alt`
+  // taken as a logo's `name`, say. A score above 100% would read as a bug in the reader rather than
+  // as the rounding it is.
+  return { chars: Math.min(textIn(fields), of), of };
+}
+
+/** The same number with nothing in hand — what a candidate at this node would keep. */
+function keptChars(block, first) {
+  const guess = classify(block, { first });
+  return guess ? keepsFor(block, fieldsFor(guess.type, block).fields).chars : 0;
+}
+
+/** Characters of visible text held by a field set, rows included and URLs excluded. */
+function textIn(fields) {
+  let total = 0;
+  for (const [name, value] of Object.entries(fields ?? {})) {
+    if (URL_FIELDS.has(name)) continue;
+    if (typeof value === "string") total += value.replace(/\s+/g, " ").trim().length;
+    else if (Array.isArray(value)) for (const row of value) total += textIn(row);
+  }
+  return total;
+}
+
+/** A `keeps` pair as the share the report prints — a whole percent, and 0 when there is no text. */
+export function keptShare(keeps) {
+  return keeps?.of ? Math.round((keeps.chars / keeps.of) * 100) : 0;
+}
+
+/** One thin candidate as the note spells it — the one place that sentence is built (SH580). */
+function describeThin(row) {
+  return `${row.id} keeps ${keptShare(row.keeps)}% of ${row.keeps.of} chars`;
+}
+
 /** Tags that carry no content of their own — losing a `<div>` loses nothing but its class. */
 const LAYOUT = new Set(["div", "section", "article", "header", "footer", "aside", "ul", "ol", "li",
   "figure", "figcaption", "picture", "dl", "dt", "dd", "p", "br", "hr"]);
@@ -1017,6 +1128,23 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     );
   }
 
+  // SH580 — the candidates whose fields would carry less than half their own text. The walk in
+  // `blocksOf` already declined to descend into these, because splitting them would keep no more, so
+  // this is the residue: blocks the vocabulary matches and mostly cannot hold. Said out loud because
+  // `--accept all` is one keystroke and the alternative is measuring it after the publish, with
+  // `shio diff`, on a site somebody is already looking at.
+  const thin = [...candidates.values()]
+    .filter((row) => row.keeps?.of && row.keeps.chars < row.keeps.of * KEEP_FLOOR)
+    .sort((a, b) => byText(a.id, b.id));
+  if (thin.length) {
+    const worst = thin.slice(0, 4).map(describeThin).join("; ");
+    notes.push(
+      `${thin.length} candidate(s) would carry less than ${Math.round(KEEP_FLOOR * 100)}% of their `
+        + "own text, so accepting one converts a block and drops most of what it says — this is what "
+        + `a page below \`shio diff\`'s text floor looks like before it is published: ${worst}`,
+    );
+  }
+
   const rows = [...candidates.values()]
     // SH551 — `offered` is dropped here with `index`: both are working state this module computes and
     // no consumer of the artefact reads. Serializing it would put a list on every candidate to support
@@ -1218,6 +1346,10 @@ function describe(block, guess, index) {
       evidence: "nothing in the vocabulary fits this block",
       fields: {},
       loss: lossFor(block, new Set()),
+      // SH580 — `0 of N`, and it is a real reading rather than a placeholder: a block no type matches
+      // has no fields, so none of its text has anywhere to live. That is the honest score for the
+      // candidate whose answer is a post-type of its own.
+      keeps: keepsFor(block, {}),
       // SH506 — absent rather than empty when there is nothing to derive. An absent key is what a
       // reader gets for "this block offers no post-type"; `{fields: []}` reads as an offer.
       ...(postType ? { postType } : {}),
@@ -1229,6 +1361,10 @@ function describe(block, guess, index) {
     evidence: guess.evidence,
     fields,
     loss: lossFor(block, consumed),
+    // SH580 — what the acceptance would keep, beside what it would drop. Computed from `fields`
+    // rather than from a second extraction, so the number cannot disagree with the values printed
+    // above it.
+    keeps: keepsFor(block, fields),
     // SH551 — which row fields the markup gave this pass something to read. Not serialized (see
     // `buildProposal`'s row mapping): it is the input to one check inside this module, and a
     // per-candidate list on the artefact would be bytes every reader pays for and none reads.
@@ -1351,6 +1487,11 @@ export function describeProposal(proposal, options = {}) {
   // sound worse than none.
   lines.push("  fidelity keeps the source's appearance and offers no fields; authorable gives these "
     + "fields, presented by the site's own theme");
+  // SH580 — the legend, once. The number is on every candidate line and costs three tokens there;
+  // the sentence that makes it mean something does not vary per candidate, so it is P2's header rule
+  // rather than a line repeated N times.
+  lines.push("  keeps N% is how much of a block's own text those fields would carry — the rest has "
+    + "no field to live in");
 
   for (const row of proposal.candidates.slice(0, limit)) {
     const where = row.pages.length > 1
@@ -1362,7 +1503,7 @@ export function describeProposal(proposal, options = {}) {
       // label for it is what it is: a block the vocabulary does not fit and nothing can be derived
       // from. `NEW undefined` was what reading `.name` off an absent proposal would have printed.
       `${row.id}  ${row.type ?? (row.postType ? `NEW ${row.postType.name}` : "no type")}  `
-        + `[${row.mode}]  on ${where}` +
+        + `[${row.mode}]  keeps ${keptShare(row.keeps)}%  on ${where}` +
         `${row.pages.length > 1 ? ` (e.g. ${row.pages[0]})` : ""}`,
     );
     lines.push(`  why: ${row.evidence}`);
