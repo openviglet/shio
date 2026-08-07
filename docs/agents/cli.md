@@ -1863,6 +1863,33 @@ the whole decision, and `instance-hints.test.mjs` checks both against `index.mjs
 both directions. A new command cannot be registered without taking a side, and a side taken for a
 command that no longer exists fails too.
 
+**A version bump on the inventory is a migration or a refusal (SH592).** `shio clone` over
+`vilt-group.com` with `--render`: 198 pages, 403 assets, 52.7 MB, about ten minutes — by far the
+most expensive step in the chain, and the only one whose output was **immutable**, since everything
+after it reads the inventory off disk and runs in seconds. Twice in this work that asymmetry cost a
+full recapture for a reason that had nothing to do with the source: SH578 changed the asset shape
+and `diff` refused every capture written before it (an excellent refusal, naming the version and the
+remedy, which does not make the remedy cheaper), and once the source had not changed at all and a
+downstream one-line fix needed a capture the new reader could parse. **The information was already
+in the file.** SH578's `{own, style}` split and SH581's `head` are all derivable from the stored
+markup, which `--markup` keeps beside the inventory precisely so `propose` can read it — so the
+refusal was never about missing information, it was about nobody having written the derivation, and
+the cost of a reader's change was paid in somebody else's ten minutes. `inventory-migrate.mjs`
+brings a version-3-or-later capture forward **from the bytes it already stored**, using
+`scanPage` + `countAssets` — the same functions the capture runs — so a migrated row and a fresh one
+are computed by one rule and cannot disagree. **What it still refuses, and why that is the honest
+half:** version 1 → 2 added `unfollowed` and `problems`, and neither is derivable, because the crawl
+did not record what it declined to follow and an absent list read as an empty one says *nothing was
+left uncrawled* — a bounded sample reading as complete, which is SH431's failure. So the refusal
+names the **field** and why it cannot be computed, rather than a version number. A page whose markup
+is not on disk is reported as one the migration could not derive and is **left as it was**, never
+guessed. The migrator is pure and takes a `Map` of markup: the derivation is not IO, and the command
+reads through `ctx.fs` like everything else in this tree, because a `node:fs` call inside a command
+is a seam no fixture can reach (SH198). **Half of SH592 is still open** — `clone --refresh`,
+re-fetching conditionally and rewriting only what moved, needs the inventory to record an ETag or a
+Last-Modified per page, which it does not, so that is a version bump of its own rather than a use of
+what is stored.
+
 **`shio judge --site X` — one verdict, and the disagreements that produced it (SH589).** Judging a
 replica meant running `verify`, `diff`, `audit` and `snapshot`, reading four reports in four
 vocabularies, and knowing which answers which question. Round eight: `verify` 0, `audit` 0, `diff`

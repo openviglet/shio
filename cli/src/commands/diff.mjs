@@ -32,7 +32,10 @@
  */
 import { join } from "node:path";
 
-import { addressablePath, countAssets, countLinks, INVENTORY_FILE, scanPage } from "../clone.mjs";
+import {
+  addressablePath, countAssets, countLinks, INVENTORY_FILE, MARKUP_DIR, markupFileFor, scanPage,
+} from "../clone.mjs";
+import { describeMigration, migrateInventory } from "../inventory-migrate.mjs";
 import { assertMode, compareCapture, describeDiff } from "../diff.mjs";
 import { PLAN_FILE, PROPOSAL_FILE } from "../propose.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -105,7 +108,14 @@ export async function run(flags, positionals, ctx) {
 
   const path = typeof flags.inventory === "string" ? flags.inventory : INVENTORY_FILE;
   const inventory = await readInventory(join(ctx.cwd, path), ctx, path);
-  const pages = (inventory.pages ?? []).filter((page) => page?.path);
+  // SH592 — an inventory one version behind is MIGRATED where the missing field is derivable, and
+  // refused only where it is not. The refusal this replaces was correct and cost ten minutes of
+  // somebody else's crawl for a change that was not the crawl's.
+  const upgrade = migrateInventory(inventory, await storedMarkup(inventory, ctx));
+  if (upgrade.migrated.length || upgrade.blocked.length) {
+    ctx.stdout.write(describeMigration(upgrade));
+  }
+  const pages = (upgrade.inventory.pages ?? []).filter((page) => page?.path);
   if (!pages.length) {
     throw new Error(
       `shio diff: ${path} records no page, so there is nothing to compare a replica with.\n`
@@ -247,6 +257,34 @@ async function readInventory(at, ctx, named) {
   } catch (error) {
     throw new Error(`shio diff: ${named} is not readable JSON (${error.message}).`);
   }
+}
+
+/**
+ * The markup this capture stored, by path (SH592).
+ *
+ * <p>Read here and handed over as a map, so `migrateInventory` stays pure: the derivation is not
+ * IO, and a pure function is the one that can be asserted without a disk. It goes through
+ * `ctx.fs` like every other read in this tree — the injected filesystem is what lets a command
+ * run against a fixture, and a `node:fs` call inside one is a seam nobody can reach (SH198).</p>
+ *
+ * <p>Only for the rows that need it. A capture whose pages already carry the split costs no reads
+ * at all, which is the common case and the one that must stay free.</p>
+ */
+async function storedMarkup(inventory, ctx) {
+  const markup = new Map();
+  for (const page of inventory?.pages ?? []) {
+    if (!page?.path) continue;
+    if (typeof page.assets?.own === "number" && typeof page.assets?.head === "number") continue;
+    try {
+      markup.set(page.path,
+        await ctx.fs.readFile(join(ctx.cwd, MARKUP_DIR, markupFileFor(page.path)), "utf8"));
+    } catch {
+      // A capture taken without --markup, or a page whose file was removed. Either way there are
+      // no bytes to re-read, and the migration reports it as a page it could not derive rather
+      // than scoring it on a shape it does not have.
+    }
+  }
+  return markup;
 }
 
 function basic(user, password) {
