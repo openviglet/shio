@@ -94,6 +94,21 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                id, because an agent must not have to invent an identifier the server owns.
      *                Honoured on create, like {@code locale}, and resolved to the target's translation
      *                group. Pointing at the group's anchor keeps the relationship a forest.
+     * @param url     the friendly URL <b>as the source declares it</b>, for {@code post.upsert}
+     *                (SH467) — the one thing an {@code address} structurally cannot carry. A source
+     *                serves {@code /model-catalog/} with a 200 and 301s {@code /model-catalog} to
+     *                it; a replica that stores the collapsed form mirrors that exactly backwards,
+     *                and a document-relative {@code ./app/main.js} on the page then resolves one
+     *                level too high. That is a correctness defect, not a redirect cost.
+     *                <p>It is a field on the <em>write</em> rather than a fourth component on
+     *                {@code ShAddress} because {@code ShAddress} is a value: a fourth component
+     *                makes {@code post:S/x} and {@code post:S/x/} two unequal addresses for one
+     *                post, which is the P5 identity split, and the render digest hashes the
+     *                address. So the address stays collapsed and the declared spelling rides here,
+     *                the way {@code folder}, {@code locale} and {@code translationOf} already do.
+     *                <p><b>Refused unless it is a spelling of {@code address}</b> — the two must
+     *                name one post, so all it may differ in is the slash the grammar drops. Absent
+     *                means the address's own path, which is what every caller before SH467 sent
      * @param when    an ISO-8601 instant for {@code post.publish} and {@code post.unpublish}:
      *                schedule the transition instead of doing it now (SH342). Absent means now,
      *                which is what the op has always meant — so the two are never the same call,
@@ -102,7 +117,13 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                manifest advertised and only an id-keyed console route could reach.
      */
     public record Op(String op, String address, String type, String folder, String to,
-                     JsonNode data, String when, String locale, String translationOf) {
+                     JsonNode data, String when, String locale, String translationOf, String url) {
+
+        /** The nine-field form, before SH467 made the declared spelling survive the address. */
+        public Op(String op, String address, String type, String folder, String to, JsonNode data,
+                  String when, String locale, String translationOf) {
+            this(op, address, type, folder, to, data, when, locale, translationOf, null);
+        }
 
         /** The eight-field form, before SH348 made the sibling link declarable. */
         public Op(String op, String address, String type, String folder, String to, JsonNode data,

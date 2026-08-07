@@ -159,10 +159,13 @@ public class ShAgentDesiredStateService {
             if (post.url() == null || post.url().isBlank()) {
                 throw new MissingPostUrlException();
             }
+            // SH467 — the address collapses `/x/` to `/x` and must, because it is the identity the
+            // render digest hashes. This is the line the declared spelling used to die on: it is
+            // carried beside the address instead, so the write can store what the source served.
             String address = ShAddress.post(site, post.url()).toString();
             upserts.add(new ShAgentBatch.Op(ShAgentBatchService.POST_UPSERT, address,
                     post.type(), post.folder(), null, post.data(), null, post.locale(),
-                    post.translationOf()));
+                    post.translationOf(), post.url()));
             // Absent `publish` means "leave it alone", so only an explicit true or false
             // produces an op. Treating absence as false would unpublish live pages the
             // moment someone trimmed a field from the document (P7).

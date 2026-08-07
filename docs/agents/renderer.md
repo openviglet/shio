@@ -556,13 +556,12 @@ renderer over one body of content at a second address. See the section on it bel
   invisible while every redirect came from a `Redirect` post somebody wrote, and immediately wrong
   once the route canonicalises by itself — `/search/?q=shio` arriving at `/search` with no term is a
   worse answer than the 404 it replaced. Skipped when the target declares a query of its own.
-  **What is deliberately *not* done** is the other end the task names — storing the trailing slash the
-  source declared, so the replica's *canonical* matches the source's rather than mirroring it. That
-  means splitting `/shio` and `/shio/` into two addresses, and `normalizePath` is the instance's one
-  canonical path form precisely so they are one: nine exact-`furl` lookups (resolver, CDA, verify,
-  render, copy/move) would become slash-sensitive, and an agent typing a stray slash would create a
-  second post rather than update the first. That is a P5 identity change, not a capture fix, and it
-  is worth deciding on its own evidence.
+  **What this half deliberately did *not* do** was store the trailing slash the source declared, on
+  the reading that it means splitting `/shio` and `/shio/` into two addresses — `normalizePath` is
+  the instance's one canonical path form precisely so they are one. That reading was scoped twice
+  and the second pass reached a different answer; the write half below is what it settled on, and
+  the design is written up in
+  [`docs/specs/SH467-canonical-slash.md`](../specs/SH467-canonical-slash.md).
 - **One generator decides what a spelling is, and it landed before anything stored one (SH583)** —
   the paragraph above says nine lookups would become slash-sensitive. Measured at `077b115` it is
   **thirteen, across seven classes**, and the tolerance meant to bridge `/shio` and `/shio/` was not
@@ -583,6 +582,34 @@ renderer over one body of content at a second address. See the section on it bel
   about it — the assertion that
   would have caught the failure mode, which is a page that renders in `/preview`, answers **404** on
   the CDA and **verifies clean**.
+- **The declared spelling is a write, not an identity — and that is the whole design (SH467, write
+  half)** — the measurement that reopened it: `openviglet.github.io` serves `/model-catalog/` and
+  301s `/model-catalog` to it, so a mirrored replica makes a document-relative `./app/main.js`
+  resolve to `/app/main.js` instead of `/model-catalog/app/main.js`. `verify` calls it
+  `page-reference-broken`, the only reference error on an otherwise clean authorable replica. Not a
+  301 cost: a redirect does not fix a reference already resolved against the wrong base.
+  Two options were on the table and **both are wrong**. A fourth component on `ShAddress` makes
+  `post:S/x` and `post:S/x/` two unequal addresses for one post — the P5 identity split, and the
+  render digest hashes the address. And `data.furl` is **`ShSite`'s**, written by `siteUpsert`;
+  there is no `data.furl` on a post write and there cannot casually be one, because SH168 refuses
+  any `data` key the post-type does not declare and carving an exception into the guard whose point
+  is that it has none is worse than the defect. So the spelling rides on the **op**, beside
+  `folder`, `locale` and `translationOf` — SH348's `translationOf` is the precedent, tenth component
+  with a nine-field compatibility constructor under it. Two lines were carrying the loss:
+  `ShAgentDesiredStateService` derives the address from `post.url()` and now passes the url along
+  too, and `ShAgentBatchService` writes `declaredFurl(op, address)` instead of `address.path()`.
+  **The storage layer needed no change at all** — `ShPostUnifiedWriteService.normalizeUrl`
+  guarantees the *leading* slash and nothing else, so it stores what it is handed.
+  `declaredFurl` refuses a url that is not a spelling of the address (`ShFurlSpellings.candidates`,
+  the fifth reader and the reason SH583 went first), and ignores rather than 400s, because every
+  pre-SH467 caller sends no url at all.
+  **Honoured on create and nowhere else**, like `locale` and `translationOf`, and here the reason is
+  sharper than theirs: a post's file path in `shio/content/**` *is* its URL, so `/x` and `/x/` are
+  one filename and the projection structurally cannot carry the slash. An update that re-spelled
+  would be un-done by the next `shio push`. Changing a live post's canonical URL stays `post.move`'s
+  gesture (P7). `ShAgentCanonicalSlashTest` asserts it at the boundary it crossed — declare the
+  slash, and the row carries it — and pairs with `ShRenderRedirectTest`, whose `/docs/` fixture was
+  hand-persisted with a comment saying it was what the capture half needed.
 - **A verbatim `href` is a hardcoded base, so the fallback is inverted (SH466)** — SH336's rule was
   *rewrite only what the index resolves, leave the rest alone*, and what it produced is a page
   carrying two kinds of `href` where one works. A replicated page held `href="/turing/"` — the

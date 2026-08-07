@@ -196,8 +196,8 @@ priority = [
   # `urlCandidates`, and the render route's own rule), and they agree today only because
   # nothing is ever stored with one. SH584 rides at the back — a crawl's own `unfollowed: 22`
   # came back as 22 red `page-link-broken`, which is SH557's shape a second time.
-  "SH467",
   "SH584",
+  "SH585",
   "SH528",
   "SH529",
   "SH523",

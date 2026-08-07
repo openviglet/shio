@@ -1050,9 +1050,17 @@ public class ShAgentBatchService {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
         ShSite site = requireSite(address.site(), session);
         Optional<ShPostUnified> existing = findPost(site, address.path());
+        String declaredFurl = declaredFurl(op, address);
 
         if (existing.isPresent()) {
             ShPostUnified post = existing.get();
+            // SH467 — the declared spelling is honoured on *create* and nowhere else, exactly as
+            // `locale` and `translationOf` are, and here the reason is sharper than theirs: a
+            // post's file path in `shio/content/**` **is** its URL, so `/x` and `/x/` are one
+            // filename and the projection structurally cannot carry the slash. An update that
+            // re-spelled would therefore be un-done by the next `shio push` — the collapsed URL
+            // that a pull wrote would arrive as a re-spelling back. Changing an existing post's
+            // canonical URL is `post.move`'s gesture, not a routine apply's side effect (P7).
             if (op.data() == null || sameData(post, op.data())) {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
@@ -1070,6 +1078,7 @@ public class ShAgentBatchService {
             }
             return session.change(op, address, Change.UPDATE, undeclared, post.getId());
         }
+
         // Only reachable in a dry run — a real run would have found the row above.
         if (session.alreadyPlanned(address)) {
             return session.change(op, address, Change.NOOP, "created earlier in this batch", null);
@@ -1095,8 +1104,9 @@ public class ShAgentBatchService {
                 session.actor, op.locale(), translationGroupFor(op, address, session)));
         // The address *is* the identity here, so the furl is written from it rather
         // than derived from a title — two posts with the same headline must still be
-        // two addresses, and the next run must find this one again.
-        shPostUnifiedWriteService.setFurl(created.getId(), address.path());
+        // two addresses, and the next run must find this one again. SH467 keeps the
+        // identity and stores the *declared* spelling of it, which the address drops.
+        shPostUnifiedWriteService.setFurl(created.getId(), declaredFurl);
         return session.change(op, address, Change.CREATE, null, created.getId());
     }
 
@@ -1942,6 +1952,44 @@ public class ShAgentBatchService {
             return List.of();
         }
         return Arrays.stream(path.split("/")).filter(segment -> !segment.isBlank()).toList();
+    }
+
+    /**
+     * The {@code furl} a {@code post.upsert} stores — the spelling {@code op.url()} declares, or
+     * the address's own path when it declares none (SH467).
+     *
+     * <h2>Why the address cannot answer this</h2>
+     *
+     * <p>{@code ShAddress} collapses a trailing slash, deliberately: it is a value with equality,
+     * and the render digest hashes it, so {@code post:S/x} and {@code post:S/x/} being two
+     * addresses for one post is the P5 identity split. But a source that serves
+     * {@code /model-catalog/} with a 200 and 301s {@code /model-catalog} to it means the slash,
+     * and a replica storing the collapsed form mirrors it exactly backwards — a document-relative
+     * {@code ./app/main.js} then resolves to {@code /app/main.js} instead of
+     * {@code /model-catalog/app/main.js}. So the identity collapses and the <em>spelling</em>
+     * travels on the write, beside {@code folder}, {@code locale} and {@code translationOf}.</p>
+     *
+     * <h2>The guard, and why it is silent</h2>
+     *
+     * <p>A declared URL that is not a spelling of {@code address} is ignored rather than refused.
+     * The two are not independent inputs an agent chose — {@code apply} derives the address
+     * <em>from</em> the URL one line earlier, so they can only disagree by a slash, and the one
+     * way to reach a genuine disagreement is a hand-built batch op that named both. Refusing that
+     * would be a 400 on the field's own compatibility default: every caller before SH467 sends no
+     * {@code url} at all, and half of them would be a blank string away from it.
+     * {@link ShFurlSpellings#candidates} is what decides "is a spelling of", which is the reason
+     * SH583 landed first — this is the fifth reader, and it would otherwise have been a fifth
+     * private rule.</p>
+     */
+    private static String declaredFurl(ShAgentBatch.Op op, ShAddress address) {
+        String declared = op.url();
+        if (declared == null || declared.isBlank()) {
+            return address.path();
+        }
+        String stored = ShFurlSpellings.stored(declared);
+        return ShFurlSpellings.candidates(address.path()).contains(stored)
+                ? stored
+                : address.path();
     }
 
     private static String nullSafe(String value) {

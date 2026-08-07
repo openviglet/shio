@@ -1893,32 +1893,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.44 The canonical is the mirror of the source's (SH467)
-
-The source serves `/shio/` with a **200** and answers `/shio` with a **301** to it. The
-replica does the exact opposite. The route half has landed — `pageAt` tries the other
-form and redirects toward the stored `furl` — but the stored form is still the
-grammar's: the capture reads `/shio/` and `ShAddress.normalizePath` collapses it.
-
-It was filed as a cost — every captured link, sitemap entry and bookmark pays a 301 —
-and a measurement on `openviglet.github.io` says it is a **correctness** defect. The
-source's `/model-catalog/` is canonical and the replica's `/model-catalog` is, exactly
-mirrored, so `./app/main.js` on that page resolves to `/model-catalog/app/main.js` at
-the source and to `/app/main.js` at the replica. `verify` reports it as
-`page-reference-broken`, and it is the only reference error on an otherwise clean
-authorable replica. Every document-relative reference on a directory-style page lands
-one level too high — SH512's shape, one phase along: the capture resolves correctly and
-the delivery has the slash inverted.
-
-That does not make it cheap. Preserving the declared slash makes `/shio` and `/shio/`
-**two addresses**, and `normalizePath` is one canonical form precisely so they are one:
-nine exact-`furl` lookups become slash-sensitive, and a stray slash creates a second post
-instead of updating the first. A P5 identity change wearing a capture fix's clothes.
-
-So the question the section used to close on is answered. A redirect is not the honest
-answer for a URL Shio never owned, because a redirect does not fix a reference resolved
-against it.
-
 ### XVII.53 A mark that labels itself is not a label (SH477)
 
 SH472 spaced the mark correctly and left it in place. A product card on `www.viglet.org`
@@ -2063,6 +2037,31 @@ This is SH557's shape and its second instance, which is what makes it worth a ru
 rather than a fix: a fact the chain establishes at phase one and states at phase five,
 in the vocabulary of damage. SH557 was a source trait; this is a bound the operator
 chose. Both are knowable early and both currently arrive as a red gate.
+
+### XVII.86 The tree cannot spell what the instance now stores (SH585)
+
+SH467 stores the trailing slash a source declared, so an instance can hold a post whose
+canonical URL is `/model-catalog/`. `shio pull` writes it to
+`shio/content/<site>/model-catalog.md`, and no other filename is available: a post's
+**path on disk is its URL**, which is Block I's whole economy.
+
+So `normalizeUrl` drops the slash going out and coming back, and both are correct in
+isolation. What is lost is which spelling is canonical. Block I promises the tree is a
+**complete description** of a site, and after SH467 it is not: a `pull` produces a tree
+that, re-applied to an empty instance, rebuilds every directory-style page one character
+short and reintroduces the defect SH467 closed.
+
+Nothing is broken by it today, which is why this is a task and not a follow-up commit.
+SH467 honours the spelling on **create only**, so a `push` sends the collapsed URL,
+`findPost` resolves it through SH583's candidates and reports NOOP. The tree cannot
+un-do the slash; it cannot state it, and that surfaces one rebuild later, on a machine
+that no longer has the capture.
+
+Two shapes, and a count decides rather than taste. A front-matter `url:` — which exists,
+and is already refused when it disagrees with its filename, so the rule becomes "may
+differ only by the slash". Or a filename convention, cheaper to read and worse to type.
+The first deliverable either way is SH583's: count the `normalizeUrl` readers that must
+agree, because they were written to be interchangeable.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 

@@ -1,9 +1,13 @@
 # SH467 — the canonical slash: where the declared spelling is stored, and what has to agree
 
-**Status:** design settled, not implemented. SH467 is ⏳ open; SH583 lands before it.
-**Read this before writing code.** It exists because the scoping was done twice and the
-second pass reached a different answer than the first, and neither is obvious from the
-tree.
+**Status: shipped.** SH583 landed first, then SH467. What the tree still cannot say is
+filed as **SH585** — a post's file path in `shio/content/**` *is* its URL, so the
+projection has no filename for the slash, which is why the declared spelling is honoured
+on **create only**.
+
+**Kept because the scoping was done twice and the second pass reached a different answer
+than the first** — neither is obvious from the tree, and the two rejected options below
+are the part a reader would otherwise re-propose.
 
 ## The defect, restated by measurement
 
@@ -144,3 +148,10 @@ a false green is cheap to avoid and expensive to discover.
 The assertion that closes SH467, per SH527: a page whose source is canonically
 `/x/` is served at `/x/`, `/x` 301s to it, and a `./y.js` on that page resolves to
 `/x/y.js`. At the boundary it crossed, naming the id.
+
+**What shipped:** `ShAgentCanonicalSlashTest` — declare `/model-catalog/` through `apply`
+and the row carries it, the address stays collapsed, a second apply converges, and a
+declared url that is not a spelling of its address is ignored. It pairs with
+`ShRenderRedirectTest.theCanonicalFormIsWhicheverTheContentDeclares`, whose `/docs/`
+fixture was hand-persisted with a comment saying it was what this half needed — the two
+together are the claim above.

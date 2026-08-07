@@ -81,6 +81,27 @@ public final class ShFurlSpellings {
     }
 
     /**
+     * A declared spelling as it will be <b>stored</b>: repeated slashes collapsed, exactly one
+     * leading slash, and the trailing one <em>kept</em>.
+     *
+     * <p>This is {@link #canonical}'s sibling and its opposite where it matters. SH467's design
+     * turns on the two being different things: the address is the identity and collapses, the
+     * stored {@code furl} is what the source declared and does not. Both still normalise the parts
+     * of a path nobody declares on purpose — {@code //x} and {@code /x} are one spelling, not two —
+     * so the only difference two calls can produce is the character SH467 is about.</p>
+     *
+     * <p>{@code ShPostUnifiedWriteService.normalizeUrl} would add the leading slash on its own and
+     * nothing else, which is why the storage layer needed no change; this exists so the value
+     * handed to it is already the one form, rather than each caller trimming differently.</p>
+     */
+    public static String stored(String path) {
+        if (path == null || path.isBlank()) {
+            return "/";
+        }
+        return collapse(path);
+    }
+
+    /**
      * Every stored {@code furl} spelling that names the same post as {@code path}, in the order a
      * reader must try them.
      *
