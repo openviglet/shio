@@ -35,10 +35,6 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -49,6 +45,10 @@ import com.viglet.shio.render.ShPageRenderService.ShRenderedPage;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * SH464 — the layout a conversion writes actually renders, and the editor has something to frame.
@@ -694,7 +694,7 @@ class ShConvertedLayoutRenderTest {
             for (Resource resource : resources) {
                 JsonNode tree = new ObjectMapper().readTree(resource.getInputStream());
                 Matcher matcher = where.matcher(resource.getURL().getPath());
-                String name = tree.path("name").asText("");
+                String name = tree.path("name").asString("");
                 if (name.isBlank() || !matcher.find()) {
                     continue;
                 }
@@ -722,12 +722,12 @@ class ShConvertedLayoutRenderTest {
 
     private static void collect(JsonNode fields, String prefix, List<ShSectionField> into) {
         for (JsonNode field : fields) {
-            String name = field.path("name").asText("");
+            String name = field.path("name").asString("");
             if (name.isBlank()) {
                 continue;
             }
             String path = prefix.isEmpty() ? name : prefix + "." + name;
-            into.add(new ShSectionField(path, field.path("widget").asText("")));
+            into.add(new ShSectionField(path, field.path("widget").asString("")));
             collect(field.path("fields"), path, into);
         }
     }
@@ -741,7 +741,7 @@ class ShConvertedLayoutRenderTest {
     private static String sentinelData(ShSectionType type) {
         ObjectNode data = MAPPER.createObjectNode();
         for (JsonNode field : type.declaration().path("fields")) {
-            String name = field.path("name").asText("");
+            String name = field.path("name").asString("");
             if (name.isBlank()) {
                 continue;
             }
@@ -749,7 +749,7 @@ class ShConvertedLayoutRenderTest {
             if (nested.isArray() && !nested.isEmpty()) {
                 ObjectNode row = MAPPER.createObjectNode();
                 for (JsonNode child : nested) {
-                    String childName = child.path("name").asText("");
+                    String childName = child.path("name").asString("");
                     if (!childName.isBlank()) {
                         row.put(childName, sentinel(type, name + "." + childName));
                     }

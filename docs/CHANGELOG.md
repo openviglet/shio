@@ -459,6 +459,7 @@
 - **SH459** — The locale segment is checked against the locales the site's published content is actually in (plus the route's own default), so /sites/<site>/default/xx-yy/ is a teaching 404 instead of the home page with a 200 — and the authentication entry point answers 404 for a URI no controller claims, so a missing font is absent rather than behind a door.
 - **SH242** — monaco-editor is pinned to 0.52.2, strictPeerDependencies makes an unmet range refuse the install, and a test resolves every Monaco specifier the GraphiQL tree imports.
 - **SH542** — All nine use import.meta.dirname and a repo walk keeps them there, so Vite's native config loader becoming the default cannot fail the console build.
+- **SH574** — The four replaced packages are gone from every Java source, and ShJacksonVersionLintTest holds the rule: imports, pom declarations, and the annotations exemption's own vacuity.
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 

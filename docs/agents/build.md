@@ -403,6 +403,37 @@ This file used to document `-Dskip.installnodepnpm=true -Dskip.pnpm=true`, which
 for — passing them silently runs the React build anyway, so the documented
 backend-only command was neither.
 
+### Jackson 3 is the rule, and the annotations package is not Jackson 2 (SH574)
+
+This repository is on **Jackson 3**: `tools.jackson.databind`, `tools.jackson.core`. The four
+packages Jackson 3 replaced — `com.fasterxml.jackson.` **`databind`**, **`core`**, **`dataformat`**,
+**`datatype`** — may not be imported by any Java source here.
+
+**`com.fasterxml.jackson.annotation` is not one of them, and this is the whole trap.** Jackson 3 kept
+the annotations where they were and *depends* on them: `tools.jackson.core:jackson-databind:3.1.4`
+pulls `jackson-annotations:2.21`, which is where `@JsonInclude` and `@JsonProperty` still live. So a
+grep for `com.fasterxml.jackson` answers ~92 hits across 56 files and **87 of them are correct**.
+"No `com.fasterxml`" is a false rule, and stating it that way is why the real one went unwritten and
+unchecked until SH574.
+
+**Why a wrong import compiles.** `springdoc-openapi` → `swagger-core-jakarta` drags
+`com.fasterxml.jackson.core:jackson-databind:2.21.4` onto the classpath, so Jackson 2 resolves
+without anyone asking for it. `ShConvertedLayoutRenderTest` imported `JsonNode`, `ObjectMapper`,
+`ArrayNode` and `ObjectNode` from it and passed for as long as nobody looked. That transitive arrival
+is springdoc's business and stays — banning it in the pom would break the dependency that needs it —
+so the rule is about what *we* import and what *our* poms declare, never about the resolved tree.
+
+**`asString()`, not `asText()`.** Jackson 3 makes `asString()` the abstract accessor and keeps
+`asText()` as a legacy alias, so a file on the Jackson 2 spelling compiles while drifting from every
+other file — the kind of difference review does not see.
+
+`ShJacksonVersionLintTest` holds all three parts: no replaced-package import in either source root,
+no `com.fasterxml.jackson` groupId declared in either pom, and a vacuity guard asserting the
+annotations exemption still covers something (if it ever reaches zero the exemption is dead code and
+should go). It reads import statements, so a fully-qualified reference in a method body and the
+package named in prose — `ShMcpServer` discusses a Maven coordinate in a comment — are outside it: a
+declared lower bound, per SH273/SH322.
+
 ### Publishing to npm
 `.github/workflows/publish-js-sdk.yml` (manual `workflow_dispatch`): bumps the
 publishable packages, builds, and runs `pnpm publish` in dependency order
