@@ -316,29 +316,6 @@ it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional sh
 SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
 there has to be asserted rather than assumed.
 
-### VIII.33 One capability, three lists, no join (SH599)
-
-A capability in Shio is declared in three unrelated places: a boolean in the manifest's
-`features`, a path in its `endpoints`, and a tool or resource in the MCP listing.
-Nothing joins them. SH596 was one instance — `diagnostics` was `true` in the first,
-present in the second, and in neither MCP list — and it was found because a run needed
-it, not because anything checked.
-
-This is also where P1's cost shows up. Every capability lands in four places by law (MCP
-→ files/CLI → REST → console), which is a 4x maintenance multiplier on a surface that
-only grows. The laws create the surface; nothing yet bounds it. Four ledgers (SH594)
-keep what is knowingly wrong visible, but they are human-in-the-loop devices and they do
-not catch a capability that was simply never added to one list.
-
-The fix is not a fourth list. One of the three becomes the source — `features` is the
-candidate, since it is the one an agent reads first and the one already asserted by
-`ShAgentP1ConformanceTest` — and the others are derived from it or asserted equal to it.
-A capability then cannot exist in the manifest and be absent from MCP, because the
-absence is a build failure rather than a discovery somebody makes in round thirteen.
-
-Out of scope: making the derivation clever. A test that fails naming the missing entry
-is enough, and it is the part that cannot be argued.
-
 ### VIII.34 The projection that answers nothing, with a 200 (SH600)
 
 `?include=identity` is a reasonable-looking way to ask the manifest a narrow question.

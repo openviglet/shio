@@ -1101,6 +1101,22 @@ projection nothing names until the manifest arrives. One finding was about the w
 the comment is left in place: leaving `resources/templates/list` shut reported
 `shio://blueprint/{name}` unreachable from an entry point that had already been told where to
 look — a reachability check models the protocol or it reports its own gaps as the product's.
+**And the three registries now join (SH599).** A capability is declared in three unrelated
+places — a boolean in `features`, a path in `endpoints`, a tool/resource/prompt on MCP — and
+`ShAgentP1ConformanceTest` only ever walked *feature → is it delivered*. The other direction was
+noticed once (SH463: "a capability with no flag is not classified at all") and never generalised.
+`ShAgentCapabilityJoinTest` puts all three in one key space (`tool:` / `resource:` / `prompt:` /
+`route:`) and fails naming any entry that no flag claims and nothing declares flagless. **The
+claimed side is read from P1's table, never copied** — a second copy is the drift the test exists
+to catch — so `classification()` is package-visible for exactly that. Both directions are guarded:
+an unaccounted entry fails, and an accounted entry no registry holds fails too (SH142's rule, so a
+classification pointing at a deleted tool cannot read as coverage). **Measured: 50 entries, 16
+claimed, 34 flagless by design**, declared in seven families (`PROTOCOL`, `MIRROR`, `PROMPT`, `CDA`,
+`ID_KEYED`, `BYTES`, `SAME_FLAG`) rather than thirty-four essays — thirty-four paragraphs would be
+thirty-four chances to write a different rule. The 34 are not a backlog: a flag answers "does this
+instance do X", and most of the surface is machinery that is not optional. Claiming them anyway
+would be SH596's mistake inverted — answering "is this accounted for" with a neighbouring
+capability.
 **And the render sweep is measured in queries, not milliseconds (SH264).**
 `ShRenderSweepBenchmarkTest` counts Hibernate statements — a timing ceiling on a shared machine is a
 flake, and SH250's rule is that a flake is worse than a break. It prints on every run. The measured answer,

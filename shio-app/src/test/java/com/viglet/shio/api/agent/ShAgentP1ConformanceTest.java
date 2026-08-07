@@ -91,7 +91,7 @@ class ShAgentP1ConformanceTest {
     private List<ShMcpResource> mcpResources;
 
     /** How a capability reaches the operator P1 names. */
-    private enum Reach {
+    enum Reach {
 
         /** An MCP-only client can invoke it. The strictest bar, and what P1 actually asks for. */
         MCP_TOOL(false),
@@ -142,7 +142,7 @@ class ShAgentP1ConformanceTest {
      * @param why    the claim. For a cross-cutting or instance fact it is the whole justification;
      *               for an exception it is what P1 is paying for and, where one exists, the task id
      */
-    private record Delivery(Reach reach, String target, String why) {
+    record Delivery(Reach reach, String target, String why) {
     }
 
     private static Delivery mcp(String tool, String why) {
@@ -170,7 +170,7 @@ class ShAgentP1ConformanceTest {
      * classified here — which is the point: the classification is a decision about P1, and the
      * cheapest moment to make it is when the flag is written.
      */
-    private static Map<String, Delivery> classification() {
+    static Map<String, Delivery> classification() {
         Map<String, Delivery> byFeature = new TreeMap<>();
 
         // --- Reachable from an MCP-only client -------------------------------------------------
