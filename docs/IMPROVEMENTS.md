@@ -1053,32 +1053,6 @@ publishes the templates it wrote, because a draft-only layout is the state that 
 One command, one visible site — and the packages become the place the render conventions
 are *demonstrated* rather than described.
 
-### XI.17 The onboarding command that skips the capability list (SH595)
-
-`/shio-start` exists to *learn this Shio instance before doing anything to it*. It
-called `shio_context`, the `shio://blueprints` resource and `shio_verify` — the model,
-the sitemap, the packages and the current lint state. It never read `shio://manifest`,
-which is a resource the same MCP server already publishes, and which is the only
-document carrying what differs between one instance and the next: 57 `features`,
-`limits`, 28 `endpoints` with a worked example each, and a `startHere` sequence written
-for exactly this reader.
-
-The cost is on record. A development session diagnosed a 500 by locating the server's
-log file and grepping a stack trace while `diagnostics: true` sat in that list, and
-twice proposed building a capability the same list already flagged shipped. That was a
-repo-local skill; a new installation reaches the identical dead end by following the
-plugin's own front door.
-
-Two things follow, and the second is the general one. The command reads the manifest
-first and reports the `features` that are **false** and the `limits`, because those are
-what an assumption gets wrong. And it reads `shio_remember`, since whoever worked on
-that instance last may have written down what it is for.
-
-The rule underneath: a skill listing capabilities goes stale and lies, while a skill
-that says *ask the instance* cannot. The manifest is machine-readable, per-instance and
-always current — the plugin's job is to make the first call the wide one, not to restate
-what the call returns.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

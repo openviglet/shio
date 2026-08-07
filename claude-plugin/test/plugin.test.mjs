@@ -126,6 +126,49 @@ test("every command declares a description, and none of them writes without aski
   }
 });
 
+/**
+ * SH595 — the onboarding command asks what the instance can *do* before anything else.
+ *
+ * <p>`/shio-start` called `shio_context`, `shio://blueprints` and `shio_verify` — the model, the
+ * packages, the lint state — and never `shio://manifest`, the one document carrying what differs
+ * between one instance and the next. The cost is on record: a run diagnosed a 500 by grepping the
+ * server's log while `diagnostics: true` sat in that list, and twice proposed building a capability
+ * the same list already flagged shipped.</p>
+ *
+ * <p><b>The assertion is about order, because the defect was.</b> Nothing was missing from the
+ * plugin — the resource was published and the command was free to read it. Asserting only that the
+ * string appears would pass on a file that reads the manifest last, which is the same dead end
+ * reached more slowly. So the manifest's position is compared against every other call the command
+ * makes, and `shio_remember` is required outright: whoever worked on that instance last is the
+ * other thing no amount of re-derivation recovers.</p>
+ */
+test("SH595: the onboarding command reads the manifest, and reads it first", async () => {
+  const text = await readFile(join(plugin, "commands/shio-start.md"), "utf8");
+
+  const manifest = text.indexOf("shio://manifest");
+  assert.ok(manifest > 0, "shio-start must read shio://manifest — it is the capability list");
+
+  for (const later of ["shio_context", "shio://blueprints", "shio_verify"]) {
+    const at = text.indexOf(later);
+    assert.ok(at > 0, `shio-start must still call ${later}`);
+    assert.ok(
+      manifest < at,
+      `shio://manifest must be read before ${later}: a capability check costs one call and ` +
+        "the alternative costs a session",
+    );
+  }
+
+  // The two fields an assumption gets wrong, named rather than left to the reader.
+  assert.match(text, /\bfeatures\b/, "it must say to report the features that are false");
+  assert.match(text, /\blimits\b/, "it must say to report the limits");
+
+  // The instance's own memory. A note is the only fact that survives a session, and it is free.
+  assert.ok(
+    text.includes("shio_remember"),
+    "shio-start must read the instance's notes — whoever worked here last wrote down why",
+  );
+});
+
 test("the AGENTS.md fragment states the rules that are expensive to learn by mistake", async () => {
   const fragment = await readFile(join(plugin, "AGENTS.fragment.md"), "utf8");
 

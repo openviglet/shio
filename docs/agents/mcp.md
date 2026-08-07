@@ -137,9 +137,31 @@ quota apply on the agent path identically.
 `claude-plugin/` (published via the repo-root `.claude-plugin/marketplace.json`):
 `claude plugin marketplace add openviglet/shio && claude plugin install shio`. An `.mcp.json`
 entry running the CLI's stdio bridge through `npx`, three skills (`shio-site`,
-`shio-content-model`, `shio-verify`), three commands (`/shio-start`, `/shio-blueprint`,
-`/shio-check`) and an `AGENTS.fragment.md` for sessions without the plugin. It is the
-**distribution channel for the whole concept**. `claude-plugin/test/plugin.test.mjs` validates
-the manifests — a skill whose description does not state its trigger never loads, and that
-failure is invisible to every other test in this repository.
+`shio-content-model`, `shio-verify`, `shio-replicate`), three commands (`/shio-start`,
+`/shio-blueprint`, `/shio-check`) and an `AGENTS.fragment.md` for sessions without the plugin.
+It is the **distribution channel for the whole concept**. `claude-plugin/test/plugin.test.mjs`
+validates the manifests — a skill whose description does not state its trigger never loads, and
+that failure is invisible to every other test in this repository.
+
+**The front door read everything except the capability list (SH595).** `/shio-start` exists to
+learn an instance before touching it, and it called `shio_context`, `shio://blueprints` and
+`shio_verify` — the model, the packages, the lint state — while never reading `shio://manifest`,
+the resource the same server already publishes and the only document carrying what differs
+between one instance and the next: 57 `features`, the `limits`, 28 `endpoints` with a worked
+example each, and a `startHere` sequence written for exactly this reader. The cost is on record
+and is SH587's: a session diagnosed a 500 by grepping the server's log while `diagnostics: true`
+sat in that list, and twice proposed building a capability the list already flagged shipped. That
+was a *repo-local* skill; a fresh installation reaches the identical dead end by following the
+plugin's own front door, which is what makes it the plugin's defect rather than one clone's. So
+the command reads the manifest first, reports the `features` that are **false** and the `limits`
+— those are what an assumption gets wrong — and then reads `shio_remember`, because whoever
+worked on that instance last may have written down what it is for. **The assertion is about
+order, because the defect was:** nothing was missing, the resource was published and the command
+was free to read it, so a test that only looked for the string would pass on a file that reads
+the manifest last — the same dead end reached more slowly. `plugin.test.mjs` compares the
+manifest's position against every other call the command makes. The rule underneath is general:
+a skill that *lists* capabilities goes stale and lies, while a skill that says **ask the
+instance** cannot, which is also why the replication procedure moved out of this repo's
+`.claude/skills/` — 223 lines that existed in one clone — into `shio-replicate`, keeping only
+what is true of any instance.
 

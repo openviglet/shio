@@ -16,7 +16,7 @@
 - 📋 **SH524** (deps: SH523) **Nothing reports a declared field that no template renders** — The lint catches a template reading a field that does not exist and not the inverse, which produced four collection types drawn as a heading and a CTA nobody could repoint. → §VIII.24
 - 📋 **SH525** (deps: SH523) **Type inference from instances exists only for a stranger's markup** — propose derives a post-type with typed fields from captured pages, and the same question about my own content has no verb, so a model is written blind and rewritten after. → §VIII.25
 - 📋 **SH553** (deps: SH545 ✅) **The context pack's sitemap says DRAFT for every page, including the live ones** — SH545 gave read and find a published field and left Node.state as the third surface with one word for two questions, because a field there moves the SH116 digest and the pack's own budget. → §VIII.30
-- 📋 **SH596** (deps: SH595) **The failure recorder is reachable from the CLI and the console and not from MCP, which is the plugin's only surface** — The MCP server publishes eleven tools and four resources and diagnostics is none of them, so an agent driving Shio by plugin cannot read why a call failed. → §VIII.31
+- 📋 **SH596** (deps: SH595 ✅) **The failure recorder is reachable from the CLI and the console and not from MCP, which is the plugin's only surface** — The MCP server publishes eleven tools and four resources and diagnostics is none of them, so an agent driving Shio by plugin cannot read why a call failed. → §VIII.31
 
 ## Block K — Perception & verification loop
 
@@ -57,7 +57,6 @@
 - 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — The plan and dryRun paths are write-free and nothing enforces it, so the next feature needing to resolve what it would create can reintroduce a write. → §XI.15
 - 📋 **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — No first-party package ships a theme, a layout or a binding, so applying one yields content whose design is the labelled fallback and an agent finishes the job by hand. → §XI.16
 - 📋 **SH518** (deps: SH509 ✅) **A blueprint-built site cannot be seen, because the layout generator only runs on the replication path** — apply --blueprint writes 13 authorable posts and no PageLayout or Theme, so /preview answers 400 while convert writes both. → §XVII.70
-- 📋 **SH595** (deps: SH587 ✅) **The plugin every installation inherits does not read the document that says what the instance can do** — shio-start calls context, blueprints and verify and never the manifest resource it already exposes, so a fresh install learns the model and not the capabilities. → §XI.17
 
 ## Block L — Agent safety & human-in-the-loop
 
