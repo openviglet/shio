@@ -83,7 +83,8 @@ test("every skill declares the name and the description that make it trigger", a
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
 
-  assert.deepEqual(names.sort(), ["shio-content-model", "shio-site", "shio-verify"]);
+  assert.deepEqual(names.sort(),
+    ["shio-content-model", "shio-replicate", "shio-site", "shio-verify"]);
 
   for (const name of names) {
     const fields = frontmatter(await readFile(join(dir, name, "SKILL.md"), "utf8"));
@@ -140,5 +141,16 @@ test("the AGENTS.md fragment states the rules that are expensive to learn by mis
     assert.ok(fragment.includes(rule), `the fragment must mention ${rule}`);
   }
   // It is hand-written and therefore rots: it has to say so, and point at what replaces it.
-  assert.match(fragment, /SH115/);
+  assert.match(fragment, /shio context --as agents-md/);
+
+  // And it must point at it by the COMMAND, not by a task id. Everything under
+  // `claude-plugin/` ships to installations that have no access to this repository's
+  // roadmap, so an `SH<n>` there reads as a term of art the reader is missing rather than
+  // as the bookkeeping it is. This assertion used to require one, which is how five of them
+  // survived in the published README, package description, fragment and a skill.
+  for (const file of ["README.md", "AGENTS.fragment.md", "package.json"]) {
+    const text = await readFile(join(plugin, file), "utf8");
+    const leaked = text.match(/SH\d{2,}/g) ?? [];
+    assert.deepEqual(leaked, [], `${file}: internal task ids do not ship — found ${leaked.join(" ")}`);
+  }
 });

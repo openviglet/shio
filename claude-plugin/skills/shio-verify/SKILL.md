@@ -13,7 +13,8 @@ human round trip. Run it before you say you are done.
 `shio_verify` (or `GET /api/v2/agent/verify`, or `shio verify`) reports required fields left
 empty, references to posts that do not exist, `File` fields with no bytes, two pages on one
 URL, empty folders, links that resolve to nothing, and anything that failed asynchronously.
-Every finding carries an SH79 address and a `fix`.
+Every finding carries a content address — `post:<site>/<url>` or `folder:<site>/<path>` —
+and a `fix`.
 
 **Read the severities correctly:**
 

@@ -3,7 +3,7 @@
   in Shio. It is the minimum an agent needs to stop discovering the CMS on every session.
 
   This fragment is written by hand and therefore rots. **Prefer the generated form:**
-  `shio context --as agents-md --out AGENTS.md` (SH115) renders the same guidance plus this
+  `shio context --as agents-md --out AGENTS.md` renders the same guidance plus this
   instance's actual content model, folder tree and remembered conventions, so it cannot
   drift from the CMS. Regenerate it and the diff is the drift. Use this hand-written
   fragment only when the instance is not reachable at authoring time.

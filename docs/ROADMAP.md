@@ -16,6 +16,7 @@
 - 📋 **SH524** (deps: SH523) **Nothing reports a declared field that no template renders** — The lint catches a template reading a field that does not exist and not the inverse, which produced four collection types drawn as a heading and a CTA nobody could repoint. → §VIII.24
 - 📋 **SH525** (deps: SH523) **Type inference from instances exists only for a stranger's markup** — propose derives a post-type with typed fields from captured pages, and the same question about my own content has no verb, so a model is written blind and rewritten after. → §VIII.25
 - 📋 **SH553** (deps: SH545 ✅) **The context pack's sitemap says DRAFT for every page, including the live ones** — SH545 gave read and find a published field and left Node.state as the third surface with one word for two questions, because a field there moves the SH116 digest and the pack's own budget. → §VIII.30
+- 📋 **SH596** (deps: SH595) **The failure recorder is reachable from the CLI and the console and not from MCP, which is the plugin's only surface** — The MCP server publishes eleven tools and four resources and diagnostics is none of them, so an agent driving Shio by plugin cannot read why a call failed. → §VIII.31
 
 ## Block K — Perception & verification loop
 
@@ -39,7 +40,6 @@
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
-- 📋 **SH587** (deps: —) **The instance records the failure and holds the notes, and nothing on the path an agent walks ever names either** — A 500 was diagnosed from the server log while /agent/diagnostics held the column, the frames and a fix, and four remember notes went unread for twelve rounds. → §IX.54
 - 📋 **SH588** (deps: SH524) **Five of the checklist's seven checks are prose a person runs, and the annotation count is the one already got wrong** — Counting props against the fields each type declares was hand-written four times in four rounds and once read a complete page as 9 of 10, by counting one form. → §IX.55
 - 📋 **SH589** (deps: SH577 ✅) **Four instruments answer one question in four vocabularies with four exit codes, and reconciling them is hand work** — A replica read verify 0, audit 0 and diff 1 in one round and verify 0, diff 1 in another, so which to trust for which question is knowledge no command carries. → §IX.56
 - 📋 **SH590** (deps: SH586 ✅) **A delta repeated identically across every page is reported as one finding per page** — Twenty-two pages each read minus three internal and plus three external, which is one cause and was read as forty-four unrelated numbers for four rounds. → §IX.57
@@ -57,6 +57,7 @@
 - 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — The plan and dryRun paths are write-free and nothing enforces it, so the next feature needing to resolve what it would create can reintroduce a write. → §XI.15
 - 📋 **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — No first-party package ships a theme, a layout or a binding, so applying one yields content whose design is the labelled fallback and an agent finishes the job by hand. → §XI.16
 - 📋 **SH518** (deps: SH509 ✅) **A blueprint-built site cannot be seen, because the layout generator only runs on the replication path** — apply --blueprint writes 13 authorable posts and no PageLayout or Theme, so /preview answers 400 while convert writes both. → §XVII.70
+- 📋 **SH595** (deps: SH587 ✅) **The plugin every installation inherits does not read the document that says what the instance can do** — shio-start calls context, blueprints and verify and never the manifest resource it already exposes, so a fresh install learns the model and not the capabilities. → §XI.17
 
 ## Block L — Agent safety & human-in-the-loop
 

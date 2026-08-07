@@ -1,4 +1,4 @@
-# The Shio plugin for Claude Code (SH97)
+# The Shio plugin for Claude Code
 
 An agent session that starts **already knowing** Shio, instead of spending its first ten
 calls discovering it. This is also the distribution channel for the whole agent-native
@@ -48,7 +48,7 @@ plus the `shio://manifest`, `shio://blueprints`, `shio://context` and
 
 **`AGENTS.fragment.md`** — paste into your project's `AGENTS.md` so the conventions survive
 a session that does not have the plugin. Hand-written today; `shio context --as agents-md`
-(SH115) will generate it from the live instance.
+will generate it from the live instance.
 
 ## The rules the plugin encodes
 

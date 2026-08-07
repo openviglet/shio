@@ -316,6 +316,31 @@ it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional sh
 SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
 there has to be asserted rather than assumed.
 
+### VIII.31 The one surface that cannot ask what failed (SH596)
+
+`GET /api/v2/agent/diagnostics` folds asynchronous and 5xx failures by cause and carries
+what the failed response no longer can: a count, first and last occurrence, a `fix`, and
+`frames` naming the throwing method. It is reachable over REST, and the CLI can be
+pointed at it.
+
+Over MCP it is not reachable at all. `tools/list` answers eleven — apply, assets,
+changes, context, digest, find, publish, read, remember, verify, write — and
+`resources/list` answers four: blueprints, context, manifest, ops. Neither holds it.
+
+That matters more than a missing tool count suggests, because MCP is not one surface
+among several for a plugin user: **it is the only one**. The Claude Code plugin wires an
+`.mcp.json` and nothing else. So the reader most likely to hit a 500 — an agent driving
+an instance it did not build, over the plugin — is the one reader who cannot ask what
+happened, and the fallback is a server log on a machine that may not be theirs.
+
+P1 orders every capability MCP → files/CLI → REST → console. This one landed at the
+bottom three and skipped the top, which is the same inversion the CLI's missing publish
+verb was: the tool list has ten neighbours, the API has it, and the tier in between is
+the one nobody reads to check.
+
+A resource rather than a tool is probably right — it is a read with no arguments, like
+`shio://context` — and the manifest's `diagnostics` flag should be what says so.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -771,34 +796,6 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
-### IX.54 What the instance already knows, said where it is needed (SH587)
-
-`GET /api/v2/agent/diagnostics` answers with the exact incident SH544 was filed from —
-the column, the truncated value, `count: 2`, `firstSeen`/`lastSeen`, a `fix`, and
-`frames: ShPostUnifiedWriteService.setFurl:223 ← ShAgentBatchService.postUpsert:1059`.
-That run was diagnosed instead by locating `store/logs/shio.log` and grepping a stack
-trace, while the endpoint recorded both attempts.
-
-`shio remember` holds four notes on this instance, one of which describes the
-`site.postTypeLayout` binding and names SH328. Twelve replication rounds read none of
-them.
-
-Neither is a missing capability. Both are P2 — *discovery is a product feature, not a
-docs problem* — broken by the product that declares it. The manifest is called every
-round with `?include=identity` and nothing else in it is ever read; `convert` and
-`verify` run dozens of times and neither has ever said that an incident was recorded or
-that a note exists.
-
-The repair is two lines and no new surface. SH513 already makes the CLI print the scalar
-fields of a non-teaching error body; a 5xx should add *the instance recorded this: GET
-/api/v2/agent/diagnostics*, because a 500's response is gone by definition and that is
-the only place left. And a command running against a site or instance that carries notes
-should print their count and keys — not the prose, which is P3's business, just the fact
-that somebody left one.
-
-The measure of success is that the next round's transcript contains neither a log grep
-nor a re-derived fact.
-
 ### IX.55 The measurement that keeps being rewritten (SH588)
 
 `SKILL.md` carries seven checks for judging a replica. Two are verbs — `verify` and
@@ -1055,6 +1052,32 @@ binding, `apply` provisions the types first (SH152's `ensure`, never an upsert) 
 publishes the templates it wrote, because a draft-only layout is the state that 409s.
 One command, one visible site — and the packages become the place the render conventions
 are *demonstrated* rather than described.
+
+### XI.17 The onboarding command that skips the capability list (SH595)
+
+`/shio-start` exists to *learn this Shio instance before doing anything to it*. It
+called `shio_context`, the `shio://blueprints` resource and `shio_verify` — the model,
+the sitemap, the packages and the current lint state. It never read `shio://manifest`,
+which is a resource the same MCP server already publishes, and which is the only
+document carrying what differs between one instance and the next: 57 `features`,
+`limits`, 28 `endpoints` with a worked example each, and a `startHere` sequence written
+for exactly this reader.
+
+The cost is on record. A development session diagnosed a 500 by locating the server's
+log file and grepping a stack trace while `diagnostics: true` sat in that list, and
+twice proposed building a capability the same list already flagged shipped. That was a
+repo-local skill; a new installation reaches the identical dead end by following the
+plugin's own front door.
+
+Two things follow, and the second is the general one. The command reads the manifest
+first and reports the `features` that are **false** and the `limits`, because those are
+what an assumption gets wrong. And it reads `shio_remember`, since whoever worked on
+that instance last may have written down what it is for.
+
+The rule underneath: a skill listing capabilities goes stale and lies, while a skill
+that says *ask the instance* cannot. The manifest is machine-readable, per-instance and
+always current — the plugin's job is to make the first call the wide one, not to restate
+what the call returns.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

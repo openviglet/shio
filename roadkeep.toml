@@ -238,6 +238,17 @@ priority = [
   # SH594 sits apart: four ledgers of what is knowingly broken, invented four times, which
   # is SH583's shape one level up and was found by one of them holding a case under an id
   # that had already shipped.
+  # Then, on instruction, the same question turned on my own artefacts: can the skill and the
+  # memory be slimmed and the knowledge delegated to the plugin? The framing that settled it
+  # was the user's — **I am the teacher and the plugin is the student**. Twelve rounds taught
+  # *me*: 223 lines of hard-won procedure in `.claude/skills/`, which exists in one clone,
+  # while the plugin every installation inherits carried three skills and an onboarding
+  # command that never reads the manifest. So SH595 goes first, ahead of SH587 which it
+  # generalises: a fresh install following the plugin's own front door reaches the identical
+  # dead end. SH596 is the harder half — `diagnostics` is reachable over REST, CLI and
+  # console and from **neither** MCP list, and MCP is a plugin user's only surface.
+  "SH595",
+  "SH596",
   "SH587",
   "SH590",
   "SH588",

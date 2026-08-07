@@ -216,8 +216,24 @@ agent should never need. A failed conformance test never reaches its teardown, s
 
 Fixtures worth keeping: one fidelity replica and one native-render site. Delete the rest.
 
-## Where the detail lives
+## Where the detail lives, and which of it is not this file's
 
-[docs/agents/renderer.md](../../../docs/agents/renderer.md) for the render model and the
-SH185 editor protocol · [docs/agents/content-files.md](../../../docs/agents/content-files.md)
-for the capture and the CLI · `cli/conformance/` for the suite this file surrounds.
+This file is the **development** half: the conformance harness, the corpus, the ledger ids,
+the instance you built yourself. The half that is true of *any* Shio instance now lives in
+the plugin, at `claude-plugin/skills/shio-replicate/SKILL.md`, and ships to every
+installation — the chain, the three modes, the checks, the failure shapes. **Teach that one
+first.** A rule learned here and written only here is a rule no installation inherits, which
+is what happened for twelve rounds: 223 lines of hard-won procedure in a directory that
+exists in one clone.
+
+Ids are this repository's bookkeeping and stay in it. Nothing under `claude-plugin/` carries
+one — `plugin.test.mjs` asserts that, and it used to assert the opposite, which is how five
+of them reached the published README, package description, fragment and a skill.
+
+- **What this instance can do** — the manifest's `features`, `limits`, `endpoints` and
+  `startHere`, read whole. The one document that is per-instance and never stale.
+- **The agent surface itself** — the `shio-agent-surface` skill, which names
+  `/agent/diagnostics` and the rest of what this file used to leave you to find.
+- [docs/agents/renderer.md](../../../docs/agents/renderer.md) for the render model and the
+  editor protocol · [docs/agents/content-files.md](../../../docs/agents/content-files.md)
+  for the capture and the CLI · `cli/conformance/` for the suite this file surrounds.
