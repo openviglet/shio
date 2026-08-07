@@ -1067,6 +1067,21 @@ asserts both ratios; `ShAgentResponseBudgetTest` guards eleven canonical respons
 read their ceilings from `shio-app/src/test/resources/token-budgets.properties` — the same
 file as the SH132 MCP budgets, because a second place to keep a number is a place that goes
 stale. Raising a ceiling is allowed and must be justified in the commit.
+**Every one of those scores a *surface*, and P2's claim is about a *path* (SH597).**
+`tools/list`, a canonical response and a task an agent has already decided how to do are all
+surfaces; "one call replaces a session" is cold start to the first correct action.
+`ShAgentDiscoveryCostTest` scores that: six **intents** — a job with a known right first move —
+each walked from an empty context up a two-rung ladder (`/agent/context?include=all,manifest`,
+then the full endpoint index) until a rung's body *names* the move, which is then executed and
+required to succeed. **The marker is a path, never a `features` flag**, because `diagnostics:
+true` is exactly what a replication round had in front of it while it grepped `store/logs`. An
+intent no rung names fails the build: a capability that shipped and cannot be found is P1's
+failure wearing a green build. Measured at **10604 tokens over six independent cold starts**
+(the sum is of cold starts, not of one session — an intent needing rung 2 is paying for the
+one-call promise not holding), and the printed table names the rung that answered each.
+**Two of the six cost ~3.7× the rest** because `startHere` names neither `/agent/diagnostics`
+nor `/agent/changes`, so the only route to them is the ~2400-token index. That is the finding,
+not drift to budget around.
 **And the render sweep is measured in queries, not milliseconds (SH264).**
 `ShRenderSweepBenchmarkTest` counts Hibernate statements — a timing ceiling on a shared machine is a
 flake, and SH250's rule is that a flake is worse than a break. It prints on every run. The measured answer,

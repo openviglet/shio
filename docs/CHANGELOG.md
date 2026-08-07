@@ -332,6 +332,7 @@
 - **SH435** — Each command exports its own help and prints it; a lint derives its flags from the source, and the global help fell from 357 lines to 58.
 - 🗑 **SH519** — abandoned: Not a defect: the corruption was mine. subprocess.run(text=True) decodes with cp1252 on this machine, so the read-modify-write patches I applied to the VILT pages turned C3 A9 into the UTF-8 of A-tilde-copyright before posting it back. A fresh convert into a clean site stores correct UTF-8, and an apply round trip of an accented string returns it unchanged.
 - **SH513** — A refusal whose body is valid JSON but not a teaching document now prints the fields it does carry - Spring's default names the endpoint in path and the CLI was discarding it - while a body holding any SH80 key prints exactly as before. One choke point, so it reaches every write the CLI makes.
+- **SH597** — ShAgentDiscoveryCostTest scores the path rather than a surface: six intents with a known right first move, each walked from an empty context until a cold-start read names the move, then the move executed and required to succeed. Measured 10604 tokens across six independent cold starts, and it prints which rung answered each — two of the six are reachable only from the ~2400-token endpoint index, because `startHere` names neither /agent/diagnostics nor /agent/changes.
 
 ## Block N — Realignment of what already shipped (SH74)
 

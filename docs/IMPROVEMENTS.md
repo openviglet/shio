@@ -1470,30 +1470,6 @@ consequences to accept — the budget rises (a truthful number is the point, not
 one), and the benchmark starts covering the flow SH277 named as the one nothing tested
 end to end, which is how that defect survived four blocks.
 
-### XIII.20 The cost of finding out (SH597)
-
-Block M measures responses. `tools/list` has a 2375-token cap checked every build, the
-agent responses have `ShAgentResponseBudgetTest`, and SH394 asks the same of `shio
---help`. Every one of those scores a **surface**. P2 does not claim a surface is small —
-it claims *one call replaces a session*, and that is a property of a **path**: cold
-start to the first correct action.
-
-Nothing counts it, which is why twelve replication rounds could propose building a
-shipped capability twice, and diagnose a 5xx by grepping a server log with `diagnostics:
-true` sitting in the manifest, without a number moving. The manifest was complete the
-whole time. The run that found a feature in one call and the run that never found it
-scored identically, because neither was scored.
-
-The metric: from an empty context, the calls and tokens spent before the first action
-that is *correct* — not the first action. Correctness needs a fixture that declares it,
-so the benchmark is a small set of intents with a known right first move (diagnostics
-after a 5xx, the notes before re-deriving a convention, the blueprint that already does
-the job) and the cost of reaching each.
-
-It lands before the rest of the discovery work, per the project's own rule: a cost that
-is argued rather than measured is the same defect as a premise carried in a comment.
-Without it, every P2 task after it is an opinion with a commit attached.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
