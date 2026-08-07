@@ -434,6 +434,28 @@ who stops at `nothing lost` should not be told only the true half — and per pa
 still printed, because a fact removed from the report is a fact nobody can find. It also breaks the
 `as declared` shortcut, which is the line the whole defect used to appear as.
 
+**A constant is not a coincidence (SH590).** The paragraph above says *twenty-two pages, exactly
+three each, identical on every one* — and that sentence is the finding. It was on screen in round
+eight, read as two ordinary shortfalls, and again in round twelve before anybody fetched a page and
+looked at the hrefs. The same shape produced SH578: `assets +30` on every page of a fidelity
+replica, uniform to the unit, which was the inlined theme's own `url()` counted on one side only.
+**Both times the give-away was not the number but its invariance** — a real page-by-page loss varies
+with the page, so a delta that does not vary is a property of the pipeline rather than of any page.
+So `diff` groups every non-zero delta by `(fact, value)` and reports a group of
+`INVARIANT_FLOOR` = **3** pages or more once, as a candidate cause, with the pages folded behind the
+count and three named so a reader can go and look at one. Three because two is one page agreeing
+with another; the floor is deliberately low, since a candidate cause that turns out to be a
+coincidence costs one line and the alternative cost four rounds. It prints **above** the per-page
+table — the fold is the cause, the table is the evidence — and the per-page rows are unchanged,
+because the cause is a candidate rather than a verdict. **A by-design group is labelled, not
+filtered:** an authorable replica drops the source's chrome on every page, so its shortfall is
+invariant by construction, which is an argument for saying it *once* rather than for dropping it.
+It is arithmetic over output the command already computes — no new measurement, no browser, no
+instance — and it rides on `comparison.invariant`, so a `--json` caller gets the cause too. Twelve
+rounds of this work found defects three ways: two instruments disagreeing (SH589's subject), a
+declaration nobody read (SH560's group K), and a number that was uniform. Only the third is one pass
+over a single command's own output.
+
 **And one function was not enough (SH554).** "Both sides come out of `scanPage`" was true and
 insufficient: `scanPage`'s `links` is an array of raw hrefs, an inventory row's is
 `{internal, external}`, and the split between them lived inline in `buildInventory` — so it ran on

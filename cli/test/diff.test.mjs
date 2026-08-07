@@ -710,3 +710,94 @@ test("SH586: a page whose only difference is the flip is not reported `as declar
 
   assert.doesNotMatch(report, /as declared/);
 });
+
+/**
+ * SH590 — a constant is not a coincidence.
+ *
+ * `diff` on a 25-page replica printed `internal links -3` beside `external links +3` on twenty-two
+ * of them. Exactly three, on every page, in both directions: one cause, read as forty-four ordinary
+ * shortfalls for four rounds. The same shape produced SH578 (`assets +30` on every page of a
+ * fidelity replica, uniform to the unit). Both times the give-away was the **invariance**, not the
+ * magnitude — a real page-by-page loss varies with the page.
+ */
+
+/** N pages, each declaring `was` links and serving `now`, so the delta is identical on every one. */
+function replicaOf(count, { was, now, from = 0 }) {
+  const declared = [];
+  const produced = new Map();
+  for (let index = from; index < from + count; index += 1) {
+    const path = `/page-${index}`;
+    declared.push({ ...withLinks(was, 3), path });
+    produced.set(path, { ...withLinks(now, 3), path, title: "Home" });
+  }
+  return { declared, produced };
+}
+
+test("SH590: a delta identical across pages is one candidate cause, not one finding per page", () => {
+  const { declared, produced } = replicaOf(22, { was: 9, now: 6 });
+  const comparison = compareCapture(declared, produced);
+
+  const group = comparison.invariant.find((entry) => entry.fact === "internal links");
+  assert.ok(group, "the repeated delta must be reported");
+  assert.equal(group.delta, -3);
+  assert.equal(group.pages, 22);
+  assert.equal(group.of, 22);
+
+  const report = describeDiff(comparison, { limit: 2 });
+  assert.match(report, /delta\(s\) identical across pages/);
+  assert.match(report, /internal links: -3\s+on 22 of 22 page\(s\)/);
+  // Folded behind the count, with enough paths to go and look at one.
+  // Lexical, which is `compareCapture`'s own page order — deterministic, not numeric.
+  assert.match(report, /e\.g\. \/page-0, \/page-1, \/page-10 … \+19/);
+  // The per-page rows still print. A candidate cause is not a verdict, and this file's standing
+  // rule is that a fact removed from the report is a fact nobody can find.
+  assert.match(report, /internal links: 9 → 6/);
+});
+
+test("SH590: a loss that varies with the page is exactly what this must NOT fold", () => {
+  // The discriminator, stated as a fixture: three pages each losing a different number of links is
+  // three findings, and calling them one cause would be the mirror of the defect.
+  const declared = [];
+  const produced = new Map();
+  for (const [index, now] of [6, 5, 4].entries()) {
+    const path = `/page-${index}`;
+    declared.push({ ...withLinks(9, 3), path });
+    produced.set(path, { ...withLinks(now, 3), path, title: "Home" });
+  }
+
+  assert.deepEqual(compareCapture(declared, produced).invariant, []);
+});
+
+test("SH590: two pages agreeing is a coincidence; the floor is three", () => {
+  assert.deepEqual(compareCapture(...Object.values(replicaOf(2, { was: 9, now: 6 })))
+    .invariant, []);
+  assert.equal(compareCapture(...Object.values(replicaOf(3, { was: 9, now: 6 })))
+    .invariant.length, 1);
+});
+
+test("SH590: the fold is sorted, so two runs over one replica print the same bytes", () => {
+  // `internal links` on all six and `body assets` on three of them: most-shared first, and the
+  // paths inside a group in the order `compareCapture` compared them.
+  const { declared, produced } = replicaOf(6, { was: 9, now: 6 });
+  for (const path of ["/page-0", "/page-1", "/page-2"]) {
+    produced.set(path, { ...produced.get(path), assets: { own: 2, head: 0, style: 0 } });
+  }
+
+  const { invariant } = compareCapture(declared, produced);
+  assert.deepEqual(invariant.map((group) => [group.fact, group.delta, group.pages]), [
+    ["internal links", -3, 6],
+    ["body assets", 2, 3],
+  ]);
+  assert.deepEqual(invariant[1].paths, ["/page-0", "/page-1", "/page-2"]);
+});
+
+test("SH590: a by-design invariant is labelled, not filtered — saying it once is the point", () => {
+  // An authorable replica drops the source's chrome on every page, so its shortfall is invariant by
+  // construction. That is an argument for saying it ONCE, not for dropping it.
+  const { declared, produced } = replicaOf(5, { was: 9, now: 6 });
+  const comparison = compareCapture(declared, produced, { mode: "authorable" });
+
+  const group = comparison.invariant.find((entry) => entry.fact === "internal links");
+  assert.equal(group.claimed, false);
+  assert.match(describeDiff(comparison), /by design — said once rather than per page/);
+});

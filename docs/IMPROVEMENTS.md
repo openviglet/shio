@@ -820,30 +820,6 @@ session — and the one thing it must not do is average. A green from three and 
 one is a red, and the report names which and on what, so the disagreement survives the
 summary rather than being dissolved by it.
 
-### IX.57 A constant is not a coincidence (SH590)
-
-`shio diff` on a 25-page replica printed `internal links -3` beside `external links +3`
-on twenty-two of them. Exactly three, on every page, in both directions. That is one
-cause — the source writes three of its own links as absolute URLs and the replica serves
-them verbatim — and it was on screen in round eight, read as two ordinary shortfalls,
-and again in round twelve before anybody fetched a page and looked at the hrefs.
-
-The same shape produced SH578: `assets +30` on every page of a fidelity replica, uniform
-to the unit, which turned out to be the inlined theme's own `url()` counted on one side
-only. Both times the give-away was not the number but its **invariance**. A real
-page-by-page loss varies with the page; a constant across twenty-two pages is a property
-of the pipeline.
-
-So `diff` should say so: any fact whose delta is identical across N pages is reported
-once, as a candidate cause, with the pages folded behind the count. It is arithmetic
-over output the command already computes — no new measurement, no browser, no instance.
-
-The value is in the loop. Twelve rounds of this work found defects three ways: two
-instruments disagreeing (SH589's subject), a declaration nobody read (SH560's group K),
-and a number that was uniform. Only the third is one pass over a single command's own
-output, which makes it the cheapest to build and the one that would have moved a finding
-four rounds earlier.
-
 ### IX.58 Four ledgers of what is knowingly wrong (SH594)
 
 The device is sound and it has been invented four times:
@@ -1377,6 +1353,30 @@ The fix is to extend the task to its real end: apply, provision, bind, publish, 
 consequences to accept — the budget rises (a truthful number is the point, not a small
 one), and the benchmark starts covering the flow SH277 named as the one nothing tested
 end to end, which is how that defect survived four blocks.
+
+### XIII.20 The cost of finding out (SH597)
+
+Block M measures responses. `tools/list` has a 2375-token cap checked every build, the
+agent responses have `ShAgentResponseBudgetTest`, and SH394 asks the same of `shio
+--help`. Every one of those scores a **surface**. P2 does not claim a surface is small —
+it claims *one call replaces a session*, and that is a property of a **path**: cold
+start to the first correct action.
+
+Nothing counts it, which is why twelve replication rounds could propose building a
+shipped capability twice, and diagnose a 5xx by grepping a server log with `diagnostics:
+true` sitting in the manifest, without a number moving. The manifest was complete the
+whole time. The run that found a feature in one call and the run that never found it
+scored identically, because neither was scored.
+
+The metric: from an empty context, the calls and tokens spent before the first action
+that is *correct* — not the first action. Correctness needs a fixture that declares it,
+so the benchmark is a small set of intents with a known right first move (diagnostics
+after a 5xx, the notes before re-deriving a convention, the blueprint that already does
+the job) and the cost of reaching each.
+
+It lands before the rest of the discovery work, per the project's own rule: a cost that
+is argued rather than measured is the same defect as a premise carried in a comment.
+Without it, every P2 task after it is an opinion with a commit attached.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 

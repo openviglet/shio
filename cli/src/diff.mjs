@@ -350,6 +350,9 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
     missing,
     unaddressable,
     modes: counted,
+    // SH590 — the arithmetic over what the loop above already computed. Here rather than in the
+    // printer because a caller reading `--json` wants the candidate cause as much as a reader does.
+    invariant: invariantDeltas(pages),
     theme: themeAssets(declared, produced),
     // SH581 — the other fact a page cannot be held to, counted the same way and for the same reason.
     head: headAssets(declared, produced),
@@ -360,6 +363,71 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
     // line prints the number: it is what a reader compares against the source's own link count.
     wentHome: pages.reduce((total, page) => total + (page.wentHome ?? 0), 0),
   };
+}
+
+/**
+ * How many pages must share a delta before it stops being a coincidence (SH590).
+ *
+ * <p>Three, because two is one page agreeing with another and the argument here is about
+ * <b>invariance</b>: a real page-by-page loss varies with the page, so a number that does not vary
+ * is a property of the pipeline. Both sightings this was derived from were far above it — 22 pages
+ * of `-3` and 13 pages of `+30` — and the floor is set low deliberately, since a candidate cause
+ * that turns out to be a coincidence costs a reader one line, while the alternative cost four
+ * rounds.</p>
+ */
+export const INVARIANT_FLOOR = 3;
+
+/**
+ * A delta identical across pages, reported once as a candidate cause (SH590).
+ *
+ * <h3>The give-away was never the number</h3>
+ *
+ * <p>`shio diff` on a 25-page replica printed `internal links -3` beside `external links +3` on
+ * twenty-two of them. Exactly three, on every page, in both directions — one cause (the source
+ * writes three of its own links as absolute URLs and the replica serves them verbatim), read as
+ * forty-four ordinary shortfalls for four rounds before anybody fetched a page and looked at the
+ * hrefs. The same shape produced SH578: `assets +30` on every page of a fidelity replica, uniform to
+ * the unit, which was the inlined theme's own `url()` counted on one side only.</p>
+ *
+ * <p>Both times what mattered was not the magnitude but the <b>invariance</b>. So the arithmetic is
+ * the whole feature: group every non-zero delta by (fact, value), and any group holding
+ * {@link INVARIANT_FLOOR} pages or more is one candidate cause with its pages folded behind a count.
+ * No new measurement, no browser, no instance — one pass over output the command already computes,
+ * which is what makes it the cheapest of the three ways this work has found defects and the one that
+ * would have moved a finding four rounds earlier.</p>
+ *
+ * <p><b>A by-design group is kept and labelled rather than filtered.</b> An authorable replica drops
+ * the source's nav on every page, so its shortfall is invariant by construction — and that is an
+ * argument for saying it <i>once</i>, not for dropping it: this file's standing rule is that a fact
+ * removed from the report is a fact nobody can find (SH575 was read off a line like this one).</p>
+ *
+ * @param {object[]} pages `compareCapture`'s per-page rows
+ * @returns {Array<{fact: string, delta: number, pages: number, of: number, claimed: boolean,
+ *   paths: string[]}>} most-shared first; ties broken by fact then delta, so two runs over one
+ *   replica print the same bytes (P5)
+ */
+export function invariantDeltas(pages, { floor = INVARIANT_FLOOR } = {}) {
+  const groups = new Map();
+  for (const page of pages) {
+    for (const row of page.rows ?? []) {
+      if (!row.delta) continue;
+      const key = `${row.fact} ${row.delta}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = { fact: row.fact, delta: row.delta, claimed: row.claimed !== false, paths: [] };
+        groups.set(key, group);
+      }
+      // One page cannot be its own corroboration: a fact appears once per page in `FACTS`, but
+      // guarding it here keeps the count honest if that ever stops being true.
+      if (!group.paths.includes(page.path)) group.paths.push(page.path);
+    }
+  }
+  return [...groups.values()]
+    .filter((group) => group.paths.length >= floor)
+    .map((group) => ({ ...group, pages: group.paths.length, of: pages.length }))
+    .sort((a, b) => b.pages - a.pages
+      || a.fact.localeCompare(b.fact)
+      || a.delta - b.delta);
 }
 
 /**
@@ -424,7 +492,7 @@ function headAssets(declared, produced) {
  */
 export function describeDiff(comparison, options = {}) {
   const { pages, missing, unaddressable = [], lost, byDesign = 0, modes, theme, head,
-    wentHome = 0 } = comparison;
+    wentHome = 0, invariant = [] } = comparison;
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   const lines = [
     `shio diff: ${pages.length} page(s) compared with the capture that declared them`
@@ -441,6 +509,26 @@ export function describeDiff(comparison, options = {}) {
       // and a reader who stops at the headline should not be told only the true half.
       + `${wentHome ? `, ${wentHome} link(s) now point at the source` : ""}`,
   ];
+  // SH590 — before the per-page table, because it is a candidate CAUSE and the table is the
+  // evidence. A reader who meets `internal links -3` twenty-two times reads twenty-two findings;
+  // the same reader meeting it once, with the count, reads one — which is what it is. The per-page
+  // rows are still printed underneath, because a fact removed from the report is a fact nobody can
+  // find, and because the cause is a candidate rather than a verdict.
+  if (invariant.length) {
+    lines.push(
+      `  ${invariant.length} delta(s) identical across pages — a real loss VARIES with the page, so `
+        + "a constant is a property of the pipeline. One cause each, not one finding per page:",
+    );
+    for (const group of invariant) {
+      const shown = group.paths.slice(0, 3).join(", ");
+      lines.push(
+        `    ${group.fact}: ${group.delta > 0 ? `+${group.delta}` : group.delta}`
+          + `  on ${group.pages} of ${group.of} page(s)`
+          + `${group.claimed ? "" : "  (by design — said once rather than per page)"}`
+          + `  e.g. ${shown}${group.paths.length > 3 ? ` … +${group.paths.length - 3}` : ""}`,
+      );
+    }
+  }
   for (const page of pages.slice(0, limit)) {
     if (!page.lost && !page.byDesign && !page.gained && !page.wentHome) {
       lines.push(`  ${page.path}  as declared`);

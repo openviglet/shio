@@ -41,7 +41,6 @@
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
 - 📋 **SH588** (deps: SH524) **Five of the checklist's seven checks are prose a person runs, and the annotation count is the one already got wrong** — Counting props against the fields each type declares was hand-written four times in four rounds and once read a complete page as 9 of 10, by counting one form. → §IX.55
 - 📋 **SH589** (deps: SH577 ✅) **Four instruments answer one question in four vocabularies with four exit codes, and reconciling them is hand work** — A replica read verify 0, audit 0 and diff 1 in one round and verify 0, diff 1 in another, so which to trust for which question is knowledge no command carries. → §IX.56
-- 📋 **SH590** (deps: SH586 ✅) **A delta repeated identically across every page is reported as one finding per page** — Twenty-two pages each read minus three internal and plus three external, which is one cause and was read as forty-four unrelated numbers for four rounds. → §IX.57
 - 📋 **SH594** (deps: SH579 ✅) **Four named lists now hold what is knowingly broken, in four formats read by four readers** — verify-baseline.json, assertion-debt's DEBT array, open-findings.json and red-suites.json each carry accepted findings, and no reader knows another exists. → §IX.58
 
 ## Block I — Content as files (local-first authoring)
@@ -77,6 +76,7 @@
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
 - 📋 **SH394** (deps: SH132 ✅, SH208) **The CLI's discovery surface has no budget, so it reads as free** — tools/list is capped at 2375 tokens and checked every build while shio --help is 14 KB nobody measures, so the two surfaces cannot be compared on the cost that decides between them. → §XIII.13
 - 📋 **SH396** (deps: SH112 ✅, SH395) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
+- 📋 **SH597** (deps: SH394, SH396) **P2's own claim is unmeasured — nothing counts the path from cold start to the first correct action** — Every surface has its own ceiling and the path across them has none, so a run that re-derived a shipped capability scored the same as one that found it in a call. → §XIII.20
 
 ## Block N — Realignment of what already shipped
 
