@@ -162,6 +162,23 @@ priority = [
   # body span a Page stores, so a fidelity page reads `-28` for the loss of about four head
   # links. `diff`'s own footer already prints that its numbers disagree, which is why it is a
   # task rather than a guess.
+  #
+  # Then a measurement on instruction, and it reordered the two above rather than adding to
+  # them. The tenth run's numbers came from **one** real authorable source, viglet.org, which
+  # is a React SPA — the shape that forces one top-level block per page. Run against a
+  # server-rendered source (`openviglet.github.io`) the same commands propose 21 candidates
+  # over pages of 2, 15 and 27 blocks, `diff` scores **1** fact lost against 12, and two of
+  # three pages lose no text at all. So SH580 is a defect of SPA capture and not of the
+  # authorable path, and what actually stands between this chain and a green handover on a
+  # normal site is two things it found instead. SH582 is first of those and first overall:
+  # `--accept all` writes three sections with an empty required `heading`, so `verify` exits 1
+  # on a replica whose content is complete — the proposal derives the fields and never compares
+  # them with the type's required set. SH467 is second and was **restated**, not re-filed: it
+  # was carried as a 301 cost and the measurement makes it a correctness defect, because the
+  # mirrored slash means `./app/main.js` resolves to `/model-catalog/app/main.js` at the source
+  # and `/app/main.js` at the replica. It is the only reference error on that run.
+  "SH582",
+  "SH467",
   "SH580",
   "SH581",
   "SH528",

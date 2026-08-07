@@ -1920,27 +1920,28 @@ listing, or six languages. They surface here because a real site has all three.
 ### XVII.44 The canonical is the mirror of the source's (SH467)
 
 The source serves `/shio/` with a **200** and answers `/shio` with a **301** to it. The
-replica did the exact opposite: `/shio` was 200 and `/shio/` was **404**, on the public
-route and the preview alike — so it was the stored friendly URL, not the route.
+replica does the exact opposite. The route half has landed — `pageAt` tries the other
+form and redirects toward the stored `furl` — but the stored form is still the
+grammar's: the capture reads `/shio/` and `ShAddress.normalizePath` collapses it.
 
-The route half has landed: `pageAt` tries the other trailing-slash form and redirects
-toward the stored `furl`, so both spellings answer and the direction is read off the
-content. What remains is that the stored form is still the grammar's. The capture reads
-`/shio/` and `ShAddress.normalizePath` collapses it, so the replica's **canonical** is
-the mirror of the source's: every captured link, sitemap entry and bookmark costs a 301
-instead of a 200, and a search index built from the replica names a URL the source
-redirects away from.
+It was filed as a cost — every captured link, sitemap entry and bookmark pays a 301 —
+and a measurement on `openviglet.github.io` says it is a **correctness** defect. The
+source's `/model-catalog/` is canonical and the replica's `/model-catalog` is, exactly
+mirrored, so `./app/main.js` on that page resolves to `/model-catalog/app/main.js` at
+the source and to `/app/main.js` at the replica. `verify` reports it as
+`page-reference-broken`, and it is the only reference error on an otherwise clean
+authorable replica. Every document-relative reference on a directory-style page lands
+one level too high — SH512's shape, one phase along: the capture resolves correctly and
+the delivery has the slash inverted.
 
-SH385's rule is that a replica keeps the original's URL space, and one character per
-directory-style path is what is missing. It is also not cheap. Preserving the declared
-slash makes `/shio` and `/shio/` **two addresses**, and `normalizePath` is the one
-canonical path form precisely so they are one: nine exact-`furl` lookups — resolver,
-CDA, `verify`, render, copy/move — become slash-sensitive, and an agent typing a stray
-slash creates a second post instead of updating the first. A P5 identity change wearing
-a capture fix's clothes.
+That does not make it cheap. Preserving the declared slash makes `/shio` and `/shio/`
+**two addresses**, and `normalizePath` is one canonical form precisely so they are one:
+nine exact-`furl` lookups become slash-sensitive, and a stray slash creates a second post
+instead of updating the first. A P5 identity change wearing a capture fix's clothes.
 
-So the question is narrower than it looked: is a replica's canonical worth splitting the
-address space, or is a redirect the honest answer for URLs Shio never owned?
+So the question the section used to close on is answered. A redirect is not the honest
+answer for a URL Shio never owned, because a redirect does not fix a reference resolved
+against it.
 
 ### XVII.53 A mark that labels itself is not a label (SH477)
 
@@ -2087,6 +2088,30 @@ drops 80% of its text is a block to walk into, not to accept. And report: `propo
 should score what an acceptance keeps, so the choice is made before the write rather
 than measured after the publish. The second is cheap and makes the first arguable with
 numbers.
+
+### XVII.83 An acceptance that writes what the gate will refuse (SH582)
+
+`propose --accept all` on `openviglet.github.io` accepted fifteen of twenty-one
+candidates. Three of them became sections whose `heading` — a required field on their
+post-type — is empty, so `shio verify` exits 1 with three `required-field-empty` errors
+on a replica that is otherwise the best this chain has produced: one fact lost, both
+other pages keeping all their text, navigation, sixteen annotated fields.
+
+The proposal already knows which fields a candidate would fill. It lists them per
+candidate — `['heading', 'features', 'intro']` on one, `['ctaLabel', 'ctaHref']` on
+another, and `[]` on the six it declines — so the fields it derives are a fact it holds
+at proposal time, and whether a derived set covers the type's *required* fields is one
+comparison against the post-type it is proposing.
+
+SH551 is the same shape one level in: a field no row fills is a finding, and this is a
+field no *instance* fills. The difference is who it costs. SH551's empty question label
+rendered as nothing; this one makes the gate red, so the run cannot be handed over
+without somebody opening three sections and typing a heading the source may not have.
+
+Two honest outcomes and the proposal can pick either: decline a candidate whose required
+fields it cannot fill, or accept it and say so — `2 of 15 accepted blocks leave a
+required field empty` in the same note that already counts what was cut. What it cannot
+keep doing is producing content that its own gate refuses.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
