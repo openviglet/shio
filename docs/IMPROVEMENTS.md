@@ -1280,30 +1280,6 @@ Two candidate answers, not exclusive:
   a trashed folder, so the correct form is also the shortest one. The lint then has something to
   point at, which is what made SH128's guard teachable rather than annoying.
 
-### XII.15 A site that was never meant to be kept (SH591)
-
-Twelve replication rounds left thirteen sites on one instance — `R6Fid`, `R6Aut`,
-`R9Aut`, `R9Loc`, `R10Ssr`, `R11`, `R12` and six older ones. Every one was made to
-answer a question that has since been answered. Removing them means thirteen
-`site.delete` ops, each answering 428 and each needing its own confirm token, which is
-SH108 working exactly as designed and applied to the one case where the surprise it
-guards against cannot happen.
-
-The distinction the model is missing is **who declared the site disposable, and when**.
-P7 is that a human is never surprised; a site the agent marked as scratch at the moment
-it created it, in a document the human could read, is not a surprise — the declaration
-happened before there was anything to lose.
-
-So `convert --create-site --scratch` (and `apply --create-site --scratch`) records the
-flag on the site, and `shio site rm --scratch` sweeps every site carrying it, in one
-confirmation rather than thirteen. A site without the flag is untouched by that command
-at any count, which is what keeps it from becoming a way to delete a real site quickly.
-
-The second half is worth as much as the first: a scratch site should be **visible as
-such**. `shio context` and the console listing that show thirteen sites today show no
-difference between the two the human curates and the eleven an agent left behind, and
-the human is the one who has to look at that list.
-
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened

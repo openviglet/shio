@@ -115,9 +115,21 @@ public record ShAgentContext(
      *                     omitted unless {@code ids=true}, since {@code folder:<site>/}
      *                     resolves to the same thing
      * @param posts        number of distinct posts in the site
+     * @param scratch      SH591 — declared disposable by whoever created it. Omitted when it is
+     *                     not, because the common case is a site somebody keeps and a
+     *                     {@code false} on every row would cost tokens to say nothing (P3). The
+     *                     second half of SH591 is precisely this: a listing that shows thirteen
+     *                     sites and no difference between the two a human curates and the eleven
+     *                     an agent left behind is a listing the human cannot act on.
      */
     @JsonInclude(Include.NON_NULL)
-    public record Site(String id, String name, String url, String rootFolderId, long posts) {
+    public record Site(String id, String name, String url, String rootFolderId, long posts,
+                       Boolean scratch) {
+
+        /** The five-field form, before SH591 made a disposable site visible as one. */
+        public Site(String id, String name, String url, String rootFolderId, long posts) {
+            this(id, name, url, rootFolderId, posts, null);
+        }
     }
 
     /**

@@ -57,6 +57,11 @@ import tools.jackson.databind.JsonNode;
  *                here. Off by default and never implied: prune is the one operation
  *                whose blast radius grows with content the author never mentioned (P7),
  *                which is why the plan lists every deletion before {@code apply} runs
+ * @param scratch    SH591 — declare the created site <b>disposable</b>. Only meaningful with
+ *                   {@code createSite}, and that is the guarantee rather than a limitation: the
+ *                   flag says the site was never meant to be kept, and only its creator can say
+ *                   that honestly. A document a human read before it ran is where the declaration
+ *                   belongs, which is what keeps `shio site rm --scratch` from being a surprise.
  * @param createSite create {@code site}, blank, as this run's <em>first</em> step when it is
  *                not there (SH439). Opt-in for the same reason {@code prune} is: a document
  *                naming a site nobody made is usually a typo, and the refusal that catches
@@ -79,30 +84,38 @@ import tools.jackson.databind.JsonNode;
  */
 public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                   List<Move> moves, boolean prune, String confirm,
-                                  boolean createSite, Map<String, String> postTypeLayout) {
+                                  boolean createSite, Map<String, String> postTypeLayout,
+                                  boolean scratch) {
+
+    /** The eight-field form: every caller before SH591 made a site declarable as disposable. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
+                               List<Move> moves, boolean prune, String confirm,
+                               boolean createSite, Map<String, String> postTypeLayout) {
+        this(site, folders, posts, moves, prune, confirm, createSite, postTypeLayout, false);
+    }
 
     /** The four-field form: every document that does not prune, and every pre-SH108 caller. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts, boolean prune) {
-        this(site, folders, posts, null, prune, null, false, null);
+        this(site, folders, posts, null, prune, null, false, null, false);
     }
 
     /** The five-field form: pre-SH150 callers, which never moved anything. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                boolean prune, String confirm) {
-        this(site, folders, posts, null, prune, confirm, false, null);
+        this(site, folders, posts, null, prune, confirm, false, null, false);
     }
 
     /** The six-field form: pre-SH439 callers, which never created the site they wrote into. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                List<Move> moves, boolean prune, String confirm) {
-        this(site, folders, posts, moves, prune, confirm, false, null);
+        this(site, folders, posts, moves, prune, confirm, false, null, false);
     }
 
     /** The seven-field form: pre-SH449 callers, which never bound a layout. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                List<Move> moves, boolean prune, String confirm,
                                boolean createSite) {
-        this(site, folders, posts, moves, prune, confirm, createSite, null);
+        this(site, folders, posts, moves, prune, confirm, createSite, null, false);
     }
 
     /**

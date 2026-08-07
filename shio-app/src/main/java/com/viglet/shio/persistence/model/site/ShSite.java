@@ -62,7 +62,27 @@ public class ShSite extends ShObject {
 	private Set<ShFolder> shFolders = new HashSet<>();
 
 	private String formSuccess;
-	
+
+	/**
+	 * Whether this site was declared disposable by whoever created it (SH591).
+	 *
+	 * <p>Twelve replication rounds left thirteen sites on one instance, each needing its own
+	 * {@code site.delete}, its own 428 and its own confirm token. The distinction the model was
+	 * missing is <b>who declared the site disposable, and when</b>: P7 says a human is never
+	 * surprised, and a site an agent marked as scratch at the moment it created it — in a document
+	 * the human could read — is not a surprise, because the declaration happened before there was
+	 * anything to lose.</p>
+	 *
+	 * <p><b>Set at creation and never afterwards.</b> That is the whole guarantee. A flag anybody
+	 * could raise later would be a way to make a real site deletable in bulk, which is precisely
+	 * what {@code shio site rm --scratch} must not become.</p>
+	 *
+	 * <p>{@code Boolean} rather than {@code boolean}: every site created before this column has
+	 * {@code null}, and null means <i>kept</i> — the reading that leaves an existing instance
+	 * exactly as it was.</p>
+	 */
+	private Boolean scratch;
+
 	public ShSite() {
 		this.setObjectType(ShObjectType.SITE);
 	}
@@ -106,6 +126,16 @@ public class ShSite extends ShObject {
 
     public void setFormSuccess(String formSuccess) {
 		this.formSuccess = formSuccess;
+	}
+
+	/** SH591 — written by the create that declared it, and by nothing else. */
+	public void setScratch(Boolean scratch) {
+		this.scratch = scratch;
+	}
+
+	/** SH591 — null is a site that predates the column, which is a site nobody called disposable. */
+	public boolean isScratch() {
+		return Boolean.TRUE.equals(this.scratch);
 	}
 	
 }

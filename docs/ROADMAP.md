@@ -70,7 +70,6 @@
 - 📋 **SH224** (deps: SH55 ✅, SH200 ✅) **A permanent deletion is the one write nobody records** — purge fires the lifecycle event and writes no audit row, so the irreversible half of the trash is the one nobody can attribute. → §XII.8
 - 📋 **SH225** (deps: SH54 ✅, SH201 ✅) **The ACL check depends on `open-in-view` and does not say so** — requireRead and requireWrite reach the folder-chain walk by self-invocation, so the transaction is whatever the caller happened to have — open-in-view in the app, nothing elsewhere. → §XII.9
 - 💭 **SH226** (deps: SH200 ✅) **A trashed folder is excluded by convention, not by invariant** — The trashed-folder exclusion lives in one repository's finders, and ids also resolve polymorphically through another that knows nothing about it. → §XII.10
-- 📋 **SH591** (deps: SH463 ✅) **A site an agent made to measure something has to be deleted one confirmation at a time** — Thirteen throwaway replicas accumulated on one instance across twelve rounds, and each delete is a 428 and a confirm token because nothing marks a site as disposable. → §XII.15
 
 ## Block M — Token economy (measured)
 

@@ -58,6 +58,8 @@ Every post lands in DRAFT. Publishing is a separate, explicit call: shio publish
 
   --site <name>        The site to write into (required)
   --create-site        Create the site (blank) if it does not exist, as the first step
+  --scratch            With --create-site: declare the site DISPOSABLE, so
+                       shio site rm --scratch sweeps it in one confirmation
   --home <path>        Redirect / to one of the captured pages, for a source that answers
                        nothing at its own root. Without it a home page is written listing
                        the replica's pages
@@ -102,6 +104,8 @@ export async function run(flags, positionals, ctx) {
     plan,
     site,
     createSite: Boolean(flags.createSite),
+    // SH591 — a replica made to answer a question, declared disposable at the moment it is made.
+    scratch: Boolean(flags.scratch),
     // SH449 — the markup cache the proposal was computed from. A page whose blocks nobody accepted
     // is written verbatim, and this is where the bytes come from; without it the fidelity half of
     // the two documented modes has no source and the command falls back to SH438's behaviour.

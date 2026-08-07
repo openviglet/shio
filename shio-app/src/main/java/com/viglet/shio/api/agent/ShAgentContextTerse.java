@@ -105,6 +105,8 @@ public final class ShAgentContextTerse {
                     .attr("root", site.rootFolderId())
                     .attr("url", site.url())
                     .count("posts", site.posts())
+                    // SH591 — the word a human scanning this list needs, and only where it is true.
+                    .attr("scratch", Boolean.TRUE.equals(site.scratch()) ? "true" : null)
                     .build());
         }
         for (ShAgentContext.Type type : nullSafe(pack.model())) {

@@ -55,6 +55,8 @@ compaction. - reads the document from stdin.
   --param k=v            With --blueprint: one parameter value; repeat for several
   --params <file.json>   With --blueprint: values from a file (--param wins over it)
   --create-site          Create the site (blank) if it does not exist, as the first step
+  --scratch              With --create-site: declare the site DISPOSABLE, so
+                         shio site rm --scratch sweeps it in one confirmation
   --merge-post-types     With --blueprint: add fields an existing post-type lacks; never
                          changes one
   --force                With --blueprint: overwrite existing front-end files
@@ -76,6 +78,9 @@ export async function run(flags, positionals, ctx) {
   // document's own key rather than merging: a document that already declares it is unchanged, and
   // a caller who typed the flag asked for it here.
   if (flags.createSite) document.createSite = true;
+  // SH591 — and only with it. `--scratch` on a document that creates nothing would be a caller
+  // asking to mark somebody else's site disposable, which is the one thing the flag must not do.
+  if (flags.scratch && document.createSite) document.scratch = true;
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
 

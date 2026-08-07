@@ -1,0 +1,37 @@
+databaseChangeLog:
+  # SH591 — `ShSite.scratch`: a site that was never meant to be kept.
+  #
+  # Twelve replication rounds left thirteen sites on one instance, every one made to answer a
+  # question that has since been answered. Removing them meant thirteen `site.delete` ops, each
+  # answering 428 and each needing its own confirm token — SH108 working exactly as designed, and
+  # applied to the one case where the surprise it guards against cannot happen.
+  #
+  # The distinction the model was missing is **who declared the site disposable, and when**. P7 is
+  # that a human is never surprised; a site the agent marked as scratch at the moment it created it,
+  # in a document the human could read, is not a surprise — the declaration happened before there
+  # was anything to lose. So it is a column and not a naming convention: a convention is a claim
+  # anybody can make about anybody's site after the fact, and this one has to be a claim its creator
+  # made at creation.
+  #
+  # Nullable forever and read as false when absent, so every site that existed before this is what
+  # it always was: kept. Not a tenant discriminator, so no ShTenantBackfillRunner entry. The
+  # lower-case `boolean` is the portable spelling every other flag column here uses, and the
+  # upper-case one is a forbidden token per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL (it does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh591-site-scratch
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShSite
+                columnName: scratch
+      changes:
+        - addColumn:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: scratch
+                  type: boolean

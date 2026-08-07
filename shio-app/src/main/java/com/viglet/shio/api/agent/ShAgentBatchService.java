@@ -687,7 +687,12 @@ public class ShAgentBatchService {
         // a plan and a run describe the same op: a plan derived from a second reading of the rule
         // is a plan that can disagree with the run it predicts.
         Map<String, String> bindings = bindingsOf(op.data());
-        String detail = createDetail(bindings);
+        // SH591 — read on the create branch and on no other, which is the guarantee the sweep rests
+        // on. `siteFill` never sees it: a flag that could be raised on an existing site would make
+        // `shio site rm --scratch` a way to bulk-delete a site somebody chose to keep.
+        boolean scratch = flag(op.data(), "scratch");
+        String detail = createDetail(bindings) + (scratch ? ", declared SCRATCH — disposable, and "
+                + "`shio site rm --scratch` may remove it in one confirmation" : "");
         if (session.dryRun) {
             return session.change(op, address, Change.CREATE, detail, null);
         }
@@ -697,6 +702,7 @@ public class ShAgentBatchService {
         payload.setDescription(text(op.data(), "description"));
         payload.setUrl(text(op.data(), "url"));
         payload.setFurl(text(op.data(), "furl"));
+        payload.setScratch(scratch ? Boolean.TRUE : null);
         ShSite created = shSiteWriteService.createBlank(payload, bindings, session.actor);
         return session.change(op, address, Change.CREATE, detail, created.getId());
     }
@@ -2108,7 +2114,7 @@ public class ShAgentBatchService {
                             + "plus the `folders` and `posts` that should exist. Neither list holds "
                             + "anything, so there is nothing to converge to.")
                     .withAllowed(List.of("site", "folders", "posts", "moves", "prune", "confirm",
-                            "createSite", "postTypeLayout"))
+                            "createSite", "postTypeLayout", "scratch"))
                     .withFix("Declare at least one folder or post. If you meant to send an `ops` "
                             + "array, that is a different endpoint: POST /api/v2/agent/batch.")
                     .withExample("{\"site\":\"Blog\",\"folders\":[{\"path\":\"/blog\"}],"

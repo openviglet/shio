@@ -144,6 +144,10 @@ public class ShSiteWriteService {
         site.setPostTypeLayout(payload.getPostTypeLayout());
         site.setSearchablePostTypes(payload.getSearchablePostTypes());
         site.setFormSuccess(payload.getFormSuccess());
+        // SH591 — carried from the create and settable nowhere else. A flag anybody could raise
+        // later would make `shio site rm --scratch` a way to bulk-delete a site somebody chose to
+        // keep; the guarantee it rests on is that the declaration preceded the content.
+        site.setScratch(payload.isScratch() ? Boolean.TRUE : null);
         site.setFurl(hasText(payload.getFurl()) ? payload.getFurl() : slugify(payload.getName()));
         site.setOwner(owner);
         site.setDate(Instant.now());

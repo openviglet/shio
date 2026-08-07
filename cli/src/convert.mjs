@@ -92,6 +92,9 @@ export const REDIRECT_TO = "TO";
  * @param {object} input.proposal the proposal computed from the capture **now**
  * @param {{accepted?: Array<{block: string, type: string}>}} input.plan the reviewed decisions
  * @param {string} input.site the site to write into
+ * @param {boolean} [input.scratch] declare the created site disposable (SH591) — written only
+ *   alongside `createSite`, because only a creator can honestly say a site was never meant to be
+ *   kept
  * @param {boolean} [input.createSite] make the site as the run's first step (SH439). The key is
  *   written into the document only when asked, so an `--out` file is the same bytes it was
  *   before for every caller that did not ask (P5) — and carries the intent for the one that did,
@@ -99,7 +102,8 @@ export const REDIRECT_TO = "TO";
  * @returns {{document: object|null, stale: string[], sections: object[], extras: string[]}}
  */
 export function buildConversion({
-  proposal, plan = {}, site, createSite = false, markup = new Map(), home = null, inventory = null,
+  proposal, plan = {}, site, createSite = false, scratch = false, markup = new Map(), home = null,
+  inventory = null,
 }) {
   const accepted = (plan.accepted ?? []).map((entry) => ({ ...entry }));
   const byId = new Map((proposal?.candidates ?? []).map((row) => [row.id, row]));
@@ -202,6 +206,11 @@ export function buildConversion({
       // SH439 — present only when asked. Creating a site nobody named is the surprise P7 forbids,
       // and an absent key is what every document written before this said.
       ...(createSite ? { createSite: true } : {}),
+      // SH591 — only alongside `createSite`, which is the guarantee rather than a limitation: the
+      // flag says the site was never meant to be kept, and only its creator can say that honestly.
+      // It rides in the document a human can read *before* the run, so `shio site rm --scratch`
+      // removing it later is not the surprise P7 forbids — the declaration preceded the content.
+      ...(createSite && scratch ? { scratch: true } : {}),
       // SH449 — the edge that turns a layout into a rendered page. Written only when there is a
       // layout to bind, so a document that does not need it is the same bytes it was before (P5).
       ...(pages.length ? { postTypeLayout: { [PAGE_TYPE]: fidelityLayoutTitle(site) } } : {}),

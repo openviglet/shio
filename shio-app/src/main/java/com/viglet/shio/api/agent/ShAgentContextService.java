@@ -213,7 +213,10 @@ public class ShAgentContextService {
                         site.getName(),
                         site.getUrl(),
                         ids ? rootFolder(site).map(ShFolder::getId).orElse(null) : null,
-                        postsBySite.getOrDefault(site.getId(), 0L)))
+                        postsBySite.getOrDefault(site.getId(), 0L),
+                        // SH591 — present only when true. A `scratch=false` on every row is a
+                        // token per site to say the ordinary thing.
+                        site.isScratch() ? Boolean.TRUE : null))
                 .toList();
     }
 

@@ -858,6 +858,31 @@ read this as restorable would not offer the human an undo that does not exist. S
 are refused: an allow-list says what may be read and written, never that the container may be
 destroyed.
 
+**And a site that was never meant to be kept (SH591).** Twelve replication rounds left thirteen
+sites on one instance — `R6Fid`, `R6Aut`, `R9Aut`, `R9Loc`, `R10Ssr`, `R11`, `R12` and six older
+ones — every one made to answer a question that has since been answered. Removing them meant
+thirteen `site.delete` ops, each a 428 and each with its own confirm token: SH108 working exactly as
+designed, applied to the one case where the surprise it guards against **cannot happen**. The
+distinction the model was missing is *who declared the site disposable, and when*. So `ShSite`
+carries a `scratch` column, `site.upsert` reads `data.scratch:true` **on the create branch and
+nowhere else**, and `shio site rm --scratch` sweeps every site carrying it in one confirmation.
+**The create-only rule is the entire safety argument**, not a limitation: a flag an existing site
+could gain would make the sweep a fast way to delete a site somebody chose to keep, whereas a flag
+set at creation was declared in a document a human could read *before there was anything in it to
+lose* — P7 satisfied rather than waived. `ShAgentSiteDeleteTest` asserts both directions (a create
+marks, an upsert on an existing site does not), because that is the property that stays true only
+until somebody adds a convenience. **Nothing in SH108 changed**, and that is worth stating: the
+confirm token has always been *per batch* — `ShAgentConfirm.ofPlan` digests every deletion the plan
+reports — so thirteen deletes in one document have always cost one token. The protocol was never
+the problem; nothing marked a site as disposable, so the sweep could not be *composed*. Two smaller
+decisions: only the JSON literal `true` counts (a flag deciding whether a site may later be
+bulk-deleted is the last place to be generous about spelling), and the flag is **omitted** from the
+context pack when false, because `scratch:false` on every row is a token per site to say the
+ordinary thing (P3). The second half of the task is worth as much as the first — `shio context` and
+`shio site` now **mark** the disposable ones, since a listing showing thirteen sites with no
+difference between the two a human curates and the eleven an agent left behind is a listing the
+human cannot act on.
+
 **Two instruments existed to find that gap and neither could — which is the part to remember
 (SH463).** `ShAgentP1ConformanceTest` is keyed on manifest `features`, and site deletion had **no
 key**, so it was not classified at all: an inventory keyed on what the manifest advertises measures

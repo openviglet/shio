@@ -183,8 +183,12 @@ public class ShAgentDesiredStateService {
         // Nothing else here changes — that is the point of compiling to an op rather than teaching
         // this class what a site is (P10).
         if (desired.createSite()) {
+            // SH591 — `scratch` rides the create and only the create. It is not a second op the way
+            // the binding below is, because unlike `postTypeLayout` it is *not* settable without
+            // `createSite`: a flag an existing site could gain would make `shio site rm --scratch` a
+            // way to bulk-delete a site somebody chose to keep.
             ops.add(op(ShAgentBatchService.SITE_UPSERT, ShAddress.site(site).toString(),
-                    null, null, null));
+                    null, null, desired.scratch() ? scratchData() : null));
         }
         // SH449 — the binding, as its own op right after the create. A fidelity replication writes
         // a PageLayout, and a layout nobody bound renders nothing: `/preview/<site>/` answers 400
@@ -454,6 +458,14 @@ public class ShAgentDesiredStateService {
                 layout.put(entry.getKey(), entry.getValue());
             }
         }
+        return data;
+    }
+
+    /** SH591 — `{"scratch": true}` for the create op, as the JSON literal the op reads. */
+    private static tools.jackson.databind.JsonNode scratchData() {
+        tools.jackson.databind.node.ObjectNode data = tools.jackson.databind.node.JsonNodeFactory
+                .instance.objectNode();
+        data.put("scratch", true);
         return data;
     }
 

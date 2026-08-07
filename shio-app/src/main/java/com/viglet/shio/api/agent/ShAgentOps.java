@@ -116,7 +116,8 @@ public final class ShAgentOps {
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Create a blank site, or fill an empty url/description/furl on one that "
                             + "exists. `data.postTypeLayout` binds a post-type to a PageLayout "
-                            + "title, per key. Never replaces a value somebody set."),
+                            + "title, per key. `data.scratch:true` marks the new site DISPOSABLE, "
+                            + "on the CREATE only. Never replaces a value somebody set."),
             new OpSpec(ShAgentBatchService.SITE_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Remove a site and every folder and post in it. Needs `confirm` from its "

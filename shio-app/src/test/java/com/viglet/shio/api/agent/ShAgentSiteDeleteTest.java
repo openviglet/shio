@@ -217,4 +217,63 @@ class ShAgentSiteDeleteTest {
     private static Op delete(String site) {
         return new Op(ShAgentBatchService.SITE_DELETE, "site:" + site, null, null, null, null, null);
     }
+
+    /**
+     * SH591 — a site is disposable only if its creator said so, at creation.
+     *
+     * <p>Twelve replication rounds left thirteen sites on one instance, each needing its own
+     * {@code site.delete}, its own 428 and its own confirm token. {@code shio site rm --scratch}
+     * sweeps them in one confirmation, and the whole safety of that verb rests on one property:
+     * <b>an existing site can never gain the flag</b>. If {@code siteFill} ever learns to write it,
+     * the sweep becomes a fast way to delete a site somebody chose to keep — which is the exact
+     * inversion of P7 the flag exists to avoid, since the declaration is only honest while it
+     * precedes the content.</p>
+     */
+    @Test
+    @DisplayName("SH591: scratch is written by the create and can never be gained afterwards")
+    void scratchIsDeclaredAtCreationAndNowhereElse() {
+        String fresh = "sh591-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+
+        run(false, upsert(fresh, "{\"scratch\":true}"));
+        assertThat(shSiteRepository.findByName(fresh).isScratch())
+                .as("the create declared it disposable, in a document a human could read before "
+                        + "there was anything in it to lose")
+                .isTrue();
+
+        // The site seeded by @BeforeEach exists already, so this takes the fill branch.
+        run(false, upsert(siteName, "{\"scratch\":true}"));
+        assertThat(shSiteRepository.findByName(siteName).isScratch())
+                .as("""
+                        an upsert on an EXISTING site must not raise this flag. If it can, then                         anything that can call site.upsert can mark somebody's real site                         disposable and `shio site rm --scratch` will then delete it in one                         confirmation — the surprise P7 forbids, arriving through the mechanism                         built to avoid it.""")
+                .isFalse();
+
+        // And a site nobody said anything about is what it always was: kept.
+        assertThat(shSiteRepository.findByName(fresh + "-absent")).isNull();
+    }
+
+    /**
+     * SH591 — a `scratch` that is not the JSON literal `true` is not a declaration.
+     *
+     * <p>The string {@code "true"} is deliberately refused. A flag deciding whether a site may
+     * later be bulk-deleted is the last place to be generous about spelling, and the cost of
+     * strictness here is that a caller who got it wrong finds out from the site not being marked
+     * rather than from a site being gone.</p>
+     */
+    @Test
+    @DisplayName("SH591: only the boolean literal declares a site disposable")
+    void onlyTheLiteralCounts() {
+        String quoted = "sh591q-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+
+        run(false, upsert(quoted, "{\"scratch\":\"true\"}"));
+
+        assertThat(shSiteRepository.findByName(quoted).isScratch()).isFalse();
+    }
+
+    private static Op upsert(String site, String data) {
+        return new Op(ShAgentBatchService.SITE_UPSERT, "site:" + site, null, null, null, json(data));
+    }
+
+    private static tools.jackson.databind.JsonNode json(String raw) {
+        return new tools.jackson.databind.ObjectMapper().readTree(raw);
+    }
 }

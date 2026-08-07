@@ -72,6 +72,11 @@ const BOOLEANS = [
   // instead of from my argv" — a decision, so a flag. `--unpublish` is the same verb inverted,
   // spelled the way `shio_publish` spells it rather than as a second command.
   "all", "unpublish",
+  // SH591: a site declared disposable by the run that made it, and the only set `site rm` will
+  // ever act on. A flag rather than a value because it is a declaration, not a parameter.
+  "scratch",
+  // SH589: the two instruments `judge` will not run unless asked, each for its own reason.
+  "browser", "verbose",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -98,6 +103,7 @@ const COMMANDS = {
   audit: () => import("./commands/audit.mjs"),
   annotations: () => import("./commands/annotations.mjs"),
   judge: () => import("./commands/judge.mjs"),
+  site: () => import("./commands/site.mjs"),
   clone: () => import("./commands/clone.mjs"),
   propose: () => import("./commands/propose.mjs"),
   convert: () => import("./commands/convert.mjs"),
@@ -146,6 +152,8 @@ Commands:
                  rows expanded (exits 1 when a rendered field is not editable)
   judge          Run verify/diff (and audit/snapshot on request), answer once, and
                  name where the instruments disagreed — which is where the defects are
+  site           List the sites, marking the disposable ones; site rm --scratch
+                 sweeps every site its creator declared disposable, in one confirmation
   clone <url>    Capture a site that already exists: an inventory, and no content
   propose        Which captured blocks could become sections, and what each would lose
   convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT
