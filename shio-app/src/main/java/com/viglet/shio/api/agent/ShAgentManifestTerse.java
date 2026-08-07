@@ -70,6 +70,7 @@ public final class ShAgentManifestTerse {
                 .attr("built", manifest.builtAt())
                 .build());
 
+        appendOmitted(out, manifest.omitted());
         appendFeatures(out, manifest.features());
         appendElsewhere(out, manifest.elsewhere());
         appendLimits(out, manifest.limits());
@@ -87,6 +88,27 @@ public final class ShAgentManifestTerse {
                     .build());
         }
         return out.toString();
+    }
+
+    /**
+     * What {@code include=} removed (SH600), <b>first</b> and on one line.
+     *
+     * <p>First because it is the line that tells a caller its question was not answered, and a
+     * reader that stops early has to meet it before the sections that survived. One line because
+     * it is a handful of counts: {@code omitted features=57 limits=1 endpoints=28 start-here=5} is
+     * the whole report, and it is absent entirely on a full document — nothing was dropped, so
+     * there is nothing to say and no tokens to spend saying it.</p>
+     */
+    private static void appendOmitted(StringBuilder out, Map<String, Integer> omitted) {
+        if (omitted == null || omitted.isEmpty()) {
+            return;
+        }
+        ShTerse.Line line = ShTerse.line("omitted");
+        // `attr` and not `count`: count folds a zero away, and a dropped section that happened to
+        // be empty is exactly the case a caller still has to be told about — "there is an
+        // `elsewhere` section and you did not ask for it" is the report, not the number.
+        omitted.forEach(line::attr);
+        out.append(line.build());
     }
 
     /**

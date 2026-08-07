@@ -187,7 +187,14 @@ class ShAgentRoundTripTest {
                 .as("the endpoint index deliberately stays on /agent/manifest: it is ~87% of "
                         + "that document, it changes only when the build does, and folding it in "
                         + "here would re-send it every time a post changed")
-                .doesNotContain("\"endpoints\"");
+                .doesNotContain("\"endpoints\":[");
+        assertThat(body)
+                .as("SH600: and the pack now *says* the index was left out. The folded manifest "
+                        + "is itself a projection, so a session that opens with this one call "
+                        + "used to be handed a capability list with no indication that the "
+                        + "twenty-eight routes existed at all — which is the omission SH597 "
+                        + "prices at a second round trip")
+                .contains("\"omitted\"", "\"endpoints\"");
     }
 
     /**

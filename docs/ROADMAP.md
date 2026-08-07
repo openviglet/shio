@@ -16,8 +16,8 @@
 - 📋 **SH524** (deps: SH523) **Nothing reports a declared field that no template renders** — The lint catches a template reading a field that does not exist and not the inverse, which produced four collection types drawn as a heading and a CTA nobody could repoint. → §VIII.24
 - 📋 **SH525** (deps: SH523) **Type inference from instances exists only for a stranger's markup** — propose derives a post-type with typed fields from captured pages, and the same question about my own content has no verb, so a model is written blind and rewritten after. → §VIII.25
 - 📋 **SH553** (deps: SH545 ✅) **The context pack's sitemap says DRAFT for every page, including the live ones** — SH545 gave read and find a published field and left Node.state as the third surface with one word for two questions, because a field there moves the SH116 digest and the pack's own budget. → §VIII.30
-- 📋 **SH600** (deps: —) **A narrowed discovery response does not say what it dropped** — include=identity answers 200 with all 57 feature flags projected away, so a caller who asked one question is handed a manifest that answers none, and P6 covers the 4xx only. → §VIII.34
 - 📋 **SH601** (deps: SH597 ✅, SH598 ✅) **startHere is an inventory, so the one call leaves the choosing undone** — P2 promises one call replaces a session and what arrives is a list of everything, so a reader still has to map an intent onto it, which is the mapping that failed every round. → §VIII.35
+- 📋 **SH608** (deps: SH600 ✅) **The context pack narrows the same way the manifest did and still says nothing** — SH600 gave the manifest an omitted report and include=instance on the pack still drops the model, the sitemap and the conventions with a 200, the same silent projection one endpoint over. → §VIII.36
 
 ## Block K — Perception & verification loop
 

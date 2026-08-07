@@ -59,6 +59,16 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                  surface, which would cost tokens on every session (P3)
  * @param startHere the first calls to make, in order — the manifest's answer to
  *                  "where do I begin?"
+ * @param omitted   section name → how many entries {@code include=} removed (SH600), absent
+ *                  when nothing was removed. <b>A narrowed discovery response is the one place
+ *                  a 200 misleads worse than a 404</b>: a caller narrowing a discovery surface
+ *                  is by construction a caller who does not yet know what is there, so
+ *                  {@code ?include=identity} answering 200 with all 57 capability flags
+ *                  projected away hands it a manifest that answers none of the questions the
+ *                  document exists for — and a 404 would at least have been read. P6 scopes
+ *                  "errors are instructions" to the 4xx; this failure has no error. Counts and
+ *                  section names only, never the content: it costs a handful of tokens and it
+ *                  converts a silent projection into a pointer
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -78,13 +88,23 @@ public record ShAgentManifest(
         Map<String, String> elsewhere,
         ShAgentLimits limits,
         List<ShAgentEndpoint> endpoints,
-        List<String> startHere) {
+        List<String> startHere,
+        Map<String, Integer> omitted) {
+
+    /** A whole manifest — nothing was narrowed, so there is nothing to report as gone. */
+    public ShAgentManifest(String product, String version, int protocol, String apiBase,
+                           String commit, String builtAt, Map<String, Boolean> features,
+                           Map<String, String> elsewhere, ShAgentLimits limits,
+                           List<ShAgentEndpoint> endpoints, List<String> startHere) {
+        this(product, version, protocol, apiBase, commit, builtAt, features, elsewhere, limits,
+                endpoints, startHere, null);
+    }
 
     /** Every caller from before SH393, for whom no capability lived anywhere else. */
     public ShAgentManifest(String product, String version, int protocol, String apiBase,
                            Map<String, Boolean> features, ShAgentLimits limits,
                            List<ShAgentEndpoint> endpoints, List<String> startHere) {
         this(product, version, protocol, apiBase, null, null, features, null, limits, endpoints,
-                startHere);
+                startHere, null);
     }
 }

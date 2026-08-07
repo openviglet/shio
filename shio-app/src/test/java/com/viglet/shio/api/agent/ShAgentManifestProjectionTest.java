@@ -80,8 +80,17 @@ class ShAgentManifestProjectionTest {
                 .contains("\"protocol\"", "\"product\"", "\"apiBase\"")
                 .contains("\"features\"", "\"limits\"");
         assertThat(body)
-                .as("the endpoint index is the whole weight of this document and was not asked for")
-                .doesNotContain("\"endpoints\"", "\"startHere\"");
+                .as("the endpoint index is the whole weight of this document and was not asked "
+                        + "for. Matched on the section's opener rather than on its name (SH600): "
+                        + "the name now appears in `omitted`, which is the point of that field — "
+                        + "and an assertion that cannot tell the content from the report of its "
+                        + "absence would have passed over either one going missing")
+                .doesNotContain("\"endpoints\":[", "\"startHere\":[");
+        assertThat(body)
+                .as("SH600: a narrowed discovery response says what the narrowing removed. This "
+                        + "call is a 200 that answers one question and silently drops the other "
+                        + "four sections, and until this field existed nothing said so")
+                .contains("\"omitted\"", "\"endpoints\"", "\"start-here\"", "\"elsewhere\"");
 
         assertThat(tokens(check))
                 .as("SH174 is a token claim; if the projection does not measure smaller it did nothing")
@@ -104,15 +113,17 @@ class ShAgentManifestProjectionTest {
         MvcResult pointers = manifest("?include=elsewhere");
 
         assertThat(check.getResponse().getContentAsString())
-                .as("a caller checking flags every session must not pay for the pointers")
-                .doesNotContain("\"elsewhere\"");
+                .as("a caller checking flags every session must not pay for the pointers — the "
+                        + "pointers themselves, that is, not the SH600 line saying how many there "
+                        + "were, which is twelve tokens and the reason the caller knows to ask")
+                .doesNotContain("\"elsewhere\":{");
 
         String body = pointers.getResponse().getContentAsString();
         assertThat(body)
-                .contains("\"elsewhere\"")
+                .contains("\"elsewhere\":{")
                 .contains("shio import")
                 .as("the flags are the other section, and this caller did not ask for them")
-                .doesNotContain("\"features\"", "\"endpoints\"");
+                .doesNotContain("\"features\":{", "\"endpoints\":[");
         assertThat(tokens(pointers))
                 .as("nine pointers, and nothing else — if this is not tiny it is not a projection")
                 .isLessThan(tokens(check));

@@ -1117,6 +1117,32 @@ thirty-four chances to write a different rule. The 34 are not a backlog: a flag 
 instance do X", and most of the surface is machinery that is not optional. Claiming them anyway
 would be SH596's mistake inverted — answering "is this accounted for" with a neighbouring
 capability.
+
+**A narrowed discovery response says what the narrowing removed (SH600).** `?include=identity`
+is a reasonable-looking way to ask the manifest a narrow question; it returns **200** and drops
+all 57 `features`, the `limits` and `startHere` — everything P2 exists to deliver. A skill's
+opening line carried exactly that call for twelve rounds, and in every one of them the manifest
+was read and the capability list was never seen. **P6 scopes "errors are instructions" to the
+4xx and this failure has no error**, which is why it is the one place a 200 misleads worse than
+a 404: a 404 would have been read. So `ShAgentManifest` carries **`omitted`** — section wire-name
+→ entry count, built in `ShAgentManifestSection.project`, absent entirely on a full document.
+Terse renders it as one line, **first**, so a reader that stops early meets it:
+`omitted features=57 limits=1 endpoints=28 start-here=5`. Counts and section names only, never
+content — listing the 57 flag names would cost most of what the projection saved, which would
+make the fix an argument against itself. It uses `attr` and not `count`, because `count` folds a
+zero away and a dropped section that happened to be empty is exactly the case a caller still has
+to be told about.
+**It reaches the context pack for free**, and that is the part worth knowing: the manifest folded
+in at `include=manifest` is *itself* projected to features+limits+startHere, so a session opening
+with the one call is now told `omitted endpoints=28 elsewhere=12`. Eight tokens against the ~2400
+that rung 2 costs (SH597) — and eight tokens is what stops a caller not knowing there is anywhere
+to go. **The context pack's own `include=` still has the hole**, deliberately: its sections are
+content-shaped, so a projection and an empty instance are indistinguishable after the fact the
+way `features: null` and `features: {}` are not. That is SH608.
+One trap this change exposed, and it is the same confusion one level up: three assertions used
+the *word* `endpoints` as a proxy for the index's absence, and now the word appears in `omitted`.
+They match the section's opener (`"endpoints":[`) instead — an assertion that cannot tell content
+from a report of its absence would have passed over either one going missing.
 **And the render sweep is measured in queries, not milliseconds (SH264).**
 `ShRenderSweepBenchmarkTest` counts Hibernate statements — a timing ceiling on a shared machine is a
 flake, and SH250's rule is that a flake is worse than a break. It prints on every run. The measured answer,

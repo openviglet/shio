@@ -13,7 +13,9 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.error.ShProblem;
@@ -119,7 +121,65 @@ public enum ShAgentManifestSection {
                 sections.contains(ELSEWHERE) ? manifest.elsewhere() : null,
                 sections.contains(LIMITS) ? manifest.limits() : null,
                 sections.contains(ENDPOINTS) ? manifest.endpoints() : null,
-                sections.contains(START_HERE) ? manifest.startHere() : null);
+                sections.contains(START_HERE) ? manifest.startHere() : null,
+                omitted(manifest, sections));
+    }
+
+    /**
+     * What the narrowing removed (SH600) — section name and how many entries, never the content.
+     *
+     * <h2>Why a 200 needed this and a 400 did not</h2>
+     *
+     * <p>{@link UnknownManifestSectionException} already teaches a caller that misspelled a
+     * section. A caller that spelled one correctly and narrowly gets a 200 and no signal at all:
+     * {@code ?include=identity} is four scalars and the fifty-seven capability flags, the limits
+     * and {@code startHere} are simply gone. It looks like an answer. A skill's opening line
+     * carried exactly that call for twelve rounds, and in every one of them the manifest was read
+     * and the capability list was never seen — which cost proposing to build two shipped features
+     * and diagnosing a 5xx from a server log with {@code diagnostics: true} two lines away in a
+     * response nobody had asked for.</p>
+     *
+     * <p>P6 says errors are instructions and is scoped to the 4xx. <b>The failure here has no
+     * error</b>, and a caller narrowing a <em>discovery</em> surface is by construction one who
+     * does not yet know what is there — so this is the one place a 200 misleads worse than a 404,
+     * because a 404 would have been read.</p>
+     *
+     * <p>Counts, not names of the things omitted. {@code features=57} is what tells a caller its
+     * question was not answered; listing the fifty-seven flag names would cost most of what the
+     * projection saved, which would make the fix an argument against itself (P3). Sorted, because
+     * the manifest is byte-stable (P5/SH136), and absent entirely when nothing was dropped, so the
+     * full document pays nothing for a report it has no content for.</p>
+     */
+    private static Map<String, Integer> omitted(ShAgentManifest manifest,
+                                                Set<ShAgentManifestSection> sections) {
+        Map<String, Integer> dropped = new TreeMap<>();
+        if (!sections.contains(FEATURES)) {
+            dropped.put(FEATURES.wireName(), size(manifest.features()));
+        }
+        if (!sections.contains(ELSEWHERE)) {
+            dropped.put(ELSEWHERE.wireName(), size(manifest.elsewhere()));
+        }
+        if (!sections.contains(LIMITS) && manifest.limits() != null) {
+            // One object rather than a collection, so the honest count is 1. Reporting it at all
+            // matters more than the number: `limits` is how a client learns to pace itself, and a
+            // caller that does not know it exists learns the ceiling from a 429 instead.
+            dropped.put(LIMITS.wireName(), 1);
+        }
+        if (!sections.contains(ENDPOINTS)) {
+            dropped.put(ENDPOINTS.wireName(), size(manifest.endpoints()));
+        }
+        if (!sections.contains(START_HERE)) {
+            dropped.put(START_HERE.wireName(), size(manifest.startHere()));
+        }
+        return dropped.isEmpty() ? null : dropped;
+    }
+
+    private static int size(Collection<?> values) {
+        return values == null ? 0 : values.size();
+    }
+
+    private static int size(Map<?, ?> values) {
+        return values == null ? 0 : values.size();
     }
 
     private static ShAgentManifestSection resolve(String name) {

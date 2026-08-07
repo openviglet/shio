@@ -316,30 +316,6 @@ it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional sh
 SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
 there has to be asserted rather than assumed.
 
-### VIII.34 The projection that answers nothing, with a 200 (SH600)
-
-`?include=identity` is a reasonable-looking way to ask the manifest a narrow question.
-It returns 200. It also removes every one of the 57 `features`, the `limits` and
-`startHere` — that is, everything P2 exists to deliver.
-
-A procedure written against that call teaches it to every run that follows. That is what
-happened here: a skill's first line carried `?include=identity`, and for twelve rounds
-the manifest was called and the capability list was never seen. The cost was proposing
-to build two shipped features and diagnosing a 5xx from a server log while `diagnostics:
-true` sat two lines away in a response nobody had asked for.
-
-P6 says errors are instructions, and it is scoped to the 4xx. The failure here has no
-error. A caller who narrows a *discovery* surface is, by construction, a caller who does
-not yet know what is there, so a silent projection is the one place a 200 misleads worse
-than a 404: a 404 would have been read.
-
-The rule to add: a discovery response that has been narrowed states what the narrowing
-removed — a count and the key names, not the content. `features: 57 omitted
-(include=identity)` is a handful of tokens and it converts a silent projection into a
-pointer. It costs nothing on the full response, because there is nothing to report.
-
-Small, and it is the cheapest of the P2 tasks by a wide margin.
-
 ### VIII.35 Inventory is not routing (SH601)
 
 The manifest is complete. That is the finding, and it is the uncomfortable one: every
@@ -361,6 +337,30 @@ Two cautions. It must not become a fifth registry (SH599 is the opposite directi
 the intent set has to come from measurement, not from introspection: SH597's fixture is
 precisely a list of intents with a known right first move, so the benchmark and the
 router want the same table. Build the table once, score against it, then route with it.
+
+### VIII.36 The other narrowed discovery response (SH608)
+
+SH600 closed this on the manifest: a projected document carries `omitted`, a section
+name and an entry count for everything `include=` removed, so `?include=identity` can no
+longer answer 200 while dropping all fifty-seven capability flags in silence.
+
+`/agent/context` takes the same parameter and has the same hole. `?include=instance`
+returns four scalars and drops the model, the sitemap and the conventions — including
+the remembered notes, the section SH597 measures a whole intent against. SH600's
+argument applies unchanged: a caller narrowing a *discovery* surface does not yet know
+what is there.
+
+It was left out deliberately, for one reason worth stating. The pack's sections are
+**content**-shaped, so a projection and an empty instance are indistinguishable after
+the fact the way `features: null` and `features: {}` are not: `sites` is an empty list
+on a fresh instance and an empty list when nobody asked. The report has to be built
+where the sections are chosen, from the parsed section set, rather than derived from the
+assembled pack.
+
+The second half needs a decision rather than a port. The pack already reports
+`budget.truncated` when the sitemap walk stopped early, so two mechanisms would be
+saying "you did not get all of it" for two reasons. Whether that is one field or two is
+the work.
 
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
