@@ -1837,6 +1837,33 @@ the whole decision, and `instance-hints.test.mjs` checks both against `index.mjs
 both directions. A new command cannot be registered without taking a side, and a side taken for a
 command that no longer exists fails too.
 
+**`shio judge --site X` — one verdict, and the disagreements that produced it (SH589).** Judging a
+replica meant running `verify`, `diff`, `audit` and `snapshot`, reading four reports in four
+vocabularies, and knowing which answers which question. Round eight: `verify` 0, `audit` 0, `diff`
+1. Round twelve: `verify` 0, `diff` 1. Both ended with a real defect and neither ended with a number
+anybody could act on. **The composition is the easy half.** The half worth building is that it
+prints *where they disagreed*, because that is where every finding of this work came from — SH521
+(the gate said `ok` on a page `/agent/render` had already scored at nine unstyled classes), SH554
+(`diff` reported a loss `verify` could not see, and `diff` was wrong), SH577 (`diff` red, `verify`
+green, and the mode was the reason), SH586 (`diff` red where `verify` was clean, and the links were
+leaving the site). Four for four. A disagreement is not noise to be reconciled; it is the
+highest-yield signal the chain produces, and it reached a reader only if they happened to run both
+and notice. **Three rules the implementation is:** it never averages — a green from three and a red
+from one is a **red**, and the report names which and on what; an instrument that did not run is
+**unproven and never green**, printed with what it *would* have answered, because "we could not
+check this" and "this is fine" are different answers (SH410's rule, SH588's again); and an
+instrument only disagrees about a subject it **covered**, since silence from a run that never
+looked at a page would invent a disagreement out of its own scope. The two vocabularies —
+`verify`'s SH79 address and the other three's served path — normalise to the path, including
+`post:<site>/` → `/`, or a disagreement is keyed on two strings for one page and nobody sees it. It
+**composes** rather than forks (P10): each instrument is its own command's `run` with a captured
+`stdout`, so a rule that changes in `verify` changes here, and `--verbose` prints the four reports
+underneath because a disagreement is a pointer at two of them. `verify` and `diff` always run
+(browser-free); `audit` is `--browser` and `snapshot` is `--against <origin>`, both bounded by
+`--pages` with the bound **declared**, because choosing a baseline for the caller would be inventing
+the thing whose absence is the question. `judge.mjs` is pure — the reconciliation is what has to be
+asserted, and a browser must not be needed to test it.
+
 **`shio annotations <page>` — the measurement that kept being rewritten (SH588).** `SKILL.md`
 carries seven checks for judging a replica. Two are verbs, `verify` and `diff`; the other five are
 paragraphs, and the most-used is *count, do not eyeball*: take the props a page emits and compare

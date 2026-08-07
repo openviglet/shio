@@ -864,30 +864,6 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
-### IX.56 One verdict, and the disagreements that produced it (SH589)
-
-Judging a replica means running `verify`, `diff`, `audit` and `snapshot`, reading four
-reports in four vocabularies, and knowing which one answers which question. Round eight:
-`verify` 0, `audit` 0, `diff` 1. Round twelve: `verify` 0, `diff` 1. Both ended with a
-real defect and neither ended with a number anybody could act on.
-
-`shio judge --site X` runs them and answers once. The composition is the easy half. The
-half worth building is that it prints **where they disagreed**, because that is where
-every finding of this work came from: SH521 (the gate said `ok` on a page
-`/agent/render` had already scored at nine unstyled classes), SH554 (`diff` reported a
-loss `verify` could not see, and it was `diff` that was wrong), SH577 (`diff` red and
-`verify` green, and the mode was the reason), SH586 (`diff` red where `verify` was
-clean, and the links were leaving the site).
-
-Four for four. A disagreement between two instruments is not noise to be reconciled; it
-is the highest-yield signal this chain produces, and it reaches a reader only if the
-reader happens to run both and notice.
-
-This is P2 applied to the perception loop rather than to discovery — one call replaces a
-session — and the one thing it must not do is average. A green from three and a red from
-one is a red, and the report names which and on what, so the disagreement survives the
-summary rather than being dissolved by it.
-
 ### IX.58 Four ledgers of what is knowingly wrong (SH594)
 
 The device is sound and it has been invented four times:

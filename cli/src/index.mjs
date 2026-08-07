@@ -97,6 +97,7 @@ const COMMANDS = {
   snapshot: () => import("./commands/snapshot.mjs"),
   audit: () => import("./commands/audit.mjs"),
   annotations: () => import("./commands/annotations.mjs"),
+  judge: () => import("./commands/judge.mjs"),
   clone: () => import("./commands/clone.mjs"),
   propose: () => import("./commands/propose.mjs"),
   convert: () => import("./commands/convert.mjs"),
@@ -143,6 +144,8 @@ Commands:
   annotations <page>
                  The props a page emits vs the fields its types declare — both forms,
                  rows expanded (exits 1 when a rendered field is not editable)
+  judge          Run verify/diff (and audit/snapshot on request), answer once, and
+                 name where the instruments disagreed — which is where the defects are
   clone <url>    Capture a site that already exists: an inventory, and no content
   propose        Which captured blocks could become sections, and what each would lose
   convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT
