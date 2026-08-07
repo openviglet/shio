@@ -107,19 +107,32 @@ annotates each field.
 *Proof:* `/preview/<site>/?editor=true` is 200 **and** carries `data-shio-prop` per field,
 `data-shio-post` per section, `_shio/editor.js` injected and `data-shio-editor-origin` set.
 
-**Count, do not eyeball.** Take the props the page emits and compare them against the fields
-each section type declares — **including the fields of every collection row**. Four of seven
-types are collection-shaped (`features`, `questions`, `logos`, `quotes`), so a page that looks
-annotated can be five props over a grid whose two cards carry none. Rendering is not
-annotation: the rows once did not draw at all (SH465), then drew with no `sh-post` and no
-`sh-field` (SH475), and the visible page looked reasonable at every stage.
+**Count, do not eyeball — and the counting is a verb now (SH588).**
 
-**Count both declaration forms.** A field whose value lands in an attribute is declared by
-`data-shio-prop-attr="<field>:<attribute>"` beside the element's own `data-shio-prop`, because
-one element may carry two fields — a link's text and its destination (SH503). Counting only
-`data-shio-prop` under-reports every attribute-valued field, which is how a complete page once
-read as 9 of 10 and nearly had a regression filed against it. Expect *more* declarations than
-filled fields, too: an empty slot is annotated so a curator can fill it.
+```
+shio annotations post:<site>/<path>
+```
+
+Props by field, both declaration forms, every collection row expanded, each attributed to the
+post that owns it, joined against what that post's type declares. **Exit 1 when a declared
+field is rendered without an annotation.** Do not hand-write this comparison; it was
+hand-written four times here, differently each time, and once wrong.
+
+What the verb encodes, so you do not have to re-derive it:
+
+- **Rows are their own posts.** Four of seven types are collection-shaped (`features`,
+  `questions`, `logos`, `quotes`), so a page that looks annotated can be five props over a grid
+  whose two cards carry none. Rendering is not annotation: the rows once did not draw at all
+  (SH465), then drew with no `sh-post` and no `sh-field` (SH475), and the visible page looked
+  reasonable at every stage.
+- **Both forms.** A field whose value lands in an attribute is declared by
+  `data-shio-prop-attr="<field>:<attribute>"` beside the element's own `data-shio-prop`, because
+  one element may carry two fields — a link's text and its destination (SH503). Counting only
+  `data-shio-prop` is how a complete page once read as **9 of 10** and nearly had a regression
+  filed against it.
+- **More declarations than filled fields is expected**, not a finding: an empty slot is
+  annotated so a curator can fill it.
+- **A type it cannot resolve reads `NOT checked`**, not clean. Read that line.
 
 Read one extracted string against the source, too. An entity survives extraction as
 characters and is escaped again on render, so `&` becomes `&amp;` in the page *and in the

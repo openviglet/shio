@@ -47,8 +47,8 @@ export const DIAGNOSTICS_HINT = "the instance recorded this: GET /api/v2/agent/d
  */
 export const NOTES_COMMANDS = new Set([
   "resolve", "impact", "apply", "publish", "import", "blueprints", "verify", "changes",
-  "report", "digest", "snapshot", "audit", "propose", "convert", "diff", "pull", "push",
-  "deploy",
+  "report", "digest", "snapshot", "audit", "annotations", "propose", "convert", "diff", "pull",
+  "push", "deploy",
 ]);
 
 /**

@@ -96,6 +96,7 @@ const COMMANDS = {
   digest: () => import("./commands/digest.mjs"),
   snapshot: () => import("./commands/snapshot.mjs"),
   audit: () => import("./commands/audit.mjs"),
+  annotations: () => import("./commands/annotations.mjs"),
   clone: () => import("./commands/clone.mjs"),
   propose: () => import("./commands/propose.mjs"),
   convert: () => import("./commands/convert.mjs"),
@@ -139,6 +140,9 @@ Commands:
   digest <page>  Structural digest of one page: outline, landmarks, links, images
   snapshot <page> PNG of a page + whether it looks different (needs playwright)
   audit <page>   What is wrong with a rendered page, as text with a selector each
+  annotations <page>
+                 The props a page emits vs the fields its types declare — both forms,
+                 rows expanded (exits 1 when a rendered field is not editable)
   clone <url>    Capture a site that already exists: an inventory, and no content
   propose        Which captured blocks could become sections, and what each would lose
   convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT

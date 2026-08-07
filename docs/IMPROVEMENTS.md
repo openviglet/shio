@@ -864,31 +864,6 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
-### IX.55 The measurement that keeps being rewritten (SH588)
-
-`SKILL.md` carries seven checks for judging a replica. Two are verbs — `verify` and
-`diff`. The other five are paragraphs, and the most-used is *count, do not eyeball*:
-take the props a page emits and compare them against the fields each section type
-declares, **including every collection row**, and **in both declaration forms**, because
-a value that lands in an attribute is declared by `sh-field-attr` beside the element's
-own `sh-field`.
-
-That procedure was hand-written four times across four rounds, slightly differently each
-time. Once it was wrong: a complete page read as 9 of 10 because only `data-shio-prop`
-was counted, and a regression was nearly filed against SH503 on the strength of it. The
-rule about counting both forms exists in `SKILL.md` *because* of that, which is the
-definition of a procedure that cannot be left to a reader.
-
-So: `shio annotations <page>` — props by field, both forms, rows expanded, joined
-against what the post-type of each `data-shio-post` declares, and non-zero when a
-declared field is rendered without an annotation. It is SH524's question asked at the
-page rather than at the template, and the two are worth having apart: SH524 finds a
-field no template draws, this finds a field a template draws and does not make editable,
-which is how SH465 and SH475 both shipped looking reasonable.
-
-Every instrument this project added — SH516, SH521, SH526, SH548, SH560 — turned a rule
-in a file into an assertion. This is the next on that list.
-
 ### IX.56 One verdict, and the disagreements that produced it (SH589)
 
 Judging a replica means running `verify`, `diff`, `audit` and `snapshot`, reading four

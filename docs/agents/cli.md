@@ -1837,6 +1837,29 @@ the whole decision, and `instance-hints.test.mjs` checks both against `index.mjs
 both directions. A new command cannot be registered without taking a side, and a side taken for a
 command that no longer exists fails too.
 
+**`shio annotations <page>` — the measurement that kept being rewritten (SH588).** `SKILL.md`
+carries seven checks for judging a replica. Two are verbs, `verify` and `diff`; the other five are
+paragraphs, and the most-used is *count, do not eyeball*: take the props a page emits and compare
+them against the fields each section type declares, **including every collection row**, and **in
+both declaration forms**. That procedure was hand-written four times across four rounds, slightly
+differently each time, and **once it was wrong** — a complete page read as *9 of 10* because only
+`data-shio-prop` was counted, and a regression was nearly filed against SH503 on the strength of it.
+The rule about counting both forms exists in `SKILL.md` *because* of that, which is the definition
+of a procedure that cannot be left to a reader. So: props by field, both forms, rows expanded, each
+attributed to the post that owns it, joined against what that post's type declares, exit **1** when
+a declared field is rendered without an annotation. **It is SH524's question asked at the page
+rather than at the template**, and the two are worth having apart — SH524 finds a field no template
+draws, this finds a field a template draws and does not make editable, which is how SH465 and SH475
+both shipped looking reasonable. Three properties the implementation turns on: ownership is by
+**containment** (the renderer's own rule, and getting it wrong turns "the grid's two cards carry
+none" into "the page has plenty"); **more annotations than declared fields is expected**, since an
+empty slot is annotated so a curator can fill it and one field may be drawn twice; and a type that
+cannot be resolved is reported **`NOT checked`** rather than as complete, because "we could not
+check this" and "this is fine" are different answers (SH410's rule, one surface along). **No
+browser**, unlike `audit` — the annotations come off `ShRegionComposer`, so they are in the bytes
+`?editor=true` already returns, and paying for Chromium to answer a question settled before any
+script runs would make the cheapest check in the chain the most expensive to run.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a
