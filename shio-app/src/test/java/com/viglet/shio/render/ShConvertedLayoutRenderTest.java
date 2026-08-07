@@ -364,6 +364,87 @@ class ShConvertedLayoutRenderTest {
                 .contains("<em>Rich</em> text");
     }
 
+    /**
+     * SH575 — a site of pages with no way between them, asserted on the page a visitor gets.
+     *
+     * <h3>What was measured</h3>
+     *
+     * <p>An authorable conversion keeps what the vocabulary matched and drops the rest, which is the
+     * design; the source's navigation lives in <em>the rest</em>, and nothing put one back. On
+     * viglet.org converted with {@code --accept all}: {@code shio diff} reported
+     * {@code internal links: 16 → 0} on all twelve pages, {@code audit} reported {@code no-landmark},
+     * and {@code verify} exited <b>0</b> — twelve pages, none of which a reader can leave, and every
+     * gate green. Each instrument measures the page it is given, and a page with no links is a valid
+     * page.
+     *
+     * <h3>Why the assertion is here and not only in the CLI</h3>
+     *
+     * <p>{@code convert.test.mjs} asserts the template <em>says</em> {@code {{#query type="Page"}}};
+     * that is a statement about a string. Whether those rows exist is a question only this side can
+     * answer — {@code {{#query}}} with no {@code folder=} resolves the <b>rendering post's own</b>
+     * folder, and a conversion writes its pages into the site root ({@code PAGES_FOLDER} is
+     * {@code "/"}) with {@code sections} and {@code theme} beside them. A template that compiled and
+     * listed nothing would pass every check in the other language, which is the SH245 shape this
+     * class exists to avoid.
+     *
+     * <h3>And why {@code {{#query}}} rather than {@code {{#navigation}}}</h3>
+     *
+     * <p>XVII.80 left the choice open and named {@code {{#navigation}}} as the cheapest. It is the
+     * wrong helper for this tree: it yields the site's top-level <b>folders</b>, so a replica's nav
+     * would read <i>sections, theme</i> — and link to neither, since a folder row's {@code url} is
+     * its index post (SH381) and neither folder has one. The pages are posts in the root, and
+     * {@code {{#query}}} is the helper that lists posts.
+     */
+    @Test
+    @DisplayName("SH575: an authorable replica is a site you can move around in")
+    void anAuthorablePageCarriesTheSitesOwnNavigation() {
+        String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("the landmark `audit` reported missing, with the accessible name that tells it "
+                        + "apart from a nav the source's own markup may also carry")
+                .contains("<nav class=\"shio-nav\" aria-label=\"Site\">");
+        assertThat(html)
+                .as("""
+                        and it lists the site's other pages, by their friendly URLs. This is the \
+                        half a template assertion cannot make: `{{#query}}` with no `folder=` \
+                        resolves the rendering post's own folder, and if that lookup came back \
+                        empty the nav would render as an empty <ul> with every CLI check still \
+                        green.""")
+                .contains("href=\"" + VOCABULARY_URL + "\"")
+                .contains("href=\"" + ENTITY_URL + "\"")
+                .contains("href=\"" + MIXED_URL + "\"");
+        assertThat(html.indexOf(">Entities<"))
+                .as("alphabetical by title, not newest-first: a menu whose items move when somebody "
+                        + "edits a page is a control people misclick, which is the same argument "
+                        + "`{{#translations}}` makes for ordering a switcher by locale")
+                .isLessThan(html.indexOf(">Vocabulary<"));
+    }
+
+    /**
+     * SH575 — and the page that must <b>not</b> get one, which is the whole reason for the guard.
+     *
+     * <p>SH549's precedent: {@code content} holds the source's own markup, so
+     * {@code {{#unless content}}} is the per-page condition separating a page that <em>lost</em> its
+     * navigation from one that still has the source's. A fidelity replica is judged at 0.00% against
+     * its source by {@code snapshot --against} — that bar has been reached, it is the mode's whole
+     * claim — and a Shio nav above the source's own would put it out of reach for the one mode that
+     * had nothing wrong with it.
+     */
+    @Test
+    @DisplayName("SH575: a page that kept the source's markup keeps the source's navigation too")
+    void averbatimPageIsNotGivenASecondNavigation() {
+        assertThat(shPageRenderService.render(siteName, VERBATIM_URL, ShPostState.DRAFT).html())
+                .as("a fidelity page already carries whatever the source's <body> had, nav included, "
+                        + "and a second one would be both a duplicate landmark and a pixel the "
+                        + "0.00% comparison can never get back")
+                .doesNotContain("shio-nav");
+        assertThat(shPageRenderService.render(siteName, MIXED_URL, ShPostState.DRAFT).html())
+                .as("and a mixed page is on the same side of the line: SH520 keeps the source's "
+                        + "bytes around the blocks that were accepted, so its chrome is still there")
+                .doesNotContain("shio-nav");
+    }
+
     @Test
     @DisplayName("SH464: every section field carries data-shio-prop, so the editor has props to bind")
     void everyRenderedFieldIsAnnotatedForTheEditor() {

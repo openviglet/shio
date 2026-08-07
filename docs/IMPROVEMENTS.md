@@ -2039,30 +2039,6 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
-### XVII.80 A site of pages with no way between them (SH575)
-
-An authorable conversion keeps what the vocabulary matched and drops the rest, which is
-the design. The source's navigation lives in the rest. Nothing puts one back, so a
-replica of a twelve-page site serves twelve pages with no link between any of them: the
-home page cannot reach `/about/`, and `/about/` cannot reach anything at all.
-
-Measured on viglet.org converted with `--accept all`: `shio diff` reports `internal
-links: 16 → 0` on `/` and the same on every other page; `shio audit` reports
-`no-landmark — no main, nav, header, footer or aside`; and `shio verify` exits 0 with
-three warnings, none of them this. The generated layout carries no `<nav>`, no
-`<footer>` and no call to the `navigation` helper, which the renderer has shipped for as
-long as the helper set has existed.
-
-The corpus now holds it across four archetypes, which is the useful part: it is not a
-property of one source. Every authorable conversion produces this, and the reason it
-went unreported for eight rounds is that each instrument measures the page it is given.
-A page with no links is a valid page.
-
-What to emit is a real choice — a `navigation` call over the site's own tree is the
-cheapest and gives a curator something to edit, while lifting the source's own nav means
-keeping chrome the vocabulary exists to drop. The assertion is already written either
-way, and it names SH575.
-
 ### XVII.81 The one address the grammar does not spell, unwritten (SH576)
 
 `post:<site>/` is a site's home page — the address form SH433 exists because the grammar

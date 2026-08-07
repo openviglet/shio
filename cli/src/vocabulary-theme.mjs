@@ -97,6 +97,10 @@ img{max-width:100%;height:auto}
 .shio-page{margin:0;padding-block:calc(var(--space-step) * 2);background:var(--color-surface);color:var(--color-ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:var(--text-base);line-height:1.6;-webkit-font-smoothing:antialiased}
 .shio-page > * + *{margin-block-start:calc(var(--space-step) * 2)}
 .shio-container{width:100%;max-width:var(--size-measure);margin-inline:auto;padding-inline:var(--space-step)}
+.shio-nav{width:100%;max-width:var(--size-measure);margin-inline:auto;padding-inline:var(--space-step)}
+.shio-nav ul{display:flex;flex-wrap:wrap;gap:var(--space-step);list-style:none;margin:0;padding:0}
+.shio-nav a{color:var(--color-ink-muted);font-weight:600;text-decoration:none}
+.shio-nav a:hover,.shio-nav a:focus-visible{color:var(--color-accent);text-decoration:underline}
 .shio-stack > * + *{margin-block-start:var(--space-step)}
 .shio-grid{display:grid;gap:var(--space-step);grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));list-style:none;margin:0;padding:0}
 .shio-card{background:var(--color-surface-sunk);border:1px solid var(--color-line);border-radius:var(--size-radius);padding:var(--space-step)}

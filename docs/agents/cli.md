@@ -982,6 +982,40 @@ it. Four decisions worth keeping:
   than shipping a second copy of the accepted markup. **Ordering is what it does not buy**: a layout
   is resolved per post-type and holds one `{{{content}}}`, so the remainder keeps the source's order
   among itself and the sections render after it.
+- **A site of pages with no way between them (SH575).** An authorable conversion keeps what the
+  vocabulary matched and drops the rest, which is the design — and the source's navigation lives in
+  *the rest*. Nothing put one back, so a replica of a twelve-page site served twelve pages with no
+  link between any of them. Measured on viglet.org with `--accept all`: `shio diff` reported
+  `internal links: 16 → 0` on **all twelve**, `audit` reported `no-landmark`, `verify` exited **0**,
+  and the corpus then held it across four archetypes — it is a property of every authorable
+  conversion, not of one source. Eight rounds missed it because **each instrument measures the page
+  it is given, and a page with no links is a valid page.**
+  The layout now emits `<nav class="shio-nav" aria-label="Site">` over
+  `{{#query type="Page" sort="title" limit="50"}}`, inside `PAGE_BODY_HTML` so the cross-language
+  test renders it. Three decisions, each of which is a thing that would otherwise be wrong:
+  - **`{{#query}}`, not `{{#navigation}}`** — which XVII.80 named as the cheapest and is the wrong
+    helper for this tree. `{{#navigation}}` yields the site's top-level **folders**, and a conversion
+    writes pages into the root (`PAGES_FOLDER` is `/`) with `sections` and `theme` beside them, so
+    the nav would read *sections, theme* and link to neither: a folder row's `url` is its index post
+    (SH381) and neither has one. With no `folder=`, `{{#query}}` resolves the **rendering post's own**
+    folder, which is right for a flat replica and for a locale-prefixed one alike.
+  - **`{{#unless content}}`, which is SH549's per-page condition** and not a site-wide switch.
+    `content` holds the source's own markup, so the guard separates a page that *lost* its navigation
+    from one that still has the source's. Fidelity is judged at 0.00% by `snapshot --against` — that
+    bar has been reached and is the mode's whole claim — and a Shio nav above the source's own would
+    put it out of reach for the one mode with nothing wrong with it. A **mixed** page is on the same
+    side of the line, since SH520 keeps the source's bytes around what was accepted.
+  - **`sort="title"`, and no `sh-field`.** Alphabetical because a menu whose items move when somebody
+    edits a page is a control people misclick — `{{#translations}}`' argument for ordering a switcher
+    by locale, one helper along. The nav declares no owner and nothing editable: it is derived from
+    the site's own tree, so a curator edits it by renaming or moving a page, and an `sh-field` here
+    would offer a text box that writes to nothing.
+
+  `shio-nav` joins `LAYOUT_ROLES` and is styled in `VOCABULARY_THEME_CSS`, which SH556's two-way
+  check enforces in both directions. **The half only the JVM can assert** is that those rows *exist*:
+  a template that compiled and listed nothing would pass every check in JavaScript, so
+  `ShConvertedLayoutRenderTest` renders the seeded replica and reads the sibling pages' friendly URLs
+  off the page — and reads the verbatim and mixed pages to confirm they get none.
 - **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
   layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
   `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after

@@ -103,7 +103,6 @@
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
-- 📋 **SH575** (deps: SH549 ✅) **An authorable replica has no navigation, so every page it serves is a page you cannot leave** — The generated layout emits neither the navigation helper nor a nav, so diff reported internal links 16 to 0 on all twelve pages while verify exited 0. → §XVII.80
 - 📋 **SH576** (deps: SH557 ✅) **A source with no document at / converts to a site whose home address resolves to nothing** — Every page of a locale-prefixed source lands under its prefix and the conversion writes none at /, so post:site/ answers 404 and the replica has no front door. → §XVII.81
 
 ## Block F — Market positioning

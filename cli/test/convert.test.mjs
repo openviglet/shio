@@ -1379,3 +1379,93 @@ test("SH438: a proposal from before this carried no pages, and still converts", 
   assert.deepEqual(pages, []);
   assert.deepEqual(document.posts.map((post) => post.url), [`${SECTIONS_FOLDER}/hero1`]);
 });
+
+/*
+ * SH575 — a site of pages with no way between them.
+ *
+ * An authorable conversion keeps what the vocabulary matched and drops the rest, which is the
+ * design; the source's navigation lives in the rest, and nothing put one back. Measured on
+ * viglet.org converted with `--accept all`: `shio diff` reported `internal links: 16 → 0` on all
+ * twelve pages, `audit` reported `no-landmark`, and `verify` exited 0. Twelve pages, none of which
+ * you can leave, and every gate green.
+ */
+
+/** The one `{{#unless content}}` region the nav has to be inside, and the reason it must be. */
+function unlessContent(html) {
+  const open = "{{#unless content}}";
+  const start = html.indexOf(open);
+  assert.ok(start >= 0, "the layout has no `{{#unless content}}` block at all");
+  const end = html.indexOf("{{/unless}}", start);
+  assert.ok(end > start, "unterminated `{{#unless content}}`");
+  return html.slice(start + open.length, end);
+}
+
+function layoutOf() {
+  const { document } = buildConversion({
+    proposal: {
+      candidates: [candidate("b1a2")],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+  return document.posts.find((post) => post.type === "PageLayout").data.HTML;
+}
+
+test("SH575: the generated layout emits a navigation, over the site's own pages", () => {
+  const html = layoutOf();
+
+  const nav = /<nav class="shio-nav"[^>]*>([\s\S]*?)<\/nav>/.exec(html);
+  assert.ok(nav, `the layout carries no <nav class="shio-nav">. HTML: ${html.slice(0, 400)}`);
+  // `{{#query}}` and not `{{#navigation}}`, which is the choice XVII.80 left open and the corpus
+  // settled: `{{#navigation}}` yields the site's top-level FOLDERS, and a conversion writes its
+  // pages into the root (PAGES_FOLDER is "/") with `sections` and `theme` beside them. A nav built
+  // from it would list "sections" and "theme" — and link to neither, since a folder's row `url` is
+  // its index post and these have none.
+  assert.match(nav[1], /\{\{#query type="Page"/,
+    "the rows are the site's Page posts, which is what a reader means by the site's navigation");
+  assert.match(nav[1], /href="\{\{link\}\}"/,
+    "`link` is the post's friendly URL — the address a delivered front end would use, not a "
+      + "preview path, so the markup the preview proves is the markup the site serves");
+  assert.match(nav[1], /sort="title"/,
+    "alphabetical and not `newest`: a menu whose items move when somebody edits a page is a "
+      + "control people misclick — the same argument `{{#translations}}` makes for ordering by "
+      + "locale rather than by date");
+  assert.match(nav[0], /aria-label="Site"/,
+    "and the landmark `audit` reported missing, named — two navs on one page is the case an "
+      + "accessible name exists for");
+});
+
+test("SH575: and only on a page with no verbatim markup, or fidelity would carry two navs", () => {
+  const html = layoutOf();
+
+  assert.match(
+    unlessContent(html),
+    /<nav class="shio-nav"/,
+    "SH549's precedent, and the reason this is not a site-wide switch: `content` holds the source's "
+      + "own markup, so `{{#unless content}}` is the per-page condition that separates a page which "
+      + "LOST its navigation from one that still has the source's. A fidelity replica is judged at "
+      + "0.00% against its source (`snapshot --against`), and a Shio nav above the source's own "
+      + "would put that bar out of reach for a mode that had nothing wrong with it.",
+  );
+
+  const nav = /<nav class="shio-nav"[^>]*>[\s\S]*?<\/nav>/.exec(html)[0];
+  assert.ok(
+    !/\bsh-post=/.test(nav) && !/\bsh-field(-attr)?=/.test(nav),
+    "the nav declares no owner and nothing editable: it is derived from the site's own tree, so a "
+      + "curator edits it by moving or renaming a page, and an `sh-field` here would offer a text "
+      + "box that writes to nothing",
+  );
+});
+
+test("SH575: the class it draws is in the vocabulary and the theme styles it", () => {
+  // The two directions SH556's instrument already checks, asserted here by name because this is the
+  // task that added a role: a class the layout draws and the theme does not style is `page-unstyled`
+  // on every page, which is precisely the finding SH521's lint reported on all eleven pages of a
+  // converted site.
+  assert.ok(VOCABULARY_CLASSES.includes("shio-nav"));
+  assert.match(VOCABULARY_THEME_CSS, /\.shio-nav\{/);
+  assert.match(VOCABULARY_THEME_CSS, /\.shio-nav a\{/,
+    "the links are styled by element, the way `.shio-card h3` is — a second class per leaf would be "
+      + "two more names for the theme to define and the diff to carry");
+});

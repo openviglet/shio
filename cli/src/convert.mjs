@@ -284,6 +284,7 @@ function withoutChrome(row, chrome, dropped) {
  */
 export const LAYOUT_ROLES = Object.freeze([
   "shio-page",       // <body> — the vertical rhythm *between* sections
+  "shio-nav",        // the site's own navigation, on a page with no verbatim markup (SH575)
   "shio-section",    // one section, which is what `.shio-page`'s rhythm spaces
   "shio-container",  // the outer bound: one measure, centred, so a section can still go full bleed
   "shio-stack",      // the vertical rhythm *inside* one section
@@ -343,7 +344,8 @@ export const WRAPPER_ROLES = Object.freeze(["shio-container", "shio-stack", "shi
  * <p>Nothing here interpolates, which is what makes the extraction a slice between two backticks
  * rather than a JavaScript parser.</p>
  */
-export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
+export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-label="Site"><ul>{{#query type="Page" sort="title" limit="50"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}</ul></nav>{{/unless}}
+{{#if content}}{{{content}}}{{/if}}
 {{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
 {{#getRelation sections}}
 <section class="shio-section" sh-post="{{id}}" data-shio-section="{{type}}" data-shio-align="{{align}}" data-shio-variant="{{variant}}" data-shio-columns="{{columns}}">

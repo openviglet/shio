@@ -26,30 +26,6 @@
       "what": "buildInventory drops the redirectedTo that visit returns, so /antigo and /docs/guia/ are two pages with the same body and no record that one is the other's redirect."
     },
     {
-      "id": "SH575",
-      "archetype": "awkward",
-      "assertion": "authorable-has-navigation",
-      "what": "The generated layout emits neither the `navigation` helper nor a <nav>, so every page of an authorable replica is a leaf: diff measured internal links 16 to 0 on all twelve pages of a real conversion while verify exited 0."
-    },
-    {
-      "id": "SH575",
-      "archetype": "locale-prefixed",
-      "assertion": "authorable-has-navigation",
-      "what": "The generated layout emits neither the `navigation` helper nor a <nav>, so every page of an authorable replica is a leaf: diff measured internal links 16 to 0 on all twelve pages of a real conversion while verify exited 0."
-    },
-    {
-      "id": "SH575",
-      "archetype": "query-pages",
-      "assertion": "authorable-has-navigation",
-      "what": "The generated layout emits neither the `navigation` helper nor a <nav>, so every page of an authorable replica is a leaf: diff measured internal links 16 to 0 on all twelve pages of a real conversion while verify exited 0."
-    },
-    {
-      "id": "SH575",
-      "archetype": "theme-heavy",
-      "assertion": "authorable-has-navigation",
-      "what": "The generated layout emits neither the `navigation` helper nor a <nav>, so every page of an authorable replica is a leaf: diff measured internal links 16 to 0 on all twelve pages of a real conversion while verify exited 0."
-    },
-    {
       "id": "SH576",
       "archetype": "locale-prefixed",
       "assertion": "home-page-written",
