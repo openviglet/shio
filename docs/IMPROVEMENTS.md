@@ -771,29 +771,6 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
-### IX.51 The one fact where a loss can hide inside a gain (SH578)
-
-SH554 split the two sides of `diff` through one function so a link stopped being counted
-differently at each end. The asset fact still is, for a different reason: the declared
-side is a page's own references, and the produced side is a page **plus the stylesheet
-inlined into it**.
-
-Measured on a fidelity replica of vilt-group.com: every page reports exactly `+30`, and
-the served page carries 32 references of its own and 60 `url()` inside its `<style>`,
-against a captured theme holding 59. The number is not noise and it is not a gain — it
-is a different question answered on each side.
-
-A gain is never a failure, and that decision is right: a layout adds links and a gate
-that called that damage would fire on every working conversion. It is also what makes
-this the one fact where a real loss disappears. A page that dropped twenty of its own
-images and picked up thirty theme `url()` reports `+10`, and `diff` — the only
-instrument in the chain holding an expectation — says the page is fine.
-
-The repair is a boundary rather than a formula: an asset a page references and an asset
-a stylesheet references are two facts, and the theme's are the same on every page of a
-site, so counting them once at the site level says more than counting them thirteen
-times. The assertion is a page whose own references shrink while its theme's grow.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

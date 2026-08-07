@@ -63,8 +63,15 @@ const LIMIT = 20;
  * way, which the note below states rather than leaving to be inferred — the data files are still in
  * `problems` there, so `replication-unchecked` over-reports on exactly the sites that have a data
  * surface.
+ *
+ * <p>**4 since SH578**, and it adds no rule here — which is why there is no `version < 4` note
+ * below to pair with the two that are. That bump split a page row's `assets` into `{own, style}`
+ * for `shio diff`, and this group reads a page row's `path` and the capture's top-level `assets`
+ * array and nothing else. It is tracked anyway because the alternative is worse than silence: a
+ * reader left at 3 answers `version > READS_VERSION` on every capture `shio clone` now writes, and
+ * warns that the run is under-informed about a field it never reads.</p>
  */
-export const READS_VERSION = 3;
+export const READS_VERSION = 4;
 
 /**
  * Lints a replication's coverage against the capture it came from.

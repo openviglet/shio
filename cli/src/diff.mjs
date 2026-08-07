@@ -181,8 +181,10 @@ const FACTS = [
     why: "same: an off-host link the source carried in its chrome has no section to live in",
   },
   {
+    // SH578 — the page's **own** references. What a stylesheet references is the other fact, and it
+    // is reported once at the site level: see `THEME_ASSETS` below.
     name: "assets",
-    of: (page) => (Array.isArray(page.assets) ? page.assets.length : page.assets),
+    of: (page) => page.assets?.own,
     verbatimOnly: true,
     why: "the captured theme is deliberately not on an authorable page (SH510) and the favicon "
       + "link is chrome, so a page keeps only the assets its accepted sections carry",
@@ -208,14 +210,32 @@ const FACTS = [
  * because the failure mode is not a crash — it is four believable facts.</p>
  */
 function assertComparable(page, side) {
-  if (!Array.isArray(page?.links)) return;
-  throw new Error(
-    `shio diff: the ${side} side carries links as a raw array, which cannot be compared (SH554).\n`
-      + "  fix: classify it first — countLinks(doc.links, pageUrl) — so both sides are\n"
-      + "       {internal, external}, which is the shape an inventory row records.\n"
-      + "  why: scoring the array reads its length as the internal count and zero as the external\n"
-      + "       one, so every page reports a loss it did not suffer.",
-  );
+  if (Array.isArray(page?.links)) {
+    throw new Error(
+      `shio diff: the ${side} side carries links as a raw array, which cannot be compared (SH554).\n`
+        + "  fix: classify it first — countLinks(doc.links, pageUrl) — so both sides are\n"
+        + "       {internal, external}, which is the shape an inventory row records.\n"
+        + "  why: scoring the array reads its length as the internal count and zero as the external\n"
+        + "       one, so every page reports a loss it did not suffer.",
+    );
+  }
+  // SH578 — the same refusal for the same reason, one fact along. An unsplit `assets` is a number
+  // (a version-3 inventory row) or an array (`scanPage`'s own output), and reading either as `own`
+  // would compare a page's markup against a replica's markup **plus the theme inlined into it**.
+  if (page?.assets !== undefined && typeof page.assets?.own !== "number") {
+    throw new Error(
+      `shio diff: the ${side} side carries assets as a `
+        + `${Array.isArray(page.assets) ? "raw array" : typeof page.assets}, which cannot be `
+        + "compared (SH578).\n"
+        + "  fix: split it first — countAssets(doc.assets) — so both sides are {own, style}.\n"
+        + "  why: the produced side is a page plus the theme inlined into it, so counting one total\n"
+        + "       answers a different question at each end. Measured at +30 on every page of a\n"
+        + "       fidelity replica, which is the reading under which a page that lost twenty of its\n"
+        + "       own images and gained thirty theme url() reports a GAIN.\n"
+        + "  note: a capture written before SH578 is version 3 — re-run `shio clone` to get one\n"
+        + "       this can read, rather than have it scored on a shape it does not have.",
+    );
+  }
 }
 
 /** Below this share of the source's text, a page has lost prose rather than whitespace. */
@@ -272,8 +292,38 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
     missing,
     unaddressable,
     modes: counted,
+    theme: themeAssets(declared, produced),
     lost: pages.reduce((total, page) => total + page.lost, 0),
     byDesign: pages.reduce((total, page) => total + page.byDesign, 0),
+  };
+}
+
+/**
+ * What a stylesheet references, for the whole site, once (SH578).
+ *
+ * <p>A theme is **one artefact**. On a fidelity replica its `url()` calls are inlined into every
+ * page's `&lt;style&gt;`, identically, so the per-page number is the same figure repeated: thirteen
+ * copies of "59" say nothing thirteen times, and reported per page they scored as thirteen gains
+ * that could each hide a real loss of the page's own images.</p>
+ *
+ * <p>The <b>max</b> rather than a sum or an average, and `uniform` says whether that mattered. A sum
+ * would multiply one artefact by the page count; an average would invent a number no page has. The
+ * max is the site's theme as at least one page carries it, and when the pages disagree — a second
+ * theme, a page the conversion missed — `uniform: false` is the fact worth reading, which is why it
+ * is reported rather than smoothed away.</p>
+ */
+function themeAssets(declared, produced) {
+  const styleOf = (page) => (typeof page?.assets?.style === "number" ? page.assets.style : 0);
+  const producedRows = [...declared]
+    .map((page) => produced.get(page.path))
+    .filter(Boolean);
+  const seen = new Set(producedRows.map(styleOf));
+  return {
+    declared: Math.max(0, ...declared.map(styleOf)),
+    produced: Math.max(0, ...producedRows.map(styleOf)),
+    // One value across every page it could read, which is what "a theme is one artefact" predicts.
+    uniform: seen.size <= 1,
+    pages: producedRows.length,
   };
 }
 
@@ -285,7 +335,7 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
  * nobody reads to the end (SH138's rule, applied to a comparison instead of to a cut).</p>
  */
 export function describeDiff(comparison, options = {}) {
-  const { pages, missing, unaddressable = [], lost, byDesign = 0, modes } = comparison;
+  const { pages, missing, unaddressable = [], lost, byDesign = 0, modes, theme } = comparison;
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   const lines = [
     `shio diff: ${pages.length} page(s) compared with the capture that declared them`
@@ -342,6 +392,19 @@ export function describeDiff(comparison, options = {}) {
         + "captured page(s) cannot be addressed at all. That is a trait of the SOURCE, not a defect "
         + "in the replica, and `shio clone` says it too — a limit learned here has already cost a "
         + "proposal, an upload and a publish",
+    );
+  }
+  // SH578 — the theme, once, in its own words and outside the scoring. Printed whenever either side
+  // has one, because "the page's own references shrank while its theme's grew" is only readable if
+  // both numbers are on the report; the fact that used to hide it was their sum.
+  if (theme && (theme.declared || theme.produced)) {
+    lines.push(
+      `  theme: ${theme.declared} → ${theme.produced} url() inside a stylesheet, across `
+        + `${theme.pages} page(s) — one artefact, counted once and never scored. A page's OWN `
+        + "references are the `assets` fact above"
+        + (theme.uniform
+          ? ""
+          : "; and the pages disagree about this number, which a single theme cannot explain"),
     );
   }
   lines.push(

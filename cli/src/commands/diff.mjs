@@ -32,7 +32,7 @@
  */
 import { join } from "node:path";
 
-import { addressablePath, countLinks, INVENTORY_FILE, scanPage } from "../clone.mjs";
+import { addressablePath, countAssets, countLinks, INVENTORY_FILE, scanPage } from "../clone.mjs";
 import { assertMode, compareCapture, describeDiff } from "../diff.mjs";
 import { PLAN_FILE, PROPOSAL_FILE } from "../propose.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -139,7 +139,15 @@ export async function run(flags, positionals, ctx) {
     // raw hrefs; an inventory row carries them already split, so the replica's are split too, by
     // the same `classifyLinks` the capture ran. Against the *served* URL: internal on a replica
     // means the instance that serves it, which is where the source's own-origin links now point.
-    produced.set(page.path, { ...doc, links: countLinks(doc.links, url) });
+    // SH578 — and the third half. `scanPage` finds a page's markup references, its inline
+    // stylesheet's `url()` (SH455) and its scripts' `fetch()` strings (SH515) and puts all three in
+    // one array; on a replica the middle group is the **theme**, inlined into every page. Split by
+    // the same function the capture ran, so `assets` means the page's own references at both ends.
+    produced.set(page.path, {
+      ...doc,
+      links: countLinks(doc.links, url),
+      assets: countAssets(doc.assets),
+    });
   }
 
   const comparison = compareCapture(pages, produced, await resolveModes(asked, ctx));

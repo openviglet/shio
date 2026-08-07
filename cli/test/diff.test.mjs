@@ -17,7 +17,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { buildInventory, countLinks, INVENTORY_FILE, scanPage } from "../src/clone.mjs";
+import { buildInventory, countAssets, countLinks, INVENTORY_FILE, scanPage } from "../src/clone.mjs";
 import { compareCapture, describeDiff } from "../src/diff.mjs";
 import * as diff from "../src/commands/diff.mjs";
 import { norm } from "./support/paths.mjs";
@@ -48,7 +48,9 @@ function inventoryOf(html) {
       // here is the very defect under test, one layer up: it would call an absolute same-origin
       // link external and agree with nothing.
       links: countLinks(doc.links, "https://x.test/"),
-      assets: doc.assets.length,
+      // SH578 — `countAssets`, for the same reason `countLinks` is here rather than a hand-rolled
+      // split: a fixture that builds the row its own way is a fixture that cannot see the defect.
+      assets: countAssets(doc.assets),
       forms: doc.forms.length,
       textChars: doc.textChars,
     }],
@@ -58,7 +60,7 @@ function inventoryOf(html) {
 /** The produced side as `shio diff` builds it: scanned, then split by the rule the capture used. */
 function scannedAt(html, url) {
   const doc = scanPage(html, url);
-  return { ...doc, links: countLinks(doc.links, url) };
+  return { ...doc, links: countLinks(doc.links, url), assets: countAssets(doc.assets) };
 }
 
 function ctxWith({ served = {}, inventory = inventoryOf(SOURCE) } = {}) {
@@ -123,7 +125,7 @@ test("SH522: a replica that matches its capture says so in one line and exits ze
 test("SH522: a fact the replica gained is not a loss", () => {
   // A Shio layout adds links — a skip link, a nav the theme composes — so a gate that called any
   // difference damage would fire on every working conversion. Counted apart and never failing.
-  const declared = [{ path: "/", title: "Home", links: { internal: 2, external: 0 }, assets: 1, forms: 0, textChars: 400 }];
+  const declared = [{ path: "/", title: "Home", links: { internal: 2, external: 0 }, assets: { own: 1, style: 0 }, forms: 0, textChars: 400 }];
   const produced = new Map([["/", scannedAt(
     '<html><head><title>Home</title></head><body><a href="/a">a</a><a href="/b">b</a>'
       + '<a href="/c">c</a><img src="/img/hero.png" alt=""><p>'
@@ -138,7 +140,7 @@ test("SH522: a fact the replica gained is not a loss", () => {
 });
 
 test("SH522: a path the replica does not serve is one absence, not four lost facts", () => {
-  const declared = [{ path: "/gone", title: "Gone", links: { internal: 3, external: 1 }, assets: 2, forms: 1, textChars: 900 }];
+  const declared = [{ path: "/gone", title: "Gone", links: { internal: 3, external: 1 }, assets: { own: 2, style: 0 }, forms: 1, textChars: 900 }];
 
   const comparison = compareCapture(declared, new Map());
 
@@ -219,7 +221,7 @@ test("SH554: a replica that keeps its off-host links is not reported as having l
 test("SH554: an unclassified side is refused rather than scored", () => {
   // The boundary the defect crossed. The wrong shape did not throw — it produced four believable
   // numbers, which is why nothing caught it for a whole release.
-  const declared = [{ path: "/", title: "Home", links: { internal: 3, external: 2 }, assets: 1, forms: 0, textChars: 400 }];
+  const declared = [{ path: "/", title: "Home", links: { internal: 3, external: 2 }, assets: { own: 1, style: 0 }, forms: 0, textChars: 400 }];
   const raw = scanPage(MIXED, "https://x.test/");
 
   assert.throws(
@@ -459,3 +461,86 @@ test("SH577: no plan on disk is fidelity, which is what this command was before 
     assert.match(ctx.out.text, /internal links: 3 → 0 {2}\(-3\)$/m,
       "and no by-design note, because there is nothing to explain away");
   });
+
+/*
+ * SH578 — the one fact where a loss can hide inside a gain.
+ *
+ * SH554 made both sides come out of one function; this fact still asked a different question at each
+ * end. The declared side is a source page's own references; the produced side is a replica page plus
+ * the theme inlined into it, whose every url() this scanner correctly finds (SH455) and then counted
+ * as if the page had referenced it. Measured on a fidelity replica of vilt-group.com: +30 on every
+ * page, 32 own references against 60 url() in its <style>, from a captured theme holding 59.
+ */
+
+/** A source page with three of its own images and no inline stylesheet. */
+const OWN_ASSETS = `<html lang="en"><head><title>Home</title></head><body>
+  <img src="/img/a.png" alt="a"><img src="/img/b.png" alt="b"><img src="/img/c.png" alt="c">
+  <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p>
+  </body></html>`;
+
+/** The replica: it lost all three, and picked up a theme with four `url()` inlined into it. */
+const THEME_INLINED = `<html lang="en"><head><title>Home</title>
+  <style>.a{background:url("/t/1.png")}.b{background:url("/t/2.png")}
+  .c{background:url("/t/3.png")}@font-face{src:url("/t/4.woff2")}</style></head><body>
+  <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p>
+  </body></html>`;
+
+test("SH578: a page whose own references shrink while its theme's grow is a LOSS", async () => {
+  const ctx = ctxWith({ served: { "/": THEME_INLINED }, inventory: inventoryOf(OWN_ASSETS) });
+
+  const result = await diff.run({ site: "Acme" }, [], ctx);
+
+  // Before the split this page reported `assets: 3 → 4`, a gain — and a gain is never a failure,
+  // which is right and is exactly what made this the fact where a real loss disappears.
+  assert.equal(result.exitCode, 1, "three images gone. The old reading netted them off against four "
+    + "theme url() and called the page fine");
+  const assets = result.pages[0].rows.find((row) => row.fact === "assets");
+  assert.deepEqual(
+    { declared: assets.declared, produced: assets.produced, delta: assets.delta },
+    { declared: 3, produced: 0, delta: -3 },
+    "the page's OWN references, at both ends — the question the declared side was always asking",
+  );
+  assert.match(ctx.out.text, /assets: 3 → 0 {2}\(-3\)/);
+});
+
+test("SH578: and the theme is one artefact, reported once at the site level and never scored",
+  async () => {
+    const ctx = ctxWith({ served: { "/": THEME_INLINED }, inventory: inventoryOf(OWN_ASSETS) });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    assert.deepEqual(
+      result.theme,
+      { declared: 0, produced: 4, uniform: true, pages: 1 },
+      "counted, named and outside the arithmetic: on a thirteen-page site the same number thirteen "
+        + "times said nothing thirteen times, and each copy could hide a page's own loss",
+    );
+    assert.equal(result.pages[0].gained, 0, "the theme is not a gain either — it is not this page's");
+    assert.match(ctx.out.text, /theme: 0 → 4 url\(\) inside a stylesheet, across 1 page\(s\)/);
+  });
+
+test("SH578: pages that disagree about the theme are said so, because one theme cannot explain it",
+  async () => {
+    const other = THEME_INLINED.replace('.c{background:url("/t/3.png")}', "");
+    const inventory = inventoryOf(OWN_ASSETS);
+    inventory.pages.push({ ...inventory.pages[0], path: "/about" });
+    const ctx = ctxWith({ served: { "/": THEME_INLINED, "/about": other }, inventory });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    assert.equal(result.theme.uniform, false);
+    assert.equal(result.theme.produced, 4, "the max: a sum would multiply one artefact by the page "
+      + "count and an average would invent a number no page has");
+    assert.match(ctx.out.text, /the pages disagree about this number/);
+  });
+
+test("SH578: a capture written before the split is refused, not scored", () => {
+  // The failure mode this rule exists for is not a crash. A version-3 row read as `own` compares a
+  // page's markup against a replica's markup-plus-theme, which is the +30 that started this.
+  const declared = [{ path: "/", title: "Home", links: { internal: 0, external: 0 }, assets: 32, forms: 0, textChars: 400 }];
+
+  assert.throws(
+    () => compareCapture(declared, new Map([["/", scannedAt(THEME_INLINED, "https://x.test/")]])),
+    /declared side carries assets as a number[\s\S]*SH578[\s\S]*countAssets[\s\S]*re-run `shio clone`/,
+  );
+});

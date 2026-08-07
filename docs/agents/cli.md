@@ -439,6 +439,31 @@ Three things about the shape, each of which is the defect it avoids:
   find. `--mode fidelity` forces the strict reading; `headless` is refused by name, since those
   pages are served from an origin this command never asks.
 
+**The one fact where a loss can hide inside a gain — `INVENTORY_VERSION` is 4 (SH578).** SH554 made
+both sides come out of one function; the **asset** fact still asked a different *question* at each
+end. The declared side is a source page's own references. The produced side is a replica page **plus
+the theme inlined into it**, whose every `url()` `scanPage` correctly finds (SH455) and which was
+then counted as if the page had referenced it. Measured on a fidelity replica of vilt-group.com:
+every page reported exactly **+30** — 32 references of its own and 60 `url()` in its `<style>`,
+against a captured theme holding 59.
+
+**A gain is never a failure, and that is what made this the fact where a real loss disappears.** A
+page that dropped twenty of its own images and picked up thirty theme `url()` reports `+10`, and the
+only instrument in the chain that holds an expectation says the page is fine. So the repair is a
+**boundary, not a formula**: `scanPage` tags each reference with `from` (`markup` / `style` /
+`script`), `countAssets` — beside `countLinks`, same shape and same argument — splits them into
+`{own, style}`, and a page row records that pair instead of one total.
+
+`diff` then compares **`own` per page** and reports the theme **once at the site level**
+(`comparison.theme`, printed as `theme: 0 → 59 url() inside a stylesheet, across 13 page(s)`, never
+scored). The site-level number is the **max**, not a sum — one artefact multiplied by the page count
+is a number no page has — and `uniform: false` says when the pages disagree, which a single theme
+cannot explain. `comparePage` **refuses** an unsplit `assets` naming SH578, the same way it refuses
+an unclassified `links`: a version-3 row read as `own` reproduces the +30 exactly, and the failure
+mode here has never been a crash. `READS_VERSION` in `verify-replication.mjs` moves to 4 with it
+even though that group reads neither half — a reader left behind answers "this capture is newer than
+I read" on every capture `clone` now writes.
+
 **Baking content is right, baking machinery is not (SH517).** The source has
 `<div id="particles"></div>` — empty, filled at runtime by a particles library — and the replica had
 `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas width="1480"

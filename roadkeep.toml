@@ -135,12 +135,12 @@ priority = [
   # reader blind to `shio-site/scripts` rather than a defect, so the ordering argument now
   # rested on one real red — SH577's — which shipped second and closed it: `diff` reads the mode
   # off the plan, the conformance suite is green 5 of 5, and `red-suites.json` is empty again.
-  # SH578 is the other half of the judge — the one fact
-  # where a loss hides inside a gain. Then the two the corpus holds as debt: SH575's missing
+  # SH578 was the other half of the judge and shipped third — the asset fact is now `{own, style}`
+  # and the theme is counted once at the site level. What is left is the two the corpus holds as
+  # debt, and they are about the conversion rather than about the judge: SH575's missing
   # navigation, which is every authorable conversion and not one source, and SH576's missing
   # home page. SH555 rides along and is not a re-open: it shipped on the render side and the
   # CLI still writes `{{CSS}}`, which is why the corpus holds a red case under a closed id.
-  "SH578",
   "SH575",
   "SH576",
   "SH528",

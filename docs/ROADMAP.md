@@ -39,7 +39,6 @@
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
-- 📋 **SH578** (deps: SH554 ✅) **The asset count reads the page's own references on one side and the inlined theme's on the other** — A fidelity replica reported plus thirty assets on every page, which is the theme's url() counted only on the produced side, so a page that lost assets can read as a gain. → §IX.51
 
 ## Block I — Content as files (local-first authoring)
 

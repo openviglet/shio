@@ -57,8 +57,15 @@ import { FETCH_CALL, URL_CALL, kindForUrl } from "./clone-assets.mjs";
  * version-2 file a data endpoint served correctly *is* a row in `problems`, so a reader that does not
  * know the difference reports it as a page nobody could read — and then calls every count in its own
  * report a lower bound because of it.
+ *
+ * <p>**4 since SH578**, for the same reason once more: a page row's `assets` was one number covering
+ * the page's own references *and* its stylesheet's, and the two are different questions. It is now
+ * `{own, style}` — the shape `links` has carried since SH554 — and `shio diff` refuses the old
+ * number rather than scoring it, because that is the failure mode: a version-3 row read as `{own}`
+ * would compare a page's markup against a replica's markup-plus-inlined-theme and report a gain on
+ * a page that lost images.
  */
-export const INVENTORY_VERSION = 3;
+export const INVENTORY_VERSION = 4;
 
 /** Where the inventory lives: beside `content-base.json`, which is the other derived snapshot. */
 export const INVENTORY_FILE = "shio/.shio/source-inventory.json";
@@ -191,6 +198,42 @@ export function classifyLinks(links, pageUrl, originUrl = pageUrl) {
 export function countLinks(links, pageUrl, originUrl = pageUrl) {
   const split = classifyLinks(links, pageUrl, originUrl);
   return { internal: split.internal.length, external: split.external.length };
+}
+
+/**
+ * A page's assets, split into the page's own references and its stylesheet's (SH578).
+ *
+ * <p><b>The one fact where a loss can hide inside a gain.</b> SH554 made both sides of `shio diff`
+ * come out of one function; this fact still asked a different *question* at each end. The declared
+ * side is a source page's own references. The produced side is a replica page **plus the theme
+ * inlined into it**, whose every `url()` this scanner correctly finds (SH455) and then counted
+ * as if the page had referenced it.</p>
+ *
+ * <p>Measured on a fidelity replica of vilt-group.com: every page reported exactly <b>+30</b> — 32
+ * references of its own and 60 `url()` inside its `&lt;style&gt;`, against a captured theme holding
+ * 59. Not noise, and not a gain. A gain is never a failure and that decision is right — a layout
+ * adds links, and a gate that called that damage would fire on every working conversion — which is
+ * exactly what makes this the fact where a real loss disappears: a page that dropped twenty of its
+ * own images and picked up thirty theme `url()` reports <b>+10</b>, and the only instrument in the
+ * chain that holds an expectation says the page is fine.</p>
+ *
+ * <p>So the repair is a boundary and not a formula. `own` is what the page's markup and its own
+ * scripts reference; `style` is what a stylesheet does, and a theme's are the same on every page of
+ * a site — so `shio diff` compares `own` per page and reports `style` once at the site level, where
+ * thirteen identical numbers say less than one.</p>
+ *
+ * @param {{from?: string}[]} assets `scanPage`'s `assets`
+ */
+export function countAssets(assets) {
+  let own = 0;
+  let style = 0;
+  for (const asset of assets ?? []) {
+    // A row with no `from` predates this split. It is the page's own reference far more often than
+    // not, and calling it `own` is the strict reading: it keeps the fact judged rather than excused.
+    if (asset?.from === "style") style += 1;
+    else own += 1;
+  }
+  return { own, style };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -577,7 +620,8 @@ export function scanPage(html, pageUrl) {
   const addAsset = (href, tag, attrs) => {
     const url = resolveHref(href, pageUrl);
     if (!url) return;
-    doc.assets.push({ url: url.href, kind: assetKind(tag, url, attrs) });
+    // `from` — which of the three passes below found this reference (SH578). See `countAssets`.
+    doc.assets.push({ url: url.href, kind: assetKind(tag, url, attrs), from: "markup" });
   };
 
   // SH455 — the `url()` calls inside the page's own `<style>` blocks, which `stripNonMarkup` removed
@@ -597,7 +641,7 @@ export function scanPage(html, pageUrl) {
     for (const match of body.matchAll(URL_CALL)) {
       const raw = (match[1] ?? match[2] ?? match[3] ?? "").trim();
       const url = resolveHref(raw, pageUrl);
-      if (url) doc.assets.push({ url: url.href, kind: kindForUrl(url.pathname) });
+      if (url) doc.assets.push({ url: url.href, kind: kindForUrl(url.pathname), from: "style" });
     }
   }
 
@@ -611,7 +655,7 @@ export function scanPage(html, pageUrl) {
     for (const match of body.matchAll(FETCH_CALL)) {
       const raw = (match[1] ?? match[2] ?? match[3] ?? "").trim();
       const url = raw ? resolveHref(raw, pageUrl) : null;
-      if (url) doc.assets.push({ url: url.href, kind: "data" });
+      if (url) doc.assets.push({ url: url.href, kind: "data", from: "script" });
     }
   }
 
@@ -1153,7 +1197,10 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       status: entry.status,
       depth: entry.depth,
       links: { internal, external: outbound },
-      assets: doc.assets.length,
+      // SH578 — `{own, style}`, the same shape and the same reason as `links`' `{internal, external}`
+      // one line up: a count whose two halves answer different questions is a count that scores
+      // rather than crashes when the sides disagree.
+      assets: countAssets(doc.assets),
       forms: doc.forms.length,
       textChars: doc.textChars,
       ...(doc.baseHref ? { baseHref: doc.baseHref } : {}),
