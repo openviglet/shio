@@ -43,7 +43,7 @@
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
-- 📋 **SH594** (deps: SH579 ✅) **Four named lists now hold what is knowingly broken, in four formats read by four readers** — verify-baseline.json, assertion-debt's DEBT array, open-findings.json and red-suites.json each carry accepted findings, and no reader knows another exists. → §IX.58
+- 🛠 **SH594** (deps: SH579 ✅) **Four named lists now hold what is knowingly broken, in four formats read by four readers** — verify-baseline.json, assertion-debt's DEBT array, open-findings.json and red-suites.json each carry accepted findings, and no reader knows another exists. → §IX.58
 - 📋 **SH602** (deps: SH594) **Friction is found only when somebody reads a transcript back by hand** — Every finding in twelve rounds came from a session being narrated afterwards, so a refusal, a 404 and a question asked under the wrong name are lost the moment it ends. → §IX.59
 - 📋 **SH603** (deps: SH597, SH602) **The corpus has one task shape, so every friction it measures is replication-flavoured** — One reader drove one instance through one family of sources, which cannot tell a defect in the protocol from a gap in a corpus the same hands designed. → §IX.60
 
@@ -113,6 +113,7 @@
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
 - ⏳ **SH592** (deps: SH578 ✅) **The expensive artefact of the chain is the one that cannot be updated, only recaptured** — A capture of 200 pages costs ten minutes and 52 MB, and an inventory version bump made every stored one unreadable, so testing a one-line change downstream meant crawling again. → §XVII.88
+- 📋 **SH606** (deps: SH555 ✅) **A corpus assertion and the fix that closed its task disagree about whether two braces are a defect** — SH555 made those fields SafeString at render and the corpus still fails the generated layout for emitting {{CSS}}, so one of the two is wrong and no run says which. → §XVII.89
 
 ## Block F — Market positioning
 

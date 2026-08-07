@@ -94,13 +94,19 @@ const INERT_KEYS = ["scenarios.headless"];
 /**
  * Held findings whose owning task has already shipped, which is a debt of its own.
  *
- * <p>`SH555` shipped as a render-side fix — a captured stylesheet now reaches the browser as CSS —
- * and the CLI's generated layout still writes `{{CSS}}` with two braces, which is what this corpus
- * reads. The behaviour is correct on this renderer and the document is still wrong, so the case is
- * red under a closed id. Naming it here is the honest state; emptying this list means the generator
- * was fixed too, or the entry was repointed at a task somebody can pick up.
+ * <p><b>Empty, and SH594 is why.</b> It held `SH555`: that task shipped as a render-side fix — a
+ * captured stylesheet now reaches the browser as CSS — while the CLI's generated layout kept the
+ * `{{CSS}}` this corpus reads, so the case was red under a closed id and nobody would ever pick it
+ * up. This declaration's own instruction was that emptying it means the generator was fixed too
+ * <i>or the entry was repointed at a task somebody can pick up</i>, and the second is what
+ * happened: SH606 now owns it, and it is a real question rather than a re-filing — the render's
+ * `SafeString` and this brace count disagree about whether two braces are a defect at all.</p>
+ *
+ * <p>Kept as a list rather than deleted with its last entry. It is the only reader of the
+ * *other* direction of staleness — a fix that lands somewhere this corpus does not look — and a
+ * check that exists only while it is failing is one nobody re-adds.</p>
  */
-const CLOSED_OWNERS = ["SH555"];
+const CLOSED_OWNERS = [];
 
 const held = new Map(OPEN.findings.map((finding) => [`${finding.archetype}/${finding.assertion}`, finding]));
 const exercised = new Set();

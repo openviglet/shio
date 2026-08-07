@@ -48,6 +48,34 @@ This is the contract `assertion-debt.test.mjs` uses for its DEBT list and
 `ShSilentCatchInventoryTest` for its inventory: a named list with a reason beside each entry,
 never a ceiling. A ceiling lets one task pay the debt and the next spend it.
 
+### Four ledgers of what is knowingly wrong, and one reader (SH594)
+
+The device is sound and it has been invented **four** times — `shio/verify-baseline.json`
+(accepted `verify` findings, SH142), `assertion-debt.test.mjs`'s `DEBT` (shipped ids with no
+assertion, SH527), `fixtures/source-sites/open-findings.json` (corpus assertions red at HEAD,
+SH560) and `red-suites.json` (a suite allowed to be red, SH579). Each is a named list rather than
+a ceiling, each is checked in both directions, and each was the right call on its own. Together
+they are four formats, four readers and four places to look, and nothing joined them.
+
+`cli/test/known-debt.test.mjs` does **not** merge them: their scopes are genuinely different, and
+merging would throw away the per-ledger checks that make each honest. It answers the one question
+none of them can — *what is this repository knowingly carrying, and which of it has an owner who
+has already gone.* Three checks, and the second is the reason it exists: **no entry may be owned
+by a task that has already shipped**, every entry must name an owner (an unsigned suppression can
+never be shown to have gone green), and an owner in neither `ROADMAP.md` nor `CHANGELOG.md` is a
+dangling reference from a retirement or a renumber. A fifth ledger is one row in `LEDGERS`, which
+is the point — the failure was four bespoke readers, so a fifth bespoke reader would be the same
+mistake again.
+
+**It landed red and found the case its own rationale predicted.** `open-findings.json` held a
+finding owned by SH555 *after SH555 had shipped* — the fix went to the render side and the CLI's
+generated layout still writes `{{CSS}}`. Re-opening a shipped id is not one of the two honest
+resolutions, so it was re-filed as **SH606** and the entry repointed; and SH606 is a real question
+rather than paperwork, because SH555 made those fields `Handlebars.SafeString` and the corpus
+assertion checks a brace count whose meaning that fix changed underneath it. One of the two
+artefacts has to go, and the round that picks is the deliverable. `source-corpus.test.mjs`'s
+`CLOSED_OWNERS` is now empty, exactly as its own comment said emptying it would mean.
+
 ### And red has to be visible without somebody choosing to look
 
 [`.github/workflows/suites.yml`](../../.github/workflows/suites.yml) runs `js` and

@@ -2281,6 +2281,35 @@ refusal, and a refusal is honest only when the new field genuinely cannot be com
 from what is on disk. Otherwise the cost of a reader's change is paid in somebody else's
 ten minutes.
 
+### XVII.89 Two readers of one brace count (SH606)
+
+`source-corpus.test.mjs` fails the CLI's generated layout for emitting `{{CSS}}` inside
+the `{{#getRelation "/theme/captured"}}` block: two braces, so Handlebars escapes it, so
+a megabyte of stylesheet reaches the browser with every `url()` as `&quot;…&quot;`. That
+reading was right when it was written.
+
+SH555 then shipped, on the **render** side: a `getRelation` row's raw-text fields —
+`Theme.CSS` and `JAVASCRIPT`, `Region.JAVASCRIPT`, `PageLayout.JAVASCRIPT` — are
+`Handlebars.SafeString`, keyed by field. Under that fix `{{CSS}}` is not escaped, and
+the assertion is checking a brace count whose meaning the render changed underneath it.
+
+So the two disagree and **neither run says which is wrong**. The corpus reports a held
+finding, the render suite is green, and nothing joins them. SH594's reader is what
+surfaced it: the entry was owned by SH555 *after SH555 had shipped*, the one state a
+debt ledger cannot see on its own.
+
+Only one of two things is true:
+
+- the render fix is the whole answer and the assertion measures a proxy that stopped meaning
+  anything, so it is retired;
+- or `SafeString` is narrower than the assertion assumes — a field off SH555's list, a layout
+  written by hand, a path where the row does not come through `getRelation` — and the generator
+  should write `{{{CSS}}}` anyway.
+
+**The deliverable is the answer, not the edit.** Whichever way it goes, one of the two
+artefacts is removed rather than both left standing: two readers of one fact that agree
+only by accident is SH583's shape, and this is its third sighting.
+
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against
