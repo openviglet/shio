@@ -39,6 +39,9 @@
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
+- 📋 **SH577** (deps: SH554 ✅) **The gate asserts a replica lost nothing, on the one conversion mode whose purpose is to drop things** — The chain accepts candidates and then requires diff to report zero loss, so the suite has been red for two rounds over chrome an authorable page is designed not to keep. → §IX.50
+- 📋 **SH578** (deps: SH554 ✅) **The asset count reads the page's own references on one side and the inlined theme's on the other** — A fidelity replica reported plus thirty assets on every page, which is the theme's url() counted only on the produced side, so a page that lost assets can read as a gain. → §IX.51
+- 📋 **SH579** (deps: SH527 ✅) **Two suites are red at HEAD and work kept landing on top of both** — The conformance chain has failed for two rounds and assertion-debt names two tasks that shipped without one, and neither red run stopped a commit or was mentioned in one. → §IX.52
 
 ## Block I — Content as files (local-first authoring)
 
@@ -103,6 +106,8 @@
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
+- 📋 **SH575** (deps: SH549 ✅) **An authorable replica has no navigation, so every page it serves is a page you cannot leave** — The generated layout emits neither the navigation helper nor a nav, so diff reported internal links 16 to 0 on all twelve pages while verify exited 0. → §XVII.80
+- 📋 **SH576** (deps: SH557 ✅) **A source with no document at / converts to a site whose home address resolves to nothing** — Every page of a locale-prefixed source lands under its prefix and the conversion writes none at /, so post:site/ answers 404 and the replica has no front door. → §XVII.81
 
 ## Block F — Market positioning
 

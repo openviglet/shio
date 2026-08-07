@@ -120,12 +120,27 @@ priority = [
   # in any command but a source trait no command names until the last one calls it damage.
   # SH558 and SH559 last: a lint that cannot read a `getRelation` binding, and a banner that
   # says `fidelity` over an authorable page — both cheap, both cost a wrong inference here.
-  "SH554",
-  "SH555",
-  "SH556",
-  "SH557",
-  "SH558",
-  "SH559",
+  # The eighth run is spent: all six shipped, and the round that validated them found the
+  # remaining friction is no longer in any one command. `verify` exits 0 on the authorable
+  # replica, the escaped stylesheet is gone, the class vocabularies agree.
+  #
+  # The ninth run, on instruction (2026-08-07), and it is the first ordered by what a suite
+  # says rather than by what a page looks like. SH560's corpus grew four groups this round —
+  # fidelity (the mode nothing ran), the six checklist rules that were declared and read by
+  # nothing, navigation, and a coverage check over the declarations themselves — and it now
+  # reports 22 assertions, 9 red, 6 owners, 49 declared keys and 1 inert. SH579 leads because
+  # it is about all of the others: two suites are red at HEAD and nineteen commits landed over
+  # them, so nothing below is worth fixing until a red run obliges something. Then SH577 and
+  # SH578, the two halves of the judge — one standard applied to three modes, and the one fact
+  # where a loss hides inside a gain. Then the two the corpus holds as debt: SH575's missing
+  # navigation, which is every authorable conversion and not one source, and SH576's missing
+  # home page. SH555 rides along and is not a re-open: it shipped on the render side and the
+  # CLI still writes `{{CSS}}`, which is why the corpus holds a red case under a closed id.
+  "SH579",
+  "SH577",
+  "SH578",
+  "SH575",
+  "SH576",
   "SH528",
   "SH529",
   "SH523",

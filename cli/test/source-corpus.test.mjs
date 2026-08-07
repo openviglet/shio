@@ -80,6 +80,28 @@ const OPEN = JSON.parse(
   await readFile(new URL("../../fixtures/source-sites/open-findings.json", import.meta.url), "utf8"),
 );
 
+/**
+ * The expectation keys that are declared and deliberately read by nothing, held as a named list.
+ *
+ * <p>Same device as `OPEN`, one level up: `OPEN` holds assertions that are red, this holds traits
+ * that are not asserted at all — which is the worse of the two, because a red case is visible and an
+ * unread key reads as coverage. `scenarios.headless` is here because the fast tier cannot install
+ * from a registry and the scaffold it would install is SH502's, unpublished; every other entry is a
+ * task, not a bound.
+ */
+const INERT_KEYS = ["scenarios.headless"];
+
+/**
+ * Held findings whose owning task has already shipped, which is a debt of its own.
+ *
+ * <p>`SH555` shipped as a render-side fix — a captured stylesheet now reaches the browser as CSS —
+ * and the CLI's generated layout still writes `{{CSS}}` with two braces, which is what this corpus
+ * reads. The behaviour is correct on this renderer and the document is still wrong, so the case is
+ * red under a closed id. Naming it here is the honest state; emptying this list means the generator
+ * was fixed too, or the entry was repointed at a task somebody can pick up.
+ */
+const CLOSED_OWNERS = ["SH555"];
+
 const held = new Map(OPEN.findings.map((finding) => [`${finding.archetype}/${finding.assertion}`, finding]));
 const exercised = new Set();
 const reported = [];
@@ -138,8 +160,16 @@ function sink() {
 
 const json = async (cwd, file) => JSON.parse(await readFile(join(cwd, file), "utf8"));
 
-/** One archetype's chain, run in a real temp directory. The artefact between phases is the file. */
-async function capture(entry, { accept = false } = {}) {
+/**
+ * One archetype's chain, run in a real temp directory. The artefact between phases is the file.
+ *
+ * <p>`accept` chooses the **mode**, and it is the whole difference between the two scenarios the
+ * checklist insists are proved apart: accepting nothing is fidelity — `convert` writes the source's
+ * verbatim markup and Shio's renderer serves it — and accepting everything is authorable, where the
+ * blocks become sections and the markup is gone. `SKILL.md` says a round is not complete until both
+ * have run, and until SH567 only the second one did.
+ */
+async function capture(entry, { accept = false, fidelity = false } = {}) {
   const cwd = await mkdtemp(join(tmpdir(), `shio-sh560-${entry.id}-`));
   const source = injectedFetch(entry.table, ORIGIN);
   const ctx = { env: {}, cwd, stdout: sink(), stderr: sink(), fetch: source.fetch, fs: nodeFs };
@@ -158,16 +188,36 @@ async function capture(entry, { accept = false } = {}) {
     ctx,
   );
   result.inventory = await json(cwd, INVENTORY_FILE);
-  if (!accept) return result;
+  if (!accept && !fidelity) return result;
 
   const { proposal } = await propose.run({}, [], ctx);
   result.proposal = proposal;
-  await propose.run({ accept: true }, ["all"], ctx);
-  result.plan = await json(cwd, PLAN_FILE);
+  // Fidelity is `propose` and accept **nothing**. The proposal still has to run — it is what writes
+  // the plan file `convert` reads — and the acceptance is what it withholds.
+  // …and the plan file is written *by* the acceptance, so fidelity has none. Reading it anyway is
+  // how this driver first reported four red fidelity cases that were its own ENOENT.
+  if (accept) {
+    await propose.run({ accept: true }, ["all"], ctx);
+    result.plan = await json(cwd, PLAN_FILE);
+  }
   await convert.run({ site: siteOf(entry), out: "conversion.json" }, [], ctx);
   result.conversion = await json(cwd, "conversion.json");
   return result;
 }
+
+/** The posts of one type in a conversion document, in the order the document holds them. */
+const postsOfType = (conversion, type) =>
+  (conversion.posts ?? []).filter((post) => post.type === type);
+
+/** Every class name a template draws, which is what a theme has to define for a page to be styled. */
+const drawnClasses = (html) =>
+  new Set([...String(html).matchAll(/class="([^"]*)"/g)]
+    .flatMap((match) => match[1].split(/\s+/))
+    .filter((name) => name.startsWith("shio-")));
+
+/** Every selector a stylesheet defines, read the way SH521's own lint reads one. */
+const definedClasses = (css) =>
+  new Set([...String(css).matchAll(/\.(shio-[A-Za-z0-9_-]+)/g)].map((match) => match[1]));
 
 /** A site name per archetype: grep-able, and never one a live run would collide with. */
 function siteOf(entry) {
@@ -508,11 +558,328 @@ describe("SH560 group F: the bound of this tier is declared, not discovered", ()
 });
 
 // -------------------------------------------------------------------------------------------------
+// Group H — fidelity, which is the other half of "a round is not complete until both have run"
+// -------------------------------------------------------------------------------------------------
+
+describe("SH560 group H: the mode that accepts nothing, judged in the same document", () => {
+  for (const entry of corpus.filter((each) => each.declaration.scenarios?.fidelity
+    && !each.declaration.needsBrowser)) {
+    test(`${entry.id}: accept nothing, and the source's own markup is what would be written`, async () => {
+      const run = await capture(entry, { fidelity: true });
+      try {
+        const pages = postsOfType(run.conversion, "Page");
+        assert.ok(pages.length, `${entry.id}: a fidelity conversion writes one Page per captured page`);
+
+        // The defining property, and the one SH520 proved is worth asserting: fidelity keeps the
+        // page. A Page carrying `sections` and no `content` is the authorable shape, and the run
+        // that shipped it measured 106 annotated fields on a page that was mostly gone.
+        for (const page of pages) {
+          assert.ok(
+            page.data?.content,
+            `SH520 / ${entry.id}: ${page.url} was converted with nothing accepted and carries no `
+              + "`content`. Fidelity's whole claim is a pixel comparison against the source, and a "
+              + "page with no markup cannot make it.\n"
+              + `  fields: ${Object.keys(page.data ?? {}).join(" ")}`,
+          );
+        }
+
+        // And the documented limit, stated as an assertion so it stops being folklore: verbatim
+        // markup has no `sh-field`, so the editor loads over a page with nothing to edit. A round
+        // that reported annotated fields on a fidelity replica would be measuring the wrong mode.
+        const annotated = pages.filter((page) => /sh-field|data-shio-prop/.test(page.data?.content ?? ""));
+        assert.deepEqual(
+          annotated.map((page) => page.url),
+          [],
+          `${entry.id}: fidelity is defined by having no editable field — the source's markup has `
+            + "no `sh-field` and `convert` adds none. A page here that is annotated means the mode "
+            + "boundary moved and SKILL.md's 'zero data-shio-prop' is no longer the property.",
+        );
+
+        // Both modes still need a layout: the renderer resolves one per post-type, and SH464 is the
+        // task that exists because the authorable path once wrote none and /preview answered 400.
+        assert.ok(
+          postsOfType(run.conversion, "PageLayout").length,
+          `SH464 / ${entry.id}: a fidelity conversion writes no PageLayout, so every page it makes `
+            + "answers 400 — the same defect the authorable path shipped with",
+        );
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+});
+
+// -------------------------------------------------------------------------------------------------
+// Group I — the checklist rules that were declared per archetype and read by nothing
+// -------------------------------------------------------------------------------------------------
+
+describe("SH560 group I: the checks the corpus declared and no assertion consumed", () => {
+  // Check 3. Both spellings of a directory path answer, one canonical and one redirecting, the way
+  // the source does (SH467). Decidable from the capture: the inventory records which spelling the
+  // source served and which it redirected, and the conversion says which one becomes the furl.
+  for (const entry of corpus.filter((each) => (each.declaration.bothSpellings ?? []).length)) {
+    test(`${entry.id}: a directory path keeps the spelling the source made canonical (SH467)`, async () => {
+      const run = await capture(entry, { accept: true });
+      try {
+        for (const path of entry.declaration.bothSpellings) {
+          holding(entry.id, `both-spellings-${slug(path)}`, () => {
+            const withSlash = `${path.replace(/\/$/, "")}/`;
+            const urls = new Set(postsOfType(run.conversion, "Page").map((page) => page.url));
+            assert.ok(
+              urls.has(withSlash),
+              `SH467 / ${entry.id}: the source serves ${path} and ${withSlash} as one canonical `
+                + "and one redirect, and the replica writes only one of the two — so every captured "
+                + "link to the other costs a 301 or a 404. The grammar collapses the declared "
+                + `slash, which is the half SH467 left open.\n  urls: ${[...urls].join(" ")}`,
+            );
+          });
+        }
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+
+  // Check 1, at the phase where it is cheapest. A document-relative reference is the one that breaks
+  // — the replica is served several segments deeper than its source — and collecting only
+  // `/`-prefixed refs once reported 0 broken on a page with fifteen missing images (SH512).
+  for (const entry of corpus.filter((each) => each.declaration.relativeReferences)) {
+    test(`${entry.id}: a document-relative reference is resolved against its own page (SH512)`, async () => {
+      const run = await capture(entry);
+      try {
+        for (const [page, refs] of Object.entries(entry.declaration.relativeReferences)) {
+          for (const ref of refs) {
+            const resolved = new URL(ref, new URL(page, ORIGIN)).pathname;
+            holding(entry.id, `relative-reference-${slug(resolved)}`, () => {
+              assert.ok(
+                run.inventory.assets.some((asset) => asset.path === resolved),
+                `SH512 / ${entry.id}: ${page} references ${ref}, which resolves to ${resolved} `
+                  + "against the page's own URL. The capture does not hold it, so the replica will "
+                  + "serve a page whose image is simply absent and whose reference list looks "
+                  + `clean.\n  captured: ${run.inventory.assets.map((a) => a.path).join(" ")}`,
+              );
+            });
+          }
+        }
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+
+  // SH433 — a site's home page is `post:<site>/`, the one address form the grammar does not spell.
+  // A source with no document at `/` is where that stops being a formality: something has to be the
+  // home page, or the replica has a site whose root answers nothing.
+  for (const entry of corpus.filter((each) => each.declaration.noSourceHome)) {
+    test(`${entry.id}: a source with no home at / still converts to a site with one (SH433)`, async () => {
+      const run = await capture(entry, { accept: true });
+      try {
+        holding(entry.id, "home-page-written", () => {
+          const urls = postsOfType(run.conversion, "Page").map((page) => page.url);
+          assert.ok(
+            urls.includes("/"),
+            `SH433 / ${entry.id}: every page of this source lives under a locale prefix and the `
+              + "conversion writes no page at `/`, so `post:<site>/` — the home address — resolves "
+              + `to nothing and the site's root is a 404.\n  urls: ${urls.join(" ")}`,
+          );
+        });
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+
+  // SH556, read from the document rather than from a rendered page. The theme styles SH508's roles;
+  // the section templates draw class names. A name drawn and not defined is a page that renders and
+  // is unstyled, which is what `verify` reports as `page-unstyled` on every page of a site.
+  for (const entry of corpus.filter((each) => each.declaration.conversion?.themeCoversDrawnClasses)) {
+    test(`${entry.id}: every class the templates draw is one the theme defines (SH556)`, async () => {
+      const run = await capture(entry, { accept: true });
+      try {
+        const layout = postsOfType(run.conversion, "PageLayout")[0];
+        const theme = postsOfType(run.conversion, "Theme")
+          .find((post) => post.data?.TITLE === layout?.data?.THEME);
+        assert.ok(layout && theme, `${entry.id}: the layout names a theme this document holds`);
+        holding(entry.id, "theme-covers-drawn-classes", () => {
+          const defined = definedClasses(theme.data.CSS ?? "");
+          const missing = [...drawnClasses(layout.data.HTML ?? "")].filter((name) => !defined.has(name));
+          assert.deepEqual(
+            missing,
+            [],
+            `SH556 / ${entry.id}: the layout draws ${missing.length} class name(s) the theme it `
+              + "names does not define, and it loads no other stylesheet — so the page renders and "
+              + `is unstyled.\n  missing: ${missing.join(" ")}`,
+          );
+        });
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+
+  // SH550/SH555 at the document. The stored Theme is what the render reads, so an entity here is one
+  // no renderer can undo — the distinction from SH555 is that this asks about the *stored bytes*.
+  for (const entry of corpus.filter((each) => (each.declaration.conversion?.noEntitiesIn ?? []).length)) {
+    test(`${entry.id}: the stored theme holds CSS, not escaped markup (SH550)`, async () => {
+      const run = await capture(entry, { accept: true });
+      try {
+        for (const url of entry.declaration.conversion.noEntitiesIn) {
+          const post = (run.conversion.posts ?? []).find((each) => each.url === url);
+          assert.ok(post, `${entry.id}: the document holds no post at ${url}`);
+          holding(entry.id, `no-entities-in-${slug(url)}`, () => {
+            const found = JSON.stringify(post.data ?? {}).match(/&(quot|amp|lt|gt|#\d+);/g) ?? [];
+            assert.deepEqual(
+              [...new Set(found)],
+              [],
+              `SH550 / ${entry.id}: ${url} carries ${found.length} HTML entity/entities in what is `
+                + "stored as CSS. A stylesheet is not markup, so nothing downstream decodes it and "
+                + `every url() it holds is a path the site does not serve.\n  found: ${[...new Set(found)].join(" ")}`,
+            );
+          });
+        }
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+
+  // "Count, do not eyeball", and the half that is easy to miss: four of the seven section types are
+  // collection-shaped, so a page that looks annotated can be five props over a grid whose rows carry
+  // none. SH465 drew no rows at all; SH475 drew them with no `sh-post` and no `sh-field`; the
+  // visible page looked reasonable at both stages.
+  for (const entry of corpus.filter((each) => (each.declaration.collections ?? []).length)) {
+    test(`${entry.id}: every collection field annotates its rows, not just its heading (SH475)`, async () => {
+      const run = await capture(entry, { accept: true });
+      try {
+        const layout = postsOfType(run.conversion, "PageLayout")[0];
+        assert.ok(layout, `${entry.id}: no layout to read the annotations from`);
+        const html = layout.data.HTML ?? "";
+        for (const field of entry.declaration.collections) {
+          holding(entry.id, `collection-rows-annotated-${slug(field)}`, () => {
+            // A row-level field is `<field>.{{@index}}.<name>`, in either declaration form: a value
+            // that lands in an attribute is declared by `sh-field-attr`, so counting only `sh-field`
+            // under-reports every attribute-valued field and once read a complete page as 9 of 10.
+            const rowFields = new RegExp(`sh-field(-attr)?="${field}\\.\\{\\{@index\\}\\}\\.`);
+            assert.ok(
+              rowFields.test(html),
+              `SH475 / ${entry.id}: the layout renders \`${field}\` and annotates no field inside `
+                + "its rows, so a curator sees a grid drawn from content they cannot edit. Rendering "
+                + "is not annotation — that is the distinction both SH465 and SH475 were about.",
+            );
+          });
+        }
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+});
+
+// -------------------------------------------------------------------------------------------------
+// Group J — what an authorable replica is missing that no rule in the checklist thought to name
+// -------------------------------------------------------------------------------------------------
+
+describe("SH560 group J: the replica as a site somebody can move around in", () => {
+  for (const entry of corpus.filter((each) => each.declaration.scenarios?.authorable
+    && each.declaration.propose?.accept === "all"
+    && (each.declaration.addressable ?? []).length > 1)) {
+    test(`${entry.id}: an authorable replica can be navigated (SH568)`, async () => {
+      const run = await capture(entry, { accept: true });
+      try {
+        const layout = postsOfType(run.conversion, "PageLayout")[0];
+        assert.ok(layout, `${entry.id}: no layout`);
+        holding(entry.id, "authorable-has-navigation", () => {
+          const html = layout.data.HTML ?? "";
+          // The renderer ships a `navigation` helper and the generated layout uses none, so every
+          // page of an authorable conversion is a leaf. Measured on a real replica: `shio diff`
+          // reported `internal links: 16 → 0` on all twelve pages, `audit` reported `no-landmark`,
+          // and `verify` exited 0 — a site of unreachable pages that every gate passes.
+          assert.ok(
+            /\{\{#?navigation\b/.test(html) || /<nav\b/.test(html),
+            `SH568 / ${entry.id}: the generated layout emits neither the \`navigation\` helper nor `
+              + "a <nav>, so a replica of a source with "
+              + `${entry.declaration.addressable.length} addressable pages serves them with no link `
+              + "between them. The source's own nav lived in chrome the vocabulary drops, and "
+              + "nothing puts one back.",
+          );
+        });
+      } finally {
+        await run.dispose();
+      }
+    });
+  }
+});
+
+// -------------------------------------------------------------------------------------------------
+// Group K — the map itself: a declaration nobody reads is a scenario nobody runs
+// -------------------------------------------------------------------------------------------------
+
+describe("SH560 group K: every trait an archetype declares is read by an assertion", () => {
+  test("no expectation key is inert, and the ones that are get named", async () => {
+    // The corpus is a catalogue of what a real site does, and its entries are only worth the
+    // assertions that consume them. A key declared and never read is the failure mode this whole
+    // file exists to prevent, one level up: it reads as coverage in a review and runs nothing.
+    const suite = await readFile(new URL(import.meta.url), "utf8");
+    const loader = await readFile(
+      new URL("../../fixtures/source-sites/corpus.mjs", import.meta.url),
+      "utf8",
+    );
+    // Comments are stripped first, and that is not tidiness: the prose *about* a key names it, so
+    // a file that documents an unread trait would report itself as reading one. This check found
+    // that on its own first run — `scenarios.headless` came back covered by the paragraph saying it
+    // is not.
+    // …and `INERT_KEYS` is cut from its own walk for the same reason `assertion-debt.test.mjs` is
+    // cut from its: a declaration that a key is unread is not a read of it. Left in, the list makes
+    // every entry on it report as covered, which is exactly backwards.
+    const readers = `${suite}\n${loader}`
+      .replace(/\/\*[\s\S]*?\*\//g, " ")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ")
+      .replace(/const INERT_KEYS = \[[^\]]*\]/, " ");
+
+    const declared = new Set();
+    for (const entry of corpus) {
+      for (const [key, value] of Object.entries(entry.declaration)) {
+        declared.add(key);
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+          for (const nested of Object.keys(value)) declared.add(`${key}.${nested}`);
+        }
+      }
+    }
+
+    // A leaf name is the unit, because that is how the suite reads one: `declaration.conversion
+    // ?.rawFields`. Keys whose leaves are data rather than API — a route table's paths, a page's
+    // own reference list — are addressed through their parent and are not looked for by name.
+    const addressedThroughParent = (key) => /^(routes|relativeReferences|redirects)\./.test(key);
+    const inert = [...declared]
+      .filter((key) => !addressedThroughParent(key))
+      .filter((key) => {
+        const leaf = key.split(".").pop();
+        return !new RegExp(`\\b${leaf.replace(/[^\w]/g, "\\$&")}\\b`).test(readers);
+      })
+      .sort();
+
+    assert.deepEqual(
+      inert,
+      INERT_KEYS,
+      "an expectation key is declared by an archetype and consumed by no assertion, so the corpus "
+        + "claims a trait it does not check. Either write the assertion or delete the key — and if "
+        + "it is a scenario this tier genuinely cannot run, say so in `scenarios` where group F can "
+        + `read it.\n  now inert: ${inert.join(" ")}\n  declared inert: ${INERT_KEYS.join(" ")}`,
+    );
+
+    console.log(
+      `\nSH560 coverage: ${declared.size} declared key(s), ${inert.length} inert `
+        + `(${inert.join(" ") || "none"})`,
+    );
+  });
+});
+
+// -------------------------------------------------------------------------------------------------
 // Group G — the held list, read back. This runs last on purpose: it judges the other groups.
 // -------------------------------------------------------------------------------------------------
 
 describe("SH560 group G: the debt this corpus is currently carrying", () => {
-  test("every held finding was exercised, and the run prints both counts", () => {
+  test("every held finding was exercised, and the run prints both counts", async () => {
     const stale = [...held.keys()].filter((key) => !exercised.has(key));
     assert.deepEqual(
       stale,
@@ -520,6 +887,24 @@ describe("SH560 group G: the debt this corpus is currently carrying", () => {
       "open-findings.json holds a key no assertion runs, so a finding stopped being checked and "
         + "the list still claims it is. Either the assertion was renamed — use the key it emits — "
         + `or the archetype it names is gone.\n  stale: ${stale.join(" ")}`,
+    );
+
+    // And the other direction of stale: an entry whose *task* is closed. `holding` catches a fix
+    // that lands and turns the case green, and it cannot catch a fix that lands somewhere else —
+    // SH555 shipped as a change to the renderer while the CLI's generated layout kept the `{{CSS}}`
+    // this corpus reads, so the case stayed red under a closed id and nobody would ever act on it.
+    // The roadmap is the authority on which ids are open, and reading it costs one file.
+    const roadmap = await readFile(new URL("../../docs/ROADMAP.md", import.meta.url), "utf8");
+    const closed = [...new Set(OPEN.findings.map((finding) => finding.id))]
+      .filter((id) => !new RegExp(`\\*\\*${id}\\*\\*`).test(roadmap))
+      .sort();
+    assert.deepEqual(
+      closed,
+      CLOSED_OWNERS,
+      "a held finding names a task that is no longer on the roadmap, so the assertion is red under "
+        + "an id nobody will pick up. Either the fix landed somewhere this corpus does not read — "
+        + "file the remainder and repoint the entry — or the entry is spent and should be deleted.\n"
+        + `  closed owners: ${closed.join(" ")}`,
     );
 
     // Not a ceiling. The point of printing both is that a reader can see the debt move without

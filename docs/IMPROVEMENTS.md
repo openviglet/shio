@@ -771,6 +771,74 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
+### IX.50 One standard applied to three modes (SH577)
+
+`shio diff` compares a replica with the capture that declared it, which is exactly the
+question fidelity answers: every fact still there, and the bar is 0.00%. It is not the
+question an authorable conversion answers. Composing a page out of sections drops the
+source's nav, its favicon link and its stylesheet tag by design — that is what the
+vocabulary is for.
+
+The conformance chain accepts its candidates and then asserts `comparison.lost === 0`.
+On the fixture that is `internal links: 2 → 1` and `assets: 3 → 0` per page, four facts
+across two pages, and the suite has now been red at HEAD for two consecutive rounds.
+SH554 fixed one half of the count and the remainder is not a counting defect: those
+facts really are gone, and an authorable page is not supposed to have them.
+
+So the gate is asking the wrong question of the right command. Either the chain runs the
+fidelity mode where `lost === 0` is the claim, or `diff` learns the mode and judges an
+authorable page on what it should keep — the content — rather than on the chrome.
+
+The cost of leaving it is the one SH554's own section states: an instrument that cries
+wolf in the gate is worse than one outside it. Two rounds is already long enough that
+the red run stopped being read, and a real loss inside it would not have been noticed.
+
+### IX.51 The one fact where a loss can hide inside a gain (SH578)
+
+SH554 split the two sides of `diff` through one function so a link stopped being counted
+differently at each end. The asset fact still is, for a different reason: the declared
+side is a page's own references, and the produced side is a page **plus the stylesheet
+inlined into it**.
+
+Measured on a fidelity replica of vilt-group.com: every page reports exactly `+30`, and
+the served page carries 32 references of its own and 60 `url()` inside its `<style>`,
+against a captured theme holding 59. The number is not noise and it is not a gain — it
+is a different question answered on each side.
+
+A gain is never a failure, and that decision is right: a layout adds links and a gate
+that called that damage would fire on every working conversion. It is also what makes
+this the one fact where a real loss disappears. A page that dropped twenty of its own
+images and picked up thirty theme `url()` reports `+10`, and `diff` — the only
+instrument in the chain holding an expectation — says the page is fine.
+
+The repair is a boundary rather than a formula: an asset a page references and an asset
+a stylesheet references are two facts, and the theme's are the same on every page of a
+site, so counting them once at the site level says more than counting them thirteen
+times. The assertion is a page whose own references shrink while its theme's grow.
+
+### IX.52 A suite that is red at HEAD is not a gate (SH579)
+
+Measured at `6bc4ba8`, clean tree, nothing of this round applied: `pnpm -C cli run
+conformance` fails one of five tests, and `pnpm -C cli test` fails one of 1148 — `SH527:
+every shipped task carries an assertion`, naming SH566 and SH571.
+
+Both are the instruments working. The conformance failure is SH577, a real question
+asked of the wrong mode; the debt failure is SH527 catching what it was built to catch,
+two commits after it shipped. Neither is a false alarm, and that is the point: the
+alarms are right and the work went on regardless. Eleven commits landed over the first
+and eight over the second, and no commit message mentions either.
+
+The rule this breaks is not written down, which is probably why. `agents.md` is firm
+that a run's count is authoritative and that a red run leaves a record, and it never
+says what a red run *obliges*. So the honest state is that these suites are reports
+rather than gates, and calling conformance "the gate" in `SKILL.md` is currently false.
+
+Two repairs, independent of each other. The narrow one: run both in the workflow that
+runs on a push, so red is visible without somebody choosing to look — SH241 says none
+runs on the branch this work happens on. The wider one: name the obligation. A red suite
+either blocks the next commit or is a declared, dated exception, and the second needs
+somewhere to live before anybody uses it.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -2038,6 +2106,53 @@ converts a **correct** repair into a permanent red — the same failure SH554 na
 block over, an instrument in a gate reporting a loss on something that lost nothing. The
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
+
+### XVII.80 A site of pages with no way between them (SH575)
+
+An authorable conversion keeps what the vocabulary matched and drops the rest, which is
+the design. The source's navigation lives in the rest. Nothing puts one back, so a
+replica of a twelve-page site serves twelve pages with no link between any of them: the
+home page cannot reach `/about/`, and `/about/` cannot reach anything at all.
+
+Measured on viglet.org converted with `--accept all`: `shio diff` reports `internal
+links: 16 → 0` on `/` and the same on every other page; `shio audit` reports
+`no-landmark — no main, nav, header, footer or aside`; and `shio verify` exits 0 with
+three warnings, none of them this. The generated layout carries no `<nav>`, no
+`<footer>` and no call to the `navigation` helper, which the renderer has shipped for as
+long as the helper set has existed.
+
+The corpus now holds it across four archetypes, which is the useful part: it is not a
+property of one source. Every authorable conversion produces this, and the reason it
+went unreported for eight rounds is that each instrument measures the page it is given.
+A page with no links is a valid page.
+
+What to emit is a real choice — a `navigation` call over the site's own tree is the
+cheapest and gives a curator something to edit, while lifting the source's own nav means
+keeping chrome the vocabulary exists to drop. The assertion is already written either
+way, and it names SH575.
+
+### XVII.81 The one address the grammar does not spell, unwritten (SH576)
+
+`post:<site>/` is a site's home page — the address form SH433 exists because the grammar
+does not spell it. A source that answers `/` gives the conversion one for free. A source
+that does not gives it nothing, and nothing is what gets written.
+
+The `locale-prefixed` archetype is the case: every page lives under `/en-us/` or
+`/pt-br/`, `/` is a 404 at the source, and the conversion document holds pages at
+`/en-us/` and `/pt-br/` and no page at `/`. The replica therefore has no front door —
+`/sites/<site>/default/en-us/` answers nothing, which is the first URL anybody opens and
+the one the console frames.
+
+It is not obvious what should be there, and that is the task rather than an obstacle to
+it. Three answers are defensible: redirect to the locale the source's own root
+redirected to, write a home page that lists the locales, or refuse the conversion and
+say which locale to pass. What is not defensible is the current one, which is to write
+neither a page nor a note: the run reports the pages it wrote, every one of them
+correct, and the site it produced has no root.
+
+The archetype was built for SH459 and SH433 and this is a third id on the same trait,
+which is the argument for a corpus rather than a fixture: the source was already written
+and the assertion cost four lines.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
