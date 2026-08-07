@@ -655,3 +655,58 @@ test("SH581: the scanner records which half of the document a reference is in", 
     { own: 2, head: 1, style: 0 },
   );
 });
+
+/**
+ * SH586 — links that changed side rather than went missing.
+ *
+ * On a real replica this was twenty-two pages carrying the identical pair, `internal links -3`
+ * beside `external links +3`, with `shio verify` exiting 0 and eleven review rounds not seeing it.
+ * The total is conserved, so nothing is lost, so no shortfall is damage and a gain is never a
+ * failure — the two numbers read as unrelated. Naming the join is the half that makes the other
+ * half findable.
+ */
+
+const withLinks = (internal, external) => ({
+  path: "/", title: "Home", links: { internal, external },
+  assets: { own: 0, head: 0, style: 0 }, forms: 0, textChars: 400,
+});
+
+test("SH586: internal down and external up by the same count is named as one fact", () => {
+  const comparison = compareCapture(
+    [withLinks(9, 3)],
+    new Map([["/", { ...withLinks(6, 6), title: "Home" }]]),
+  );
+
+  assert.equal(comparison.wentHome, 3);
+  assert.equal(comparison.pages[0].wentHome, 3);
+
+  const report = describeDiff(comparison);
+  assert.match(report, /3 link\(s\) now point at the source/, "on the headline, where a reader who "
+    + "stops after `nothing lost` would otherwise be told only the true half");
+  assert.match(report, /3 link\(s\) now point at the SOURCE/);
+  assert.match(report, /internal links: 9 → 6/, "both rows still print — a fact removed from the "
+    + "report is a fact nobody can find");
+  assert.match(report, /external links: 3 → 6/);
+});
+
+test("SH586: equal and opposite is the whole rule — a page that really lost links is not this", () => {
+  // The narrowness is the point. A page whose chrome went one way while its layout added links the
+  // other is two true facts, and calling it a flip would put a name on a coincidence.
+  assert.equal(compareCapture([withLinks(9, 3)],
+    new Map([["/", withLinks(6, 4)]])).wentHome, 0, "lost 3, gained 1");
+  assert.equal(compareCapture([withLinks(9, 3)],
+    new Map([["/", withLinks(9, 6)]])).wentHome, 0, "gained 3, lost none");
+  assert.equal(compareCapture([withLinks(9, 3)],
+    new Map([["/", withLinks(6, 3)]])).wentHome, 0, "lost 3 outright — that is a real shortfall");
+});
+
+test("SH586: a page whose only difference is the flip is not reported `as declared`", () => {
+  // The shortcut that hid it: nothing lost, nothing by design, nothing gained on a fidelity page
+  // whose every link changed side, and the line read `as declared`.
+  const report = describeDiff(compareCapture(
+    [withLinks(9, 3)],
+    new Map([["/", withLinks(6, 6)]]),
+  ));
+
+  assert.doesNotMatch(report, /as declared/);
+});

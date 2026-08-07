@@ -21,6 +21,7 @@ import {
   localeShape,
   parseRobots,
   pathOf,
+  rebaseOwnOrigin,
   resolveHref,
   robotsAllows,
   scanPage,
@@ -758,7 +759,13 @@ test("--markup caches the HTML beside the inventory, and still writes no content
   // The row names its own file, so `shio propose` never has to re-derive a slug the crawl chose.
   const home = inventory.pages.find((page) => page.path === "/");
   assert.match(home.markup, /\.html$/);
-  assert.equal(ctx.written[`/repo/${MARKUP_DIR}/${home.markup}`], SITE["/"].body);
+  // SH586 narrowed "verbatim": the cache is the source's markup with URLs on the source's OWN
+  // origin written as the paths they already mean, and nothing else touched. So this is no longer
+  // byte-identity — it is byte-identity after that one substitution, which `rebaseOwnOrigin` is.
+  assert.equal(
+    ctx.written[`/repo/${MARKUP_DIR}/${home.markup}`],
+    rebaseOwnOrigin(SITE["/"].body, "https://x.test"),
+  );
   assert.equal(inventory.crawl.markup, true);
 });
 
@@ -1097,4 +1104,60 @@ test("bad input explains itself", async () => {
   await assert.rejects(() => clone.run({}, ["not a url"], ctxWith()), /is not a URL/);
   await assert.rejects(() => clone.run({}, ["ftp://x.test"], ctxWith()), /not http\(s\)/);
   await assert.rejects(() => clone.run({ depth: "deep" }, ["https://x.test"], ctxWith()), /--depth takes a whole number/);
+});
+
+/**
+ * SH586 — a replica whose links go home.
+ *
+ * `openviglet.github.io/model-catalog/models/azure/` writes three of its own links as absolute URLs
+ * on its own origin. A fidelity replica serves them verbatim, so clicking one leaves for the
+ * original. Measured across the whole replica: twenty-two pages, exactly three each,
+ * `internal links -3` beside `external links +3` on every one. The total is conserved, which is
+ * what made it invisible — and `shio verify` exits 0, because *no href carries the source's base*
+ * is check 2 of a checklist a person runs, not a rule the gate holds.
+ */
+
+test("SH586: a link on the source's own origin is cached as the path it already means", () => {
+  const html = rebaseOwnOrigin(
+    '<a href="https://openviglet.github.io/model-catalog/">catalog</a>'
+      + '<a href="//openviglet.github.io/models/azure/">azure</a>'
+      + '<a href="https://openviglet.github.io">home</a>',
+    "https://openviglet.github.io",
+  );
+
+  assert.match(html, /href="\/model-catalog\/"/);
+  assert.match(html, /href="\/models\/azure\/"/, "protocol-relative is the same claim");
+  assert.match(html, /href="\/"/, "a bare origin means the root — a naive strip leaves href=\"\"");
+});
+
+test("SH586: a genuinely off-site link is left exactly alone", () => {
+  // The distinction SH466 could not make and this one can: an absolute URL belongs to whoever it
+  // names, and the ONE case that is wrong for is the origin the capture itself crawled. A rule that
+  // rebased more than that would break every real outbound link on the replica.
+  const html = '<a href="https://partner.test/x">p</a><a href="//de.x.test/">de</a>'
+    + '<a href="mailto:hi@x.test">m</a>';
+
+  assert.equal(rebaseOwnOrigin(html, "https://x.test"), html);
+});
+
+test("SH586: the substitution is exact — a path, a query and a fragment all survive it", () => {
+  assert.equal(
+    rebaseOwnOrigin('<a href="https://x.test/a/b?p=2#top">x</a>', "https://x.test"),
+    '<a href="/a/b?p=2#top">x</a>',
+  );
+  // srcset is comma-and-space separated, so the terminator set has to include both or the
+  // descriptor would be swallowed into the path.
+  assert.equal(
+    rebaseOwnOrigin('<img srcset="https://x.test/a.png 1x, /b.png 2x">', "https://x.test"),
+    '<img srcset="/a.png 1x, /b.png 2x">',
+  );
+});
+
+test("SH586: no origin and a malformed one leave the markup untouched", () => {
+  // A capture from before this, replayed: `planMarkup` is called with no origin by every existing
+  // caller in a test, and a cache that came back empty would be worse than one that came back old.
+  const html = '<a href="https://x.test/a">a</a>';
+  assert.equal(rebaseOwnOrigin(html, null), html);
+  assert.equal(rebaseOwnOrigin(html, "not a url"), html);
+  assert.equal(rebaseOwnOrigin(null, "https://x.test"), null);
 });

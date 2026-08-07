@@ -216,7 +216,6 @@ priority = [
   # and `diff` reports it as two numbers that read as unrelated. SH585 follows it — the
   # projection has no filename for a trailing slash, which is why SH467 is honoured on create
   # only.
-  "SH586",
   #
   # Then, on instruction (2026-08-07), a different question: not what is broken, but what
   # would give the agent driving this back time. The answer came from auditing twelve rounds

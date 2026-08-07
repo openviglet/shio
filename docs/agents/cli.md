@@ -406,6 +406,34 @@ number printed has to be the number the gate will produce or it is worse than si
 prediction rather than a finding, and with both answers named (`--depth`, or
 `shio verify --accept`), because nothing is wrong yet and either is legitimate.
 
+**A replica whose links go home (SH586).** `openviglet.github.io/model-catalog/models/azure/` writes
+three of its own links as **absolute URLs on its own origin**. A fidelity replica serves the markup
+verbatim, so clicking *model catalog* on the copy leaves for the original. Across the whole replica:
+twenty-two pages, exactly three each, identical on every one — `internal links: 9 → 6 (-3)` beside
+`external links: 3 → 6 (+3)`. **The total is conserved, which is what made it invisible.** Nothing
+is missing, so no shortfall is damage; a gain is never a failure; `shio verify` exits **0**. It
+survived eleven review rounds, because *no href carries the source's base* is check 2 of a checklist
+a **person** runs and not a rule any gate holds. Two halves, and the second is why the first went
+unfound.
+**The rewrite is in the capture, not the render, and that is forced.** SH466 rebases a root-relative
+href at render and deliberately leaves an absolute one alone — right for a genuinely off-site link,
+wrong for the one case where the absolute URL *is* the source's own origin. The render cannot tell
+them apart: nothing on the instance records what the source was (`ShSite.url` is the replica's own
+front-end URL, which is what SH-delivery probing uses). The capture knows it exactly — it is the
+crawl's own `origin` — so `planMarkup` takes it and `rebaseOwnOrigin` writes the source's link the
+short way. **Not an edit that points the markup at the replica**: the markup still carries the
+source's own paths, which SH437's asset pass and `snapshot --against` both depend on. It is SH512's
+rule one shape along — record what the source meant, and let SH466 rebase it. Both spellings, since
+`https://host/x` and `//host/x` are one claim, and a bare origin becomes `/` rather than the empty
+href a naive strip leaves. A URL on the source's own origin *is* the source's own path by
+definition, so there is no heuristic here and nothing to tune.
+**And `diff` names the flip (`wentHome`).** Equal and opposite, deliberately narrow: that is the
+signature of a link that *moved*, where "lost 3, gained 1" is two true facts and calling it a flip
+would name a coincidence. Printed on the headline beside `byDesign` for the same reason — a reader
+who stops at `nothing lost` should not be told only the true half — and per page, with both rows
+still printed, because a fact removed from the report is a fact nobody can find. It also breaks the
+`as declared` shortcut, which is the line the whole defect used to appear as.
+
 **And one function was not enough (SH554).** "Both sides come out of `scanPage`" was true and
 insufficient: `scanPage`'s `links` is an array of raw hrefs, an inventory row's is
 `{internal, external}`, and the split between them lived inline in `buildInventory` — so it ran on

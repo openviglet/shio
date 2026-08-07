@@ -17,11 +17,39 @@ red for two rounds while nineteen commits landed over it, which made the sentenc
 false — a suite nobody is obliged to answer is a report, not a gate. See
 [docs/agents/build.md](../../../docs/agents/build.md).
 
-## Before anything: is the instance the code you are testing?
+## Read the manifest whole, once, before you decide anything is missing
 
 ```
-curl -s -u admin:viglet localhost:2710/api/v2/agent/manifest?include=identity
+curl -s -u admin:viglet localhost:2710/api/v2/agent/manifest
 ```
+
+**`?include=identity` is the narrow call and the rest of this file used to teach only
+that.** It projects six fields. The whole document carries **57 `features` flags**, **28
+`endpoints`** with a purpose and a worked example each, `limits`, and `startHere` — an
+onboarding sequence written for exactly the reader holding this file.
+
+The cost of the narrow habit, measured: twelve replication rounds ran without once calling
+`/agent/diagnostics` or reading `shio remember`, and both are `True` in `features`
+(`diagnostics`, `durableIncidents`, `instanceMemory`). A 500 was then diagnosed by locating
+`store/logs/shio.log` and grepping a stack trace while `/agent/diagnostics` held the same
+incident folded by cause, with `count`, `firstSeen`/`lastSeen`, a `fix`, and `frames`
+naming the throwing method. Four instance notes went unread for the same twelve rounds.
+
+So, two rules with the same root:
+
+- **Before proposing a capability, grep `features` for it.** Two "new features" proposed
+  out of this work were already shipped and flagged `True`. A feature list is cheaper to
+  read than a design is to write.
+- **When a run is red server-side, `/agent/diagnostics` comes before any log.** The log is
+  the fallback for what the endpoint does not have, not the first stop. A 500's response
+  body is gone by definition; that endpoint is where it went.
+
+And read `shio remember` at the start of a run and write to it at the end — the instance is
+where a fact survives a session, and a note nobody reads is one somebody re-derives.
+
+## Then: is the instance the code you are testing?
+
+`?include=identity` **is** the right call for this one question, and only this one:
 
 `commit` and `builtAt` (SH460) against `git rev-parse --short HEAD`. **A stale instance
 produces failures indistinguishable from defects** — it once cost a session and nearly two

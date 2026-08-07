@@ -75,6 +75,8 @@ export function comparePage(declared, produced, mode = "fidelity") {
   const short = rows.filter((row) => row.delta < 0);
   return {
     rows,
+    // SH586 — the shape two unrelated-looking numbers were hiding. See `linksThatWentHome`.
+    wentHome: linksThatWentHome(rows),
     // A fact the replica has less of than the source declared **and** the mode claims. `gained` is
     // counted apart and is never a failure: a replica legitimately gains the links a Shio layout
     // adds, and reporting that as damage would make the gate fire on every working conversion.
@@ -83,6 +85,32 @@ export function comparePage(declared, produced, mode = "fidelity") {
     byDesign: short.filter((row) => !row.claimed).length,
     gained: rows.filter((row) => row.delta > 0).length,
   };
+}
+
+/**
+ * Links that changed side rather than went missing (SH586).
+ *
+ * <h3>Why a derived fact and not two rows a reader joins</h3>
+ *
+ * <p>A source that writes some of its own links as absolute URLs on its own origin produces, on a
+ * fidelity replica that serves them verbatim, exactly this: `internal links -3` beside
+ * `external links +3`. **The total is conserved**, which is what makes it invisible — nothing is
+ * lost, so no shortfall is damage, and a gain is never a failure. Measured on a real replica it was
+ * twenty-two pages with the identical pair, `verify` exiting 0, and eleven review rounds that did
+ * not see it: the two numbers read as unrelated, and the rule that would have caught them — *no
+ * href carries the source's base* — is a line in a checklist a person runs.</p>
+ *
+ * <p>So the join is done here, once, and named in the vocabulary of what happened. It is deliberately
+ * narrow: **equal and opposite**, because that is the signature of a link that moved rather than of
+ * a page that lost three links and happens to have gained three others. A looser rule would fire on
+ * an authorable page whose chrome went one way and whose layout added links the other, which is two
+ * true facts and not this one.</p>
+ */
+function linksThatWentHome(rows) {
+  const internal = rows.find((row) => row.fact === "internal links");
+  const external = rows.find((row) => row.fact === "external links");
+  if (!internal || !external || internal.delta >= 0) return 0;
+  return external.delta === -internal.delta ? -internal.delta : 0;
 }
 
 /**
@@ -299,7 +327,7 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
       continue;
     }
     const pageMode = modes?.get(page.path) ?? mode;
-    const { rows, lost, byDesign, gained } = comparePage(page, now, pageMode);
+    const { rows, lost, byDesign, gained, wentHome } = comparePage(page, now, pageMode);
     counted[pageMode] += 1;
     const declaredText = page.textChars ?? 0;
     const producedText = now.textChars ?? 0;
@@ -314,6 +342,7 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
       lost: lost + (textLost ? 1 : 0),
       byDesign,
       gained,
+      wentHome,
     });
   }
   return {
@@ -326,6 +355,10 @@ export function compareCapture(declared, produced, { mode = "fidelity", modes } 
     head: headAssets(declared, produced),
     lost: pages.reduce((total, page) => total + page.lost, 0),
     byDesign: pages.reduce((total, page) => total + page.byDesign, 0),
+    // SH586 — across the replica, because one page's three is a curiosity and twenty-two pages'
+    // sixty-six is the defect. Summed rather than counted in pages for the same reason the per-page
+    // line prints the number: it is what a reader compares against the source's own link count.
+    wentHome: pages.reduce((total, page) => total + (page.wentHome ?? 0), 0),
   };
 }
 
@@ -390,7 +423,8 @@ function headAssets(declared, produced) {
  * nobody reads to the end (SH138's rule, applied to a comparison instead of to a cut).</p>
  */
 export function describeDiff(comparison, options = {}) {
-  const { pages, missing, unaddressable = [], lost, byDesign = 0, modes, theme, head } = comparison;
+  const { pages, missing, unaddressable = [], lost, byDesign = 0, modes, theme, head,
+    wentHome = 0 } = comparison;
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   const lines = [
     `shio diff: ${pages.length} page(s) compared with the capture that declared them`
@@ -401,10 +435,14 @@ export function describeDiff(comparison, options = {}) {
       // SH577 — said on the headline, because it is the number that used to be indistinguishable
       // from damage. A reader who sees only "nothing lost" on an authorable replica cannot tell a
       // conversion that kept everything from one whose chrome was dropped as designed.
-      + `${byDesign ? `, ${byDesign} the mode does not claim` : ""}`,
+      + `${byDesign ? `, ${byDesign} the mode does not claim` : ""}`
+      // SH586 — on the headline for the same reason `byDesign` is: it is the number that reads as
+      // nothing. `nothing lost` is true of a replica whose every page links back to the original,
+      // and a reader who stops at the headline should not be told only the true half.
+      + `${wentHome ? `, ${wentHome} link(s) now point at the source` : ""}`,
   ];
   for (const page of pages.slice(0, limit)) {
-    if (!page.lost && !page.byDesign && !page.gained) {
+    if (!page.lost && !page.byDesign && !page.gained && !page.wentHome) {
       lines.push(`  ${page.path}  as declared`);
       continue;
     }
@@ -424,6 +462,15 @@ export function describeDiff(comparison, options = {}) {
     }
     if (page.text.lost) {
       lines.push(`    text: ${page.text.declared} → ${page.text.produced} characters`);
+    }
+    // SH586 — the join, in the words of what happened. The two rows above are still printed, because
+    // a fact removed from the report is a fact nobody can find; this says what they mean together.
+    if (page.wentHome) {
+      lines.push(
+        `    ${page.wentHome} link(s) now point at the SOURCE — internal became external and the `
+          + "total is conserved, so nothing reads as lost. The source writes them as absolute URLs "
+          + "on its own origin and this page serves them verbatim: clicking one leaves the replica",
+      );
     }
   }
   if (pages.length > limit) {

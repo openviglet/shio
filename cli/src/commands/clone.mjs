@@ -208,7 +208,10 @@ export async function run(flags, positionals, ctx) {
   try {
     const walk = await crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup, progress }, ctx);
     notes.push(...walk.notes);
-    const markup = keepMarkup ? planMarkup(walk.visited) : null;
+    // SH586 — the crawl's own origin, so a source's absolute link to itself is cached as the path
+    // it already means. Without it a fidelity replica serves those hrefs verbatim and every page
+    // links back to the site it copied.
+    const markup = keepMarkup ? planMarkup(walk.visited, origin.origin) : null;
     if (markup) await writeMarkup(markup, ctx);
     let inventory = buildInventory({
       origin: origin.origin,

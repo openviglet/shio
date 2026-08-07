@@ -915,6 +915,63 @@ function digest8(text) {
 }
 
 /**
+ * A URL on the capture's <b>own origin</b>, written as the path it already means (SH586).
+ *
+ * <h3>The defect: a replica whose links go home</h3>
+ *
+ * <p>`openviglet.github.io/model-catalog/models/azure/` writes three of its own links as absolute
+ * URLs on its own origin. A fidelity replica serves the markup verbatim, so clicking *model
+ * catalog* on the copy <b>leaves for the original</b>. Measured across the whole replica: twenty-two
+ * pages, exactly three each, identical on every one — `internal links: 9 → 6 (-3)` beside
+ * `external links: 3 → 6 (+3)`. The total is conserved, which is what made it invisible: nothing is
+ * missing, three links per page changed side. `shio verify` exits 0 on that replica, because *no
+ * href carries the source's base* is check 2 of a checklist a person runs and not a rule the gate
+ * holds — which is how it survived eleven rounds.</p>
+ *
+ * <h3>Why here and not at render</h3>
+ *
+ * <p>SH466 rebases a root-relative href at render and deliberately leaves an absolute one alone,
+ * which is right for a genuinely off-site link. The one case it is wrong for is the absolute URL
+ * that <b>is</b> the source's own origin — and the render cannot tell, because nothing on the
+ * instance records what the source was. The capture knows it exactly: it is the crawl's own
+ * `origin`. So this is not an edit that points the markup at the replica — the markup still carries
+ * the source's own paths, as it must for SH437's asset pass and `snapshot --against` to work. It
+ * writes the source's link the short way, which is what SH512 already established for a
+ * document-relative reference: record what the source meant, and let SH466 rebase it.</p>
+ *
+ * <h3>Both spellings, and no heuristic</h3>
+ *
+ * <p>The scheme-ful `https://host/x` and the protocol-relative `//host/x` are the same claim. A URL
+ * on the source's own origin *is* the source's own path by definition, so this needs no judgement
+ * about which links are navigation — it is a substitution, applied wherever the origin appears as
+ * an attribute value. A bare origin with no path (`href="https://host"`) means the root and becomes
+ * `/`, which is the one case a naive strip would turn into an empty href.</p>
+ */
+export function rebaseOwnOrigin(html, originUrl) {
+  if (typeof html !== "string" || !html || !originUrl) return html;
+  let origin;
+  try {
+    origin = new URL(originUrl).origin;
+  } catch {
+    return html;
+  }
+  // `https://host` and `//host` — the second is what a source writes to inherit the page's scheme.
+  const forms = [origin, origin.slice(origin.indexOf("//"))];
+  let out = html;
+  for (const form of forms) {
+    const pattern = new RegExp(
+      `(["'(])${escapeRegExp(form)}(/[^"'()\\s,]*)?(?=["'()\\s,]|$)`, "g");
+    out = out.replace(pattern, (_whole, open, path) => `${open}${path || "/"}`);
+  }
+  return out;
+}
+
+/** The metacharacters a URL can carry — a host has dots and a path has `?` and `+`. */
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Which captured pages get a markup file, and which two would land on one (SH379).
  *
  * <p>The collision is *reported*, never resolved by renaming: 32 bits over a bounded crawl makes it
@@ -922,14 +979,14 @@ function digest8(text) {
  * from a page's markup under another page's path — is exactly the class of defect this block exists
  * to avoid. Sorted by file so the writes happen in the same order every run.
  */
-export function planMarkup(visited = []) {
+export function planMarkup(visited = [], originUrl = null) {
   const files = [];
   const byFile = new Map();
   for (const entry of visited) {
     if (typeof entry?.html !== "string" || !entry.doc) continue;
     const path = pathOf(entry.url);
     const file = markupFileFor(path);
-    const item = { url: entry.url, path, file, html: entry.html };
+    const item = { url: entry.url, path, file, html: rebaseOwnOrigin(entry.html, originUrl) };
     const existing = byFile.get(file);
     if (existing) existing.push(item);
     else byFile.set(file, [item]);
