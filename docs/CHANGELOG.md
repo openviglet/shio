@@ -197,6 +197,7 @@
 - **SH526** — audit reads the page's landmarks and headings from the browser and reports no-landmark and no-heading, printing the shape whether or not it found one; snapshot --against compares the same shape beside its pixel percentage, one-directionally, so a lost region is named whatever the number says.
 - **SH527** — A defect closes with an assertion carrying its id, and cli/test/assertion-debt.test.mjs computes whether it did: the ledger's shipped ids against the ids every suite names, the difference held as a named list rather than a ceiling. It reads 275 files and one ledger in under a second, and it is excluded from its own walk because its declaration is not an assertion.
 - **SH543** — A crawl now reports where it is to two files beside the inventory — a constant-size status with a heartbeat, ceilings and pid, and a per-unit jsonl keeping the cost the inventory drops — so a long run is followed from another turn instead of being diagnosed by sampling the browser's CPU.
+- **SH548** — the gate order names diff wherever a capture exists, the conformance run against a live replica invokes it, and a lint holds the prose and the runnable order in step
 
 ### Block I follow-up
 

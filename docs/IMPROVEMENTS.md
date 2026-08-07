@@ -571,27 +571,6 @@ It is also the honest end of my part in this. I have been the verification for f
 rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
 me looking.
 
-### IX.40 An instrument outside the order that runs it (SH548)
-
-Last round's finding was that four instruments passed a page that had lost most of its
-content, because each measures what is there and none holds an expectation. SH522's
-`diff` holds one, and on its first real run it worked: twelve pages compared against the
-capture that declared them, 35 facts lost, internal links 16 → 0 on eleven of them, text
-7073 → 1819 on the home page. Exit 1.
-
-On the same site, `verify` exited 0 having warned `page-unstyled` on ten pages, and
-`audit` exited 0 having warned `no-landmark`. Both warnings are true and neither is the
-finding. The gate order in `cli.md` runs `verify --checks projection,replication`, then
-three `--check` drift guards, then `verify`. `diff` is in none of them, so the only red
-signal on a gutted replica is one a person has to remember to ask for.
-
-Two things follow and they are separable. The narrow one is that the order should name
-`diff` wherever a capture exists, which is the condition it already tests for. The wider
-one is what the two exit codes mean: a site whose every page draws with classes no
-stylesheet defines is not a warning-shaped fact, and the argument for keeping it one is
-that SH521 could not tell a missing theme from a deliberate one. `diff` can — it knows
-what the source had — so the two reads together decide what one could not.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

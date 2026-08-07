@@ -52,6 +52,7 @@ import { SECTIONS_FOLDER } from "../src/convert.mjs";
 import * as clone from "../src/commands/clone.mjs";
 import * as contentPull from "../src/commands/content-pull.mjs";
 import * as convert from "../src/commands/convert.mjs";
+import * as diff from "../src/commands/diff.mjs";
 import * as init from "../src/commands/init.mjs";
 import * as propose from "../src/commands/propose.mjs";
 import * as verify from "../src/commands/verify.mjs";
@@ -299,6 +300,30 @@ describe("SH448 conformance: replication, from a served source to an installable
       `SH438: every page the capture recorded exists in the replica. This is the gate's own `
         + `statement that the replication is done, and it is only true once the content has been `
         + `through the instance and back. Still missing: ${missing.join(" | ")}`,
+    );
+
+    // ── and the gate the order used to leave out ──────────────────────────────────────────
+    // SH548. `verify --checks projection,replication` above measures what is *there*; `diff` is the
+    // only instrument in the chain that holds an **expectation** — the capture's own counts — and on
+    // its first real run it was the only one that caught a replica whose navigation was gone: 35
+    // facts lost, internal links 16 → 0 on eleven pages, exit 1, while `verify` and `audit` both
+    // exited 0 on the same site with true warnings that were not the finding. It was in no gate, so
+    // the one red signal on a gutted replica was one a person had to remember to ask for. Running it
+    // here is what makes the documented order in `cli.md` a thing this suite proves rather than
+    // states, and `gate-order.test.mjs` asserts both halves stay in step.
+    const comparison = await diff.run({ site, json: true }, [], ctx);
+    assert.equal(
+      comparison.lost,
+      0,
+      `SH548: every fact the capture declared is still on the pages the replica serves. This is the `
+        + `only check here that can fail on a page that renders, returns 200 and has lost most of `
+        + `itself: ${JSON.stringify(comparison.pages?.filter((page) => page.lost) ?? [])}`,
+    );
+    assert.deepEqual(
+      comparison.missing ?? [],
+      [],
+      "and no captured page is unserved — the same claim `source-page-missing` makes from the tree, "
+        + "made against the route a reader actually gets",
     );
 
     // ── and the front end that serves it cannot be the built-in one ───────────────────────
