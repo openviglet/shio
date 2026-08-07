@@ -22,6 +22,7 @@ import jakarta.annotation.PostConstruct;
 
 import org.springframework.stereotype.Component;
 
+import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Options;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.ShAddressResolver;
@@ -38,6 +39,8 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.render.ShTemplateEngine.ShHelperShape;
 import com.viglet.shio.utils.ShStableMap;
 
@@ -1351,7 +1354,9 @@ public class ShRenderHelpers {
 
     /** A row is the post's fields plus the four things a listing always writes. */
     private Map<String, Object> row(ShPostUnified post) {
+        String type = typeNameOf(post);
         Map<String, Object> row = new LinkedHashMap<>(shRenderModel.fieldsOf(post));
+        rawTextFields(row, type);
         row.put("id", post.getId());
         row.put("title", post.getTitle());
         row.put("summary", post.getSummary());
@@ -1361,7 +1366,7 @@ public class ShRenderHelpers {
         // has to be the markup the front end serves, or the preview is proving the wrong
         // page. The preview route rewrites nothing.
         row.put("link", post.getFurl());
-        row.put("type", typeNameOf(post));
+        row.put("type", type);
         // SH383 — on **every** row, not only a translation's. It is a property of every post, it is
         // already loaded, and a multilingual site wants it on a listing too: a card that renders
         // `lang` on a quoted excerpt is the ordinary case, and so is a `{{#query}}` that has to skip
@@ -1371,6 +1376,64 @@ public class ShRenderHelpers {
         row.put("locale", ShRenderModel.locale(post));
         return ShStableMap.copyOf(row);
     }
+
+    /**
+     * SH555 — a row's {@code CSS} and {@code JAVASCRIPT} are raw, for SH461's reason and at
+     * SH461's seam.
+     *
+     * <h3>The same defect, on the emission SH461 did not reach</h3>
+     *
+     * <p>SH461 marked {@code theme.css} and {@code theme.javascript} {@link Handlebars.SafeString}
+     * and said why the cure belongs on the value rather than on the stash: "or every hand-written
+     * layout in the product keeps the defect and only the generated one is cured." SH549 then gave
+     * a converted site a <em>second</em> emission of the same stylesheet — a per-page
+     * {@code {{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}}, so that the
+     * verbatim pages of a mixed conversion get the source's CSS and the authorable ones do not.
+     * That one reads a plain field off this row, and this row escaped it.</p>
+     *
+     * <p>Measured on a mixed conversion: the stored {@code Theme} post holds 1,061,481 characters
+     * and zero entities, the page it produces carries 378 — every {@code @font-face}, every quoted
+     * {@code content:} and every quoted {@code url()} — and {@code verify} reports ten
+     * {@code page-reference-broken} errors naming paths that begin with a literal {@code &quot;}.
+     * The fidelity path is the contrast that locates it: it emits the very same theme through
+     * {@code theme.css} and serves sixty clean {@code url()} with no entity at all. So the defect
+     * was never in the capture, the store or the escaping rule — one of the two emissions was
+     * written as a field read.</p>
+     *
+     * <h3>Why by field and post-type rather than for every field</h3>
+     *
+     * <p>These are the fields the product declares as {@code Ace Editor - CSS/JavaScript}
+     * ({@link ShRenderPostTypes}), and a template can only put them where they belong: inside
+     * {@code <style>} or {@code <script>}, which are <b>raw-text elements</b>. Entity escaping is
+     * not the encoding for that context, so escaping them removes correctness and defends nothing
+     * — the {@code Theme} is written by whoever writes the {@code PageLayout} that emits it, which
+     * is the privilege boundary SH461 already found is not there. Every <em>other</em> field on
+     * every other type keeps escaping, because an {@code Article}'s body in a listing card is
+     * exactly the case where it is the right encoding.</p>
+     */
+    private static void rawTextFields(Map<String, Object> row, String type) {
+        if (!RAW_TEXT_FIELDS.containsKey(type)) {
+            return;
+        }
+        for (String field : RAW_TEXT_FIELDS.get(type)) {
+            if (row.get(field) instanceof String value) {
+                row.put(field, new Handlebars.SafeString(value));
+            }
+        }
+    }
+
+    /**
+     * The (post-type, field) pairs a template can only emit into a raw-text element (SH555).
+     *
+     * <p>Spelled as a pair rather than as a field name alone: an author is free to add a field
+     * called {@code CSS} to an {@code Article}, and that one is a string in a document body with no
+     * declared context — the case escaping exists for.</p>
+     */
+    private static final Map<String, Set<String>> RAW_TEXT_FIELDS = Map.of(
+            ShSystemPostType.THEME,
+            Set.of(ShSystemPostTypeAttr.CSS, ShSystemPostTypeAttr.JAVASCRIPT),
+            ShSystemPostType.REGION, Set.of(ShSystemPostTypeAttr.JAVASCRIPT),
+            ShSystemPostType.PAGE_LAYOUT, Set.of(ShSystemPostTypeAttr.JAVASCRIPT));
 
     // --- option reading ---------------------------------------------------------
 

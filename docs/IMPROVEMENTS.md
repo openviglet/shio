@@ -547,6 +547,82 @@ It is also the honest end of my part in this. I have been the verification for f
 rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
 me looking.
 
+### IX.39 A source trait is a property of a site, not of a page (SH560)
+
+SH528 grows the one fixture, and that is right for every trait it lists but one. A page
+under a locale prefix with no home at `/` is not a few more lines: a server that answers
+`/` cannot also be a source that has none there. The same holds for three traits the
+runs found and no task has filed — a source client-rendered end to end, a source whose
+pages differ only by a query string (SH557: 91 of 107), and one whose whole style is a
+megabyte of external CSS (SH555, SH556).
+
+So the fixture becomes a corpus: `fixtures/source-sites/<archetype>/`, each archetype a
+directory of bytes plus an `expectations.json` naming the pages, the assets, the mode and
+**the ids it exists to catch**. One parametrised suite iterates it; seven copies of the
+chain drift within a week.
+
+The root rather than `cli/`, because three consumers read it: the fast tier in
+`cli/test/` with an injected fetch, the live tier in `cli/conformance/` over a real
+socket, and `shio-app`, which needs a conversion's output to prove a render.
+`ShConvertedLayoutRenderTest` already reads `../cli/src/convert.mjs`, so a
+cross-language fixture is a path this repository has. `shio-examples/` is the wrong
+home: those build as published artefacts, and a fixture has to be free to change.
+
+None of this replaces the run against a real site. That is how a trait is found. The
+corpus is how one is kept, and the archetype needing a browser refuses with the install
+command rather than skipping.
+
+### IX.42 The suite that has an instance is the one that does not speak the transport (SH561)
+
+`replication.conformance.mjs` was written to remove substitutions, and it removed three:
+the served source, the running instance, the registry. It kept a fourth nobody named. Of
+its four scenarios, one spawns `src/index.mjs` as a process — SH456, and the comment
+says why: an exit code is something a module call structurally cannot see. The other
+three `import * as convert from "../src/commands/convert.mjs"`.
+
+Claude Code uses neither. It speaks `shio mcp` over stdio JSON-RPC, and the layer import
+removes is the whole of it: the tool's declared input schema, the name an agent must
+guess right, the JSON-RPC framing, the `tools/list` payload P3 holds a budget on, and
+the shape of a refusal an agent has to read to recover. A tool renamed, a required
+property added, a response grown past its budget — all four pass a run that imports the
+module the tool wraps.
+
+So the corpus run gets a second driver over the same archetypes: the same chain, issued
+as `tools/call` against a spawned `shio mcp`, asserting the result an agent receives
+rather than the value the function returned. The module driver stays — it is faster and
+it localises a failure, which is what it is for. What it cannot be is evidence about the
+surface the product is named for.
+
+P1 orders MCP first and the manifest claims thirteen tools. `ShAgentP1ConformanceTest`
+asks whether the HTTP surface can reach a feature. Nothing yet asks whether the
+transport can.
+
+### IX.43 A render defect in Java is found by a hand pass on a real site (SH562)
+
+The eighth run found two defects in the same place, and the place is Java. SH555 is one
+brace: a captured theme read inside a `getRelation` block is escaped, so a megabyte of
+CSS reaches the browser with 378 entities and `verify` reports ten broken references.
+SH556 is two vocabularies: the generated theme styles thirteen role classes and the
+section templates draw sixteen, so every authorable page is unstyled including the one
+whose section renders.
+
+Neither is reachable from `cli/`. Both are `ShPageRenderService` composing a layout over
+content an instance already holds, which is exactly what `ShPageRenderTest` covers — and
+it is green, because it builds its fixture with an `EntityManager` and writes the layout
+the test author had in mind. A conversion writes a different one: a generated layout, a
+captured theme, a page whose body is a list of section posts. That shape exists nowhere
+on the classpath.
+
+So `shio-app` reads the corpus too. One archetype's converted output — post-types,
+layout, theme, sections, assets — checked in as the desired-state document `apply`
+takes, applied in a Spring test, rendered, and asserted on the served bytes: no entity
+in a `url()`, every class the templates draw defined by the theme, every reference
+resolving.
+
+The precedent is in the same package. `ShConvertedLayoutRenderTest` already reaches
+across the language boundary to read `../cli/src/convert.mjs`, for this reason: the two
+sides of this seam drift, and the cheap place to notice is `clean test`.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

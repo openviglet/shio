@@ -116,6 +116,18 @@ class ShConvertedLayoutRenderTest {
     private static final String VERBATIM_URL = "/verbatim";
     /** The sentinel the captured theme's CSS carries, so its presence on a page is unambiguous. */
     private static final String CAPTURED_RULE = ".sh549-captured-marker{color:#123456}";
+    /**
+     * SH555 — a rule with the one character a real stylesheet is full of and SH549's sentinel had
+     * none of.
+     *
+     * <p>{@code .sh549-captured-marker{color:#123456}} carries no {@code "}, {@code &}, {@code <} or
+     * {@code >}, so it survived HTML escaping unchanged and the assertion above passed on a page
+     * whose every {@code url()} had been destroyed. That is the whole shape of the miss: the failure
+     * was invisible in proportion to how ordinary the CSS was, and the fixture was the least
+     * ordinary CSS there is. An {@code @font-face} is what a captured theme actually contains.</p>
+     */
+    private static final String CAPTURED_FONT =
+            "@font-face{font-family:\"Inter\";src:url(\"/assets/inter.woff2\") format(\"woff2\")}";
 
     /**
      * Every section type the shipped blueprints declare — the vocabulary, read rather than listed.
@@ -274,7 +286,8 @@ class ShConvertedLayoutRenderTest {
             // head, and not from `{{theme.css}}`.
             post(site, theme, postType(ShSystemPostType.THEME, (byte) 1, when),
                     siteName + " (captured)", "/theme/captured",
-                    json("TITLE", siteName + " (captured)", "CSS", CAPTURED_RULE), when);
+                    json("TITLE", siteName + " (captured)", "CSS", CAPTURED_RULE + CAPTURED_FONT),
+                    when);
             post(site, root, pageType, "Verbatim", VERBATIM_URL,
                     "{\"title\":\"Verbatim\",\"content\":\"<section class=\\\"features\\\">"
                             + "<p>Kept</p></section>\"}",
@@ -887,6 +900,45 @@ class ShConvertedLayoutRenderTest {
                 .as("and it is what a page carrying the source's class names needs, since the layout "
                         + "names the vocabulary theme for the pages that compose sections")
                 .contains("class=\"features\"");
+    }
+
+    /**
+     * SH555 — the captured stylesheet reaches the browser as CSS, not as escaped text.
+     *
+     * <h2>One brace between a stylesheet and a browser</h2>
+     *
+     * <p>SH549's per-page emission reads a plain field inside a relation block, so Handlebars
+     * escaped it. The stored {@code Theme} was clean — 1,061,481 characters, zero entities — and the
+     * page it produced carried 378, including
+     * {@code src:url(&quot;/assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2&quot;)}. Not
+     * cosmetic: {@code verify} reported ten {@code page-reference-broken} errors on the one verbatim
+     * page of an otherwise clean site, each naming a path beginning with a literal {@code &quot;},
+     * and the gate exited 1. Every {@code @font-face}, every quoted {@code content:} and every
+     * quoted {@code url()} in a captured stylesheet was affected, so a mixed conversion's verbatim
+     * pages lost their webfonts and their background images while rendering 200 with a megabyte of
+     * CSS attached.</p>
+     *
+     * <p>The fidelity path was the contrast that located it: it emits the same theme through the
+     * layout's own {@code theme.css}, which SH461 already made a {@code SafeString}, and served
+     * sixty clean {@code url()} with no entity at all. So the defect was in neither the capture, the
+     * store nor the escaping rule — one of the two emissions was written as a field read, and
+     * {@code ShRenderHelpers.rawTextFields} is that emission getting SH461's answer.</p>
+     */
+    @Test
+    @DisplayName("SH555: the captured stylesheet reaches the page unescaped, url() quotes intact")
+    void aCapturedStylesheetIsNotEntityEscapedOnTheWayToThePage() {
+        String html = shPageRenderService.render(siteName, VERBATIM_URL, ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("`<style>` is a raw-text element: entity escaping is not the encoding for that "
+                        + "context, so what it removed was correctness. A path beginning `&quot;` is "
+                        + "the ten `page-reference-broken` errors that failed the gate")
+                .contains(CAPTURED_FONT)
+                .doesNotContain("&quot;/assets/inter.woff2&quot;");
+        assertThat(html)
+                .as("and the whole of the theme survived, not just the half without quotes — "
+                        + "SH549's sentinel passed on a page whose every url() had been destroyed")
+                .contains(CAPTURED_RULE);
     }
 
     @Test
