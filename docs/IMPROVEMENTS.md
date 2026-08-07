@@ -295,30 +295,6 @@ which is SH523's plan — inferring a type is only useful if applying it is revi
 The honest limit belongs in the report: three instances of a thing are evidence about
 those three. A proposal, not a conclusion — which is what `propose` already gets right.
 
-### VIII.29 A refusal that teaches the other endpoint's grammar (SH547)
-
-`POST /api/v2/agent/apply` takes a desired-state document. Sent an ops batch, it answers
-400 `empty-batch` — *The batch has no operations* — with `allowed` listing the eleven op
-names and `example` showing an `ops` array. Every teaching field in that document
-describes `/agent/batch`. Following it exactly reproduces the same 400.
-
-The mechanism is ordinary reuse: `apply` converts the document to ops and hands them to
-`ShAgentBatchService`, which raises the batch's own error when the list comes back
-empty. That is correct for `batch` and wrong here, and the error has no way to know
-which door it came through.
-
-P6 is not that a 4xx carries fields; it is that following them works. A problem document
-that names the wrong grammar is worse than a bare status, because a bare status sends
-the reader to the docs and this one sends them in a circle. The cost was small and
-exactly the cost P6 exists to remove: one wrong endpoint, then one wrong argument shape,
-before anything was learned.
-
-The fix is that `apply` answers for `apply` — a document with no `folders` and no
-`posts` is an empty *document*, and the fields that teach it should name those keys and
-show that shape. The shared choke point is right; what is missing is that the error
-knows its caller. The assertion is one request per endpoint asserting the two refusals
-differ, which is cheap and would have caught this before it was written.
-
 ### VIII.30 The sitemap still has the word SH545 replaced (SH553)
 
 `folderPosts` fetches both state rows, drops the published one and reports `state` from

@@ -15,7 +15,6 @@
 - 📋 **SH523** (deps: —) **A model change has no proposal, so its cost is discovered after it is made** — Content gets a reviewable plan and the model gets none, so which posts violate a field, which templates read a vanishing one and which keys no type declares are all unaskable. → §VIII.23
 - 📋 **SH524** (deps: SH523) **Nothing reports a declared field that no template renders** — The lint catches a template reading a field that does not exist and not the inverse, which produced four collection types drawn as a heading and a CTA nobody could repoint. → §VIII.24
 - 📋 **SH525** (deps: SH523) **Type inference from instances exists only for a stranger's markup** — propose derives a post-type with typed fields from captured pages, and the same question about my own content has no verb, so a model is written blind and rewritten after. → §VIII.25
-- 📋 **SH547** (deps: —) **The apply endpoint refuses an ops document by teaching the ops grammar it does not accept** — A batch sent to /agent/apply answers empty-batch with post.upsert in allowed and an ops array in example, which is the shape /agent/batch takes and this endpoint does not. → §VIII.29
 - 📋 **SH553** (deps: SH545 ✅) **The context pack's sitemap says DRAFT for every page, including the live ones** — SH545 gave read and find a published field and left Node.state as the third surface with one word for two questions, because a field there moves the SH116 digest and the pack's own budget. → §VIII.30
 
 ## Block K — Perception & verification loop

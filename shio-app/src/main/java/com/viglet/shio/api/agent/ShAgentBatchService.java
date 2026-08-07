@@ -498,7 +498,13 @@ public class ShAgentBatchService {
     private List<ShAgentBatch.Op> validate(ShAgentBatch batch, Source source) {
         List<ShAgentBatch.Op> ops = batch == null || batch.ops() == null ? List.of() : batch.ops();
         if (ops.isEmpty()) {
-            throw new EmptyBatchException();
+            // SH547 — the same shape SH138 gave the size ceiling, applied to the empty case: the
+            // error has to know which door it came through. `/agent/apply` compiles a document into
+            // ops and hands them here, so an empty document raised the *batch's* refusal — `allowed`
+            // listing eleven op names and `example` showing an `ops` array, every field of it
+            // describing the endpoint the caller was not using. Following it exactly reproduces the
+            // same 400. P6 is not that a 4xx carries fields; it is that following them works.
+            throw source == Source.DOCUMENT ? new EmptyDocumentException() : new EmptyBatchException();
         }
         // SH138 — a compiled document is bounded by its own, larger ceiling, and refused with
         // advice it can act on. Held to the hand-written batch's cap it failed with "split the
@@ -2037,6 +2043,35 @@ public class ShAgentBatchService {
                     .withAllowed(OPS)
                     .withFix("Send at least one op, or use GET /api/v2/agent/context to read instead.")
                     .withExample("{\"ops\":[{\"op\":\"folder.upsert\",\"address\":\"folder:Blog/blog\"}]}"));
+        }
+    }
+
+    /**
+     * A 400 for a desired-state document that declares nothing to converge to (SH547).
+     *
+     * <p>Every teaching field names the <b>document's</b> keys, because that is the grammar this
+     * caller is using. The {@code fix} also names {@code /agent/batch}, which is the one thing the
+     * old message got right by accident and the reason this refusal is not merely a reworded
+     * {@code empty-batch}: an empty document is either a caller who declared nothing or a caller who
+     * sent an ops batch to the wrong endpoint — {@code ops} is not a key here, so Jackson drops it
+     * and what arrives is a document with no folders and no posts. Both readers are answered in one
+     * round trip, which is the cost P6 exists to remove and the cost this one charged twice.</p>
+     */
+    public static class EmptyDocumentException extends ShTeachingException {
+
+        public EmptyDocumentException() {
+            super(ShProblem.badRequest("empty-document",
+                            "The document declares no folders and no posts")
+                    .withDetail("POST /api/v2/agent/apply takes a desired-state document: `site` "
+                            + "plus the `folders` and `posts` that should exist. Neither list holds "
+                            + "anything, so there is nothing to converge to.")
+                    .withAllowed(List.of("site", "folders", "posts", "moves", "prune", "confirm",
+                            "createSite", "postTypeLayout"))
+                    .withFix("Declare at least one folder or post. If you meant to send an `ops` "
+                            + "array, that is a different endpoint: POST /api/v2/agent/batch.")
+                    .withExample("{\"site\":\"Blog\",\"folders\":[{\"path\":\"/blog\"}],"
+                            + "\"posts\":[{\"url\":\"/blog/hello\",\"type\":\"Article\","
+                            + "\"folder\":\"/blog\",\"data\":{\"title\":\"Hello\"}}]}"));
         }
     }
 

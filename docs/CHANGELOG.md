@@ -72,6 +72,7 @@
 - **SH544** — an audit description is bounded where it is built, and a database refusal reaches the wire as a teaching 400/409 naming the op instead of a 500
 - **SH545** — an agent read reports whether a page is live in a published field, conditional and measured, so state can keep meaning which row was returned
 - **SH546** — shio publish makes drafts live from the CLI, --all names every post from a find, and the batch ceiling comes from the refusal rather than a constant
+- **SH547** — an empty desired-state document is refused as empty-document, teaching the document's own keys and naming the endpoint an ops array belongs to
 
 ## Block K — Perception & verification loop (SH74)
 

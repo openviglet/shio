@@ -334,6 +334,18 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   (`document-too-large`) naming the deletion count and pointing at narrowing `folders`;
   do not "fix" that by re-adding the old `batch-too-large` advice, which tells the caller
   to split ops they never wrote.
+  **And the *empty* case needed the same treatment, which it did not get until SH547** — an ops batch
+  sent to `/agent/apply` answered `empty-batch` with `allowed` listing the eleven op names and
+  `example` showing an `ops` array: every teaching field describing the other endpoint, and following
+  it exactly reproduced the same 400. `Source` was already threaded into `validate` for the ceiling,
+  so the fix is one branch: `empty-document`, whose `allowed` is the document's own keys and whose
+  `example` is a document. Its `fix` also names `/agent/batch`, because `ops` is not a key here — so
+  Jackson drops it and a misdirected batch arrives as a site with no folders and no posts, which means
+  one refusal has to answer both readers in one round trip. **`ShAgentEmptyRefusalTest`'s third test is
+  the one to keep**: it takes the `example` out of each refusal, posts it back, and requires a
+  *different* problem — because P6 is not that a 4xx carries fields, it is that following them works,
+  and a document naming the wrong grammar is worse than a bare status. A bare status sends the reader
+  to the docs; this one sent them in a circle.
 - `GET /agent/blueprints` · `GET /agent/blueprints/{name}` · `POST /agent/blueprints/{name}/apply`
   — **appliable starting points** (Block J, below). `dryRun` in the body returns the whole
   plan, post-types included, and writes nothing. Two opt-ins, both refused by default because
