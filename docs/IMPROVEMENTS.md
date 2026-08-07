@@ -1599,28 +1599,6 @@ intentional in the content rather than in a suppression file, at the cost of one
 field on a system post-type. The second is probably right for the same reason SH385 put
 a redirect's source on the post rather than in a side table.
 
-### XV.33 A binding the lint does not know how to read (SH558)
-
-`unused-theme` asks which `Theme` posts no layout names, and it answers by reading the
-`THEME` field. Since SH549 a generated layout names one theme and reaches the other
-through `{{#getRelation "/theme/captured"}}`, so the captured theme has no binding and
-is reported unused — on a site where it is rendering, measurably, at a megabyte a page.
-
-The lint is not wrong about what it read. It is wrong about what a reference is, in the
-same way SH516 was: it reads the tree and the page is what decides. `getRelation` is a
-first-class helper with a literal address argument, so the reference is present in the
-template source and static — this is not a case that needs the page rendered to see.
-
-Two costs, and the second is the one that matters. The immediate one is a warning that
-cannot be cleared, on the file every conversion writes, which is how a warning list
-stops being read. The wider one is that the reverse question — *is this theme reachable*
-— now has a wrong answer, so a future cleanup that trusts it would delete a theme that
-eleven pages are using.
-
-The repair is that the rule reads the same reference set the renderer resolves. The
-assertion is a layout that names one theme and relates another, asserted to leave
-neither unused.
-
 ### XV.34 The label that stopped describing what it labels (SH559)
 
 The preview banner ends with `layout <site> (fidelity)`. On a site converted with
@@ -1642,6 +1620,30 @@ is evidence, and it points somewhere.
 Either the title stops claiming a mode, or the banner reports the mode from what the
 page actually holds, which it can see. The second is more useful and barely more work:
 it already reads the post to draw the banner.
+
+### XV.35 The reference the graph can now see, and still cannot check (SH572)
+
+SH558 taught `ShTemplateGraph` to read the literal address in a `getRelation` block,
+which closed `unused-theme`. It also made the *opposite* gap legible for the first time,
+because the graph now resolves these references and can see when one resolves to
+nothing.
+
+SH297 already reports a layout whose `THEME` field names a theme the site has not got —
+an error, both ways, because a page rendered through it is missing its stylesheet. A
+relation literal has exactly the same consequence and no rule at all: `getRelation`
+renders its else branch when nothing resolves, and the block deliberately does not mark
+the absence (SH247, and it is right — a dangling *field* reference is SH154, with an
+address and a fix).
+
+The asymmetry is the defect. A field reference is checked and a template-literal
+reference is not, so `/theme/capturd` — one character — produces a page that renders
+200, carries no captured CSS, and reports clean. SH549 is how close this sits: that
+layout spells its address as a constant precisely because a literal argument had never
+been proved to resolve at all, and `ShConvertedLayoutRenderTest` exists to prove that
+one instance. Every other layout in the product gets nothing.
+
+The rule reads the same literals SH558 extracts and reports the ones that resolve to no
+post in the site, at whatever severity SH297 uses for its field twin.
 
 ## XVI. The human half (Block O) — what reading the console next found
 

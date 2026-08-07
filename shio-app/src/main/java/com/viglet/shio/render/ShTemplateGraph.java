@@ -19,6 +19,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,10 +153,114 @@ public class ShTemplateGraph {
             if (themeTitle != null && !themeTitle.isBlank()) {
                 layoutsByTheme.computeIfAbsent(themeTitle, key -> new TreeSet<>()).add(layoutTitle);
             }
+            // SH558 — and the second way a layout reaches a theme, which the field does not record.
+            // Every template the page assembles from, not just the layout: a region that relates a
+            // theme puts it on the page exactly as a layout does.
+            for (ShNamedTemplate template : templates.get().all()) {
+                for (String related : relatedThemeTitles(site, template.html())) {
+                    layoutsByTheme.computeIfAbsent(related, key -> new TreeSet<>()).add(layoutTitle);
+                }
+            }
         }
         return new ShSiteTemplateGraph(site.getName(), site.getId(), typesByLayout,
                 layoutsByRegion, layoutsByTheme, resolvedLayouts);
     }
+
+    /**
+     * The themes a template reaches by <b>relation</b> rather than by the {@code THEME} field
+     * (SH558).
+     *
+     * <h3>A binding the lint did not know how to read</h3>
+     *
+     * <p>{@code unused-theme} asks which {@code Theme} posts no layout names, and it answered by
+     * reading one field. Since SH549 a generated layout names one theme in {@code THEME} and
+     * reaches the other through {@code {{#getRelation "/theme/captured"}}}, so the captured theme
+     * had no binding and was reported unused — on a site where it renders, measurably, at a
+     * megabyte a page.</p>
+     *
+     * <p>The rule was not wrong about what it read. It was wrong about <b>what a reference is</b>,
+     * the way SH516 was: it read the tree where the page decides. But this needs no page —
+     * {@code getRelation} is a first-class helper whose argument here is a <em>literal</em> address,
+     * so the reference is present in the template source and static, and a graph is the right place
+     * to see it.</p>
+     *
+     * <h3>Two costs, and the second is the one that matters</h3>
+     *
+     * <p>The immediate one is a warning that cannot be cleared, on the file every conversion writes
+     * — which is how a warning list stops being read. The wider one is that the reverse question,
+     * <em>is this theme reachable</em>, had a wrong answer, so a cleanup that trusted it would
+     * delete a theme eleven pages were using.</p>
+     *
+     * <p>Resolved by friendly URL against this site's own rows, which is what
+     * {@code ShRenderHelpers.resolveReference} does at render time — the same normalization, so the
+     * graph and the page cannot come to disagree about which theme a layout uses (SH281's rule,
+     * already the reason {@code themeTitleOf} is read through the renderer above). A literal that
+     * resolves to nothing, or to a post that is not a {@code Theme}, contributes no edge: this
+     * answers "is this theme used", and a dangling reference is SH154's finding with its own
+     * address and its own fix.</p>
+     */
+    private Set<String> relatedThemeTitles(ShSite site, String html) {
+        if (html == null || html.isBlank() || !html.contains(GET_RELATION)) {
+            return Set.of();
+        }
+        Map<String, String> themesByUrl = themesByUrl(site);
+        if (themesByUrl.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> titles = new TreeSet<>();
+        Matcher matcher = RELATION_LITERAL.matcher(html);
+        while (matcher.find()) {
+            String reference = matcher.group(1) == null ? matcher.group(2) : matcher.group(1);
+            if (reference == null || reference.isBlank()) {
+                continue;
+            }
+            String title = themesByUrl.get(reference.startsWith("/") ? reference : "/" + reference);
+            if (title != null) {
+                titles.add(title);
+            }
+        }
+        return titles;
+    }
+
+    /** This site's {@code Theme} posts, keyed by the friendly URL a relation would name (SH558). */
+    private Map<String, String> themesByUrl(ShSite site) {
+        Map<String, String> out = new TreeMap<>();
+        for (ShPostUnified post : rowsOf(site, BOTH_STATES)) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            String url = normalizedFurl(post);
+            if (ShSystemPostType.THEME.equals(typeName) && url != null
+                    && post.getTitle() != null && !post.getTitle().isBlank()) {
+                // A draft and a published row share both furl and title, so putIfAbsent is enough
+                // and there is nothing to prefer between them: this asks whether the theme is
+                // reachable at all, which neither state changes.
+                out.putIfAbsent(url, post.getTitle());
+            }
+        }
+        return out;
+    }
+
+    /** A friendly URL with the leading slash the address forms spell, or null (SH558). */
+    private static String normalizedFurl(ShPostUnified post) {
+        String furl = post.getFurl();
+        if (furl == null || furl.isBlank()) {
+            return null;
+        }
+        return furl.startsWith("/") ? furl : "/" + furl;
+    }
+
+    /** Cheap reject before the regex — most layouts relate nothing. */
+    private static final String GET_RELATION = "getRelation";
+
+    /**
+     * {@code {{#getRelation "…"}}} with a <b>literal</b> argument, either quoting style.
+     *
+     * <p>A path expression ({@code {{#getRelation sections}}}) names a field and is deliberately
+     * not matched: what it points at is data, decided per page, and no static reading of a template
+     * can say which theme that is. The literal form is the one SH549 writes and the one this rule
+     * has to see.</p>
+     */
+    private static final Pattern RELATION_LITERAL =
+            Pattern.compile("\\{\\{\\s*#\\s*getRelation\\s+(?:\"([^\"]*)\"|'([^']*)')");
 
     /**
      * What a change to one template would affect, or empty when the post is not a template.

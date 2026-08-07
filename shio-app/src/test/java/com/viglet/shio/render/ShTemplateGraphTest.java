@@ -78,6 +78,8 @@ class ShTemplateGraphTest {
     private static final String LONELY_REGION = "SH193_LONELY";
     private static final String USED_THEME = "SH286_THEME";
     private static final String LONELY_THEME = "SH286_LONELY_THEME";
+    /** SH558 — reached by `{{#getRelation}}` and by no THEME field, the shape SH549 generates. */
+    private static final String RELATED_THEME = "SH558_RELATED_THEME";
 
     @Autowired
     private ShTemplateGraph graph;
@@ -132,8 +134,12 @@ class ShTemplateGraphTest {
                     json("HTML", "<body><div sh-region=\"" + SHARED_REGION + "\"></div>{{TEXT}}</body>",
                             "THEME", USED_THEME),
                     when, ShPostState.DRAFT);
+            // SH558 — a bound layout that names no theme in THEME and reaches one by relation,
+            // which is the shape SH549's generated layout has and the shape the rule could not read.
             post(created, root, layoutType, PAGE_LAYOUT, "/l-page",
-                    json("HTML", "<body><div sh-region=\"" + SHARED_REGION + "\"></div></body>"),
+                    json("HTML", "<body><div sh-region=\"" + SHARED_REGION + "\"></div>"
+                            + "{{#getRelation \"/t-related\"}}<style>{{CSS}}</style>{{/getRelation}}"
+                            + "</body>"),
                     when, ShPostState.DRAFT);
             post(created, root, layoutType, ORPHAN_LAYOUT, "/l-orphan",
                     json("HTML", "<body>nothing binds me</body>"), when, ShPostState.DRAFT);
@@ -149,6 +155,9 @@ class ShTemplateGraphTest {
                     json("CSS", "body{color:red}"), when, ShPostState.DRAFT);
             post(created, root, themeType, LONELY_THEME, "/t-lonely",
                     json("CSS", "body{color:blue}"), when, ShPostState.DRAFT);
+            // SH558 — reached only by PAGE_LAYOUT's relation, so it is used and no field says so.
+            post(created, root, themeType, RELATED_THEME, "/t-related",
+                    json("CSS", "body{color:green}"), when, ShPostState.DRAFT);
 
             // Two article drafts, one of them also published; one page, published.
             post(created, root, article, "A1", "/a1", json("TEXT", "one"), when, ShPostState.DRAFT);
@@ -803,6 +812,61 @@ class ShTemplateGraphTest {
                 .filteredOn(finding -> "unused-theme".equals(finding.rule()))
                 .as("and the theme a bound layout names is not reported")
                 .noneMatch(finding -> finding.message().contains(USED_THEME));
+    }
+
+    /**
+     * SH558 — a theme a layout renders through {@code getRelation} is not unused.
+     *
+     * <h2>A binding the lint did not know how to read</h2>
+     *
+     * <p>{@code unused-theme} answered by reading the {@code THEME} field. Since SH549 a generated
+     * layout names one theme there and reaches the other through
+     * {@code {{#getRelation "/theme/captured"}}}, so the captured theme had no binding and was
+     * reported unused — on a site where it renders, measurably, at a megabyte a page. The rule was
+     * not wrong about what it read; it was wrong about <b>what a reference is</b>, the way SH516
+     * was. But no page is needed to see this one: the argument is a literal, so the reference is
+     * static in the template source.</p>
+     *
+     * <p>The immediate cost was a warning that cannot be cleared, on the file every conversion
+     * writes, which is how a warning list stops being read. The wider one is that <em>is this theme
+     * reachable</em> had a wrong answer, so a cleanup trusting it would delete a theme eleven pages
+     * were using — which is why this asserts both directions of the same fixture: the related theme
+     * is used, and the theme nothing reaches is still reported.</p>
+     */
+    @Test
+    @DisplayName("SH558: a theme reached only by getRelation is used, and the lonely one still is not")
+    void aThemeReachedByRelationIsNotUnused() {
+        ShAgentReport report = verifyService.verify(siteName, "content", 200);
+
+        assertThat(report.findings())
+                .filteredOn(finding -> "unused-theme".equals(finding.rule()))
+                .as("""
+                        the whole finding: a layout that names one theme in THEME and relates \
+                        another leaves neither unused. Before this, `%s` was reported while its \
+                        CSS was on every page the layout renders.""".formatted(RELATED_THEME))
+                .noneMatch(finding -> finding.message().contains(RELATED_THEME));
+        assertThat(report.findings())
+                .filteredOn(finding -> "unused-theme".equals(finding.rule()))
+                .as("and the rule still answers the question it was for — widening what counts as "
+                        + "a reference must not turn it into a rule that reports nothing")
+                .anyMatch(finding -> finding.message().contains(LONELY_THEME));
+    }
+
+    @Test
+    @DisplayName("SH558: the graph carries the relation edge, so a theme's blast radius includes it")
+    void aRelatedThemeCarriesItsLayoutInTheGraph() {
+        ShTemplateImpact impact = impactOf(RELATED_THEME);
+
+        assertThat(impact.kind()).isEqualTo("theme");
+        assertThat(impact.layouts())
+                .as("the edge is real and not a special case inside the lint: `layoutsThemed` "
+                        + "answers it, so `include=impact` and the reverse question read the same "
+                        + "graph the renderer resolves (SH281's rule)")
+                .containsExactly(PAGE_LAYOUT);
+        assertThat(impact.isUsed())
+                .as("a cleanup that trusted the old answer would have deleted a theme that "
+                        + "eleven pages were using")
+                .isTrue();
     }
 
     @Test

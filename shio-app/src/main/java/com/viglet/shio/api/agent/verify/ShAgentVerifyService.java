@@ -1258,9 +1258,11 @@ public class ShAgentVerifyService {
             }
             for (ShPostUnified theme : unused.themes()) {
                 findings.add(Finding.warning(check, "unused-theme", address(theme), null,
-                        "No bound layout in '" + site.getName() + "' names the theme '"
+                        "No bound layout in '" + site.getName() + "' reaches the theme '"
                                 + theme.getTitle() + "', so its CSS and JavaScript reach no page. "
-                                + "A layout names its theme in its THEME field, by title."
+                                + "A layout names its theme in its THEME field by title, or "
+                                + "relates one by friendly URL inside "
+                                + "`{{#getRelation \"...\"}}` (SH558); this rule reads both."
                                 + rootless + elsewhere(scan, site, "theme", theme.getTitle()),
                         "Set THEME to '" + theme.getTitle() + "' on the layout that should use "
                                 + "it, or delete the theme. A layout that names it but is itself "

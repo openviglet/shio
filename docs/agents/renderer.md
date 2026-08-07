@@ -734,6 +734,21 @@ renderer over one body of content at a second address. See the section on it bel
   to answer nothing. `unused-theme` joins the two warnings, reporting a theme **no bound layout**
   names — including one named only by an unbound layout, since that layout's own `unused-layout`
   finding beside it is what says where the chain broke.
+  **A theme reached by relation is used too, and the rule could not see it (SH558)** — SH549 gave a
+  generated layout a *second* theme, pulled in per page with
+  `{{#getRelation "/theme/captured"}}`, and `unused-theme` read only the `THEME` field. So the
+  captured theme had no binding and was reported unused **on a site where it renders at a megabyte
+  a page**. The rule was not wrong about what it read; it was wrong about *what a reference is*, the
+  way SH516 was — but unlike SH516 this needs no page, because `getRelation`'s argument here is a
+  **literal** address and the reference is static in the template source. Two costs, and the second
+  is the one that mattered: a warning that cannot be cleared on the file every conversion writes is
+  how a warning list stops being read, and the reverse question — *is this theme reachable* — had a
+  wrong answer, so a cleanup trusting it would delete a theme eleven pages were using.
+  `ShTemplateGraph.relatedThemeTitles` scans **every template the page assembles from**, layout and
+  regions alike, resolving each literal by friendly URL against the site's own rows — the same
+  normalization `ShRenderHelpers.resolveReference` does at render time, which is SH281's rule again.
+  A path expression (`{{#getRelation sections}}`) is deliberately *not* matched: it names a field,
+  decided per page, and no static read of a template can say which theme that is.
   **An unused-* finding says what happened (SH298/SH308)**: when the title is used in another of the
   run's sites it names **the layout post's address** there — a site name is not an address and a
   title is not one either — and points at `post.move` (a stray template is a move, not a
