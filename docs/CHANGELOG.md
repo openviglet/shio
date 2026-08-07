@@ -73,6 +73,7 @@
 - **SH545** — an agent read reports whether a page is live in a published field, conditional and measured, so state can keep meaning which row was returned
 - **SH546** — shio publish makes drafts live from the CLI, --all names every post from a find, and the batch ceiling comes from the refusal rather than a constant
 - **SH547** — an empty desired-state document is refused as empty-document, teaching the document's own keys and naming the endpoint an ops array belongs to
+- **SH596** — `shio://diagnostics` is on `resources/list` — the failure report folded by cause, with the count, the fix and the frames, terse, a read with no arguments rather than a twelfth tool against a `tools/list` paid every turn. The half worth keeping is why the conformance check was green over it: `ShAgentP1ConformanceTest` classified the feature as `shio_changes` on the true observation that incidents ride the change feed, because its `Reach` vocabulary had no way to say *a resource delivers this and no tool needs to*, so the honest answer had nowhere to go. A classification can only be as honest as its categories allow — `MCP_RESOURCE` now exists, is checked against the registered beans rather than believed, and carries its own vacuity guard.
 
 ## Block K — Perception & verification loop (SH74)
 

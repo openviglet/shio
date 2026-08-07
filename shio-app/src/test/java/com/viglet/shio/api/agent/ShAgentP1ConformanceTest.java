@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
+import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 
 /**
@@ -86,12 +87,28 @@ class ShAgentP1ConformanceTest {
     private ShAgentManifestService shAgentManifestService;
     @Autowired
     private List<ShMcpTool> mcpTools;
+    @Autowired
+    private List<ShMcpResource> mcpResources;
 
     /** How a capability reaches the operator P1 names. */
     private enum Reach {
 
         /** An MCP-only client can invoke it. The strictest bar, and what P1 actually asks for. */
         MCP_TOOL(false),
+        /**
+         * An MCP-only client can <em>read</em> it — a document on {@code resources/list} rather
+         * than a verb on {@code tools/list}. Reachable, and the bar P1 asks for.
+         *
+         * <p><b>SH596 added this category, and its absence is what produced the finding.</b> The
+         * vocabulary could say "a tool delivers it" and could not say "a resource does, and no tool
+         * needs to", so {@code diagnostics} was classified as {@code shio_changes} on the true
+         * observation that incidents ride the change feed (SH144). They do — as rows in a stream.
+         * The fold by cause, with the count, the fix and the frames, is a different document, and
+         * it was on no MCP list at all. Answering "is this reachable" with a neighbouring
+         * capability is how a conformance check comes back green over exactly the gap it exists to
+         * find, and a classification can only be as honest as its categories allow.</p>
+         */
+        MCP_RESOURCE(false),
         /** Declared in the manifest's endpoint index, so an agent with HTTP finds it (P2). */
         AGENT_ROUTE(false),
         /** A property of every route rather than a call — {@code true} is honest with no target. */
@@ -130,6 +147,10 @@ class ShAgentP1ConformanceTest {
 
     private static Delivery mcp(String tool, String why) {
         return new Delivery(Reach.MCP_TOOL, tool, why);
+    }
+
+    private static Delivery mcpResource(String uri, String why) {
+        return new Delivery(Reach.MCP_RESOURCE, uri, why);
     }
 
     private static Delivery route(String path, String why) {
@@ -187,8 +208,13 @@ class ShAgentP1ConformanceTest {
         byFeature.put("renderFetch", mcp("shio_digest", "?url= digests the delivered page, when the "
                 + "operator has allowed fetching"));
         byFeature.put("changeCursor", mcp("shio_changes", "since= is the SH88 cursor"));
-        byFeature.put("diagnostics", mcp("shio_changes", "incidents ride the change feed (SH144), so "
-                + "one since= answers what changed and what broke"));
+        // SH596 — this said `shio_changes`, and the reason it gave was true: incidents do ride the
+        // change feed. What it was not is the same document. The fold by cause — count, first and
+        // last seen, a fix, the frames that threw — was on no MCP list at all, and MCP is a plugin
+        // user's only surface. The entry now names what actually delivers it.
+        byFeature.put("diagnostics", mcpResource("shio://diagnostics", "the failure report folded "
+                + "by cause, with the frames and the fix; a read with no arguments, so a resource "
+                + "rather than a twelfth tool"));
         byFeature.put("durableIncidents", mcp("shio_changes", "the same feed, and the row survives a "
                 + "restart (SH144)"));
         // SH342 — `when` on post.publish. Note what this exposed about the rot check itself: the
@@ -357,6 +383,7 @@ class ShAgentP1ConformanceTest {
         Map<String, Boolean> features = manifest.features();
         Map<String, Delivery> classified = classification();
         Set<String> tools = toolNames();
+        Set<String> resources = resourceUris();
         Set<String> declaredPaths = declaredPaths(manifest.endpoints());
 
         assertThat(classified.keySet())
@@ -382,6 +409,12 @@ class ShAgentP1ConformanceTest {
                 case MCP_TOOL -> {
                     if (!tools.contains(delivery.target())) {
                         problems.add(feature + ": names tool '" + delivery.target()
+                                + "', which is not registered");
+                    }
+                }
+                case MCP_RESOURCE -> {
+                    if (!resources.contains(delivery.target())) {
+                        problems.add(feature + ": names resource '" + delivery.target()
                                 + "', which is not registered");
                     }
                 }
@@ -519,7 +552,7 @@ class ShAgentP1ConformanceTest {
     }
 
     @Test
-    @DisplayName("the guard is not vacuous: the two reachability checks can fail")
+    @DisplayName("the guard is not vacuous: the three reachability checks can fail")
     void theGuardCanFail() {
         Set<String> tools = toolNames();
         Set<String> paths = declaredPaths(shAgentManifestService.manifest().endpoints());
@@ -529,6 +562,12 @@ class ShAgentP1ConformanceTest {
                         + "which is the lint-that-reports-zero-forever failure")
                 .contains("shio_write", "shio_read", "shio_verify", "shio_remember")
                 .hasSizeGreaterThanOrEqualTo(11);
+        assertThat(resourceUris())
+                .as("SH596 — the same vacuity question for the category it added. An empty resource "
+                        + "registry would pass every MCP_RESOURCE row, which is precisely the shape "
+                        + "of the finding: a classification that cannot be wrong is not a check")
+                .contains("shio://manifest", "shio://context", "shio://diagnostics")
+                .hasSizeGreaterThanOrEqualTo(5);
         assertThat(paths)
                 .contains("/agent/resolve", "/post-type/{name}", "/render/post-types",
                         "/site-webhook", "/preview-token")
@@ -539,6 +578,12 @@ class ShAgentP1ConformanceTest {
 
     private Set<String> toolNames() {
         return mcpTools.stream().map(ShMcpTool::name)
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+    }
+
+    /** The registered resource URIs (SH596), so an MCP_RESOURCE row is checked and not believed. */
+    private Set<String> resourceUris() {
+        return mcpResources.stream().map(ShMcpResource::uri)
                 .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
     }
 

@@ -17,7 +17,9 @@ import com.viglet.shio.api.agent.ShAgentContextService;
 import com.viglet.shio.api.agent.ShAgentContextTerse;
 import com.viglet.shio.api.agent.ShAgentManifestService;
 import com.viglet.shio.api.agent.ShAgentOps;
+import com.viglet.shio.api.agent.diagnostics.ShAgentDiagnosticsService;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
+import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
 import com.viglet.shio.api.cda.ShCdaService;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -158,6 +160,51 @@ public class ShMcpResources {
                             ? ShBlueprintTerse.fileBodies(blueprint)
                             : ShBlueprintTerse.detail(blueprint);
                 });
+    }
+
+    /**
+     * What has failed, folded by cause (SH596).
+     *
+     * <h2>The one surface that could not ask what went wrong</h2>
+     *
+     * <p>{@code GET /api/v2/agent/diagnostics} carries what a failed response no longer can: a
+     * count, first and last occurrence, a {@code fix}, and the frames naming the throwing method.
+     * It was reachable over REST, from the CLI and from the console, and over MCP it was reachable
+     * <b>not at all</b> — eleven tools and four resources, and it was none of them.</p>
+     *
+     * <p>That matters more than a missing row suggests, because MCP is not one surface among
+     * several for a plugin user: <b>it is the only one</b>. The Claude Code plugin wires an
+     * {@code .mcp.json} and nothing else. So the reader most likely to meet a 500 — an agent
+     * driving an instance it did not build — was the one reader who could not ask what happened,
+     * and the fallback was a server log on a machine that may not be theirs. P1 orders every
+     * capability MCP → files/CLI → REST → console; this one landed on the bottom three and skipped
+     * the top, which is the same inversion the CLI's missing publish verb was.</p>
+     *
+     * <p><b>And the manifest said it was fine.</b> {@code ShAgentP1ConformanceTest} classified the
+     * {@code diagnostics} feature as reachable because incidents ride the change feed (SH144), and
+     * they do — as rows in a stream. The fold by cause, with the frames and the fix, is a different
+     * document, and answering "is it reachable" with a neighbouring capability is how a
+     * conformance check comes back green over exactly this gap.</p>
+     *
+     * <h2>A resource and not a tool</h2>
+     *
+     * <p>It is a read with no arguments, like {@code shio://context} — the test this class applies
+     * — and {@code tools/list} is re-sent every turn while a resource is one row read by whoever is
+     * about to ask. Terse for the same reason the ops vocabulary is: this is read after something
+     * has already gone wrong, and the reader wants the frames, not formatting. The default limit
+     * applies, and the header states {@code since} and {@code dropped}, so an empty answer keeps
+     * saying "nothing since then" rather than "nothing ever".</p>
+     */
+    @Bean
+    ShMcpResource shMcpDiagnosticsResource(ShAgentDiagnosticsService diagnosticsService) {
+        return resource("shio://diagnostics", "Shio failure report",
+                "What has failed on this instance, folded by cause: webhook deliveries, image "
+                        + "transforms, scheduled publishes and 5xx errors, each with a count, when "
+                        + "it was first and last seen, a fix, and the frames that threw. Read it "
+                        + "when a call answered 500 or when something did not happen — the failed "
+                        + "response is gone and this is where its cause still is.",
+                TEXT, "/api/v2/agent/diagnostics",
+                uri -> ShAgentVerifyTerse.diagnostics(diagnosticsService.diagnostics(null)));
     }
 
     @Bean

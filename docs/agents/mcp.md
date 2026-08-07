@@ -63,6 +63,24 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   `post.upsert` only when creating, `to`|`folder` on `post.move`. **It is also
   `GET /agent/context?include=ops` (SH346)** — same bytes, so an HTTP-only agent reads the same
   document; see agent-surface.md for why that section and not a manifest one.
+- **`shio://diagnostics` is the failure report, and MCP is the surface that could not ask (SH596)** —
+  `/agent/diagnostics` folds asynchronous and 5xx failures by cause and carries what the failed
+  response no longer can: a count, first and last occurrence, a `fix`, and the frames naming the
+  throwing method. It was reachable over REST, from the CLI and from the console, and over MCP it was
+  reachable *not at all* — eleven tools and four resources, and it was none of them. That is heavier
+  than a missing row sounds, because MCP is not one surface among several for a plugin user: **it is
+  the only one**, since the Claude Code plugin wires an `.mcp.json` and nothing else. So the reader
+  most likely to meet a 500 — an agent driving an instance it did not build — was the one reader
+  whose fallback was a server log on somebody else's machine. A **resource**, terse: it is a read
+  with no arguments like `shio://context`, and `tools/list` is paid every turn (P3). **And the
+  conformance check said it was fine**, which is the half worth remembering: `ShAgentP1ConformanceTest`
+  classified the `diagnostics` feature as `shio_changes` on the true observation that incidents ride
+  the change feed (SH144) — they do, as rows in a stream, and the fold by cause is a different
+  document. The `Reach` vocabulary had no way to say *a resource delivers this and no tool needs to*,
+  so the honest answer had nowhere to go and a neighbouring capability was recorded instead. A
+  classification can only be as honest as its categories allow, so SH596 added `MCP_RESOURCE`, checked
+  against the registered `ShMcpResource` beans rather than believed, with its own vacuity guard — an
+  empty registry would pass every row of the new category, which is the same shape as the finding.
 - **Every resource declares its HTTP twin, and a build guard checks the route exists (SH346)** —
   `ShMcpResource.httpTwin()`, asserted against the live handler mappings by
   `ShMcpResourceHttpTwinLintTest`. Publishing a document over MCP alone is a P1 break;

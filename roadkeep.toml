@@ -247,7 +247,6 @@ priority = [
   # generalises: a fresh install following the plugin's own front door reaches the identical
   # dead end. SH596 is the harder half — `diagnostics` is reachable over REST, CLI and
   # console and from **neither** MCP list, and MCP is a plugin user's only surface.
-  "SH596",
   "SH590",
   "SH588",
   "SH589",

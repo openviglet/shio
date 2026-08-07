@@ -223,6 +223,33 @@ class ShMcpServerTest {
         assertThat(contents.get("text").asString()).startsWith("shio-context ");
     }
 
+    /**
+     * SH596 — the reader most likely to meet a 500 could not ask what happened.
+     *
+     * <p>{@code /agent/diagnostics} was reachable over REST, from the CLI and from the console, and
+     * over MCP it was reachable not at all. That is not one surface among several for a plugin
+     * user: the Claude Code plugin wires an {@code .mcp.json} and nothing else, so an agent driving
+     * an instance it did not build had a server log on somebody else's machine as its only
+     * fallback. The assertion is at the <b>wire</b>, which is the boundary the gap crossed —
+     * {@code resources/list} is what an MCP client actually reads, and a bean that exists but is
+     * not listed is the same dead end.</p>
+     */
+    @Test
+    void theFailureReportIsReachableOverMcp() {
+        List<JsonNode> fixed = array(call("resources/list", null).get("result"), "resources");
+        assertThat(fixed).extracting(node -> node.get("uri").asString())
+                .contains("shio://diagnostics");
+
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put("uri", "shio://diagnostics");
+        JsonNode contents = call("resources/read", params).get("result").get("contents").get(0);
+
+        assertThat(contents.get("mimeType").asString()).isEqualTo("text/plain");
+        // The header states `since`, so an empty report keeps saying "nothing since then" rather
+        // than "nothing ever" — the distinction the endpoint exists to preserve.
+        assertThat(contents.get("text").asString()).startsWith("diagnostics ");
+    }
+
     @Test
     void anUnknownResourceUriListsWhatExists() {
         ObjectNode params = objectMapper.createObjectNode();

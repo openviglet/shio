@@ -316,31 +316,6 @@ it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional sh
 SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
 there has to be asserted rather than assumed.
 
-### VIII.31 The one surface that cannot ask what failed (SH596)
-
-`GET /api/v2/agent/diagnostics` folds asynchronous and 5xx failures by cause and carries
-what the failed response no longer can: a count, first and last occurrence, a `fix`, and
-`frames` naming the throwing method. It is reachable over REST, and the CLI can be
-pointed at it.
-
-Over MCP it is not reachable at all. `tools/list` answers eleven — apply, assets,
-changes, context, digest, find, publish, read, remember, verify, write — and
-`resources/list` answers four: blueprints, context, manifest, ops. Neither holds it.
-
-That matters more than a missing tool count suggests, because MCP is not one surface
-among several for a plugin user: **it is the only one**. The Claude Code plugin wires an
-`.mcp.json` and nothing else. So the reader most likely to hit a 500 — an agent driving
-an instance it did not build, over the plugin — is the one reader who cannot ask what
-happened, and the fallback is a server log on a machine that may not be theirs.
-
-P1 orders every capability MCP → files/CLI → REST → console. This one landed at the
-bottom three and skipped the top, which is the same inversion the CLI's missing publish
-verb was: the tool list has ten neighbours, the API has it, and the tier in between is
-the one nobody reads to check.
-
-A resource rather than a tool is probably right — it is a read with no arguments, like
-`shio://context` — and the manifest's `diagnostics` flag should be what says so.
-
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
