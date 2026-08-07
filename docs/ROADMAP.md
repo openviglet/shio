@@ -39,6 +39,7 @@
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
+- 📋 **SH581** (deps: SH578 ✅) **The asset count reads the source's whole document against the replica's body span** — A fidelity page reported 33 assets down to 5 while losing only its head links, because the declared side counts a head the layout owns and the produced side is the body a page stores. → §IX.53
 
 ## Block I — Content as files (local-first authoring)
 
@@ -103,6 +104,7 @@
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
+- 📋 **SH580** (deps: SH577 ✅) **A page becomes one section, so most of its text has no field to live in** — Every page of a real source proposed exactly one top-level block, and the eleven authorable pages kept 12 to 35 percent of their text — 11436 characters became 1408 on the worst. → §XVII.82
 
 ## Block F — Market positioning
 

@@ -149,6 +149,21 @@ priority = [
   # real red, and SH578, SH575 and SH576 each landed with the corpus itself demanding its own
   # bookkeeping: three of them went green on a held finding, and the suite fails on that. SH555 rides along and is not a re-open: it shipped on the render side and the
   # CLI still writes `{{CSS}}`, which is why the corpus holds a red case under a closed id.
+  #
+  # The tenth run, on instruction (2026-08-07). The ninth left the judge trustworthy, and the
+  # first round judged by it says the conversion is where the work now is. `diff` on a fresh
+  # authorable replica scores 33 shortfalls as `by design` and 12 as real, and eleven of the
+  # twelve are one fact: the page kept between 12% and 35% of its text. That is SH580, and it
+  # is first because it is the only one of the two that is about the product rather than about
+  # the reading — every page of a real source proposes exactly ONE top-level block, so a page
+  # becomes one section and the rest of it has no field to live in. The proposal already names
+  # what it would drop and nobody reads it. SH581 second: the last uncut axis in the asset
+  # fact, where the declared side is the whole captured document and the produced side is the
+  # body span a Page stores, so a fidelity page reads `-28` for the loss of about four head
+  # links. `diff`'s own footer already prints that its numbers disagree, which is why it is a
+  # task rather than a guess.
+  "SH580",
+  "SH581",
   "SH528",
   "SH529",
   "SH523",

@@ -771,6 +771,30 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
+### IX.53 The head one side counts and the other does not have (SH581)
+
+SH578 split an asset a page references from an asset a stylesheet references, and it was
+the right cut. A second one is still uncut, on a different axis: the declared side is the
+**whole captured document** and the produced side is the **body span a Page stores**.
+
+`/partner/` is the fidelity page of an otherwise authorable conversion. The capture
+declares `assets: {own: 33, style: 0}`; the replica serves five; `diff` calls it `-28`
+and exits 1. What actually went missing is the source's `<head>` — nine `<link>`
+elements, of which the stylesheet is inlined by the layout, leaving favicons and a
+manifest. The captured markup is 155,881 characters and the stored `content` is 60,322:
+the head is not lost, it belongs to the layout, and a replica is not supposed to carry
+the source's.
+
+So the number is wrong in both directions at once. It overstates by 28 what is a loss of
+about four, and it would understate a body-side loss that a head-side count happened to
+cover.
+
+`diff` already suspects it. Its own footer prints *the pages disagree about this number,
+which a single theme cannot explain* — an instrument reporting an inconsistency in its
+own reading, which is the best place to start and the reason this is one task rather
+than a guess. The cut is head versus body, the same shape as SH578's, and the assertion
+is a fidelity page whose body is unchanged and whose head is the layout's.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -2038,6 +2062,31 @@ converts a **correct** repair into a permanent red — the same failure SH554 na
 block over, an instrument in a gate reporting a loss on something that lost nothing. The
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
+
+### XVII.82 One block a page, and the rest of the page (SH580)
+
+`propose` walks a captured page and offers its top-level blocks as candidates. On
+viglet.org it offers exactly **one** per page — the span is 84,252 characters, the whole
+document body — because the source is a React SPA whose body is one root `<div>`. That
+one block matches a single vocabulary type, so the page converts to one section, and
+every word the section's fields do not name is gone.
+
+Measured with SH577's mode-aware `diff`, which is the first run that scores this
+honestly: eleven of twelve authorable pages fall below the text floor.
+`/turing/release-notes/` keeps 1,408 characters of 11,436; `/turing/` keeps 827 of
+6,445; `/` keeps 2,463 of 7,068. The chrome losses beside them are marked *by design*
+and these are not, which is the boundary working.
+
+The proposal already knows. Each candidate carries a `loss` block naming the elements it
+would drop — 114 `circle`, 81 `path`, 10 `a`, 8 `h3` on the `/partner/` candidate — and
+nothing reads it, so `--accept all` accepts a block that discards most of its own
+content without the acceptance saying so.
+
+Two directions, and they are not exclusive. Descend: a block that matches one type and
+drops 80% of its text is a block to walk into, not to accept. And report: `propose`
+should score what an acceptance keeps, so the choice is made before the write rather
+than measured after the publish. The second is cheap and makes the first arguable with
+numbers.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
