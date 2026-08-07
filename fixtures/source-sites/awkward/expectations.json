@@ -1,0 +1,32 @@
+{
+  "id": "awkward",
+  "title": "A source whose requests answer oddly",
+  "trait": "page",
+  "catches": ["SH467", "SH466", "SH476", "SH514", "SH512", "SH550"],
+  "why": "Six traits that each cost a task, gathered because none of them is about content and all of them are about a *request*: a directory path whose two spellings disagree about which is canonical (SH467), an absolute href carrying the source's own base (SH466), a title escaped twice so decoding once leaves a literal `&amp;` (SH476/SH550), a zero-byte stylesheet the upload refused (SH514), and a page served two segments down whose every reference is relative (SH512). An injected fetch can express all six, which is why they belong in the fast tier and not only in a live run.",
+  "clone": { "depth": 3, "assets": true, "markup": true },
+  "expect": {
+    "pages": ["/", "/antigo", "/docs/guia/"],
+    "unfollowed": [],
+    "problems": [],
+    "assets": ["/css/blank.css", "/css/site.css", "/img/wash.png"],
+    "notes": []
+  },
+  "addressable": ["/", "/antigo", "/docs/guia/"],
+  "unaddressable": [],
+  "redirects": { "/antigo": "/docs/guia/" },
+  "bothSpellings": ["/docs/guia"],
+  "doubleEscaped": { "/": "Awkward &amp; company" },
+  "emptyAssets": ["/css/blank.css"],
+  "relativeReferences": { "/docs/guia/": ["../../css/site.css", "../../img/wash.png"] },
+  "sourceBase": "https://awkward.test",
+  "propose": { "accept": "all" },
+  "conversion": { "noSourceBaseInHrefs": true },
+  "scenarios": { "fidelity": true, "authorable": true, "headless": false },
+  "needsBrowser": false,
+  "routes": {
+    "/antigo": { "status": 301, "location": "/docs/guia/", "type": "text/html; charset=utf-8", "body": "" },
+    "/docs/guia": { "status": 301, "location": "/docs/guia/", "type": "text/html; charset=utf-8", "body": "" },
+    "/css/blank.css": { "file": "empty/blank.css", "type": "text/css" }
+  }
+}

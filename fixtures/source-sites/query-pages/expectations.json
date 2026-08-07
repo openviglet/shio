@@ -1,0 +1,31 @@
+{
+  "id": "query-pages",
+  "title": "A source whose pages differ only by a query string",
+  "trait": "site",
+  "catches": ["SH557"],
+  "why": "91 of 107 pages captured from a real source were query strings the replica cannot address, and it was `diff` at the end of the chain that said so — as pages the replica serves nothing at, never as a limit the capture named. A friendly URL cannot hold a `?`, so this is a property of the source that decides whether it can be replicated at all.",
+  "clone": { "depth": 2, "assets": true, "markup": true },
+  "expect": {
+    "pages": ["/", "/blog?page=2", "/produtos", "/produtos?id=2", "/produtos?id=3"],
+    "unfollowed": ["/carrinho"],
+    "problems": [],
+    "assets": ["/css/site.css"],
+    "notes": [
+      {
+        "match": "query string",
+        "catches": "SH557",
+        "means": "the capture names the pages it recorded that no friendly URL can address, at the phase that can still stop the run"
+      }
+    ]
+  },
+  "addressable": ["/", "/produtos"],
+  "unaddressable": ["/blog?page=2", "/produtos?id=2", "/produtos?id=3"],
+  "propose": { "accept": "all" },
+  "scenarios": { "fidelity": true, "authorable": true, "headless": false },
+  "needsBrowser": false,
+  "routes": {
+    "/produtos?id=2": { "file": "pages/produtos-2.html" },
+    "/produtos?id=3": { "file": "pages/produtos-3.html" },
+    "/blog?page=2": { "file": "pages/blog-2.html" }
+  }
+}

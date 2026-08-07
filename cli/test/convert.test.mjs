@@ -20,7 +20,7 @@ import { test } from "node:test";
 
 import {
   CAPTURED_STYLE_HTML, CAPTURED_THEME_URL, LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER,
-  WRAPPER_ROLES, buildConversion, describeConversion, withResolvedFileFields,
+  VOCABULARY_CLASSES, WRAPPER_ROLES, buildConversion, describeConversion, withResolvedFileFields,
 } from "../src/convert.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
@@ -799,10 +799,66 @@ test("SH508: the layout carries a structural contract, named by role and owned b
   );
 
   assert.deepEqual(
-    [...used].filter((name) => name !== "shio-section-{{type}}" && name.includes("Section")), [],
-    "shio-section-{{type}} is the per-type hook and stays; a *structural* class that named a type "
-      + "would make the theme a list of types and break on the eighth one that ships",
+    [...used].filter((name) => name.includes("Section")), [],
+    "no class names a type at all (SH556): the per-type hook is data-shio-section, which is on the "
+      + "same element, so a class spelling it too would make the theme a list of types and break on "
+      + "the eighth one that ships",
   );
+});
+
+test("SH556: the layout draws no class the vocabulary does not declare", () => {
+  // The instrument, and the direction nobody was checking. SH509's test asserts every *role* is
+  // styled; nothing asserted the converse, so the templates grew sixteen names the theme never had
+  // — `shio-section-<Type>`, `shio-features`, `shio-feature`, `shio-feature-title`,
+  // `shio-quote-avatar` and the rest — and SH521's lint reported the gap on all eleven authorable
+  // pages of a converted site, accurately, every run. Reading the layout constant rather than a
+  // rendered page is what makes this total: every `{{#if}}` branch is in the string whether or not
+  // a fixture has that field, so a class only a testimonial draws is still counted.
+  const { document } = buildConversion({
+    proposal: {
+      candidates: [candidate("b1a2")],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+  const html = document.posts.find((post) => post.type === "PageLayout").data.HTML;
+  const drawn = new Set(layoutElements(html).flatMap((element) => element.classes));
+
+  assert.ok(drawn.size > 0, "a scanner that found nothing would make this pass over nothing");
+  assert.deepEqual(
+    [...drawn].filter((name) => !VOCABULARY_CLASSES.includes(name)).sort(), [],
+    "a class the templates draw and the vocabulary does not declare is `page-unstyled` on every "
+      + "page that renders it — the lint's premise is provable and it was right",
+  );
+  assert.deepEqual(
+    VOCABULARY_CLASSES.filter((name) => !VOCABULARY_THEME_CSS.includes(`.${name}`)), [],
+    "and the other end: a declared class the theme never styles is the same gap one file over",
+  );
+});
+
+test("SH556: what the removed classes addressed is still addressable", () => {
+  // The objection that made the choice look hard — "emit only roles and you lose the per-type hook
+  // a curator's own CSS would want" — and the fact that answers it. Nothing was lost, because the
+  // hook was already on the same element: the template was spelling it twice, which is exactly what
+  // the `data-shio-columns` paragraph in convert.mjs forbids.
+  const { document } = buildConversion({
+    proposal: {
+      candidates: [candidate("b1a2")],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+  const html = document.posts.find((post) => post.type === "PageLayout").data.HTML;
+
+  assert.match(html, /<section class="shio-section"[^>]*data-shio-section="\{\{type\}\}"/,
+    "`[data-shio-section=\"SectionHero\"]` is what `.shio-section-SectionHero` was");
+  for (const row of ["features", "questions", "logos", "quotes"]) {
+    assert.ok(html.includes(`data-shio-row="${row}"`),
+      `\`[data-shio-row="${row}"]\` is what \`.shio-${row}\` was, and it reaches the leaves too: `
+        + `\`[data-shio-row="${row}"] h3\` is the title the class named`);
+  }
 });
 
 // --- SH509: the theme the vocabulary never had ---

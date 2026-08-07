@@ -1,0 +1,4 @@
+:root { --ink: #1a202c }
+.hero { color: var(--ink); background: #f7fafc }
+.hero h1 { font-size: 2rem }
+.card { background: #fff }

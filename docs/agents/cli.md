@@ -806,6 +806,29 @@ it. Four decisions worth keeping:
   names three roles rather than eight *and the test asserts why*: `shio-card` and `shio-media` land
   on elements that do declare fields — a feature row is a card and draws its `icon` into an
   attribute — so a rule written over all eight would be false rather than strict.
+- **Then the templates broke that rule sixteen times, and one of the two lists had to move (SH556).**
+  The theme defined thirteen selectors; the templates emitted those **and** `shio-section-<Type>`,
+  `shio-features`, `shio-feature`, `shio-feature-title`, `shio-feature-body`, `shio-questions`,
+  `shio-question`, `shio-question-text`, `shio-answer`, `shio-quotes`, `shio-quote`,
+  `shio-quote-text`, `shio-quote-avatar`, `shio-quote-author`, `shio-quote-role` — none defined
+  anywhere — so SH521's lint fired on **all eleven authorable pages** of a converted site and was
+  right: *this page draws with 5 class name(s) its own stylesheet does not define, and it loads no
+  other*. The site was 8 KB a page instead of a megabyte, which SH549 achieved, and the classes
+  carrying the shape of a feature grid still resolved to nothing. Which list should move looked like
+  a genuine choice — emit only roles and lose the per-type hook, or grow the theme by sixteen and
+  make it a component stylesheet — and it was not one, because **the hook was already on the same
+  element**: `data-shio-section="{{type}}"` sat beside `class="shio-section-{{type}}"`, and
+  `data-shio-row="features"` beside `class="shio-feature"`. The per-type handle was spelled twice —
+  exactly what the `data-shio-columns` rule one bullet up forbids — so the classes went and nothing
+  became unaddressable: `[data-shio-section="SectionHero"]` and `[data-shio-row="features"] h3` are
+  what they were. The leaves were already styled *by element* (`.shio-card h3`, `.shio-card p`,
+  `.shio-card cite`), so their names carried no shape either. `shio-section` joins `LAYOUT_ROLES`,
+  the new `TEXT_ROLES` names the five text roles that were in the theme and in no list, and
+  `VOCABULARY_CLASSES` is the union — **the complete set a template may draw**. The instrument is
+  the deliverable (SH322): SH509's test asserted every role is styled and nothing asserted the
+  converse, which is how sixteen names accumulated, so `convert.test.mjs` now holds both directions
+  and reads the layout **constant** rather than a rendered page — every `{{#if}}` branch is in the
+  string, so a class only a testimonial draws is still counted.
 - **And the theme that lays it out, as a `Theme` post (SH509).** `vocabulary-theme.mjs` is the
   stylesheet SH507's decision promised: type scale, measure, vertical rhythm, a card, a button, and
   two colour roles — **surface** and **ink** — each with the one companion a card and a caption need,

@@ -623,6 +623,84 @@ The precedent is in the same package. `ShConvertedLayoutRenderTest` already reac
 across the language boundary to read `../cli/src/convert.mjs`, for this reason: the two
 sides of this seam drift, and the cheap place to notice is `clean test`.
 
+### IX.44 The redirect the crawler followed and the inventory forgot (SH563)
+
+The first run of SH560's corpus found this, which is the argument that corpus was filed
+on.
+
+`visit` follows one hop by hand, on purpose: the comment says the redirect should be
+*visible* in the inventory rather than erased by the fetch layer, and it returns `{
+...result, redirectedTo: pathOf(target) }`. `buildInventory` then builds the page row
+from `path`, `title`, `description`, `lang`, `status`, `depth`, `links`, `assets`,
+`forms`, `textChars` and three conditionals — and `redirectedTo` is in none of them. Its
+own JSDoc lists the field as part of a `visited` entry, so it is documented and dropped
+in one file.
+
+This is what SH467 is about, one phase earlier. `/docs/guia` 301s to `/docs/guia/` and
+both answer; the capture records **two pages with the same content** and no statement
+that one is the other's redirect. A conversion writes two Pages from that, so the
+replica serves the body twice and redirects neither — the source's canonical choice is
+gone, and the 301 every external link to the old form needs cannot be rebuilt, because
+nothing downstream knows there was one.
+
+The status is not the workaround. `entry.status` is the status of the response the crawl
+ended on, which is the 200: by the time the row is built the 301 is resolved, so a
+reader cannot tell a redirected path from a served one.
+
+Cheap, and its assertion exists and is red — group E of `source-corpus.test.mjs` asserts
+the field for this reason (SH527: the assertion that would have caught it).
+
+### IX.45 An absolute href becomes a field value, and the rebase never sees it (SH564)
+
+`propose` extracted `ctaHref = "https://awkward.test/docs/guia"` from an anchor whose
+href was absolute, and `convert` wrote it into `SectionHero` unchanged. The button on
+the accepted hero then points at the original site.
+
+SH466 is not the fix and is not wrong. It rebases **root-relative** hrefs onto the site
+being served, and it does that in the renderer over the page's `content`. Neither half
+reaches this: `ctaHref` is a field, not content, and its value is an absolute URL with a
+foreign host — which at render time is indistinguishable from a link a curator meant to
+point off-site. Rewriting it there would break every deliberate outbound link on every
+page.
+
+So the phase that can tell is the one that knows what the origin was. `clone` records
+the source's origin and `propose` resolves each href against the page that carried it;
+an href whose host equals the capture's origin is the source's own path and should be
+stored the way the theme already stores one — as the **source-relative path** (SH461:
+the rewritten CSS names `/img/x`, not the tree path, because that is what the instance
+resolves). An href whose host is anything else is genuinely external and stays whole.
+
+The shape is the one this project keeps finding: the correction shipped half of itself.
+SH466 closed verbatim markup and left the authorable path, exactly as SH452 fixed a note
+and not the fetch. Its assertion is in `source-corpus.test.mjs` group D, red, naming the
+field.
+
+### IX.46 The title is RCDATA, and both entity fixes routed around it (SH565)
+
+Measured: `scanPage("<title>Northwind &amp; Co</title>")` yields the five characters
+`&amp;`, and `decodeEntities` on the same string yields `&`. The decoder is right and
+nothing calls it here.
+
+Two shipped fixes and the title falls between them. SH476 decodes text "when it becomes
+a field" — `propose.mjs`' `text()` and `alt`. SH550 decodes attribute values, and states
+the exclusion in its own words: raw-text bodies are not decoded. `decodeEntities`
+appears exactly twice in `clone.mjs`, once in `parseAttrs` and once as its own export.
+
+`<title>` is neither an attribute nor raw text. In HTML it is **RCDATA**: a `<` inside
+it is data, and an entity inside it *is* decoded — which is what separates it from
+`<script>` and `<style>`, the elements SH550's exclusion was written for. Lumping them
+together is the whole defect, and `title` is the one RCDATA element a capture reads.
+
+It reaches further than the other two did, because the title does not travel through
+`propose`. `scanPage` puts it on `doc.title`, `buildInventory` copies it onto the page
+row, and `convert` writes it into `Page.data.title` — so **fidelity and authorable are
+both wrong**, where SH476 was authorable only. Every source page with an ampersand in
+its title is affected, and it compounds on re-capture the way SH476 does: each pass
+escapes what the last one stored.
+
+Its assertion is `source-corpus.test.mjs` group D, on the `awkward` archetype, red,
+comparing the stored title against the source's own bytes.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1861,29 +1939,6 @@ stays a declaration of content.
 
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
-
-### XVII.77 Two class vocabularies, one of them styled (SH556)
-
-`Theme (Shio)` defines thirteen selectors — `shio-actions`, `shio-body`, `shio-button`,
-`shio-card`, `shio-container`, `shio-grid`, `shio-heading`, `shio-intro`, `shio-media`,
-`shio-page`, `shio-page-title`, `shio-stack`, `shio-subheading` — which is SH508's role
-list and is a coherent thing to style.
-
-The section templates in `convert.mjs` emit those and then sixteen more: `shio-section`,
-`shio-section-SectionFeatureGrid`, `shio-features`, `shio-feature`,
-`shio-feature-title`, `shio-feature-body`, `shio-questions`, `shio-question`,
-`shio-question-text`, `shio-answer`, `shio-quotes`, `shio-quote`, `shio-quote-text`,
-`shio-quote-avatar`, `shio-quote-author`, `shio-quote-role`. None is defined anywhere.
-
-So SH521's lint fires on all eleven authorable pages of a converted site, and it is
-right: *this page draws with 5 class name(s) its own stylesheet does not define, and it
-loads no other*. The site is 8 KB a page instead of a megabyte, which SH549 achieved,
-and the classes that carry the shape of a feature grid still resolve to nothing.
-
-Which list should move is a real choice and not obvious. The templates could emit only
-roles, which loses the per-type hook a curator's own CSS would want; or the theme could
-grow the sixteen, which makes it a component stylesheet rather than a role one. What is
-not defensible is shipping both and letting the lint report the gap on every page.
 
 ### XVII.78 The pages a path-addressed replica cannot hold (SH557)
 

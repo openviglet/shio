@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Guia</title>
+  <link rel="stylesheet" href="../../css/site.css">
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Guia</h1>
+      <p>This page is served two segments below the root and every reference it makes is
+         relative, which is what breaks when a replica is served deeper than its source.</p>
+      <img src="../../img/wash.png" alt="Wash">
+      <a href="../../">Home</a>
+    </section>
+    <section class="features">
+      <h2>References</h2>
+      <div class="card"><h3>Relative</h3><p>Resolved against this page, not the root.</p></div>
+      <div class="card"><h3>Stylesheet</h3><p>Its own url() goes up one, not two.</p></div>
+    </section>
+  </main>
+</body>
+</html>

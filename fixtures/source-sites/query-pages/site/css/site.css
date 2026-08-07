@@ -1,0 +1,5 @@
+:root { --ink: #1f2933; --wash: #f5f7fa }
+.hero { color: var(--ink); background: var(--wash) }
+.hero h1 { font-size: 2rem; color: #1f2933 }
+.card { color: #1f2933; background: #f5f7fa }
+.pager a { color: #0b7285 }

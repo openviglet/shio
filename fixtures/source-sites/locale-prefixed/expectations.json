@@ -1,0 +1,22 @@
+{
+  "id": "locale-prefixed",
+  "title": "A source with no home at /",
+  "trait": "site",
+  "catches": ["SH459", "SH433"],
+  "why": "Every page lives under a locale prefix and `/` is a 404. This cannot be a trait of the shared fixture, because a server that answers `/` is not this source — which is the whole argument for a corpus over a bigger fixture. A replica's home page is `post:<site>/`, the one form the address grammar does not spell, so a source that has nothing to put there is the case that decides what the replica serves at its own root.",
+  "clone": { "depth": 2, "assets": true, "markup": true, "seed": "/pt-br/" },
+  "expect": {
+    "pages": ["/en-us/", "/pt-br/"],
+    "unfollowed": [],
+    "problems": [],
+    "assets": ["/css/site.css"],
+    "notes": []
+  },
+  "addressable": ["/en-us/", "/pt-br/"],
+  "unaddressable": [],
+  "noSourceHome": true,
+  "propose": { "accept": "all" },
+  "scenarios": { "fidelity": true, "authorable": true, "headless": false },
+  "needsBrowser": false,
+  "routes": {}
+}

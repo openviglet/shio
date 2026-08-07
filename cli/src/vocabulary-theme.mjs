@@ -39,6 +39,14 @@
  * *fields* of the vocabulary, so a new type that declares one inherits the styling rather than
  * needing a rule.
  *
+ * SH556 — and the other half of that, which was missing: it must **define every class the templates
+ * draw**. It defined thirteen and they drew sixteen more, so SH521's lint fired on all eleven
+ * authorable pages of a converted site and said so accurately. Growing this file by sixteen would
+ * have made it a component stylesheet and broken the rule above from the other end; the templates
+ * dropped the sixteen instead, because every one of them duplicated a `data-shio-*` handle already
+ * on the same element. `convert.test.mjs` now holds both directions — no role unstyled, and no class
+ * drawn that is not a role — so the pair can no longer drift.
+ *
  * And it must not be inlined **alongside** the captured theme. Two stylesheets on one page make the
  * cascade depend on which came first, which is the accident SH424 spent a task removing. SH510 is
  * the half that stops sending the captured one on an authorable page.
@@ -96,8 +104,9 @@ img{max-width:100%;height:auto}
 .shio-card cite{display:block;font-style:normal;color:var(--color-ink-muted)}
 .shio-card h3{font-size:var(--text-h3);line-height:1.3;margin:0}
 .shio-card p{margin:0}
+.shio-section{margin:0}
 .shio-media{margin:0}
-.shio-media img{display:block;border-radius:var(--size-radius)}
+.shio-media img,img.shio-media{display:block;border-radius:var(--size-radius)}
 .shio-actions{margin:0}
 .shio-button{display:inline-block;padding:0.7em 1.4em;border-radius:var(--size-radius);background:var(--color-accent);color:var(--color-surface);font-weight:600;text-decoration:none}
 .shio-button:hover,.shio-button:focus-visible{filter:brightness(1.15)}

@@ -1,0 +1,47 @@
+@import url("/css/tokens.css");
+
+@font-face {
+  font-family: "Fixture Sans";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/fonts/fixture-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fixture Sans";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/fonts/fixture-700.woff2") format("woff2");
+}
+
+:root {
+  --ink: #10243a;
+  --wash: #eef3f8;
+  --brand: #0b7285;
+  --font-body: "Fixture Sans", system-ui, sans-serif;
+}
+
+body { margin: 0; color: var(--ink); font-family: var(--font-body) }
+
+.hero {
+  background: var(--wash) url("/img/hero.png") no-repeat right center;
+  padding: 4rem 2rem;
+}
+.hero h1 { font-size: 2.75rem; font-weight: 700; color: var(--ink) }
+.hero p { max-width: 42rem }
+.hero .cta::after { content: " \2192"; color: var(--brand) }
+
+.features { padding: 3rem 2rem }
+.features h2 { font-size: 1.75rem }
+.card { background: #fff; border: 1px solid #d9e2ec; padding: 1.5rem }
+.card h3 { color: var(--brand) }
+.card::before { content: "\2022"; color: var(--brand) }
+
+.quote { background: var(--ink); color: #fff; padding: 3rem 2rem }
+.quote blockquote::before { content: "\201C" }
+.quote blockquote::after { content: "\201D" }
+
+.logos { display: flex; gap: 2rem; padding: 2rem }
+.logos img { height: 2rem }
+
+.faq dt { font-weight: 700 }
+.faq dd { margin: 0 0 1rem }

@@ -257,25 +257,66 @@ function withoutChrome(row, chrome, dropped) {
  * elements at all. So the tree comes before the stylesheet, and it is the vocabulary's own rather
  * than a translation of anybody's.</p>
  *
- * <p><b>Roles, because a theme has to survive the next section type.</b> `shio-section-<Type>` is
- * the per-type hook and stays; every name here describes what an element *does* — bound, space,
- * arrange, carry an image, hold the actions — so a theme written against them keeps working when an
- * eighth type ships. A structural class that named a type would make the theme a list of types.</p>
+ * <p><b>Roles, because a theme has to survive the next section type.</b> Every name here describes
+ * what an element *does* — bound, space, arrange, carry an image, hold the actions — so a theme
+ * written against them keeps working when an eighth type ships. A structural class that named a
+ * type would make the theme a list of types.</p>
  *
  * <p>The column count is not a role: it is `SectionFeatureGrid.columns`, already on the section as
  * `data-shio-columns`, so a theme reads `[data-shio-columns="3"] .shio-grid` and the contract has
  * both ends without the template writing the number twice.</p>
+ *
+ * <p><b>SH556 — and that last sentence is the whole rule, which the templates then broke sixteen
+ * times.</b> A class is a *role*; a per-type or per-instance handle is a `data-*` attribute. The
+ * templates emitted the roles and then `shio-section-<Type>`, `shio-features`, `shio-feature`,
+ * `shio-feature-title`, `shio-quote-avatar` and eleven more, none of them defined anywhere — so
+ * SH521's lint fired on all eleven authorable pages of a converted site and was right: *this page
+ * draws with 5 class name(s) its own stylesheet does not define, and it loads no other*. Which list
+ * should move looked like a real choice — emit only roles and lose the per-type hook, or grow the
+ * theme by sixteen and make it a component stylesheet — and it was not one, because <b>the hook was
+ * never lost: it is already on the same element</b>. `data-shio-section="{{type}}"` sat beside
+ * `class="shio-section-{{type}}"`, and `data-shio-row="features"` beside `class="shio-feature"`.
+ * The per-type handle was spelled twice, exactly what the `data-shio-columns` paragraph above
+ * forbids, so removing the class costs a curator nothing: `[data-shio-section="SectionHero"]` and
+ * `[data-shio-row="features"] h3` address what the classes addressed. The leaves were already
+ * styled by element — `.shio-card h3`, `.shio-card p`, `.shio-card cite` — so their class names
+ * carried no shape either.</p>
  */
 export const LAYOUT_ROLES = Object.freeze([
   "shio-page",       // <body> — the vertical rhythm *between* sections
+  "shio-section",    // one section, which is what `.shio-page`'s rhythm spaces
   "shio-container",  // the outer bound: one measure, centred, so a section can still go full bleed
   "shio-stack",      // the vertical rhythm *inside* one section
   "shio-grid",       // columns, counted from the nearest `data-shio-columns`
   "shio-card",       // one bounded unit of a grid or a stack
-  "shio-media",      // an image and nothing else
+  "shio-media",      // an image, on the image or on the one element wrapping it
   "shio-actions",    // where a call to action lives
   "shio-button",     // and what it looks like
 ]);
+
+/**
+ * The five roles that name a *passage of text* rather than a box (SH556).
+ *
+ * <p>They were always in the theme and never in a list, which is how {@link LAYOUT_ROLES} came to
+ * be checked in both directions while these were checked in neither. Separate from the structural
+ * eight because they are: a theme may restyle `shio-heading` without touching a single box.</p>
+ */
+export const TEXT_ROLES = Object.freeze([
+  "shio-page-title",
+  "shio-heading",
+  "shio-subheading",
+  "shio-intro",
+  "shio-body",
+]);
+
+/**
+ * Every class name the generated templates are allowed to draw (SH556).
+ *
+ * <p>The set SH521's lint measures a page against, from this side. It is the union and nothing
+ * else: a name the templates emit and this does not hold is a name the theme does not define, which
+ * is `page-unstyled` on every page that renders it.</p>
+ */
+export const VOCABULARY_CLASSES = Object.freeze([...LAYOUT_ROLES, ...TEXT_ROLES]);
 
 /**
  * The three roles that are **pure wrappers** — they bound, space or arrange, and nothing else.
@@ -305,18 +346,18 @@ export const WRAPPER_ROLES = Object.freeze(["shio-container", "shio-stack", "shi
 export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
 {{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
 {{#getRelation sections}}
-<section class="shio-section shio-section-{{type}}" sh-post="{{id}}" data-shio-section="{{type}}" data-shio-align="{{align}}" data-shio-variant="{{variant}}" data-shio-columns="{{columns}}">
+<section class="shio-section" sh-post="{{id}}" data-shio-section="{{type}}" data-shio-align="{{align}}" data-shio-variant="{{variant}}" data-shio-columns="{{columns}}">
 <div class="shio-container shio-stack">
 {{#if heading}}<h2 class="shio-heading" sh-field="heading">{{heading}}</h2>{{/if}}
 {{#if subheading}}<p class="shio-subheading" sh-field="subheading">{{subheading}}</p>{{/if}}
 {{#if intro}}<p class="shio-intro" sh-field="intro">{{intro}}</p>{{/if}}
 {{#if body}}<div class="shio-body" sh-field="body">{{{body}}}</div>{{/if}}
-{{#if image}}<p class="shio-image shio-media"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
-{{#if ctaLabel}}<p class="shio-cta shio-actions"><a class="shio-cta-link shio-button" sh-field="ctaLabel" sh-field-attr="ctaHref:href" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
-{{#if features}}<ul class="shio-features shio-grid">{{#each features}}<li class="shio-feature shio-card" data-shio-row="features" data-shio-icon="{{icon}}" sh-field-attr="features.{{@index}}.icon:data-shio-icon">{{#if title}}<h3 class="shio-feature-title" sh-field="features.{{@index}}.title">{{title}}</h3>{{/if}}{{#if body}}<p class="shio-feature-body" sh-field="features.{{@index}}.body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
-{{#if questions}}<div class="shio-questions shio-stack">{{#each questions}}<div class="shio-question shio-card" data-shio-row="questions">{{#if question}}<h3 class="shio-question-text" sh-field="questions.{{@index}}.question">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-answer" sh-field="questions.{{@index}}.answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
-{{#if logos}}<ul class="shio-logos shio-grid">{{#each logos}}<li class="shio-logo shio-media" data-shio-row="logos">{{#if image}}<img class="shio-logo-image" sh-field="logos.{{@index}}.image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a class="shio-logo-link" sh-field="logos.{{@index}}.name" sh-field-attr="logos.{{@index}}.href:href" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span class="shio-logo-name" sh-field="logos.{{@index}}.name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
-{{#if quotes}}<div class="shio-quotes shio-grid">{{#each quotes}}<blockquote class="shio-quote shio-card" data-shio-row="quotes">{{#if quote}}<p class="shio-quote-text" sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-quote-avatar" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite class="shio-quote-author" sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span class="shio-quote-role" sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
+{{#if image}}<p class="shio-media"><img sh-field="image" src="{{file_url image}}" alt="{{heading}}"></p>{{/if}}
+{{#if ctaLabel}}<p class="shio-actions"><a class="shio-button" sh-field="ctaLabel" sh-field-attr="ctaHref:href" href="{{ctaHref}}">{{ctaLabel}}</a></p>{{/if}}
+{{#if features}}<ul class="shio-grid">{{#each features}}<li class="shio-card" data-shio-row="features" data-shio-icon="{{icon}}" sh-field-attr="features.{{@index}}.icon:data-shio-icon">{{#if title}}<h3 sh-field="features.{{@index}}.title">{{title}}</h3>{{/if}}{{#if body}}<p sh-field="features.{{@index}}.body">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}
+{{#if questions}}<div class="shio-stack">{{#each questions}}<div class="shio-card" data-shio-row="questions">{{#if question}}<h3 sh-field="questions.{{@index}}.question">{{question}}</h3>{{/if}}{{#if answer}}<div class="shio-body" sh-field="questions.{{@index}}.answer">{{{answer}}}</div>{{/if}}</div>{{/each}}</div>{{/if}}
+{{#if logos}}<ul class="shio-grid">{{#each logos}}<li class="shio-media" data-shio-row="logos">{{#if image}}<img sh-field="logos.{{@index}}.image" src="{{file_url image}}" alt="{{name}}">{{/if}}{{#if href}}<a sh-field="logos.{{@index}}.name" sh-field-attr="logos.{{@index}}.href:href" href="{{href}}">{{name}}</a>{{/if}}{{#unless href}}<span sh-field="logos.{{@index}}.name">{{name}}</span>{{/unless}}</li>{{/each}}</ul>{{/if}}
+{{#if quotes}}<div class="shio-grid">{{#each quotes}}<blockquote class="shio-card" data-shio-row="quotes">{{#if quote}}<p sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-media" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
 </div>
 </section>
 {{/getRelation}}`;

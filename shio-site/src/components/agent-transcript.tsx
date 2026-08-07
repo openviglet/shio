@@ -7,6 +7,17 @@ const LAST = TRANSCRIPT.length - 1;
 const STEP_MS = 2600;
 
 /**
+ * How far `item` sits outside `box`, signed, and 0 when it already fits — the
+ * `block: "nearest"` rule, computed rather than delegated so the scroll it
+ * feeds can be applied to one element instead of to every ancestor.
+ */
+function overflowWithin(box: DOMRect, item: DOMRect): number {
+  if (item.top < box.top) return item.top - box.top;
+  if (item.bottom > box.bottom) return item.bottom - box.bottom;
+  return 0;
+}
+
+/**
  * SH531 — the centrepiece: a Claude Code session that builds one page, as a
  * player rather than a still.
  *
@@ -83,9 +94,23 @@ export function AgentTranscript({ className }: { className?: string }) {
     return () => window.clearTimeout(timer);
   }, [playing, current]);
 
-  // Keep the lit step in view inside the scrolling list.
+  /**
+   * Keep the lit step in view *inside the list*, and nowhere else (SH565).
+   *
+   * `scrollIntoView` was the obvious call and it was the bug: even with
+   * `block: "nearest"` it scrolls **every** scrollable ancestor, the document
+   * included. Once a reader scrolled past the hero the panel kept playing, and
+   * every 2.6s tick dragged the page back up to it — the section reading as a
+   * scroll trap. Scrolling the `<ol>` by hand is the only form that cannot
+   * touch the window: `Element.scrollBy` moves that element and stops there.
+   */
   useEffect(() => {
-    listRef.current?.children[current]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const list = listRef.current;
+    const item = list?.children[current];
+    if (!list || !item) return;
+
+    const delta = overflowWithin(list.getBoundingClientRect(), item.getBoundingClientRect());
+    if (delta !== 0) list.scrollBy({ top: delta, behavior: "smooth" });
   }, [current]);
 
   /**

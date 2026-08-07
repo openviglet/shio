@@ -1,0 +1,36 @@
+{
+  "id": "theme-heavy",
+  "title": "A source whose whole appearance is one external stylesheet",
+  "trait": "site",
+  "catches": ["SH555", "SH556", "SH558", "SH452"],
+  "why": "Every defect the eighth run found in an authorable replica is on this path and none of them is about the capture: the stylesheet reaches a verbatim page HTML-escaped so the browser cannot parse it (SH555), the generated theme and the section templates were written against different class names (SH556), and the theme a layout pulls in through `getRelation` is reported as unused (SH558). All three are readable in the conversion document, which is why this archetype is worth more than a live run — it makes them fast-tier findings.",
+  "clone": { "depth": 2, "assets": true, "markup": true },
+  "expect": {
+    "pages": ["/", "/about"],
+    "unfollowed": [],
+    "problems": [],
+    "assets": [
+      "/css/site.css",
+      "/css/tokens.css",
+      "/favicon.ico",
+      "/fonts/fixture-400.woff2",
+      "/fonts/fixture-700.woff2",
+      "/img/hero.png",
+      "/img/sprite.svg"
+    ],
+    "notes": []
+  },
+  "addressable": ["/", "/about"],
+  "unaddressable": [],
+  "propose": { "accept": "all" },
+  "conversion": {
+    "rawFields": ["CSS"],
+    "noEntitiesIn": ["/theme/captured"],
+    "themeCoversDrawnClasses": true,
+    "noSourceBaseInHrefs": true
+  },
+  "collections": ["features", "questions", "logos", "quotes"],
+  "scenarios": { "fidelity": true, "authorable": true, "headless": false },
+  "needsBrowser": false,
+  "routes": {}
+}

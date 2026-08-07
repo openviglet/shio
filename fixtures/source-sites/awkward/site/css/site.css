@@ -1,0 +1,4 @@
+:root { --ink: #22272e }
+.hero { color: var(--ink); background: #eceff4 url("../img/wash.png") repeat-x }
+.hero h1 { font-size: 2rem }
+.card { background: #fff }

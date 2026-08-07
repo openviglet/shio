@@ -1,0 +1,28 @@
+{
+  "id": "spa",
+  "title": "A source that is client-rendered end to end",
+  "trait": "site",
+  "catches": ["SH392", "SH517"],
+  "why": "The served document is an empty `<div id=\"root\">` and a module script; every word, every link and a `<canvas>` are created after load. A fetch-only crawl gets one thin page and cannot reach the second route at all, so this archetype's whole value is that the *capture must say so* rather than producing a replica of an empty div. `--render` is the flag the note has to teach, and it needs a browser — which makes this the one archetype the live tier refuses rather than skips.",
+  "clone": { "depth": 2, "assets": true, "markup": true },
+  "expect": {
+    "pages": ["/"],
+    "unfollowed": [],
+    "problems": [],
+    "assets": ["/assets/app.css", "/assets/app.js"],
+    "notes": [
+      {
+        "match": "almost no text with scripts present",
+        "catches": "SH392",
+        "means": "the crawl recognised a client-rendered page and taught --render instead of reporting a captured site"
+      }
+    ]
+  },
+  "addressable": ["/"],
+  "unaddressable": [],
+  "unreachableWithoutBrowser": ["/pricing"],
+  "propose": { "accept": "all" },
+  "scenarios": { "fidelity": false, "authorable": false, "headless": false },
+  "needsBrowser": true,
+  "routes": {}
+}

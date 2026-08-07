@@ -1008,6 +1008,7 @@
 - **SH552** — propose publishes the chrome finding as rows, convert drops those field values instead of writing them, and the command that performed the cut is the one that prints it
 - **SH551** — a details unit's summary is the question, and a row field the markup offered that no row carries is reported as a statement about the extractor
 - **SH555** — a getRelation row's raw-text fields are Handlebars.SafeString — Theme.CSS/JAVASCRIPT, Region.JAVASCRIPT, PageLayout.JAVASCRIPT, keyed by (post-type, field) so every other field keeps escaping — which is SH461's answer applied to SH549's second emission; the captured stylesheet now reaches the browser with its url() quotes intact and the ten page-reference-broken errors are gone
+- **SH556** — the templates emit roles only — the sixteen undefined names each duplicated a data-shio-* handle already on the same element, so [data-shio-section] and [data-shio-row] address everything the classes did and the theme stays a role stylesheet; VOCABULARY_CLASSES is the declared union and convert.test.mjs now holds both directions, so no role goes unstyled and no drawn class goes undeclared
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

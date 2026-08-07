@@ -29,7 +29,9 @@ violated rule, so it is stated up front and it is absolute:
 
 The full commit + batch mechanics are rules 7–8 below; the propagation to the
 end-user docs repo is a **separate** commit (see "Propagating to end-user
-documentation").
+documentation"). When a task turns out to be its **block's last** — `stats` says
+so, you do not — one more unit of work follows it: see
+"[When a block completes](#when-a-block-completes--the-sweep-across-the-three-public-surfaces)".
 
 ---
 
@@ -249,7 +251,8 @@ re-running before committing.
   shape the product left; a new section under it makes the page *contradict
   itself*. Fix the stale prose first, then add.
 - **A new page needs a sidebar row or it does not exist.** Add it to
-  [`sidebars-shio.ts`](../../../../../vigletdocs/vigletdocs.github.io/sidebars-shio.ts)
+  [`sidebars-shio.ts`](https://github.com/vigletdocs/vigletdocs.github.io/blob/main/sidebars-shio.ts)
+  (`vigletdocs.github.io/sidebars-shio.ts`, one level *above* `docs-shio/`)
   under the hub the COVERAGE section names — the matrix is grouped by *who does
   the job* (agent builds it / human curates it / CDA delivers it), and since SH482
   those four hubs **are** the sidebar. A page absent from it builds as an unlisted

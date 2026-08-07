@@ -1,0 +1,41 @@
+{
+  "note": "The corpus's assertions that are red at HEAD, each owned by an open task. This is a NAMED LIST and deliberately not a ceiling: a ceiling lets one task pay the debt and the next task spend it, which is the reasoning cli/test/assertion-debt.test.mjs was built on. Every entry here is a case source-corpus.test.mjs reports rather than fails on — so the suite can live in the gate without crying wolf (docs/agents/cli.md) while still holding the assertion the SH338 order says must land before the fix. The list is checked in BOTH directions: an entry whose assertion has gone green FAILS the run, naming the id to delete. That is what stops the list becoming the place findings go to be forgotten.",
+  "findings": [
+    {
+      "id": "SH557",
+      "archetype": "query-pages",
+      "assertion": "capture-notes-query-string",
+      "what": "The capture records three pages whose paths no friendly URL can hold and its notes do not say so. On a real source this was 91 of 107, reported by `diff` after 403 assets had been uploaded."
+    },
+    {
+      "id": "SH557",
+      "archetype": "query-pages",
+      "assertion": "unaddressable-named-at-capture",
+      "what": "The same finding at the phase that can still stop the run, rather than at the phase that reports the damage."
+    },
+    {
+      "id": "SH555",
+      "archetype": "theme-heavy",
+      "assertion": "layout-raw-field-CSS",
+      "what": "The generated layout emits {{CSS}} with two braces inside the getRelation block, so a captured stylesheet reaches the browser with every url() entity-escaped."
+    },
+    {
+      "id": "SH564",
+      "archetype": "awkward",
+      "assertion": "no-source-base-in-fields",
+      "what": "SectionHero.ctaHref holds https://awkward.test/docs/guia — an absolute href extracted whole, which the render-time rebase correctly leaves alone."
+    },
+    {
+      "id": "SH565",
+      "archetype": "awkward",
+      "assertion": "title-entity-decoded",
+      "what": "scanPage reads <title> into the page row without decoding its entities, so a source title of `Awkward &amp;amp; company` is stored verbatim and escaped again on render. <title> is RCDATA, not raw text — SH550's exclusion was written for <script> and <style>."
+    },
+    {
+      "id": "SH563",
+      "archetype": "awkward",
+      "assertion": "redirect-recorded",
+      "what": "buildInventory drops the redirectedTo that visit returns, so /antigo and /docs/guia/ are two pages with the same body and no record that one is the other's redirect."
+    }
+  ]
+}
