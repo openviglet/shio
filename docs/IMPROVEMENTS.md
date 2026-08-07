@@ -318,27 +318,27 @@ there has to be asserted rather than assumed.
 
 ### VIII.32 Discovery has fixes and no grep (SH598)
 
-SH338 states the rule: when a review finds a design law being broken, the instrument
-that finds every *other* break lands before the fixes. P1 obeyed it —
+SH338 states the rule: when a review finds a design law broken, the instrument that
+finds every *other* break lands before the fixes. P1 obeyed it —
 `ShAgentP1ConformanceTest` classifies every manifest `features` key and holds the
-unreachable ones as an asserted list, and it named four that no task had.
+unreachable ones as an asserted list, naming four no task had.
 
-P2 did the opposite. Three breaks were found by hand, one per round, and each was fixed
+P2 did the opposite. Three breaks were found by hand, one per round, each fixed
 alone: a capability named by four documents and no command (SH587), an onboarding
 command that never read the manifest (SH595), a feature reachable by REST, CLI and
-console and by neither MCP list (SH596). Three fixes, no grep. So the honest count of P2
-breaks today is *three that somebody happened to notice*.
+console and by neither MCP list (SH596). So the honest count of P2 breaks today is
+*three that somebody happened to notice*.
 
-The question P1 asks is **is every feature reachable**. The question P2 asks is
-different and it is assertable: **is every capability reachable from the entry point, in
-one call, without prior knowledge of its name**. Concretely — every manifest feature
-that is `true` is named by at least one of {tool, resource, command, CLI verb}, and the
-path from `startHere` to it is bounded.
+**The measure is computable without an agent.** Discoverability, defined as *named
+in a response already received*, is graph reachability: seed the known set with the
+entry point's response, expand by every name it contains, repeat. A capability is
+reachable at depth N or it is not reachable at all. No LLM, no tokens, no
+judgement — a sibling of `ShAgentNaiveClientBenchmarkTest` (SH340), which is
+already naive about *keys* and not about *what exists*.
 
-The asserted-list shape is the one to copy, not a ceiling: the run prints how many are
-reachable and how many are held, and a task that closes one cannot quietly open another.
-SH597 lands first, because the instrument says *which* are unreachable and the benchmark
-says *what that costs*.
+Assert it as P1's asserted list rather than a ceiling: the run prints how many are
+reachable and how many held, so closing one cannot quietly open another. SH597 lands
+first — the walk says *which* are unreachable, the benchmark says *what that costs*.
 
 ### VIII.33 One capability, three lists, no join (SH599)
 
@@ -1143,6 +1143,30 @@ Two moves, in order: assert the enumeration equals the server's, so the build fa
 a tool ships; then delete the enumeration in favour of routing to `shio://manifest`, so
 there is nothing left to assert. The leak guard added for internal ids is the same shape
 and the same file — one more walk over the published artefacts.
+
+### XI.19 The clean room, and what is actually in the box (SH605)
+
+Every measurement this project has was taken with the source tree on disk. The reader
+had `agents.md`, `docs/agents/**`, `docs/specs/**` and a repo-local skill, and used them
+without noticing — that is what using them looks like. A stranger who runs `npm i -g`
+and adds the plugin has **none** of it, and no run has ever been made under that
+constraint.
+
+So the question "is Shio discoverable" has never actually been asked. What was measured
+is "is Shio discoverable to a reader holding its repository".
+
+The clean room is mechanical and cheap: build the publishable artefacts and nothing else
+— the CLI tarball and `claude-plugin/` — install them into an empty directory, and run
+SH598's reachability walk with that directory as the only filesystem. A step that needs
+a file which is not in the box fails naming the file. No agent, no tokens, no judgement.
+
+It is the enforcement half of SH603. SH603 says *follow only what the instance and the
+plugin say*; a reader with the repo mounted cannot honour that and cannot tell that it
+did not, because the cheapest read is the one you do not remember making. One of the two
+is a promise and this one is the guard.
+
+Expect it to be red on the first run, and expect the missing files to be interesting:
+what leaves the box is a decision nobody has made deliberately.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
