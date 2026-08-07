@@ -547,31 +547,6 @@ It is also the honest end of my part in this. I have been the verification for f
 rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
 me looking.
 
-### IX.41 The judge whose two sides are not the same shape (SH554)
-
-`diff` claims in its own header comment that both sides come from `scanPage`, so nothing
-is derived. They do not. The declared side reads an inventory row shaped `links:
-{internal, external}`; the produced side reads a live scan whose `links` is an array.
-`FACTS` then reads `page.links?.internal ?? page.links?.length` and
-`page.links?.external`, so on the produced side internal falls back to the **total** and
-external is `undefined`, counted as zero.
-
-Measured on a fidelity replica of vilt-group.com: the served page carries nine absolute
-external links, identical to the nine the source serves, and `diff` reports `external
-links: 9 → 0` on that page and on every other. The internal count reads 67 against a
-declared 44, and 67 is exactly the total number of `href` attributes on the page. Every
-replica therefore reports a loss it did not suffer and hides an internal-link loss
-behind an apparent gain.
-
-The cost is not the wrong number. SH548 put this command in the CI gate on the argument
-that it is the only instrument holding an expectation, which was right, and the
-conformance suite is now red at HEAD on its own fixture — four facts lost across two
-pages that lost nothing. An instrument that cries wolf in the gate is worse than one
-outside it, because the next red run is the one nobody reads.
-
-The assertion is one page scanned both ways with the same counts asserted equal, which
-is the invariant the comment already states.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

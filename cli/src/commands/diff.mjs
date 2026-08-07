@@ -32,7 +32,7 @@
  */
 import { join } from "node:path";
 
-import { INVENTORY_FILE, scanPage } from "../clone.mjs";
+import { countLinks, INVENTORY_FILE, scanPage } from "../clone.mjs";
 import { compareCapture, describeDiff } from "../diff.mjs";
 import { resolveAdmin } from "../context.mjs";
 
@@ -117,7 +117,12 @@ export async function run(flags, positionals, ctx) {
     // A non-200 is "the replica serves nothing here", which `compareCapture` reports as a missing
     // page rather than as four lost facts — one absence is one fact.
     if (!response?.ok) continue;
-    produced.set(page.path, scanPage(await response.text(), url));
+    const doc = scanPage(await response.text(), url);
+    // SH554 — the second half of the reading, and the half that was missing. `scanPage` hands back
+    // raw hrefs; an inventory row carries them already split, so the replica's are split too, by
+    // the same `classifyLinks` the capture ran. Against the *served* URL: internal on a replica
+    // means the instance that serves it, which is where the source's own-origin links now point.
+    produced.set(page.path, { ...doc, links: countLinks(doc.links, url) });
   }
 
   const comparison = compareCapture(pages, produced);

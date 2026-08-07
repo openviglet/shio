@@ -199,6 +199,7 @@
 - **SH527** — A defect closes with an assertion carrying its id, and cli/test/assertion-debt.test.mjs computes whether it did: the ledger's shipped ids against the ids every suite names, the difference held as a named list rather than a ceiling. It reads 275 files and one ledger in under a second, and it is excluded from its own walk because its declaration is not an assertion.
 - **SH543** — A crawl now reports where it is to two files beside the inventory — a constant-size status with a heartbeat, ceilings and pid, and a per-unit jsonl keeping the cost the inventory drops — so a long run is followed from another turn instead of being diagnosed by sampling the browser's CPU.
 - **SH548** — the gate order names diff wherever a capture exists, the conformance run against a live replica invokes it, and a lint holds the prose and the runnable order in step
+- **SH554** — the internal/external split is one shared function called on both sides — classifyLinks in clone.mjs, run by buildInventory and by shio diff on the served bytes — so the fallback that read a raw scan's link array as "total internal, zero external" is gone and comparePage refuses an unclassified side naming SH554; the gate no longer reports nine external links lost on a page that lost none
 
 ### Block I follow-up
 

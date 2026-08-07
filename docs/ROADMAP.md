@@ -30,7 +30,6 @@
 - ⏳ **SH522** (deps: SH521 ✅) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
 - 📋 **SH528** (deps: SH527 ✅) **The fixture cannot exhibit the traits that broke every real replica** — It serves a page, a stylesheet, a font, an image and a favicon, so a query string, a relative depth, an overlay, an entity, an empty file and a script-made canvas are unreproducible offline. → §IX.37
 - 📋 **SH529** (deps: SH528) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38
-- 📋 **SH554** (deps: SH548 ✅) **The instrument now in the gate reports a loss on every page that has lost nothing** — diff reads links.external on the produced side where the scan supplies an array, so every page reports its external links gone and its internal links as the total, and the suite is red at HEAD. → §IX.41
 
 ## Block I — Content as files (local-first authoring)
 

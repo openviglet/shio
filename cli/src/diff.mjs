@@ -31,6 +31,12 @@
  * is SH245's rule and it is the whole of why this can be trusted: a second reader of "how many links
  * does this page have" would disagree with the first somewhere, and the disagreement would read as a
  * replica that lost content. The comparison below is arithmetic over two runs of one function.
+ *
+ * SH554 — and one function was not enough, because `scanPage` is only *half* of what an inventory
+ * row records. Its `links` is an array of raw hrefs; the row's is `{internal, external}`, split by
+ * a rule that lived inline in `buildInventory` and ran on the declared side only. Both steps are
+ * now shared — `scanPage` then `countLinks` — and `assertComparable` refuses a side that skipped
+ * the second, because the wrong shape did not crash here: it scored, plausibly, as a total lost.
  */
 
 /**
@@ -46,6 +52,8 @@
  *   a caller branches on — `lost` is the one that means a defect
  */
 export function comparePage(declared, produced) {
+  assertComparable(declared, "declared");
+  assertComparable(produced, "produced");
   const rows = FACTS.map((fact) => {
     const was = fact.of(declared) ?? 0;
     const now = fact.of(produced) ?? 0;
@@ -74,11 +82,33 @@ export function comparePage(declared, produced) {
  * legal notice.</p>
  */
 const FACTS = [
-  { name: "internal links", of: (page) => page.links?.internal ?? page.links?.length },
+  { name: "internal links", of: (page) => page.links?.internal },
   { name: "external links", of: (page) => page.links?.external },
   { name: "assets", of: (page) => (Array.isArray(page.assets) ? page.assets.length : page.assets) },
   { name: "forms", of: (page) => (Array.isArray(page.forms) ? page.forms.length : page.forms) },
 ];
+
+/**
+ * The shape check that would have caught SH554 at the boundary it crossed.
+ *
+ * <p>The header above claims both sides come out of `scanPage`, and they do — but `scanPage`'s
+ * `links` is an *array* of hrefs, and an inventory row's is `{internal, external}`. `FACTS` used to
+ * paper over the difference with `page.links?.internal ?? page.links?.length`, so an unclassified
+ * side reported its total as internal and zero as external: a plausible pair of numbers, wrong on
+ * every page, and red in the CI gate SH548 had just put this command into. Callers pass the
+ * produced side through `countLinks` (SH554); this refuses the raw shape rather than scoring it,
+ * because the failure mode is not a crash — it is four believable facts.</p>
+ */
+function assertComparable(page, side) {
+  if (!Array.isArray(page?.links)) return;
+  throw new Error(
+    `shio diff: the ${side} side carries links as a raw array, which cannot be compared (SH554).\n`
+      + "  fix: classify it first — countLinks(doc.links, pageUrl) — so both sides are\n"
+      + "       {internal, external}, which is the shape an inventory row records.\n"
+      + "  why: scoring the array reads its length as the internal count and zero as the external\n"
+      + "       one, so every page reports a loss it did not suffer.",
+  );
+}
 
 /** Below this share of the source's text, a page has lost prose rather than whitespace. */
 export const TEXT_FLOOR = 0.6;

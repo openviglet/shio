@@ -372,6 +372,26 @@ the replica does not serve is *one absence* rather than four lost facts, because
 earlier moment>` are the three §IX.34 also names and **none is built**: the refusal says so rather
 than answering approximately, and the capture is the one both hand-errors were about.
 
+**And one function was not enough (SH554).** "Both sides come out of `scanPage`" was true and
+insufficient: `scanPage`'s `links` is an array of raw hrefs, an inventory row's is
+`{internal, external}`, and the split between them lived inline in `buildInventory` — so it ran on
+the declared side and nowhere else. `FACTS` papered over the gap with
+`page.links?.internal ?? page.links?.length`, which does not crash on the wrong shape; it *scores*
+it, reading the total as internal and zero as external. Measured on a fidelity replica of
+vilt-group.com: nine absolute external links served, nine in the source, `external links: 9 → 0`
+reported on that page and on every other, with the internal count reading 67 against a declared 44
+— 67 being exactly every `href` on the page. Every replica reported a loss it had not suffered and
+hid a real internal-link loss behind an apparent gain, and because SH548 had just put this command
+in the CI gate, the conformance suite was red at HEAD on its own fixture. **An instrument that cries
+wolf in the gate is worse than one outside it**, because the next red run is the one nobody reads.
+The split is now `classifyLinks`/`countLinks` in `clone.mjs`, called by `buildInventory` *and* by
+`shio diff` on the served bytes — against the **serving** origin, since internal on a replica means
+the instance that serves it. The fallback is gone and `comparePage` refuses an unclassified side
+naming SH554, because the failure mode was never a crash but four believable numbers. One caveat
+the fixture makes explicit: a replica that kept the source's *absolute same-host* spelling really is
+serving a link that leaves the site, so counting that as an internal link lost is the correct
+reading and not a regression of this fix.
+
 **Baking content is right, baking machinery is not (SH517).** The source has
 `<div id="particles"></div>` — empty, filled at runtime by a particles library — and the replica had
 `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas width="1480"

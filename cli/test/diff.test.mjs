@@ -17,7 +17,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { INVENTORY_FILE, scanPage } from "../src/clone.mjs";
+import { buildInventory, countLinks, INVENTORY_FILE, scanPage } from "../src/clone.mjs";
 import { compareCapture, describeDiff } from "../src/diff.mjs";
 import * as diff from "../src/commands/diff.mjs";
 import { norm } from "./support/paths.mjs";
@@ -44,15 +44,21 @@ function inventoryOf(html) {
     pages: [{
       path: "/",
       title: doc.title,
-      links: {
-        internal: doc.links.filter((link) => link.href.startsWith("/")).length,
-        external: doc.links.filter((link) => !link.href.startsWith("/")).length,
-      },
+      // SH554 — `countLinks`, not a `startsWith("/")` of this fixture's own. A hand-rolled split
+      // here is the very defect under test, one layer up: it would call an absolute same-origin
+      // link external and agree with nothing.
+      links: countLinks(doc.links, "https://x.test/"),
       assets: doc.assets.length,
       forms: doc.forms.length,
       textChars: doc.textChars,
     }],
   };
+}
+
+/** The produced side as `shio diff` builds it: scanned, then split by the rule the capture used. */
+function scannedAt(html, url) {
+  const doc = scanPage(html, url);
+  return { ...doc, links: countLinks(doc.links, url) };
 }
 
 function ctxWith({ served = {}, inventory = inventoryOf(SOURCE) } = {}) {
@@ -118,7 +124,7 @@ test("SH522: a fact the replica gained is not a loss", () => {
   // A Shio layout adds links — a skip link, a nav the theme composes — so a gate that called any
   // difference damage would fire on every working conversion. Counted apart and never failing.
   const declared = [{ path: "/", title: "Home", links: { internal: 2, external: 0 }, assets: 1, forms: 0, textChars: 400 }];
-  const produced = new Map([["/", scanPage(
+  const produced = new Map([["/", scannedAt(
     '<html><head><title>Home</title></head><body><a href="/a">a</a><a href="/b">b</a>'
       + '<a href="/c">c</a><img src="/img/hero.png" alt=""><p>'
       + "Body copy that reads like a page a person wrote. ".repeat(6) + "</p></body></html>",
@@ -148,6 +154,77 @@ test("SH522: --against names the three declarations that are not built yet", asy
     /not built[\s\S]*allowed: capture[\s\S]*same address\n *at an earlier moment/,
     "a flag that accepted the value and answered approximately would be worse than one that says "
       + "what it does not do",
+  );
+});
+
+/** Every href shape that has to survive the join: relative, root-relative, absolute-same-host, off-host. */
+const MIXED = `<html lang="en"><head><title>Mixed</title></head><body>
+  <nav><a href="/about">About</a><a href="https://x.test/pricing">Pricing</a><a href="contact">Contact</a></nav>
+  <p><a href="https://linkedin.test/company/acme">LinkedIn</a><a href="https://github.test/acme">GitHub</a></p>
+  <img src="/img/hero.png" alt="">
+  <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p>
+  </body></html>`;
+
+test("SH554: one page scanned both ways compares equal, fact for fact", () => {
+  // The invariant `diff`'s own header states and did not hold. The capture's counts come out of
+  // `buildInventory`; the replica's out of the produced path. Same bytes, same URL, so every delta
+  // must be zero — and before SH554 they were `internal 3 → 5` (the total, via a `?? links.length`
+  // fallback) and `external 2 → 0` (a field the raw scan shape does not have).
+  const at = "https://x.test/";
+  const inventory = buildInventory({
+    origin: "https://x.test",
+    seed: at,
+    visited: [{ url: at, doc: scanPage(MIXED, at), status: 200, depth: 0 }],
+    robots: { present: true },
+  });
+  const declared = inventory.pages;
+  assert.deepEqual(declared[0].links, { internal: 3, external: 2 },
+    "root-relative, absolute-same-host and bare-relative are all internal; two off-host are not");
+
+  const comparison = compareCapture(declared, new Map([["/", scannedAt(MIXED, at)]]));
+
+  assert.deepEqual(
+    comparison.pages[0].rows.filter((row) => row.delta !== 0),
+    [],
+    "a page compared with itself has lost and gained nothing",
+  );
+  assert.equal(comparison.lost, 0);
+});
+
+/**
+ * The same page as a replica serves it: own-origin links rebased to root-relative by the rewriter,
+ * off-host ones left absolute.
+ *
+ * <p>The rebase is why `https://x.test/pricing` is spelled `/pricing` here, and it is load-bearing:
+ * a replica that kept the source's absolute spelling really would be serving a link that leaves the
+ * site, and `diff` counting that as one internal link lost is the correct reading, not a false
+ * alarm. What SH554 fixes is the reading of the links that did *not* move.</p>
+ */
+const REPLICA = MIXED.replace('href="https://x.test/pricing"', 'href="/pricing"');
+
+test("SH554: a replica that keeps its off-host links is not reported as having lost them", async () => {
+  // The measured symptom on a fidelity replica of a real site: nine absolute external links served,
+  // nine in the source, and `diff` printing `external links: 9 → 0` on that page and every other —
+  // with the command in SH548's CI gate, so the suite was red at HEAD on its own fixture.
+  const ctx = ctxWith({ inventory: inventoryOf(MIXED), served: { "/": REPLICA } });
+
+  const result = await diff.run({ site: "Acme" }, [], ctx);
+
+  assert.equal(result.exitCode, 0, "nothing was lost, so the gate must not fire");
+  assert.equal(result.lost, 0);
+  assert.doesNotMatch(ctx.out.text, /external links: \d+ → 0/,
+    "an instrument that cries wolf in the gate is worse than one outside it");
+});
+
+test("SH554: an unclassified side is refused rather than scored", () => {
+  // The boundary the defect crossed. The wrong shape did not throw — it produced four believable
+  // numbers, which is why nothing caught it for a whole release.
+  const declared = [{ path: "/", title: "Home", links: { internal: 3, external: 2 }, assets: 1, forms: 0, textChars: 400 }];
+  const raw = scanPage(MIXED, "https://x.test/");
+
+  assert.throws(
+    () => compareCapture(declared, new Map([["/", raw]])),
+    /produced side carries links as a raw array[\s\S]*SH554[\s\S]*countLinks/,
   );
 });
 

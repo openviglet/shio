@@ -135,6 +135,42 @@ export function sameOrigin(url, origin) {
   }
 }
 
+/**
+ * A page's links, split into the two the inventory counts (SH554).
+ *
+ * <p>`scanPage` emits `links` as an array of raw hrefs, because at scan time a page does not know
+ * what origin it is being judged against. The split into internal and external is that second step,
+ * and it lived inline in `buildInventory` — so the inventory had counts and a live scan had an
+ * array, and `shio diff` read `links.external` off the array shape and got `undefined`. Every
+ * replica then reported its external links gone and its internal ones as the *total*, which is how
+ * an instrument in the CI gate came to report a loss on pages that had lost nothing.</p>
+ *
+ * <p>Returned as resolved `URL`s rather than counts because the inventory needs both: the count per
+ * page, and the targets — an internal one it never crawled is `unfollowed`, an external one names a
+ * host. One walk, one rule, and `countLinks` is the same answer with `.length` taken.</p>
+ *
+ * @param {{href: string}[]} links `scanPage`'s `links`
+ * @param {string|URL} pageUrl the page that carried them, which relative hrefs resolve against
+ * @param {string|URL} [originUrl] what counts as internal; the page's own origin when omitted,
+ *   which is the right default for a replica judged on the instance that serves it
+ */
+export function classifyLinks(links, pageUrl, originUrl = pageUrl) {
+  const internal = [];
+  const external = [];
+  for (const link of links ?? []) {
+    const url = resolveHref(link?.href, pageUrl);
+    if (!url) continue;
+    (sameOrigin(url, originUrl) ? internal : external).push(url);
+  }
+  return { internal, external };
+}
+
+/** `classifyLinks` as the two numbers an inventory row and a diff both carry (SH554). */
+export function countLinks(links, pageUrl, originUrl = pageUrl) {
+  const split = classifyLinks(links, pageUrl, originUrl);
+  return { internal: split.internal.length, external: split.external.length };
+}
+
 // ---------------------------------------------------------------------------------------------
 // robots.txt
 // ---------------------------------------------------------------------------------------------
@@ -977,27 +1013,26 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       continue;
     }
     const doc = entry.doc;
-    let internal = 0;
-    let outbound = 0;
+    // SH554 — the split is `classifyLinks`, which `shio diff` also calls on the replica's own bytes.
+    // It used to be this loop and nowhere else, which is exactly why the two sides of the comparison
+    // stopped being the same shape.
+    const links = classifyLinks(doc.links, entry.url, originUrl);
+    const internal = links.internal.length;
+    const outbound = links.external.length;
     const crawled = new Set(visited.map((each) => pathOf(each.url)));
-    for (const link of doc.links) {
-      const url = resolveHref(link.href, entry.url);
-      if (!url) continue;
-      if (sameOrigin(url, originUrl)) {
-        internal += 1;
-        // SH387 — an internal target no row in this inventory covers. Computed against the *visited*
-        // set rather than against `pages`, because a page that answered 500 is a page the crawl
-        // reached: it belongs to `problems`, and calling it uncrawled as well would put one gap in
-        // two lists that can disagree.
-        const target = pathOf(url);
-        if (!crawled.has(target)) {
-          unfollowed.set(target, (unfollowed.get(target) ?? 0) + 1);
-        }
-      } else {
-        outbound += 1;
-        const host = url.host.toLowerCase();
-        external.set(host, (external.get(host) ?? 0) + 1);
+    for (const url of links.internal) {
+      // SH387 — an internal target no row in this inventory covers. Computed against the *visited*
+      // set rather than against `pages`, because a page that answered 500 is a page the crawl
+      // reached: it belongs to `problems`, and calling it uncrawled as well would put one gap in
+      // two lists that can disagree.
+      const target = pathOf(url);
+      if (!crawled.has(target)) {
+        unfollowed.set(target, (unfollowed.get(target) ?? 0) + 1);
       }
+    }
+    for (const url of links.external) {
+      const host = url.host.toLowerCase();
+      external.set(host, (external.get(host) ?? 0) + 1);
     }
     for (const asset of doc.assets) {
       const url = new URL(asset.url);
