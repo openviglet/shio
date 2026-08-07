@@ -771,6 +771,135 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
+### IX.54 What the instance already knows, said where it is needed (SH587)
+
+`GET /api/v2/agent/diagnostics` answers with the exact incident SH544 was filed from —
+the column, the truncated value, `count: 2`, `firstSeen`/`lastSeen`, a `fix`, and
+`frames: ShPostUnifiedWriteService.setFurl:223 ← ShAgentBatchService.postUpsert:1059`.
+That run was diagnosed instead by locating `store/logs/shio.log` and grepping a stack
+trace, while the endpoint recorded both attempts.
+
+`shio remember` holds four notes on this instance, one of which describes the
+`site.postTypeLayout` binding and names SH328. Twelve replication rounds read none of
+them.
+
+Neither is a missing capability. Both are P2 — *discovery is a product feature, not a
+docs problem* — broken by the product that declares it. The manifest is called every
+round with `?include=identity` and nothing else in it is ever read; `convert` and
+`verify` run dozens of times and neither has ever said that an incident was recorded or
+that a note exists.
+
+The repair is two lines and no new surface. SH513 already makes the CLI print the scalar
+fields of a non-teaching error body; a 5xx should add *the instance recorded this: GET
+/api/v2/agent/diagnostics*, because a 500's response is gone by definition and that is
+the only place left. And a command running against a site or instance that carries notes
+should print their count and keys — not the prose, which is P3's business, just the fact
+that somebody left one.
+
+The measure of success is that the next round's transcript contains neither a log grep
+nor a re-derived fact.
+
+### IX.55 The measurement that keeps being rewritten (SH588)
+
+`SKILL.md` carries seven checks for judging a replica. Two are verbs — `verify` and
+`diff`. The other five are paragraphs, and the most-used is *count, do not eyeball*:
+take the props a page emits and compare them against the fields each section type
+declares, **including every collection row**, and **in both declaration forms**, because
+a value that lands in an attribute is declared by `sh-field-attr` beside the element's
+own `sh-field`.
+
+That procedure was hand-written four times across four rounds, slightly differently each
+time. Once it was wrong: a complete page read as 9 of 10 because only `data-shio-prop`
+was counted, and a regression was nearly filed against SH503 on the strength of it. The
+rule about counting both forms exists in `SKILL.md` *because* of that, which is the
+definition of a procedure that cannot be left to a reader.
+
+So: `shio annotations <page>` — props by field, both forms, rows expanded, joined
+against what the post-type of each `data-shio-post` declares, and non-zero when a
+declared field is rendered without an annotation. It is SH524's question asked at the
+page rather than at the template, and the two are worth having apart: SH524 finds a
+field no template draws, this finds a field a template draws and does not make editable,
+which is how SH465 and SH475 both shipped looking reasonable.
+
+Every instrument this project added — SH516, SH521, SH526, SH548, SH560 — turned a rule
+in a file into an assertion. This is the next on that list.
+
+### IX.56 One verdict, and the disagreements that produced it (SH589)
+
+Judging a replica means running `verify`, `diff`, `audit` and `snapshot`, reading four
+reports in four vocabularies, and knowing which one answers which question. Round eight:
+`verify` 0, `audit` 0, `diff` 1. Round twelve: `verify` 0, `diff` 1. Both ended with a
+real defect and neither ended with a number anybody could act on.
+
+`shio judge --site X` runs them and answers once. The composition is the easy half. The
+half worth building is that it prints **where they disagreed**, because that is where
+every finding of this work came from: SH521 (the gate said `ok` on a page
+`/agent/render` had already scored at nine unstyled classes), SH554 (`diff` reported a
+loss `verify` could not see, and it was `diff` that was wrong), SH577 (`diff` red and
+`verify` green, and the mode was the reason), SH586 (`diff` red where `verify` was
+clean, and the links were leaving the site).
+
+Four for four. A disagreement between two instruments is not noise to be reconciled; it
+is the highest-yield signal this chain produces, and it reaches a reader only if the
+reader happens to run both and notice.
+
+This is P2 applied to the perception loop rather than to discovery — one call replaces a
+session — and the one thing it must not do is average. A green from three and a red from
+one is a red, and the report names which and on what, so the disagreement survives the
+summary rather than being dissolved by it.
+
+### IX.57 A constant is not a coincidence (SH590)
+
+`shio diff` on a 25-page replica printed `internal links -3` beside `external links +3`
+on twenty-two of them. Exactly three, on every page, in both directions. That is one
+cause — the source writes three of its own links as absolute URLs and the replica serves
+them verbatim — and it was on screen in round eight, read as two ordinary shortfalls,
+and again in round twelve before anybody fetched a page and looked at the hrefs.
+
+The same shape produced SH578: `assets +30` on every page of a fidelity replica, uniform
+to the unit, which turned out to be the inlined theme's own `url()` counted on one side
+only. Both times the give-away was not the number but its **invariance**. A real
+page-by-page loss varies with the page; a constant across twenty-two pages is a property
+of the pipeline.
+
+So `diff` should say so: any fact whose delta is identical across N pages is reported
+once, as a candidate cause, with the pages folded behind the count. It is arithmetic
+over output the command already computes — no new measurement, no browser, no instance.
+
+The value is in the loop. Twelve rounds of this work found defects three ways: two
+instruments disagreeing (SH589's subject), a declaration nobody read (SH560's group K),
+and a number that was uniform. Only the third is one pass over a single command's own
+output, which makes it the cheapest to build and the one that would have moved a finding
+four rounds earlier.
+
+### IX.58 Four ledgers of what is knowingly wrong (SH594)
+
+The device is sound and it has been invented four times:
+
+| where | what it holds | since |
+|---|---|---|
+| `shio/verify-baseline.json` | accepted `verify` findings, per project | SH142 |
+| `cli/test/assertion-debt.test.mjs` `DEBT` | shipped ids carrying no assertion | SH527 |
+| `fixtures/source-sites/open-findings.json` | corpus assertions red at HEAD | SH560 |
+| `red-suites.json` | a suite allowed to be red, with its reason | SH579 |
+
+Each is a **named list rather than a ceiling**, for the same stated reason every time: a
+ceiling lets one task pay the debt and the next spend it. Each is checked in both
+directions, so an entry that goes green fails the run. Each was the right call on its
+own.
+
+Together they are four formats, four readers and four places to look, and nothing joins
+them. This session met the cost directly: `open-findings.json` held a red case owned by
+SH555 **after SH555 had shipped**, because the fix landed on the render side and the
+CLI's generated layout — which the corpus reads — still emits `{{CSS}}`. Only a check
+written this round noticed, and it had to read `docs/ROADMAP.md` to do it.
+
+This is SH583's shape one level up: five places decided what a trailing slash meant and
+they agreed only by accident. Four ledgers agree about what is knowingly broken only
+while nobody's debt is anybody else's. The question is not whether to merge the files —
+their scopes are genuinely different — but whether one reader can answer *what is this
+repository knowingly carrying, and which of it has an owner who has already gone*.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1062,6 +1191,30 @@ Two candidate answers, not exclusive:
 - **A resolver**, in the `ShFolderSite.of` mould: one method that resolves an object id and drops
   a trashed folder, so the correct form is also the shortest one. The lint then has something to
   point at, which is what made SH128's guard teachable rather than annoying.
+
+### XII.15 A site that was never meant to be kept (SH591)
+
+Twelve replication rounds left thirteen sites on one instance — `R6Fid`, `R6Aut`,
+`R9Aut`, `R9Loc`, `R10Ssr`, `R11`, `R12` and six older ones. Every one was made to
+answer a question that has since been answered. Removing them means thirteen
+`site.delete` ops, each answering 428 and each needing its own confirm token, which is
+SH108 working exactly as designed and applied to the one case where the surprise it
+guards against cannot happen.
+
+The distinction the model is missing is **who declared the site disposable, and when**.
+P7 is that a human is never surprised; a site the agent marked as scratch at the moment
+it created it, in a document the human could read, is not a surprise — the declaration
+happened before there was anything to lose.
+
+So `convert --create-site --scratch` (and `apply --create-site --scratch`) records the
+flag on the site, and `shio site rm --scratch` sweeps every site carrying it, in one
+confirmation rather than thirteen. A site without the flag is untouched by that command
+at any count, which is what keeps it from becoming a way to delete a real site quickly.
+
+The second half is worth as much as the first: a scratch site should be **visible as
+such**. `shio context` and the console listing that show thirteen sites today show no
+difference between the two the human curates and the eleven an agent left behind, and
+the human is the one who has to look at that list.
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
@@ -1648,6 +1801,34 @@ emits, or as something that carries the existing ones across. The second needs a
 statement about what `convert` may rewrite on a site that already exists, which the
 product has not made anywhere else.
 
+### XV.37 A lint that scolds the generator's own output (SH593)
+
+Every replica this work produced ends the same way:
+
+    ! head-no-canonical    post:<site>/theme/layout · HTML
+    ! head-no-description  post:<site>/theme/layout · HTML
+
+Both are correct. SH337 put `post.canonical` on the model precisely so a template can
+emit it, and the generated layout does not. But that layout is written by `shio
+convert`, not by a human, so the finding is Shio telling itself off — and it is
+unclearable by construction: the next conversion regenerates the same file and reports
+the same two.
+
+The cost is not the two lines. It is that a warning list is read for as long as it is
+actionable, and these have headed every list for twelve rounds. In round twelve the
+whole report was `0 error(s), 2 warning(s)` — the first fully green verify on a real
+replica — and the two were these. A reader who learns that the top of the list is always
+noise stops reading the list, which is where SH421's warning about a legitimately
+script-free layout also lives.
+
+Two repairs, and the first is plainly right: the generator emits `<link rel="canonical"
+href="{{post.canonical}}">` and a `<meta name="description">` from the page's own field,
+because both values are on the model and the template is ours to change. That closes it
+at the source and leaves the lint sharp for a layout somebody wrote by hand.
+
+SH421 is the same shape from the other side — a lint that cannot be satisfied by a
+deliberate omission — and the pair is worth reading together.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
@@ -2039,6 +2220,32 @@ Two halves, and the second is why it went unseen for eleven rounds. Rebase an ab
 href whose origin is the capture's; and have `diff` name the flip — *3 link(s) now point
 at the source* rather than three lost and three gained, which reads as two unrelated
 numbers.
+
+### XVII.88 Recrawling a site to test something that is not the crawl (SH592)
+
+`shio clone` over `vilt-group.com` with `--render`: 198 pages, 403 assets, 52.7 MB,
+about ten minutes. It is by far the most expensive step in the chain and the only one
+whose output is immutable — everything after it reads the inventory off disk and runs in
+seconds.
+
+Twice in this work that asymmetry cost a full recapture for a reason that had nothing to
+do with the source. SH578 changed the inventory's asset shape and `diff` refused every
+capture written before it — with an excellent error naming the version and the remedy,
+which is the right refusal and does not make the remedy cheaper. The other time the
+source had not changed at all; a downstream one-line fix needed a capture the new reader
+could parse.
+
+The information to do better is already in the file. Every asset row carries a `sha256`,
+every page a `status` and its markup hash. `shio clone --refresh` can re-fetch
+conditionally and rewrite only what moved, and an inventory one version behind can be
+**migrated** rather than refused where the missing field is derivable — SH578's split of
+`assets` into `{own, style}` is derivable from the stored markup, which the capture also
+keeps.
+
+The rule worth stating alongside it: a version bump on the inventory is a migration or a
+refusal, and a refusal is honest only when the new field genuinely cannot be computed
+from what is on disk. Otherwise the cost of a reader's change is paid in somebody else's
+ten minutes.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 

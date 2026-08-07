@@ -39,6 +39,11 @@
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
 - 📋 **SH570** (deps: SH560, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
+- 📋 **SH587** (deps: —) **The instance records the failure and holds the notes, and nothing on the path an agent walks ever names either** — A 500 was diagnosed from the server log while /agent/diagnostics held the column, the frames and a fix, and four remember notes went unread for twelve rounds. → §IX.54
+- 📋 **SH588** (deps: SH524) **Five of the checklist's seven checks are prose a person runs, and the annotation count is the one already got wrong** — Counting props against the fields each type declares was hand-written four times in four rounds and once read a complete page as 9 of 10, by counting one form. → §IX.55
+- 📋 **SH589** (deps: SH577 ✅) **Four instruments answer one question in four vocabularies with four exit codes, and reconciling them is hand work** — A replica read verify 0, audit 0 and diff 1 in one round and verify 0, diff 1 in another, so which to trust for which question is knowledge no command carries. → §IX.56
+- 📋 **SH590** (deps: SH586) **A delta repeated identically across every page is reported as one finding per page** — Twenty-two pages each read minus three internal and plus three external, which is one cause and was read as forty-four unrelated numbers for four rounds. → §IX.57
+- 📋 **SH594** (deps: SH579 ✅) **Four named lists now hold what is knowingly broken, in four formats read by four readers** — verify-baseline.json, assertion-debt's DEBT array, open-findings.json and red-suites.json each carry accepted findings, and no reader knows another exists. → §IX.58
 
 ## Block I — Content as files (local-first authoring)
 
@@ -61,6 +66,7 @@
 - 📋 **SH224** (deps: SH55 ✅, SH200 ✅) **A permanent deletion is the one write nobody records** — purge fires the lifecycle event and writes no audit row, so the irreversible half of the trash is the one nobody can attribute. → §XII.8
 - 📋 **SH225** (deps: SH54 ✅, SH201 ✅) **The ACL check depends on `open-in-view` and does not say so** — requireRead and requireWrite reach the folder-chain walk by self-invocation, so the transaction is whatever the caller happened to have — open-in-view in the app, nothing elsewhere. → §XII.9
 - 💭 **SH226** (deps: SH200 ✅) **A trashed folder is excluded by convention, not by invariant** — The trashed-folder exclusion lives in one repository's finders, and ids also resolve polymorphically through another that knows nothing about it. → §XII.10
+- 📋 **SH591** (deps: SH463 ✅) **A site an agent made to measure something has to be deleted one confirmation at a time** — Thirteen throwaway replicas accumulated on one instance across twelve rounds, and each delete is a 428 and a confirm token because nothing marks a site as disposable. → §XII.15
 
 ## Block M — Token economy (measured)
 
@@ -95,6 +101,7 @@
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
 - 📋 **SH572** (deps: SH558 ✅) **A template relating an address the site has not got renders nothing and reports nothing** — SH297 proves a missing THEME field but no rule reads a getRelation literal, so a typo is a silent else branch on every page. → §XV.35
 - 📋 **SH573** (deps: SH559 ✅) **A generated layout's title claims a mode that one layout has not determined since SH464** — convert.mjs still mints <site> (fidelity) for the layout every mode renders through, and SH559 could only quote it because the title is a postTypeLayout key. → §XV.36
+- 📋 **SH593** (deps: SH421) **Every conversion produces the same two warnings on the layout it generates, and no run can clear them** — head-no-canonical and head-no-description fire on the generated layout of every replica, so the warning list a reader should scan opens with two entries nobody can act on. → §XV.37
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
@@ -103,6 +110,7 @@
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
 - 📋 **SH586** (deps: SH467 ✅) **A source's own absolute links are served verbatim, so every page of the replica links back to the site it copied** — Twenty-two fidelity pages each carry three hrefs on the source's origin; diff reports three internal lost beside three external gained, and verify exits 0. → §XVII.87
+- 📋 **SH592** (deps: SH578 ✅) **The expensive artefact of the chain is the one that cannot be updated, only recaptured** — A capture of 200 pages costs ten minutes and 52 MB, and an inventory version bump made every stored one unreadable, so testing a one-line change downstream meant crawling again. → §XVII.88
 
 ## Block F — Market positioning
 

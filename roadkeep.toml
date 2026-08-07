@@ -217,6 +217,36 @@ priority = [
   # projection has no filename for a trailing slash, which is why SH467 is honoured on create
   # only.
   "SH586",
+  #
+  # Then, on instruction (2026-08-07), a different question: not what is broken, but what
+  # would give the agent driving this back time. The answer came from auditing twelve rounds
+  # of transcript rather than from taste, and its first result was a correction — **two of
+  # the six things I was about to propose already exist**. `/api/v2/agent/diagnostics` holds
+  # the SH544 incident with the column, `count: 2`, a `fix` and
+  # `frames: ShPostUnifiedWriteService.setFurl:223 ← …`, and that run was diagnosed by
+  # grepping `store/logs/shio.log` instead. `shio remember` holds four notes on this
+  # instance, one describing the `site.postTypeLayout` binding, and twelve rounds read none.
+  # So SH587 leads and is the cheapest of the eight: nothing on the path an agent walks ever
+  # names either, which is P2 — *discovery is a product feature, not a docs problem* — broken
+  # by the product that declares it. Then SH590, because it is one pass over output `diff`
+  # already computes and it would have surfaced SH586 four rounds earlier: a delta identical
+  # on 22 pages is one cause, not 44 numbers. Then SH588 (the annotation count, hand-written
+  # four times and wrong once) and SH589 (one verdict, and the disagreements — all four of
+  # SH521, SH554, SH577 and SH586 came from two instruments disagreeing). SH593 and SH591
+  # after them, both small and both about a list a human reads: two warnings no conversion
+  # can clear, and thirteen throwaway sites that delete one confirmation at a time. SH592
+  # last of the friction set — a ten-minute capture that a reader's version bump can void.
+  # SH594 sits apart: four ledgers of what is knowingly broken, invented four times, which
+  # is SH583's shape one level up and was found by one of them holding a case under an id
+  # that had already shipped.
+  "SH587",
+  "SH590",
+  "SH588",
+  "SH589",
+  "SH593",
+  "SH591",
+  "SH592",
+  "SH594",
   "SH528",
   "SH529",
   "SH523",
