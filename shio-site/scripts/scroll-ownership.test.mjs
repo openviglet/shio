@@ -1,4 +1,4 @@
-// SH565 — who is allowed to move the window.
+// SH566 — who is allowed to move the window.
 //
 // The hero player kept the lit step in view with `scrollIntoView`, which reads
 // as a container-local call and is not one: it scrolls **every** scrollable
@@ -44,7 +44,7 @@ test("only reader-initiated navigation scrolls the window", () => {
     offenders,
     [],
     `scrollIntoView() scrolls every scrollable ancestor including the document, so ` +
-      `an autoplaying panel that calls it hijacks the page (SH565). Scroll the ` +
+      `an autoplaying panel that calls it hijacks the page (SH566). Scroll the ` +
       `container instead: list.scrollBy({ top: delta }). Offenders: ${offenders.join(", ")}`
   );
 });

@@ -95,7 +95,7 @@ export function AgentTranscript({ className }: { className?: string }) {
   }, [playing, current]);
 
   /**
-   * Keep the lit step in view *inside the list*, and nowhere else (SH565).
+   * Keep the lit step in view *inside the list*, and nowhere else (SH566).
    *
    * `scrollIntoView` was the obvious call and it was the bug: even with
    * `block: "nearest"` it scrolls **every** scrollable ancestor, the document

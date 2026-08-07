@@ -1,4 +1,4 @@
-// SH565 — the proof the source lint cannot make: the page does not move on its own.
+// SH566 — the proof the source lint cannot make: the page does not move on its own.
 //
 // `scroll-ownership.test.mjs` asserts the *shape* (nobody but the router calls
 // `scrollIntoView`), which is what runs on every CI build. This file asserts the
@@ -33,7 +33,7 @@ async function browser() {
   }
 }
 
-test("the hero player never scrolls the window (SH565)", async (t) => {
+test("the hero player never scrolls the window (SH566)", async (t) => {
   if (!URL_UNDER_TEST) return t.skip("set SHIO_SITE_URL to a running site");
   const chromium = await browser();
   if (!chromium) return t.skip("playwright is not installed: pnpm add -D playwright");
