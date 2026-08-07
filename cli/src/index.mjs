@@ -24,6 +24,7 @@ import { parseArgs } from "./args.mjs";
 import { finish } from "./exit.mjs";
 import { formatError } from "./format-error.mjs";
 import { defaultContext } from "./context.mjs";
+import { noticeInstanceNotes } from "./instance-hints.mjs";
 
 const BOOLEANS = [
   "help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict",
@@ -221,7 +222,13 @@ async function main() {
   }
 
   const mod = await loader();
-  const result = await mod.run(flags, positionals, defaultContext());
+  const ctx = defaultContext();
+  // SH587 — say that this instance carries notes before the command speaks, not after. The
+  // notes are what an earlier session worked out about the site the caller is about to act on,
+  // so they change what the run does; printed underneath a report they would be a footnote.
+  // On stderr, because a command's stdout is somebody's `--json` pipe.
+  await noticeInstanceNotes(command, flags, ctx);
+  const result = await mod.run(flags, positionals, ctx);
   // Commands may request a non-zero exit (e.g. `push --check` drift guard, SH65).
   if (result && typeof result.exitCode === "number" && result.exitCode !== 0) {
     await finish(result.exitCode);

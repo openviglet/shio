@@ -1790,6 +1790,31 @@ without trimming it. Three tasks in a row — SH434, SH440, this — were measur
 rather than against the failing command; the rule that falls out is that a fix for a crash owes a
 harness that **fails first**.
 
+**The instance already knew both of them, and no command said so (SH587).** `GET
+/api/v2/agent/diagnostics` answers with the exact incident SH544 was filed from — the column, the
+truncated value, `count: 2`, `firstSeen`/`lastSeen`, a `fix`, and the frames — and that run was
+diagnosed instead by locating `store/logs/shio.log` and grepping a stack trace. `shio remember` held
+four notes on the same instance, one naming the `site.postTypeLayout` binding, and twelve
+replication rounds read none of them. Neither is a missing capability, which is what makes it **P2**
+rather than a feature request: *discovery is a product feature, not a docs problem*, broken by the
+product that declares it. So `format-error.mjs` adds one line to a **5xx** — `the instance recorded
+this: GET /api/v2/agent/diagnostics` — and only to a 5xx, because a 4xx carries `fix`/`allowed`
+under P6 and has already said what to do, while a 500's response body is gone by definition and the
+endpoint is the only place its cause still exists. The second half is `instance-hints.mjs`: before
+any instance-facing command runs, the **count and the keys** of this instance's notes go to stderr
+(stdout is somebody's `--json` pipe), never the prose — a key is enough to decide, and P3 owns the
+rest. Silent when there are none, when the instance is down, and when the credentials are wrong: a
+command that opens by complaining about a request it made on its own initiative is worse than one
+that says nothing, and its own error a moment later is the honest report. **The notice lives at the
+dispatcher, and the classification is the deliverable.** Eighteen modules construct a
+`ShioAgentClient`; wiring a notice into each is eighteen edits and eighteen chances for the
+nineteenth command to be written without one, which is SH322's shape exactly. `index.mjs` is the one
+place every command passes through, so `NOTES_COMMANDS` and `NOTES_EXEMPT` — the latter carrying a
+*reason* per entry, because "why does `clone` not print notes" is not derivable from the code — are
+the whole decision, and `instance-hints.test.mjs` checks both against `index.mjs`'s own registry in
+both directions. A new command cannot be registered without taking a side, and a side taken for a
+command that no longer exists fails too.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

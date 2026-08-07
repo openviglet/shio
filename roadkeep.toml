@@ -249,7 +249,6 @@ priority = [
   # console and from **neither** MCP list, and MCP is a plugin user's only surface.
   "SH595",
   "SH596",
-  "SH587",
   "SH590",
   "SH588",
   "SH589",

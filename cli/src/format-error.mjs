@@ -27,6 +27,11 @@
  * one shape this module could not print was a JSON body that is not a teaching document, which is
  * exactly the shape a defect produces: `path` and `error` were on the wire and nobody saw them.</p>
  *
+ * <h2>And a 500 names where its cause still lives (SH587)</h2>
+ *
+ * <p>The one status whose body cannot say anything useful is the one this module could add a
+ * sentence to: see `recorded` below.</p>
+ *
  * <p>Diagnosing that cost a log (a 400 is a client error and is not logged), a hand-built probe
  * against an endpoint whose contract I guessed wrong, and finally a byte-size listing. P6 is why it
  * is a defect rather than terseness: every 4xx in Shio carries a fix because an agent is the reader,
@@ -34,6 +39,8 @@
  * it and the caller sees `400`. It reaches every write the CLI makes, since `convert`, `push`,
  * `apply`, `init` and the batch surface all speak the same convention.</p>
  */
+import { DIAGNOSTICS_HINT } from "./instance-hints.mjs";
+
 export function formatError(err, { debug = false } = {}) {
   const status = err && typeof err === "object" ? err.status : undefined;
   if (typeof status !== "number") {
@@ -48,7 +55,11 @@ export function formatError(err, { debug = false } = {}) {
   if (!problem || typeof problem !== "object") {
     // No teaching body: say the status and the body as it came, which is still better than a URL.
     const raw = typeof err.body === "string" && err.body.trim() ? `\n  ${err.body.trim()}` : "";
-    return `shio: the server answered ${status}.${raw}\n${debug ? `  url: ${err.url}\n` : ""}`;
+    return (
+      `shio: the server answered ${status}.${raw}\n` +
+      recorded(status) +
+      `${debug ? `  url: ${err.url}\n` : ""}`
+    );
   }
   const lines = [`shio: ${problem.title ?? `the server answered ${status}`}`];
   if (problem.detail) lines.push(`  ${problem.detail}`);
@@ -65,8 +76,29 @@ export function formatError(err, { debug = false } = {}) {
   if (!TEACHES.some((key) => carries(problem, key))) {
     lines.push(...saidBy(problem));
   }
+  const pointer = recorded(status);
+  if (pointer) lines.push(pointer.replace(/\n$/, ""));
   if (debug) lines.push(`  url: ${err.url}`);
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Where the cause of a 5xx still is (SH587).
+ *
+ * <p>A 500's response body is gone the moment it is printed, and the instance kept the rest:
+ * `GET /api/v2/agent/diagnostics` answers with the column, the truncated value, `count`,
+ * `firstSeen`/`lastSeen`, a `fix` and the frames. A replication round diagnosed exactly such a
+ * failure by locating `store/logs/shio.log` and grepping a stack trace while the endpoint held
+ * all of it — which is a P2 defect (discovery is a product feature) in the product that
+ * declares P2, not a docs gap.</p>
+ *
+ * <p><b>5xx only.</b> A 4xx carries `fix`/`allowed`/`didYouMean` under P6 and has already told
+ * the caller what to do; sending them to an incident log as well would dilute the instruction
+ * they were given. Nothing is fetched here — this module is pure and a failure path is the
+ * worst possible place to make a request.</p>
+ */
+function recorded(status) {
+  return status >= 500 ? `  ${DIAGNOSTICS_HINT}\n` : "";
 }
 
 /** The SH80 keys. A body holding one of them is a teaching document and prints as one. */
