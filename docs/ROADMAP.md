@@ -42,6 +42,7 @@
 - 📋 **SH602** (deps: SH594 ✅) **Friction is found only when somebody reads a transcript back by hand** — Every finding in twelve rounds came from a session being narrated afterwards, so a refusal, a 404 and a question asked under the wrong name are lost the moment it ends. → §IX.59
 - 📋 **SH603** (deps: SH597 ✅, SH602) **The corpus has one task shape, so every friction it measures is replication-flavoured** — One reader drove one instance through one family of sources, which cannot tell a defect in the protocol from a gap in a corpus the same hands designed. → §IX.60
 - 📋 **SH609** (deps: SH560 ✅) **The conformance gate's staleness check has no answer on a dirty tree, so its escape hatch is the normal way to run it** — SH500 falls back to builtAt on a dirty tree, and a fat-jar CodeSource is a nested URL Paths.get refuses - so it is null on the only shape the gate accepts. → §IX.61
+- 📋 **SH612** (deps: SH204 ✅, SH22 ✅) **An incident recorded from a pool thread is filed under the default tenant, and now it carries a site id too** — The two async recorders write with no ShTenantContext, so a non-default tenant's failure lands under shio, and SH204 gave that misfiled row a foreign site id. → §IX.63
 
 ## Block I — Content as files (local-first authoring)
 

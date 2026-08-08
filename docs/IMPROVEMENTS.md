@@ -846,6 +846,31 @@ writes. And the assertion is the deliverable (SH527) — a case that resolves th
 from a fat-jar `CodeSource` and requires a timestamp, so the null cannot return the next
 time the packaging changes.
 
+### IX.63 The tenant a pool thread does not have (SH612)
+
+`ShAgentIncident` carries `@TenantId`, and `ShTenantContext` is a thread-local. Two
+recorders write from a pool thread that never had one set: the webhook dispatcher inside
+`dispatchAsync(...).whenComplete(...)`, and the Turing listener inside
+`executor.execute(...)`. Both run past `AFTER_COMMIT`, so there is no request, no
+session and no tenant — the store's `REQUIRES_NEW` write is stamped with the default
+discriminator, `shio`.
+
+SH22 did not miss this so much as never reach it. Until SH204 the row held a URL, a
+message and a timestamp, and being filed under the wrong tenant made it invisible rather
+than wrong. SH204 added a site id, so a misfiled row now carries an identifier belonging
+to a tenant that cannot see it.
+
+The consequence is quiet, and worth stating precisely. The row is visible only to the
+default tenant, whose readable sites never include the foreign id, so it matches no
+scoped read and resolves to no name in an unrestricted one. Nothing leaks — but the
+operator whose site actually failed is the one person who cannot see the failure, and
+the webhook that never arrived is exactly the incident a tenant is paying for.
+
+The fix is to carry the tenant across the boundary the way `siteId` and `what` already
+are: capture it on the committing thread, restore it around the write. What decides the
+shape is whether any other `@TenantId` write happens off-thread — a question for a lint
+rather than a reading.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
