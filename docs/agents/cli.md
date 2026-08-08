@@ -1090,6 +1090,20 @@ it. Four decisions worth keeping:
   names three roles rather than eight *and the test asserts why*: `shio-card` and `shio-media` land
   on elements that do declare fields — a feature row is a card and draws its `icon` into an
   attribute — so a rule written over all eight would be false rather than strict.
+- **And the JVM checks it on the bytes now, not on two declarations agreeing (SH562).** SH555 and
+  SH556 were both found by a hand pass on a real site, and both are `ShPageRenderService` composing
+  a layout over content an instance holds — a place `cli/` cannot reach. SH555 got its Java
+  assertion when it shipped; SH556 got one only in `convert.test.mjs`, which reads the declared
+  union against the declared templates. That is two declarations agreeing with each other, and
+  **neither of them renders**: a template can draw a class the union forgot, and the CLI check still
+  passes. `ShConvertedLayoutRenderTest` now reads `VOCABULARY_THEME_CSS` out of
+  `cli/src/vocabulary-theme.mjs` — the same cross-language read it already does for `convert.mjs`,
+  for SH245's reason — renders the vocabulary page and asserts every `shio-` class on an annotated
+  element is defined. Scoped to elements carrying a `data-shio-` handle **on purpose**: a converted
+  page also carries the source's own classes on markup it kept verbatim (SH575), and a check that
+  demanded the theme style those would fail on every working replica. Verified red by removing one
+  rule, which named `shio-heading` and nothing else. It costs no context slot — the class already
+  has an isolated one, which mattered with the SH423 gauge at 62 of 64.
 - **Then the templates broke that rule sixteen times, and one of the two lists had to move (SH556).**
   The theme defined thirteen selectors; the templates emitted those **and** `shio-section-<Type>`,
   `shio-features`, `shio-feature`, `shio-feature-title`, `shio-feature-body`, `shio-questions`,

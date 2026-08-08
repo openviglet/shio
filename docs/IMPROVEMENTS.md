@@ -362,32 +362,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.43 A render defect in Java is found by a hand pass on a real site (SH562)
-
-The eighth run found two defects in the same place, and the place is Java. SH555 is one
-brace: a captured theme read inside a `getRelation` block is escaped, so a megabyte of
-CSS reaches the browser with 378 entities and `verify` reports ten broken references.
-SH556 is two vocabularies: the generated theme styles thirteen role classes and the
-section templates draw sixteen, so every authorable page is unstyled including the one
-whose section renders.
-
-Neither is reachable from `cli/`. Both are `ShPageRenderService` composing a layout over
-content an instance already holds, which is exactly what `ShPageRenderTest` covers — and
-it is green, because it builds its fixture with an `EntityManager` and writes the layout
-the test author had in mind. A conversion writes a different one: a generated layout, a
-captured theme, a page whose body is a list of section posts. That shape exists nowhere
-on the classpath.
-
-So `shio-app` reads the corpus too. One archetype's converted output — post-types,
-layout, theme, sections, assets — checked in as the desired-state document `apply`
-takes, applied in a Spring test, rendered, and asserted on the served bytes: no entity
-in a `url()`, every class the templates draw defined by the theme, every reference
-resolving.
-
-The precedent is in the same package. `ShConvertedLayoutRenderTest` already reaches
-across the language boundary to read `../cli/src/convert.mjs`, for this reason: the two
-sides of this seam drift, and the cheap place to notice is `clean test`.
-
 ### IX.44 The redirect the crawler followed and the inventory forgot (SH563)
 
 The first run of SH560's corpus found this, which is the argument that corpus was filed

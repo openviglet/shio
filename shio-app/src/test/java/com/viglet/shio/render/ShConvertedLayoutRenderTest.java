@@ -107,6 +107,19 @@ class ShConvertedLayoutRenderTest {
     private static final Path CONVERT =
             Path.of("..", "cli", "src", "convert.mjs");
 
+    /**
+     * SH562 — the file that writes the theme, read for the same reason {@link #CONVERT} is.
+     *
+     * <p>The seam is between two languages and both sides of it were asserted against themselves.
+     * SH556 was <b>two class vocabularies</b>: the generated theme styled thirteen role classes and
+     * the section templates drew sixteen, so every authorable page was unstyled — including the one
+     * whose section rendered, which is why it read as a styling opinion rather than a defect. It
+     * shipped with an instrument on the JavaScript side (`convert.test.mjs` holds both directions)
+     * and none on this one, and this side is where the page is actually composed.</p>
+     */
+    private static final Path VOCABULARY_THEME =
+            Path.of("..", "cli", "src", "vocabulary-theme.mjs");
+
     private static final String LAYOUT_TITLE = "Sh464 (fidelity)";
 
     private static final String BACKSLASH = "\\";
@@ -1314,4 +1327,82 @@ class ShConvertedLayoutRenderTest {
         }
         return out.toString();
     }
+
+    /**
+     * SH562 — every class the templates draw is a class the theme defines, asserted on the bytes.
+     *
+     * <h2>Why this belongs in the JVM and not beside the template</h2>
+     *
+     * <p>SH555 and SH556 were both found by a hand pass on a real site, and both are
+     * {@code ShPageRenderService} composing a layout over content an instance holds. SH555 now has
+     * an assertion here (see above); SH556 shipped with one only in {@code cli/}, which reads the
+     * declared union against the declared templates — two declarations agreeing with each other.
+     * What nothing checked is the third thing: <b>what a rendered page actually carries</b>. A
+     * template can draw a class the union forgot to declare, and the CLI check would still pass
+     * because the CLI never renders.</p>
+     *
+     * <h2>Scoped to what the templates emit, deliberately</h2>
+     *
+     * <p>Only classes on elements the composer annotated — anything carrying a {@code data-shio-}
+     * handle. A converted page also carries the <em>source's</em> classes on the markup it kept
+     * verbatim ({@code class="features"} is the fixture's own), and the vocabulary theme has no
+     * business defining those: SH575's rule is that a fidelity page keeps what the source had. A
+     * check that demanded the theme style them would fail on every working replica.</p>
+     */
+    @Test
+    @DisplayName("SH562: the rendered page draws no role class the generated theme leaves undefined")
+    void everyDrawnRoleClassIsDefinedByTheGeneratedTheme() {
+        String css;
+        try {
+            css = Files.readString(VOCABULARY_THEME, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException("cannot read " + VOCABULARY_THEME.toAbsolutePath(), e);
+        }
+        String html = shPageRenderService.render(siteName, VOCABULARY_URL, ShPostState.DRAFT).html();
+
+        Set<String> drawn = roleClassesOn(html);
+        assertThat(drawn)
+                .as("""
+                        the scan found no annotated element to read a class from, which would make                         the assertion below pass forever — the vacuity this repository writes every                         guard against""")
+                .isNotEmpty();
+
+        List<String> undefined = drawn.stream()
+                .filter(name -> !css.contains("." + name))
+                .sorted()
+                .toList();
+
+        assertThat(undefined)
+                .as("""
+                        SH556 measured sixteen drawn against thirteen defined, and the page it                         produced was unstyled while every suite was green: the CLI asserts its                         declared union against its declared templates, which is two declarations                         agreeing with each other, and neither of them renders. Add the rule to                         VOCABULARY_THEME_CSS in cli/src/vocabulary-theme.mjs, or stop drawing the                         class — the templates emit roles only since SH556, and a name that                         duplicates a data-shio-* handle already on the element is the second one.""")
+                .isEmpty();
+    }
+
+    /**
+     * The classes on elements the composer annotated — the ones the templates are answerable for.
+     *
+     * <p>Crude on purpose: a tag that carries {@code data-shio-} and a {@code class} attribute, and
+     * the tokens of that attribute. A parser would be a dependency for a question two regexes
+     * answer, and the failure mode of getting it slightly wrong is over-reporting, which is the
+     * direction a guard should be wrong in.</p>
+     */
+    private static Set<String> roleClassesOn(String html) {
+        Set<String> names = new java.util.TreeSet<>();
+        java.util.regex.Matcher tag =
+                java.util.regex.Pattern.compile("<[^>]*data-shio-[^>]*>").matcher(html);
+        while (tag.find()) {
+            java.util.regex.Matcher attr =
+                    java.util.regex.Pattern.compile("class=\"([^\"]*)\"").matcher(tag.group());
+            while (attr.find()) {
+                for (String token : attr.group(1).trim().split("\\s+")) {
+                    // Only the vocabulary's own namespace. A converted page carries the source's
+                    // classes too (SH575), and the theme is not answerable for those.
+                    if (token.startsWith("shio-")) {
+                        names.add(token);
+                    }
+                }
+            }
+        }
+        return names;
+    }
+
 }
