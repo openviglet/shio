@@ -362,31 +362,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.38 The debt already standing (SH529)
-
-SH527 states the rule for the next defect and SH528 gives the fixture the traits to
-express one. This is the debt already standing: **the defects this work found and
-closed, which no assertion holds.**
-
-The count is the first deliverable and it is computable — the ledger names what shipped,
-the suite names what it asserts, and the difference is a list. Around forty tasks came
-out of the replication rounds and the suite carries five cases, so the list is most of
-them.
-
-Not all of them earn one, and saying which do is the work. A one-line fix to a message
-does not; a defect that **shipped twice** does, and there are six of those. A defect
-nobody could see without a browser does, because that is the boundary the suite exists
-to cross. The output is a decision per task, not a test per task.
-
-Order by whether a defect could return. The six half-corrections could — each was a real
-fix whose second half was written later, so the code around them is the code most likely
-to be revised. SH445's abort is the sharpest: fixed three times, and the third fix has
-no assertion on the exit code of a real remote failure either.
-
-It is also the honest end of my part in this. I have been the verification for fifteen
-rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
-me looking.
-
 ### IX.42 The suite that has an instance is the one that does not speak the transport (SH561)
 
 `replication.conformance.mjs` was written to remove substitutions, and it removed three:

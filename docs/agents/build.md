@@ -48,6 +48,24 @@ This is the contract `assertion-debt.test.mjs` uses for its DEBT list and
 `ShSilentCatchInventoryTest` for its inventory: a named list with a reason beside each entry,
 never a ceiling. A ceiling lets one task pay the debt and the next spend it.
 
+**And since SH529 each DEBT group carries a verdict, because a list is not a decision.** SH527
+established the count and held it; the question it left open was *which of these earn an
+assertion* — not all do, and saying which is the work rather than a way out of it. Every group now
+reads EARNS or DOES NOT, with the shape the assertion would take, ordered by **whether the defect
+could return** rather than by cost. That inverts the obvious order: a *removal* is the cheapest
+entry and ranks first, because an absence has nobody looking at it, while the sixteen console
+entries rank last despite being the largest group — a broken editor page is seen the first time
+somebody opens the console. One entry (SH238) is marked as earning **a reader, not an assertion**:
+it is asserted in `shio-react/e2e`, a tree this reader does not walk because it needs a running
+instance, and a second assertion would duplicate a passing one.
+**Writing the first group's assertion found a defect (SH620).** `ShRemovalsStayedRemovedTest`
+closes SH20, SH21 and SH60 — and SH21 had never finished: four tracked files, ~456 KB of the legacy
+AngularJS bundle, still in `src/main/resources/ui/` under a commit whose subject is *"delete legacy
+AngularJS resources/ui tree"*, shipping in every jar for two blocks. Nothing referenced them and
+nothing served them (`resources/ui/**` is not a served root). A deletion of 330 files is reviewed
+by its diff, and a diff shows what went rather than what stayed. The debt entry said "unasserted";
+the assertion came back red.
+
 ### Four ledgers of what is knowingly wrong, and one reader (SH594)
 
 The device is sound and it has been invented **four** times — `shio/verify-baseline.json`
