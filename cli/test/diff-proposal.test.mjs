@@ -40,7 +40,7 @@ const heldWith = (entries) => new Map(Object.entries(entries));
 const compare = (held, plan = PLAN, proposal = PROPOSAL) =>
   compareProposal({ plan, proposal, held: heldWith(held), sectionsFolder: SECTIONS, pagesFolder: "" });
 
-test("SH522: a conversion that did what it promised reports no break", () => {
+test("SH618: a conversion that did what it promised reports no break", () => {
   const result = compare({
     "/sections/b1": { data: { HEADLINE: "hi", CTA: "go" } },
     "/sections/b2": { data: { TITLE: "t" } },
@@ -52,7 +52,7 @@ test("SH522: a conversion that did what it promised reports no break", () => {
   assert.match(describeProposalDiff(result), /matches the proposal/);
 });
 
-test("SH522: a section the plan accepted and the write never made is named", () => {
+test("SH618: a section the plan accepted and the write never made is named", () => {
   const result = compare({
     "/sections/b1": { data: { HEADLINE: "hi", CTA: "go" } },
     "/": { data: { sections: ["/sections/b1"] } },
@@ -66,7 +66,7 @@ test("SH522: a section the plan accepted and the write never made is named", () 
   assert.match(describeProposalDiff(result), /ABSENT {6}\/sections\/b2/);
 });
 
-test("SH522: a section that exists without the fields it promised is incomplete, not absent", () => {
+test("SH618: a section that exists without the fields it promised is incomplete, not absent", () => {
   const result = compare({
     "/sections/b1": { data: { HEADLINE: "hi" } },
     "/sections/b2": { data: { TITLE: "t" } },
@@ -82,7 +82,7 @@ test("SH522: a section that exists without the fields it promised is incomplete,
   assert.match(describeProposalDiff(result), /missing: CTA/);
 });
 
-test("SH522: a field the artefact gained is reported and never counted as a failure", () => {
+test("SH618: a field the artefact gained is reported and never counted as a failure", () => {
   const result = compare({
     "/sections/b1": { data: { HEADLINE: "hi", CTA: "go", title: "the post-type's own" } },
     "/sections/b2": { data: { TITLE: "t" } },
@@ -98,7 +98,7 @@ test("SH522: a field the artefact gained is reported and never counted as a fail
   assert.match(describeProposalDiff(result), /1 field\(s\) the artefact carries beyond the proposal/);
 });
 
-test("SH522: a page that lost one of its sections is short, and says which", () => {
+test("SH618: a page that lost one of its sections is short, and says which", () => {
   const result = compare({
     "/sections/b1": { data: { HEADLINE: "hi", CTA: "go" } },
     "/sections/b2": { data: { TITLE: "t" } },
@@ -114,7 +114,7 @@ test("SH522: a page that lost one of its sections is short, and says which", () 
   assert.equal(result.broken, 1);
 });
 
-test("SH522: a plan accepting a block the proposal never declared is its own finding", () => {
+test("SH618: a plan accepting a block the proposal never declared is its own finding", () => {
   const result = compare(
     {
       "/sections/b1": { data: { HEADLINE: "hi", CTA: "go" } },
@@ -132,7 +132,7 @@ test("SH522: a plan accepting a block the proposal never declared is its own fin
   assert.equal(result.broken, 1);
 });
 
-test("SH522: only the pages the plan actually touched are judged", () => {
+test("SH618: only the pages the plan actually touched are judged", () => {
   const result = compare(
     { "/sections/b1": { data: { HEADLINE: "hi", CTA: "go" } }, "/": { data: { sections: ["/sections/b1"] } } },
     // b2 is dropped from the plan, so `/` composes one accepted block and `/about` still composes
