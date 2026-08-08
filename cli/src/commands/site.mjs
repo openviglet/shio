@@ -28,25 +28,9 @@
  */
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { helpText } from "../help.mjs";
 
-export const HELP = `shio site — what this instance holds, and a sweep for what nobody meant to keep
-
-  shio site                 List the sites, marking the ones declared disposable
-  shio site rm --scratch    Delete every site carrying the scratch flag, in one confirmation
-
-  --scratch            Required by rm. A site without the flag is never touched, at any
-                       count — the flag can only be set by the run that CREATED the site
-                       (shio convert --create-site --scratch)
-  --dry-run            Print what would be deleted and delete nothing
-  --json               As JSON, for a pipeline
-
-A site delete is PURGED, not trashed: there is no undo (SH463).
-
-Examples:
-  shio site
-  shio site rm --scratch --dry-run
-  shio site rm --scratch
-`;
+export const HELP = helpText("site");
 
 export async function run(flags, positionals, ctx) {
   const verb = String(positionals[0] ?? "ls").trim().toLowerCase();

@@ -18,6 +18,7 @@
  */
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio remember --help` prints (SH435).
@@ -27,21 +28,7 @@ import { resolveAdmin } from "../context.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio remember [key] [note] — write down a decision the next session should not re-derive
-
-Bare, it lists what this instance has been told. With a key and a note, it writes one
-(idempotently, by key).
-
-  --list               List the notes (the default with no positional)
-  --forget             Drop the note this key names
-  --site <name>        Scope to one site's notes (instance-wide when omitted)
-  --limit <n>          Notes to print
-
-Examples:
-  shio remember
-  shio remember frontend-routes "/tags/* /search" --site Acme
-  shio remember frontend-routes --forget --site Acme
-`;
+export const HELP = helpText("remember");
 
 export async function run(flags, positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);

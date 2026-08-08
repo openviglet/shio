@@ -1,0 +1,9 @@
+shio types — generate a TypeScript .d.ts from the live post-types
+
+Uses a CDA token (--token, or SHIO_CDA_TOKEN), not the console credentials.
+
+  --out <file>          Where the declarations go
+  --import-from <spec>  The module the generated types import their helpers from
+
+Example:
+  shio types --out lib/shio-types.d.ts

@@ -37,6 +37,7 @@ import {
 import { readLocalDefs } from "../post-types-compile.mjs";
 import { PROJECTION_CHECK, lintProjection, splitChecks } from "../verify-projection.mjs";
 import { REPLICATION_CHECK, lintReplication } from "../verify-replication.mjs";
+import { helpText } from "../help.mjs";
 import {
   BASELINE_FILE,
   acceptedFrom,
@@ -57,43 +58,7 @@ const DEFS_DIR = "shio/post-types";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio verify — lint the content and its routes; exits 1 on an error (the CI gate)
-
-The content-side type-check: empty required fields, references to posts that do not exist,
-images with no bytes, two pages on one URL, links that resolve to nothing. Errors exit 1;
-warnings are printed and counted.
-
-  --site <idOrName>    Scope to one site
-  --checks <groups>    projection,replication,content,routes,page,diagnostics,delivery
-                       (default: all that can run). projection and replication read the
-                       file tree only — no instance, no credentials — so
-                       --checks projection,replication is the cheapest gate there is and
-                       belongs first in CI. page renders each published page and resolves
-                       every reference on it against the URL that page is served at, which
-                       is the question the other groups answer from the content graph and
-                       therefore cannot answer at all
-  --delivery           Also prove each published route by fetching it from the site's own
-                       origin; turns "the front end does not serve this" into an error
-  --strict             Fail on warnings too (off by default — a gate that fails on "this
-                       folder is empty" is one people learn to skip)
-  --limit <n>          Findings to print (the counts always cover the whole run)
-  --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)
-  --address <a,b>      Scope to named posts (post:<site>/<url>, comma-separated)
-  --since <cursor>     Scope to what changed after an SH88 cursor (shio changes --cursor)
-  --baseline <file>    Accepted findings to subtract (default shio/verify-baseline.json)
-  --accept             Write this run's findings into the baseline
-  --reason <why>       With --accept: why each finding is accepted
-  --dir <dir>          Local post-types directory (default shio/post-types)
-  --content-dir <dir>  Local content tree        (default shio/content)
-  --assets-dir <dir>   Local asset tree          (default shio/assets)
-  --folders-dir <dir>  Local folder markers      (default shio/folders)
-
-A scoped run says so: the report carries scope/partial, and the counts cover the subset.
-
-Examples:
-  shio verify --checks projection,replication
-  shio verify --site Acme --strict
-`;
+export const HELP = helpText("verify");
 
 export async function run(flags, positionals, ctx) {
   const site = flags.site ?? positionals[0];

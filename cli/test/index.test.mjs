@@ -47,34 +47,27 @@ test("every registered command is documented in help", async () => {
 });
 
 /**
- * SH377 — the failure this file's own header describes, in the form it actually takes.
+ * SH377 — the help output reaches its last line.
  *
- * The header says a single backtick in a new help paragraph "makes the whole CLI fail to parse".
- * That is the *lucky* case. A paragraph that quotes a shell idiom introduces backticks in **pairs**,
- * and a pair does not fail to parse: `HELP = \`…\` || true \`…\`` is a valid expression whose value
- * is the first fragment. The help text is then silently cut at that point — measured when it
- * happened, 149 lines instead of 200, with `Common options` and every flag after the cut simply
- * gone. Nothing failed, and the existing guard passed because the Commands section it checks sits
- * above the cut.
+ * <h2>Half of this guard is now structural, and that half is gone (SH208)</h2>
  *
- * So the guard is on both ends: the literal must contain no raw backtick at all, and the *printed*
- * output must still reach its last line, which catches a truncation from any other cause.
+ * SH377 described the failure precisely, and its worse form is the reason SH208 moved the text out
+ * of JavaScript entirely. A *single* backtick in a help paragraph is the lucky case: the file fails
+ * to parse and `shio` does not load. A paragraph quoting a shell idiom introduces backticks in
+ * **pairs**, and a pair parses fine — ``HELP = `…` || true `…` `` is a valid expression whose value
+ * is the first fragment. The help was then silently cut: measured at the time, 149 lines instead of
+ * 200, with `Common options` and every flag below it simply absent. Nothing failed, and the
+ * Commands guard above passed because the section it checks sits above the cut.
+ *
+ * The text is a `.txt` now, so neither failure has a mechanism: there is no delimiter to close and
+ * nothing to truncate. Scanning the source for a raw backtick would be scanning for a shape that
+ * cannot occur — `help-source.test.mjs` refuses the shape's *return* instead, which is the only
+ * thing left to be wrong about.
+ *
+ * What stays is the end-to-end half, because it never depended on the cause: the printed output
+ * must reach its last line, whatever truncates it.
  */
-test("the help literal is whole: no raw backtick, and the last line still prints", async () => {
-  const source = await readFile(ENTRY, "utf8");
-  const opening = source.indexOf("const HELP = `");
-  assert.ok(opening > 0, "the help literal moved — this guard needs to move with it");
-  const body = source.slice(opening + "const HELP = `".length);
-  const closing = body.indexOf("\n`;");
-  assert.ok(closing > 0, "the help literal has no closing backtick on its own line");
-
-  assert.equal(
-    (body.slice(0, closing).match(/`/g) ?? []).length,
-    0,
-    "a raw backtick inside HELP ends the template there and silently truncates the help — " +
-      "write the shell idiom without backticks, or escape it",
-  );
-
+test("the help output reaches its last line", async () => {
   const { stdout } = await run(process.execPath, [ENTRY, "--help"]);
   assert.match(stdout, /^ {2}-h, --help {11}Show help$/m, "the help output does not reach its last line");
   assert.match(stdout, /^Common options:$/m);

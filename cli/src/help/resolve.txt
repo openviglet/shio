@@ -1,0 +1,10 @@
+shio resolve <address> — resolve a content address to its object
+
+  --address <addr>     The address, when no positional is given
+  --id                 Print only the resolved id (pipeline-friendly)
+
+Addresses: post:<site>/<url> · folder:<site>/<chain> · site:<name> · id:<uuid>
+
+Examples:
+  shio resolve post:Blog/blog/hello-world
+  ID=$(shio resolve folder:Blog/blog --id)

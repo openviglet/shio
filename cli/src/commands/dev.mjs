@@ -10,6 +10,7 @@
 import { spawn } from "node:child_process";
 
 import * as types from "./types.mjs";
+import { helpText } from "../help.mjs";
 
 /** Pick the package manager from the invoking agent (pnpm/yarn/bun/npm). */
 export function detectPackageManager(env = process.env) {
@@ -28,15 +29,7 @@ export function detectPackageManager(env = process.env) {
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio dev — generate types, start the site's dev server, and watch the model
-
-  --content            Sync shio/content/** both ways and log events, instead of running
-                       the site's dev server
-  --interval <ms>      How often to poll for changes
-
-Example:
-  shio dev --content
-`;
+export const HELP = helpText("dev");
 
 export async function run(flags, positionals, ctx) {
   if (flags.content) {

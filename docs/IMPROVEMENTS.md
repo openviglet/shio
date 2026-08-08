@@ -384,29 +384,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.9 A backtick in the CLI's help text breaks the whole binary (SH208)
-
-`cli/src/index.mjs` holds `HELP` as a template literal. Help text is prose, prose about a CLI
-contains command names, and command names in Markdown-ish prose attract backticks — at which
-point the file is a syntax error and `shio` does not load. Not the command that was edited: the
-whole binary.
-
-This is filed because of *how it was found*: it happened twice in one session, while adding
-`verify --delivery` and then `shio report`, and both times the only tests that noticed were the
-three that spawn the CLI as a subprocess. Every other CLI test imports the command modules
-directly, so 155 tests passed against a package whose entry point could not be parsed.
-
-**It then happened a third time**, in a different session, documenting SH150's `movedFrom:` in
-the content section — one backtick pair around a frontmatter key. Three occurrences across
-three sessions, each one caught only by the same three tests, is no longer a run of bad luck: it
-is a file whose failure mode is disproportionate to the edit, and the reason this moved from 💭
-to 📋.
-
-The class is removable rather than manageable: `String.raw`, or a `help.txt` read at startup.
-The second is slightly better than it looks — it also stops help text from being reindented by
-whatever formats the JavaScript, and makes the one file a contributor is most likely to edit a
-file with no syntax at all.
-
 ### IX.10 `shio snapshot` photographs one page per run (SH209)
 
 SH102 captures a page. The artifact anyone actually wants for a handoff or a nightly job is the

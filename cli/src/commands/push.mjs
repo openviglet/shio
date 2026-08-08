@@ -15,6 +15,7 @@ import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { diffDefs, planPush } from "../post-types-io.mjs";
 import { readLocalDefs } from "../post-types-compile.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio push --help` prints (SH435).
@@ -24,36 +25,7 @@ import { readLocalDefs } from "../post-types-compile.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio push — apply the local post-types back to the instance
-
-  --dry-run            Print the plan, change nothing
-  --check              Drift guard — exit non-zero if the plan is not empty (CI)
-  --prune              Delete remote types absent locally (never system types)
-  --content            Push the content tree (shio/content/**) instead of the model
-  --dir <dir>          Post-types directory (default shio/post-types)
-
-With --content (the SH90 projection):
-  Pushes shio/content/** back: what the server lacks is uploaded once per path, and an
-  asset's bytes merge three ways like a field does. A remote change the base says you have
-  not seen stops the push rather than overwriting it — that is what --force is for.
-  --site <name>        Scope to one site
-  --force              Push over a remote change the base says you have not seen
-  --prune              Delete remote posts the tree does not declare
-  --max-ops <n>        Ceiling on operations in one batch
-  --max-folder-reads <n>  Ceiling on folder reads while resolving the tree
-  --limit <n>          Rows to print
-  --baseline <file>    Accepted findings to subtract from the pre-push lint
-  --accept             Write the pre-push findings into the baseline
-  --reason <why>       With --accept: why
-  --content-dir <dir>  Content tree (default shio/content)
-  --assets-dir <dir>   Asset tree   (default shio/assets)
-  --folders-dir <dir>  Folder markers (default shio/folders)
-  --base-file <file>   The merge base (default shio/.shio/content-base.json)
-
-Examples:
-  shio push --check
-  shio push --content --site Acme --dry-run
-`;
+export const HELP = helpText("push");
 
 export async function run(flags, positionals, ctx) {
   if (flags.content) {

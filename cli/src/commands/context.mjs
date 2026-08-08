@@ -16,6 +16,7 @@ import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { helpText } from "../help.mjs";
 
 /** `terse` is the default here, unlike the endpoint: the caller is an agent. */
 const DEFAULT_FORMAT = "terse";
@@ -28,24 +29,7 @@ const DEFAULT_FORMAT = "terse";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio context — the agent context pack: model + sitemap + conventions, in one call
-
-  --site <idOrName>    Scope to one site       (omit for every readable site)
-  --include <sections> instance,sites,model,sitemap,conventions (default all)
-  --format <fmt>       terse (default), json, or agents-md
-  --as agents-md       Same as --format agents-md; pair with --out AGENTS.md so the file
-                       cannot rot — regenerate it and the diff is the drift
-  --depth <n>          Folder-tree depth to walk
-  --budget <tokens>    Estimated-token ceiling (0 = unbounded)
-  --from <id>          Resume cursor from a truncated pack
-  --ids                Put object ids back on every row (off by default — a row is
-                       addressable without one, and a UUID is the priciest field)
-  --out <file>         Write the pack to a file instead of stdout
-
-Examples:
-  shio context --site Acme
-  shio context --as agents-md --out AGENTS.md
-`;
+export const HELP = helpText("context");
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);

@@ -1,0 +1,6 @@
+shio deploy — push the model, then regenerate the types
+
+  --skip-types         Push and stop, leaving the declarations as they are
+
+Example:
+  shio deploy

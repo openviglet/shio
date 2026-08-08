@@ -23,23 +23,9 @@ import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { pageTarget, resolveUrl } from "../snapshot.mjs";
+import { helpText } from "../help.mjs";
 
-export const HELP = `shio annotations <page> — the props a page emits, against the fields its types declare
-
-Counts, so nobody has to. Both declaration forms (data-shio-prop and data-shio-prop-attr),
-every collection row expanded, each field attributed to the post that owns it. Exits 1 when a
-declared field is rendered without an annotation — rendering is not annotation.
-
-  --page <page>        The page (or a bare positional, or --address)
-  --preview            Read the instance's own preview even for a site with a front end
-  --json               The join as JSON, for a pipeline
-
-NOT --url: that is the instance (SH365).
-
-Examples:
-  shio annotations post:Acme/about
-  shio annotations post:Acme/ --json
-`;
+export const HELP = helpText("annotations");
 
 export async function run(flags, positionals, ctx) {
   // No `warn`, for the reason `audit` gives: this command never documented `--url` as the page, so

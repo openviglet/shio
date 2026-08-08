@@ -54,6 +54,7 @@ import {
   serializeProposal,
 } from "../propose.mjs";
 import { DEFAULT_MIN_REFS, buildTheme } from "../theme.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio propose --help` prints (SH435).
@@ -63,28 +64,7 @@ import { DEFAULT_MIN_REFS, buildTheme } from "../theme.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio propose [ids…] — which captured blocks could become sections, and what each loses
-
-Reads the capture and nothing else: no instance, no network, no browser. Writes a proposal
-to shio/.shio/conversion-proposal.json; --accept writes the reviewed decision to
-shio/conversion-plan.json and applies nothing.
-
-  --accept <id…>       Accept the candidates these ids name, or all. The ids are
-                       positionals, so --accept itself is a boolean — one flag whose arity
-                       differs per command is how --accept --reason x b1a2 silently accepts
-                       a candidate called --reason
-  --reason <why>       With --accept: why, recorded beside the entry
-  --min-refs <n>       How often a literal must recur to be a palette value (default 3; 2 is
-                       the floor — at 1 every colour becomes a token and the list stops
-                       meaning anything)
-  --inventory <file>   Read a capture from somewhere else
-  --out <file>         Proposal path (default shio/.shio/conversion-proposal.json)
-  --json               The proposal on stdout instead of the report
-
-Examples:
-  shio propose
-  shio propose --accept b1a2c3d4 --reason "the hero is the same on every page\"
-`;
+export const HELP = helpText("propose");
 
 export async function run(flags, positionals, ctx) {
   const { inventory, plan, proposal, markup, theme } = await proposalFor(flags, ctx, "propose");

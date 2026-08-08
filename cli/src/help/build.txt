@@ -1,0 +1,10 @@
+shio build — compile local DSL/JSON post-types to canonical JSON
+
+shio/post-types/ may hold *.json or *.ts/*.mjs DSL sources (@viglet/shio-model); this is
+the compile step push runs before diffing, made available on its own.
+
+  --dir <dir>          Sources (default shio/post-types)
+  --out <dir>          Where the canonical JSON goes (default shio/.out)
+
+Example:
+  shio build --out shio/.out

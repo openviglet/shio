@@ -1,0 +1,12 @@
+shio blueprints [name] — the appliable starting points this instance carries
+
+Bare, it lists the catalogue with each package's parameters. With a name, it prints that
+one in detail. Applying is shio apply --blueprint <name> --site <site>.
+
+  --name <name>        The package, when no positional is given
+  --files              Also list the front-end files the package carries
+  --json               Raw JSON instead of the report
+
+Examples:
+  shio blueprints
+  shio blueprints blog --files

@@ -31,6 +31,7 @@ import {
 } from "../blueprint-params.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { writeProjectFiles } from "../project-files.mjs";
+import { helpText } from "../help.mjs";
 
 async function prompt(rl, question, fallback) {
   const answer = (await rl.question(`${question}${fallback ? ` (${fallback})` : ""}: `)).trim();
@@ -45,24 +46,7 @@ async function prompt(rl, question, fallback) {
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio init [name] — scaffold a Next.js site wired to this instance
-
-  --name <name>        The directory to create, when no positional is given
-  --blueprint <name>   Take the starter from the instance instead of the built-in template
-  --site <site>        With --blueprint: also apply the package's content into that site
-  --param k=v          With --blueprint: one parameter value; repeat for several
-  --params <file.json> With --blueprint: values from a file (--param wins over it)
-  --create-site        With --blueprint --site: create the site (blank) if it is not there
-  --force              Overwrite files that are already there
-  --yes                Take every default without asking
-
-Examples:
-  shio init my-site
-  shio init acme --blueprint marketing-site --site Acme --param brand=Acme
-
-With --site and no --blueprint, a site whose pages are built from sections is refused: the
-built-in template renders a page's body and not its sections (SH502).
-`;
+export const HELP = helpText("init");
 
 export async function run(flags, positionals, ctx) {
   let projectName = positionals[0] ?? flags.name;

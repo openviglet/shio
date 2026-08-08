@@ -1,0 +1,8 @@
+shio dev — generate types, start the site's dev server, and watch the model
+
+  --content            Sync shio/content/** both ways and log events, instead of running
+                       the site's dev server
+  --interval <ms>      How often to poll for changes
+
+Example:
+  shio dev --content

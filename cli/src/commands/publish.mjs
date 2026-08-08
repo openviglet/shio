@@ -40,31 +40,14 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { retellUnknownSite } from "../unknown-site.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio publish --help` prints (SH435).
  *
  * Here rather than in `index.mjs` so the flags and their meanings are one edit apart.
  */
-export const HELP = `shio publish [address...] — make drafts live, or take live pages down
-
-The only call that changes what visitors see. Re-publishing unchanged content is a noop, so
-running this twice is safe; shio verify and shio diff are what tell you it worked.
-
-  --address <a,b>      Addresses to publish, comma-separated (or pass them as arguments)
-  --site <name>        The site, required with --all
-  --all                Every post the site holds, named explicitly in the ops after a find
-  --type <name>        With --all: only posts of this post-type
-  --unpublish          Take them down instead
-  --dry-run            Report what would change and write nothing
-  --ids                Put object ids on the change rows (off by default)
-
-Examples:
-  shio publish post:Acme/about post:Acme/contact
-  shio publish --site Acme --all --dry-run
-  shio publish --site Acme --all --type Page
-  shio publish --unpublish post:Acme/old-campaign
-`;
+export const HELP = helpText("publish");
 
 export async function run(flags, positionals, ctx) {
   const site = typeof flags.site === "string" ? flags.site : undefined;

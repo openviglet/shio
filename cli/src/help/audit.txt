@@ -1,0 +1,21 @@
+shio audit <page> — what is wrong with a rendered page, as text with a selector each
+
+Errors are what a machine observed (a 404, a thrown exception) and exit 1; overflow,
+contrast, a collapsed box and a fallback font are warnings that exit 0, because each is
+design intent often enough that gating on them makes this the exit code people wrap in
+|| true. Needs playwright.
+
+  --page <page>        The page to audit (or a bare positional, or --address)
+  --width <n[,n]>      Viewport width(s) to load, default 1280 — findings merge across them
+  --height <n>         Viewport height (default 800)
+  --contrast <ratio>   The contrast floor to report against (default 4.5)
+  --strict             Exit 1 on warnings too
+  --preview            Audit the instance's own preview (the banner is never a finding)
+  --timeout <ms>       Per-page navigation timeout (default 30000)
+  --json               The findings as JSON, for a pipeline
+
+NOT --url: that is the instance (SH365).
+
+Examples:
+  shio audit post:Acme/about --width 1280,375
+  shio audit https://acme.example.com/ --strict

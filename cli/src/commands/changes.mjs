@@ -14,6 +14,7 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { BASE_FILE, readBase } from "../content-store.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio changes --help` prints (SH435).
@@ -23,20 +24,7 @@ import { BASE_FILE, readBase } from "../content-store.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio changes — what changed, with a cursor to resume from
-
-  --since <cursor>     Only what happened after that position ("last" = the last pull's)
-  --since-last         Same as --since last
-  --cursor             Print only the cursor (SINCE=$(shio changes --cursor))
-  --site <name>        Scope to one site
-  --limit <n>          Entries to print
-  --json               Raw JSON instead of lines
-  --base-file <file>   Where the last content pull's position is kept
-
-Examples:
-  shio changes --since last
-  SINCE=$(shio changes --cursor)
-`;
+export const HELP = helpText("changes");
 
 export async function run(flags, positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);

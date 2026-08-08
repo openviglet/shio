@@ -12,6 +12,7 @@
  */
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio resolve --help` prints (SH435).
@@ -21,17 +22,7 @@ import { resolveAdmin } from "../context.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio resolve <address> — resolve a content address to its object
-
-  --address <addr>     The address, when no positional is given
-  --id                 Print only the resolved id (pipeline-friendly)
-
-Addresses: post:<site>/<url> · folder:<site>/<chain> · site:<name> · id:<uuid>
-
-Examples:
-  shio resolve post:Blog/blog/hello-world
-  ID=$(shio resolve folder:Blog/blog --id)
-`;
+export const HELP = helpText("resolve");
 
 export async function run(flags, positionals, ctx) {
   const address = positionals[0] ?? flags.address;

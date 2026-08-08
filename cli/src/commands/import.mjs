@@ -27,6 +27,7 @@ import { basename } from "node:path";
 
 import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio import --help` prints (SH435).
@@ -36,16 +37,7 @@ import { resolveAdmin } from "../context.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio import <file> — clone an SH68 exchange package (.zip) into this instance
-
-The way to accept a site somebody hands you. Export one with
-GET /api/v2/site/{id}/export.
-
-  --file <file.zip>    The package, when no positional is given
-
-Example:
-  shio import acme-site.zip
-`;
+export const HELP = helpText("import");
 
 export async function run(flags, positionals, ctx) {
   const file = positionals[0] ?? flags.file;

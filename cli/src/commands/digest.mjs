@@ -17,6 +17,7 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { pageTarget } from "../snapshot.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio digest --help` prints (SH435).
@@ -26,19 +27,7 @@ import { pageTarget } from "../snapshot.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio digest <page> — one page's structure: outline, landmarks, links, images
-
-The agent's own appearance check: no browser, and a fraction of a screenshot's tokens.
-Takes a post:<site>/<url> address, or a delivery URL when fetching is enabled.
-
-  --page <page>        The page, when no positional is given
-  --address <addr>     Same as --page
-
-NOT --url: that is the instance, here as in every other command (SH365).
-
-Example:
-  shio digest post:Acme/about
-`;
+export const HELP = helpText("digest");
 
 export async function run(flags, positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);

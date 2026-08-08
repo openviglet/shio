@@ -32,6 +32,7 @@ import { coerceParams, readParams } from "../blueprint-params.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { writeProjectFiles } from "../project-files.mjs";
 import { retellUnknownSite } from "../unknown-site.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio apply --help` prints (SH435).
@@ -41,31 +42,7 @@ import { retellUnknownSite } from "../unknown-site.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio apply [file] — plan or apply a desired-state content document, or a blueprint
-
-Applying the same document twice changes nothing the second time, so it survives a
-compaction. - reads the document from stdin.
-
-  --file <file>          The document, when no positional is given
-  --dry-run              Print the plan, write nothing
-  --check                Drift guard — plan, and exit non-zero if anything would change
-  --ids                  Put object ids on the change rows (off by default)
-  --blueprint <name>     Apply a ready-made package instead of a document
-  --site <site>          With --blueprint: the site to apply it into (required)
-  --param k=v            With --blueprint: one parameter value; repeat for several
-  --params <file.json>   With --blueprint: values from a file (--param wins over it)
-  --create-site          Create the site (blank) if it does not exist, as the first step
-  --scratch              With --create-site: declare the site DISPOSABLE, so
-                         shio site rm --scratch sweeps it in one confirmation
-  --merge-post-types     With --blueprint: add fields an existing post-type lacks; never
-                         changes one
-  --force                With --blueprint: overwrite existing front-end files
-
-Examples:
-  shio apply site.json --dry-run
-  echo '{"site":"Blog","folders":[{"path":"/blog"}]}' | shio apply -
-  shio apply --blueprint marketing-site --site Acme --param brand=Acme --create-site
-`;
+export const HELP = helpText("apply");
 
 export async function run(flags, positionals, ctx) {
   if (flags.blueprint) {

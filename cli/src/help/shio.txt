@@ -1,0 +1,70 @@
+shio — the Shio CMS CLI
+
+Usage:
+  shio <command> [options]
+  shio <command> --help      That command's own flags, with what each one means
+                             (this list names the commands; it stopped describing
+                              their flags when each command grew its own help)
+
+Commands:
+  init [name]    Scaffold a Next.js site wired to the Shio CDA
+                 (--blueprint <name> takes the starter from the instance instead;
+                  add --site <site> to apply its content in the same command)
+  context        Print the agent context pack: model + sitemap + conventions (one call)
+  mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
+  resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
+  impact <addr>  What a change to this template would affect: layouts, types, page counts
+  apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
+                 or a ready-made package (--blueprint <name> --site <site>;
+                  --merge-post-types adds missing fields). --create-site makes the site
+                  in either mode, and means the same thing on convert
+  import <file>  Clone an SH68 exchange package (.zip) into this instance — the way to accept
+                 a site somebody hands you (export it with GET /api/v2/site/{id}/export)
+  blueprints     List the appliable starting points (blueprints <name> for its parameters)
+  publish [addr] Make drafts live, or take live pages down (--unpublish)
+                 (--site <name> --all names every post the site holds; --dry-run first)
+  verify         Lint the content and its routes; exits non-zero on an error (CI gate)
+  changes        What changed, with a cursor to resume from (--since, --cursor)
+  report         The human handoff: what changed, preview links, open questions
+  remember       Write down a decision the next session should not re-derive
+  digest <page>  Structural digest of one page: outline, landmarks, links, images
+  snapshot <page> PNG of a page + whether it looks different (needs playwright)
+  audit <page>   What is wrong with a rendered page, as text with a selector each
+  annotations <page>
+                 The props a page emits vs the fields its types declare — both forms,
+                 rows expanded (exits 1 when a rendered field is not editable)
+  judge          Run verify/diff (and audit/snapshot on request), answer once, and
+                 name where the instruments disagreed — which is where the defects are
+  site           List the sites, marking the disposable ones; site rm --scratch
+                 sweeps every site its creator declared disposable, in one confirmation
+  clone <url>    Capture a site that already exists: an inventory, and no content
+  propose        Which captured blocks could become sections, and what each would lose
+  convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT
+  diff           Compare what a replica serves with the capture that declared it
+                 (counts, not pixels: exits 1 when a page lost something)
+  pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
+  push           Apply local post-types back to Shio (--dry-run, --prune, --content)
+  build          Compile local DSL/JSON post-types to canonical JSON (--out)
+  types          Generate a TypeScript .d.ts from the live post-types (CDA token)
+  dev            Generate types, start the site dev server, watch the model
+                 (--content: sync shio/content/** both ways and log events instead)
+  deploy         push (apply) then types
+
+Post-types as code:
+  shio/post-types/ may hold *.json or *.ts/*.mjs DSL sources (@viglet/shio-model).
+  push and build compile DSL sources to canonical JSON before diffing/emitting.
+
+Connection:
+  --url <baseUrl>      Shio base URL          (env SHIO_URL, default http://localhost:2710)
+  --user <user>        Console user           (env SHIO_USER)        [pull/push/deploy]
+  --password <pass>    Console password       (env SHIO_PASSWORD)    [pull/push/deploy]
+  --token <token>      CDA token              (env SHIO_CDA_TOKEN)   [types/dev]
+
+Common options:
+  --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
+  --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out;
+                       a file for context)
+  --dry-run            push/apply: print the plan, change nothing
+  --check              push/apply: drift guard — exit non-zero if the plan is non-empty (CI)
+  --prune              push: delete remote types absent locally (never system types)
+  -h, --help           Show help

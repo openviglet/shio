@@ -39,34 +39,10 @@ import { describeMigration, migrateInventory } from "../inventory-migrate.mjs";
 import { assertMode, compareCapture, describeDiff } from "../diff.mjs";
 import { PLAN_FILE, PROPOSAL_FILE } from "../propose.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { helpText } from "../help.mjs";
 
 /** What `shio diff --help` prints. */
-export const HELP = `shio diff --site <name> - compare what a replica serves with what declared it
-
-Walks the capture's pages, asks the instance for each one, and reads the served bytes with
-the same scanner the capture used. What comes back is not pixels: the counts the source
-recorded against the counts the page shows, per page and per fact.
-
-Exits 1 when a page lost something. A fact the replica GAINED is never a failure - a Shio
-layout adds links, and a gate that called that damage would fire on every working
-conversion.
-
-A page composed from the section vocabulary drops the source's nav, favicon and
-stylesheet by design, so the capture's counts are not a claim about it. --mode says what
-the counts ARE a claim about, and defaults to reading it off the conversion plan.
-
-  --site <name>        The site the replica lives in (required)
-  --against <what>     Which declaration to judge against (default: capture)
-  --mode <how>         auto (default), fidelity, mixed or authorable
-  --inventory <file>   Read a capture from somewhere else
-  --limit <n>          Pages to print
-  --json               The comparison as JSON on stdout instead of the report
-
-Examples:
-  shio diff --site Acme
-  shio diff --site Acme --json
-  shio diff --site Acme --mode fidelity   # judge every fact, whatever the plan says
-`;
+export const HELP = helpText("diff");
 
 /** The declarations this can judge against. `capture` is the one that is built (SH522). */
 const AGAINST = ["capture"];

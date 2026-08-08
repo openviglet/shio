@@ -18,6 +18,7 @@
  * back is written verbatim as one line.
  */
 import { resolveAdmin } from "../context.mjs";
+import { helpText } from "../help.mjs";
 
 /** The header the server mints on initialize and expects echoed afterwards. */
 const SESSION_HEADER = "mcp-session-id";
@@ -30,15 +31,7 @@ const SESSION_HEADER = "mcp-session-id";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio mcp — bridge stdio to this instance's MCP endpoint
-
-Speaks newline-delimited JSON-RPC on stdin/stdout and forwards it to POST /mcp. Takes no
-flags of its own beyond the connection ones (--url/--user/--password, or SHIO_URL/
-SHIO_USER/SHIO_PASSWORD).
-
-Register it with:
-  claude mcp add shio -- shio mcp
-`;
+export const HELP = helpText("mcp");
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);

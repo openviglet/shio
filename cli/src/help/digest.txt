@@ -1,0 +1,12 @@
+shio digest <page> — one page's structure: outline, landmarks, links, images
+
+The agent's own appearance check: no browser, and a fraction of a screenshot's tokens.
+Takes a post:<site>/<url> address, or a delivery URL when fetching is enabled.
+
+  --page <page>        The page, when no positional is given
+  --address <addr>     Same as --page
+
+NOT --url: that is the instance, here as in every other command (SH365).
+
+Example:
+  shio digest post:Acme/about

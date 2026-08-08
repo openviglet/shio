@@ -9,6 +9,7 @@
  */
 import * as push from "./push.mjs";
 import * as types from "./types.mjs";
+import { helpText } from "../help.mjs";
 
 /**
  * What `shio deploy --help` prints (SH435).
@@ -18,13 +19,7 @@ import * as types from "./types.mjs";
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio deploy — push the model, then regenerate the types
-
-  --skip-types         Push and stop, leaving the declarations as they are
-
-Example:
-  shio deploy
-`;
+export const HELP = helpText("deploy");
 
 export async function run(flags, positionals, ctx) {
   ctx.stdout.write("shio deploy: applying post-types...\n");

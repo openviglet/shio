@@ -1,0 +1,17 @@
+shio context — the agent context pack: model + sitemap + conventions, in one call
+
+  --site <idOrName>    Scope to one site       (omit for every readable site)
+  --include <sections> instance,sites,model,sitemap,conventions (default all)
+  --format <fmt>       terse (default), json, or agents-md
+  --as agents-md       Same as --format agents-md; pair with --out AGENTS.md so the file
+                       cannot rot — regenerate it and the diff is the drift
+  --depth <n>          Folder-tree depth to walk
+  --budget <tokens>    Estimated-token ceiling (0 = unbounded)
+  --from <id>          Resume cursor from a truncated pack
+  --ids                Put object ids back on every row (off by default — a row is
+                       addressable without one, and a UUID is the priciest field)
+  --out <file>         Write the pack to a file instead of stdout
+
+Examples:
+  shio context --site Acme
+  shio context --as agents-md --out AGENTS.md

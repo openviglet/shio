@@ -1,0 +1,32 @@
+shio convert --site <name> - apply the accepted conversion plan as content
+
+Turns the blocks you accepted with shio propose --accept into posts, plus the captured
+theme and scripts. It reads the capture and the plan, and writes through the same
+desired-state path shio apply uses, so running it twice changes nothing the second time.
+
+Every post lands in DRAFT. Publishing is a separate, explicit call: shio publish --site <name>
+--all, which is the step after this one (SH546).
+
+  --site <name>        The site to write into (required)
+  --create-site        Create the site (blank) if it does not exist, as the first step
+  --scratch            With --create-site: declare the site DISPOSABLE, so
+                       shio site rm --scratch sweeps it in one confirmation
+  --home <path>        Redirect / to one of the captured pages, for a source that answers
+                       nothing at its own root. Without it a home page is written listing
+                       the replica's pages
+  --dry-run            Print the plan the instance would apply, and write nothing
+  --check              Drift guard: plan, and exit non-zero if anything would change
+  --out <file>         Write the desired-state document to a file and apply nothing
+  --ids                Put object ids on the change rows (off by default)
+  --limit <n>          Rows to print
+  --inventory <file>   Read a capture from somewhere else
+  --assets-dir <dir>   Where the captured bytes are (default shio/assets). A page kept in
+                       fidelity mode references them by the source's own path, so they are
+                       uploaded at that path and served there
+  --json               The document as JSON on stdout instead of the report
+
+Examples:
+  shio convert --site Acme --dry-run
+  shio convert --site Acme --create-site
+  shio convert --site Acme --out conversion.json
+  shio convert --site Acme --home /en-us/

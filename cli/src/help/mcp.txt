@@ -1,0 +1,8 @@
+shio mcp — bridge stdio to this instance's MCP endpoint
+
+Speaks newline-delimited JSON-RPC on stdin/stdout and forwards it to POST /mcp. Takes no
+flags of its own beyond the connection ones (--url/--user/--password, or SHIO_URL/
+SHIO_USER/SHIO_PASSWORD).
+
+Register it with:
+  claude mcp add shio -- shio mcp

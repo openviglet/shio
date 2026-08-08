@@ -1,0 +1,27 @@
+shio pull — pull the post-types into shio/post-types/*.json
+
+  --content            Pull the content tree (shio/content/**) instead of the model
+  --dir <dir>          Post-types directory (default shio/post-types)
+  --out <dir>          Same as --dir
+
+With --content (the SH90 projection):
+  Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields, the
+  body is the post's rich-text field, and binaries land in shio/assets/<site>/... so a File
+  field reads as a path rather than a UUID. A pull merges three ways (last-synced base,
+  server, files): only a field both sides changed is a conflict, and a conflict writes
+  nothing and exits non-zero.
+  --site <name>        Scope to one site
+  --ours / --theirs    Resolve a three-way conflict in favour of one side
+  --force              Overwrite local files that differ
+  --allow-partial      Keep what was pulled when the range could not be covered whole
+  --show-remote        Print the remote side of each conflict
+  --limit <n>          Rows to print
+  --content-dir <dir>  Content tree (default shio/content)
+  --assets-dir <dir>   Asset tree   (default shio/assets)
+  --folders-dir <dir>  Folder markers (default shio/folders)
+  --base-file <file>   The merge base (default shio/.shio/content-base.json)
+  --dry-run            Print what would be written, write nothing
+
+Examples:
+  shio pull
+  shio pull --content --site Acme

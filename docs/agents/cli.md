@@ -1768,6 +1768,21 @@ fell from **357 lines to 58**: it names the commands, points at `shio <command> 
 what is genuinely cross-command (the connection flags). Both halves of that are the same rule — the
 same interface described in two places is the shape that drifts.
 
+**The text lives in `src/help/<command>.txt`, not in the JavaScript (SH208).** Each module still
+exports `HELP`, now as `helpText("<command>")` — a synchronous read at module load, and commands are
+imported lazily, so `shio verify` reads one file. The reason is that help text is prose *about a CLI*,
+prose about a CLI names commands, and command names attract backticks — which inside a template
+literal is a syntax error that stops **the whole binary** loading, not the command that was edited.
+It happened three times in three sessions, and each time the only tests that noticed were the three
+that spawn the CLI as a subprocess; every other CLI test imports the command modules directly, so a
+green suite ran against an unparseable entry point. **The pair case is worse and is why an escape
+rule was not enough (SH377):** two backticks parse fine and silently *truncate* the help — 149 lines
+instead of 200, `Common options` and everything below it gone, no error anywhere. `String.raw` is not
+a fix and `help-source.test.mjs` says so in an assertion: it changes how backslashes are read and has
+no effect on the delimiter. That lint refuses any `HELP` that is a template literal again, and checks
+every `helpText(...)` has a file behind it — a missing one throws at load, which is the same "the
+binary does not run" failure in a different costume.
+
 **The optional browser is resolved before anything else, and one module owns the refusal (SH434).**
 With `playwright` absent, `snapshot`, `snapshot --against` and `audit` printed the intended teaching
 error and then emitted `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` and exit

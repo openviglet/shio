@@ -30,6 +30,7 @@ import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { BASE_FILE, readBase } from "../content-store.mjs";
 import { buildReport } from "../report.mjs";
+import { helpText } from "../help.mjs";
 
 /** Where `--mark` records the position the last handoff covered. */
 export const REPORT_STATE_FILE = "shio/.shio/report-state.json";
@@ -43,29 +44,7 @@ const STATE_VERSION = 1;
  * one's meant grepping the source for `flags.` — reading an implementation to discover an
  * interface, having already paid for a help text that answered something else.
  */
-export const HELP = `shio report — the human handoff: what changed, preview links, open questions
-
-Markdown on stdout — paste it into a pull-request body. It composes changes, context
-and verify; there is no endpoint behind it, because the reader is a person.
-
-  --since <cursor>     Range start; "last" = where the last --mark left off, "content" =
-                       where the last content pull reached. Omit for a window
-  --mark               Record this range as reviewed, so the next --since last resumes.
-                       Refused when the report could not cover its whole range
-  --site <name>        Scope to one site
-  --limit <n>          Rows per section
-  --title <text>       The document's heading
-  --no-verify          Drop the open questions, leaving the change list
-  --verify             The default; --verify=false is the same as --no-verify
-  --out <file>         Write the Markdown to a file instead of stdout
-  --json               The report's data instead of Markdown
-  --state <file>       Where --mark keeps its position
-  --base-file <file>   Where the last content pull's position is kept
-
-Examples:
-  shio report --since last --out PR.md
-  shio report --since content --mark
-`;
+export const HELP = helpText("report");
 
 export async function run(flags, positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);

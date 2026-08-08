@@ -26,24 +26,9 @@
  * unproven and a verdict that treats the two the same is the defect this exists to remove.</p>
  */
 import { describeJudgement, judgeRuns, subjectOf } from "../judge.mjs";
+import { helpText } from "../help.mjs";
 
-export const HELP = `shio judge --site <name> — run the instruments, answer once, name the disagreements
-
-verify and diff always run (both browser-free). audit and snapshot are opt-in and are
-reported NOT RUN rather than green when they are not asked for. Exits 1 when any instrument
-that ran found something — a green from three and a red from one is a red.
-
-  --site <name>        The site to judge (or a bare positional)
-  --browser            Also run audit, which needs playwright
-  --against <origin>   Also run snapshot against this origin (the source you replicated)
-  --pages <n>          How many pages audit/snapshot look at (default 5)
-  --verbose            Print each instrument's own report underneath the judgement
-  --json               The judgement as JSON, for a pipeline
-
-Examples:
-  shio judge --site Acme
-  shio judge --site Acme --browser --against https://acme.example.com
-`;
+export const HELP = helpText("judge");
 
 /** What each instrument is worth spending a browser on, when one is spent at all. */
 const DEFAULT_PAGES = 5;
