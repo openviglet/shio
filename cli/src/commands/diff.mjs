@@ -36,16 +36,29 @@ import {
   addressablePath, countAssets, countLinks, INVENTORY_FILE, MARKUP_DIR, markupFileFor, scanPage,
 } from "../clone.mjs";
 import { describeMigration, migrateInventory } from "../inventory-migrate.mjs";
-import { assertMode, compareCapture, describeDiff } from "../diff.mjs";
+import {
+  assertMode, compareCapture, compareProposal, describeDiff, describeProposalDiff,
+} from "../diff.mjs";
 import { PLAN_FILE, PROPOSAL_FILE } from "../propose.mjs";
+import { SECTIONS_FOLDER } from "../convert.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { helpText } from "../help.mjs";
 
 /** What `shio diff --help` prints. */
 export const HELP = helpText("diff");
 
-/** The declarations this can judge against. `capture` is the one that is built (SH522). */
-const AGAINST = ["capture"];
+/**
+ * The declarations this can judge against (SH522).
+ *
+ * <p>`capture` compares the served page with what the source declared; `proposal` compares the
+ * content the instance holds with what the plan said the conversion would make. Two different
+ * questions on purpose - a page that composes the right sections and serves them badly is the
+ * first one's finding, and keeping them apart is what lets a reader tell "the conversion did not
+ * do what it promised" from "it did, and the layout is wrong".</p>
+ *
+ * <p>The document and an earlier moment remain unbuilt, and the refusal names them.</p>
+ */
+const AGAINST = ["capture", "proposal"];
 
 export async function run(flags, positionals, ctx) {
   const site = typeof flags.site === "string" && flags.site.trim()
@@ -69,10 +82,8 @@ export async function run(flags, positionals, ctx) {
     throw new Error(
       `shio diff: --against ${against} is not built.\n`
         + `  allowed: ${AGAINST.join(", ")}\n`
-        + "The proposal (what was intended), the document (what was written) and the same address\n"
-        + "at an earlier moment are the other three declarations this verb is for, and none of\n"
-        + "them is implemented — the capture is the one whose two sides are computed by the same\n"
-        + "function, which is what makes this comparison arithmetic rather than a second opinion.",
+        + "The document (what was written) and the same address at an earlier moment are the two\n"
+        + "declarations this verb is still for, and neither is implemented.",
     );
   }
 
@@ -81,6 +92,12 @@ export async function run(flags, positionals, ctx) {
   // *finding* a mode rather than one of them.
   const asked = typeof flags.mode === "string" && flags.mode.trim() ? flags.mode.trim() : "auto";
   if (asked !== "auto") assertMode(asked);
+
+  if (against === "proposal") {
+    // Before the inventory read: this comparison never touches the capture, and paying for a
+    // walk of it to answer a question about the plan is the shape SH577 refused one flag along.
+    return againstProposal(site, flags, ctx);
+  }
 
   const path = typeof flags.inventory === "string" ? flags.inventory : INVENTORY_FILE;
   const inventory = await readInventory(join(ctx.cwd, path), ctx, path);
@@ -198,6 +215,68 @@ async function resolveModes(asked, ctx) {
   }
   // A captured page the proposal never composed is one `convert` writes verbatim or not at all.
   return { mode: "fidelity", modes };
+}
+
+/**
+ * `--against proposal` - the plan's intent against the content the instance holds (SH522).
+ *
+ * <p>Reads three things and joins them: the reviewed plan, the proposal it reviewed, and the posts
+ * the write produced. Nothing is guessed and nothing is re-derived - the chain is already written
+ * down, which is what SH522 said made this cheap, and it is why this reads documents rather than
+ * running a second scan.</p>
+ */
+async function againstProposal(site, flags, ctx) {
+  const planPath = typeof flags.plan === "string" ? flags.plan : PLAN_FILE;
+  const proposalPath = typeof flags.proposal === "string" ? flags.proposal : PROPOSAL_FILE;
+  const plan = await readJson(join(ctx.cwd, planPath), ctx);
+  const proposal = await readJson(join(ctx.cwd, proposalPath), ctx);
+  if (!plan || !proposal) {
+    // P6: which file, and the command that writes it. `readJson` answers null for both absent and
+    // unreadable, which is right for `--mode auto` (judge everything) and wrong here - the whole
+    // comparison IS these two files.
+    throw new Error(
+      `shio diff: --against proposal needs both declarations, and ${!plan ? planPath : proposalPath}`
+        + " could not be read.\n"
+        + `  ${proposalPath} - shio propose\n`
+        + `  ${planPath} - shio propose --accept <id> --reason "..."`,
+    );
+  }
+
+  const accepted = (plan.accepted ?? []).map((entry) => entry?.block).filter(Boolean);
+  if (!accepted.length) {
+    throw new Error(
+      `shio diff: ${planPath} accepts no block, so the proposal declared nothing to compare.\n`
+        + '  shio propose --accept <id> --reason "..."',
+    );
+  }
+
+  const addresses = [
+    ...new Set([
+      ...accepted.map((id) => `post:${site}${SECTIONS_FOLDER}/${id}`),
+      ...(proposal.pages ?? []).map((page) => `post:${site}${page.path}`),
+    ]),
+  ];
+  const { ShioAgentClient } = await import("../agent-client.mjs");
+  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+  const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+  const docs = await client.read(addresses);
+
+  // Keyed by the url the proposal speaks rather than by the SH79 address the read speaks: both
+  // sides of this comparison are declarations, and translating once here keeps the pure half free
+  // of addressing.
+  const held = new Map();
+  for (const doc of Array.isArray(docs) ? docs : []) {
+    const url = String(doc?.address ?? "").slice(`post:${site}`.length);
+    held.set(url, doc);
+  }
+
+  const comparison = compareProposal({
+    plan, proposal, held, sectionsFolder: SECTIONS_FOLDER, pagesFolder: "",
+  });
+  ctx.stdout.write(flags.json
+    ? `${JSON.stringify(comparison, null, 2)}\n`
+    : describeProposalDiff(comparison, { limit: flags.limit }));
+  return { ...comparison, exitCode: comparison.broken ? 1 : 0 };
 }
 
 async function readJson(at, ctx) {

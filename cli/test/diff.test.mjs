@@ -150,12 +150,23 @@ test("SH522: a path the replica does not serve is one absence, not four lost fac
   assert.match(describeDiff(comparison), /the replica serves nothing here/);
 });
 
-test("SH522: --against names the three declarations that are not built yet", async () => {
+test("SH522: --against names the declarations that are not built yet, and only those", async () => {
   await assert.rejects(
-    () => diff.run({ site: "Acme", against: "proposal" }, [], ctxWith()),
-    /not built[\s\S]*allowed: capture[\s\S]*same address\n *at an earlier moment/,
+    () => diff.run({ site: "Acme", against: "document" }, [], ctxWith()),
+    /not built[\s\S]*allowed: capture, proposal[\s\S]*at an earlier moment/,
     "a flag that accepted the value and answered approximately would be worse than one that says "
       + "what it does not do",
+  );
+
+  // The list shrinks as the chain is walked, which is the half a refusal usually gets wrong: the
+  // proposal is built now, so naming it as missing would send a reader away from a verb they have.
+  await assert.rejects(
+    () => diff.run({ site: "Acme", against: "document" }, [], ctxWith()),
+    (error) => {
+      assert.ok(!/The proposal \(what was intended\)/.test(error.message),
+        "the refusal must stop offering an excuse for something that now exists");
+      return true;
+    },
   );
 });
 

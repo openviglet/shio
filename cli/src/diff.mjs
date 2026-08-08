@@ -484,6 +484,135 @@ function headAssets(declared, produced) {
 }
 
 /**
+ * `--against proposal` — did the intent become the artefact (SH522)?
+ *
+ * <h2>The link of the chain this walks</h2>
+ *
+ * <p>The capture declares the source and `compareCapture` judges the served page against it. The
+ * proposal declares the <em>intent</em>: these blocks, accepted, become sections carrying these
+ * fields, and this page composes those. Nothing had ever compared that with what the instance
+ * actually holds — so "the conversion said it would make eleven sections" and "the site has
+ * eleven sections" were two facts a person put side by side by hand.</p>
+ *
+ * <h2>It reads the instance, not the wire</h2>
+ *
+ * <p>Deliberately different from the capture comparison, which fetches the route because the
+ * question there is what a *reader* gets. The question here is whether the write did what the plan
+ * said, and the write's product is content — so both sides are documents, and the comparison is a
+ * set difference rather than a scan. A page that composes the right sections and serves them badly
+ * is `--against capture`'s finding, and keeping the two apart is what lets a reader tell "the
+ * conversion did not do what it promised" from "the conversion did, and the layout is wrong".</p>
+ *
+ * @param plan     the reviewed decisions: `{ accepted: [{ block, type }] }`
+ * @param proposal the candidates and each page's composition, from `conversion-proposal.json`
+ * @param held     address → the post the instance holds, as `{ data }`; absent means it has none
+ */
+export function compareProposal({ plan, proposal, held, sectionsFolder, pagesFolder }) {
+  const accepted = new Set((plan?.accepted ?? []).map((entry) => entry?.block).filter(Boolean));
+  const byId = new Map((proposal?.candidates ?? []).map((row) => [row.id, row]));
+
+  const sections = [];
+  for (const id of [...accepted].sort()) {
+    const url = `${sectionsFolder}/${id}`;
+    const candidate = byId.get(id);
+    const post = held.get(url) ?? null;
+    if (!candidate) {
+      // Accepted in the plan and absent from the proposal: a hand-edited plan, which the file
+      // invites. Reported rather than skipped — it is the one case where the two declarations
+      // disagree with each other before the artefact is even involved.
+      sections.push({ url, status: "undeclared", missing: [], extra: [] });
+      continue;
+    }
+    if (!post) {
+      sections.push({ url, status: "absent", missing: fieldsOf(candidate), extra: [] });
+      continue;
+    }
+    const promised = new Set(fieldsOf(candidate));
+    const actual = new Set(Object.keys(post.data ?? {}));
+    const missing = [...promised].filter((field) => !actual.has(field)).sort();
+    // A field the artefact gained is never a failure, for `compareCapture`'s reason: the write adds
+    // `title` and the post-type may declare more. Reported, never counted against the run.
+    const extra = [...actual].filter((field) => !promised.has(field)).sort();
+    sections.push({ url, status: missing.length ? "incomplete" : "ok", missing, extra });
+  }
+
+  const pages = [];
+  for (const page of (proposal?.pages ?? []).toSorted((a, b) => (a.path < b.path ? -1 : 1))) {
+    const promised = [...new Set((page.blocks ?? [])
+      .filter((id) => accepted.has(id))
+      .map((id) => `${sectionsFolder}/${id}`))];
+    if (!promised.length) continue;
+    const url = `${pagesFolder}${page.path}`.replace(/\/{2,}/g, "/");
+    const post = held.get(url) ?? held.get(page.path) ?? null;
+    if (!post) {
+      pages.push({ path: page.path, status: "absent", missing: promised, extra: [] });
+      continue;
+    }
+    const actual = new Set(listOf(post.data?.sections));
+    const missing = promised.filter((each) => !actual.has(each));
+    const extra = [...actual].filter((each) => !promised.includes(each)).sort();
+    pages.push({
+      path: page.path,
+      status: missing.length ? "incomplete" : "ok",
+      missing,
+      extra,
+    });
+  }
+
+  const broken = sections.filter((row) => row.status !== "ok").length
+    + pages.filter((row) => row.status !== "ok").length;
+  return { sections, pages, broken };
+}
+
+/** A candidate's promised field names, whichever shape the proposal recorded them in. */
+function fieldsOf(candidate) {
+  const fields = candidate?.fields;
+  if (Array.isArray(fields)) {
+    return fields.map((f) => (typeof f === "string" ? f : f?.name)).filter(Boolean).sort();
+  }
+  return fields && typeof fields === "object" ? Object.keys(fields).sort() : [];
+}
+
+/** `sections` is a list on the wire and may arrive as one string; both are one page's composition. */
+function listOf(value) {
+  if (Array.isArray(value)) return value.filter((each) => typeof each === "string");
+  return typeof value === "string" && value ? [value] : [];
+}
+
+/** The proposal comparison as a reader sees it — the answer first, then only what went wrong. */
+export function describeProposalDiff(comparison, options = {}) {
+  const { sections, pages, broken } = comparison;
+  const limit = Number(options.limit) > 0 ? Number(options.limit) : 20;
+  const lines = [];
+
+  lines.push(broken === 0
+    ? `shio diff: the artefact matches the proposal — ${sections.length} section(s) and `
+      + `${pages.length} composed page(s), all present with the fields the plan accepted.`
+    : `shio diff: ${broken} of ${sections.length + pages.length} declared item(s) are not what the `
+      + "proposal said they would be.");
+  lines.push("");
+
+  const wrong = [
+    ...sections.filter((row) => row.status !== "ok").map((row) => ({ ...row, what: row.url })),
+    ...pages.filter((row) => row.status !== "ok").map((row) => ({ ...row, what: `page ${row.path}` })),
+  ];
+  for (const row of wrong.slice(0, limit)) {
+    lines.push(`  ${row.status.toUpperCase().padEnd(11)} ${row.what}`);
+    if (row.missing.length) lines.push(`    missing: ${row.missing.join(", ")}`);
+  }
+  if (wrong.length > limit) lines.push(`  … ${wrong.length - limit} more`);
+  if (broken === 0) {
+    // The gained half, said once and never as a failure: a post-type declares fields the proposal
+    // never promised, and a reader comparing counts by hand would otherwise ask about the
+    // difference every time.
+    const gained = sections.reduce((sum, row) => sum + row.extra.length, 0);
+    if (gained) lines.push(`  (${gained} field(s) the artefact carries beyond the proposal — the `
+      + "post-type's own, never a failure)");
+  }
+  return `${lines.join("\n").trimEnd()}\n`;
+}
+
+/**
  * What a reader sees, and it leads with the answer rather than with the table.
  *
  * <p>The question is "is this what it was supposed to be", so the first line answers it. A page that

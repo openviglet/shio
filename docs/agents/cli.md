@@ -350,7 +350,7 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
-**`shio diff` — both sides were held and nothing compared them (SH522, `--against capture` only).**
+**`shio diff` — both sides were held and nothing compared them (SH522, `--against capture` and `proposal`).**
 Shio holds both sides of every comparison it does not make: a capture declares the **source** (six
 pages, eleven links, one image, this much text), a proposal declares the **intent**, a document
 declares the **write**, and the artefact each produces is compared with none of them. So *is this
@@ -361,6 +361,20 @@ on disk, the artefact was on the wire, and the join was forty lines of Python wr
 What makes it cheap is that **every artefact carries the identity of what declared it** — the
 inventory names the capture, the proposal names the inventory, the document names the proposal — so
 nothing is guessed or re-fetched; the chain was already written down and nobody had walked it.
+**`--against proposal` is the second link, and it reads documents rather than the wire.** The
+capture comparison asks what a *reader* gets; this asks whether the write did what the plan said —
+the accepted blocks became sections carrying the fields they promised, and each page composes the
+ones it was supposed to. Both sides are declarations, so it is a set difference and not a scan, and
+it needs no capture at all (the branch is taken before the inventory is read). Keeping the two
+apart is the point: a page that composes the right sections and serves them badly is the capture's
+finding, and merging them would leave a reader unable to tell **"the conversion did not do what it
+promised"** from **"it did, and the layout is wrong"**. Four outcomes per row — `ok`, `absent`
+(declared, never made), `incomplete` (made, missing a promised field — the shape the 106-field
+hand-count got wrong), and `undeclared` (the plan accepts a block the proposal never had, which is
+two declarations disagreeing before the artefact is involved). A field the artefact **gained** is
+reported and never counted against the run, for the same reason a gained link is not: the
+post-type declares fields the proposal never promised. **The document and an earlier moment remain
+unbuilt**, and the refusal names those two and no longer names the proposal.
 `diff` walks the capture's pages, asks the instance for each at `/preview/<site><path>`, and reads
 the served bytes with **`scanPage`, the same function that wrote the declared counts** — SH245's
 rule, and the reason the comparison is arithmetic rather than a second opinion. Not pixels
