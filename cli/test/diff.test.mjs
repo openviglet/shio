@@ -150,19 +150,20 @@ test("SH522: a path the replica does not serve is one absence, not four lost fac
   assert.match(describeDiff(comparison), /the replica serves nothing here/);
 });
 
-test("SH522: --against names the declarations that are not built yet, and only those", async () => {
-  await assert.rejects(
-    () => diff.run({ site: "Acme", against: "document" }, [], ctxWith()),
-    /not built[\s\S]*allowed: capture, proposal[\s\S]*at an earlier moment/,
-    "a flag that accepted the value and answered approximately would be worse than one that says "
-      + "what it does not do",
-  );
-
-  // The list shrinks as the chain is walked, which is the half a refusal usually gets wrong: the
-  // proposal is built now, so naming it as missing would send a reader away from a verb they have.
+test("SH522: the refusal sends a reader somewhere, and never to a verb that now exists", async () => {
   await assert.rejects(
     () => diff.run({ site: "Acme", against: "document" }, [], ctxWith()),
     (error) => {
+      assert.match(error.message, /allowed: capture, proposal/);
+      assert.match(error.message, /shio apply --check/,
+        "the document comparison is not unbuilt — it is `apply --check` under another name, and a "
+          + "refusal that called it 'not implemented' would send somebody to build a second reader "
+          + "for a question already answered");
+      assert.match(error.message, /SH619/,
+        "and the published one is blocked on a read rather than on this verb, which is a different "
+          + "thing to know: /agent/read is DRAFT-preferred and cannot return the live row's fields");
+      // The list shrinks as the chain is walked. This is the half a refusal usually gets wrong:
+      // naming something as missing after it ships sends a reader away from a verb they have.
       assert.ok(!/The proposal \(what was intended\)/.test(error.message),
         "the refusal must stop offering an excuse for something that now exists");
       return true;

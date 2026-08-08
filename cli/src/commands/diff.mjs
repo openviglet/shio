@@ -82,8 +82,12 @@ export async function run(flags, positionals, ctx) {
     throw new Error(
       `shio diff: --against ${against} is not built.\n`
         + `  allowed: ${AGAINST.join(", ")}\n`
-        + "The document (what was written) and the same address at an earlier moment are the two\n"
-        + "declarations this verb is still for, and neither is implemented.",
+        + "The other two declarations SH522 named are settled rather than pending:\n"
+        + "  document  - `shio apply --check <file>` already plans a desired-state document\n"
+        + "              against the instance and exits non-zero if anything would change.\n"
+        + "  published - blocked on a read rather than on this verb: /api/v2/agent/read is\n"
+        + "              DRAFT-preferred and takes no state, so the live row's fields cannot\n"
+        + "              be fetched at all (SH619).",
     );
   }
 

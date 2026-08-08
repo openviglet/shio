@@ -373,8 +373,17 @@ promised"** from **"it did, and the layout is wrong"**. Four outcomes per row �
 hand-count got wrong), and `undeclared` (the plan accepts a block the proposal never had, which is
 two declarations disagreeing before the artefact is involved). A field the artefact **gained** is
 reported and never counted against the run, for the same reason a gained link is not: the
-post-type declares fields the proposal never promised. **The document and an earlier moment remain
-unbuilt**, and the refusal names those two and no longer names the proposal.
+post-type declares fields the proposal never promised.
+**The other two declarations are settled rather than pending, and that is SH522's closing finding.**
+The **document** is `shio apply --check` under another name — it plans a desired-state document
+against the instance and exits non-zero if anything would change, which is the whole question. A
+second reader for it would be a second contract over one question, which P10 refuses, so it is
+retired rather than left as an unbuilt quarter somebody re-proposes. An **earlier moment** is
+blocked on a *read*, not on this verb: `GET /api/v2/agent/read` is DRAFT-preferred and takes no
+`state`, so the live row's fields are unreachable and a fact-level draft-against-live comparison
+cannot be assembled at all — SH545's `published` answers *whether*, not *what*. Filed as **SH619**,
+which is a read before it is a diff. The refusal prints both of these instead of implying the flag
+is merely unfinished.
 `diff` walks the capture's pages, asks the instance for each at `/preview/<site><path>`, and reads
 the served bytes with **`scanPage`, the same function that wrote the declared counts** — SH245's
 rule, and the reason the comparison is arithmetic rather than a second opinion. Not pixels

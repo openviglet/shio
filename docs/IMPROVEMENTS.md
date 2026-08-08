@@ -362,29 +362,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.34 Both sides are held and never compared (SH522)
-
-Shio holds both sides of every comparison it does not make. A capture is a **declaration
-of the source**: six pages, eleven links, one image, this text. A proposal is a
-declaration of **intent**: these fields from these blocks. A desired-state document is a
-declaration of the **write**. And the artefact each produces is compared with none of
-them.
-
-So the question I ask every round — "is this what it was supposed to be?" — has no
-answer in the product, and I answer it by hand. That hand has been wrong twice: zero
-broken references on a page with a missing logo, and 106 editable fields on a page that
-had lost most of its content. Both times the declaration was on disk and the artefact
-was on the wire, and the join was forty lines of Python I wrote from memory.
-
-The verb is `shio diff`, and its argument is which declaration to judge against — the
-capture, the proposal, the document, or the same address at an earlier moment. What it
-returns is not pixels: fields present, absent and changed; references that resolved and
-that did not; counts the source recorded against counts the page shows.
-
-**Every artefact carries the identity of what declared it**, which is what makes this cheap: the inventory
-names the capture, the proposal names the inventory, the document names the proposal. Nothing has to be
-guessed or re-fetched — the chain is already written down and nobody has ever walked it.
-
 ### IX.37 The fixture as a catalogue of what breaks a replica (SH528)
 
 Every defect this work found came from a real site, and none of them can be reproduced
@@ -782,6 +759,30 @@ method away, so adopting it is small. But `pending` also counts **entries** rath
 posts — one page edited four times reports four — so fixing only the staleness leaves a
 number that is fresh and still not a count of decisions. Both or neither: a half-fix
 here reads as correct.
+
+### IX.66 The moment the read surface cannot reach (SH619)
+
+SH522 named four declarations to judge an artefact against. Three are settled: the
+capture and the proposal are built, and the document turned out to be `apply --check`
+under another name. The fourth — the same address at an earlier moment — is not built,
+and the reason is worth recording because it is not effort.
+
+`GET /api/v2/agent/read` is **DRAFT-preferred and takes no `state`**. SH545 added
+`published` so a caller can tell whether a live row exists, which is the right field and
+answers a different question: whether, not what. So the published row's *fields* are
+unreachable from the agent surface, and a fact-level comparison of draft against live
+cannot be assembled at all — not expensively, not at all.
+
+The rendered published page is reachable (`/preview`, `/sites/**`), so a *pixel* answer
+exists and `snapshot` gives it. What does not exist is the cheap one: which fields
+changed, which is the question somebody asks before publishing and the one the SH14
+dialog answers for exactly one post at a time, in a browser, to a human.
+
+The work is therefore a read before it is a diff. Either `read?state=published` — small,
+and it makes `state` mean what its own javadoc says it means — or a projection that
+returns both rows where they differ, which is closer to what a caller wants and costs a
+shape nobody has designed. Deciding that is the task; `shio diff --against published` is
+what it unblocks.
 
 ## X. Content as files (Block I)
 

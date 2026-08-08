@@ -21,7 +21,6 @@
 
 ## Block K — Perception & verification loop
 
-- ⏳ **SH522** (deps: SH521 ✅) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
 - 📋 **SH528** (deps: SH527 ✅, SH560 ✅) **The fixture cannot exhibit the traits that broke every real replica** — It serves a page, a stylesheet, a font, an image and a favicon, so a query string, a relative depth, an overlay, an entity, an empty file and a script-made canvas are unreproducible offline. → §IX.37
 - 📋 **SH529** (deps: SH528) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38
 - 📋 **SH561** (deps: SH560 ✅, SH448 ✅) **The conformance run drives the CLI by module import, which is not the transport Claude Code uses** — Each scenario calls src/commands/*.mjs, so a wrong tool schema, a broken stdio frame and a tools/list budget regression are invisible to the one suite with an instance. → §IX.42
@@ -38,6 +37,7 @@
 - 📋 **SH612** (deps: SH204 ✅, SH22 ✅) **An incident recorded from a pool thread is filed under the default tenant, and now it carries a site id too** — The two async recorders write with no ShTenantContext, so a non-default tenant's failure lands under shio, and SH204 gave that misfiled row a foreign site id. → §IX.63
 - 📋 **SH613** (deps: SH206 ✅, SH322 ✅) **A textual lint reads prose, so writing about a rule can fail the build for breaking it** — SH206 hit this and fixed one lint; 17 of the 22 source-scanning tests still match their own subject inside a comment, and nothing says which of them mean to. → §IX.64
 - 📋 **SH615** (deps: SH109 ✅, SH207 ✅) **The review queue's per-run pending count never reaches zero, because publishing keeps the draft** — A run stays 'N to review' forever and its Approve button never settles, since the count asks whether a DRAFT row exists and the editable draft always does. → §IX.65
+- 📋 **SH619** (deps: SH522 ✅, SH545 ✅) **A draft cannot be compared with what is live, because the read surface cannot return the published row** — Every agent read is DRAFT-preferred with no state parameter, so 'what will change when I publish this' has no answer outside the console's own diff dialog. → §IX.66
 
 ## Block I — Content as files (local-first authoring)
 
