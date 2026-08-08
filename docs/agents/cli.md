@@ -2029,6 +2029,32 @@ statement about the boundary rather than about the fixture. `cli/test/source-cor
 iterates the corpus and runs the offline chain (`clone` → `propose --accept all` → `convert --out`)
 once per archetype, reading a declaration where the other two suites read a constant.
 
+**Both drivers now have a caller, and that was the half that was missing.** `serve` shipped with the
+loader and was called by nothing, so the sentence above — *a divergence between the tiers is a
+statement about the boundary* — was unfalsifiable: one driver ran, and every claim the corpus made
+was a claim about an injected `fetch`. `cli/conformance/source-corpus.conformance.mjs` is the second
+caller, and it asserts the three things a fake structurally cannot:
+
+- **what was asked for.** `served.requested` is the server's own log. `unfollowed` says the capture
+  did not *keep* a page; only the socket says nobody ever *asked* — opposite claims (SH387), and a
+  crawl that fetched a page and discarded it has still spent a stranger's bandwidth.
+- **what the platform's `fetch` does with the answer**, which is not what the fake does: the fake
+  resolves a 301 as a 301, undici follows it. That is the boundary SH563 lives on.
+- **that `spa` is refused rather than skipped.** `--render` is always attempted; the only two
+  acceptable outcomes are a capture that reached `unreachableWithoutBrowser`, or a refusal carrying
+  `browser.mjs`'s two-command install line (SH434). A `skip` would be the corpus reporting its most
+  expensive archetype as covered.
+
+It is the one file here that does **not** call `requireInstance`: its boundary is the socket, and
+demanding a Shio it never speaks to would blame a red run on an instance with no part in it.
+
+Two consequences worth knowing. `INERT_KEYS` in the fast tier is now **empty** — `scenarios.headless`
+was never inert, it was *misfiled*, a claim about a browser capture held by a tier that declares it
+runs without one, and group K reads the conformance file precisely so a key can be covered by the
+tier that can honestly cover it. And the first live run flipped `spa`'s `scenarios.headless` to
+`true`: the check is written in both directions, so a machine where `--render` completes fails until
+the declaration admits it.
+
 Why a corpus and not a bigger `fixture-site.mjs`: **a trait can be a property of the site rather
 than of a page**, and those do not compose into one server. A source with no home at `/` cannot
 also be the one that answers `/`; a source that is client-rendered end to end cannot also be the

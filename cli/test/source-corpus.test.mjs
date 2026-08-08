@@ -85,11 +85,16 @@ const OPEN = JSON.parse(
  *
  * <p>Same device as `OPEN`, one level up: `OPEN` holds assertions that are red, this holds traits
  * that are not asserted at all — which is the worse of the two, because a red case is visible and an
- * unread key reads as coverage. `scenarios.headless` is here because the fast tier cannot install
- * from a registry and the scaffold it would install is SH502's, unpublished; every other entry is a
- * task, not a bound.
+ * unread key reads as coverage.
+ *
+ * <p><b>Empty, and the second driver is why.</b> It held `scenarios.headless`, which no assertion
+ * could consume while `serve` — the corpus's live driver — was exported and called by nothing. The
+ * key is a claim about a *browser-driven* capture, and this tier declares it runs with none; so the
+ * honest home for it is `cli/conformance/source-corpus.conformance.mjs`, which the walk below now
+ * reads for exactly that reason. A key whose only possible reader is in another tier is not inert,
+ * it is misfiled, and the list could not tell the two apart until there was a second tier.
  */
-const INERT_KEYS = ["scenarios.headless"];
+const INERT_KEYS = [];
 
 /**
  * Held findings whose owning task has already shipped, which is a debt of its own.
@@ -850,6 +855,15 @@ describe("SH560 group K: every trait an archetype declares is read by an asserti
       new URL("../../fixtures/source-sites/corpus.mjs", import.meta.url),
       "utf8",
     );
+    // The live tier counts as a reader, and it has to: a trait about a *browser* capture cannot be
+    // consumed by a file whose first paragraph says it runs with no browser and no socket. Reading
+    // it here is what lets `INERT_KEYS` be empty without either tier pretending to cover the other's
+    // ground — and it is why the key that sat on that list for the whole of this corpus's life came
+    // off it the moment `serve` had a caller.
+    const live = await readFile(
+      new URL("../conformance/source-corpus.conformance.mjs", import.meta.url),
+      "utf8",
+    );
     // Comments are stripped first, and that is not tidiness: the prose *about* a key names it, so
     // a file that documents an unread trait would report itself as reading one. This check found
     // that on its own first run — `scenarios.headless` came back covered by the paragraph saying it
@@ -857,7 +871,7 @@ describe("SH560 group K: every trait an archetype declares is read by an asserti
     // …and `INERT_KEYS` is cut from its own walk for the same reason `assertion-debt.test.mjs` is
     // cut from its: a declaration that a key is unread is not a read of it. Left in, the list makes
     // every entry on it report as covered, which is exactly backwards.
-    const readers = `${suite}\n${loader}`
+    const readers = `${suite}\n${loader}\n${live}`
       .replace(/\/\*[\s\S]*?\*\//g, " ")
       .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ")
       .replace(/const INERT_KEYS = \[[^\]]*\]/, " ");

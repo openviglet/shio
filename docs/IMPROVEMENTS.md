@@ -593,31 +593,6 @@ It is also the honest end of my part in this. I have been the verification for f
 rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
 me looking.
 
-### IX.39 A source trait is a property of a site, not of a page (SH560)
-
-SH528 grows the one fixture, and that is right for every trait it lists but one. A page
-under a locale prefix with no home at `/` is not a few more lines: a server that answers
-`/` cannot also be a source that has none there. The same holds for three traits the
-runs found and no task has filed — a source client-rendered end to end, a source whose
-pages differ only by a query string (SH557: 91 of 107), and one whose whole style is a
-megabyte of external CSS (SH555, SH556).
-
-So the fixture becomes a corpus: `fixtures/source-sites/<archetype>/`, each archetype a
-directory of bytes plus an `expectations.json` naming the pages, the assets, the mode and
-**the ids it exists to catch**. One parametrised suite iterates it; seven copies of the
-chain drift within a week.
-
-The root rather than `cli/`, because three consumers read it: the fast tier in
-`cli/test/` with an injected fetch, the live tier in `cli/conformance/` over a real
-socket, and `shio-app`, which needs a conversion's output to prove a render.
-`ShConvertedLayoutRenderTest` already reads `../cli/src/convert.mjs`, so a
-cross-language fixture is a path this repository has. `shio-examples/` is the wrong
-home: those build as published artefacts, and a fixture has to be free to change.
-
-None of this replaces the run against a real site. That is how a trait is found. The
-corpus is how one is kept, and the archetype needing a browser refuses with the install
-command rather than skipping.
-
 ### IX.42 The suite that has an instance is the one that does not speak the transport (SH561)
 
 `replication.conformance.mjs` was written to remove substitutions, and it removed three:
@@ -891,6 +866,55 @@ between the two numbers: if discovery costs the same in a shape nothing was tune
 P2 is real; if it does not, the tuning is what was being measured all along.
 
 Run it before believing any P2 improvement generalises.
+
+### IX.61 The gate whose fallback is null in the shape it demands (SH609)
+
+SH460 asks two questions in one: is this instance running the code under test, and can a
+matching commit still say so. On a clean tree the hash answers it. On a **dirty** tree
+the hash no longer describes what compiled, so SH500 falls back to `builtAt` — and that
+field is `null` on precisely the deployment the gate insists on.
+
+`ShAgentBuildIdentity.resolveBuiltAt` reads the timestamp off
+`CodeSource.getLocation()`. Under `java -jar` that is a Spring Boot nested URL
+(`jar:file:…!/BOOT-INF/classes!/`), which `Paths.get` refuses; the `catch` treats it as
+unreadable and returns `null`, honestly, leaving the fallback with nothing.
+`spring-boot:run` would resolve it — `target/classes` is a directory — but
+`requireLiveBuild` rejects a dev-mode instance for reporting no commit. Each shape
+supplies exactly the field the other lacks, and the intersection is empty.
+
+The consequence is not a wrong answer but a gate that is off during the only state
+anyone runs it in: a working tree with edits in it. `SHIO_CONFORMANCE_ALLOW_STALE=1`
+becomes the standing incantation, and an escape hatch used on every run is a check
+deleted slowly — the shape SH579's ledger exists to refuse.
+
+The fix is small and on the Java side: a Boot fat jar has its own `lastModifiedTime`,
+reachable before the nested-URL conversion or from the attribute the repackage step
+writes. And the assertion is the deliverable (SH527) — a case that resolves the identity
+from a fat-jar `CodeSource` and requires a timestamp, so the null cannot return the next
+time the packaging changes.
+
+### IX.62 The label declared twice, and the three blocks nothing can ship into (SH610)
+
+`roadkeep lint` has been red on seven findings of one rule, `block.repeated`. Five `###
+Block K follow-ups …` headings stand alongside the `## Block K` region, and Block I and
+J carry one extra each. No commit introduced it: the ledger is newest-first per block,
+so follow-ups arriving after another block's region had opened needed a heading to
+re-establish the label, and the honest way to write that was to name the block again.
+
+The cost is not cosmetic. `ship` refuses a repeated label outright, so shipping any
+Block K, I or J task fails on a file the task never touched, and the repair it names
+(*merge by hand*) is a two-hundred-line restructuring nobody wants while holding an
+unrelated diff. Measured on SH560: the ship was blocked; renaming the five headings
+unblocked it and detached ten shipped entries from their block; the rename had to be
+reverted. Blocked is the normal state for three of twelve blocks.
+
+The repair is mechanical only once the ordering is settled: those `###` titles are worth
+keeping as prose but cannot keep the label. Each region's entries move under the single
+`##` heading, and the sub-heading becomes a plain title — which is what keeps the result
+stable, since the next run of follow-ups would otherwise recreate it.
+
+And the guard is the deliverable (SH338): `lint` reports this already and no build reads
+it. A red `lint` should fail something, or it is a report nobody is obliged to read.
 
 ## X. Content as files (Block I)
 

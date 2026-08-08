@@ -22,7 +22,7 @@
   "unaddressable": [],
   "unreachableWithoutBrowser": ["/pricing"],
   "propose": { "accept": "all" },
-  "scenarios": { "fidelity": false, "authorable": false, "headless": false },
+  "scenarios": { "fidelity": false, "authorable": false, "headless": true },
   "needsBrowser": true,
   "routes": {}
 }
