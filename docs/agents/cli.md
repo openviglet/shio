@@ -1885,10 +1885,33 @@ names the **field** and why it cannot be computed, rather than a version number.
 is not on disk is reported as one the migration could not derive and is **left as it was**, never
 guessed. The migrator is pure and takes a `Map` of markup: the derivation is not IO, and the command
 reads through `ctx.fs` like everything else in this tree, because a `node:fs` call inside a command
-is a seam no fixture can reach (SH198). **Half of SH592 is still open** — `clone --refresh`,
-re-fetching conditionally and rewriting only what moved, needs the inventory to record an ETag or a
-Last-Modified per page, which it does not, so that is a version bump of its own rather than a use of
-what is stored.
+is a seam no fixture can reach (SH198).
+
+**`shio clone --refresh` is the other half, and it needed no version bump after all.** The note that
+stood here predicted one: `--refresh` has to record an ETag or a Last-Modified per page, and that
+looked like a shape change. It is not — the fields are **additive and optional**, no reader wants
+them, so SH592's own rule settles it in the other direction: a bump is a migration or a refusal, and
+this is neither. A capture written before they existed simply carries none, its first refresh is
+unconditional, and every later one is cheap. Requiring a migration to *gain* a field nothing reads
+would have been the rule applied without its reason.
+
+What makes a refresh cheap is not a digest. Comparing hashes still costs the download, and under
+`--render` the download was never the expense — the browser is, at up to `--timeout` a page. So the
+saving comes from the server declining to send anything: a conditional `GET` carrying the recorded
+validators, answered **304**, is a page that is never rendered, never re-scanned and never
+rewritten. A 304 has no body, so the row is rebuilt from the **markup already on disk** — the same
+insight one level along, which is why `--markup` is a hard precondition and why the refusal for a
+capture without it names the flag. Passing no URL is deliberate: the capture says where the site is,
+so a mistyped origin cannot refresh against a different host. The two halves compose — a capture one
+version behind is migrated from the markup `--refresh` has just read, so refreshing is also the
+cheapest way to pay off a bump.
+
+**Two things it does not do, both reported rather than hidden.** It does **not walk for new pages**:
+a link that appeared on a changed page is counted and named in the notes and never followed, because
+following it is a crawl and a crawl is what is being avoided — and a refreshed inventory that
+silently omitted new pages would read as a complete capture, which is SH431's failure exactly. And
+it re-downloads **assets by page, not by byte**: an asset that moved under a page that did not is
+missed, the report says so, and `shio clone` is named as the answer.
 
 **`shio judge --site X` — one verdict, and the disagreements that produced it (SH589).** Judging a
 replica meant running `verify`, `diff`, `audit` and `snapshot`, reading four reports in four

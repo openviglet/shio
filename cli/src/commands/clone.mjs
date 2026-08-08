@@ -56,6 +56,7 @@ import {
   settleRendered,
 } from "../clone.mjs";
 import { cloneProgress } from "../clone-progress.mjs";
+import { migrateInventory } from "../inventory-migrate.mjs";
 import { requireBrowser } from "../browser.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
 import { assetPathCollisions, siteDir } from "../content-files.mjs";
@@ -103,6 +104,13 @@ rests on: read the inventory before anything else happens.
                            --render bakes the post-hydration DOM, and handing that page
                            its own bundle back is a hydration nobody asked for. What is
                            dropped is always named in the report, flag or no flag
+  --refresh                Re-check the capture already in --out instead of crawling. Each
+                           captured page is asked for conditionally with the ETag and
+                           Last-Modified it recorded; a 304 is rebuilt from the markup on
+                           disk and never re-rendered, which is where the ten minutes go.
+                           Needs a capture taken with --markup. It re-checks what was
+                           captured and does NOT walk for new pages — anything linked from
+                           a changed page is named in the notes, never followed
   --render                 Drive a browser, for a page that renders itself (needs
                            playwright). Without it the crawl reads what the server sent
   --ignore-robots          Crawl anyway. Recorded in the inventory, so a capture taken
@@ -128,6 +136,10 @@ Examples:
   shio clone https://acme.example.com --markup
   shio clone https://acme.example.com --markup --assets --site Acme --depth 2
 
+  Re-check it later without paying for the crawl again. No URL: the capture says where
+  the site is, so a mistyped one cannot refresh against a different host:
+    shio clone --refresh
+
   A long one, followed rather than watched — this is the shape a caller wants for a real
   site, where --render can spend the per-page timeout on every page of a 200-page ceiling:
     shio clone https://acme.example.com --render --assets --site Acme > clone.log 2>&1 &
@@ -135,7 +147,15 @@ Examples:
 `;
 
 export async function run(flags, positionals, ctx) {
-  const seed = flags.url ?? positionals[0];
+  const out = typeof flags.out === "string" ? flags.out : INVENTORY_FILE;
+  // SH592 — the prior capture is read **first**, because under `--refresh` it is what says where the
+  // site is. A caller re-checking a capture they already have should not have to retype the origin,
+  // and a mistyped one would silently refresh against a different host.
+  const refreshing = flags.refresh === true;
+  const prior = refreshing ? await readPriorCapture(out, ctx) : null;
+
+  const seed = flags.url ?? positionals[0] ?? prior?.inventory?.source?.seed
+    ?? prior?.inventory?.source?.origin;
   if (!seed) {
     throw new Error(
       "shio clone: pass the site to capture.\n" +
@@ -206,7 +226,9 @@ export async function run(flags, positionals, ctx) {
 
   const page = rendered ? await renderer(flags, ctx, browser) : null;
   try {
-    const walk = await crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup, progress }, ctx);
+    const walk = refreshing
+      ? await refresh({ origin, robots, page, flags, keepMarkup, progress, prior }, ctx)
+      : await crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup, progress }, ctx);
     notes.push(...walk.notes);
     // SH586 — the crawl's own origin, so a source's absolute link to itself is cached as the path
     // it already means. Without it a fidelity replica serves those hrefs verbatim and every page
@@ -218,14 +240,18 @@ export async function run(flags, positionals, ctx) {
       seed: String(seed),
       visited: walk.visited,
       robots,
-      options: { depth, maxPages, rendered, truncated: walk.truncated, markup },
+      options: refreshing
+        // The ceilings of the run being refreshed, not this one's: a refresh walks what was
+        // captured, so reporting `--depth 3` here would describe a walk that did not happen and
+        // would quietly widen the ceiling a truncated capture recorded.
+        ? { ...(prior.inventory.options ?? {}), rendered, refreshed: true, markup }
+        : { depth, maxPages, rendered, truncated: walk.truncated, markup },
       notes,
     });
     if (site) {
       inventory = await download(inventory, { site, flags, progress }, ctx);
     }
 
-    const out = typeof flags.out === "string" ? flags.out : INVENTORY_FILE;
     const target = join(ctx.cwd, out);
     await ctx.fs.mkdir(dirname(target), { recursive: true });
     await ctx.fs.writeFile(target, serializeInventory(inventory), "utf8");
@@ -566,6 +592,233 @@ async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup 
   return { visited, notes, truncated };
 }
 
+/**
+ * `--refresh` (SH592) — re-check the capture you already have, and pay only for what moved.
+ *
+ * <h2>The asymmetry</h2>
+ *
+ * <p>`shio clone` over `vilt-group.com` with `--render`: 198 pages, 403 assets, 52.7 MB, about ten
+ * minutes. It is by far the most expensive step in the chain and everything after it reads the
+ * inventory off disk and runs in seconds. Twice in this work that asymmetry cost a full recapture
+ * for a reason that had nothing to do with the source. `inventory-migrate.mjs` answered one half —
+ * a version bump is a migration where the missing field is derivable. This is the other half: the
+ * source has not changed either, and nothing could ask.</p>
+ *
+ * <h2>What makes it cheap, and it is not a hash</h2>
+ *
+ * <p>Comparing digests still costs the download, and under `--render` the download is not the
+ * expense — the browser is, at up to `--timeout` per page. So the saving has to come from the
+ * server declining to send anything: a conditional `GET` carrying the `ETag` and `Last-Modified`
+ * this capture recorded, answered <b>304</b>. A 304 page is never rendered, never re-scanned and
+ * never rewritten.</p>
+ *
+ * <p>A 304 carries no body, so the row is rebuilt from the <b>markup already on disk</b> — which is
+ * SH592's own insight applied twice: the information was already in the file. That is why
+ * `--markup` is a hard precondition rather than a nicety, and why the refusal for a capture without
+ * it names the flag.</p>
+ *
+ * <h2>What it deliberately does not do</h2>
+ *
+ * <p><b>It does not walk for new pages.</b> A refresh re-fetches what was captured; a link that
+ * appeared on a changed page is *counted and named in the notes* and not followed, because
+ * following it is a crawl and a crawl is the thing being avoided. Reporting it is not optional —
+ * a refreshed inventory that silently omitted new pages would read as a complete capture, which is
+ * the SH431 failure exactly.</p>
+ *
+ * <p><b>It re-downloads assets by page, not by byte.</b> An asset is re-fetched when the page that
+ * references it changed. An asset that moved under an unchanged page is therefore missed, and the
+ * report says so and names `shio clone` as the answer — an honest gap beats a silent one.</p>
+ */
+async function refresh({ origin, robots, page, flags, keepMarkup, progress, prior }, ctx) {
+  const now = typeof ctx.clock === "function" ? ctx.clock : Date.now;
+  const visited = [];
+  const notes = [];
+  const froze = {};
+  const delay = Number(flags.delay ?? robots?.crawlDelay ?? 0) * 1000;
+  const rows = [...(prior.inventory.pages ?? [])].sort((a, b) => (a.path < b.path ? -1 : 1));
+  const known = new Set(rows.map((row) => row.path));
+  const appeared = new Set();
+  const counts = { unchanged: 0, changed: 0, gone: 0, unconditional: 0, carriedRender: 0 };
+
+  progress?.phase("refresh", rows.length);
+
+  for (const row of rows) {
+    const url = new URL(row.path, origin.origin);
+    const path = pathOf(url);
+    // Re-asked, not assumed. A site that tightened its robots.txt since the capture has withdrawn
+    // permission for exactly these paths, and a refresh is a new set of requests.
+    if (!robotsAllows(robots, path)) {
+      notes.push(`robots.txt now disallows ${path}, so this refresh dropped it from the capture`);
+      counts.gone += 1;
+      continue;
+    }
+    const conditional = { etag: row.etag ?? null, lastModified: row.lastModified ?? null };
+    if (!conditional.etag && !conditional.lastModified) counts.unconditional += 1;
+
+    const startedMs = now();
+    // Always the plain fetch first, even under `--render`. That IS the saving: a 304 here is a
+    // browser that never launched.
+    const probe = await visit(
+      url,
+      { page: null, flags, keepMarkup, isSeed: false, conditional },
+      ctx,
+    );
+
+    const cached = prior.markup.get(path);
+    let fetched;
+    let outcome;
+    if (probe.unchanged && cached !== undefined) {
+      fetched = {
+        status: row.status ?? 200,
+        doc: scanPage(cached, url.href),
+        ...(row.rendered ? { rendered: true } : {}),
+        ...(keepMarkup ? { html: cached } : {}),
+        ...(probe.etag ? { etag: probe.etag } : {}),
+        ...(probe.lastModified ? { lastModified: probe.lastModified } : {}),
+      };
+      counts.unchanged += 1;
+      if (row.rendered) counts.carriedRender += 1;
+      outcome = "unchanged";
+    } else if (probe.unchanged) {
+      // 304, and no markup to rebuild from. Asking again without the conditional headers is the
+      // only honest move: the alternative is a row carried forward on the strength of a body this
+      // capture never held, which is a claim about bytes nobody has read.
+      fetched = await visit(url, { page, flags, keepMarkup, isSeed: false }, ctx);
+      counts.changed += 1;
+      outcome = "refetched";
+    } else if (page && probe.doc) {
+      // Changed, and this run wants the rendered DOM. The probe's body is discarded on purpose —
+      // it is the served HTML and `--render` exists because that is not what the page shows.
+      fetched = await visit(url, { page, flags, keepMarkup, isSeed: false }, ctx);
+      counts.changed += 1;
+      outcome = "changed";
+    } else {
+      fetched = probe;
+      if (probe.error || probe.notHtml) {
+        counts.gone += 1;
+        outcome = "gone";
+      } else {
+        counts.changed += 1;
+        outcome = "changed";
+      }
+    }
+
+    visited.push({ ...fetched, depth: row.depth ?? 0, url: url.href });
+    progress?.step({
+      path,
+      depth: row.depth ?? 0,
+      outcome: fetched.error ? "failed" : "ok",
+      status: fetched.status ?? 0,
+      ms: now() - startedMs,
+      action: outcome,
+      ...(fetched.rendered ? { rendered: true } : {}),
+      ...(fetched.error ? { error: fetched.error } : {}),
+    });
+    for (const [what, count] of Object.entries(fetched.froze ?? {})) {
+      froze[what] = (froze[what] ?? 0) + count;
+    }
+    if (outcome !== "unchanged" && fetched.doc) {
+      for (const link of fetched.doc.links) {
+        const resolved = resolveHref(link.href, url.href);
+        if (!resolved || !sameOrigin(resolved, origin)) continue;
+        const target = pathOf(resolved);
+        if (!known.has(target)) appeared.add(target);
+      }
+    }
+    if (delay > 0) await sleep(delay);
+  }
+
+  notes.push(
+    `--refresh re-checked ${rows.length} captured page(s): ${counts.unchanged} unchanged (304), `
+      + `${counts.changed} re-read, ${counts.gone} no longer captured`,
+  );
+  if (counts.unconditional) {
+    notes.push(
+      `${counts.unconditional} page(s) carried no ETag and no Last-Modified, so they were fetched in `
+        + "full — this run recorded what the server sent, and the next --refresh can ask about them "
+        + "conditionally",
+    );
+  }
+  if (counts.carriedRender) {
+    notes.push(
+      `${counts.carriedRender} page(s) were carried forward from a --render capture without driving `
+        + "a browser, so any --render counters below describe only the pages that were re-read",
+    );
+  }
+  if (appeared.size) {
+    const sample = [...appeared].sort().slice(0, 5);
+    notes.push(
+      `${appeared.size} path(s) are linked from a page that changed and are NOT in this capture — a `
+        + "refresh re-checks what was captured and does not walk for new pages, so this inventory is "
+        + `still bounded by the crawl that made it: ${sample.join(" ")}${appeared.size > sample.length ? " …" : ""}`
+        + " — run `shio clone` to extend it",
+    );
+  }
+  if (counts.unchanged && prior.inventory.assets?.length) {
+    notes.push(
+      "assets are re-downloaded per page, so one that changed under a page that did not is not "
+        + "re-fetched by --refresh; `shio clone` is what re-reads every byte",
+    );
+  }
+  return { visited, notes, truncated: prior.inventory.options?.truncated === true };
+}
+
+/**
+ * The capture `--refresh` re-checks, plus the markup it needs to rebuild a 304 row (SH592).
+ *
+ * <p>Three refusals, and each one is a state where continuing would produce an inventory that reads
+ * as a capture and is not one: no prior file at all, a version older than
+ * `inventory-migrate.mjs` can bring forward, and a capture kept without `--markup`. The last is the
+ * one worth being loud about — the whole mechanism is *rebuild the unchanged row from what is
+ * already on disk*, and with nothing on disk a 304 would have to be answered by inventing a row.</p>
+ */
+async function readPriorCapture(out, ctx) {
+  const target = join(ctx.cwd, out);
+  let raw;
+  try {
+    raw = await ctx.fs.readFile(target, "utf8");
+  } catch {
+    throw new Error(
+      `shio clone --refresh: there is no capture at ${out} to refresh.\n`
+        + "  --refresh re-checks a capture you already have; it cannot make the first one.\n"
+        + "  shio clone https://example.com --markup",
+    );
+  }
+  let inventory;
+  try {
+    inventory = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`shio clone --refresh: ${out} is not readable JSON (${error.message}).`);
+  }
+
+  const markup = new Map();
+  const missing = [];
+  for (const row of inventory.pages ?? []) {
+    if (!row.markup) {
+      missing.push(row.path);
+      continue;
+    }
+    try {
+      markup.set(row.path, await ctx.fs.readFile(join(ctx.cwd, MARKUP_DIR, row.markup), "utf8"));
+    } catch {
+      missing.push(row.path);
+    }
+  }
+  if ((inventory.pages ?? []).length && missing.length === (inventory.pages ?? []).length) {
+    throw new Error(
+      `shio clone --refresh: ${out} kept no page markup, and --refresh rebuilds an unchanged page\n`
+        + "from the markup on disk rather than by asking for it again. Without it every 304 would\n"
+        + "have to be answered with a row nobody read.\n"
+        + `  shio clone ${inventory.source?.origin ?? "https://example.com"} --markup`,
+    );
+  }
+
+  // The two halves of SH592 compose here: a capture one version behind is brought forward from the
+  // markup this function has just read, so `--refresh` is also the cheapest way to pay off a bump.
+  const migration = migrateInventory(inventory, markup);
+  return { inventory: migration.inventory, markup, migrated: migration.migrated, from: migration.from };
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** What each SH517 counter is, in a sentence a reader can act on. */
@@ -581,20 +834,31 @@ const FROZE_NAMES = {
  * <p>Only `text/html` is scanned. A link to a PDF is already recorded as an asset by whichever page
  * referenced it, and running an HTML scanner over a binary would invent findings.
  */
-async function visit(url, { page, flags, keepMarkup, isSeed }, ctx) {
+async function visit(url, { page, flags, keepMarkup, isSeed, conditional }, ctx) {
   if (page) {
     return renderOne(url, page, flags, keepMarkup);
   }
   let response;
   try {
     response = await ctx.fetch(url.href, {
-      headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
+        ...conditionalHeaders(conditional),
+      },
       redirect: "manual",
     });
   } catch (error) {
     return { status: 0, error: `fetch failed: ${error?.message ?? error}` };
   }
   const status = response.status ?? 0;
+  // SH592 — before `!response.ok`, which would otherwise read the one answer this whole flag exists
+  // to get as `HTTP 304`. A 304 carries no body by definition, so there is nothing here to scan;
+  // what it means is "the row you already have is still true", and only the caller knows what that
+  // row was.
+  if (status === 304) {
+    return { status, unchanged: true, ...validatorsOf(response, conditional) };
+  }
   if (status >= 300 && status < 400) {
     const location = response.headers?.get?.("location");
     const target = location ? resolveHref(location, url.href) : null;
@@ -631,7 +895,58 @@ async function visit(url, { page, flags, keepMarkup, isSeed }, ctx) {
   const html = await response.text();
   // `html` is carried only when `--markup` asked for it: holding 200 pages of somebody else's HTML
   // in memory for a run that will not write it is a cost nobody bought.
-  return { status, contentType, doc: scanPage(html, url.href), ...(keepMarkup ? { html } : {}) };
+  return {
+    status,
+    contentType,
+    doc: scanPage(html, url.href),
+    ...validatorsOf(response),
+    ...(keepMarkup ? { html } : {}),
+  };
+}
+
+/**
+ * The request headers that let a server answer 304 (SH592).
+ *
+ * <p>Both, when both are known. `If-None-Match` is the strong one and `If-Modified-Since` is the
+ * fallback for a server that sends no ETag — sending both is what RFC 9110 says a cache does, and
+ * a server that understands only one ignores the other.</p>
+ */
+function conditionalHeaders(conditional) {
+  if (!conditional) return {};
+  return {
+    ...(conditional.etag ? { "If-None-Match": conditional.etag } : {}),
+    ...(conditional.lastModified ? { "If-Modified-Since": conditional.lastModified } : {}),
+  };
+}
+
+/**
+ * What this response says about being asked for again — carried onto the row (SH592).
+ *
+ * <p>Deliberately **additive and optional**, and deliberately not an inventory version bump. SH592's
+ * own rule is that a bump is a migration or a refusal; this is neither, because no reader needs
+ * these fields. A capture written before this exists simply has none, and its first `--refresh` is
+ * unconditional — which is the honest degradation and not a refusal, since the information really
+ * was never recorded.</p>
+ *
+ * <p>On a 304 the server is not obliged to repeat them, so the ones we sent are carried forward:
+ * dropping them would make the *next* refresh unconditional again and turn one cheap request into a
+ * full re-fetch every other run.</p>
+ */
+function validatorsOf(response, previous = null) {
+  const etag = response.headers?.get?.("etag") ?? previous?.etag ?? null;
+  const lastModified = response.headers?.get?.("last-modified") ?? previous?.lastModified ?? null;
+  return {
+    ...(etag ? { etag } : {}),
+    ...(lastModified ? { lastModified } : {}),
+  };
+}
+
+/** A playwright response's headers, behind the `get` the rest of this file reads them through. */
+function headersOf(response) {
+  const raw = typeof response?.headers === "function" ? response.headers() : null;
+  if (!raw) return { get: () => null };
+  const lower = new Map(Object.entries(raw).map(([name, value]) => [name.toLowerCase(), value]));
+  return { get: (name) => lower.get(String(name).toLowerCase()) ?? null };
 }
 
 /** The `--render` path: the same scanner, over the DOM the page's own JavaScript produced. */
@@ -649,6 +964,10 @@ async function renderOne(url, page, flags, keepMarkup) {
       doc: scanPage(html, url.href),
       rendered: true,
       froze,
+      // SH592 — playwright hands headers back as a plain object rather than a `Headers`, so the
+      // shared reader is given a `get` to call. Worth doing: `--render` is the expensive path and
+      // therefore the one whose next run has most to save by asking conditionally.
+      ...validatorsOf({ headers: headersOf(response) }),
       ...(keepMarkup ? { html } : {}),
     };
   } catch (error) {

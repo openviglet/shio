@@ -1309,6 +1309,12 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       textChars: doc.textChars,
       ...(doc.baseHref ? { baseHref: doc.baseHref } : {}),
       ...(entry.rendered ? { rendered: true } : {}),
+      // SH592 — what this page said about being asked for again, so the next `--refresh` can ask
+      // conditionally and be told 304 instead of being handed the page. Optional by design and NOT
+      // an inventory version bump: no reader needs them, so a capture written without them is
+      // readable by everything and merely re-fetches once.
+      ...(entry.etag ? { etag: entry.etag } : {}),
+      ...(entry.lastModified ? { lastModified: entry.lastModified } : {}),
       ...(markup.has(path) ? { markup: markup.get(path) } : {}),
     });
   }

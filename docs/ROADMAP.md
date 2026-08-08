@@ -108,8 +108,8 @@
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH568** (deps: SH555 ✅) **A held finding pins the mechanism of a fix, so the corpus stays red on a defect that is closed** — layout-raw-field-CSS asserts the template does not spell the escaped field, but SH461 put the cure on the value, so SH555's SafeString closed it and the entry cannot go green. → §XVII.79
-- ⏳ **SH592** (deps: SH578 ✅) **The expensive artefact of the chain is the one that cannot be updated, only recaptured** — A capture of 200 pages costs ten minutes and 52 MB, and an inventory version bump made every stored one unreadable, so testing a one-line change downstream meant crawling again. → §XVII.88
 - 📋 **SH606** (deps: SH555 ✅) **A corpus assertion and the fix that closed its task disagree about whether two braces are a defect** — SH555 made those fields SafeString at render and the corpus still fails the generated layout for emitting {{CSS}}, so one of the two is wrong and no run says which. → §XVII.89
+- 📋 **SH611** (deps: SH592 ✅) **An asset is re-read only when its page moved, so a byte that changed under a still page is the old one** — The 403 assets are where the 52.7 MB is, and --refresh either skips them all or re-downloads them all - the cheap question answered well and the expensive one not at all. → §XVII.90
 
 ## Block F — Market positioning
 

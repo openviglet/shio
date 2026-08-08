@@ -2157,32 +2157,6 @@ block over, an instrument in a gate reporting a loss on something that lost noth
 entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
 page, whichever brace count produces that.
 
-### XVII.88 Recrawling a site to test something that is not the crawl (SH592)
-
-`shio clone` over `vilt-group.com` with `--render`: 198 pages, 403 assets, 52.7 MB,
-about ten minutes. It is by far the most expensive step in the chain and the only one
-whose output is immutable — everything after it reads the inventory off disk and runs in
-seconds.
-
-Twice in this work that asymmetry cost a full recapture for a reason that had nothing to
-do with the source. SH578 changed the inventory's asset shape and `diff` refused every
-capture written before it — with an excellent error naming the version and the remedy,
-which is the right refusal and does not make the remedy cheaper. The other time the
-source had not changed at all; a downstream one-line fix needed a capture the new reader
-could parse.
-
-The information to do better is already in the file. Every asset row carries a `sha256`,
-every page a `status` and its markup hash. `shio clone --refresh` can re-fetch
-conditionally and rewrite only what moved, and an inventory one version behind can be
-**migrated** rather than refused where the missing field is derivable — SH578's split of
-`assets` into `{own, style}` is derivable from the stored markup, which the capture also
-keeps.
-
-The rule worth stating alongside it: a version bump on the inventory is a migration or a
-refusal, and a refusal is honest only when the new field genuinely cannot be computed
-from what is on disk. Otherwise the cost of a reader's change is paid in somebody else's
-ten minutes.
-
 ### XVII.89 Two readers of one brace count (SH606)
 
 `source-corpus.test.mjs` fails the CLI's generated layout for emitting `{{CSS}}` inside
@@ -2211,6 +2185,31 @@ Only one of two things is true:
 **The deliverable is the answer, not the edit.** Whichever way it goes, one of the two
 artefacts is removed rather than both left standing: two readers of one fact that agree
 only by accident is SH583's shape, and this is its third sighting.
+
+### XVII.90 The half of a refresh that is still measured in megabytes (SH611)
+
+SH592 made a page cheap to re-check and left the bytes alone. An **asset** is
+re-downloaded only when the page referencing it changed, so a stylesheet, a font or a
+hero image that moved under a page that did not is silently the old one — and the only
+answer the report can give is *run `shio clone`*, the ten minutes the flag exists to
+avoid.
+
+This is the larger half by volume: `vilt-group.com` was 198 pages and **403 assets**,
+and the assets are where the 52.7 MB is. Re-checking 198 pages for 198 requests and then
+either skipping 403 files or re-downloading all of them answers the cheap question well
+and the expensive one not at all.
+
+The mechanism is the one already built, one row along. `download` fetches through
+`fetchBytes`; giving an asset row the same optional `etag` and `lastModified` a page row
+now carries, and sending them, makes a 304 mean *the file on disk is still right*. The
+bytes are already at `shio/assets/<file>`, so nothing has to be rebuilt — strictly
+simpler than the page case, which needed the markup.
+
+Two things it must not break. `placeAsset` dedupes by digest, and an asset skipped on a
+304 has no digest this run, so the prior row's placement is carried rather than
+recomputed. And the action vocabulary — `wrote`, `deduped`, `failed`, `collision`,
+`skipped` — gains `unchanged`, which `OUTCOME_OF_ACTION` and the download report both
+read; an unchanged asset counted as `wrote` would report work that did not happen.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
