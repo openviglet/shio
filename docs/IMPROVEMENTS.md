@@ -362,32 +362,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.37 The fixture as a catalogue of what breaks a replica (SH528)
-
-Every defect this work found came from a real site, and none of them can be reproduced
-without one. The fixture is 134 lines: a page, a stylesheet, a webfont behind
-`../fonts/`, an image, a favicon. Real sites broke the replica with traits it does not
-have.
-
-The list is written already, one per task: a query string on an asset path, a `./../../`
-reference served four segments deeper than its source (SH512), a fixed overlay whose
-text became three sections' `intro` (SH505), a `&` escaped twice (SH476), a zero-byte
-file the upload refused (SH514), a `<canvas>` a script created and `--render` baked dead
-(SH517), a page under a locale prefix with no home at `/`, and a second page so a link
-can be wrong.
-
-Each is a few lines of the fixture. Together they are the deliverable: **a catalogue of
-what a real site does that breaks a replica**, and the first artefact in this work that
-keeps a finding without needing the network.
-
-That is what makes an assertion deterministic rather than merely automated. A real site
-is how a defect is *found* — `viglet.org` has a consent banner and a React canvas nobody
-planned. It is a bad way to keep one: the site changes, the network fails, and a red run
-means nothing until somebody checks which.
-
-The order follows SH527's list — a trait exists because a defect needed it, never
-because a real site happened to have it.
-
 ### IX.38 The debt already standing (SH529)
 
 SH527 states the rule for the next defect and SH528 gives the fixture the traits to

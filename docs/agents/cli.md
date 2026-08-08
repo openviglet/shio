@@ -2081,6 +2081,28 @@ stdin had nothing to do with it. `--test-force-exit` is in the `test` script so 
 reports and exits instead of burning a CI timeout with no diagnostic.
 
 
+**The fixture is a catalogue of what breaks a replica (SH528).** It was 134 lines — a page, a
+stylesheet, a webfont, an image, a favicon — and every defect this work found came from a real
+site that had traits it did not. A live source is how a defect is *found*; it is a bad way to
+*keep* one, because the site changes, the network fails, and a red run then means nothing until
+somebody works out which of the three it was. So the traits are now in the fixture, each named
+with the task that needed it: a **query string** on an asset path, a `./../../` reference served
+**four segments deeper** than its source (SH512 — against the origin it is `/logo.svg`, against
+the page's directory `/docs/guide/intro/`, and only one of the three exists), a **fixed overlay**
+whose text became three sections' `intro` (SH505), a **`&` escaped twice** (SH476/SH565), a
+**zero-byte file** behind a 200 and an image content-type (SH514 — nothing in the response says
+it is empty), a **`<canvas>` a script creates** so a plain fetch and `--render` disagree (SH517),
+a page under a **locale prefix**, and a **link that is wrong**.
+**They sit at depth 2, behind `/about`, with a stylesheet of their own** — the conformance run
+crawls `--depth 1`, so it meets none of them and its asset list, theme and counts are exactly
+what they were. A trait is something a test opts into, not something every other assertion has to
+absorb. `cli/test/fixture-traits.test.mjs` asserts each one is *present*, because a catalogue
+whose entries can vanish without a failure is a list; it also pins the two fixtures in step,
+which their shared header always claimed and nothing enforced. One entry deliberately pins a
+**defect rather than its cure**: the double-escaped title arrives whole, which is SH565 open and
+now reproducible with no network — asserting the repair there would make the catalogue fail for
+the thing it exists to preserve.
+
 **The source corpus (SH560) — `fixtures/source-sites/`, at the repo root and not under `cli/`.**
 One directory per **source archetype**: bytes under `site/`, plus an `expectations.json` that
 declares what a capture of it should contain and the task ids the archetype exists to catch.

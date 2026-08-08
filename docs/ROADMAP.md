@@ -21,8 +21,7 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH528** (deps: SH527 ✅, SH560 ✅) **The fixture cannot exhibit the traits that broke every real replica** — It serves a page, a stylesheet, a font, an image and a favicon, so a query string, a relative depth, an overlay, an entity, an empty file and a script-made canvas are unreproducible offline. → §IX.37
-- 📋 **SH529** (deps: SH528) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38
+- 📋 **SH529** (deps: SH528 ✅) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38
 - 📋 **SH561** (deps: SH560 ✅, SH448 ✅) **The conformance run drives the CLI by module import, which is not the transport Claude Code uses** — Each scenario calls src/commands/*.mjs, so a wrong tool schema, a broken stdio frame and a tools/list budget regression are invisible to the one suite with an instance. → §IX.42
 - 📋 **SH562** (deps: SH560 ✅) **No Java test renders a conversion's output, so a replica's render defect surfaces on a real site first** — SH555's escaped stylesheet and SH556's two class vocabularies are both renderer defects found by hand, and clean test holds no page a conversion produced. → §IX.43
 - 📋 **SH563** (deps: SH560 ✅) **A page reached through a redirect is stored with no record that it was one** — visit returns redirectedTo and buildInventory never copies it into the page row, so both spellings are captured as two pages and the replica reproduces neither. → §IX.44

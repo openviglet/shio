@@ -26,7 +26,11 @@ import { createServer } from "node:http";
  */
 const PAGES = {
   "/": page("Home", "Acme", ['<a href="/about">About</a>']),
-  "/about": page("About", "Who we are", ['<a href="/deep">Deeper still</a>']),
+  "/about": page("About", "Who we are", [
+    '<a href="/deep">Deeper still</a>',
+    // SH528 - depth 2, so `--depth 1` never reaches the traits and its counts are unchanged.
+    '<a href="/traits">Traits</a>',
+  ]),
 };
 
 /**
@@ -63,6 +67,86 @@ const HERO_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
   "base64",
 );
+
+/**
+ * SH528 — the traits that broke a real replica, kept where they can be reproduced offline.
+ *
+ * <h2>Why the fixture needed them</h2>
+ *
+ * <p>Every defect this work found came from a real site and none could be reproduced without one.
+ * A real site is how a defect is <em>found</em>; it is a bad way to keep one, because the site
+ * changes, the network fails, and a red run then means nothing until somebody works out which.
+ * Each entry below exists because a task needed it — never because a site happened to have it.</p>
+ *
+ * <h2>They sit at depth 2, deliberately</h2>
+ *
+ * <p>Reached only from `/about`, with a stylesheet of their own. The conformance run crawls
+ * `--depth 1`, so it meets none of this and its asset list, theme and counts are exactly what they
+ * were. A trait is a thing a test opts into, not a thing every other assertion has to absorb.</p>
+ */
+/** SH505 — a fixed overlay, which is what put a consent banner into three sections' `intro`. */
+const TRAITS_CSS = `.consent { position: fixed; bottom: 0; left: 0; right: 0; background: #102a43 }
+.consent p { color: #fff }
+.tile { color: #102a43; background: #f0f4f8 }`;
+
+/**
+ * One page carrying the traits a scanner has to survive, each named with the task that needed it.
+ *
+ * <p>SH476's double escape is the one worth reading twice: the source says `&amp;amp;`, so a reader
+ * that decodes once produces `&amp;` and one that decodes twice produces `&`. The page's own title
+ * carries it, because SH565 found the title travelling through a path that decoded neither.</p>
+ */
+const TRAITS_PAGE = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Terms &amp;amp; Conditions</title>
+  <link rel="stylesheet" href="/css/traits.css">
+</head>
+<body>
+  <!-- SH505: fixed, and first in the source - the position every scanner reads as the lead. -->
+  <div class="consent"><p>We use cookies. <a href="/en-us/privacy">Privacy</a></p></div>
+  <main>
+    <h1>Terms &amp;amp; Conditions</h1>
+    <!-- SH507: a query string on an asset path, which the file name must not swallow. -->
+    <img src="/img/hero.png?v=2" alt="Cache-busted">
+    <!-- SH514: zero bytes, which the upload refused rather than reported. -->
+    <img src="/img/empty.png" alt="Empty">
+    <div class="tile"><h3>One</h3><p>Body copy that reads like a page a person wrote.</p></div>
+    <div class="tile"><h3>Two</h3><p>Body copy that reads like a page a person wrote.</p></div>
+    <p><a href="/docs/guide/intro/detail/">Four deep</a> · <a href="/gone">A link that is wrong</a></p>
+  </main>
+  <!-- SH517: the canvas exists only after this runs, so --render bakes it and a plain fetch does not. -->
+  <script>document.body.appendChild(document.createElement("canvas"));</script>
+</body>
+</html>`;
+
+/**
+ * SH512 — a reference resolved four segments below its source.
+ *
+ * <p>`./../../logo.svg` from `/docs/guide/intro/detail/` is `/docs/guide/logo.svg`. Against the
+ * origin it would be `/logo.svg`, and against the page's own directory `/docs/guide/intro/logo.svg`
+ * — three different files, only one of which exists, which is why the depth is four and not one.</p>
+ */
+const DEEP_PAGE = `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Four deep</title></head>
+<body><main><h1>Four deep</h1>
+  <img src="./../../logo.svg" alt="Logo">
+  <p>Body copy that reads like a page a person wrote.</p>
+</main></body>
+</html>`;
+
+/** SH433/SH576 — a site whose real home is under a locale prefix, so `/` is not the front door. */
+const LOCALE_PAGE = `<!doctype html>
+<html lang="en-US">
+<head><meta charset="utf-8"><title>Privacy</title></head>
+<body><main><h1>Privacy</h1>
+  <p>Body copy that reads like a page a person wrote.</p>
+</main></body>
+</html>`;
+
+const LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8"/></svg>';
 
 function page(title, lead, links = []) {
   return `<!doctype html>
@@ -110,6 +194,17 @@ export async function serveFixture() {
     if (path === "/fonts/fixture.woff2") return send(res, 200, "font/woff2", WOFF2);
     if (path === "/img/hero.png") return send(res, 200, "image/png", HERO_PNG);
     if (path === "/favicon.ico") return send(res, 200, "image/x-icon", FAVICON);
+    // --- SH528: the catalogue, all of it at depth 2 or below ---
+    if (path === "/css/traits.css") return send(res, 200, "text/css", TRAITS_CSS);
+    if (path === "/traits") return send(res, 200, "text/html; charset=utf-8", TRAITS_PAGE);
+    if (path === "/docs/guide/intro/detail/") {
+      return send(res, 200, "text/html; charset=utf-8", DEEP_PAGE);
+    }
+    if (path === "/docs/guide/logo.svg") return send(res, 200, "image/svg+xml", LOGO_SVG);
+    if (path === "/en-us/privacy") return send(res, 200, "text/html; charset=utf-8", LOCALE_PAGE);
+    // SH514 - zero bytes, served with a 200 and an image content-type, which is exactly how the
+    // real one arrived: nothing about the response says it is empty.
+    if (path === "/img/empty.png") return send(res, 200, "image/png", Buffer.alloc(0));
     // /deep exists and is linked, and `--depth 1` is what stops the crawl reaching it: an
     // `unfollowed` row has to mean "not visited", never "not there" (SH387).
     if (path === "/deep") return send(res, 200, "text/html; charset=utf-8", page("Deep", "Never fetched"));

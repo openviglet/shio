@@ -123,7 +123,10 @@ describe("SH448 conformance: replication, from a served source to an installable
     );
     assert.deepEqual(
       inventory.unfollowed.map((row) => row.path).sort(),
-      ["/admin", "/deep"],
+      // SH528 added /traits, a third row cut by the same `--depth 1` as /deep. The count is not the
+      // claim: the claim is that a link the walk SAW and did not follow is recorded as such, and a
+      // trait page vanishing from this list instead of joining it would be the defect.
+      ["/admin", "/deep", "/traits"],
       "SH387: both are recorded as seen-and-not-followed, which is what the coverage group reads",
     );
 

@@ -60,7 +60,13 @@ import * as verify from "../src/commands/verify.mjs";
 const SITE = {
   "/robots.txt": { type: "text/plain", body: "User-agent: *\nDisallow: /admin\n" },
   "/": { body: page("Home", "Acme", ['<a href="/about">About</a>']) },
-  "/about": { body: page("About", "Who we are", ['<a href="/deep">Deeper still</a>']) },
+  "/about": {
+    body: page("About", "Who we are", [
+      '<a href="/deep">Deeper still</a>',
+      // SH528 - depth 2, so nothing above this line changes.
+      '<a href="/traits">Traits</a>',
+    ]),
+  },
   "/deep": { body: page("Deep", "Never fetched", []) },
   "/admin": { body: page("Admin", "Disallowed", []) },
   "/css/site.css": {
@@ -71,7 +77,64 @@ const SITE = {
       .card { color: #102a43; background: #f0f4f8 }`,
   },
   "/img/hero.png": { type: "image/png", body: "PNG-BYTES" },
+  // --- SH528: the traits that broke a real replica, in step with the socket fixture ---
+  // Depth 2 and below, behind /about, so every assertion above this line sees what it always did.
+  "/css/traits.css": {
+    type: "text/css",
+    // SH505 - a fixed overlay is what put a consent banner into three sections' `intro`.
+    body: `.consent { position: fixed; bottom: 0; left: 0; right: 0; background: #102a43 }
+      .tile { color: #102a43; background: #f0f4f8 }`,
+  },
+  "/traits": { body: traitsPage() },
+  "/docs/guide/intro/detail/": { body: deepPage() },
+  "/docs/guide/logo.svg": { type: "image/svg+xml", body: "<svg xmlns=\"http://www.w3.org/2000/svg\"/>" },
+  "/en-us/privacy": { body: page("Privacy", "Under a locale prefix", []) },
+  // SH514 - zero bytes behind a 200 and an image content-type: nothing in the response says so.
+  "/img/empty.png": { type: "image/png", body: "" },
 };
+
+/**
+ * SH528 — one page carrying the traits, each named with the task that needed it.
+ *
+ * A query string on an asset path (SH507), a double-escaped `&` in the title (SH476), a zero-byte
+ * image (SH514), a fixed overlay (SH505), a canvas a script creates (SH517) and a link that is
+ * wrong. The socket fixture serves the same shapes; these two should differ in where the bytes come
+ * from and nowhere else.
+ */
+function traitsPage() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Terms &amp;amp; Conditions</title>
+  <link rel="stylesheet" href="/css/traits.css">
+</head>
+<body>
+  <div class="consent"><p>We use cookies. <a href="/en-us/privacy">Privacy</a></p></div>
+  <main>
+    <h1>Terms &amp;amp; Conditions</h1>
+    <img src="/img/hero.png?v=2" alt="Cache-busted">
+    <img src="/img/empty.png" alt="Empty">
+    <div class="tile"><h3>One</h3><p>Body copy that reads like a page a person wrote.</p></div>
+    <div class="tile"><h3>Two</h3><p>Body copy that reads like a page a person wrote.</p></div>
+    <p><a href="/docs/guide/intro/detail/">Four deep</a> · <a href="/gone">A link that is wrong</a></p>
+  </main>
+  <script>document.body.appendChild(document.createElement("canvas"));</script>
+</body>
+</html>`;
+}
+
+/** SH512 — `./../../logo.svg` from four segments deep is `/docs/guide/logo.svg`, not `/logo.svg`. */
+function deepPage() {
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Four deep</title></head>
+<body><main><h1>Four deep</h1>
+  <img src="./../../logo.svg" alt="Logo">
+  <p>Body copy that reads like a page a person wrote.</p>
+</main></body>
+</html>`;
+}
 
 function page(title, lead, links) {
   return `<!doctype html>
@@ -195,8 +258,11 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     await readFile(join(cwd, ASSETS_DIR, stylesheet.file), "utf8");
     assert.deepEqual(
       inventory.unfollowed.map((row) => row.path),
-      ["/admin", "/deep"],
-      "two links the walk saw and never followed, cut for two different reasons — /admin by "
+      // SH528 added /traits, a third row cut by the same `--depth 1` as /deep. The count is not
+      // the claim — the claim is that a link the walk SAW and did not follow is recorded as such,
+      // and a trait page that vanished from this list instead of joining it would be the defect.
+      ["/admin", "/deep", "/traits"],
+      "three links the walk saw and never followed, cut for two different reasons — /admin by "
         + "robots.txt and /deep by --depth — and neither is in `pages` or in the tree. 'Absent from "
         + "the source' and 'absent from the capture' are opposite claims (SH387)",
     );
