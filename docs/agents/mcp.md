@@ -81,6 +81,28 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   classification can only be as honest as its categories allow, so SH596 added `MCP_RESOURCE`, checked
   against the registered `ShMcpResource` beans rather than believed, with its own vacuity guard — an
   empty registry would pass every row of the new category, which is the same shape as the finding.
+- **A conformance driver speaks the transport, not the module (SH561).** `replication.conformance.mjs`
+  removed three substitutions — the served source, the running instance, the registry — and kept a
+  fourth nobody named: three of its four scenarios `import * as convert from "…/convert.mjs"`, which
+  is a function call. Claude Code spawns `shio mcp` and speaks newline-delimited JSON-RPC, and the
+  layer an import removes is the whole of it: the declared **input schema**, the **name** an agent
+  must get right, the **framing**, the **`tools/list` budget**, and the **shape of a refusal**. A
+  tool renamed, a required property added, a response past its budget — all four pass a module run.
+  `mcp-transport.conformance.mjs` spawns the bridge with a hand-rolled client (no SDK, for
+  `fixture-site.mjs`'s reason: a library that knows the protocol papers over the framing this
+  exists to check) and asserts initialize, every tool's name and object schema, the budget, a real
+  `tools/call`, a refusal, and an unknown tool name. **stdout only** — the bridge's status line goes
+  to stderr because one stray line on stdout desynchronises a client, so the channel separation is
+  part of the contract and is asserted.
+  Two things it measured on its first run. **`tools/list` has two tokens of headroom**: ~2373 against
+  2375, over the wire, which no module call serialises. And the budget must be measured on
+  **`result.tools`**, the subject `ShMcpToolBudgetTest` names — counting the whole `result` read 2376
+  and reported a one-token regression that was the envelope. Two instruments for one budget have to
+  agree on the subject or the second is noise with a stack trace.
+  **The replication chain has no MCP tool**, so "the same chain over `tools/call`" is not a scenario
+  that exists: `clone → propose → convert` is a CLI path and the eleven tools are the content
+  surface. The module driver stays — faster, and it localises a failure — but it is not evidence
+  about the wire.
 - **Every resource declares its HTTP twin, and a build guard checks the route exists (SH346)** —
   `ShMcpResource.httpTwin()`, asserted against the live handler mappings by
   `ShMcpResourceHttpTwinLintTest`. Publishing a document over MCP alone is a P1 break;

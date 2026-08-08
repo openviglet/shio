@@ -362,31 +362,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.42 The suite that has an instance is the one that does not speak the transport (SH561)
-
-`replication.conformance.mjs` was written to remove substitutions, and it removed three:
-the served source, the running instance, the registry. It kept a fourth nobody named. Of
-its four scenarios, one spawns `src/index.mjs` as a process — SH456, and the comment
-says why: an exit code is something a module call structurally cannot see. The other
-three `import * as convert from "../src/commands/convert.mjs"`.
-
-Claude Code uses neither. It speaks `shio mcp` over stdio JSON-RPC, and the layer import
-removes is the whole of it: the tool's declared input schema, the name an agent must
-guess right, the JSON-RPC framing, the `tools/list` payload P3 holds a budget on, and
-the shape of a refusal an agent has to read to recover. A tool renamed, a required
-property added, a response grown past its budget — all four pass a run that imports the
-module the tool wraps.
-
-So the corpus run gets a second driver over the same archetypes: the same chain, issued
-as `tools/call` against a spawned `shio mcp`, asserting the result an agent receives
-rather than the value the function returned. The module driver stays — it is faster and
-it localises a failure, which is what it is for. What it cannot be is evidence about the
-surface the product is named for.
-
-P1 orders MCP first and the manifest claims thirteen tools. `ShAgentP1ConformanceTest`
-asks whether the HTTP surface can reach a feature. Nothing yet asks whether the
-transport can.
-
 ### IX.43 A render defect in Java is found by a hand pass on a real site (SH562)
 
 The eighth run found two defects in the same place, and the place is Java. SH555 is one
