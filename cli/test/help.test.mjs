@@ -114,20 +114,30 @@ test("SH435: every flag a command reads is named in that command's help", async 
   );
 });
 
-test("SH435: no help literal carries a raw backtick or an interpolation", async () => {
+/**
+ * SH208 retired the backtick half of this, and the reason is the point.
+ *
+ * <p>It used to assert that no command's help contained a raw backtick, because a backtick ends a
+ * template literal: a lone one broke the parse and a *pair* silently truncated the text. Both
+ * failures were properties of the help being **JavaScript**. It is a `.txt` now, where a backtick
+ * is a character — so the assertion had stopped protecting anything and started costing something,
+ * which is the state a guard is hardest to notice from the inside. It surfaced the ordinary way: a
+ * new command's help quoted a command name, the way help about a CLI wants to, and the build went
+ * red for prose that could not hurt anyone.</p>
+ *
+ * <p>What remains is real and is asserted here rather than deleted with it. A help that
+ * interpolates cannot live in a flat file at all, so `${` in a `.txt` is printed verbatim to the
+ * caller — a `${flags.site}` that renders as itself is worse than one that fails, because it looks
+ * like the command is telling you something. `help-source.test.mjs` owns the other half now: it
+ * refuses the template literal itself, which is the mechanism rather than one of its symptoms.</p>
+ */
+test("SH208: no help text interpolates, because a flat file prints ${…} verbatim", async () => {
   for (const name of commands) {
     const { HELP } = await import(`../src/commands/${name}.mjs`);
-    // The failure index.test.mjs pins for the global literal, which every one of these can now have
-    // too: backticks arrive in *pairs* when a paragraph quotes a shell idiom, and a pair parses —
-    // the help is then silently cut at that point. Nothing fails and nobody is told.
-    assert.equal(
-      (HELP.match(/`/g) ?? []).length,
-      0,
-      `\`${name}\`'s help contains a raw backtick, which ends the template literal early`,
-    );
     assert.ok(
       !HELP.includes("${"),
-      `\`${name}\`'s help interpolates, so what it prints depends on scope rather than on the text`,
+      `\`${name}\`'s help contains \${…}, which a .txt prints literally — a caller would read it `
+        + "as output rather than as a placeholder nobody filled in",
     );
   }
 });
