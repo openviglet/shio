@@ -79,6 +79,10 @@ src/main/resources/js/client-side/build
 # settings.json IS committed: it declares the roadkeep marketplace and enables the
 # plugin, so a clone gets the hook, the tools and the skill without any local setup.
 !/.claude/settings.json
+# hooks/ IS committed: the plugin never installs on Claude Code on the web (no
+# `/plugin`), so the committed roadkeep-launch.py is how a cloud session gets the
+# guard the plugin would give a local machine.
+!/.claude/hooks/
 /shio-examples/corporate-site/node_modules
 /shio-js-sdk/node_modules
 /shio-examples/blog-site/node_modules
