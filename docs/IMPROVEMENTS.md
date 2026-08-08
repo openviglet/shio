@@ -792,34 +792,6 @@ assertion compares the stored field against the source's bytes, and the fixture 
 the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
 cannot be the one that settles an encoding question.
 
-### IX.58 Four ledgers of what is knowingly wrong (SH594)
-
-The device is sound and it has been invented four times:
-
-| where | what it holds | since |
-|---|---|---|
-| `shio/verify-baseline.json` | accepted `verify` findings, per project | SH142 |
-| `cli/test/assertion-debt.test.mjs` `DEBT` | shipped ids carrying no assertion | SH527 |
-| `fixtures/source-sites/open-findings.json` | corpus assertions red at HEAD | SH560 |
-| `red-suites.json` | a suite allowed to be red, with its reason | SH579 |
-
-Each is a **named list rather than a ceiling**, for the same stated reason every time: a
-ceiling lets one task pay the debt and the next spend it. Each is checked in both
-directions, so an entry that goes green fails the run. Each was the right call on its
-own.
-
-Together they are four formats, four readers and four places to look, and nothing joins
-them. This session met the cost directly: `open-findings.json` held a red case owned by
-SH555 **after SH555 had shipped**, because the fix landed on the render side and the
-CLI's generated layout — which the corpus reads — still emits `{{CSS}}`. Only a check
-written this round noticed, and it had to read `docs/ROADMAP.md` to do it.
-
-This is SH583's shape one level up: five places decided what a trailing slash meant and
-they agreed only by accident. Four ledgers agree about what is knowingly broken only
-while nobody's debt is anybody else's. The question is not whether to merge the files —
-their scopes are genuinely different — but whether one reader can answer *what is this
-repository knowingly carrying, and which of it has an owner who has already gone*.
-
 ### IX.59 The findings nobody narrated (SH602)
 
 Twelve rounds produced roughly forty tasks. Every one of them came from the same place:

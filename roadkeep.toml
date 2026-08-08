@@ -248,7 +248,6 @@ priority = [
   # dead end. SH596 is the harder half — `diagnostics` is reachable over REST, CLI and
   # console and from **neither** MCP list, and MCP is a plugin user's only surface.
   "SH592",
-  "SH594",
   "Block R",
   "Block P",
   "Block H",
