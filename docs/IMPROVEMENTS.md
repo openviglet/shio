@@ -195,28 +195,6 @@ ten thousand queued jobs on the single-threaded sender, which is the queue-full 
 SH84 already reports arriving in bulk. A page size, and a report that says how far it
 got, are the difference between a backfill and an outage of the publish path.
 
-### VIII.20 A budget with a wall and no gauge gets spent until it stops the build (SH423)
-
-SH347 made the Spring context-cache ceiling visible by asserting it: 64, configured
-rather than defaulted, with a margin of 8 and the count printed on every run. That
-closed the failure it was written for — an evicted context is a correctness problem, not
-a slow one.
-
-What it does not do is price the next one. A task that adds `@SpringBootTest(properties
-= "spring.datasource.url=…mem:shio-shNNN…")` spends a slot silently; the number moves;
-nothing asks. Measured over Block Q: eleven tasks took it from 38 to 44, and the only
-reason it is not higher is that two of the last three deliberately extended an existing
-fixture instead — a judgement call made because the count happened to be in view, not
-because anything prompted it.
-
-Two things would help and they are different. A **gauge**: the run already prints the
-count, so the same assertion could warn on approach rather than only fail at the wall —
-the shape `token-budgets.properties` has, where a ceiling is a reviewable number and a
-diff that raises it is the moment somebody is asked. And a **cheaper default**: most of
-these isolate only because a fixture writes instance-wide post-types, which is SH246's
-real reason. A shared context with per-test site scoping would need no slot at all, and
-the tasks that cannot have it would then be the exception rather than the habit.
-
 ### VIII.23 The model's half of the proposal (SH523)
 
 Modelling is the least agent-native thing here, and the contrast is inside the product.

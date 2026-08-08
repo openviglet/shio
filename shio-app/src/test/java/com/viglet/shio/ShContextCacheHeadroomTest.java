@@ -97,8 +97,35 @@ class ShContextCacheHeadroomTest {
      *
      * <p>Eight rather than one, for the declared limit above: the count is a lower bound, and a
      * margin that only covered "one more test" would let the real number cross while this passed.</p>
+     *
+     * <p><b>Two rather than eight since SH423.</b> Eight was covering a known, systematic
+     * undercount: the counter counted <em>datasource URLs</em> and the cache keys on the whole
+     * property set, so it read 56 where the suite created 62. Now that the counter keys the way
+     * Spring does, the margin has one job left — the four classes whose properties are registered
+     * by {@code @DynamicPropertySource}, whose values a source scan cannot compute and which are
+     * counted one per class.</p>
      */
-    private static final int MARGIN = 8;
+    private static final int MARGIN = 2;
+
+    /**
+     * SH423 — <b>the gauge.</b> What the suite keys today, written down so a change has to be one.
+     *
+     * <h2>Why a declared number and not only a ceiling</h2>
+     *
+     * <p>SH347 made the wall visible; it did not price the next step toward it. A task adding
+     * {@code @SpringBootTest(properties = …)} spent a slot silently — measured over Block Q,
+     * eleven tasks took the count from 38 to 44 and nothing asked once. Then four tasks in one
+     * session took it to the wall, and the first anybody heard was a red build in the middle of
+     * unrelated work.</p>
+     *
+     * <p>So the count is asserted <em>exactly</em>, the way {@code token-budgets.properties} and
+     * {@code ShSilentCatchInventoryTest} assert theirs. Raising it is allowed and is a deliberate,
+     * reviewable act: the diff that changes this line is the moment somebody is asked. Lowering it
+     * is the same — a task that frees a slot should be able to show it did.</p>
+     *
+     * <p>The headroom is printed on every run, so approach is visible rather than only arrival.</p>
+     */
+    private static final int DECLARED_CONTEXTS = 62;
 
     /**
      * Seconds one isolated Spring context costs, measured 2026-08-02 (SH317).
@@ -112,6 +139,24 @@ class ShContextCacheHeadroomTest {
     /** Both spellings: the annotation literal and SH22's dynamic-property form. */
     private static final Pattern ISOLATED_DATASOURCE = Pattern.compile(
             "jdbc:h2:mem:([\\w-]+)");
+
+    // --- SH423: what Spring actually keys on --------------------------------
+
+    private static final Pattern SPRING_BOOT_TEST = Pattern.compile("@SpringBootTest\\b");
+
+    /** The `properties = "…"` or `properties = { … }` payload — the bulk of every key here. */
+    private static final Pattern PROPERTIES =
+            Pattern.compile("properties\\s*=\\s*(\\{[^}]*\\}|\"(?:[^\"\\\\]|\\\\.)*\")", Pattern.DOTALL);
+
+    private static final Pattern IMPORTS = Pattern.compile("@Import\\(([^)]*)\\)", Pattern.DOTALL);
+
+    private static final Pattern WEB_ENVIRONMENT =
+            Pattern.compile("webEnvironment\\s*=\\s*[\\w.]+");
+
+    /** Values a source scan cannot compute, so the class stands in for its own key. */
+    private static final Pattern DYNAMIC_PROPERTIES = Pattern.compile("@DynamicPropertySource");
+
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
     @Test
     @DisplayName("SH347: the context-cache ceiling is chosen here, not inherited from the framework")
@@ -140,29 +185,81 @@ class ShContextCacheHeadroomTest {
         }
         int ceiling = Integer.parseInt(properties.getProperty(MAX_SIZE, "32").trim());
         Set<String> isolated = isolatedDatabases();
+        Set<String> contexts = contextKeys();
+        int spare = ceiling - contexts.size() - MARGIN;
 
         // Locale.ROOT: a build log that reads "1,5 s" on one machine and "1.5 s" on another is the
         // same defect as an unstable iteration order (P5), and it is the one printf inherits.
+        // SH423 — the headroom is printed, because "how close am I" was the question nobody could
+        // answer without failing the build to find out.
         System.out.printf(java.util.Locale.ROOT,
-                "%n[SH347] %d isolated test databases, ceiling %d, margin %d%n"
+                "%n[SH423] %d Spring contexts, ceiling %d, margin %d — %d slot(s) to spare%n"
+                        + "[SH347] %d of them isolate a database of their own%n"
                         + "[SH317] about %.0f s of the run, at ~%.1f s a context (measured "
                         + "2026-08-02)%n  %s%n%n",
-                isolated.size(), ceiling, MARGIN,
+                contexts.size(), ceiling, MARGIN, spare, isolated.size(),
                 isolated.size() * SECONDS_PER_CONTEXT, SECONDS_PER_CONTEXT, isolated);
 
-        assertThat(isolated.size() + MARGIN)
+        assertThat(contexts.size())
                 .as("""
-                        %d isolated databases against a %s of %d. Each is at least one Spring \
-                        context, and crossing the ceiling does not merely cost time: an evicted \
-                        context is rebuilt with ddl-auto=create-drop, which recreates the schema \
-                        mid-run and wipes rows a later test in the shared datasource is asserting \
-                        about. The symptom is a test failing only in the full suite.
+                        SH423 — the count moved, and a slot is spent or freed without anybody being \
+                        asked unless this line moves with it. %d contexts are declared here and the \
+                        suite now keys %d.
 
-                        Raise %s and say why, or ask whether the newest isolated test needs to be \
-                        (SH315's rule is that a test measuring the *whole instance* may not share \
-                        it — a test that only reads its own fixtures may).""".formatted(
-                                isolated.size(), MAX_SIZE, ceiling, MAX_SIZE))
+                        If you ADDED one: it is allowed, and it is a deliberate act — raise \
+                        DECLARED_CONTEXTS and say why in the commit. First ask whether the new test \
+                        needs its own context at all: SH315's rule is that a test measuring the \
+                        *whole instance* may not share one, and a test that only reads its own \
+                        fixtures may. There are %d slot(s) left before the ceiling.
+                        If you REMOVED one: lower it in the same commit, or the budget a task freed \
+                        is one the next task spends without knowing it was a gift.""".formatted(
+                                DECLARED_CONTEXTS, contexts.size(), Math.max(0, spare)))
+                .isEqualTo(DECLARED_CONTEXTS);
+
+        assertThat(contexts.size() + MARGIN)
+                .as("""
+                        %d Spring contexts against a %s of %d. Crossing the ceiling does not merely \
+                        cost time: an evicted context is rebuilt with ddl-auto=create-drop, which \
+                        recreates the schema mid-run and wipes rows a later test in the shared \
+                        datasource is asserting about. The symptom is a test failing only in the \
+                        full suite.
+
+                        Raise %s and say why, or share a context (SH315's rule is that a test \
+                        measuring the *whole instance* may not share it — a test that only reads \
+                        its own fixtures may).""".formatted(
+                                contexts.size(), MAX_SIZE, ceiling, MAX_SIZE))
                 .isLessThanOrEqualTo(ceiling);
+    }
+
+    @Test
+    @DisplayName("SH423: the context counter keys the way Spring does, not by datasource")
+    void theCounterKeysOnTheWholePropertySet() {
+        // The exact shape the old counter collapsed: one URL, two property sets, two contexts.
+        String shared = keyOf("@SpringBootTest(properties = \"spring.datasource.url=jdbc:h2:mem:a\")", "A.java");
+        String plus = keyOf(
+                "@SpringBootTest(properties = {\"spring.datasource.url=jdbc:h2:mem:a\", \"x=1\"})",
+                "B.java");
+
+        assertThat(plus)
+                .as("""
+                        two classes on one database with different properties are TWO contexts. \
+                        Counting the URL read them as one, which is why the count said 56 while the \
+                        suite created 62 — a systematic undercount the margin was silently \
+                        absorbing.""")
+                .isNotEqualTo(shared);
+
+        assertThat(keyOf("@SpringBootTest\nclass Plain {}", "C.java"))
+                .as("and a class that configures nothing shares the default context, or the count "
+                        + "would be one per test class and mean nothing")
+                .isEqualTo("<default>");
+        assertThat(keyOf("@SpringBootTest @Import(Probe.class)\nclass D {}", "D.java"))
+                .as("@Import contributes to the key — SH397's probe config is a context of its own, "
+                        + "and it is invisible to a datasource scan")
+                .isNotEqualTo("<default>");
+        assertThat(contextKeys())
+                .as("a counter that came back empty would pass forever while the real count grew")
+                .hasSizeGreaterThan(40)
+                .contains("<default>");
     }
 
     @Test
@@ -184,21 +281,96 @@ class ShContextCacheHeadroomTest {
                 .isTrue();
     }
 
-    private static Set<String> isolatedDatabases() {
-        Set<String> names = new TreeSet<>();
+    /**
+     * The distinct contexts the surefire run keys, SH423's counter.
+     *
+     * <h2>Why this replaced counting datasource URLs</h2>
+     *
+     * <p>Spring's cache key is the whole {@code MergedContextConfiguration}, not the datasource.
+     * Two classes with the same URL and different other properties are two contexts, and the old
+     * counter reported them as one — a <b>systematic</b> undercount, not an approximation: it read
+     * 56 where the suite created 62. The declared limit above said so honestly and the margin was
+     * carrying the difference, which is a margin doing a counter's job.</p>
+     *
+     * <p>Everything that contributes a key in this repository is read here, and the set is closed
+     * by measurement rather than by hope: a scan for {@code @TestPropertySource},
+     * {@code @ContextConfiguration}, {@code @ActiveProfiles}, {@code @MockitoBean} and
+     * {@code @MockBean} finds none. If one appears, it belongs in this method — and
+     * {@link #theCounterFindsThem} is what will notice the count stop matching.</p>
+     *
+     * <p><b>{@code *IT.java} is excluded.</b> Failsafe runs in its own JVM with its own cache, so
+     * ten IT contexts cost nothing against this ceiling. Counting them would inflate the number
+     * with contexts that never coexist.</p>
+     */
+    private static Set<String> contextKeys() {
+        Set<String> keys = new TreeSet<>();
         try (Stream<Path> files = Files.walk(TEST_SOURCES)) {
-            files.filter(path -> path.toString().endsWith(".java")).forEach(path -> {
-                Matcher matcher = ISOLATED_DATASOURCE.matcher(read(path));
-                while (matcher.find()) {
-                    names.add(matcher.group(1));
-                }
-            });
+            files.filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> !path.getFileName().toString().endsWith("IT.java"))
+                    .filter(ShContextCacheHeadroomTest::notThisFile)
+                    .forEach(path -> {
+                        String body = read(path);
+                        if (SPRING_BOOT_TEST.matcher(body).find()) {
+                            keys.add(keyOf(body, path.getFileName().toString()));
+                        }
+                    });
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        // This test's own guard-the-guard strings would otherwise be counted as real databases.
-        names.remove("shio-x");
-        names.remove("shio-y");
+        return keys;
+    }
+
+    /**
+     * Excludes this file from both scans.
+     *
+     * <p>Not housekeeping: the guard-the-guard assertions below contain literal
+     * {@code @SpringBootTest(properties = …)} and {@code jdbc:h2:mem:} strings, so a counter that
+     * read its own source would count its own examples — this file added one phantom context and
+     * one phantom database the moment those cases were written. It is the shape
+     * {@code assertion-debt.test.mjs} excludes itself for, and on its first run that omission made
+     * every entry read as asserted.</p>
+     */
+    private static boolean notThisFile(Path path) {
+        return !path.getFileName().toString().equals("ShContextCacheHeadroomTest.java");
+    }
+
+    /** One class's approximate cache key; classes that configure nothing share {@code <default>}. */
+    private static String keyOf(String body, String name) {
+        Set<String> parts = new TreeSet<>();
+        collect(PROPERTIES.matcher(body), 1, parts, "");
+        collect(IMPORTS.matcher(body), 1, parts, "import:");
+        collect(WEB_ENVIRONMENT.matcher(body), 0, parts, "");
+        if (DYNAMIC_PROPERTIES.matcher(body).find()) {
+            // The values are computed at runtime, so the class is its own key. Four classes in the
+            // surefire run, which is what MARGIN now covers.
+            parts.add("dynamic:" + name);
+        }
+        return parts.isEmpty() ? "<default>" : String.join(" | ", parts);
+    }
+
+    private static void collect(Matcher matcher, int group, Set<String> into, String prefix) {
+        while (matcher.find()) {
+            into.add(prefix + WHITESPACE.matcher(matcher.group(group)).replaceAll(" ").trim());
+        }
+    }
+
+    private static Set<String> isolatedDatabases() {
+        Set<String> names = new TreeSet<>();
+        try (Stream<Path> files = Files.walk(TEST_SOURCES)) {
+            files.filter(path -> path.toString().endsWith(".java"))
+                    // SH423 — the whole file rather than the two names it used to subtract: the
+                    // guard-the-guard cases grew a third database and the removals did not, which
+                    // is the maintenance an exclusion does not need.
+                    .filter(ShContextCacheHeadroomTest::notThisFile)
+                    .forEach(path -> {
+                        Matcher matcher = ISOLATED_DATASOURCE.matcher(read(path));
+                        while (matcher.find()) {
+                            names.add(matcher.group(1));
+                        }
+                    });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         return names;
     }
 

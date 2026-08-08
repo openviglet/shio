@@ -21,7 +21,6 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
 - ⏳ **SH522** (deps: SH521 ✅) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
 - 📋 **SH528** (deps: SH527 ✅, SH560 ✅) **The fixture cannot exhibit the traits that broke every real replica** — It serves a page, a stylesheet, a font, an image and a favicon, so a query string, a relative depth, an overlay, an entity, an empty file and a script-made canvas are unreproducible offline. → §IX.37
 - 📋 **SH529** (deps: SH528) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38

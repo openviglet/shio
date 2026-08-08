@@ -473,6 +473,24 @@ Three things that measurement establishes, none of them obvious beforehand:
   1.5 s boot for a cleanup that has to be exhaustive to be *safe*. 1.5 s is the number such a
   proposal now has to beat.
 
+**The budget is declared, and spending a slot is a diff (SH423).** SH347 made the ceiling visible by
+asserting it, which reports arrival and not approach — measured over Block Q, eleven tasks took the
+count from 38 to 44 and nothing asked once; then four tasks in one session took it to the wall and
+the first anybody heard was a red build in the middle of unrelated work. So
+`ShContextCacheHeadroomTest` now carries **`DECLARED_CONTEXTS`**, asserted exactly: the diff that
+changes it is the moment somebody is asked, in both directions — a task that *frees* a slot lowers
+it, or the budget it returned is one the next task spends believing it was always there. The
+headroom prints on every run.
+**And the counter was undercounting by exactly the margin.** It counted distinct `jdbc:h2:mem:`
+URLs; Spring keys on the whole `MergedContextConfiguration`, so two classes on one URL with
+different properties are two contexts and were read as one. It said 56 where the suite created
+**62**. The counter now reads `properties`, `@Import`, `webEnvironment` and `@DynamicPropertySource`
+— measured to be the closed set, since no test uses `@TestPropertySource`, `@ContextConfiguration`,
+`@ActiveProfiles` or `@MockitoBean` — and the margin dropped from 8 to **2**, its one remaining job
+being the four classes whose properties are registered at runtime. `*IT.java` is excluded: failsafe
+is a separate JVM with its own cache. **The current state is 62 of 64 with zero spare**, so the next
+context is a deliberate decision about the ceiling rather than a surprise.
+
 **Skip the frontend build for backend-only work.** The three frontend executions
 bind to `generate-resources`, so a plain `mvn compile`/`test` triggers the
 (slow, Node-dependent) React build. For backend compile/test, always pass
