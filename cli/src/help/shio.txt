@@ -49,6 +49,7 @@ Commands:
   dev            Generate types, start the site dev server, watch the model
                  (--content: sync shio/content/** both ways and log events instead)
   deploy         push (apply) then types
+  doctor         Can I work here? Instance, build stamp, model drift, sites, content tree
 
 Post-types as code:
   shio/post-types/ may hold *.json or *.ts/*.mjs DSL sources (@viglet/shio-model).

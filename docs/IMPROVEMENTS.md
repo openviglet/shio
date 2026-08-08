@@ -384,27 +384,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.12 Can I work here — one call, and the fact it needs is missing in dev (SH397)
-
-The manifest's `version` reads `getPackage().getImplementationVersion()`, which the POM
-stamps with the version and the abbreviated commit — **for a packaged jar**. Run from
-Maven or an IDE, it is `null` and the manifest answers `"dev"`. That is exactly the mode
-where the instance can be several commits behind the tree being edited, and the failure
-it produces is the expensive kind: a change that is not there reads as a change that
-does not work, and the diagnosis happens in the wrong file. It has cost real sessions,
-which is why a memory note exists to warn about it.
-
-Two halves. **A stamp that exists in dev** — the commit and time from `git.properties`,
-or failing that the newest timestamp among the loaded classes, so the answer is
-comparable rather than a constant. **`shio doctor`**, one call that answers *can I
-work*: is the instance up and which build, is the render model provisioned and does it
-drift (SH295), are the widgets seeded (SH325's 409 is the tell), do the credentials
-authenticate, is the content tree in sync (`push --content --check`), which sites exist.
-
-Every fact already has a reader; nothing composes them, so the first minutes of a
-session are five calls and a guess. This is P2 pointed at the environment instead of at
-the content — and it is CLI-shaped, because half the inputs are files.
-
 ### IX.34 Both sides are held and never compared (SH522)
 
 Shio holds both sides of every comparison it does not make. A capture is a **declaration

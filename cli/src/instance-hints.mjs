@@ -66,6 +66,8 @@ export const NOTES_EXEMPT = new Map([
   ["context", "the pack it prints carries the notes verbatim (SH114); this would double them"],
   ["remember", "it is the notes — printing their count above them says nothing new"],
   ["clone", "runs against an external site, not against a Shio instance"],
+  ["doctor", "its whole output is the state of the instance; a notice about one more fact would "
+    + "compete with the four it just listed, and an unreachable instance has no notes to count"],
 ]);
 
 /**

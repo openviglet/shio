@@ -114,6 +114,7 @@ const COMMANDS = {
   build: () => import("./commands/build.mjs"),
   dev: () => import("./commands/dev.mjs"),
   deploy: () => import("./commands/deploy.mjs"),
+  doctor: () => import("./commands/doctor.mjs"),
 };
 
 const HELP = helpText("shio");
