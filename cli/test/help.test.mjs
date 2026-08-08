@@ -131,7 +131,7 @@ test("SH435: every flag a command reads is named in that command's help", async 
  * like the command is telling you something. `help-source.test.mjs` owns the other half now: it
  * refuses the template literal itself, which is the mechanism rather than one of its symptoms.</p>
  */
-test("SH208: no help text interpolates, because a flat file prints ${…} verbatim", async () => {
+test("SH617: no help text interpolates, because a flat file prints ${…} verbatim", async () => {
   for (const name of commands) {
     const { HELP } = await import(`../src/commands/${name}.mjs`);
     assert.ok(
