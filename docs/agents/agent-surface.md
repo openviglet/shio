@@ -1308,7 +1308,7 @@ it is a different one. That is never a reason to loosen the agent path to match.
   a page somebody opened and not for every console render; this one is two queries. It counts
   **runs**, matching the list it opens, and `changes` counts **distinct posts**. Neither equals
   `ShReviewSession.pending`, which counts audit *entries* — and which, because `publish` keeps the
-  DRAFT row as the editable copy, **never decreases** (**SH614**). That is why this read asks the
+  DRAFT row as the editable copy, **never decreases** (**SH615**). That is why this read asks the
   harder question: a draft with no published twin, or one modified after its twin was published.
   An indicator that stays lit after the curator acts is one they learn to ignore.
 - **A deletion is recoverable at every level (SH200).** `folder.delete` and the console's folder
