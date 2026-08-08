@@ -695,3 +695,164 @@ test("SH526: --against prints the shape beside the percentage", async () => {
     "the pixel answer is still there — the shape is beside it, never instead of it");
   assert.match(ctx.stdout.text, /shape: lost contentinfo/);
 });
+
+// --- SH209: the set, not the page ---
+
+/**
+ * A context whose instance answers both reads the sweep makes: the SH77 pack for the site's
+ * public URL, and `/agent/find` for its pages.
+ *
+ * `capture` hands back `{bytes, shape}` — the shape the real capture returns since SH526, and
+ * deliberately not the bare Buffer the older fixtures use. That difference is the whole reason
+ * the single-page path could hand a plain object to `writeFile` while every test stayed green.
+ */
+function siteCtx({ pages, files = {}, capture, truncated = false } = {}) {
+  const written = {};
+  return {
+    env: { SHIO_URL: "http://shio.test", SHIO_USER: "admin", SHIO_PASSWORD: "secret" },
+    cwd: "/repo",
+    stdout: sink(),
+    stderr: sink(),
+    written,
+    compare: null,
+    capture: capture ?? (async (url) => ({ bytes: Buffer.from(`SHOT ${url}`), shape: null })),
+    async fetch(url) {
+      const body = String(url).includes("/agent/find")
+        ? { count: pages.length, truncated, results: pages }
+        : CONTEXT;
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async text() {
+          return JSON.stringify(body);
+        },
+        async json() {
+          return body;
+        },
+      };
+    },
+    fs: {
+      async readFile(path) {
+        const key = Object.keys(files).find((each) => path.replace(/\\/g, "/").endsWith(each));
+        if (key) return files[key];
+        const error = new Error(`ENOENT: ${path}`);
+        error.code = "ENOENT";
+        throw error;
+      },
+      async mkdir() {},
+      async writeFile(path, body) {
+        if (!Buffer.isBuffer(body) && typeof body !== "string") {
+          // The real `fs.writeFile` throws ERR_INVALID_ARG_TYPE here. The fixtures that accept
+          // anything are why a plain object reached this call for two tasks without a red test.
+          throw new TypeError(
+            `ERR_INVALID_ARG_TYPE: "data" was ${Object.prototype.toString.call(body)}`,
+          );
+        }
+        written[path.replace(/\\/g, "/")] = body;
+      },
+    },
+  };
+}
+
+const PUBLISHED = [
+  { address: "post:Blog/", type: "Page", published: true },
+  { address: "post:Blog/about", type: "Page", published: true },
+  { address: "post:Blog/draft-only", type: "Page" },
+];
+
+test("SH209: --site photographs every published page and leaves the drafts alone", async () => {
+  const ctx = siteCtx({ pages: PUBLISHED });
+
+  const result = await snapshot.run({ site: "Blog" }, [], ctx);
+
+  assert.equal(result.pages, 2, "the draft has no URL a visitor could open, so it is not a page");
+  assert.deepEqual(Object.keys(ctx.written).sort(), [
+    "shio/snapshots/blog-about.png",
+    "shio/snapshots/blog.png",
+  ]);
+  assert.match(ctx.stdout.text, /2 page\(s\) of 'Blog'/);
+  assert.equal(result.exitCode, 0, "new baselines are not a failure");
+});
+
+test("SH209: an unreachable page is its own outcome, never an unchanged one", async () => {
+  const ctx = siteCtx({
+    pages: PUBLISHED,
+    capture: async (url) => {
+      if (url.includes("/about")) throw new Error("Timeout 30000ms exceeded");
+      return { bytes: Buffer.from("SHOT"), shape: null };
+    },
+  });
+
+  const result = await snapshot.run({ site: "Blog" }, [], ctx);
+
+  assert.equal(result.unreachable, 1);
+  assert.match(ctx.stdout.text, /UNREACHABLE {2}post:Blog\/about/);
+  assert.match(ctx.stdout.text, /Timeout 30000ms exceeded/,
+    "the reason travels: 'unreachable' with no cause is a row a reader has to reproduce by hand");
+  assert.match(ctx.stdout.text, /1 unreachable/);
+  assert.equal(result.exitCode, 1,
+    "a page the browser could not open is not a change — it is the run failing to do what it " +
+      "was asked, so it exits non-zero without --fail-on-change");
+});
+
+test("SH209: one bad page does not end the sweep", async () => {
+  const ctx = siteCtx({
+    pages: PUBLISHED,
+    // The FIRST page in sorted order fails, so a sweep that stopped at the first error would
+    // photograph nothing at all.
+    capture: async (url) => {
+      if (url.endsWith("/about")) throw new Error("net::ERR_CONNECTION_REFUSED");
+      return { bytes: Buffer.from("SHOT"), shape: null };
+    },
+  });
+
+  const result = await snapshot.run({ site: "Blog" }, [], ctx);
+
+  assert.equal(result.pages, 2);
+  assert.ok(
+    Object.keys(ctx.written).includes("shio/snapshots/blog.png"),
+    "the page after the failure was still photographed — losing every result after the first bad " +
+      "page is the failure mode a set is supposed to remove",
+  );
+});
+
+test("SH209: a changed page is named and an unchanged one is only counted", async () => {
+  const ctx = siteCtx({
+    pages: PUBLISHED,
+    files: {
+      "shio/snapshots/blog.png": Buffer.from("SHOT http://shio.test/x"),
+      "shio/snapshots/blog-about.png": Buffer.from("OLD"),
+    },
+    capture: async () => ({ bytes: Buffer.from("OLD"), shape: null }),
+  });
+
+  await snapshot.run({ site: "Blog" }, [], ctx);
+
+  assert.match(ctx.stdout.text, /changed {2}post:Blog\//);
+  assert.doesNotMatch(ctx.stdout.text, /changed {2}post:Blog\/about/,
+    "an unchanged page is a count, not a line — a list where everything is named is one nobody reads");
+});
+
+test("SH616: the single-page path writes bytes, not the capture envelope", async () => {
+  // `capture` returns {bytes, shape} in real mode since SH526, and this path passed the whole
+  // object to writeFile — so `shio snapshot <page>` threw ERR_INVALID_ARG_TYPE against a real
+  // browser. Every existing fixture returns a bare Buffer, so nothing was red. The fixture above
+  // returns the production envelope and its writeFile refuses a non-Buffer the way the real one
+  // does, which is what makes this red on the code as it stood.
+  const ctx = siteCtx({ pages: [] });
+
+  await snapshot.run({}, ["post:Blog/blog/hello"], ctx);
+
+  const written = ctx.written["shio/snapshots/blog-blog-hello.png"];
+  assert.ok(Buffer.isBuffer(written), `expected bytes, got ${Object.prototype.toString.call(written)}`);
+});
+
+test("SH209: a page and --site together are refused rather than resolved by precedence", async () => {
+  const ctx = siteCtx({ pages: PUBLISHED });
+
+  await assert.rejects(
+    () => snapshot.run({ site: "Blog" }, ["post:Blog/about"], ctx),
+    /cannot be combined/,
+  );
+});

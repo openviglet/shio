@@ -384,22 +384,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.10 `shio snapshot` photographs one page per run (SH209)
-
-SH102 captures a page. The artifact anyone actually wants for a handoff or a nightly job is the
-*set*: every published page of a site, one baseline each, and a list of which ones moved — which
-is also the form in which a visual diff is worth reading, because "these three pages changed" is
-a sentence and "this page changed" is a fact you already knew.
-
-The parts exist (`/agent/find` gives the addresses; the command gives the capture), so the work
-is the loop's own properties rather than the photography: one browser reused across pages instead
-of one launch each, a per-page timeout so a single hanging page cannot consume the run, and a
-summary that reports the pages it *could not* reach as distinct from the pages that did not
-change. That last one is the SH141 lesson arriving in a second place — an unreachable page and an
-unchanged page must never be the same row.
-
----
-
 ### IX.12 Can I work here — one call, and the fact it needs is missing in dev (SH397)
 
 The manifest's `version` reads `getPackage().getImplementationVersion()`, which the POM

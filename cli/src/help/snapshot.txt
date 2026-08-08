@@ -5,6 +5,10 @@ exits 0 — a page looking different is usually the change you just made — so 
 opt-in. Needs playwright; pixelmatch + pngjs make the diff per-pixel instead of byte-level.
 
   --page <page>        The page to photograph (or a bare positional, or --address)
+  --site <name>        Photograph every PUBLISHED page of a site instead, one baseline each,
+                       and report which ones moved. One browser for the whole sweep. A page
+                       the browser could not open is reported as unreachable, never as
+                       unchanged, and exits 1 on its own
   --against <url>      Compare the page against the ORIGINAL at that URL, both captured in
                        this run (SH386). A difference exits 1 — here that IS the defect
   --accept             Replace the baseline without reporting a change
@@ -22,4 +26,5 @@ previewed from — one flag that picked both would decide which server the pictu
 
 Examples:
   shio snapshot post:Acme/about
+  shio snapshot --site Acme
   shio snapshot --page post:Acme/ --against https://acme.example.com/ --width 1280,375

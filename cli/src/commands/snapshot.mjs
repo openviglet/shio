@@ -56,12 +56,28 @@ export const HELP = helpText("snapshot");
 export async function run(flags, positionals, ctx) {
   // SH365 — `--page`, not `--url`. `--url` is the instance here as everywhere else, and reading it
   // as the page as well is what let one flag decide which *server* a picture came from.
-  const target = pageTarget(flags, positionals, (message) =>
-    ctx.stderr.write(`shio snapshot: ${message}\n`));
-  if (!target) {
+  // SH209 — `--site` is the other way to say what to photograph, so the refusal below only applies
+  // when neither was given. Silent when `--site` is present: `pageTarget` writes its own advice to
+  // stderr, and advice about a flag the caller deliberately did not use is noise.
+  const wholeSite = typeof flags.site === "string" && flags.site !== "";
+  const target = pageTarget(flags, positionals, (message) => {
+    if (!wholeSite) ctx.stderr.write(`shio snapshot: ${message}\n`);
+  });
+  if (!target && !wholeSite) {
     throw new Error(
       "shio snapshot: pass a page — post:<site>/<url>, or an absolute URL.\n" +
-        "Example: shio snapshot post:Blog/blog/hello-world",
+        "Example: shio snapshot post:Blog/blog/hello-world\n" +
+        "Or photograph every published page of a site: shio snapshot --site Blog",
+    );
+  }
+  if (target && wholeSite) {
+    // Refused rather than resolved by precedence: one of them would be silently ignored, and which
+    // one is exactly the sort of thing a caller finds out from the filenames afterwards.
+    throw new Error(
+      "shio snapshot: --site photographs every published page, so it cannot be combined with a\n" +
+        "single page. Drop one:\n" +
+        `  shio snapshot ${target}\n` +
+        `  shio snapshot --site ${flags.site}`,
     );
   }
 
@@ -70,12 +86,19 @@ export async function run(flags, positionals, ctx) {
   // succeed printed its refusal while the process was still carrying live handles, and `exit(1)` was
   // measured aborting rather than exiting. Spending a round trip on a run that cannot work is the
   // smaller half of the same mistake.
-  const browser = typeof ctx.capture === "function" ? null : await requireBrowser({
+  const playwright = typeof ctx.capture === "function" ? null : await requireBrowser({
     command: "snapshot",
     why: "It is optional because a screenshot is for a human to look at (SH102) — the agent's own "
       + "check is `shio digest`, which needs no browser and costs a fraction of the tokens.",
   }, ctx);
 
+  if (wholeSite) {
+    return withBrowser(playwright, ctx, (browser) => site(flags, ctx, browser));
+  }
+  return withBrowser(playwright, ctx, (browser) => onePage(target, flags, ctx, browser));
+}
+
+async function onePage(target, flags, ctx, browser) {
   const admin = resolveAdmin(flags, ctx.env);
   const sites = /^https?:\/\//.test(String(target)) ? new Map() : await siteUrls(flags, ctx);
   const resolved = resolveUrl(target, sites, {
@@ -115,12 +138,18 @@ export async function run(flags, positionals, ctx) {
   // nobody asked for.
   // The resolved width, not the raw flag: `widthsOf` is the one parser, so `capture` never has to
   // know that `--width` can be a list.
-  const shot = await capture(resolved.url, { ...flags, width: widths[0] }, ctx,
-    resolved.preview ? { user: admin.user, password: admin.password } : null, browser);
+  // SH616 — through `shot()`, which `--against` has always used and this path never did. Since
+  // SH526 `capture` returns `{bytes, shape}` in real mode and a bare Buffer only through the
+  // `ctx.capture` seam the tests drive, so this handed a plain object to `writeFile`: every test
+  // passed and `shio snapshot <page>` — the command's whole original purpose — threw
+  // ERR_INVALID_ARG_TYPE against a real browser. A seam that differs in *shape* from production is
+  // the one kind of double that can be green about something that cannot work.
+  const bytes = shot(await capture(resolved.url, { ...flags, width: widths[0] }, ctx,
+    resolved.preview ? { user: admin.user, password: admin.password } : null, browser)).bytes;
   const before = await readIfPresent(ctx, path);
-  const result = compareSnapshots(before, shot, { compare: await comparator(ctx) });
+  const result = compareSnapshots(before, bytes, { compare: await comparator(ctx) });
 
-  await write(ctx, path, shot, result, flags);
+  await write(ctx, path, bytes, result, flags);
   let wroteDiff = null;
   if (result.diff) {
     await write(ctx, diffPath, result.diff, result, { ...flags, accept: true });
@@ -145,6 +174,144 @@ export async function run(flags, positionals, ctx) {
   // in `|| true`.
   const failed = Boolean(flags.failOnChange) && result.status === "changed";
   return { slug, url: resolved.url, path, ...result, diff: undefined, exitCode: failed ? 1 : 0 };
+}
+
+/**
+ * `--site <name>` — every published page, one baseline each (SH209).
+ *
+ * <h2>Why the set and not the page</h2>
+ *
+ * <p>SH102 photographs a page. The artifact a handoff or a nightly job wants is the <em>set</em>,
+ * because that is the form in which a visual diff is worth reading: "these three pages changed" is
+ * a sentence, and "this page changed" is a fact the person who changed it already knew.</p>
+ *
+ * <h2>The three properties, which are the actual work</h2>
+ *
+ * <p>The parts existed — {@code /agent/find} gives the addresses and {@code capture} takes the
+ * picture — so what this adds is the loop's own behaviour. <b>One browser</b>, reused (see
+ * {@link withBrowser}). <b>A per-page timeout</b>, so one page that never settles cannot consume
+ * the run: {@code --timeout} already bounded a single navigation and now bounds each of many.
+ * And <b>an unreachable page is never an unchanged one</b> — the SH141 lesson arriving in a second
+ * place. A page that could not be photographed is reported as its own outcome and never scored,
+ * because a failure to capture scoring as "no difference" is the same false green as SH450's
+ * error page scoring 100%.</p>
+ *
+ * <p>Unreachable pages set a non-zero exit on their own, independently of {@code --fail-on-change}.
+ * That flag is opt-in because a visual change is usually intended; a page the browser could not
+ * open is not a change at all, and a run that could not do what it was asked must not exit 0.</p>
+ */
+async function site(flags, ctx, browser) {
+  const admin = resolveAdmin(flags, ctx.env);
+  const client = new ShioAgentClient({
+    baseUrl: admin.baseUrl,
+    user: admin.user,
+    password: admin.password,
+    fetch: ctx.fetch,
+  });
+  const sites = await siteUrls(flags, ctx);
+  const dir = typeof flags.out === "string" ? flags.out : SNAPSHOT_DIR;
+  const widths = widthsOf(flags.width);
+  if (widths.length > 1) {
+    throw new Error(
+      `shio snapshot: --width takes one viewport here, not ${widths.length}.\n` +
+        "A baseline is one picture per page, and this mode writes one baseline per page.",
+    );
+  }
+
+  const found = await client.findAll({ site: flags.site, type: "Page" });
+  // `published` is absent rather than false when a post has no live row (SH545), so this is a
+  // positive test. A draft has no URL a visitor could open, and photographing the preview instead
+  // would silently answer a different question — `--preview` is how a caller asks for that.
+  const pages = (found.results ?? [])
+    .filter((row) => row?.address && row.published === true)
+    .map((row) => row.address)
+    // Explicit comparator: which pages a run covered has to read the same every time
+    // (P5), and the default sort's locale-free ordering is what that means here.
+    .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+
+  if (!pages.length) {
+    ctx.stdout.write(`shio snapshot: no published page in '${flags.site}' to photograph.\n`);
+    // Not an error: a site whose pages are all drafts is a normal state, and the sentence above
+    // already distinguishes it from a run that photographed pages and found nothing changed.
+    return { site: flags.site, pages: 0, results: [], exitCode: 0 };
+  }
+  if (found.truncated) {
+    ctx.stdout.write(
+      `  note: the page list was cut at ${pages.length} — this run does not cover the whole site.\n`,
+    );
+  }
+
+  const results = [];
+  for (const address of pages) {
+    results.push(await onePageOfSite(address, sites, { admin, flags, dir, widths }, ctx, browser));
+  }
+  return summarize(flags.site, results, dir, flags, ctx);
+}
+
+/** One page of a site sweep: captured and scored, or recorded as unreachable. Never both. */
+async function onePageOfSite(address, sites, { admin, flags, dir, widths }, ctx, browser) {
+  const slug = slugFor(address);
+  const resolved = resolveUrl(address, sites, {
+    previewBase: admin.baseUrl,
+    preview: flags.preview === true,
+  });
+  if (resolved.error) {
+    return { address, slug, status: "unreachable", why: resolved.error };
+  }
+  const path = join(dir, `${slug}.png`);
+  try {
+    const captured = await capture(resolved.url, { ...flags, width: widths[0] }, ctx,
+      resolved.preview ? { user: admin.user, password: admin.password } : null, browser);
+    const bytes = shot(captured).bytes;
+    const before = await readIfPresent(ctx, path);
+    const result = compareSnapshots(before, bytes, { compare: await comparator(ctx) });
+    await write(ctx, path, bytes, result, flags);
+    if (result.diff) {
+      await write(ctx, join(dir, `${slug}.diff.png`), result.diff, result, { ...flags, accept: true });
+    }
+    return { address, slug, path, status: result.status, ratio: result.ratio };
+  } catch (error) {
+    // Caught per page on purpose: a navigation timeout, a 404, a site whose front end is down.
+    // Letting it propagate would end the sweep at the first bad page and lose every result after
+    // it — the failure mode a set is supposed to remove.
+    return { address, slug, status: "unreachable", why: error.message };
+  }
+}
+
+/** What the sweep found, with the pages it could not reach kept apart from the ones that held. */
+function summarize(name, results, dir, flags, ctx) {
+  const by = (status) => results.filter((row) => row.status === status);
+  const changed = by("changed");
+  const unreachable = by("unreachable");
+  const fresh = by("new");
+
+  ctx.stdout.write(
+    `shio snapshot: ${results.length} page(s) of '${name}' — ${changed.length} changed, ` +
+      `${fresh.length} new, ${by("same").length} unchanged, ${unreachable.length} unreachable\n`,
+  );
+  for (const row of changed) {
+    const ratio = typeof row.ratio === "number" ? ` (${(row.ratio * 100).toFixed(2)}% of pixels)` : "";
+    ctx.stdout.write(`  changed  ${row.address}${ratio}\n    ${row.path}\n`);
+  }
+  for (const row of unreachable) {
+    // Named with the reason, because "unreachable" without one is the row a reader has to
+    // reproduce by hand to act on.
+    ctx.stdout.write(`  UNREACHABLE  ${row.address}\n    ${row.why}\n`);
+  }
+  if (changed.length && !flags.accept) {
+    ctx.stdout.write(`  previous images are beside each changed page in ${dir}\n`);
+  }
+
+  const failed = unreachable.length > 0
+    || (Boolean(flags.failOnChange) && changed.length > 0);
+  return {
+    site: name,
+    pages: results.length,
+    changed: changed.length,
+    unreachable: unreachable.length,
+    results,
+    exitCode: failed ? 1 : 0,
+  };
 }
 
 /**
@@ -348,15 +515,38 @@ function shot(captured) {
     : { bytes: captured, shape: null };
 }
 
-async function capture(url, flags, ctx, credentials, playwright) {
+/**
+ * One browser for the whole run (SH209).
+ *
+ * <p>`capture` used to launch and close one per picture, which was already two launches for a
+ * one-page `--against` at one width and four at two. Over a site it is the difference between a
+ * run and a wait: a Chromium launch is the most expensive thing this command does, and the pages
+ * it photographs have nothing to do with each other, so there is nothing a fresh browser buys.</p>
+ *
+ * <p>Not opened at all when `ctx.capture` is the seam: a unit test that launched a browser would
+ * be testing Playwright.</p>
+ */
+async function withBrowser(playwright, ctx, body) {
+  if (typeof ctx.capture === "function") {
+    return body(null);
+  }
+  const browser = await playwright.chromium.launch();
+  try {
+    return await body(browser);
+  } finally {
+    await browser.close();
+  }
+}
+
+async function capture(url, flags, ctx, credentials, browser) {
   if (typeof ctx.capture === "function") {
     return ctx.capture(url, flags, credentials);
   }
   const width = Number(flags.width ?? DEFAULT_WIDTH);
   const height = Number(flags.height ?? 800);
-  const browser = await playwright.chromium.launch();
+  let page = null;
   try {
-    const page = await browser.newPage({
+    page = await browser.newPage({
       viewport: { width, height },
       deviceScaleFactor: 1,
       // Basic, which is what the preview accepts and what `resolveAdmin` already holds. Absent
@@ -396,7 +586,10 @@ async function capture(url, flags, ctx, credentials, playwright) {
     // avoid for the pixels and would be no less one here.
     return { bytes, shape: await page.evaluate(readShape, LANDMARKS) };
   } finally {
-    await browser.close();
+    // SH209 — the page, not the browser. The browser now outlives this call and is closed once by
+    // `withBrowser`; leaving the page open instead would leak one per photograph, which over a
+    // site is the same unbounded growth in a different resource.
+    await page?.close();
   }
 }
 
