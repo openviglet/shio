@@ -893,29 +893,6 @@ writes. And the assertion is the deliverable (SH527) — a case that resolves th
 from a fat-jar `CodeSource` and requires a timestamp, so the null cannot return the next
 time the packaging changes.
 
-### IX.62 The label declared twice, and the three blocks nothing can ship into (SH610)
-
-`roadkeep lint` has been red on seven findings of one rule, `block.repeated`. Five `###
-Block K follow-ups …` headings stand alongside the `## Block K` region, and Block I and
-J carry one extra each. No commit introduced it: the ledger is newest-first per block,
-so follow-ups arriving after another block's region had opened needed a heading to
-re-establish the label, and the honest way to write that was to name the block again.
-
-The cost is not cosmetic. `ship` refuses a repeated label outright, so shipping any
-Block K, I or J task fails on a file the task never touched, and the repair it names
-(*merge by hand*) is a two-hundred-line restructuring nobody wants while holding an
-unrelated diff. Measured on SH560: the ship was blocked; renaming the five headings
-unblocked it and detached ten shipped entries from their block; the rename had to be
-reverted. Blocked is the normal state for three of twelve blocks.
-
-The repair is mechanical only once the ordering is settled: those `###` titles are worth
-keeping as prose but cannot keep the label. Each region's entries move under the single
-`##` heading, and the sub-heading becomes a plain title — which is what keeps the result
-stable, since the next run of follow-ups would otherwise recreate it.
-
-And the guard is the deliverable (SH338): `lint` reports this already and no build reads
-it. A red `lint` should fail something, or it is a report nobody is obliged to read.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

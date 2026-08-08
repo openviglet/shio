@@ -143,6 +143,32 @@ takes `--block`, `list --ids` is the ids alone, and `audit` reports every line i
 the reason — including the dangerous shape, a bullet with a marker and no `**SH<n>**`, which
 would otherwise be dropped in silence. `roadkeep lint` is the same reader as a gate.
 
+**The ledger holds one heading per block, and nothing may be a heading inside one (SH610).**
+`CHANGELOG.md` is newest-first per block, so a run of follow-ups arriving after another block's
+region had opened re-established the label with a heading of its own — `### Block K follow-ups —
+…`, seven of them across K, I and J. `roadkeep lint` reported every one as `block.repeated` and
+nothing read the report, so the condition grew until **`ship` could not write into three of the
+twelve blocks**: it files an entry under a heading by *position*, and with two candidates it
+refuses rather than guess. It surfaced on SH560, on a file that task never touched.
+
+Two things a repair has to know, both learned by getting them wrong first:
+
+- **Renaming the second heading is not the merge.** It detaches every entry below it — that is
+  what `block.missing` means — and it did, for ten shipped entries, before being reverted. The
+  entries have to **move** into the one region, and the rule is to preserve the order the file
+  already had: a follow-up region sitting *above* its `##` goes to the top of that block's
+  entries, one sitting below goes to the bottom. Do not re-sort by date — `ship` appends at the
+  **end** of a block's region, so within a block the ledger runs oldest to newest, and a merge
+  that "corrected" it to newest-first would put every future entry in the wrong place.
+- **A block's region ends at the next heading of any level.** So a `###` cannot group entries
+  inside a block at all. The title survives as a **bold paragraph**, which no parser reads as a
+  declaration.
+
+`cli/test/changelog-blocks.test.mjs` is the obligation the lint never had — `pnpm test` is a gate,
+and a merge that recreates the condition now fails in the same run that would have shipped. It
+matches a block label at **any** heading level on purpose: a `##`-only regex reports *none* of the
+seven against the pre-merge ledger, since all of them were `###`.
+
 **Before you quote a benchmark number, know which way it moved and why.** Blocks N and O both
 made the *baseline* lean rather than the agent path fast — aligning the console reads on the
 CDA shapes (SH117/SH120) and then the post read (SH176) — so the SH112 token ratios fell from
