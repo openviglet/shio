@@ -142,23 +142,39 @@ public class ShAgentIncidentLog {
      * Records one failure. Never throws and never blocks on anything but this monitor —
      * a diagnostics log that could break the path it observes would be worse than none.
      *
+     * <h2>SH204 — one method, and why the convenience overloads had to go</h2>
+     *
+     * <p>This was a pair: a four-argument form and a five-argument one carrying {@code frames}.
+     * Adding a site could not be another overload, because {@code record(kind, subject, message,
+     * fix, siteId)} and {@code record(kind, subject, message, fix, frames)} are the <em>same
+     * signature</em> — five strings — and the compiler cannot tell a caller's intent apart. A
+     * reader could not either, which is the more important half: the SH357 lesson is that an
+     * overload pair whose resolution decides behaviour is a defect even when it compiles.</p>
+     *
+     * <p>So every call site passes both, explicitly, {@code null} where the fact does not exist.
+     * That is longer at four of the thirteen call sites and it makes the two facts that are
+     * <b>deliberately absent</b> — the webhook give-up branch has no frame because the subscriber
+     * refused a delivery that completed, and a 5xx has no site because it belongs to a request —
+     * visible as a written {@code null} beside a comment, rather than as an argument nobody
+     * passed.</p>
+     *
      * @param kind    what kind of failure
      * @param subject what it happened to: a URL, a post id, a request path
      * @param message the shortest thing that identifies the cause
      * @param fix     what to do about it, or {@code null} when there is nothing generic
      *                to say
+     * @param frames  SH190 — the throwing location, or {@code null} when there is none
+     * @param siteId  SH204 — the site this belongs to, or {@code null} when it belongs to no one
+     *                site. Part of the fold key: two sites failing the same way stay two rows
      */
-    public void record(Kind kind, String subject, String message, String fix) {
-        record(kind, subject, message, fix, null);
-    }
-
-    /** @param frames SH190 — the throwing location, or {@code null} when there is none */
-    public void record(Kind kind, String subject, String message, String fix, String frames) {
+    public void record(Kind kind, String subject, String message, String fix, String frames,
+                       String siteId) {
         if (kind == null) {
             return;
         }
         String subjectText = trim(subject);
         String messageText = trim(message);
+        String siteText = trim(siteId);
         // Durable first, and outside this object's monitor: the store opens its own
         // transaction (SH144), and holding a lock across a database round trip on the failure
         // path is how a diagnostics log becomes the thing that makes an outage worse.
@@ -166,14 +182,15 @@ public class ShAgentIncidentLog {
         // means the durable record is incomplete, and only it should be reported as such.
         boolean lost = store != null && messageText != null
                 && !store.record(kind, subjectText, messageText, trim(fix), trim(frames),
-                        Instant.now());
-        remember(kind, subjectText, messageText, trim(fix), trim(frames), lost);
+                        siteText, Instant.now());
+        remember(kind, subjectText, messageText, trim(fix), trim(frames), siteText, lost);
     }
 
     private synchronized void remember(Kind kind, String subjectText, String messageText,
-                                       String fixText, String framesText, boolean lost) {
+                                       String fixText, String framesText, String siteText,
+                                       boolean lost) {
         for (Incident existing : incidents) {
-            if (existing.matches(kind, subjectText, messageText)) {
+            if (existing.matches(kind, subjectText, messageText, siteText)) {
                 existing.seenAgain();
                 return;
             }
@@ -185,7 +202,8 @@ public class ShAgentIncidentLog {
         if (lost) {
             unpersisted++;
         }
-        incidents.addLast(new Incident(kind, subjectText, messageText, fixText, framesText));
+        incidents.addLast(
+                new Incident(kind, subjectText, messageText, fixText, framesText, siteText));
     }
 
     /**
@@ -254,30 +272,44 @@ public class ShAgentIncidentLog {
         private final String fix;
         /** SH190 — the throwing location, or null when there is no exception behind this kind. */
         private final String frames;
+        /** SH204 — the site this belongs to, or null when it belongs to no one site. */
+        private final String siteId;
         private final Instant firstSeen;
         private Instant lastSeen;
         private int count;
 
-        private Incident(Kind kind, String subject, String message, String fix, String frames) {
-            this(kind, subject, message, fix, frames, Instant.now(), Instant.now(), 1);
+        private Incident(Kind kind, String subject, String message, String fix, String frames,
+                         String siteId) {
+            this(kind, subject, message, fix, frames, siteId, Instant.now(), Instant.now(), 1);
         }
 
         private Incident(Kind kind, String subject, String message, String fix, String frames,
-                         Instant firstSeen, Instant lastSeen, int count) {
+                         String siteId, Instant firstSeen, Instant lastSeen, int count) {
             this.kind = kind;
             this.subject = subject;
             this.message = message;
             this.fix = fix;
             this.frames = frames;
+            this.siteId = siteId;
             this.firstSeen = firstSeen;
             this.lastSeen = lastSeen;
             this.count = count;
         }
 
-        private boolean matches(Kind otherKind, String otherSubject, String otherMessage) {
+        /**
+         * SH204 — the site is in the key, so the buffer folds exactly the way the table does.
+         *
+         * <p>Not a detail: the buffer is what is left when the store's write fails, which is most
+         * likely when the database is itself the thing failing. A fallback that folds by a
+         * different key than the record it stands in for reports a different set of problems in
+         * precisely the situation nobody can cross-check it.</p>
+         */
+        private boolean matches(Kind otherKind, String otherSubject, String otherMessage,
+                                String otherSiteId) {
             return kind == otherKind
                     && java.util.Objects.equals(subject, otherSubject)
-                    && java.util.Objects.equals(message, otherMessage);
+                    && java.util.Objects.equals(message, otherMessage)
+                    && java.util.Objects.equals(siteId, otherSiteId);
         }
 
         private void seenAgain() {
@@ -286,7 +318,8 @@ public class ShAgentIncidentLog {
         }
 
         private Incident copy() {
-            return new Incident(kind, subject, message, fix, frames, firstSeen, lastSeen, count);
+            return new Incident(kind, subject, message, fix, frames, siteId, firstSeen, lastSeen,
+                    count);
         }
 
         public Kind kind() {
@@ -307,6 +340,11 @@ public class ShAgentIncidentLog {
 
         public String frames() {
             return frames;
+        }
+
+        /** SH204 — the site id, or null when this failure belongs to no one site. */
+        public String siteId() {
+            return siteId;
         }
 
         public Instant firstSeen() {

@@ -160,7 +160,12 @@ public class ShRenderModel {
                             + "fields: " + e.getOriginalMessage(),
                     "Read the post with GET /api/v2/agent/read and rewrite its fields with a "
                             + "post.upsert. The page will keep rendering empty until then.",
-                    ShAgentIncidentFrames.of(e));
+                    // SH204 — through `siteOf`, which is this class's own resolver and already
+                    // carries the ShFolderSite-exempt reasoning: a post has its own site column and
+                    // the folder walk is only the fallback for a row written before it existed.
+                    // Reusing it rather than reaching for `post.getShSite()` here is the point of
+                    // it having been lifted out by SH337.
+                    ShAgentIncidentFrames.of(e), siteIdOf(post));
             return fields;
         }
         return fields;
@@ -176,6 +181,18 @@ public class ShRenderModel {
         return value == null || value.isNull()
                 ? null
                 : objectMapper.convertValue(value, Object.class);
+    }
+
+    /**
+     * SH204 — {@link #siteOf} reduced to the id an incident stores, null-safe at both steps.
+     *
+     * <p>Separate from {@code siteOf} only because the caller is on a failure path and wants the
+     * id rather than the entity; going through it is what keeps the incident's attribution and the
+     * page's own idea of its site the same answer, including the folder-walk fallback.</p>
+     */
+    private String siteIdOf(ShPostUnified post) {
+        ShSite site = siteOf(post);
+        return site == null ? null : site.getId();
     }
 
     /**

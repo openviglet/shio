@@ -64,9 +64,18 @@ public record ShAgentDiagnostics(String since, long dropped, Map<String, Integer
      *                  incident (a webhook that answered 500, a scheduled publish that missed) or
      *                  when the failure was entirely inside the framework, which is honest rather
      *                  than empty. It replaces the advice to read a log file the caller cannot open
+     * @param site      SH204 — the site this failure belongs to, by name. Absent means it belongs
+     *                  to <b>no one site</b> rather than that nobody recorded one: an
+     *                  {@code api-error} belongs to a request and a {@code transform} to a file
+     *                  several sites may reference, and those two kinds are the only ones that
+     *                  arrive without it. Also absent when the site has been deleted since the
+     *                  failure, which an incident routinely outlives. <b>This view stays
+     *                  instance-wide</b> — unlike {@code /agent/changes}, it is not narrowed by a
+     *                  site, so the field labels a row rather than filtering one
      */
     @JsonInclude(Include.NON_NULL)
     public record Incident(String kind, String subject, String message, String fix,
-                           int count, String firstSeen, String lastSeen, String frames) {
+                           int count, String firstSeen, String lastSeen, String frames,
+                           String site) {
     }
 }

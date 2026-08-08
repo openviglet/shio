@@ -58,7 +58,12 @@ public class ShPostScheduler {
         }
         Instant now = Instant.now();
 
-        for (String id : writeService.findScheduledPublishDue(now)) {
+        // SH204 — the finders return the site beside the id now. Resolving it here instead would
+        // mean a query inside a `catch`, in a job nobody is watching: a lookup that threw would
+        // abandon the rest of the sweep, and guarding it would add the one thing
+        // ShSilentCatchInventoryTest counts. The finder already had the row loaded.
+        for (ShPostUnifiedWriteService.ShScheduledPost due : writeService.findScheduledPublishDue(now)) {
+            String id = due.id();
             try {
                 writeService.publishScheduled(id);
                 log.info("Scheduled publish fired for post {}", id);
@@ -70,11 +75,12 @@ public class ShPostScheduler {
                 // — the message names the symptom and the frame names the writer it threw inside.
                 incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
                         "scheduled publish failed: " + e.getMessage(), SCHEDULE_FIX,
-                        ShAgentIncidentFrames.of(e));
+                        ShAgentIncidentFrames.of(e), due.siteId());
             }
         }
 
-        for (String id : writeService.findScheduledUnpublishDue(now)) {
+        for (ShPostUnifiedWriteService.ShScheduledPost due : writeService.findScheduledUnpublishDue(now)) {
+            String id = due.id();
             try {
                 writeService.unpublishScheduled(id);
                 log.info("Scheduled unpublish fired for post {}", id);
@@ -82,7 +88,7 @@ public class ShPostScheduler {
                 log.warn("Scheduled unpublish failed for post {}: {}", id, e.getMessage());
                 incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
                         "scheduled unpublish failed: " + e.getMessage(), SCHEDULE_FIX,
-                        ShAgentIncidentFrames.of(e));
+                        ShAgentIncidentFrames.of(e), due.siteId());
             }
         }
     }

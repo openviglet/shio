@@ -135,12 +135,12 @@ public class ShTuringIndexListener {
         // Built here, on the thread that still has the tenant and the session; only the send is
         // deferred. A plain TurSNJobItem crosses the thread boundary, never the entity.
         indexService.indexItem(published.get())
-                .ifPresent(item -> submit(item, "index " + event.postId()));
+                .ifPresent(item -> submit(item, "index " + event.postId(), event.siteId()));
     }
 
     private void onRemoved(ShPostLifecycleEvent event) {
         indexService.deIndexItem(event.postId(), siteNameOf(event.siteId()), event.locale())
-                .ifPresent(item -> submit(item, "de-index " + event.postId()));
+                .ifPresent(item -> submit(item, "de-index " + event.postId(), event.siteId()));
     }
 
     /** The site's name, read now because the async task must not query. */
@@ -149,31 +149,38 @@ public class ShTuringIndexListener {
                 : shSiteRepository.findById(siteId).map(site -> site.getName()).orElse(null);
     }
 
-    private void submit(TurSNJobItem item, String what) {
+    /**
+     * @param siteId SH204 — carried alongside {@code item} for the same reason {@code what} is:
+     *               these two methods run on the executor, where there is no session and no event,
+     *               so anything an incident needs has to be a value that crossed the boundary with
+     *               it. It is a plain String taken from the event on the committing thread, so
+     *               nothing here queries and nothing lazily initialises
+     */
+    private void submit(TurSNJobItem item, String what, String siteId) {
         try {
-            executor.execute(() -> run(item, what));
+            executor.execute(() -> run(item, what, siteId));
         } catch (java.util.concurrent.RejectedExecutionException e) {
             // The queue is full, which means Turing has been unreachable long enough for publishes
             // to pile up. Dropping is the right call — the alternatives are blocking the editor or
             // growing without bound — and the operator is told rather than left to notice.
             incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
                     "the indexing queue is full, so this change was not sent", FIX,
-                    ShAgentIncidentFrames.of(e));
+                    ShAgentIncidentFrames.of(e), siteId);
         }
     }
 
-    private void run(TurSNJobItem item, String what) {
+    private void run(TurSNJobItem item, String what, String siteId) {
         try {
             if (!indexService.send(item, what)) {
                 // No frame: the SDK completed and Turing refused, so there is no exception of ours
                 // and nothing in Shio to point at. SH190's rule — absent beats empty.
                 incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
-                        "Turing did not accept the job", FIX);
+                        "Turing did not accept the job", FIX, null, siteId);
             }
         } catch (RuntimeException e) {
             log.warn("Turing indexing errored for {}: {}", what, e.getMessage());
             incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
-                    "errored: " + e.getMessage(), FIX, ShAgentIncidentFrames.of(e));
+                    "errored: " + e.getMessage(), FIX, ShAgentIncidentFrames.of(e), siteId);
         }
     }
 }

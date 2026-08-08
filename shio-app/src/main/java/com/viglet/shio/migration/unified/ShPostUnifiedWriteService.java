@@ -445,20 +445,48 @@ public class ShPostUnifiedWriteService {
         return shPostUnifiedRepository.save(draft);
     }
 
-    /** Ids of drafts whose scheduled publish instant is now due (SH15 sweep). */
-    @Transactional(readOnly = true)
-    public List<String> findScheduledPublishDue(Instant now) {
-        return shPostUnifiedRepository
-                .findByStateAndPublishScheduledDateLessThanEqual(ShPostState.DRAFT, now)
-                .stream().map(ShPostUnified::getId).toList();
+    /**
+     * A draft the SH15 sweep is about to fire, and the site it belongs to (SH204).
+     *
+     * <p>The site rides along because of <em>where</em> it is cheap. The sweep's failure handler
+     * needs it to attribute an incident, and there it costs a query on a path that has just thrown,
+     * in a background job where an exception would abandon the rest of the sweep. Here the row is
+     * already loaded inside a read transaction that is already open, so it is a field read on an
+     * entity the finder had to fetch anyway.</p>
+     *
+     * @param siteId null when the post has no site — the sweep still fires, and the incident it
+     *               may record is then simply unattributed, which is the honest answer
+     */
+    public record ShScheduledPost(String id, String siteId) {
     }
 
-    /** Ids of drafts whose scheduled unpublish instant is now due (SH15 sweep). */
+    /** Drafts whose scheduled publish instant is now due (SH15 sweep). */
     @Transactional(readOnly = true)
-    public List<String> findScheduledUnpublishDue(Instant now) {
+    public List<ShScheduledPost> findScheduledPublishDue(Instant now) {
+        return shPostUnifiedRepository
+                .findByStateAndPublishScheduledDateLessThanEqual(ShPostState.DRAFT, now)
+                .stream().map(ShPostUnifiedWriteService::scheduled).toList();
+    }
+
+    /** Drafts whose scheduled unpublish instant is now due (SH15 sweep). */
+    @Transactional(readOnly = true)
+    public List<ShScheduledPost> findScheduledUnpublishDue(Instant now) {
         return shPostUnifiedRepository
                 .findByStateAndUnpublishScheduledDateLessThanEqual(ShPostState.DRAFT, now)
-                .stream().map(ShPostUnified::getId).toList();
+                .stream().map(ShPostUnifiedWriteService::scheduled).toList();
+    }
+
+    /**
+     * SH204 — the pair, resolved while the session is still open.
+     *
+     * <p>ShFolderSite-exempt: a post carries its own site column, and this is the same resolution
+     * {@code lifecycleEvent} already makes one method along for the webhook's event. No folder walk
+     * fallback here on purpose — a sweep that is about to fail should not do more work to label the
+     * failure, and a post with no site column is one whose incident is honestly unattributed.</p>
+     */
+    private static ShScheduledPost scheduled(ShPostUnified row) {
+        return new ShScheduledPost(row.getId(),
+                row.getShSite() == null ? null : row.getShSite().getId());
     }
 
     /**

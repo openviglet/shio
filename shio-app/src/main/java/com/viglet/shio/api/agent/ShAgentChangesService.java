@@ -157,7 +157,8 @@ public class ShAgentChangesService {
                 : new ShAgentChangeCursor(last(entries).getDate(), last(entries).getId()).toString();
 
         // SH144 — the incident stream, read over the same range and under the same cursor.
-        Incidents failures = incidents(from, ceiling, cap, cursor, more);
+        // SH204 — and under the same scope, which it was not before.
+        Incidents failures = incidents(from, ceiling, cap, cursor, more, scope);
         return new ShAgentChanges(changes.size(), from == null, since, failures.cursor(),
                 more || failures.more(), changes,
                 failures.rows().isEmpty() ? null : failures.rows(),
@@ -182,24 +183,40 @@ public class ShAgentChangesService {
      * incident costs nothing: rows are folded, so a repeat is idempotent, and an incident that
      * is still happening is re-delivered <em>by design</em> anyway.</p>
      *
-     * <p><b>Incidents are not site-scoped, and the response says so.</b> They carry no site —
-     * a 5xx on a request path or a failed image transform is an instance-level fact — so a
-     * site-scoped read cannot narrow them and does not pretend to. That is not a new
-     * visibility: the same caller can read {@code /agent/diagnostics}, which has been
-     * instance-wide since SH103. Attributing an incident to a site where one can be known is
-     * a follow-up, and until then the note is the honest form.</p>
+     * <h2>SH204 — incidents <em>are</em> site-scoped now, and the ones that cannot be are not</h2>
+     *
+     * <p>SH144 shipped a note saying {@code site=} does not narrow this array, because an incident
+     * carried no site at all. Four of the six recorders can attribute a failure and now do, so the
+     * note was describing a hole rather than a property, and it is gone.</p>
+     *
+     * <p>The rule is the audit stream's, exactly, and it has to be — the two are merged under one
+     * cursor, so a row one of them hides and the other shows would make a single {@code since=}
+     * mean two different things. An unattributed incident is visible to an <b>unrestricted</b> read
+     * and to no scoped one, which falls out of {@code null in (…)} rather than being written. Note
+     * that {@code unrestricted} is false whenever {@code site=} was passed, even for a console
+     * session: asking for one site is itself a narrowing, and answering it with another site's
+     * failures is the mismatch this task exists to remove.</p>
+     *
+     * <p><b>What a scoped caller loses, it loses only here.</b> {@code api-error} and
+     * {@code transform} genuinely belong to no site, so a token-scoped {@code /agent/changes} no
+     * longer shows them — and {@code /agent/diagnostics} still does, instance-wide, as it has since
+     * SH103. The note says so rather than leaving a caller to discover it, because an agent's own
+     * 5xx is the incident it most wants and the last one it would think to look elsewhere for.</p>
      */
     private Incidents incidents(ShAgentChangeCursor from, Instant ceiling, int cap,
-                                String changeCursor, boolean changesHaveMore) {
+                                String changeCursor, boolean changesHaveMore, Scope scope) {
+        // null means "no allow-list applies" to the store, which is the one case that reads rows
+        // with no site; a list — even a full one — narrows to attributed rows in those sites.
+        List<String> siteIds = scope.unrestricted() ? null : scope.siteIds();
         List<ShAgentIncident> rows = from == null
-                ? reversed(incidentStore.recent(cap, ceiling))
-                : incidentStore.since(ceiling, from.at(), from.id(), cap + 1);
+                ? reversed(incidentStore.recent(cap, ceiling, siteIds))
+                : incidentStore.since(ceiling, from.at(), from.id(), cap + 1, siteIds);
         boolean more = from != null && rows.size() > cap;
         if (more) {
             rows = rows.subList(0, cap);
         }
         List<ShAgentChanges.Incident> shaped = rows.stream()
-                .map(ShAgentChangesService::incident)
+                .map(row -> incident(row, scope))
                 .toList();
         String cursor = changeCursor;
         if (!rows.isEmpty() && !changesHaveMore) {
@@ -217,7 +234,17 @@ public class ShAgentChangesService {
         return oldestFirst;
     }
 
-    private static ShAgentChanges.Incident incident(ShAgentIncident row) {
+    /**
+     * SH204 — the site is emitted as a <b>name</b>, resolved the same way a change row's is.
+     *
+     * <p>Through {@code scope.names()} rather than a lookup, which does the safe thing twice over:
+     * the map holds only sites this caller may read, so an id it does not cover yields no
+     * {@code site} rather than a name the caller was not entitled to — and there is no query on a
+     * per-row path. An unrestricted read covers every site, so the only ids that fall through are
+     * an unattributed row's absent one and a site deleted since the failure, and both are honestly
+     * spelled as absence.</p>
+     */
+    private static ShAgentChanges.Incident incident(ShAgentIncident row, Scope scope) {
         return new ShAgentChanges.Incident(
                 row.getKind() == null
                         ? null
@@ -228,7 +255,8 @@ public class ShAgentChangesService {
                 row.getOccurrences(),
                 row.getLastSeen() == null ? null : row.getLastSeen().toString(),
                 row.getFirstSeen() == null ? null : row.getFirstSeen().toString(),
-                row.getFrames());
+                row.getFrames(),
+                row.getSiteId() == null ? null : scope.names().get(row.getSiteId()));
     }
 
     private record Incidents(List<ShAgentChanges.Incident> rows, String cursor, boolean more) {
@@ -386,12 +414,22 @@ public class ShAgentChangesService {
                               Incidents failures) {
         List<String> notes = new ArrayList<>();
         if (!failures.rows().isEmpty()) {
-            // Two facts a caller has to know before acting on the array: it is not narrowed by
-            // `site=`, and a row it has seen before can come back because it happened again.
+            // SH204 replaced the first of the two facts this used to state. It said incidents carry
+            // no site and `site=` does not narrow them; both halves are now false, so the note that
+            // was honest about a hole would be a false statement about a closed one.
             notes.add(failures.rows().size() + " incident(s) are included: asynchronous failures "
-                    + "in this range. They carry no site, so `site=` does not narrow them, and a "
-                    + "recurring one reappears with a higher count because its position is its "
-                    + "last occurrence");
+                    + "in this range, and a recurring one reappears with a higher count because "
+                    + "its position is its last occurrence");
+        }
+        // The replacement fact, and it is only worth its tokens on a scoped read: an unrestricted
+        // caller is shown everything and has nothing to be told. `api-error` and `transform` belong
+        // to no one site by nature, so this is where they went rather than a gap to be closed
+        // later — and naming diagnostics is the difference between a caller looking elsewhere and
+        // one concluding its own 5xx was never recorded.
+        if (!scope.unrestricted() && !failures.rows().isEmpty()) {
+            notes.add("incidents are scoped too: an api-error or transform failure belongs to no "
+                    + "one site and so is not in this array — GET /api/v2/agent/diagnostics "
+                    + "reports those, instance-wide");
         }
         if (window) {
             notes.add("window: the most recent " + cap + " entries at most, not a delta — pass "

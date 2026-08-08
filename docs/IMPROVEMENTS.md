@@ -384,25 +384,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.5 An incident should name its site where one is knowable (SH204)
-
-SH144 folded incidents into the SH88 feed, and it had to add a note saying `site=` does not
-narrow them: an incident carries no site, so a site-scoped read gets the instance's failures or
-none. That note is honest and it is not a fix — it describes a hole rather than closing one.
-
-The reason it shipped that way is worth keeping in view, because it is the argument *against*
-doing this carelessly. Two of the four recorders know a site: the webhook dispatcher holds the
-`ShSiteWebhook` it was delivering for, and the scheduled publish holds the post. Two often
-cannot: a 5xx on `/api/v2/agent/batch` belongs to a request, not a site, and a failed image
-transform belongs to a file that may be referenced from several. So this is not "add a column
-and populate it" — it is "populate it where it is known, and keep the unattributed rows visible
-to the callers who may see them", which is exactly the rule the change feed already applies to
-audit rows whose site was not recorded (`unrestricted` sees them, a token-scoped read does not).
-
-The payoff is not only narrower reads: `shio report --site` currently shows one site's changes
-next to the whole instance's failures, which is the kind of mismatch a reviewer notices once and
-then distrusts.
-
 ### IX.6 The incident fold key is the human message (SH205)
 
 Folding is the load-bearing decision in SH144 — it is what makes a durable table affordable,

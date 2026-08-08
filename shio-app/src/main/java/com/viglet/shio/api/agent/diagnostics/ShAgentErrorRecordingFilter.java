@@ -80,8 +80,14 @@ public class ShAgentErrorRecordingFilter extends OncePerRequestFilter {
         // The path, not the query string: a query holds caller-supplied values, and
         // folding repeats by subject is what keeps one broken endpoint from evicting
         // everything else from the window.
+        // SH204 — no site, and this is one of the two kinds where that is the answer rather than a
+        // gap to close later. A 5xx belongs to a *request*: most of these paths address an object
+        // by uuid or address nothing has resolved yet, the request may have failed before anything
+        // was looked up, and the only way to guess would be a database read inside a filter on a
+        // path that is already failing — which is the one thing the log's own design refuses,
+        // because a diagnostics write must not need a healthy database to leave a trace.
         incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR,
-                request.getMethod() + " " + request.getRequestURI(), message, FIX, frames);
+                request.getMethod() + " " + request.getRequestURI(), message, FIX, frames, null);
     }
 
     private static String rootMessage(Throwable throwable) {

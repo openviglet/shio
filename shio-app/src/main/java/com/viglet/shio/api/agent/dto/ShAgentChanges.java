@@ -105,10 +105,17 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      *                new one that happens to have been seen just now
      * @param frames  SH190 — where in Shio it threw, innermost first; absent when there is no
      *                exception behind the incident
+     * @param site    SH204 — the site this failure belongs to, so {@code site=} narrows this array
+     *                the way it narrows {@code changes}. <b>Absent means instance-level</b>, not
+     *                "unknown": {@code api-error} belongs to a request and {@code transform} to a
+     *                file several sites may reference, and those two are the only kinds that can
+     *                arrive without it. A row with no site reaches an unrestricted read only —
+     *                the audit stream's rule, which the two must share because one cursor walks
+     *                both
      */
     @JsonInclude(Include.NON_NULL)
     public record Incident(String kind, String subject, String message, String fix, int count,
-                           String at, String first, String frames) {
+                           String at, String first, String frames, String site) {
     }
 
     /**

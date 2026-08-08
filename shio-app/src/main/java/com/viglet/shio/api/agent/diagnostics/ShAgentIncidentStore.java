@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent.diagnostics;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -95,12 +96,15 @@ public class ShAgentIncidentStore {
      * {@link ShAgentTransactionalOverloadLintTest} refuses the next one.</p>
      *
      * @param frames SH190 — the throwing location, or {@code null} when there is none
+     * @param siteId SH204 — the site this failure belongs to, or {@code null} when it belongs to
+     *               no one site. Part of the fold key, not a decoration on it: see
+     *               {@link ShAgentIncident#getSiteId()}
      * @return {@code true} when the row was written or updated; {@code false} when it could
      *         not be, so the caller can keep its in-memory copy honest
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean record(ShAgentIncidentLog.Kind kind, String subject, String message,
-                          String fix, String frames, Instant now) {
+                          String fix, String frames, String siteId, Instant now) {
         try {
             // SH372 — every row's position is strictly increasing, so the feed's order and the
             // cap's deletion order are the same total order and neither ends in a random id.
@@ -110,9 +114,11 @@ public class ShAgentIncidentStore {
             // out, and that is the same defect the audit trail had. `now` still leads, so a
             // caller with its own clock keeps it.
             Instant when = watermark.reserve(now);
-            Optional<ShAgentIncident> existing = subject == null
-                    ? repository.findByKindAndSubjectIsNullAndMessage(kind.name(), message)
-                    : repository.findByKindAndSubjectAndMessage(kind.name(), subject, message);
+            // SH204 — the site is part of the fold key, so one URL two sites subscribe stays two
+            // rows. Folding them would give one site's operator the other's failure and hide it
+            // from the one whose it is, which is worse than not attributing it at all.
+            Optional<ShAgentIncident> existing =
+                    repository.findFold(kind.name(), subject, message, siteId);
             if (existing.isPresent()) {
                 ShAgentIncident row = existing.get();
                 row.setOccurrences(row.getOccurrences() + 1);
@@ -139,6 +145,7 @@ public class ShAgentIncidentStore {
             row.setMessage(message);
             row.setFix(fix);
             row.setFrames(frames);
+            row.setSiteId(siteId);
             row.setFirstSeen(when);
             row.setLastSeen(when);
             row.setOccurrences(1);
@@ -168,10 +175,25 @@ public class ShAgentIncidentStore {
         repository.deleteAll(oldest);
     }
 
-    /** Most recent first, for the diagnostics view. */
+    /**
+     * Most recent first, for the feed's no-cursor window.
+     *
+     * @param siteIds SH204 — {@code null} reads every incident, which is the unrestricted case;
+     *                a list narrows to those sites and, because {@code null in (…)} is never true,
+     *                drops the incidents that belong to no one site. An <b>empty</b> list is
+     *                therefore not the same as {@code null} and must not be passed as one: it
+     *                means "readable nothing" and returns nothing, the same way the audit half
+     *                short-circuits on an empty scope
+     */
     @Transactional(readOnly = true)
-    public List<ShAgentIncident> recent(int limit, Instant ceiling) {
-        return repository.findWindow(ceiling, PageRequest.of(0, Math.max(1, limit)));
+    public List<ShAgentIncident> recent(int limit, Instant ceiling, Collection<String> siteIds) {
+        PageRequest page = PageRequest.of(0, Math.max(1, limit));
+        if (siteIds == null) {
+            return repository.findWindow(ceiling, page);
+        }
+        return siteIds.isEmpty()
+                ? List.of()
+                : repository.findWindowInSites(ceiling, siteIds, page);
     }
 
     /**
@@ -220,10 +242,22 @@ public class ShAgentIncidentStore {
                            Map<String, Integer> counts, Instant earliest) {
     }
 
-    /** Oldest first, strictly after a position — the SH88-shaped read the feed merges. */
+    /**
+     * Oldest first, strictly after a position — the SH88-shaped read the feed merges.
+     *
+     * @param siteIds SH204, and the same three-way contract as {@link #recent}: {@code null} is
+     *                unrestricted, a list narrows, an empty list returns nothing
+     */
     @Transactional(readOnly = true)
-    public List<ShAgentIncident> since(Instant ceiling, Instant at, String id, int limit) {
-        return repository.findSince(ceiling, at, id, PageRequest.of(0, Math.max(1, limit)));
+    public List<ShAgentIncident> since(Instant ceiling, Instant at, String id, int limit,
+                                       Collection<String> siteIds) {
+        PageRequest page = PageRequest.of(0, Math.max(1, limit));
+        if (siteIds == null) {
+            return repository.findSince(ceiling, at, id, page);
+        }
+        return siteIds.isEmpty()
+                ? List.of()
+                : repository.findSinceInSites(ceiling, siteIds, at, id, page);
     }
 
     /** Test seam, and an operator's reset. */

@@ -140,7 +140,14 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
                     // SH269: which stage threw. This pipeline decodes, resizes, re-encodes and
                     // writes, and "transform failed" is the same message for all four — the frame
                     // is the only thing that distinguishes a corrupt source from a missing writer.
-                    ShAgentIncidentFrames.of(e));
+                    ShAgentIncidentFrames.of(e),
+                    // SH204 — no site, and the other of the two kinds where that is the answer. A
+                    // file is not owned by one site: the same asset may be referenced from several,
+                    // and this pipeline is a stateless pure function over a Resource with no folder,
+                    // post or site anywhere in reach. Attributing it would mean threading a site
+                    // through the interface and its three implementations to name one of the sites
+                    // arbitrarily, which is worse than saying nothing.
+                    null);
             return Optional.empty();
         }
     }

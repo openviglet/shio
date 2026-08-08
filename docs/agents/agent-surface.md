@@ -691,8 +691,22 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   positions — the obvious move — silently advances past unread audit rows whenever an incident is
   ahead of the page being walked. So the cursor advances past an incident only when the change
   stream reports no `more`; until then it stays the audit's and those incidents are read again,
-  which costs nothing because rows are folded. Incidents carry **no site**, so `site=` does not
-  narrow them and the `notes` say so.
+  which costs nothing because rows are folded.
+  **An incident names its site now, and `site=` narrows them (SH204).** SH144 shipped a note saying
+  it did not, which was honest about a hole rather than a property: four of the six recorders can
+  attribute a failure and now do — the webhook dispatcher from the event it is delivering, both
+  render paths from the page's own site, the Turing listener from the published post. `api-error`
+  and `transform` **cannot ever**, and that is the answer rather than a gap: a 5xx belongs to a
+  *request* and a failed transform to a *file* several sites may reference. So an absent `site`
+  means instance-level, not unrecorded. Two rules make it work. **The site is in the fold key** —
+  one webhook URL that two sites subscribe, failing identically, is two problems with two
+  operators, and folding them keeps whichever failed first and shows one operator the other's
+  failure. And **the scoping rule is the audit trail's, exactly**: an unattributed row reaches an
+  unrestricted read and no scoped one, which falls out of `null in (…)` rather than being written —
+  the two streams are merged under one cursor, so a row one hides and the other shows would make a
+  single `since=` mean two things. A scoped read says where the instance-level failures went
+  (`/agent/diagnostics`, still instance-wide), because an agent's own 5xx is the incident it most
+  wants and the last one it would look elsewhere for. Asserted by `ShAgentIncidentSiteTest`.
   **And an incident's position comes from the same watermark as an audit row's (SH147).**
   `ShAgentIncidentStore` kept a monotonic counter of its own (SH372, so the cap would stop
   choosing which row dies by random uuid) and that is half the mechanism — the other half is being

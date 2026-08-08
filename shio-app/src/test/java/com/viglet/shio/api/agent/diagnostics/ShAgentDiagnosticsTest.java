@@ -61,7 +61,7 @@ class ShAgentDiagnosticsTest {
     @DisplayName("a failure is recorded with its subject, cause and fix")
     void aFailureIsRecordedWithItsFix() {
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://front.example.com/api/revalidate",
-                "gave up after 3 attempt(s), last status 500", "Check the target is up.");
+                "gave up after 3 attempt(s), last status 500", "Check the target is up.", null, null);
 
         ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(null);
 
@@ -113,9 +113,9 @@ class ShAgentDiagnosticsTest {
     void repeatsFoldIntoOneRow() {
         for (int attempt = 0; attempt < 200; attempt++) {
             incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://front.example.com/hook",
-                    "connection refused", null);
+                    "connection refused", null, null, null);
         }
-        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:abc", "publish failed", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:abc", "publish failed", null, null, null);
 
         ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(null);
 
@@ -138,7 +138,7 @@ class ShAgentDiagnosticsTest {
     void theReportsCapIsAdmitted() {
         for (int index = 0; index < ShAgentIncidentLog.CAPACITY + 10; index++) {
             incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "GET /api/v2/thing/" + index,
-                    "HTTP 500", null);
+                    "HTTP 500", null, null, null);
         }
 
         ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(0);
@@ -168,7 +168,7 @@ class ShAgentDiagnosticsTest {
     @DisplayName("incidents reach the verify report, so one call is enough after a write")
     void incidentsReachTheVerifyReport() {
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://front.example.com/hook",
-                "gave up after 3 attempt(s)", "Re-publish to re-fire it.");
+                "gave up after 3 attempt(s)", "Re-publish to re-fire it.", null, null);
 
         ShAgentReport report = shAgentVerifyService.verify(null, "diagnostics", null);
 
@@ -196,7 +196,7 @@ class ShAgentDiagnosticsTest {
     @DisplayName("SH330: a past incident is a warning, so a fixed cause does not stay red forever")
     void aPastIncidentNeverFailsTheGate() {
         for (ShAgentIncidentLog.Kind kind : ShAgentIncidentLog.Kind.values()) {
-            incidentLog.record(kind, "subject-" + kind.wireName(), "it failed", null);
+            incidentLog.record(kind, "subject-" + kind.wireName(), "it failed", null, null, null);
         }
 
         ShAgentReport report = shAgentVerifyService.verify(null, "diagnostics", null);
@@ -216,7 +216,7 @@ class ShAgentDiagnosticsTest {
     @DisplayName("a failed transform is a warning — the original was still served")
     void aFailedTransformIsOnlyAWarning() {
         incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "hero.png",
-                "transform failed, original served: bad header", null);
+                "transform failed, original served: bad header", null, null, null);
 
         ShAgentReport report = shAgentVerifyService.verify(null, "diagnostics", null);
 

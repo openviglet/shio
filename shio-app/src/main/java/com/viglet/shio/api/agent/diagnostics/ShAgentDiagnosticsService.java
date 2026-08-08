@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import com.viglet.shio.api.agent.ShAgentProperties;
 import com.viglet.shio.api.agent.diagnostics.dto.ShAgentDiagnostics;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
+import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.webhook.ShWebhookProperties;
 import com.viglet.shio.utils.ShStableMap;
 
@@ -44,15 +46,18 @@ public class ShAgentDiagnosticsService {
     private final ShAgentIncidentStore store;
     private final ShWebhookProperties webhookProperties;
     private final ShAgentProperties properties;
+    private final ShSiteRepository shSiteRepository;
 
     public ShAgentDiagnosticsService(ShAgentIncidentLog incidentLog,
                                      ShAgentIncidentStore store,
                                      ShWebhookProperties webhookProperties,
-                                     ShAgentProperties properties) {
+                                     ShAgentProperties properties,
+                                     ShSiteRepository shSiteRepository) {
         this.incidentLog = incidentLog;
         this.store = store;
         this.webhookProperties = webhookProperties;
         this.properties = properties;
+        this.shSiteRepository = shSiteRepository;
     }
 
     /**
@@ -91,9 +96,15 @@ public class ShAgentDiagnosticsService {
         // a contract nobody was keeping.
         Map<String, Integer> counts = new TreeMap<>();
         snapshot.counts().forEach((kind, total) -> counts.merge(wireName(kind), total, Integer::sum));
+        // SH204 — one lookup for the whole page, not one per row. `all` is at most `max-limit`
+        // rows and usually far fewer distinct sites than that, so this is a single `in (…)`
+        // resolving ids to the names a reader can act on. Diagnostics stays instance-wide, which
+        // is the deliberate difference from /agent/changes: this view is not narrowed by a site,
+        // so naming one is a disclosure to a caller who was already being shown the row.
+        Map<String, String> siteNames = siteNames(all);
         List<ShAgentDiagnostics.Incident> rows = all.stream()
                 .limit(cap)
-                .map(ShAgentDiagnosticsService::row)
+                .map(incident -> row(incident, siteNames))
                 .toList();
         Instant earliest = snapshot.earliest();
         return new ShAgentDiagnostics(earliest == null ? null : earliest.toString(),
@@ -107,7 +118,32 @@ public class ShAgentDiagnosticsService {
                 ShStableMap.copyOf(counts), rows, notes(retained, rows.size(), earliest));
     }
 
-    private static ShAgentDiagnostics.Incident row(ShAgentIncident incident) {
+    /**
+     * SH204 — id → name for every site named by the window, in one query.
+     *
+     * <p>A name and not the id, because every other address on this surface is one a caller can
+     * act on and a uuid is not. An id that resolves to nothing — a site deleted since the failure,
+     * which is a normal thing for an incident to outlive — yields no {@code site} rather than a
+     * dangling uuid, on the SH190 rule that absent beats a value that means nothing.</p>
+     */
+    private Map<String, String> siteNames(List<ShAgentIncident> window) {
+        List<String> ids = window.stream()
+                .map(ShAgentIncident::getSiteId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> names = new java.util.HashMap<>();
+        for (ShSite site : shSiteRepository.findAllById(ids)) {
+            names.put(site.getId(), site.getName());
+        }
+        return names;
+    }
+
+    private static ShAgentDiagnostics.Incident row(ShAgentIncident incident,
+                                                   Map<String, String> siteNames) {
         return new ShAgentDiagnostics.Incident(
                 wireName(incident.getKind()),
                 incident.getSubject(),
@@ -116,7 +152,8 @@ public class ShAgentDiagnosticsService {
                 incident.getOccurrences(),
                 incident.getFirstSeen().toString(),
                 incident.getLastSeen().toString(),
-                incident.getFrames());
+                incident.getFrames(),
+                incident.getSiteId() == null ? null : siteNames.get(incident.getSiteId()));
     }
 
     /** Stored by enum name; served in the wire form a caller branches on. */

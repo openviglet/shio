@@ -357,7 +357,8 @@ class ShPostUnifiedAPITest {
                 .andExpect(jsonPath("$.publishScheduledDate").exists());
 
         org.junit.jupiter.api.Assertions.assertFalse(
-                shPostUnifiedWriteService.findScheduledPublishDue(SCHED_REF).contains(newPostId),
+                shPostUnifiedWriteService.findScheduledPublishDue(SCHED_REF).stream()
+                        .anyMatch(due -> newPostId.equals(due.id())),
                 "A future schedule must not be due");
     }
 
@@ -383,8 +384,11 @@ class ShPostUnifiedAPITest {
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk());
 
+        // SH204 — the finder returns the post's site beside its id now, so the sweep's failure
+        // handler can attribute an incident without a query inside a catch.
         org.junit.jupiter.api.Assertions.assertTrue(
-                shPostUnifiedWriteService.findScheduledPublishDue(SCHED_REF).contains(newPostId),
+                shPostUnifiedWriteService.findScheduledPublishDue(SCHED_REF).stream()
+                        .anyMatch(due -> newPostId.equals(due.id())),
                 "A past schedule must be due");
 
         // Fire the due publish (what ShPostScheduler.sweep() delegates to).
@@ -399,7 +403,8 @@ class ShPostUnifiedAPITest {
 
         // Schedule field cleared, so it cannot re-fire on the next sweep.
         org.junit.jupiter.api.Assertions.assertFalse(
-                shPostUnifiedWriteService.findScheduledPublishDue(SCHED_REF).contains(newPostId),
+                shPostUnifiedWriteService.findScheduledPublishDue(SCHED_REF).stream()
+                        .anyMatch(due -> newPostId.equals(due.id())),
                 "publishScheduledDate must be cleared after firing");
     }
 

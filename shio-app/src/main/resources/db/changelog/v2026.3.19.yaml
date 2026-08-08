@@ -1,0 +1,32 @@
+databaseChangeLog:
+  # SH204 — the site an incident belongs to, where one is knowable.
+  #
+  # SH144 merged incidents into the SH88 feed and had to ship a note saying `site=` does not
+  # narrow them, because an incident carried no site: a site-scoped read answered with the whole
+  # instance's failures. That note was honest and it described a hole rather than closing one.
+  #
+  # Nullable, and permanently so — this is not a column that gets backfilled. Two of the six
+  # recorders genuinely cannot attribute a failure: a 5xx belongs to a request, not a site, and a
+  # failed image transform belongs to a file that several sites may reference. A NULL here means
+  # "instance-level", not "not recorded yet", which is why there is no ShTenantBackfillRunner
+  # entry and no NOT NULL to work towards.
+  #
+  # The id and not the name, matching `sh_history.shSite`: the feed's scope check is a set of
+  # site ids (ShAgentChangesService.Scope), a name is resolved at read time, and a rename must
+  # not orphan a row. VARCHAR(255) is the width every other id column here uses.
+  - changeSet:
+      id: sh204-agent-incident-site
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_agent_incident
+                columnName: site_id
+      changes:
+        - addColumn:
+            tableName: sh_agent_incident
+            columns:
+              - column:
+                  name: site_id
+                  type: VARCHAR(255)

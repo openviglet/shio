@@ -84,6 +84,27 @@ public class ShAgentIncident implements Serializable {
     @Column(name = "subject", length = TEXT_LENGTH)
     private String subject;
 
+    /**
+     * SH204 — the site this failure belongs to, or {@code null} when it belongs to no one site.
+     *
+     * <p><b>Null is a fact, not a gap.</b> Four of the six recorders can attribute a failure and
+     * do: the webhook dispatcher holds the event's site, both render paths hold the page's, and
+     * the Turing listener holds the published post's. Two cannot, ever — a 5xx belongs to a
+     * <em>request</em> and a failed image transform to a file several sites may reference — so
+     * this column is nullable permanently and there is nothing to backfill towards.</p>
+     *
+     * <p><b>Part of the fold key</b>, which is the half that is easy to miss. One webhook URL
+     * subscribed by two sites, failing the same way, is <em>two</em> problems with two operators;
+     * folding them by {@code (kind, subject, message)} alone would produce one row claiming
+     * whichever site happened to fail first, and a site-scoped read would then show one site a
+     * failure that is not its own while hiding it from the site whose it is.</p>
+     *
+     * <p>The id and not the name, matching {@code ShHistory.shSite}: the feed's scope check is a
+     * set of ids, and a rename must not orphan a row.</p>
+     */
+    @Column(name = "site_id", length = 255)
+    private String siteId;
+
     /** The shortest thing that identifies the cause. */
     @Column(name = "message", length = TEXT_LENGTH, nullable = false)
     private String message;

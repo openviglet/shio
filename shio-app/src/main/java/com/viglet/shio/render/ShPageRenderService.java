@@ -562,7 +562,9 @@ public class ShPageRenderService {
                     "Rewrite it with site.upsert (postTypeLayout is a flat "
                             + "{\"<post type>\": \"<layout title>\"} map). Until then every page of "
                             + "this site refuses with render-no-layout-binding.",
-                    ShAgentIncidentFrames.of(e));
+                    // SH204: free — the very next line up already dereferences `site` for its
+                    // name, so the entity is provably initialised and `getId()` reads a field.
+                    ShAgentIncidentFrames.of(e), site == null ? null : site.getId());
             return Map.of();
         }
         return bindings;
@@ -654,7 +656,9 @@ public class ShPageRenderService {
                             + "{\"src\"|\"inline\", \"position\", \"defer\", \"category\"} "
                             + "with post.upsert, or clear the field. A consent banner that silently "
                             + "stopped loading is the worst shape this defect takes.",
-                    ShAgentIncidentFrames.of(e));
+                    // SH204: `site` is the method's own parameter and is dereferenced for its name
+                    // three lines up, so this is a field read.
+                    ShAgentIncidentFrames.of(e), site.getId());
             return ShSiteScripts.of(null);
         }
     }
@@ -683,7 +687,10 @@ public class ShPageRenderService {
                     "Rewrite TOKENS as W3C Design Tokens JSON "
                             + "({\"color\":{\"accent\":{\"$value\":\"#0b5\"}}}) with "
                             + "post.upsert, or clear the field to render on the theme's CSS alone.",
-                    ShAgentIncidentFrames.of(e));
+                    // SH204: the line above already resolves `theme.getShSite().getName()`, so the
+                    // lazy association is initialised by the time this reads its id.
+                    ShAgentIncidentFrames.of(e),
+                    theme.getShSite() == null ? null : theme.getShSite().getId());
             return ShThemeTokens.assets(null, css, javascript);
         }
     }

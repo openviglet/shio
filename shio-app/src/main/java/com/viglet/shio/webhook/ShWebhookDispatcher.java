@@ -132,9 +132,13 @@ public class ShWebhookDispatcher {
                 // reset, a body that would not serialize — and "dispatch errored" alone does not
                 // say whether the fault was ours or the subscriber's. `CompletionException` wraps
                 // it, and `ShAgentIncidentFrames` walks to the deepest cause for that reason.
+                // SH204: the site, free — `event` is already captured by this lambda and carries
+                // it as a plain String, so the one recorder that most obviously belongs to a site
+                // pays nothing to say so. Part of the fold key, which matters here more than
+                // anywhere: the subject is a URL, and two sites may subscribe the same one.
                 incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, target.getUrl(),
                         "dispatch errored: " + error.getMessage(), RETRY_FIX,
-                        ShAgentIncidentFrames.of(error));
+                        ShAgentIncidentFrames.of(error), event.siteId());
             } else if (result.delivered()) {
                 log.debug("Webhook '{}' delivered ({} {}) for post {} -> {}",
                         target.getName(), event.type().wire(), result.statusCode(), event.postId(),
@@ -146,9 +150,13 @@ public class ShWebhookDispatcher {
                 // No frame here, and that is the honest answer rather than an omission: the
                 // delivery completed and the *subscriber* rejected it, so there is no exception of
                 // ours and nothing in Shio's code to point at. SH190's rule — absent beats empty.
+                // SH204 collapsed the overloads, so the absent frame is now a written `null`
+                // rather than an argument nobody passed — which suits this branch: it is the one
+                // place the absence is a deliberate statement, and it is now impossible to read
+                // as an omission.
                 incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, target.getUrl(),
                         "gave up after " + result.attempts() + " attempt(s), last status "
-                                + result.statusCode(), RETRY_FIX);
+                                + result.statusCode(), RETRY_FIX, null, event.siteId());
             }
         });
     }

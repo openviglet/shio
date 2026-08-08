@@ -76,7 +76,7 @@ class ShAgentDurableIncidentTest {
     @DisplayName("an incident is written to the table, not only to the process")
     void anIncidentIsPersisted() {
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://front.example.com/hook",
-                "gave up after 3 attempt(s)", "Check the target is up.");
+                "gave up after 3 attempt(s)", "Check the target is up.", null, null);
 
         assertThat(repository.findAll()).singleElement().satisfies(row -> {
             assertThat(row.getKind()).isEqualTo("WEBHOOK");
@@ -90,11 +90,11 @@ class ShAgentDurableIncidentTest {
     @Test
     @DisplayName("repeats fold into one row and move its feed position forward")
     void repeatsFoldAndAdvance() {
-        incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "post-1", "thumbnail failed", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "post-1", "thumbnail failed", null, null, null);
         Instant afterFirst = repository.findAll().get(0).getLastSeen();
 
         for (int i = 0; i < 5; i++) {
-            incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "post-1", "thumbnail failed", null);
+            incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "post-1", "thumbnail failed", null, null, null);
         }
 
         assertThat(repository.findAll()).singleElement().satisfies(row -> {
@@ -109,9 +109,9 @@ class ShAgentDurableIncidentTest {
     @Test
     @DisplayName("a fix learned later is kept; a missing one does not erase the earlier advice")
     void aFixIsNotLost() {
-        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "post-2", "publish threw", null);
-        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "post-2", "publish threw", "Retry it.");
-        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "post-2", "publish threw", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "post-2", "publish threw", null, null, null);
+        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "post-2", "publish threw", "Retry it.", null, null);
+        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "post-2", "publish threw", null, null, null);
 
         assertThat(repository.findAll()).singleElement()
                 .satisfies(row -> assertThat(row.getFix()).isEqualTo("Retry it."));
@@ -124,11 +124,11 @@ class ShAgentDurableIncidentTest {
         // after a restart. Evidence that lived only in the process would make the *durable* answer
         // the weaker one, which is the inversion this pairs with.
         incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "POST /api/v2/agent/batch",
-                "NullPointerException", "Read the frame.", "ShAgentBatchService.upsert:412");
+                "NullPointerException", "Read the frame.", "ShAgentBatchService.upsert:412", null);
         // A repeat with no frame: the same rule `fix` follows, because a second occurrence caught
         // somewhere shallower must not delete the location the first one identified.
         incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "POST /api/v2/agent/batch",
-                "NullPointerException", null, null);
+                "NullPointerException", null, null, null);
 
         assertThat(repository.findAll()).singleElement().satisfies(row -> {
             assertThat(row.getFrames()).isEqualTo("ShAgentBatchService.upsert:412");
@@ -143,7 +143,7 @@ class ShAgentDurableIncidentTest {
         // to read. Absent, not empty — the field is omitted from the response entirely (NON_NULL),
         // so a reader is never sent looking for a location that does not exist.
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://front.example.com/hook",
-                "HTTP 500", null);
+                "HTTP 500", null, null, null);
 
         assertThat(repository.findAll()).singleElement()
                 .satisfies(row -> assertThat(row.getFrames()).isNull());
@@ -153,7 +153,7 @@ class ShAgentDurableIncidentTest {
     @DisplayName("the change feed carries incidents, in their own array")
     void theFeedCarriesIncidents() {
         incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "/api/v2/agent/batch",
-                "500 on POST", "See the log.");
+                "500 on POST", "See the log.", null, null);
         // The SH88 lag applies to incidents too, and deliberately: the store stamps `lastSeen`
         // before it commits, so the same "an older row lands after a newer one was read"
         // hazard exists here. A test that read immediately would be asserting on an entry the
@@ -178,7 +178,7 @@ class ShAgentDurableIncidentTest {
     @Test
     @DisplayName("one cursor advances past both streams, and an incident after it comes back")
     void oneCursorCoversBoth() {
-        incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://a.example.com", "first", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://a.example.com", "first", null, null, null);
         waitForLag();
 
         String cursor = shAgentChangesService.changes(null, null, 50, false).cursor();
@@ -186,7 +186,7 @@ class ShAgentDurableIncidentTest {
         ShAgentChanges quiet = shAgentChangesService.changes(null, cursor, 50, false);
         assertThat(quiet.incidents()).isNull();
 
-        incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://b.example.com", "second", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://b.example.com", "second", null, null, null);
         waitForLag();
 
         ShAgentChanges next = shAgentChangesService.changes(null, cursor, 50, false);
@@ -199,12 +199,12 @@ class ShAgentDurableIncidentTest {
     @DisplayName("a failure that is still happening is reported again, with a higher count")
     void anOngoingFailureIsRedelivered() {
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://ongoing.example.com",
-                "gave up", null);
+                "gave up", null, null, null);
         waitForLag();
         String cursor = shAgentChangesService.changes(null, null, 50, false).cursor();
 
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://ongoing.example.com",
-                "gave up", null);
+                "gave up", null, null, null);
         waitForLag();
 
         ShAgentChanges next = shAgentChangesService.changes(null, cursor, 50, false);
@@ -228,7 +228,7 @@ class ShAgentDurableIncidentTest {
     @Test
     @DisplayName("a recent incident never advances the cursor past unread changes")
     void anIncidentCannotSkipUnreadChanges() {
-        incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "/skip-guard", "500", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "/skip-guard", "500", null, null, null);
         waitForLag();
 
         // A page of one over a trail that certainly holds more than one entry, anchored well
@@ -256,7 +256,7 @@ class ShAgentDurableIncidentTest {
     @DisplayName("the terse feed gives an incident its own verb")
     void terseKeepsThemApart() {
         incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "post-9", "resize failed",
-                "Re-upload it.");
+                "Re-upload it.", null, null);
         waitForLag();
 
         String terse = ShAgentChangesTerse.render(
@@ -275,7 +275,7 @@ class ShAgentDurableIncidentTest {
         assertThat(empty.notes()).anySatisfy(note ->
                 assertThat(note).contains("nothing has failed rather than nothing is remembered"));
 
-        incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://c.example.com", "boom", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://c.example.com", "boom", null, null, null);
 
         // SH357 — this line is a discriminator, not a second assertion. This test read an empty
         // table once in roughly fifteen full runs, with nothing else failing and no code changed
@@ -304,7 +304,7 @@ class ShAgentDurableIncidentTest {
         try {
             for (int i = 0; i < 5; i++) {
                 incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "/path/" + i,
-                        "500 on GET " + i, null);
+                        "500 on GET " + i, null, null, null);
             }
             List<ShAgentIncident> rows = repository.findAll();
             assertThat(rows).hasSize(3);
@@ -335,7 +335,7 @@ class ShAgentDurableIncidentTest {
         try {
             for (int i = 0; i < 5; i++) {
                 store.record(ShAgentIncidentLog.Kind.API_ERROR, "/tie/" + i,
-                        "500 on GET " + i, null, null, frozen);
+                        "500 on GET " + i, null, null, null, frozen);
             }
 
             assertThat(repository.findAll())

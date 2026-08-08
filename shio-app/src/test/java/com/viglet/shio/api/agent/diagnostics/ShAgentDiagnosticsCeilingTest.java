@@ -11,6 +11,7 @@ package com.viglet.shio.api.agent.diagnostics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -80,11 +81,11 @@ class ShAgentDiagnosticsCeilingTest {
     @DisplayName("a ceiling that predates a row hides it, however healthy the row")
     void aCeilingHidesALiveRow() {
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://ceiling.example.com",
-                "gave up", null);
+                "gave up", null, null, null);
 
         Instant stamped = repository.findAll().get(0).getLastSeen();
 
-        assertThat(store.recent(10, stamped.minusMillis(1)))
+        assertThat(store.recent(10, stamped.minusMillis(1), null))
                 .as("""
                         the mechanism, stated once so the rest of this class is not arguing from a \
                         flake: `findWindow` answers `lastSeen <= :ceiling`, so a row stamped after \
@@ -92,7 +93,7 @@ class ShAgentDiagnosticsCeilingTest {
                         this is the query doing its job, which is why the defect was in the caller \
                         that had no reason to pass a ceiling at all.""")
                 .isEmpty();
-        assertThat(store.recent(10, stamped))
+        assertThat(store.recent(10, stamped, null))
                 .as("and the same read at the row's own instant finds it — the predicate is "
                         + "inclusive, so this is a boundary and not an off-by-one")
                 .hasSize(1);
@@ -112,10 +113,10 @@ class ShAgentDiagnosticsCeilingTest {
 
         // One incident of a kind nothing else here uses, recorded first so every one of the
         // fillers below is newer than it and it falls off the page.
-        incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "post-sh357", "resize failed", null);
+        incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, "post-sh357", "resize failed", null, null, null);
         for (int filler = 0; filler < page + 5; filler++) {
             incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "/sh357/" + filler,
-                    "500 on GET " + filler, null);
+                    "500 on GET " + filler, null, null, null);
         }
 
         ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(null);
@@ -140,15 +141,19 @@ class ShAgentDiagnosticsCeilingTest {
         // trade an invisible row for a *lost* one: SH88's lag exists so a cursor cannot read past a
         // row that commits a millisecond late, and a skipped row in a cursor feed never comes back.
         // The two reads are different questions and only one of them has something to protect.
+        // SH204 — asserted on the *presence of an Instant* rather than on a parameter count, which
+        // is what this always meant. `recent` grew a site scope and the count-based form failed
+        // while the property it guards was untouched: a lint that breaks when an unrelated argument
+        // is added teaches the next reader to adjust the number rather than ask the question.
         assertThat(ShAgentIncidentStore.class.getDeclaredMethods())
                 .as("""
-                        `recent(limit, ceiling)` is the feed's read and keeps its ceiling; \
+                        `recent(limit, ceiling, …)` is the feed's read and keeps its ceiling; \
                         `snapshot(limit)` is the diagnostics read and must not have one. If these \
                         ever collapse into one method, the question 'is there a cursor to protect' \
                         stops being asked.""")
                 .anyMatch(method -> "recent".equals(method.getName())
-                        && method.getParameterCount() == 2)
-                .anyMatch(method -> "snapshot".equals(method.getName())
-                        && method.getParameterCount() == 1);
+                        && List.of(method.getParameterTypes()).contains(Instant.class))
+                .noneMatch(method -> "snapshot".equals(method.getName())
+                        && List.of(method.getParameterTypes()).contains(Instant.class));
     }
 }

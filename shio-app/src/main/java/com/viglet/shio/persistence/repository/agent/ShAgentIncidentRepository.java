@@ -9,6 +9,7 @@
 package com.viglet.shio.persistence.repository.agent;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,12 +34,47 @@ import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 @Repository
 public interface ShAgentIncidentRepository extends JpaRepository<ShAgentIncident, String> {
 
-    /** The fold key: what went wrong, not each time it did. */
-    Optional<ShAgentIncident> findByKindAndSubjectAndMessage(String kind, String subject,
-                                                            String message);
+    /**
+     * The fold key: what went wrong, <b>where</b>, not each time it did.
+     *
+     * <p>SH204 added the site to it. One webhook URL that two sites subscribe, failing the same
+     * way, is two problems and two operators; folding them together produces one row claiming
+     * whichever site failed first, which a site-scoped read then shows to the wrong one.</p>
+     *
+     * <p><b>Four derived finders and a dispatcher, rather than one query with {@code coalesce}.</b>
+     * Both {@code subject} and {@code siteId} are nullable and {@code null} is not {@code =}, so a
+     * single JPQL predicate needs either a null-safe comparison or a parameter compared against
+     * itself — and this repository's rows are read on PostgreSQL and MariaDB as well as H2, where
+     * the cross-DB ITs skip entirely without a Docker daemon. Spring Data generates these four and
+     * validates them at context startup, on every database, which is the check a hand-written
+     * predicate would not get. The table is capped at 500 rows, so nothing here is worth a query
+     * plan argument.</p>
+     */
+    default Optional<ShAgentIncident> findFold(String kind, String subject, String message,
+                                               String siteId) {
+        if (subject == null) {
+            return siteId == null
+                    ? findByKindAndSubjectIsNullAndMessageAndSiteIdIsNull(kind, message)
+                    : findByKindAndSubjectIsNullAndMessageAndSiteId(kind, message, siteId);
+        }
+        return siteId == null
+                ? findByKindAndSubjectAndMessageAndSiteIdIsNull(kind, subject, message)
+                : findByKindAndSubjectAndMessageAndSiteId(kind, subject, message, siteId);
+    }
 
-    /** Same, for the rows whose subject was never recorded — {@code null} is not {@code =}. */
-    Optional<ShAgentIncident> findByKindAndSubjectIsNullAndMessage(String kind, String message);
+    Optional<ShAgentIncident> findByKindAndSubjectAndMessageAndSiteId(String kind, String subject,
+                                                                     String message, String siteId);
+
+    Optional<ShAgentIncident> findByKindAndSubjectAndMessageAndSiteIdIsNull(String kind,
+                                                                           String subject,
+                                                                           String message);
+
+    Optional<ShAgentIncident> findByKindAndSubjectIsNullAndMessageAndSiteId(String kind,
+                                                                           String message,
+                                                                           String siteId);
+
+    Optional<ShAgentIncident> findByKindAndSubjectIsNullAndMessageAndSiteIdIsNull(String kind,
+                                                                                 String message);
 
     /**
      * Everything strictly after the {@code (lastSeen, id)} position, oldest first.
@@ -56,6 +92,30 @@ public interface ShAgentIncidentRepository extends JpaRepository<ShAgentIncident
     @Query("select i from ShAgentIncident i where i.lastSeen <= :ceiling "
             + "order by i.lastSeen desc, i.id desc")
     List<ShAgentIncident> findWindow(Instant ceiling, Pageable pageable);
+
+    /**
+     * The two above, narrowed to a set of sites (SH204).
+     *
+     * <p><b>Deliberately the same shape as {@code ShHistoryRepository}'s pair</b>, down to the
+     * {@code in :siteIds} spelling — which is also where the rule about an unattributed row comes
+     * from, and it comes for free rather than being written: {@code null in (…)} is never true in
+     * SQL, so a row with no site drops out of every scoped read without a clause saying so, and is
+     * visible only to the unrestricted read that uses {@code findWindow}/{@code findSince}. That is
+     * exactly what the audit trail has always done with a row whose site was not recorded, and the
+     * two streams are merged under one cursor, so they must agree.</p>
+     */
+    @Query("select i from ShAgentIncident i where i.lastSeen <= :ceiling "
+            + "and i.siteId in :siteIds "
+            + "and (i.lastSeen > :at or (i.lastSeen = :at and i.id > :id)) "
+            + "order by i.lastSeen asc, i.id asc")
+    List<ShAgentIncident> findSinceInSites(Instant ceiling, Collection<String> siteIds, Instant at,
+                                           String id, Pageable pageable);
+
+    @Query("select i from ShAgentIncident i where i.lastSeen <= :ceiling "
+            + "and i.siteId in :siteIds "
+            + "order by i.lastSeen desc, i.id desc")
+    List<ShAgentIncident> findWindowInSites(Instant ceiling, Collection<String> siteIds,
+                                            Pageable pageable);
 
     /**
      * The same window with <b>no ceiling</b> — the diagnostics read (SH357).
