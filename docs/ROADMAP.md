@@ -41,6 +41,7 @@
 - 📋 **SH603** (deps: SH597 ✅, SH602) **The corpus has one task shape, so every friction it measures is replication-flavoured** — One reader drove one instance through one family of sources, which cannot tell a defect in the protocol from a gap in a corpus the same hands designed. → §IX.60
 - 📋 **SH609** (deps: SH560 ✅) **The conformance gate's staleness check has no answer on a dirty tree, so its escape hatch is the normal way to run it** — SH500 falls back to builtAt on a dirty tree, and a fat-jar CodeSource is a nested URL Paths.get refuses - so it is null on the only shape the gate accepts. → §IX.61
 - 📋 **SH612** (deps: SH204 ✅, SH22 ✅) **An incident recorded from a pool thread is filed under the default tenant, and now it carries a site id too** — The two async recorders write with no ShTenantContext, so a non-default tenant's failure lands under shio, and SH204 gave that misfiled row a foreign site id. → §IX.63
+- 📋 **SH613** (deps: SH206 ✅, SH322 ✅) **A textual lint reads prose, so writing about a rule can fail the build for breaking it** — SH206 hit this and fixed one lint; 17 of the 22 source-scanning tests still match their own subject inside a comment, and nothing says which of them mean to. → §IX.64
 
 ## Block I — Content as files (local-first authoring)
 
