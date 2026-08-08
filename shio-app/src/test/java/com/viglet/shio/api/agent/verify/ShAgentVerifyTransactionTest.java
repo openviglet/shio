@@ -69,10 +69,11 @@ import jakarta.persistence.PersistenceContext;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest(properties = {
-        "shio.agent.render.allow-fetch=true",
-        "spring.datasource.url=jdbc:h2:mem:shio-verify-tx;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
-                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true"})
+// The shared datasource, deliberately (SH347's ceiling, and SH315's rule for when to leave it).
+// Every read here is scoped to this class's own site — `verify(siteName, "delivery", …)` — and the
+// assertions are about a probe this context alone installs, so nothing it does is a statement about
+// the instance. `ShAgentDeliveryTest` is the same shape one question along and shares it too.
+@SpringBootTest(properties = "shio.agent.render.allow-fetch=true")
 @Import(ShAgentVerifyTransactionTest.ProbeConfig.class)
 @TestInstance(Lifecycle.PER_CLASS)
 class ShAgentVerifyTransactionTest {

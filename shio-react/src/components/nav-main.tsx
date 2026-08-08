@@ -1,4 +1,4 @@
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import type { Icon } from "@tabler/icons-react"
 import { NavLink, useLocation } from "react-router-dom"
 
@@ -6,6 +6,16 @@ interface NavItem {
   title: string
   url: string
   icon: Icon
+  /**
+   * SH207 — an unread-shaped count, absent when there is nothing to say.
+   *
+   * Absent rather than `0`: a badge that is always there is a badge nobody reads, and this one
+   * has to be read. Zero is the state a curator has to be able to ignore safely, and the way to
+   * make that true is to not draw it.
+   */
+  badge?: number
+  /** What the badge means, for a reader who cannot see a number in a corner. */
+  badgeLabel?: string
 }
 
 interface NavGroup {
@@ -30,6 +40,9 @@ export function NavMain({ groups }: { groups: NavGroup[] }) {
                     <span>{item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
+                {item.badge ? (
+                  <SidebarMenuBadge aria-label={item.badgeLabel}>{item.badge}</SidebarMenuBadge>
+                ) : null}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>

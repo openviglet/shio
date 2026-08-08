@@ -384,22 +384,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.8 The handoff has no console banner (SH207)
-
-SH104 shipped the handoff as `shio report`, which is right for where a handoff usually
-lands: a PR body, written by whatever ran the agent. Its design named a second
-destination — a console banner — and that half is unshipped, which leaves the curator
-who never opens a terminal with no answer to "what did the agent do since I last
-looked".
-
-It is a small feature over already-composed data (the same three reads), and its natural
-home is the SH109 review queue page, which is already the console's answer to "what did
-an agent do, and do I accept it". The one design question is the position: a banner that
-shows on every page is noise, and a banner only on the review page is a page nobody
-visits unless they already suspect something. The honest version is probably a count in
-the navigation that opens the report — the same shape as an unread indicator, which is a
-pattern a curator already knows how to ignore safely when it is zero.
-
 ### IX.9 A backtick in the CLI's help text breaks the whole binary (SH208)
 
 `cli/src/index.mjs` holds `HELP` as a template literal. Help text is prose, prose about a CLI

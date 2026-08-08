@@ -2,6 +2,7 @@ import axios from "axios"
 import type {
   ShReviewDetail,
   ShReviewOutcome,
+  ShReviewPending,
   ShReviewSession,
 } from "@/models/review/review.model"
 
@@ -15,6 +16,17 @@ export class ShReviewService {
     const response = await axios.get<ShReviewSession[]>("/v2/review/sessions", {
       params: { limit },
     })
+    return response.data
+  }
+
+  /**
+   * How much is waiting for a human (SH207) — cheap enough for the navigation badge.
+   *
+   * Not `sessions()`: that scans 2000 audit rows and resolves every touched post, which is fine
+   * for a page somebody opened and not for something asked on every console render.
+   */
+  async pending(): Promise<ShReviewPending> {
+    const response = await axios.get<ShReviewPending>("/v2/review/pending")
     return response.data
   }
 

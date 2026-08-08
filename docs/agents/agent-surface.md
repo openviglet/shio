@@ -1299,6 +1299,18 @@ it is a different one. That is never a reason to loosen the agent path to match.
   entry may name a **folder**: reverting that one restores the whole deleted section, which is
   the gesture a human means by "undo that", and `approve` skips folder entries because a section
   has no draft to publish.
+  **`GET /api/v2/review/pending` is the navigation badge's read (SH207).** SH104's handoff answers
+  "what did the agent do since I last looked" for whoever ran `shio report`; a curator who never
+  opens a terminal had nothing. §IX.8 settled the *position* first — a banner on every page is
+  noise, a banner only on the review page is a page nobody visits unless they already suspect
+  something — so what shipped is an indicator in the sidebar, absent at zero. Its own endpoint
+  because `/sessions` scans 2000 audit rows and resolves each post one at a time, which is fine for
+  a page somebody opened and not for every console render; this one is two queries. It counts
+  **runs**, matching the list it opens, and `changes` counts **distinct posts**. Neither equals
+  `ShReviewSession.pending`, which counts audit *entries* — and which, because `publish` keeps the
+  DRAFT row as the editable copy, **never decreases** (**SH614**). That is why this read asks the
+  harder question: a draft with no published twin, or one modified after its twin was published.
+  An indicator that stays lit after the curator acts is one they learn to ignore.
 - **A deletion is recoverable at every level (SH200).** `folder.delete` and the console's folder
   delete put the subtree in the trash rather than erasing it, so the op SH108's confirm token
   exists to gate is no longer a *harder* delete than deleting each post by hand. What is still

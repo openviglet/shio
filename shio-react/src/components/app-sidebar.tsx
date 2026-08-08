@@ -32,12 +32,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { ShLogo } from "@/components/logo/sh-logo"
+import { useReviewPending } from "@/contexts/review-pending.context"
 
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
   const { toggleSidebar, state, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
+  const { pending } = useReviewPending()
 
   const navGroups = React.useMemo(() => [
     {
@@ -67,11 +69,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         { title: t("emailConfig.title"), url: ROUTES.ADMIN_EMAIL_CONFIG, icon: IconMail },
         { title: t("siteWebhook.title"), url: ROUTES.ADMIN_WEBHOOKS, icon: IconWebhook },
         { title: t("activity.title"), url: ROUTES.ADMIN_ACTIVITY, icon: IconHistory },
-        { title: t("review.title"), url: ROUTES.ADMIN_REVIEW, icon: IconRobot },
+        {
+          title: t("review.title"),
+          url: ROUTES.ADMIN_REVIEW,
+          icon: IconRobot,
+          // SH207 — the handoff's console half. `shio report` answers "what did the agent do
+          // since I last looked" for whoever ran it; a curator who never opens a terminal had
+          // nothing. Undefined at zero, so the indicator is only ever drawn when it says
+          // something.
+          badge: pending || undefined,
+          badgeLabel: t("review.pendingSessions", { count: pending }),
+        },
         { title: t("graphql.title"), url: ROUTES.GRAPHQL_ROOT, icon: IconBrandGraphql },
       ],
     },
-  ], [t])
+  ], [t, pending])
 
   return (
     <Sidebar collapsible="icon" side={isMobile ? "right" : "left"} {...props}>

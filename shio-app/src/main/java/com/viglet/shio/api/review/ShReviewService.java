@@ -27,6 +27,7 @@ import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.api.review.dto.ShReviewDetail;
 import com.viglet.shio.api.review.dto.ShReviewOutcome;
+import com.viglet.shio.api.review.dto.ShReviewPending;
 import com.viglet.shio.api.review.dto.ShReviewSession;
 import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -114,6 +115,82 @@ public class ShReviewService {
                 .map(group -> summarize(group.getKey(), group.getValue()))
                 .limit(Math.max(1, limit))
                 .toList();
+    }
+
+    /**
+     * How much is waiting for a human — the navigation badge's read (SH207).
+     *
+     * <p>Two queries however many runs there are, which is the whole reason it is not
+     * {@link #sessions}: that one resolves each touched post one at a time, and a badge is asked
+     * for on every console render rather than on a page somebody opened.</p>
+     *
+     * <p>It counts <b>sessions</b>, because the page it opens is a list of sessions. Counting
+     * changes there would produce a badge whose number appears nowhere on the page it links to,
+     * which is the kind of mismatch a reviewer notices once and then stops trusting.</p>
+     */
+    @Transactional(readOnly = true)
+    public ShReviewPending pending() {
+        List<ShHistory> entries = shHistoryRepository.findAgentEntries(PageRequest.of(0, SCAN_LIMIT));
+        Set<String> objects = new LinkedHashSet<>();
+        for (ShHistory entry : entries) {
+            if (entry.getShObject() != null) {
+                objects.add(entry.getShObject());
+            }
+        }
+        if (objects.isEmpty()) {
+            return new ShReviewPending(0, 0);
+        }
+        Set<String> unreleased = unreleased(objects);
+        if (unreleased.isEmpty()) {
+            return new ShReviewPending(0, 0);
+        }
+        Set<String> sessions = new LinkedHashSet<>();
+        for (ShHistory entry : entries) {
+            if (entry.getShObject() != null && unreleased.contains(entry.getShObject())) {
+                sessions.add(entry.getAgentSessionId());
+            }
+        }
+        return new ShReviewPending(sessions.size(), unreleased.size());
+    }
+
+    /**
+     * Which of these posts hold work a human has not released (SH207).
+     *
+     * <h2>Not "which have a draft" — the trap this exists to avoid</h2>
+     *
+     * <p>{@code publish} writes a {@code PUBLISHED} row and <b>keeps</b> the draft, because the
+     * draft is the editable copy. So every post that has ever existed has one, forever, and a
+     * count keyed on its presence never reaches zero. An indicator that stays lit after the
+     * curator has acted is one they learn to ignore, which is worse than none: it occupies the
+     * place a working one would have gone.</p>
+     *
+     * <p>Unreleased means one of two things, and both need the published twin to see: the draft
+     * has <b>no</b> twin, so it has never been published; or the draft was modified <b>after</b>
+     * its twin was published, so it holds edits nobody has released. Approving does exactly what
+     * makes both false, which is the property that makes the number trustworthy.</p>
+     */
+    private Set<String> unreleased(Set<String> ids) {
+        Map<String, Instant> drafts = new LinkedHashMap<>();
+        Map<String, Instant> published = new LinkedHashMap<>();
+        for (Object[] row : shPostUnifiedRepository.findStateRowsOf(ids)) {
+            String id = (String) row[0];
+            ShPostState state = (ShPostState) row[1];
+            if (state == ShPostState.DRAFT) {
+                // `modifiedDate` is null on a row nobody has edited since it was created, and
+                // then the creation instant is when its content last changed.
+                drafts.put(id, row[2] != null ? (Instant) row[2] : (Instant) row[4]);
+            } else if (state == ShPostState.PUBLISHED) {
+                published.put(id, (Instant) row[3]);
+            }
+        }
+        Set<String> waiting = new LinkedHashSet<>();
+        drafts.forEach((id, changed) -> {
+            Instant released = published.get(id);
+            if (released == null || (changed != null && changed.isAfter(released))) {
+                waiting.add(id);
+            }
+        });
+        return waiting;
     }
 
     /** One run's changes, oldest first. */

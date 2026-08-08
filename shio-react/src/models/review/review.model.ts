@@ -17,6 +17,18 @@ export interface ShReviewSession {
   pending: number
 }
 
+/**
+ * How much agent work is waiting for a human (SH207) — the navigation badge's read.
+ *
+ * `sessions` is what the badge shows, because the page it opens lists sessions. `changes` counts
+ * distinct posts, which is deliberately not the sum of each session's `pending`: that one counts
+ * audit entries, so a run that edited one page four times reports four.
+ */
+export interface ShReviewPending {
+  sessions: number
+  changes: number
+}
+
 export interface ShReviewEntry {
   action: string
   postId?: string

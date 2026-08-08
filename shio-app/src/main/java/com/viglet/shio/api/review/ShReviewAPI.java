@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.review.dto.ShReviewDetail;
 import com.viglet.shio.api.review.dto.ShReviewOutcome;
+import com.viglet.shio.api.review.dto.ShReviewPending;
 import com.viglet.shio.api.review.dto.ShReviewSession;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,6 +54,18 @@ public class ShReviewAPI {
     public List<ShReviewSession> sessions(
             @RequestParam(name = "limit", required = false, defaultValue = "50") int limit) {
         return shReviewService.sessions(limit);
+    }
+
+    /**
+     * How much is waiting for a human — the console's navigation badge (SH207).
+     *
+     * <p>Its own read rather than a field on {@code /sessions}, because a badge is asked for on
+     * every console render and that listing scans two thousand audit rows to answer.</p>
+     */
+    @GetMapping("/pending")
+    @Operation(summary = "How many agent runs are still awaiting a decision")
+    public ShReviewPending pending() {
+        return shReviewService.pending();
     }
 
     /** One run's changes, oldest first. */

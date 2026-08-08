@@ -1,6 +1,7 @@
 import { AppFooter } from "@/components/app-footer"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { ReviewPendingProvider } from "@/contexts/review-pending.context"
 import { UserProvider } from "@/contexts/user.context"
 import React from "react"
 import { Outlet } from "react-router-dom"
@@ -8,6 +9,8 @@ import { Outlet } from "react-router-dom"
 export default function ConsoleRootPage() {
   return (
     <UserProvider>
+      {/* SH207 — outside the sidebar, because the review queue invalidates what the badge reads. */}
+      <ReviewPendingProvider>
       <SidebarProvider
         defaultOpen={false}
         style={{
@@ -22,6 +25,7 @@ export default function ConsoleRootPage() {
           <AppFooter />
         </SidebarInset>
       </SidebarProvider>
+      </ReviewPendingProvider>
     </UserProvider>
   )
 }

@@ -6,6 +6,7 @@
   "review.changesBy": "{{count}} alteração(ões) por {{actor}}",
   "review.unknownActor": "um agente",
   "review.pending": "{{count}} para revisar",
+  "review.pendingSessions": "{{count}} execução(ões) de agente aguardando revisão",
   "review.approve": "Aprovar",
   "review.revert": "Reverter",
   "review.approved": "{{count}} post(s) publicado(s)",

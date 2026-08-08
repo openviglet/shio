@@ -32,6 +32,33 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     Optional<ShPostUnified> findByIdAndState(String id, ShPostState state);
 
+    /**
+     * SH207 — the state rows of these posts, in one query: {@code [id, state, modified, published]}.
+     *
+     * <h2>Why the dates and not just the states</h2>
+     *
+     * <p>"Is there a {@code DRAFT} row" is <b>not</b> the same question as "is there unpublished
+     * work", and the difference is the whole reason this exists. {@link #publish} writes a
+     * {@code PUBLISHED} row and <em>keeps</em> the draft — the draft is the editable copy, so every
+     * post that has ever existed has one forever. A count built on the draft's presence therefore
+     * never goes down, which is what {@code ShReviewSession.pending} does today.</p>
+     *
+     * <p>The honest test needs both rows: a draft with no published twin has never been published,
+     * and a draft modified after its twin's publication has edits nobody has released.</p>
+     *
+     * <h2>Why one query</h2>
+     *
+     * <p>{@link #findByIdAndState} answers this one id at a time, which is what the review queue's
+     * summary does once per audit row. Affordable on a page somebody opened deliberately; not on
+     * what a navigation badge asks for on every render.</p>
+     *
+     * <p>Columns and not entities: fetching the rows would drag every field and a lazy site across
+     * to compare two instants.</p>
+     */
+    @Query("select p.id, p.state, p.modifiedDate, p.publicationDate, p.date from ShPostUnified p "
+            + "where p.id in :ids")
+    List<Object[]> findStateRowsOf(@Param("ids") Collection<String> ids);
+
     List<ShPostUnified> findById(String id);
 
     List<ShPostUnified> findByShFolderAndState(ShFolder shFolder, ShPostState state);
