@@ -384,26 +384,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.7 The delivery proof fetches inside a read transaction (SH206)
-
-SH141 runs its network pass inside `verify()`'s read-only transaction, holding a pooled
-connection for the duration. That was accepted with the cost written down and bounded three ways
-— a 50-request cap, a 15-second wall-clock budget, fail-fast per unreachable origin — which
-makes it *safe*, not right: on a slow front end a verification call still occupies a connection
-for fifteen seconds doing no database work at all.
-
-The shape that removes it is not subtle: gather the targets inside the transaction (they are
-plain strings — origins, paths, addresses), close it, fetch, then assemble the findings. The
-reason it was not done first is structural rather than intellectual. `verify()` is a single
-transactional entry point that the checks all read entities through, and Spring's proxying means
-a self-call cannot change propagation — so this needs the read pass and the report assembly
-separated into two beans, which is a refactor of the block's largest class and wants to be its
-own change rather than a rider on the feature that exposed it.
-
-Worth stating for whoever does it: the fetches must stay *bounded* afterwards. The transaction
-was never the only reason for the cap and the budget — a verification call that takes four
-minutes is a hang whether or not it holds a connection.
-
 ### IX.8 The handoff has no console banner (SH207)
 
 SH104 shipped the handoff as `shio report`, which is right for where a handoff usually

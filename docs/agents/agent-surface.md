@@ -499,6 +499,21 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   no URL is a **warning** when the group arrived by default and a **400** when the caller named it
   (a group that joined on its own must not fail a call that never asked); and the pass is bounded
   by `shio.agent.verify.max-fetches` + `fetch-budget-millis`, with every cut in `notes`.
+  **The fetches happen outside the read transaction (SH206).** They used to run inside it, holding a
+  pooled connection for the whole network pass — bounded three ways, which made it *safe* rather than
+  right: a slow front end occupied a connection for fifteen seconds doing no database work. `verify()`
+  is now three phases — **read** (every database access, including the delivery *gather*), **fetch**,
+  **assemble** — and the transaction spans only the first. Two consequences to keep. The read pass
+  returns a `Plan` holding **no entity**, because `Scan` is full of `ShPostUnified`/`ShSite` that
+  detach at commit and a slow front end would otherwise become a `LazyInitializationException`. And
+  it is a **`TransactionTemplate`, not a second bean**: §IX.7 proposed splitting the class because
+  `verify()` calling its own annotated method is a self-invocation that never crosses the proxy, and
+  a programmatic boundary sidesteps that *and* fixes the case a bean split would not have —
+  `ShAgentProofService` calls `verify()` from inside its own transaction, so on that path the fetches
+  were never in a transaction this class opened. The bounds stay: a verification call that takes four
+  minutes is a hang whether or not it holds a connection. `ShAgentVerifyTransactionTest` asserts it on
+  the *calling* thread — `TransactionSynchronizationManager` is thread-local, so a loopback server's
+  handler would have reported "no transaction" no matter what.
   **Coverage is a note, and marker counting is settled as impossible here (SH302).** A clean pass
   emitted nothing at all, so forty proved pages and zero proved pages read identically — it now says
   how many it proved per site. Counting SH299's defect markers in the delivered body would be a

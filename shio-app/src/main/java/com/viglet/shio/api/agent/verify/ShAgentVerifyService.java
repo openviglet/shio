@@ -23,7 +23,11 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.interceptor.NoRollbackRuleAttribute;
+import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.ShAddressResolver;
@@ -109,8 +113,12 @@ import tools.jackson.databind.ObjectMapper;
  * @since 2026.3
  */
 @Service
+// SH206 — the class-level @Transactional this used to carry is now a TransactionTemplate built in
+// the constructor, with the same two settings (read-only; a teaching exception does not mark
+// rollback, so a caller that already had a transaction is not poisoned by our 400). It moved
+// because an annotation cannot end a transaction in the middle of a method, and the SH141 network
+// pass has to happen after the reads and before the report. See `verify` and `READ_PASS`.
 // SH345 — see ShAgentSiteAccess.
-@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentVerifyService {
 
     private static final List<ShPostState> BOTH_STATES =
@@ -171,6 +179,37 @@ public class ShAgentVerifyService {
     private final ShPageRenderService pageRenderService;
     private final ShSiteAssets siteAssets;
 
+    /**
+     * SH206 — the read pass's transaction, opened and <b>closed</b> programmatically.
+     *
+     * <h2>Why this is not the annotation it replaces</h2>
+     *
+     * <p>An annotation cannot end a transaction in the middle of a method, and that is precisely
+     * what this needs: SH141's network pass has to run after every database read and before the
+     * findings are assembled. With the class-level {@code @Transactional} the fetches happened
+     * <em>inside</em> the read transaction, holding a pooled connection for as long as the network
+     * took — bounded to 15 seconds and 50 requests, which made it safe rather than right.</p>
+     *
+     * <p><b>Programmatic rather than a second bean.</b> §IX.7 proposed splitting the read pass and
+     * the report assembly into two beans, because {@code verify()} calling an annotated method of
+     * its own is a self-invocation that never crosses Spring's proxy. That is true and a
+     * {@code TransactionTemplate} does not care: it is not proxy-based, so the boundary can be
+     * drawn inside one method and the block's largest class does not have to be cut in half to
+     * move it.</p>
+     *
+     * <p><b>And it fixes the case a bean split would not have.</b> {@code ShAgentProofService}
+     * calls {@code verify()} from inside its own read-only transaction, so on that path the fetches
+     * were inside a transaction this class did not open. Because this template <em>completes</em>
+     * before the first request rather than merely being a narrower annotation, the connection is
+     * back in the pool on both paths.</p>
+     *
+     * <p>The two settings are the ones the annotation carried. Read-only, because nothing here
+     * writes. And a teaching exception must not mark rollback: it is a 400 the caller asked for,
+     * and on the proof path marking rollback-only would poison a transaction belonging to somebody
+     * else.</p>
+     */
+    private final TransactionTemplate readPass;
+
     public ShAgentVerifyService(ShAgentSiteAccess siteAccess,
                                 ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -185,7 +224,13 @@ public class ShAgentVerifyService {
                                 ShTemplateFieldLint templateFieldLint,
                                 ShTemplateGraph templateGraph,
                                 ShPageRenderService pageRenderService,
-                                ShSiteAssets siteAssets) {
+                                ShSiteAssets siteAssets,
+                                PlatformTransactionManager transactionManager) {
+        RuleBasedTransactionAttribute definition = new RuleBasedTransactionAttribute();
+        definition.setReadOnly(true);
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        definition.setRollbackRules(List.of(new NoRollbackRuleAttribute(ShTeachingException.class)));
+        this.readPass = new TransactionTemplate(transactionManager, definition);
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -227,6 +272,58 @@ public class ShAgentVerifyService {
                 ? properties.getVerify().getDefaultLimit()
                 : Math.min(limit, properties.getVerify().getMaxLimit());
 
+        // SH206 — three phases, and the transaction spans only the first.
+        Plan plan = readPass.execute(status ->
+                read(site, checks, folder, address, since, requested));
+
+        // The read transaction has committed. Everything below works on plain data — Strings in
+        // `Target`, Strings in `Finding` — so the connection is in the pool while the network is
+        // slow, which is the whole of this task. The bounds stay: SH141's cap and budget were
+        // never only about the connection, and a verification call that takes four minutes is a
+        // hang whether or not it holds one.
+        if (!plan.targets().isEmpty()) {
+            Fetches fetches = fetch(plan.targets());
+            report(ShAgentCheck.DELIVERY.wireName(), plan.targets(), fetches, plan.siteNames(),
+                    plan.findings(), plan.notes());
+        }
+
+        List<Finding> ordered = plan.findings().stream().sorted(ORDER).toList();
+        int errors = (int) ordered.stream().filter(Finding::isError).count();
+        List<Finding> capped = ordered.size() > cap ? ordered.subList(0, cap) : ordered;
+        return new ShAgentReport(
+                errors == 0,
+                requested.stream().sorted().map(ShAgentCheck::wireName).toList(),
+                plan.checked(),
+                errors,
+                ordered.size() - errors,
+                ordered.size(),
+                ordered.size() > cap,
+                // Absent rather than `false` on a full pass: a flag that is always present
+                // is a flag nobody reads, and this one has to be read.
+                plan.partial() ? Boolean.TRUE : null,
+                plan.describe(),
+                plan.notes().isEmpty() ? null : List.copyOf(plan.notes()),
+                List.copyOf(capped));
+    }
+
+    /**
+     * Everything that touches the database, in one transaction that ends when this returns.
+     *
+     * <p>SH206 — this is the old body of {@link #verify}, minus the network pass and the findings
+     * it implies. Two things moved and both were free. <b>{@code delivery} now only gathers</b>:
+     * it resolves the origins and the target URLs, which is the part that reads entities, and
+     * hands back plain Strings. And <b>{@code pages} runs before that gathering completes</b>
+     * rather than after the fetch — the two never depended on each other, and every finding is
+     * sorted by {@link #ORDER} at the end, so no report changes shape.</p>
+     *
+     * <p>What this returns holds <b>no entity</b>. That is the property that makes the phase split
+     * correct rather than merely tidy: {@code Scan} is full of {@code ShPostUnified} and
+     * {@code ShSite}, all of which detach the moment this transaction commits, so a
+     * {@code Plan} carrying one would turn a slow front end into a
+     * {@code LazyInitializationException}.</p>
+     */
+    private Plan read(String site, String checks, String folder, String address, String since,
+                      Set<ShAgentCheck> requested) {
         List<ShSite> sites = siteAccess.readable(site);
         ShAgentVerifyScope scope = scope(sites, site, folder, address, since);
         Scan scan = scan(sites, scope);
@@ -246,9 +343,9 @@ public class ShAgentVerifyService {
         if (requested.contains(ShAgentCheck.ROUTES)) {
             routes(scan, findings, declared, proving ? unproven : null, notes, scope.partial());
         }
-        if (proving) {
-            delivery(scan, findings, notes, unproven, explicitlyAsked(checks));
-        }
+        Delivery delivery = proving
+                ? delivery(scan, findings, unproven, explicitlyAsked(checks))
+                : Delivery.NONE;
         // SH516 — after routes, because it asks the strictly larger question about the same site:
         // routes reads the content graph, this reads the page that graph produces.
         if (requested.contains(ShAgentCheck.PAGE)) {
@@ -257,24 +354,27 @@ public class ShAgentVerifyService {
         if (requested.contains(ShAgentCheck.DIAGNOSTICS)) {
             diagnostics(findings);
         }
+        return new Plan(findings, notes, delivery.targets(), delivery.siteNames(),
+                scan.checked(), scope.partial(), scope.describe());
+    }
 
-        List<Finding> ordered = findings.stream().sorted(ORDER).toList();
-        int errors = (int) ordered.stream().filter(Finding::isError).count();
-        List<Finding> capped = ordered.size() > cap ? ordered.subList(0, cap) : ordered;
-        return new ShAgentReport(
-                errors == 0,
-                requested.stream().sorted().map(ShAgentCheck::wireName).toList(),
-                scan.checked(),
-                errors,
-                ordered.size() - errors,
-                ordered.size(),
-                ordered.size() > cap,
-                // Absent rather than `false` on a full pass: a flag that is always present
-                // is a flag nobody reads, and this one has to be read.
-                scope.partial() ? Boolean.TRUE : null,
-                scope.describe(),
-                notes.isEmpty() ? null : List.copyOf(notes),
-                List.copyOf(capped));
+    /**
+     * The read pass's whole output — plain data, so it outlives the transaction (SH206).
+     *
+     * @param findings mutable on purpose: the delivery report appends to it after the fetch, which
+     *                 is the one thing that happens between here and the response
+     * @param targets  the URLs to prove; empty when {@code delivery} was not requested, which is
+     *                 also how {@link #verify} knows to skip the network entirely
+     */
+    private record Plan(List<Finding> findings, List<String> notes, List<Target> targets,
+                        Map<String, String> siteNames, int checked, boolean partial,
+                        String describe) {
+    }
+
+    /** What the delivery gather resolved, before anything is fetched (SH206). */
+    private record Delivery(List<Target> targets, Map<String, String> siteNames) {
+
+        static final Delivery NONE = new Delivery(List.of(), Map.of());
     }
 
     /**
@@ -1944,16 +2044,19 @@ public class ShAgentVerifyService {
      * copies of it is a report nobody reads. All three write a {@code note}, because a
      * shortened list of defects reads exactly like a shorter list of defects (SH138).</p>
      *
-     * <h2>The cost this accepts</h2>
+     * <h2>The cost this used to accept, and no longer does (SH206)</h2>
      *
-     * <p>The fetches happen inside the report's read transaction, which holds a connection for
-     * as long as the network pass takes. That is why the budget is a hard 15 seconds by default
-     * and why the group is not in the default set unless an operator has enabled fetching:
-     * the alternative — two round trips and a report that cannot answer {@code ok} — costs the
-     * caller more than it costs the pool.</p>
+     * <p>The fetches happened inside the report's read transaction, holding a connection for as
+     * long as the network pass took. Bounded three ways, which made it safe rather than right: on
+     * a slow front end a verification call still occupied a connection for fifteen seconds doing
+     * no database work at all. This method is now the <b>gather</b> only — it reads entities and
+     * yields plain Strings — and {@link #verify} fetches after the transaction has committed.</p>
+     *
+     * <p>The bounds stay, for the reason §IX.7 asked them to: the transaction was never their only
+     * justification, and a verification call that takes four minutes is a hang either way.</p>
      */
-    private void delivery(Scan scan, List<Finding> findings, List<String> notes,
-                          List<Unresolved> unproven, boolean explicit) {
+    private Delivery delivery(Scan scan, List<Finding> findings, List<Unresolved> unproven,
+                              boolean explicit) {
         String check = ShAgentCheck.DELIVERY.wireName();
         List<ShPostUnified> pages = scan.published().stream()
                 .filter(post -> post.getShSite() != null && !isBlank(post.getFurl()))
@@ -1963,11 +2066,16 @@ public class ShAgentVerifyService {
         unproven.forEach(link -> withSubjects.add(link.siteId()));
 
         Map<String, String> origins = new LinkedHashMap<>();
+        // SH206 — resolved here because this is the last place a site entity is in hand. It also
+        // replaces `siteById`, which walked `siteAccess.readable()` once per unreachable origin and
+        // once per proved page: a repository read per finding, on a list this loop already holds.
+        Map<String, String> siteNames = new LinkedHashMap<>();
         for (String siteId : withSubjects) {
             ShSite owner = scan.siteById().get(siteId);
             if (owner == null) {
                 continue;
             }
+            siteNames.put(siteId, owner.getName());
             if (ShAgentDeliveryProbe.join(owner.getUrl(), "/") == null) {
                 findings.add(Finding.warning(check, "site-url-missing",
                         ShAddress.site(owner.getName()).toString(), null,
@@ -1983,12 +2091,10 @@ public class ShAgentVerifyService {
             if (explicit && !withSubjects.isEmpty()) {
                 throw new NoDeliveryOriginException();
             }
-            return;
+            return Delivery.NONE;
         }
 
-        List<Target> targets = targets(pages, unproven, origins);
-        Fetches fetches = fetch(targets, origins.keySet());
-        report(check, targets, fetches, findings, notes);
+        return new Delivery(targets(pages, unproven, origins), siteNames);
     }
 
     /**
@@ -2030,7 +2136,7 @@ public class ShAgentVerifyService {
      * the site, and asking twelve times would spend the budget proving what the first answer
      * already said.</p>
      */
-    private Fetches fetch(List<Target> targets, Set<String> siteIds) {
+    private Fetches fetch(List<Target> targets) {
         Map<String, ShAgentDeliveryProbe.Outcome> byUrl = new LinkedHashMap<>();
         Map<String, String> unreachable = new LinkedHashMap<>();
         int max = properties.getVerify().getMaxFetches();
@@ -2068,16 +2174,23 @@ public class ShAgentVerifyService {
                 skipped++;
             }
         }
-        return new Fetches(byUrl, unreachable, exhausted, skipped, siteIds);
+        return new Fetches(byUrl, unreachable, exhausted, skipped);
     }
 
-    /** The findings the fetches imply — one per target, plus one per unreachable origin. */
-    private void report(String check, List<Target> targets, Fetches fetches,
-                        List<Finding> findings, List<String> notes) {
+    /**
+     * The findings the fetches imply — one per target, plus one per unreachable origin.
+     *
+     * <p>SH206 — runs <b>after</b> the read transaction has committed, so it touches no entity.
+     * {@code siteNames} is what that costs: the only thing this needed a site for was its name,
+     * resolved once per site in the gather instead of once per finding through the repository.</p>
+     */
+    private static void report(String check, List<Target> targets, Fetches fetches,
+                               Map<String, String> siteNames, List<Finding> findings,
+                               List<String> notes) {
         fetches.unreachable().forEach((siteId, failure) -> {
-            ShSite owner = siteById(siteId);
+            String owner = siteNames.get(siteId);
             findings.add(Finding.error(check, "delivery-unreachable",
-                    owner == null ? null : ShAddress.site(owner.getName()).toString(), null,
+                    owner == null ? null : ShAddress.site(owner).toString(), null,
                     "The front end for this site did not answer (" + failure + "), so none of "
                             + "its routes could be proved.",
                     "Start the front end, or correct the site's URL. Until it answers, run "
@@ -2109,7 +2222,7 @@ public class ShAgentVerifyService {
                                     : "Fix the link, publish the page it means, or add the route "
                                             + "to the front end."));
         }
-        deliveryCoverage(targets, fetches, notes);
+        deliveryCoverage(targets, fetches, siteNames, notes);
         if (fetches.exhausted() && fetches.skipped() > 0) {
             notes.add("The delivery check stopped after " + fetches.byUrl().size()
                     + " request(s) and left " + fetches.skipped()
@@ -2139,7 +2252,8 @@ public class ShAgentVerifyService {
      * identically. Coverage is now a note, per site, because "silence is not evidence" is the thing
      * this check is most easily wrong about.</p>
      */
-    private void deliveryCoverage(List<Target> targets, Fetches fetches, List<String> notes) {
+    private static void deliveryCoverage(List<Target> targets, Fetches fetches,
+                                         Map<String, String> siteNames, List<String> notes) {
         Map<String, Integer> provedBySite = new TreeMap<>();
         Set<String> counted = new LinkedHashSet<>();
         for (Target target : targets) {
@@ -2152,21 +2266,13 @@ public class ShAgentVerifyService {
             if (outcome == null || !outcome.served()) {
                 continue;
             }
-            ShSite owner = siteById(target.siteId());
-            String name = owner == null ? target.siteId() : owner.getName();
+            String name = siteNames.getOrDefault(target.siteId(), target.siteId());
             provedBySite.merge(name, 1, Integer::sum);
         }
         provedBySite.forEach((site, proved) -> notes.add("The delivery check proved " + proved
                 + " published page(s) of '" + site + "' by fetching them. What it proves is that the "
                 + "route answers: the page's own markup is the content checks' subject, and an "
                 + "external front end carries none of Shio's render markers to look at."));
-    }
-
-    private ShSite siteById(String siteId) {
-        return siteAccess.readable().stream()
-                .filter(site -> siteId.equals(site.getId()))
-                .findFirst()
-                .orElse(null);
     }
 
     /**
@@ -2197,9 +2303,12 @@ public class ShAgentVerifyService {
      * @param exhausted a bound stopped the pass rather than the target list running out
      * @param skipped   targets left unproved, so the note can say how many
      */
+    // SH206 — a fifth component, `siteIds`, was carried in and never read by anything. Removed
+    // while restructuring this call rather than left: the phase split gives the record a new
+    // journey across a transaction boundary, and a dead field is one more thing to reason about
+    // on the way.
     private record Fetches(Map<String, ShAgentDeliveryProbe.Outcome> byUrl,
-                           Map<String, String> unreachable, boolean exhausted, int skipped,
-                           Set<String> siteIds) {
+                           Map<String, String> unreachable, boolean exhausted, int skipped) {
     }
 
     // --- SH103: recent asynchronous failures --------------------------------

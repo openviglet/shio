@@ -48,6 +48,20 @@ import org.junit.jupiter.api.Test;
  * argument disqualifies it: nobody reads logs, which is the reason the incident log exists at all.
  * A build failure names the new path to the person adding it, at the moment they add it.</p>
  *
+ * <h2>Two things SH206 taught it</h2>
+ *
+ * <p><b>It read prose.</b> The scan ran over the whole file, so a javadoc sentence containing
+ * {@code @Transactional} counted as a declaration — and one explaining why a class no longer has
+ * the annotation failed the build for having mentioned it. A lint whose finding can be produced by
+ * writing about the rule is one people learn to route around by not writing about it.</p>
+ *
+ * <p><b>And it could not see a transaction that is not an annotation.</b> SH206 moved
+ * {@code ShAgentVerifyService} to a {@link org.springframework.transaction.support.TransactionTemplate}
+ * because an annotation cannot end a transaction in the middle of a method. With the annotation
+ * gone the file had nothing left to match, so the class became <em>compliant by being invisible</em>
+ * — which is the same answer this lint would give a class that genuinely rendered inside a write.
+ * A programmatic boundary is now checked on its own terms.</p>
+ *
  * @author Alexandre Oliveira
  */
 class ShRenderCacheReachLintTest {
@@ -61,6 +75,13 @@ class ShRenderCacheReachLintTest {
     private static final Pattern TRANSACTIONAL =
             Pattern.compile("@Transactional(?:\\s*\\(([^)]*)\\))?");
 
+    /** SH206 — a transaction boundary drawn in code rather than declared. */
+    private static final Pattern PROGRAMMATIC =
+            Pattern.compile("new\\s+TransactionTemplate\\s*\\(");
+
+    /** What makes a programmatic one read-only, on either the template or its definition. */
+    private static final Pattern SETS_READ_ONLY = Pattern.compile("setReadOnly\\s*\\(\\s*true\\s*\\)");
+
     @Test
     @DisplayName("SH313: nothing renders from inside a writing transaction")
     void nothingRendersInsideAWritingTransaction() {
@@ -70,13 +91,21 @@ class ShRenderCacheReachLintTest {
                 callers.size(), new TreeMap<>(callers).keySet());
 
         List<String> writing = new ArrayList<>();
-        callers.forEach((name, body) -> {
+        callers.forEach((name, source) -> {
+            // SH206 — code only. This used to scan the raw file, so a javadoc sentence mentioning
+            // the annotation was indistinguishable from declaring it.
+            String body = code(source);
             Matcher matcher = TRANSACTIONAL.matcher(body);
             while (matcher.find()) {
                 String arguments = matcher.group(1) == null ? "" : matcher.group(1);
                 if (!arguments.contains("readOnly")) {
                     writing.add(name + " -> @Transactional(" + arguments + ")");
                 }
+            }
+            // SH206 — and a boundary built rather than declared has to say the same thing. Without
+            // this, moving off the annotation silently removes a file from this lint's reach.
+            if (PROGRAMMATIC.matcher(body).find() && !SETS_READ_ONLY.matcher(body).find()) {
+                writing.add(name + " -> new TransactionTemplate(...) with no setReadOnly(true)");
             }
         });
 
@@ -89,6 +118,81 @@ class ShRenderCacheReachLintTest {
                         lint. Either render outside the write, or say in the commit why this path \
                         pays that and add it here.""")
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("the scan reads code, not prose, and sees a programmatic boundary")
+    void theScanReadsCodeAndSeesBothKinds() {
+        // Guards the guard (SH275's habit), and both halves are cases SH206 actually hit.
+        String prose = """
+                /**
+                 * This class used to carry @Transactional and no longer does.
+                 */
+                // and a line comment mentioning @Transactional(readOnly = false) too
+                public class Example {
+                }
+                """;
+        assertThat(TRANSACTIONAL.matcher(code(prose)).find())
+                .as("a sentence about the rule must not be readable as a breach of it")
+                .isFalse();
+
+        String declared = """
+                public class Example {
+                    @Transactional
+                    public void write() {
+                    }
+                }
+                """;
+        assertThat(TRANSACTIONAL.matcher(code(declared)).find())
+                .as("and the real declaration still matches, or stripping comments broke the lint")
+                .isTrue();
+
+        String programmatic = "this.readPass = new TransactionTemplate(manager, definition);";
+        assertThat(PROGRAMMATIC.matcher(programmatic).find()).isTrue();
+        assertThat(SETS_READ_ONLY.matcher(programmatic).find())
+                .as("a template with no read-only setting is the writing case, spelled in code")
+                .isFalse();
+        assertThat(SETS_READ_ONLY.matcher("definition.setReadOnly(true);").find()).isTrue();
+    }
+
+    /**
+     * The file with its comments removed (SH206).
+     *
+     * <p>String and text-block aware, because this repository is full of both and a URL's
+     * {@code //} inside a literal is not a comment. Deliberately a small state machine rather than
+     * a regex: comment stripping is the one job a regex cannot do on a language with nested quoting
+     * rules, and getting it wrong here silently blinds the lint rather than failing it.</p>
+     */
+    private static String code(String source) {
+        StringBuilder out = new StringBuilder(source.length());
+        int i = 0;
+        while (i < source.length()) {
+            char c = source.charAt(i);
+            if (source.startsWith("\"\"\"", i)) {
+                int end = source.indexOf("\"\"\"", i + 3);
+                int stop = end < 0 ? source.length() : end + 3;
+                out.append(source, i, stop);
+                i = stop;
+            } else if (c == '"' || c == '\'') {
+                int j = i + 1;
+                while (j < source.length() && source.charAt(j) != c) {
+                    j += source.charAt(j) == '\\' ? 2 : 1;
+                }
+                int stop = Math.min(j + 1, source.length());
+                out.append(source, i, stop);
+                i = stop;
+            } else if (source.startsWith("//", i)) {
+                int end = source.indexOf('\n', i);
+                i = end < 0 ? source.length() : end;
+            } else if (source.startsWith("/*", i)) {
+                int end = source.indexOf("*/", i + 2);
+                i = end < 0 ? source.length() : end + 2;
+            } else {
+                out.append(c);
+                i++;
+            }
+        }
+        return out.toString();
     }
 
     @Test
