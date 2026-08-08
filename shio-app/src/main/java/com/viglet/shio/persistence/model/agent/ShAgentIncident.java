@@ -105,9 +105,32 @@ public class ShAgentIncident implements Serializable {
     @Column(name = "site_id", length = 255)
     private String siteId;
 
-    /** The shortest thing that identifies the cause. */
+    /**
+     * The shortest thing that identifies the cause, <b>as of the most recent occurrence</b>.
+     *
+     * <p>SH205 — this is prose for a human and is no longer the fold key; {@link #getSignature()}
+     * is. It is overwritten on a repeat, which is what makes the signature's normalization safe to
+     * be lossy: the detail the key discards is still here, at its latest value.</p>
+     */
     @Column(name = "message", length = TEXT_LENGTH, nullable = false)
     private String message;
+
+    /**
+     * SH205 — the fold identity: {@code message} with its varying detail stripped.
+     *
+     * <p>The key was the message itself, so <i>"gave up after 3 attempt(s), last status 500"</i>
+     * and the same webhook's 503 on the next publish were two rows. Folding therefore failed on a
+     * flapping target — the highest-volume case — and the near-duplicates it produced evicted
+     * unrelated incidents through the cap, looking exactly like several real problems.</p>
+     *
+     * <p>Nullable only for rows written before this column existed: the backfill gives them their
+     * own message, so they keep the identity they were recorded under and age out rather than
+     * merging into rows a reader has already seen as separate. Code never writes null.</p>
+     *
+     * @see com.viglet.shio.api.agent.diagnostics.ShAgentIncidentSignature
+     */
+    @Column(name = "signature", length = TEXT_LENGTH)
+    private String signature;
 
     /** What to do about it (law P6), when there is anything generic to say. */
     @Column(name = "fix", length = 1000)

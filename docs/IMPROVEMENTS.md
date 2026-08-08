@@ -384,27 +384,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.6 The incident fold key is the human message (SH205)
-
-Folding is the load-bearing decision in SH144 — it is what makes a durable table affordable,
-because the row count tracks the number of distinct *problems* rather than the traffic. The key
-is `(kind, subject, message)`, and the message is prose written for a human: *"gave up after 3
-attempt(s), last status 500"*. The same broken webhook answering 503 on the next publish is a
-different message, therefore a different row.
-
-So folding fails precisely where it matters most — a flapping target, which is the highest-volume
-case — and the rows it fails to fold then push against the cap and evict unrelated incidents.
-The failure is invisible: the report looks like several distinct problems, which is what it
-would look like if there really were several.
-
-The fix is the split SH142 already needed for a different reason: an identity separate from its
-prose. A `signature` — kind plus subject plus a normalized cause, with the varying detail
-stripped — folds correctly, while `message` keeps the detail of the most recent occurrence for
-whoever reads it. The normalization is the whole design question, and the safe default is a
-short allow-list of things known to vary (an attempt count, a status code, a duration) rather
-than a clever generic scrubber, because a scrubber that over-normalizes folds two genuinely
-different failures into one and there is nothing in the payload that would show it.
-
 ### IX.7 The delivery proof fetches inside a read transaction (SH206)
 
 SH141 runs its network pass inside `verify()`'s read-only transaction, holding a pooled
@@ -427,18 +406,19 @@ minutes is a hang whether or not it holds a connection.
 
 ### IX.8 The handoff has no console banner (SH207)
 
-SH104 shipped the handoff as `shio report`, which is right for where a handoff usually lands: a
-PR body, written by whatever ran the agent. §IX.6 described a second destination — a console
-banner — and that half is unshipped, which leaves the curator who never opens a terminal with no
-answer to "what did the agent do since I last looked".
+SH104 shipped the handoff as `shio report`, which is right for where a handoff usually
+lands: a PR body, written by whatever ran the agent. Its design named a second
+destination — a console banner — and that half is unshipped, which leaves the curator
+who never opens a terminal with no answer to "what did the agent do since I last
+looked".
 
-It is a small feature over already-composed data (the same three reads), and its natural home is
-the SH109 review queue page, which is already the console's answer to "what did an agent do, and
-do I accept it". The one design question is the position: a banner that shows on every page is
-noise, and a banner only on the review page is a page nobody visits unless they already suspect
-something. The honest version is probably a count in the navigation that opens the report — the
-same shape as an unread indicator, which is a pattern a curator already knows how to ignore
-safely when it is zero.
+It is a small feature over already-composed data (the same three reads), and its natural
+home is the SH109 review queue page, which is already the console's answer to "what did
+an agent do, and do I accept it". The one design question is the position: a banner that
+shows on every page is noise, and a banner only on the review page is a page nobody
+visits unless they already suspect something. The honest version is probably a count in
+the navigation that opens the report — the same shape as an unread indicator, which is a
+pattern a curator already knows how to ignore safely when it is zero.
 
 ### IX.9 A backtick in the CLI's help text breaks the whole binary (SH208)
 

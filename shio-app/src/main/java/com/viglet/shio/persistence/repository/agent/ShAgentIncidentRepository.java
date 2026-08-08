@@ -50,31 +50,32 @@ public interface ShAgentIncidentRepository extends JpaRepository<ShAgentIncident
      * predicate would not get. The table is capped at 500 rows, so nothing here is worth a query
      * plan argument.</p>
      */
-    default Optional<ShAgentIncident> findFold(String kind, String subject, String message,
+    default Optional<ShAgentIncident> findFold(String kind, String subject, String signature,
                                                String siteId) {
         if (subject == null) {
             return siteId == null
-                    ? findByKindAndSubjectIsNullAndMessageAndSiteIdIsNull(kind, message)
-                    : findByKindAndSubjectIsNullAndMessageAndSiteId(kind, message, siteId);
+                    ? findByKindAndSubjectIsNullAndSignatureAndSiteIdIsNull(kind, signature)
+                    : findByKindAndSubjectIsNullAndSignatureAndSiteId(kind, signature, siteId);
         }
         return siteId == null
-                ? findByKindAndSubjectAndMessageAndSiteIdIsNull(kind, subject, message)
-                : findByKindAndSubjectAndMessageAndSiteId(kind, subject, message, siteId);
+                ? findByKindAndSubjectAndSignatureAndSiteIdIsNull(kind, subject, signature)
+                : findByKindAndSubjectAndSignatureAndSiteId(kind, subject, signature, siteId);
     }
 
-    Optional<ShAgentIncident> findByKindAndSubjectAndMessageAndSiteId(String kind, String subject,
-                                                                     String message, String siteId);
+    Optional<ShAgentIncident> findByKindAndSubjectAndSignatureAndSiteId(String kind, String subject,
+                                                                       String signature,
+                                                                       String siteId);
 
-    Optional<ShAgentIncident> findByKindAndSubjectAndMessageAndSiteIdIsNull(String kind,
-                                                                           String subject,
-                                                                           String message);
+    Optional<ShAgentIncident> findByKindAndSubjectAndSignatureAndSiteIdIsNull(String kind,
+                                                                             String subject,
+                                                                             String signature);
 
-    Optional<ShAgentIncident> findByKindAndSubjectIsNullAndMessageAndSiteId(String kind,
-                                                                           String message,
-                                                                           String siteId);
+    Optional<ShAgentIncident> findByKindAndSubjectIsNullAndSignatureAndSiteId(String kind,
+                                                                             String signature,
+                                                                             String siteId);
 
-    Optional<ShAgentIncident> findByKindAndSubjectIsNullAndMessageAndSiteIdIsNull(String kind,
-                                                                                 String message);
+    Optional<ShAgentIncident> findByKindAndSubjectIsNullAndSignatureAndSiteIdIsNull(String kind,
+                                                                                    String signature);
 
     /**
      * Everything strictly after the {@code (lastSeen, id)} position, oldest first.

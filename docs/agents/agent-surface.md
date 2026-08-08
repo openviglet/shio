@@ -652,6 +652,21 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   occurrence, which is what makes the table grow with the number of *problems*; and the feed
   position is **`lastSeen`**, so an incident that is still happening is re-delivered with a
   higher count rather than being reported once, ever.
+  **The key is a `signature`, not the message (SH205).** The message is prose for a human — "gave
+  up after 3 attempt(s), last status 500" — so the same webhook answering 503 next publish was a
+  *different row*, and folding failed on a **flapping target**, which is the highest-volume case
+  and the one whose every occurrence differs. The near-duplicates then evicted unrelated incidents
+  through the cap, invisibly: several near-identical rows is what a report would look like if there
+  really were several problems. `ShAgentIncidentSignature` collapses runs of digits — every varying
+  part of every message here is a number (attempt count, status code, Jackson's `line: 1, column: 5`,
+  a timeout, a port), including inside exception text nobody could enumerate. The standing objection
+  to a scrubber is that over-folding hides a failure and nothing shows it; the split answers it
+  rather than ignoring it — **`message` is overwritten with the most recent occurrence**, so a wrong
+  fold is one row carrying the newest text, not one row that swallowed the other's. Case is kept
+  deliberately, and the collision would have to survive an identical kind, subject *and* site.
+  Note the asymmetry with `fix`/`frames`, which keep the **first** value: a repeat arriving without
+  them must not erase what the first one knew, while a reader asking "what is it doing now" wants
+  the current status code. Both halves asserted by `ShAgentIncidentSignatureTest`.
   **`REQUIRES_NEW` was on an overload nobody called, for two blocks (SH358).** `record` was a
   pair — a five-argument method carrying the annotation and delegating to a six-argument one
   carrying nothing — and the only caller took the second, so every incident this product ever

@@ -117,11 +117,21 @@ public class ShAgentIncidentStore {
             // SH204 — the site is part of the fold key, so one URL two sites subscribe stays two
             // rows. Folding them would give one site's operator the other's failure and hide it
             // from the one whose it is, which is worse than not attributing it at all.
+            // SH205 — and the *signature* is the key, not the message: the message is prose with an
+            // attempt count and a status code in it, so a flapping target used to produce a row per
+            // occurrence and evict everything else through the cap.
+            String signature = ShAgentIncidentSignature.of(message);
             Optional<ShAgentIncident> existing =
-                    repository.findFold(kind.name(), subject, message, siteId);
+                    repository.findFold(kind.name(), subject, signature, siteId);
             if (existing.isPresent()) {
                 ShAgentIncident row = existing.get();
                 row.setOccurrences(row.getOccurrences() + 1);
+                // SH205 — the latest text wins, and this is the half that makes a lossy signature
+                // safe. `fix` and `frames` below keep the *first* value they were given, because a
+                // repeat that arrived without them must not erase what the first one knew; the
+                // message is the opposite case, since a reader asking "what is it doing now" wants
+                // the current status code rather than the one it started with.
+                row.setMessage(message);
                 // Moves the row forward in the feed, so a cursor that already passed it
                 // delivers it again with the higher count — see the entity's class note.
                 row.setLastSeen(when);
@@ -143,6 +153,7 @@ public class ShAgentIncidentStore {
             row.setKind(kind.name());
             row.setSubject(subject);
             row.setMessage(message);
+            row.setSignature(signature);
             row.setFix(fix);
             row.setFrames(frames);
             row.setSiteId(siteId);

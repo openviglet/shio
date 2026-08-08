@@ -1,0 +1,52 @@
+databaseChangeLog:
+  # SH205 — an incident's identity, separated from the prose a human reads.
+  #
+  # Folding is the load-bearing decision in SH144: it is what makes a durable table affordable,
+  # because the row count tracks the number of distinct *problems* rather than the traffic. The key
+  # was `(kind, subject, message)`, and `message` is prose written for a human — "gave up after 3
+  # attempt(s), last status 500". The same broken webhook answering 503 on the next publish is a
+  # different message and so was a different row.
+  #
+  # So folding failed exactly where it mattered most, on a flapping target, which is the
+  # highest-volume case; and the rows it failed to fold pushed against the cap and evicted
+  # unrelated incidents. Invisibly — a report of several near-identical rows is what it would look
+  # like if there really were several problems.
+  #
+  # `signature` is the identity (kind + subject + a cause with the varying detail stripped) and
+  # `message` keeps the detail of the most recent occurrence, which is what makes the normalization
+  # safe to be lossy: nothing a reader needs is discarded, only the thing the key is computed from.
+  #
+  # Same width as `message`, because it is derived from it and can be no longer.
+  - changeSet:
+      id: sh205-agent-incident-signature
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_agent_incident
+                columnName: signature
+      changes:
+        - addColumn:
+            tableName: sh_agent_incident
+            columns:
+              - column:
+                  name: signature
+                  type: VARCHAR(300)
+
+  # Existing rows keep the identity they were recorded under, which is their own message. They will
+  # not fold with rows written after this — correctly: they were folded by the old rule and
+  # re-deriving a signature for them would merge rows that a reader has already seen as separate.
+  # They age out through the cap, and a problem that is still happening gets a new, correctly
+  # folding row on its next occurrence.
+  - changeSet:
+      id: sh205-agent-incident-signature-backfill
+      author: shio
+      changes:
+        - update:
+            tableName: sh_agent_incident
+            columns:
+              - column:
+                  name: signature
+                  valueComputed: message
+            where: signature IS NULL

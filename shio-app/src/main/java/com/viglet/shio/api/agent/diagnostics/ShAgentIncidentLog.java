@@ -191,7 +191,7 @@ public class ShAgentIncidentLog {
                                        boolean lost) {
         for (Incident existing : incidents) {
             if (existing.matches(kind, subjectText, messageText, siteText)) {
-                existing.seenAgain();
+                existing.seenAgain(messageText);
                 return;
             }
         }
@@ -268,7 +268,8 @@ public class ShAgentIncidentLog {
 
         private final Kind kind;
         private final String subject;
-        private final String message;
+        /** SH205 — not final: a repeat overwrites it with the latest occurrence's text. */
+        private String message;
         private final String fix;
         /** SH190 — the throwing location, or null when there is no exception behind this kind. */
         private final String frames;
@@ -308,13 +309,19 @@ public class ShAgentIncidentLog {
                                 String otherSiteId) {
             return kind == otherKind
                     && java.util.Objects.equals(subject, otherSubject)
-                    && java.util.Objects.equals(message, otherMessage)
+                    // SH205 — on the *signature*, so a flapping target folds here exactly as it
+                    // does in the table. Computed on both sides rather than stored, because this
+                    // buffer is bounded at 50 and the comparison is cheaper than the field.
+                    && java.util.Objects.equals(ShAgentIncidentSignature.of(message),
+                            ShAgentIncidentSignature.of(otherMessage))
                     && java.util.Objects.equals(siteId, otherSiteId);
         }
 
-        private void seenAgain() {
+        /** @param latest SH205 — the newest text wins, the same way the stored row's does */
+        private void seenAgain(String latest) {
             count++;
             lastSeen = Instant.now();
+            message = latest;
         }
 
         private Incident copy() {
