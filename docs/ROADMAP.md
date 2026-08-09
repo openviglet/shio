@@ -110,11 +110,19 @@
 - 💭 **SH46** (deps: SH22 ✅) **Nav/feature gating by tenant** — hide SaaS surfaces on single-tenant installs. → §VI.1
 - 💭 **SH47** (deps: SH22 ✅, SH38 ✅) **Per-tenant file storage** — prefix `tenantId` into the id-keyed `ShFileStorageService` layout from `ShTenantContext`. → §VI.1
 
-## Block R — End-user documentation for 2026.3 (docs-shio)
-
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH540** (deps: SH530 ✅) **Nothing on the site is answered by a running Shio** — The transcripts, the preview links and the manifest read are all recordings, so the single claim a visitor cannot check is the one the whole page rests on. → §XIX.11
+
+## Block T — End-user documentation, round two (the curator's half)
+
+- 📋 **SH623** (deps: —) **The administration guide describes AngularJS screens the React console replaced** — A page that describes a shape the product left is worse than a missing one, and dashboard, Media Library, the static-file manager, the webhooks UI and the config pages are all read through it. → §XX.2
+- 📋 **SH624** (deps: —) **None of the curator's lifecycle tools are documented** — Preview tokens, draft-vs-published diff and restore, scheduled publish, the activity view and the trash are five shipped surfaces a curator cannot discover from any page. → §XX.3
+- 📋 **SH625** (deps: —) **The content console has no end-user page at all** — Block R documented the agent's half well and left the surface a curator is in every day undocumented: the browser, the post form, copy/move, select-everything and the trash. → §XX.1
+- 📋 **SH626** (deps: —) **Outbound webhooks are documented only from the consumer side** — SH12 shipped per-site subscriptions and a signed payload, and no page describes the subscription, the payload shape or how to verify the signature. → §XX.4
+- 📋 **SH627** (deps: —) **Content i18n has no page, so the locale axis is undiscoverable** — SH53 shipped linked translations, CDA locale and the checked locale segment, and a reader meets the segment first in a URL nobody explained. → §XX.5
+- 📋 **SH628** (deps: —) **The developer guide names a stack this product left, and neither the agent surface nor the CLI** — It still lists Elasticsearch 9.3.3, so the page a contributor reads first is actively misleading rather than merely thin. → §XX.6
+- 📋 **SH629** (deps: —) **The image epic's operational half is undocumented** — The transform parameters are on the render page and the result cache, the dimension and format limits and signed-URL configuration are the operator's questions, answered nowhere. → §XX.7
 
 ## Non-goals (do NOT add as tasks)
 

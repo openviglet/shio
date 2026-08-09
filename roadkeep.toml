@@ -247,7 +247,10 @@ priority = [
   # generalises: a fresh install following the plugin's own front door reaches the identical
   # dead end. SH596 is the harder half — `diagnostics` is reachable over REST, CLI and
   # console and from **neither** MCP list, and MCP is a plugin user's only surface.
-  "Block R",
+  # Block R came off the queue when SH499 emptied it (2026-08-09). Removed by hand rather than by
+  # `priority drop`, which refuses while the queue lives in this file: it wants `priority migrate`
+  # first, and moving the whole queue into docs/ROADMAP.md is a structural decision that does not
+  # belong inside a block sweep.
   "Block P",
   "Block H",
   "Block K",

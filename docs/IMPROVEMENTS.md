@@ -2047,28 +2047,6 @@ recomputed. And the action vocabulary — `wrote`, `deduped`, `failed`, `collisi
 `skipped` — gains `unchanged`, which `OUTCOME_OF_ACTION` and the download report both
 read; an unchanged asset counted as `wrote` would report work that did not happen.
 
-## XVIII End-user documentation for 2026.3 (Block R)
-
-The published documentation at `docs-shio` describes the 2018 product. Measured against
-the working tree: the words MCP, agent, Universal Editor, Handlebars, blueprint, tenant
-and `post-unified` appear in **zero** of its 19 pages, while Nashorn and `shObject`
-appear across six, and the landing page pins `v2026.1` and sells server-side JavaScript
-rendering plus Hazelcast as the product's four capabilities. Blocks H through Q shipped
-an agent-native CMS and none of it is published, so a reader who arrives at
-docs.viglet.org/shio is told the opposite of what the ten laws in `agents.md` say the
-product is.
-
-This block writes that documentation in the shape `docs-turing` already uses: narrative
-hubs with an `.mdx` landing page each, per-page front matter, pre-rendered Mermaid SVGs
-from `diagrams/`, the brand CSS variables, no em dashes, and a `COVERAGE.md` matrix that
-maps every shipped block to a page or to an explicit "deliberately internal" row. The
-matrix comes first (SH338: the instrument precedes the fixes), because an undocumented
-subsystem is exactly the defect class no page-by-page pass finds.
-
-`docs-shio` lives in a different git repository
-(`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
-Shio-repo ship, and the vigletdocs page edit.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
@@ -2108,3 +2086,166 @@ made an instance date its own build and the conformance harness refuse one older
 HEAD, so the demo is deployable on that discipline rather than on somebody remembering.
 The site degrades to the scripted content when the instance is unreachable, and says
 which one it is showing.
+
+## XX End-user documentation, round two (Block T)
+
+Block R measured this and could not fix it. It took the coverage matrix from **33 wrong
+of 40** to **6**, and every one of the six is a cluster **no Block R task ever named** —
+they were not leftovers that ran out of time, they were never in scope. That is the
+finding the matrix existed to produce, and it is why these are a block rather than a
+snagging list.
+
+Four of the six are curator-facing. The agent's surface is now the best-documented part
+of Shio and the console is the worst, which inverts who actually needs a page: an agent
+reads a manifest, a person reads a page or gives up. P7 — *never surprise the human* —
+is the law the gap sits on.
+
+Two things make this round different from Block R's. **The examples are executed now**
+(SH499): two instruments compare every published verb, route, tool name, configuration
+key and read-only request against a running product on each conformance run, so a page
+written here is checked rather than trusted. And **⚠️ rows are rewrites, not additions**
+— a page describing a shape the product left makes any new section contradict it, so the
+stale prose goes first.
+
+Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
+page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
+
+### XX.1 The console is the least documented part of the product, and it is where the human is (SH625)
+
+The content console: the browser and its paged listing, the post form built from the
+post-type, copy/move with both ends authorized and free names, "select everything", and
+the trash. All shipped, all reachable from the first screen a curator sees, and none of
+it written down anywhere a reader can reach.
+
+`COVERAGE.md` scores it 🔴 with the note that SH485 covers *the rails* — the safety
+model, the review queue, the publish gate — and not the console. That is an accurate
+split and it is the problem: the rails are the part an agent drives and the console is
+the part a person drives, so the documented half is the half that needs documentation
+least.
+
+"Select everything" is the sharpest instance. It is a real capability with a real blast
+radius, its semantics are not guessable from the checkbox, and a curator's only way to
+find out what it selects is to use it. That is P7 inverted by omission rather than by
+design.
+
+Scope note: this is a page, not a tour. What earns space is what is not guessable — what
+copy/move does about name collisions and about permissions at both ends, what the trash
+retains and for how long, and which listing operations are scoped to the page versus the
+whole result set.
+
+### XX.2 A page describing a shape the product left is worse than no page (SH623)
+
+`administration-guide` describes the AngularJS screens the React console replaced.
+`COVERAGE.md` gives that verdict its own symbol — ⚠️, which `docs-turing` does not need
+— because "has a page" and "has a correct page" are different questions for every Shio
+page written before 2026.3.
+
+The distinction decides how it is fixed. A 🔴 is an addition; a ⚠️ is a **rewrite**, and
+a new section under stale prose makes the page contradict itself. So the stale text goes
+first. Read through this one page today: the dashboard, the Media Library, the
+static-file manager, the webhooks UI and the `config/` pages (auth providers, exchange
+providers, email/SMTP, search) — a reader following it is hunting for screens that no
+longer exist, and concluding the product is broken rather than the page.
+
+One question to settle before writing, because it changes the shape rather than the
+wording: whether this stays one page covering all of them, or whether the Media Library
+and the static-file manager move under the human's hub. They are the two a **curator**
+uses rather than an operator, and the matrix is grouped by who does the job.
+
+### XX.3 Five lifecycle surfaces a curator cannot discover (SH624)
+
+SH13 short-lived preview tokens and console preview, SH14 draft-versus-published diff
+and restore, SH15 scheduled publish and unpublish, SH51 audit history and the Activity
+viewer, SH55 trash and restore. Five shipped surfaces, one 🔴 row, and `content-modeling
+§ Publishing` covers none of them.
+
+They belong together because they answer one question — *what happened to this page, and
+can I undo it* — and because a curator who does not know they exist does the work the
+hard way: sends a screenshot instead of a preview link, re-types instead of restoring,
+sits at a keyboard at the hour a post should go live.
+
+The undocumented half of a safety feature is the expensive one. Draft-default and the
+publish gate exist so a mistake is recoverable, and a person who does not know restore
+exists experiences a mistake as unrecoverable anyway. The feature was paid for and the
+reassurance was not delivered.
+
+Preview tokens have a second reason to be written down: they are short-lived by design,
+and a curator who does not know that reads an expired link as a broken product.
+
+### XX.4 The webhook is documented from the side that receives it (SH626)
+
+SH12 shipped outbound webhooks on publish, unpublish and delete, with per-site
+subscriptions and a signed payload. What is published is the *consumer* half, in
+`nextjs-starter § Environment` — a variable to set in somebody else's app. Nothing
+describes how to subscribe, what the payload contains, or how to verify the signature.
+
+The signature is the part that makes this more than a thin page. An integrator who
+cannot verify it either skips verification — turning a webhook into an unauthenticated
+write trigger reachable by anyone who guesses the URL — or abandons the feature. Both
+outcomes are worse than the feature not existing, and both follow directly from the
+absence.
+
+The page also has to say what it does **not** guarantee: delivery ordering, retry
+behaviour, and whether a consumer must be idempotent. Those are the questions an
+integrator hits in production, and an answer of "unspecified" is a legitimate one that
+still has to be written.
+
+### XX.5 The locale segment a reader meets before anything explains it (SH627)
+
+SH53 shipped content i18n: the locale axis, linked translations, `?locale` on the CDA,
+and the checked locale segment in the delivery grammar. No page mentions any of it.
+
+The delivery grammar is why this is not merely a missing feature page.
+`/sites/{site}/{format}/ {locale}/{path}` puts the locale in every published URL, so it
+is the **first** thing a reader meets — before they have decided whether they want
+translations at all. An unexplained segment in the one URL shape everybody copies is a
+question asked on every single page of the site.
+
+Then the modelling half, which is the part that is genuinely not guessable: whether a
+translation is a separate post linked to its original or a field on one post, what
+happens to a link that points at a page translated in one locale and not another, and
+what the CDA returns when a requested locale has no translation. Getting that wrong is
+discovered after the content is written, which is the most expensive time to discover
+it.
+
+`website-development` already documents the grammar and would be the natural home for
+the URL half; the modelling half belongs beside post types.
+
+### XX.6 The page a contributor reads first names a stack this product left (SH628)
+
+`developer-guide` still lists Elasticsearch 9.3.3 in the stack and names neither the
+agent surface nor the CLI. It is the ⚠️ of the six: not thin, wrong.
+
+Its audience is what makes it the sharpest of them. A reader here is deciding whether to
+build against Shio or contribute to it, and the page tells them the product is a 2018
+headless CMS with a search dependency it no longer has. Every one of the ten design laws
+is invisible from it, and the two surfaces this project treats as primary — MCP and the
+CLI — are not mentioned. Someone who reads it and leaves never sees the product that
+exists.
+
+The stack claim is also the kind that should be derivable rather than typed. SH499 found
+the same class of defect in `README.md` (13 MCP tools claimed, 11 registered, two of the
+names invented) and the answer there was an instrument, not a correction. A version
+number in a prose page is the same shape of claim, and the same question applies: what
+would fail when it goes stale.
+
+### XX.7 The image epic's operator half, folded into a page for authors (SH629)
+
+The SH25 epic's transform parameters are documented — `?w=`, `?h=`, `?format=`, `?crop=`
+in `website-development § Static files and images`, correctly, for the person writing a
+template. What is missing is everything the person **running** the instance needs: the
+result cache and its invalidation, the dimension and format limits, and how to turn
+signed URLs on.
+
+`COVERAGE.md` scores the cluster 🧩 rather than 🔴, which is the honest verdict and also
+why it survived the block — a partially-covered row does not read as an orphan in a
+scan.
+
+The limits are the operationally urgent half. An image transform endpoint with no
+documented ceiling is a request for an arbitrarily large allocation, and signed URLs are
+the mechanism that stops a stranger driving the resize pipeline from a public page. Both
+exist; neither is discoverable, so the default deployment is the unconfigured one.
+
+This is a section under an operations page rather than a page of its own, and the
+question it should answer first is what the defaults already protect against — an
+operator who reads it and needs to change nothing has still been served.
