@@ -18,6 +18,8 @@
 - 📋 **SH553** (deps: SH545 ✅) **The context pack's sitemap says DRAFT for every page, including the live ones** — SH545 gave read and find a published field and left Node.state as the third surface with one word for two questions, because a field there moves the SH116 digest and the pack's own budget. → §VIII.30
 - 📋 **SH601** (deps: SH597 ✅, SH598 ✅) **startHere is an inventory, so the one call leaves the choosing undone** — P2 promises one call replaces a session and what arrives is a list of everything, so a reader still has to map an intent onto it, which is the mapping that failed every round. → §VIII.35
 - 📋 **SH608** (deps: SH600 ✅) **The context pack narrows the same way the manifest did and still says nothing** — SH600 gave the manifest an omitted report and include=instance on the pack still drops the model, the sitemap and the conventions with a 200, the same silent projection one endpoint over. → §VIII.36
+- 📋 **SH621** (deps: —) **An unknown post-type name answers 404 with an empty body** — P6 stops at the agent surface, so the one name-keyed surface answers a typo with zero bytes and a caller cannot tell a renamed type from a missing one. → §VIII.37
+- 📋 **SH622** (deps: —) **A rejected credential is a bare Spring error, so the first 4xx an agent meets carries no instructions** — The security chain answers before any controller advice runs, so 401 and 403 arrive as timestamp/status/error/path and never name the scope the endpoint wanted. → §VIII.38
 
 ## Block K — Perception & verification loop
 
@@ -109,8 +111,6 @@
 - 💭 **SH47** (deps: SH22 ✅, SH38 ✅) **Per-tenant file storage** — prefix `tenantId` into the id-keyed `ShFileStorageService` layout from `ShTenantContext`. → §VI.1
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
-
-- 📋 **SH499** (deps: SH479 ✅, SH487 ✅) **No published example is ever executed, so a renamed verb rots the docs silently** — 57 executable blocks over 17 pages carry 65 assertable subjects, so both questions are answered: it lives in cli/conformance/, and it is two instruments rather than one. → §XVIII.21
 
 ## Block S — The public site (shio.viglet.org)
 

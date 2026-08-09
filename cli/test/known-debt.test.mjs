@@ -3,9 +3,9 @@
  *
  * Licensed under the Apache License, Version 2.0.
  *
- * SH594 — four ledgers of what is knowingly wrong, and one reader that can answer for all of them.
+ * SH594 — the ledgers of what is knowingly wrong, and one reader that can answer for all of them.
  *
- * ## The device is sound and it has been invented four times
+ * ## The device is sound and it has been invented five times
  *
  * | where | what it holds | since |
  * |---|---|---|
@@ -13,6 +13,12 @@
  * | `cli/test/assertion-debt.test.mjs` `DEBT` | shipped ids carrying no assertion | SH527 |
  * | `fixtures/source-sites/open-findings.json` | corpus assertions red at HEAD | SH560 |
  * | `red-suites.json` | a suite allowed to be red, with its reason | SH579 |
+ * | `cli/conformance/docs-open-findings.json` | published examples red against a live instance | SH499 |
+ *
+ * <p>The fifth arrived after this file existed and cost one row in `LEDGERS`, which is the whole
+ * claim the paragraph below makes. It was invented anyway — SH499 reached for the shape without
+ * reading this file — so the device being obvious is confirmed rather than contradicted; what this
+ * reader prevents is the fifth being invented *and left unjoined*.</p>
  *
  * Each is a **named list rather than a ceiling**, for the same stated reason every time: a ceiling
  * lets one task pay the debt and the next spend it. Each is checked in both directions, so an entry
@@ -96,6 +102,19 @@ const LEDGERS = [
     ownerIsSubject: true,
   },
   {
+    // The fifth, and the first added the way this file said one should be: a row, not a reader.
+    name: "docs-open-findings.json",
+    path: "cli/conformance/docs-open-findings.json",
+    holds: "published examples whose live request is red at HEAD",
+    since: "SH499",
+    async entries(text) {
+      return (JSON.parse(text).findings ?? []).map((row) => ({
+        owner: row.id ?? null,
+        what: row.request ?? "(unnamed request)",
+      }));
+    },
+  },
+  {
     name: "verify-baseline.json",
     path: "shio/verify-baseline.json",
     holds: "accepted verify findings, per project",
@@ -169,7 +188,10 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
     );
   }
 
-  assert.equal(ledgers.length, 4, "four ledgers is the finding; a fifth is a row in LEDGERS");
+  // The number is asserted, not merely printed, so inventing a *sixth* ledger without joining it
+  // here fails the run. SH499 is the case: it reached for this shape unprompted, and the failing
+  // count is what turned "a new debt file exists somewhere" into a one-line edit.
+  assert.equal(ledgers.length, 5, "a new ledger is a row in LEDGERS, not a sixth reader");
   // Not vacuous: if every reader came back empty the join would pass forever, which is the
   // lint-that-reports-zero failure every instrument in this repository is warned about.
   assert.ok(

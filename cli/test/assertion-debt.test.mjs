@@ -110,8 +110,15 @@ const DECLARATION = [`${MARK}:start`, `${MARK}:end`];
 const ELSEWHERE = {
   // Block R writes end-user documentation into the `vigletdocs` repository
   // (D:\Git\viglet\vigletdocs\vigletdocs.github.io), which has no test harness and is not a
-  // checkout this suite can see. SH499 is the task that proposes executing those pages' examples;
-  // until it ships there is nothing here to assert about them.
+  // checkout this suite can see.
+  //
+  // SH499 has now shipped and it does reach those pages — `cli/conformance/docs-vocabulary` and
+  // `docs-examples.conformance.mjs` read them out of `SHIO_DOCS_DIR` and hold their invocations
+  // against this product. It does **not** empty this list, and the distinction is the point: what
+  // those two instruments assert is the *vocabulary and the requests*, which is one property
+  // shared by every page. Each id below shipped a page whose prose, structure and worked example
+  // are its own deliverable, and nothing here names one. They stay ELSEWHERE for the reason they
+  // arrived — the boundary is in another repository — rather than for want of a harness.
   docs: ["SH479", "SH480", "SH481", "SH482", "SH483", "SH484", "SH485", "SH486", "SH487", "SH488",
     "SH489", "SH490", "SH491", "SH492", "SH493", "SH494", "SH495", "SH496", "SH497", "SH498",
     "SH504"],

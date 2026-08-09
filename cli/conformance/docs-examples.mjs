@@ -27,10 +27,19 @@ const CLAIMS = [
   {
     kind: "cli",
     langs: ["bash", "sh", "shell", "console"],
-    match: (body) => /(^|\n)\s*(npx @viglet\/shio|shio)\s+[a-z-]+/.test(body),
-    /** The verb is the assertable part: a renamed command is the failure this catches. */
+    // `[ \t]*` and not `\s*`: `\s` matches `\n`, which overlaps the `(^|\n)` before it and makes
+    // the pattern backtrack superlinearly over a long block. A shell indent is spaces or tabs.
+    match: (body) => /(^|\n)[ \t]*(npx @viglet\/shio|shio)[ \t]+[a-z][a-z-]*/.test(body),
+    /**
+     * The verb is the assertable part: a renamed command is the failure this catches.
+     *
+     * SH499 — a verb starts with a letter. `[a-z-]+` also matched the `--help` in `shio --help`,
+     * so the vocabulary check was handed a flag to look up in the command registry and reported a
+     * miss that named the extractor's defect rather than the docs'.
+     */
     subject: (body) =>
-      [...body.matchAll(/(?:^|\n)\s*(?:npx @viglet\/shio|shio)\s+([a-z-]+)/g)].map((m) => m[1]),
+      [...body.matchAll(/(?:^|\n)[ \t]*(?:npx @viglet\/shio|shio)[ \t]+([a-z][a-z-]*)/g)]
+        .map((m) => m[1]),
   },
   {
     kind: "http",

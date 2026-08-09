@@ -340,6 +340,52 @@ The second half needs a decision rather than a port. The pack already reports
 saying "you did not get all of it" for two reasons. Whether that is one field or two is
 the work.
 
+### VIII.37 The 404 that says nothing, on the surface a typo is likeliest (SH621)
+
+SH499's execution instrument issued the requests `docs-shio` publishes and this was its
+first finding: `GET /api/v2/post-type/Article` on a bare instance answers **404 with
+`Content-Length: 0`**. Not a thin problem document — no body at all.
+
+Compare the same miss one surface over. `GET /api/v2/agent/read?address=post:nosuch/x`
+answers a full RFC 9457 document: `type`, `title`, `detail`, `fix` naming the call that
+lists the options, and `allowed` carrying the names. P6 is implemented, and it is
+implemented on `/api/v2/agent/**` only.
+
+That is the wrong half to have covered, because post types are **the one name-keyed
+surface** (SH117 retired the id-keyed twin), so a name is the only thing a caller can
+get wrong and a typo is the likeliest way to arrive here. `didYouMean` is a solved
+mechanism on this codebase and this is the endpoint it was invented for.
+
+The gap is not cosmetic: with zero bytes back, a renamed type and a type that never
+existed are the same answer, and the caller's next move — retry, create, or ask a human
+— depends on which. An agent that cannot tell them apart guesses, and guessing on a
+model change is how a second post-type gets created beside the one that was meant.
+
+### VIII.38 P6 is a controller-advice property, and the first error is not thrown by a controller (SH622)
+
+The other two findings of SH499's first execution run were `GET /api/v2/cda/site` and
+`GET /api/v2/cda/post/{id}/editable`, both answering **403** to console HTTP Basic with
+Spring's own body: `{timestamp, status, error, path}`. Anonymous gets the same shape
+with 401.
+
+The cause is structural rather than an omission on those two endpoints. P6 is
+implemented in `@ControllerAdvice`, and a rejected credential never reaches a controller
+— the filter chain answers first, so *every* endpoint on this product has one 4xx that
+carries no `fix`, and it is the one a caller hits before any other. A page publishing a
+CDA read is correct about the route and silent about the credential, and the 403 that
+would have said so says nothing.
+
+This is worse for an agent than for a person. A human reads the page again; an agent has
+three indistinguishable readings of 403 — wrong scope, right scope with the wrong key,
+or an endpoint that is not for this credential at all — and no field to tell them apart.
+The manifest knows which scope each endpoint wants, so the answer exists and is simply
+not where the error is.
+
+The fix is an entry point and an access-denied handler emitting the same problem
+document the advice does, with `fix` naming the scope and the call that mints one. The
+reason this was never noticed is the reason it is worth writing down: no test asks an
+unauthenticated question and reads the *body*.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -2022,25 +2068,6 @@ subsystem is exactly the defect class no page-by-page pass finds.
 `docs-shio` lives in a different git repository
 (`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
 Shio-repo ship, and the vigletdocs page edit.
-
-### XVIII.21 The examples nobody runs (§XVIII.21) (SH499)
-
-The failure this whole block repairs was not that anybody wrote the docs badly. It is
-that the pages were written once, the product moved, and nothing ever compared the two.
-A coverage matrix catches a subsystem with no page; it does not catch a page whose
-example stopped working.
-
-The instrument: extract the copyable invocations from `docs-shio` (fenced `bash`, `http`
-and `json` blocks carrying a `shio` verb, an `/api/v2/**` path or a `POST /mcp` body)
-and run them against a live instance seeded the way the conformance harness seeds one,
-asserting the shape of what comes back rather than the bytes. A renamed flag, a moved
-endpoint or a changed response key then fails a run instead of misleading a reader.
-
-Two questions to answer before building it, which is why this is an idea and not a
-design. Where does it live: the docs repo has no test harness, and Shio's
-`cli/conformance/` already knows how to drive an instance. And how much is worth
-extracting: a first count of the executable blocks decides whether this is a gate or a
-periodic check, and that count is the first deliverable either way.
 
 ## XIX The public site (Block S)
 

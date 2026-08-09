@@ -2176,3 +2176,48 @@ exercises fails too. Every run prints the count and the owners, the way
 the next task spend it. Its first run held six red cases owned by five open tasks, three of which
 (SH563, SH564, SH565) it found: a redirect `buildInventory` drops, an absolute href stored in a
 section field, and a `<title>` nobody decodes.
+
+**The published pages are executed, by two instruments and not one (SH499).** Block R wrote a
+documentation set full of copyable invocations and nothing ran one, which is exactly how the 2018
+pages became wrong: written once, product moved, never compared. The task's first deliverable was
+the count — `cli/conformance/docs-examples.mjs`, an extractor that classifies the fenced blocks of
+`docs-shio` and prints what it found (**57 executable blocks over 18 pages, 65 assertable
+subjects**, against 32 illustrative ones). That count is what decided the shape, because it splits
+in two halves that answer different questions at very different prices:
+
+- **`docs-vocabulary.conformance.mjs` — the names.** Every documented `shio` verb, `@RequestMapping`
+  path, `shio_*` tool and `shio.*` key is held against what the *product* declares, read by
+  `support/product-vocabulary.mjs` from `COMMANDS` in `index.mjs`, the Spring annotations, the MCP
+  tools' `name()` and the `@ConfigurationProperties` classes. **No instance, milliseconds.** This is
+  what catches a renamed verb. Nothing is listed here — a checked-in list of "the verbs as of today"
+  would rot by the same mechanism as the docs, one directory closer.
+- **`docs-examples.conformance.mjs` — the requests.** The 15 read-only documented requests are
+  issued against a live instance. It catches the three things a name check structurally cannot: an
+  endpoint that is mapped and 500s, one whose response lost the key the page shows, and one a page
+  presents as open that now needs a credential it does not mention.
+
+**Both live in `cli/conformance/` because their input is another repository.** `docs-shio` is not a
+checkout `cli/test/` can see, so a gate there would have to *skip* when it is absent — the failure
+mode `support/instance.mjs` exists to refuse. Here the bargain is already opt-in, so an absent
+checkout is a failed run naming the clone command, exactly as an unreachable instance is.
+`SHIO_DOCS_DIR` overrides the path, because the one certainty about a sibling checkout is that it is
+somewhere else on the next machine.
+
+**The 404 problem is why the execution assertion is shaped the way it is.** "A documented request
+must not 404" is wrong and quietly so: half these examples carry a placeholder site (`mysite`) no
+instance has, so a *correct* server 404s for a reason that has nothing to do with the docs. P6
+resolves it — every 4xx here carries `fix`, so a domain 404 is an RFC 9457 document and a routing
+404 is Spring's bare body. The assertion is **"reached a handler"**, decided by reading the body,
+which makes this suite a second reader of P6 as a side effect.
+
+That side effect found all three of its first run's failures, and they are held in
+`docs-open-findings.json` — the **fifth** ledger `known-debt.test.mjs` joins, added the way that
+file said one should be (a row in `LEDGERS`, not a fifth reader; the hardcoded count is asserted so
+a sixth cannot arrive unjoined). `GET /api/v2/post-type/Article` answers **404 with zero bytes**
+while the same miss on `/api/v2/agent/read` returns `type`/`title`/`fix`/`allowed` — P6 implemented
+on the agent surface only, on the one name-keyed surface where a typo is likeliest (**SH621**). And
+two CDA reads answer **403 from the security chain**, which runs before any `@ControllerAdvice`, so
+*every* endpoint here has one 4xx that carries no instructions and it is the one a caller meets
+first (**SH622**). Mutating examples are **declared unexecuted** and printed with the reason rather
+than dropped: a suite silently covering half its subjects reads exactly like one covering all of
+them.
