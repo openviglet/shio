@@ -1463,30 +1463,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.25 A security claim in prose, checked by nobody (SH363)
-
-SH359 was found by accident: SH265 needed to know whether `shio snapshot` would have to
-authenticate, so somebody read the config. Nothing was looking. The defect had been live
-since SH183 and its two halves each read correctly on their own — an allow-list entry
-naming a path that used to mean something else, and a controller comment naming the rule
-it believed it inherited.
-
-**The instrument is the deliverable (SH338), and the honest version is narrow.** "Every
-prose claim about authentication is true" is not checkable. Two things are:
-
-- **Every `permitAll()` entry names a route that still exists**, and carries a reason
-  beside it. `/preview/**` outlived its route by years; an entry pointing at nothing is
-  the exact shape that silently adopts the next controller mounted on the prefix.
-- **Every controller under a governed prefix is asserted from outside, anonymously.**
-  `ShPreviewIsNotPublicTest` is that test for one route. The general form is a table:
-  path → expected status with no credentials, with a new mapping failing the build until
-  somebody declares which side of the line it is on.
-
-The second is the one that would have caught SH359, and it is the SH354 habit applied to
-security: the question is not "is this safe" but "what does the allow-list already say
-about this prefix", and only a request can answer it. A test over the config restates
-the config.
-
 ### XV.26 The form's receiving half, now that it has a design (SH364)
 
 SH247 shipped the rendering half and left this deliberately. What changed is that it is

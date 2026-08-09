@@ -179,3 +179,40 @@ interceptor.
   right, and it is right only because the route was designed to the entry rather than the other
   way round.
 
+
+## The allow-list is checked from both sides now (SH363)
+
+SH359's shape was not a widened permission. `mvc.matcher("/preview/**")` was written when
+`/preview` meant something on the legacy console; the console went, the entry stayed matching
+nothing, and years later SH183 mounted `GET /preview/{site}/{url}` — defaulting to `DRAFT` — on the
+prefix. The first matching rule wins, so a **dead entry adopted a new route** and every unpublished
+page on the instance became readable by anyone who could reach the port. Both halves read correctly
+on their own, which is why no review could have found it.
+
+Two instruments, deliberately approaching from opposite directions, because either alone is blind
+to what the other sees:
+
+- **`ShAnonymousRouteAccessTest` works from the request in.** Every mapping a Shio controller
+  registers is covered by one line of a table declaring `PUBLIC` or `AUTHENTICATED`, and an
+  anonymous GET is issued against each: `401` where the classification says governed, *not* `401`
+  where it says public. Spring Security authorizes before dispatch, so the answer holds whatever
+  the handler does. Mount a controller on a new path and the build fails naming it, which is the
+  moment SH359 never had.
+- **`ShAllowListIsGroundedTest` works from the config out**, and it is the one that catches the
+  actual cause. A `permitAll()` entry matching **no route at all** has nothing to probe, so no
+  request can find it — it is invisible to the test above by construction. This one reads the
+  literals out of `ShSecurityConfig` (resolving constant references, because half the entries are
+  written that way) and fails on any that denotes nothing and is not declared in
+  `NOT_A_CONTROLLER` with the reason it is public. That map is read in **both** directions: an
+  exemption whose allow-list entry has gone is deleted, because kept it pre-approves whoever adds
+  that path back. Two named negatives carry the incident itself — `/preview/**` must not be listed,
+  `/sites/**` must be.
+
+It reads the source on purpose rather than for convenience. Spring's rules are not introspectable
+as a list once built, and asking the container which paths are permitted would interrogate the
+object the config produced — restating the config, which is what SH363 ruled out. The allow-list is
+a literal in one file, and the question is whether each literal still denotes anything.
+
+**Proved by injecting one.** A `/ghost-of-a-retired-console/**` added to a `permitAll()` block
+failed the build naming the entry; the line was then reverted. A lint that has only ever been run
+on a clean tree is green for two indistinguishable reasons.
