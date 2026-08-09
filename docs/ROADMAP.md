@@ -85,7 +85,6 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-- 📋 **SH419** (deps: SH384 ✅) **A listing loads the whole folder to render ten rows** — Measured at 213 rows per 10 rendered: limit and page are an in-memory window over a whole-folder read, so a 5000-post archive pays 5000 rows for page one. → §XV.30
 - 📋 **SH420** (deps: SH384 ✅) **A nested listing clobbers the outer block's @last** — Measured: an outer row reading {{#if @last}} after an inner query renders twice, because both blocks write @index and @last into one shared data scope. → §XV.31
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
 - 📋 **SH572** (deps: SH558 ✅) **A template relating an address the site has not got renders nothing and reports nothing** — SH297 proves a missing THEME field but no rule reads a getRelation literal, so a typo is a silent else branch on every page. → §XV.35
@@ -93,6 +92,7 @@
 - 📋 **SH631** (deps: —) **A form submission has no scope to arrive on, so the endpoint cannot be written safely** — A FORM token has to name one site, and its eligible post-types have to exclude every system type, because a submission that creates a PageLayout is server-side template execution. → §XV.40
 - 📋 **SH632** (deps: —) **Nothing on a site says which folder a submission lands in or which types may be submitted** — The destination has to be site configuration and never template content, so it needs a home beside the site rather than a setting a page can choose. → §XV.38
 - 📋 **SH633** (deps: SH631, SH632) **A rendered form still posts nowhere once the scope and the destination exist** — The endpoint itself: DRAFT only into the site's folder, honeypot, and the per-token bucket the CDA already has, classified AUTHENTICATED in the anonymous-access table. → §XV.41
+- 📋 **SH634** (deps: SH419 ✅) **A listing still scans the folder, in sort keys rather than in entities** — SH419 stopped loading rows it will not draw and the scan is still O(folder); a windowed query needs the fold, the exact total and a portable ORDER BY, which MariaDB has no NULLS LAST for. → §XV.42
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

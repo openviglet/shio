@@ -1283,3 +1283,38 @@ vocabulary for the agent, the console and the front end.
   and not `postType` because sections are heterogeneous, and not a naming convention because
   nothing can check prose.
 
+
+## A listing loads the page, not the folder (SH419)
+
+SH384 built `{{#query}}`'s paging, sorting and filtering as in-memory operations and said why: the
+folder read already materialized every row, so a window cost no extra query. Its benchmark also
+recorded the price of that premise — **213 entity rows loaded to render 10, identical for page 1 and
+page 19**. The cost grew with the folder rather than with the page, so a 5000-post archive paid 5000
+rows, each hydrated with its JSON `data`, to draw the first ten.
+
+**The window is now decided before the rows are loaded.** `findListingKeys` returns tuples — id,
+state, date, title, post-type id — the fold, the `type=` filter and the comparator run over those,
+and the ≤`limit` survivors are read whole in one `IN` per state. Measured **2 rows loaded per row
+rendered**, and `render.listing.max-rows-loaded-per-row-rendered` went from 25 to 4.
+
+**Not one predicate, comparator or fold moved**, and that is the design rather than caution. Pushing
+the ORDER BY into the query is *not portable here*: `date` is nullable and the comparator is
+`nullsLast`, so the clause needs explicit null placement — MariaDB has no `NULLS LAST`, and it and
+PostgreSQL disagree about where a `DESC` null falls by default. A listing whose page boundaries
+differ by engine moves SH101's digest for a change nobody made, on one deployment and not another.
+That is the fourth objection SH384 did not know about, and it is why SH634 carries the remaining
+scan rather than this task closing it.
+
+**The cost is a second fold and a second comparator family**, over keys instead of entities — two
+writers for one rule, which is the shape SH245 warns about. `ShRenderListingOrderTest` is the price:
+one population, folded and sorted both ways, must yield the **same sequence of ids**, with a null
+date, a null title and two posts sharing a date in the fixture because that is where two
+hand-written comparators actually drift. A disagreement would be the listing drawing different posts
+depending on which branch ran, visible only to somebody comparing two pages that should be one.
+
+`field=` is the one path still reading whole rows: it is a predicate over the post's JSON, so the
+JSON is what it needs. Declared here and in the benchmark rather than quietly excepted.
+
+The benchmark's own claim **inverted** rather than being replaced — it asserted `first > PER_PAGE`
+(the folder reaches the reader) and now asserts `first < ARCHIVE` (it does not). A benchmark that
+stops asserting the thing it was written about is one that passes for a reason nobody checked.

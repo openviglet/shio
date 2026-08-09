@@ -136,14 +136,18 @@ class ShRenderListingPageBenchmarkTest {
         measured.put("render.listing.rows-loaded-last-page", deep);
         measured.put("render.listing.rows-rendered", (long) PER_PAGE);
 
-        // The finding, and the reason it had to be measured rather than assumed: `limit` is applied
-        // AFTER the read, so the rows loaded are the folder's and not the page's.
+        // SH384 measured this at 213-to-10 and asserted `isGreaterThan(PER_PAGE)` — the finding as it
+        // then stood. SH419 paid it, so the direction of the claim inverts: what must now be true is
+        // that the folder's size does NOT reach the reader. Kept as an inversion of the same
+        // measurement rather than replaced by a new one, because a benchmark that stops asserting the
+        // thing it was written about is a benchmark that passes for a reason nobody checked.
         assertThat(first)
                 .as("""
-                        %d rows loaded to render %d, in a folder of %d — `limit` is an in-memory \
-                        window over a whole-folder read, which no query counter can see.""",
+                        %d rows loaded to render %d in a folder of %d. Before SH419 this WAS the \
+                        folder's size, because `limit` was an in-memory window over a whole-folder \
+                        read — which no query counter can see, which is why this benchmark exists.""",
                         first, PER_PAGE, ARCHIVE)
-                .isGreaterThan(PER_PAGE);
+                .isLessThan(ARCHIVE);
 
         assertThat(deep)
                 .as("""
@@ -169,9 +173,11 @@ class ShRenderListingPageBenchmarkTest {
         assertThat(ratio)
                 .as("""
                         The ceiling is on the RATIO, not the count, so enlarging the fixture cannot \
-                        absorb the finding. Pushing the window into the query is the follow-up — and \
-                        it is not free, because the DRAFT-preference fold and the exact total both \
-                        need rows a windowed query would exclude.""")
+                        absorb the finding. It was 25 with 21 measured; SH419 brought it to 4 with 2 \
+                        measured, by deciding the window over sort keys and loading only the rows the \
+                        page draws. A regression here is a return to reading the folder, which at \
+                        this fixture size is 21 and not 3 — so the ceiling has room for the page \
+                        frame's variance without having room for the defect.""")
                 .isLessThanOrEqualTo(ceiling("render.listing.max-rows-loaded-per-row-rendered"));
     }
 

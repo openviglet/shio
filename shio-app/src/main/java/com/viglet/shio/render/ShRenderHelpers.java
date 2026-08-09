@@ -37,6 +37,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository.ShListingKey;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
@@ -733,14 +734,15 @@ public class ShRenderHelpers {
         String sort = hash(options, "sort", "newest");
         String field = hash(options, "field", null);
         String value = hash(options, "value", null);
-        List<ShPostUnified> matching = matching(folder.get(), type, field, value, sort, options);
         int page = page(options);
-        int pages = Math.max((matching.size() + limit - 1) / limit, 1);
-        List<Map<String, Object>> rows = matching.stream()
-                .skip((long) (page - 1) * limit)
-                .limit(limit)
-                .map(this::row)
-                .toList();
+        // SH419 — the window is decided before the rows are loaded. `listing` folds, filters and
+        // sorts *sort keys* and then reads only the ≤limit posts it will actually draw, so the
+        // entity count stops growing with the folder. The total below is still exact, and every
+        // comparator and predicate is the one that was here before — see `listing`'s note for why
+        // the ORDER BY itself deliberately did not move into the query.
+        Listing listing = listing(folder.get(), type, field, value, sort, page, limit, options);
+        int pages = Math.max((listing.total() + limit - 1) / limit, 1);
+        List<Map<String, Object>> rows = listing.rows().stream().map(this::row).toList();
 
         // The pager's facts, as Handlebars data variables. They are `@`-prefixed rather than row keys
         // for two reasons: a row is one post and these are properties of the *listing*, so putting
@@ -751,7 +753,7 @@ public class ShRenderHelpers {
         // for it would be a second one to learn.
         options.data("page", page);
         options.data("pages", pages);
-        options.data("total", matching.size());
+        options.data("total", listing.total());
         options.data("hasPrev", page > 1);
         options.data("hasNext", page < pages);
         options.data("prevPage", Math.max(page - 1, 1));
@@ -804,6 +806,114 @@ public class ShRenderHelpers {
                 .filter(post -> field == null || value == null || carries(post, field, value))
                 .sorted(order(sort))
                 .toList();
+    }
+
+    /**
+     * One page of a listing, and the exact total — without loading the rows it will not draw (SH419).
+     *
+     * <h3>What changed and, more importantly, what did not</h3>
+     *
+     * <p>SH384 measured <b>213 entity rows loaded to render 10</b>, the same for page 1 and page 19.
+     * Every row past the window was read whole, hydrated with its JSON {@code data}, and discarded;
+     * the cost grew with the folder rather than with the page, so a 5000-post archive paid 5000 rows
+     * for the first ten of them.</p>
+     *
+     * <p><b>Not one predicate, comparator or fold moved.</b> The draft-preference fold, {@code order},
+     * the {@code type=} match and the pager's exact total are the same code operating on the same
+     * values in the same order — the change is that they operate on <em>sort keys</em> rather than on
+     * entities, and only the survivors are loaded. That is deliberate rather than timid: pushing the
+     * ORDER BY down is not portable here ({@code date} is nullable, the comparator is
+     * {@code nullsLast}, MariaDB has no {@code NULLS LAST} and the engines disagree about a
+     * {@code DESC} null), and a listing whose page boundaries differ by database is SH101's digest
+     * moving for a change nobody made on one deployment and not another.</p>
+     *
+     * <p>The {@code field=} filter is the one case that still reads whole rows: it is a predicate over
+     * the post's JSON, so the JSON is what it needs. Declared here rather than quietly handled, and
+     * the benchmark records both paths so the exception has a number instead of a footnote.</p>
+     */
+    private Listing listing(ShFolder folder, String type, String field, String value, String sort,
+                            int page, int limit, Options options) {
+        ShPostState state = state(options);
+        if (field != null && value != null) {
+            // The predicate reads `data`, so there is nothing to save by not loading it.
+            List<ShPostUnified> all = matching(folder, type, field, value, sort, options);
+            return new Listing(window(all, page, limit), all.size());
+        }
+
+        String typeId = type == null ? null : idOfPostType(type);
+        if (type != null && typeId == null) {
+            // An unknown type name matches nothing, which is what the in-memory path answers too —
+            // never an error, for the reason the CDA gives at the same fork.
+            return new Listing(List.of(), 0);
+        }
+
+        List<ShListingKey> keys = ShRenderState.preferDraftKeys(
+                shPostUnifiedRepository.findListingKeys(folder, statesFor(state)), state);
+        List<ShListingKey> matching = keys.stream()
+                .filter(key -> typeId == null || typeId.equals(key.postTypeId()))
+                .sorted(orderKeys(sort))
+                .toList();
+
+        List<ShListingKey> wanted = window(matching, page, limit);
+        return new Listing(load(wanted), matching.size());
+    }
+
+    /** The page's rows, loaded whole in one statement and put back into the window's order. */
+    private List<ShPostUnified> load(List<ShListingKey> wanted) {
+        if (wanted.isEmpty()) {
+            return List.of();
+        }
+        Map<String, ShPostUnified> byKey = new LinkedHashMap<>();
+        // Grouped by state so each read is one `IN`, which for a published render is a single
+        // statement; a draft render can need two because the fold may keep rows of both states.
+        for (ShPostState state : List.of(ShPostState.DRAFT, ShPostState.PUBLISHED)) {
+            List<String> ids = wanted.stream()
+                    .filter(key -> key.state() == state)
+                    .map(ShListingKey::id)
+                    .toList();
+            if (ids.isEmpty()) {
+                continue;
+            }
+            for (ShPostUnified post : shPostUnifiedRepository.findByIdInAndState(ids, state)) {
+                byKey.put(post.getId() + " " + post.getState(), post);
+            }
+        }
+        // Re-ordered by the window rather than by whatever the `IN` returned: the sort is the
+        // listing's contract and a set read gives no order at all.
+        return wanted.stream()
+                .map(key -> byKey.get(key.id() + " " + key.state()))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private static <T> List<T> window(List<T> all, int page, int limit) {
+        return all.stream().skip((long) (page - 1) * limit).limit(limit).toList();
+    }
+
+    /**
+     * The same three orders as {@link #order}, over sort keys.
+     *
+     * <p>Two comparators for one contract is the shape SH245 warns about, and it is accepted here
+     * for one reason: they are asserted to agree. {@code ShRenderListingOrderTest} sorts the same
+     * population both ways and requires the same sequence of ids, so a change to one that is not
+     * made to the other fails rather than reorders somebody's archive.</p>
+     */
+    private Comparator<ShListingKey> orderKeys(String sort) {
+        Comparator<ShListingKey> byDateThenId = Comparator
+                .comparing(ShListingKey::date, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ShListingKey::id);
+        return switch (sort.toLowerCase(java.util.Locale.ROOT)) {
+            case "oldest" -> byDateThenId.reversed();
+            case "title" -> Comparator
+                    .comparing((ShListingKey key) -> key.title() == null ? "" : key.title(),
+                            String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(ShListingKey::id);
+            default -> byDateThenId;
+        };
+    }
+
+    /** One page of a listing: the rows to draw, and how many there are in all. */
+    private record Listing(List<ShPostUnified> rows, int total) {
     }
 
     /** Whether one of this field's values is this value, case-insensitively. */
@@ -1350,6 +1460,18 @@ public class ShRenderHelpers {
 
     private String typeNameOf(ShPostUnified post) {
         return post.getShPostType() == null ? null : post.getShPostType().getName();
+    }
+
+    /**
+     * A post-type name to its id, or {@code null} when nothing is named that (SH419).
+     *
+     * <p>The listing filters on the id because that is a column on the post table, where the name
+     * would join the JOINED {@code ShObject} root and trip the {@code @TenantId} hazard. One extra
+     * read, and only when {@code type=} was given — against a whole-folder entity load it is free.</p>
+     */
+    private String idOfPostType(String name) {
+        ShPostType found = shPostTypeRepository.findByName(name);
+        return found == null ? null : found.getId();
     }
 
     /** A row is the post's fields plus the four things a listing always writes. */

@@ -109,6 +109,18 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     Page<ShPostUnified> findByShFolderAndState(ShFolder shFolder, ShPostState state, Pageable pageable);
 
+    /**
+     * One folder's posts of one post-type, windowed (SH419).
+     *
+     * <p>Keyed by post-type <b>id</b> and never by name, for the {@code @TenantId} reason spelled
+     * out on {@link #findByShPostType_IdAndState}: {@code post_type_id} is a column on this table,
+     * while navigating to {@code shPostType.name} joins the JOINED {@code ShObject} root and dies at
+     * query-prepare time. The renderer's {@code {{#query}}} takes a post-type <em>name</em> and
+     * resolves it to an id first, exactly as the CDA does.</p>
+     */
+    Page<ShPostUnified> findByShFolderAndShPostType_IdAndState(ShFolder shFolder, String postTypeId,
+                                                              ShPostState state, Pageable pageable);
+
     Page<ShPostUnified> findByShSite_IdAndState(String siteId, ShPostState state, Pageable pageable);
 
     /**
@@ -184,6 +196,65 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     //     dedup draft-preferred. Used only by the PREVIEW-environment read path. ---
 
     List<ShPostUnified> findByShFolderAndStateIn(ShFolder shFolder, Collection<ShPostState> states);
+
+    /**
+     * One folder's posts as sort keys only — no {@code data}, no entity (SH419).
+     *
+     * <h3>The measurement this exists to move</h3>
+     *
+     * <p>{@code ShRenderListingPageBenchmarkTest} recorded <b>213 entity rows loaded to render
+     * 10</b>, identical for page 1 and page 19: the listing reads the whole folder and the window is
+     * applied afterwards in memory, so the cost grows with the folder rather than with the page and
+     * a 5000-post archive pays 5000 rows for the first ten of them. Every row past the tenth is
+     * loaded, hydrated with its JSON {@code data}, and thrown away.</p>
+     *
+     * <h3>Why a projection and not a windowed query</h3>
+     *
+     * <p>SH384 deferred the window for three reasons and all three are still true. The
+     * draft-preference fold reads both states and keeps one row per id, so a window applied before
+     * it can return fewer rows than asked for. The pager's totals are exact and come from the whole
+     * matching set. And the {@code field=} filter is a predicate over the post's JSON, evaluated in
+     * Java.</p>
+     *
+     * <p>There is a fourth that only appears when you try it, and it is the one that decides the
+     * shape: <b>the sort cannot be pushed down portably.</b> {@code date} is nullable and the
+     * comparator is {@code nullsLast}, so the ORDER BY needs explicit null placement — and MariaDB
+     * has no {@code NULLS LAST}, while PostgreSQL and MariaDB disagree about where a {@code DESC}
+     * null goes by default. A listing whose page boundaries differ by engine is SH101's digest
+     * moving for a change nobody made, on one deployment and not another.</p>
+     *
+     * <p>So the fold, the comparators and both filters stay exactly where they are — <b>no semantic
+     * changes at all</b> — and what changes is what they operate on. These tuples carry only what
+     * the fold and the sort read; the ≤{@code limit} rows that survive are then loaded whole in one
+     * {@code IN} query. Two statements instead of one, and the entity count stops scaling with the
+     * folder.</p>
+     *
+     * <p>{@code p.shPostType.id} and not {@code .name}: navigating past {@code .id} of an
+     * {@code ShObject} subclass emits the tenant predicate against a subclass alias that has no such
+     * column, which is valid JPQL that dies at query-prepare time. The renderer resolves the name.</p>
+     */
+    @Query("""
+            select new com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository$ShListingKey(
+                p.id, p.state, p.date, p.title, p.shPostType.id)
+            from ShPostUnified p
+            where p.shFolder = :folder and p.state in :states""")
+    List<ShListingKey> findListingKeys(@Param("folder") ShFolder folder,
+                                       @Param("states") Collection<ShPostState> states);
+
+    /**
+     * Everything the fold, the sort and the type filter read about a post, and nothing else.
+     *
+     * @param id         the post id — the fold's key
+     * @param state      which row this is, so the winner can be re-read by (id, state)
+     * @param date       the default sort key
+     * @param title      the {@code sort="title"} key
+     * @param postTypeId the {@code type=} filter's key, by id because the name would join
+     */
+    record ShListingKey(String id, ShPostState state, Instant date, String title, String postTypeId) {
+    }
+
+    /** The window's rows, loaded whole, in one statement rather than one per row (SH419). */
+    List<ShPostUnified> findByIdInAndState(Collection<String> ids, ShPostState state);
 
     /**
      * One page of a folder's posts, one row per logical id, DRAFT preferred — the console

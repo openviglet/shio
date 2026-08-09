@@ -1463,28 +1463,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.30 The window belongs in the query, and the reason it was not put there is a correctness argument (SH419)
-
-SH384's first deliverable was the measurement, and it found something the sweep
-benchmarks are blind to: they count prepared statements, where a listing is flat, while
-`findByShFolderAndStateIn` reads the **whole folder** and `limit` is applied afterwards
-in memory. `ShRenderListingPageBenchmarkTest` records 213 entity rows loaded to render
-10, identical for page 1 and page 19, with the ceiling asserted on the *ratio* so
-enlarging a fixture cannot absorb it.
-
-That measurement licensed paging, sorting and filtering as free in-memory operations,
-and it is also the finding: the cost grows with the folder rather than with the page, so
-an archive of 5000 posts pays 5000 rows for the first ten of them.
-
-Pushing the window into the query is **not** free, which is why SH384 deferred it rather
-than doing it in passing. Three things need rows a windowed query would exclude. The
-DRAFT-preference fold reads both states and keeps one row per id, so a window applied
-before the fold can return fewer rows than asked for, or the wrong ones. The exact
-totals the pager reports come from the full matching set, so a windowed read owes a
-second count query with the same predicates, which has to stay in step with them or the
-pager lies. And the field filter is a predicate over the post's JSON data, evaluated in
-Java today.
-
 ### XV.31 The pager idiom SH384 documented is unreliable in exactly the page that needs it (SH420)
 
 SH384 published `@page`, `@pages`, `@total`, `@first` and `@last` as Handlebars data
@@ -1655,6 +1633,30 @@ submissions subsystem:
 The teaching refusals matter more than usual because the caller is a browser nobody
 controls: a non-eligible type, a full bucket and a tripped honeypot are three different
 answers, and only the first two should say so.
+
+### XV.42 The scan that is left, and the reason it was not removed with the rest (SH634)
+
+SH419 took the listing from **213 entity rows loaded to render 10** down to **2 per
+row**: the fold, the filters and the sort run over sort keys, and only the survivors are
+read whole. It did not remove the scan. The keys query is still `where folder = ? and
+state in (?)`, so a 5000-post archive reads 5000 tuples to draw ten — five scalar
+columns and no JSON, but O(folder) all the same.
+
+Two of SH384's three objections are now answered rather than avoided. The **fold** runs
+over keys before anything loads; the **exact total** is the size of the folded, filtered
+key list, free and still exact.
+
+The third is unchanged and a fourth is new. The **`field=` filter** is a predicate over
+the post's JSON, so that path still reads whole rows — declared, not quietly excepted.
+And **the ORDER BY cannot be pushed down portably**: `date` is nullable and the
+comparator is `nullsLast`, so the clause needs explicit null placement. MariaDB has no
+`NULLS LAST`, and it and PostgreSQL disagree about where a `DESC` null falls by default
+— a listing whose page boundaries differ by engine moves SH101's digest for a change
+nobody made, on one deployment and not another.
+
+So what is left is not "add a `Pageable`". It is deciding how the order is expressed so
+every engine produces one sequence, and that decision wants the cross-database ITs
+actually running.
 
 ## XVI. The human half (Block O) — what reading the console next found
 

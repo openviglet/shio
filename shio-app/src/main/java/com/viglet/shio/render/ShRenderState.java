@@ -15,6 +15,7 @@ import java.util.Map;
 
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository.ShListingKey;
 
 /**
  * SH278 — which row of a post the renderer reads, and in what order, in one place.
@@ -81,6 +82,37 @@ final class ShRenderState {
             }
         }
         return List.copyOf(byId.values());
+    }
+
+    /**
+     * The same fold over sort keys rather than entities (SH419).
+     *
+     * <p>A second implementation of one rule is what SH245 is about, so it is written to be
+     * obviously the same one — same pre-sort, same winner, same order — and
+     * {@code ShRenderListingOrderTest} holds the two against one population rather than trusting
+     * the resemblance. It exists because the listing must decide <em>which</em> rows to load before
+     * loading them: SH384 measured 213 entity rows read to render 10, and the fold is the step that
+     * decides which of the 213 survive.</p>
+     */
+    static List<ShListingKey> preferDraftKeys(List<ShListingKey> keys, ShPostState state) {
+        Map<String, ShListingKey> byId = new LinkedHashMap<>();
+        for (ShListingKey key : keys.stream().sorted(byKeyTitleThenId()).toList()) {
+            if (state == ShPostState.PUBLISHED && key.state() != ShPostState.PUBLISHED) {
+                continue;
+            }
+            ShListingKey held = byId.get(key.id());
+            if (held == null || key.state() == ShPostState.DRAFT) {
+                byId.put(key.id(), key);
+            }
+        }
+        return List.copyOf(byId.values());
+    }
+
+    /** {@link #byTitleThenId()} over a key — the same null handling, which is the part that matters. */
+    static Comparator<ShListingKey> byKeyTitleThenId() {
+        return Comparator
+                .comparing((ShListingKey key) -> key.title() == null ? "" : key.title())
+                .thenComparing(key -> key.id() == null ? "" : key.id());
     }
 
     /** Title, then id — a total order over rows the database returned in none. */
