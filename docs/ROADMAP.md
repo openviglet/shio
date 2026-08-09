@@ -35,6 +35,7 @@
 - 📋 **SH613** (deps: SH206 ✅, SH322 ✅) **A textual lint reads prose, so writing about a rule can fail the build for breaking it** — SH206 hit this and fixed one lint; 17 of the 22 source-scanning tests still match their own subject inside a comment, and nothing says which of them mean to. → §IX.64
 - 📋 **SH615** (deps: SH109 ✅, SH207 ✅) **The review queue's per-run pending count never reaches zero, because publishing keeps the draft** — A run stays 'N to review' forever and its Approve button never settles, since the count asks whether a DRAFT row exists and the editable draft always does. → §IX.65
 - 📋 **SH619** (deps: SH522 ✅, SH545 ✅) **A draft cannot be compared with what is live, because the read surface cannot return the published row** — Every agent read is DRAFT-preferred with no state parameter, so 'what will change when I publish this' has no answer outside the console's own diff dialog. → §IX.66
+- 📋 **SH630** (deps: —) **Naming a task id in a comment marks it asserted, so a debt is paid by mentioning it** — The SH527 walk greps suite files for ids and cannot tell an assertion from prose, so three ids left the debt list in one task because a new file explained why they were relevant. → §IX.67
 
 ## Block I — Content as files (local-first authoring)
 
@@ -84,7 +85,6 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-- ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — All four line-level defects are repaired now that SH361 renumbered the duplicate SH347; the 7 over-long sections that remain have no sanctioned repair, because no verb shortens a live section. → §XVI.66
 - 📋 **SH363** (deps: —) **A class comment can claim its route is authenticated and nothing checks** — ShRenderAPI said it sits under anyRequest().authenticated() while /preview/** was in permitAll, and SH359 fixed that one instance without adding anything that would find the next. → §XV.25
 - 💭 **SH364** (deps: SH247 ✅) **A rendered form posts nowhere, and the design for where it should post is written** — 2018's createPost plus folder says a submission becomes a post in a named folder, and the only thing between that and shipping is a public unauthenticated write nobody has scoped. → §XV.26
 - 📋 **SH392** (deps: SH248 ✅, SH391 ✅) **A region's JavaScript reaches the browser and nothing ever runs it** — SH248 ships a region's script to the reader on purpose, and no test, lint or gate executes it, so the one field whose value is code has no proof path at all. → §XV.28

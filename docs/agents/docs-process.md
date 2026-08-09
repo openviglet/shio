@@ -206,3 +206,33 @@ because it mixes those five and moves when the baseline does.
 5. **Non-goals are binding.** Check `ROADMAP.md` → "Non-goals" (and IMPROVEMENTS §0)
    before proposing new work.
 
+
+## The rationale file's own debt, and the ratchet that holds it (SH356)
+
+SH341 took `ROADMAP.md`'s 42 over-long lines to zero. SH356 asked where the rest of
+`roadkeep lint`'s findings had gone and answered: into `IMPROVEMENTS.md`, as **45 sections over
+the 250-word budget, 42 whose task had already shipped, 9 that no line pointed at and 3 anchors
+claimed twice**, beside four line-level corruptions. Measured again when it closed, by roadkeep's
+own counters: **0, 0, clean, clean**, and the corruption gone with SH361.
+
+**Two of the four already have a gate that cannot be bypassed, and one has none.** `add` and
+`section add` *refuse* prose over budget at write time, and `lint` reports an unresolved or
+duplicated anchor — a second implementation of either here would be a reader that can disagree
+with the tool. **Stale is the one with no gate**: `ship` drops a section as the third of its three
+edits, so the tool never leaves one behind, but that is a property of the write path being *taken*
+rather than a fact about the file, and all 42 survivors predate roadkeep owning these files. The
+hook denies the hand-edit; `cli/test/improvements-debt.test.mjs` asserts the outcome, because a
+guard on the door is not the same statement as a fact about the room. It is also the costliest of
+the four to a reader — this file is defined as rationale for *unshipped* work, so a survivor reads
+as a live argument for something already built, and nothing on the page says which it is.
+
+It re-states roadkeep's rules rather than shelling out, the same bargain
+`cli/test/changelog-blocks.test.mjs` documents and for the same reason: roadkeep resolves to a
+Python entry point `pnpm test` cannot depend on. The drift that permits is a red run here against
+a green `roadkeep lint` — visible, and cheap to resolve.
+
+**One thing to know before writing about a task in a suite file.** `cli/test/assertion-debt.test.mjs`
+walks these trees for `SH<n>` and cannot tell an assertion from a comment, so naming an id in prose
+**pays off its debt**. It happened three times while SH356 was being written, and the workaround
+was to stop naming the ids — prose degraded to protect a counter. SH630 is the repair; until it
+ships, name in a suite file only the ids that file actually asserts.

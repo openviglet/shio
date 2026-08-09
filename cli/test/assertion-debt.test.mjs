@@ -183,7 +183,13 @@ const DEBT = [
   // asserted elsewhere BY BEHAVIOUR and not by id, so the work is naming the id in a test that
   // already passes. An assertion nobody can find from the id does not close the loop — which is a
   // real gap and a much smaller one than the group's size suggests.
-  "SH361", "SH366", "SH367", "SH368", "SH369", "SH370", "SH371",
+  //
+  // SH361 is paid (2026-08-09). It was the group's *decision* entry rather than one of the six
+  // steps — an id names a step, not an entry somebody later rewrites — so what closes it is holding
+  // that outcome: `cli/test/improvements-debt.test.mjs` fails if one id ever carries two lines in
+  // the roadmap or two entries in the ledger, which is the duplicate `SH347` SH356 counted and
+  // SH361 renumbered away. The six steps stay: each is a behaviour asserted under no id.
+  "SH366", "SH367", "SH368", "SH369", "SH370", "SH371",
   // DOES NOT EARN a new assertion — it earns a READER. The Universal Editor's load-bearing fact is
   // checked, in `shio-react/e2e`, which this reader does not walk because it needs a running
   // instance. Writing a second assertion here would duplicate a passing one; the honest fix is to

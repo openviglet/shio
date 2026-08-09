@@ -701,6 +701,30 @@ returns both rows where they differ, which is closer to what a caller wants and 
 shape nobody has designed. Deciding that is the task; `shio diff --against published` is
 what it unblocks.
 
+### IX.67 The debt reader cannot tell an assertion from a mention (SH630)
+
+Found by using it. SH356's ratchet shipped with a header explaining why it holds SH361's
+outcome and why it deliberately does not assert a cross-file rule, naming three other
+ids to say so. All three left the debt list on the next run. Nothing asserted them; a
+file had said their numbers out loud.
+
+The walk's own header already argues one half of this — a glob over the whole repository
+would count an id in a source comment, so it is restricted to suite trees. That narrows
+the population and does not address the mechanism: **inside** a walked file, a comment
+and an assertion message are the same bytes to a regex.
+
+The direction of the failure is what makes it worth fixing. It never invents debt, it
+only *retires* it — silently, in a diff about something else, at the moment somebody is
+writing carefully about why a task matters. The better the comment, the more debt it
+pays. And the workaround this session used was to **stop naming the ids**, which
+degrades the prose to protect the counter: the instrument now shapes what may be written
+about the code it reads.
+
+Two candidate repairs, and a count decides between them. Restrict recognition to an id
+inside an assertion's message argument, or require an explicit marker the way the other
+four ledgers require an owner. The first is a parse; the second is a convention nobody
+applies by accident.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1746,29 +1770,6 @@ Two consequences that carries: the workflow should publish surefire's summary as
 run's headline, so no count is re-derived by hand (SH283's defect, SH354's at the
 terminal); and which jobs run on push versus pull request is a deliberate choice — the
 console check drives Chromium, the Java suite is cheap enough for both.
-
-### XVI.66 The rationale file carries the debt the roadmap just shed (SH356)
-
-SH341 took the roadmap's 42 over-long lines to zero and `roadkeep lint` fell from 249
-findings to 107. What is left is almost entirely one file: **45 sections over the
-250-word budget, 42 whose task has already shipped, 9 that no line points at, and 3
-anchors claimed twice.**
-
-The three kinds are not one job. A **stale** section is the cheapest and most misleading: `ship`
-drops a section as its third edit, so 42 survivors mean 42 tasks whose rationale was moved by hand
-before the tool owned the files — and a reader meeting one cannot tell live design from history. An
-**orphan** is a section nothing can reach: either the last copy of an argument or dead weight, and
-only reading says which. **Over-long** is SH341's drift one file along, with the same fix — split, or
-move the remainder into the commit that made it true.
-
-Four line-level defects sit beside them and are not editorial at all: two `U+0008`
-control characters inside a ledger line, an entry with no `—` separator, a duplicate
-`SH347`, and an entry naming a file the repository no longer contains. That is
-corruption rather than prose, and `lint --fix` does not touch it.
-
-SH341's order applies — instrument first — but a section gate cannot ratchet from 45 the
-way the line gate did, because dropping a section is destructive where shortening a line
-is not. So the honest first step is deciding what a *stale* section should become.
 
 # Part 2 — pre-existing sections
 
