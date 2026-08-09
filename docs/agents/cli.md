@@ -41,6 +41,28 @@ baseline", which cannot tell an emptied page from a re-cropped hero and has no a
 blueprint-built page with no baseline, while a lost `contentinfo` is a lost footer whatever the
 number says. One-directional, like `shio diff`'s counts — a landmark the replica **gained** is a
 `nav` the layout composed, not damage.
+**The eleventh rule is the one field whose value is a program (SH392).** `Region.JAVASCRIPT` is
+shipped to the browser and never evaluated in the JVM — SH248, and the correct resolution of the
+Block D non-goal — which left it the **only** part of the render model nothing in this repository
+ever executed: `ShRenderNoScriptEngineTest` asserts the opposite property (that the server *cannot*
+run it), the composer's test asserts the emission, and SH336's click interception is asserted as a
+*string*. A region whose script does not even parse renders, hashes, lints and verifies clean,
+because the browser runs none of it and the DOM is exactly what the server sent. `region-script`
+compiles every `script[data-shio-region]` on the page and reports one that will not, naming the
+region — free attribution, since `ShRegionComposer` already annotates each tag it emits. Four
+decisions in it: **`new Function`, not `eval`**, because that parses without running and re-running a
+region's initialisation is the exact bug the composer emits each script once to avoid; **an `error`,
+not a warning**, which fits `audit.test.mjs`'s standing rule that only *observed facts* gate — the
+parser said so, where every `warn` is a threshold this command picked; **judged once, not per
+viewport**, a script being the same bytes at every width; and **a runtime throw stays
+`console-error`**, since `pageerror` already reports it and one defect in two rules is two findings
+that can disagree. The line prints even at zero (`0 region scripts on this page`) — the complaint
+was that this field is delivered and never run, so silence would be indistinguishable from health.
+**Forwarding it found that SH526's shape line had never reached a reader**: `classify` returned a
+`shape`, the command destructured three of its keys and not that one, so neither the text report nor
+`--json` ever carried it. Both halves were right in isolation, which is why every unit test passed —
+each calls `classify` or `describe` directly, and the defect lived only where they meet. That is the
+gap `run`-level assertions now cover.
 
 **Errors are what a machine observed and they exit 1** (a 404, a thrown exception); **overflow,
 contrast, a collapsed box and a fallback font are warnings that exit 0**, because each is design

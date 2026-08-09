@@ -58,6 +58,12 @@ export const AUDIT_RULES = {
   // nothing that fails to load.
   "no-landmark": "warn",
   "no-heading": "warn",
+  // SH392 — the one field whose value is a program. `Region.JAVASCRIPT` is shipped to the browser
+  // and never evaluated in the JVM (SH248, the Block D non-goal's resolution), which left it the
+  // only part of the render model that nothing in this repository executes: a region whose script
+  // does not even parse renders, hashes, lints and verifies clean. An `error` and not a `warn`,
+  // because unlike every rule above this one reports code that cannot run at all.
+  "region-script": "error",
 };
 
 /**
@@ -310,10 +316,31 @@ export function classify(observed, options = {}) {
     }
   }
 
+  // SH392 — like the shape, read once: a region's script is the same bytes at every viewport, so
+  // reporting one broken region twice because two widths were audited would be a count that
+  // disagrees with the number of defects.
+  const scripts = (observed?.probes ?? []).find((probe) => probe.regionScripts)?.regionScripts ?? [];
+  for (const script of scripts) {
+    if (!script.syntaxError) continue;
+    merge("region-script", `script[data-shio-region="${script.region}"]`, undefined, {
+      region: script.region,
+      post: script.post ?? null,
+      message: script.syntaxError,
+    });
+  }
+
   const findings = [...found.values()];
   for (const finding of findings) finding.widths.sort((a, b) => b - a);
   findings.sort(compare);
-  return { findings, capped, counts: count(findings), ...(shape ? { shape } : {}) };
+  return {
+    findings,
+    capped,
+    counts: count(findings),
+    ...(shape ? { shape } : {}),
+    // Carried even when empty — `[]` and "this run did not look" are different answers, and the
+    // report says which (SH392).
+    ...(scripts ? { regionScripts: scripts } : {}),
+  };
 }
 
 /** Deterministic order: errors first, then by rule, then by the element named (P5). */
@@ -367,6 +394,10 @@ function detail(finding) {
       return "the page is not made of regions — no main, nav, header, footer or aside";
     case "no-heading":
       return "nothing on the page announces what it is";
+    case "region-script":
+      // The region name is in the selector already; what the author needs here is the parser's own
+      // words, because a syntax error is fixed by reading it and nothing else.
+      return `JAVASCRIPT does not parse, so no line of it ran — ${finding.message}`;
     default:
       return "";
   }
@@ -378,7 +409,10 @@ function detail(finding) {
  * <p>`--limit` bounds what is printed, never what was counted: a cut this report did not declare
  * would read as a clean pass, which is the failure `shio verify`'s `notes` exist to prevent.
  */
-export function describe({ target, url, widths, findings, counts, capped, shape }, options = {}) {
+export function describe(
+  { target, url, widths, findings, counts, capped, shape, regionScripts },
+  options = {},
+) {
   const limit = Number.isFinite(Number(options.limit)) ? Number(options.limit) : Infinity;
   const shown = findings.slice(0, Math.max(limit, 0));
   const head =
@@ -392,6 +426,11 @@ export function describe({ target, url, widths, findings, counts, capped, shape 
   // intact page reads `main, navigation, contentinfo · 3 headings` and the emptied one
   // `no landmark · 2 headings`, and that difference is the whole of what four instruments missed.
   if (shape) lines.push(`  shape: ${describeShape(shape)}`);
+  // SH392 — printed whether or not it produced a finding, and for a sharper reason than the shape
+  // line above: the whole complaint was that `Region.JAVASCRIPT` is delivered and never run, so a
+  // report that stayed silent when a page carries no region script at all would be indistinguishable
+  // from one where every script is fine. `0 region scripts` is an answer.
+  if (regionScripts) lines.push(`  scripts: ${describeRegionScripts(regionScripts)}`);
   for (const finding of shown) lines.push(line(finding));
   if (shown.length < findings.length) {
     lines.push(`  (${findings.length - shown.length} more — raise --limit to see them)`);
@@ -403,6 +442,23 @@ export function describe({ target, url, widths, findings, counts, capped, shape 
     lines.push("  nothing to fix: no overflow, no failed request, no console error, contrast clears AA");
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The region scripts in one line (SH392): how many were compiled, and how many are not programs.
+ *
+ * <p>`compiled` is the number this run actually put through the browser's parser, which is the fact
+ * the task was filed about — before it, that number was zero for every page ever rendered.</p>
+ */
+export function describeRegionScripts(scripts) {
+  const total = scripts.length;
+  if (!total) return "0 region scripts on this page";
+  const broken = scripts.filter((each) => each.syntaxError).length;
+  const empty = scripts.filter((each) => each.empty).length;
+  const parts = [`${total} region script${total === 1 ? "" : "s"} compiled`];
+  if (broken) parts.push(`${broken} that do${broken === 1 ? "es" : ""} not parse`);
+  if (empty) parts.push(`${empty} empty`);
+  return parts.join(" · ");
 }
 
 /**
@@ -516,6 +572,54 @@ export function readShape(landmarks) {
     headings.push({ level, text: (element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80) });
   }
   return { landmarks: counts, headings };
+}
+
+/**
+ * Every region script on the page, and whether it is a program at all (SH392).
+ *
+ * <p>Runs in the browser, its own `page.evaluate` for `readShape`'s reason: a function handed to
+ * `evaluate` is serialized to source and runs with no module scope.</p>
+ *
+ * <h3>Why `new Function` and not "did it throw"</h3>
+ *
+ * <p>The question this answers is the one nothing could ask before: **does the code parse**. A
+ * script that does not is the case with no symptom anywhere else — the browser never runs a line of
+ * it, the DOM is exactly what the server sent, and the page renders, hashes, lints and verifies
+ * clean. `new Function(text)` compiles without executing, so the check is per region, exact, and
+ * has **no side effect**: re-running a region's initialisation is a defect the composer already
+ * takes care to avoid (it emits each region's script once, keyed by name, precisely so a layout
+ * that slots a nav twice does not initialise it twice).</p>
+ *
+ * <p>A script that parses and then throws at runtime is deliberately *not* this rule's business —
+ * it has already surfaced as `pageerror`, which SH391's listener turns into `console-error`. One
+ * defect reported by two rules would be two findings that can disagree.</p>
+ *
+ * <p>Attribution is free because the markup already carries it: `ShRegionComposer` writes
+ * `data-shio-region` (and `data-shio-post`) onto every script tag it emits, for the same reason it
+ * annotates the markup.</p>
+ */
+export function readRegionScripts() {
+  const out = [];
+  for (const script of document.querySelectorAll("script[data-shio-region]")) {
+    const region = script.getAttribute("data-shio-region");
+    const body = script.textContent || "";
+    let syntaxError = null;
+    if (body.trim()) {
+      try {
+        // eslint-disable-next-line no-new-func
+        new Function(body);
+      } catch (error) {
+        syntaxError = String(error?.message ?? error);
+      }
+    }
+    out.push({
+      region,
+      post: script.getAttribute("data-shio-post"),
+      empty: !body.trim(),
+      syntaxError,
+    });
+  }
+  return out;
 }
 
 export function probe(options) {

@@ -28,6 +28,7 @@ import {
   parseColor,
   parseWidths,
   probe,
+  readRegionScripts,
 } from "../src/audit.mjs";
 import * as audit from "../src/commands/audit.mjs";
 
@@ -234,9 +235,13 @@ test("a console error's message is the finding, so its line has no dangling dash
 test("every rule has a severity, and only observed facts are errors", () => {
   // The severity table is the design decision, so it is asserted rather than described: a rule
   // promoted to `error` silently turns this command into a gate on somebody's design choice.
+  // SH392 added the third, and it belongs by this test's own rule rather than despite it: a
+  // script that does not compile is an *observed fact* — the browser's parser said so — not a
+  // judgement about how somebody chose to write it. The two above are the same shape (the console
+  // said it, the network said it), and every `warn` is a threshold this command picked.
   assert.deepEqual(
     Object.entries(AUDIT_RULES).filter(([, severity]) => severity === "error").map(([rule]) => rule).sort(),
-    ["console-error", "request-failed"],
+    ["console-error", "region-script", "request-failed"],
   );
   const { findings } = classify({
     probes: [{ width: 375, collapsed: [{ selector: ".row", children: 3 }] }],
@@ -492,4 +497,132 @@ test("SH526: a run with no shape at all reports nothing about it", () => {
 
   assert.deepEqual(findings, []);
   assert.equal(shape, undefined);
+});
+
+// --- SH392: the field whose value is a program, finally executed ---
+
+test("SH392: a region script that does not parse is an error naming the region", () => {
+  // The case with no symptom anywhere else. `Region.JAVASCRIPT` is shipped to the browser and never
+  // evaluated in the JVM (SH248), so a region whose script is not even a program renders, hashes,
+  // lints and verifies clean — the browser silently runs none of it and the DOM is exactly what the
+  // server sent.
+  const { findings, regionScripts } = classify({
+    probes: [{
+      width: 1280,
+      regionScripts: [
+        { region: "NAV", post: "p1", empty: false, syntaxError: "Unexpected token ')'" },
+        { region: "HERO", post: "p2", empty: false, syntaxError: null },
+      ],
+    }],
+  });
+
+  const broken = findings.filter((each) => each.rule === "region-script");
+  assert.equal(broken.length, 1, "one broken region, one finding");
+  assert.equal(broken[0].severity, "error",
+    "an error and not a warning: unlike every other rule this one reports code that cannot run");
+  assert.equal(broken[0].selector, 'script[data-shio-region="NAV"]',
+    "the selector names the region, which the composer already annotates onto the script tag");
+  assert.match(broken[0].region, /NAV/);
+  assert.equal(regionScripts.length, 2, "and the scripts ride the result, broken or not");
+});
+
+test("SH392: a region script is judged once, not once per viewport", () => {
+  // A script is the same bytes at every width, so two loads must not become two findings — the
+  // same argument SH526 makes for the shape one rule up.
+  const { findings } = classify({
+    probes: [
+      { width: 1280, regionScripts: [{ region: "NAV", empty: false, syntaxError: "boom" }] },
+      { width: 375, regionScripts: [{ region: "NAV", empty: false, syntaxError: "boom" }] },
+    ],
+  });
+  assert.equal(findings.filter((each) => each.rule === "region-script").length, 1);
+});
+
+test("SH392: a runtime throw stays a console-error and is not double-reported", () => {
+  // The division of labour: this rule answers "does it parse", `pageerror` answers "did it throw".
+  // One defect reported by two rules would be two findings that can disagree about the count.
+  const { findings } = classify({
+    probes: [{ width: 1280, regionScripts: [{ region: "NAV", empty: false, syntaxError: null }] }],
+    consoleErrors: [{ text: "TypeError: x is not a function", width: 1280 }],
+  });
+  assert.equal(findings.filter((each) => each.rule === "region-script").length, 0);
+  assert.equal(findings.filter((each) => each.rule === "console-error").length, 1);
+});
+
+test("SH392: the reader compiles without running, so no region is initialised twice", () => {
+  // `readRegionScripts` is serialized into the page, so this asserts its SOURCE: `new Function` is
+  // a parse, and `eval`/`appendChild` would be an execution. The composer emits each region's
+  // script once, keyed by name, precisely so a layout that slots a nav twice does not initialise it
+  // twice — a checker that re-ran the body would reintroduce exactly that.
+  const source = readRegionScripts.toString();
+  assert.match(source, /new Function/, "it compiles the body");
+  assert.doesNotMatch(source, /\beval\(/, "and never evaluates it");
+  assert.doesNotMatch(source, /appendChild|document\.write|import\(/,
+    "and never re-injects it, which would run the script a second time");
+});
+
+test("SH392: the scripts line is printed even when nothing is wrong, and when there are none", () => {
+  // The whole complaint was that this field is delivered and never run. A report that said nothing
+  // when a page carries no region script would be indistinguishable from one where every script is
+  // fine — so `0 region scripts` is an answer, not an omission.
+  const none = describeReport({
+    target: "post:Blog/x", url: "https://x/", widths: [1280],
+    findings: [], counts: { total: 0, errors: 0, warnings: 0 }, capped: {}, regionScripts: [],
+  });
+  assert.match(none, /scripts: 0 region scripts on this page/);
+
+  const some = describeReport({
+    target: "post:Blog/x", url: "https://x/", widths: [1280],
+    findings: [], counts: { total: 0, errors: 0, warnings: 0 }, capped: {},
+    regionScripts: [
+      { region: "NAV", empty: false, syntaxError: null },
+      { region: "HERO", empty: false, syntaxError: "boom" },
+    ],
+  });
+  assert.match(some, /scripts: 2 region scripts compiled · 1 that does not parse/);
+});
+
+test("SH392: the command forwards the shape and the scripts, which no unit test could see", async () => {
+  // The defect this closes is a wiring one and it had been live since SH526: `classify` returned a
+  // `shape`, the command destructured three keys and not that one, and `describe`'s own comment
+  // said the line was "printed whether or not it produced a finding". Both halves were correct in
+  // isolation, which is why the unit tests above — each calling one function directly — all passed
+  // while the command printed neither line. Asserted through `run`, because that is the only view
+  // where the two meet.
+  const ctx = ctxWith({
+    observed: {
+      probes: [{
+        width: 1280,
+        shape: { landmarks: { main: 1 }, headings: [{ level: 1, text: "Hi" }] },
+        regionScripts: [{ region: "NAV", empty: false, syntaxError: "Unexpected token" }],
+      }],
+      requests: [],
+      consoleErrors: [],
+    },
+  });
+  await audit.run({}, ["https://blog.example.com/"], ctx);
+
+  assert.match(ctx.stdout.text, /shape: main · 1 heading/,
+    "SH526's shape line reaches the reader (it did not, until SH392 forwarded it)");
+  assert.match(ctx.stdout.text, /scripts: 1 region script compiled · 1 that does not parse/);
+  assert.match(ctx.stdout.text, /error region-script/);
+});
+
+test("SH392: --json carries the shape and the scripts too", async () => {
+  const ctx = ctxWith({
+    observed: {
+      probes: [{
+        width: 1280,
+        shape: { landmarks: { main: 1 }, headings: [] },
+        regionScripts: [{ region: "NAV", empty: false, syntaxError: null }],
+      }],
+      requests: [],
+      consoleErrors: [],
+    },
+  });
+  await audit.run({ json: true }, ["https://blog.example.com/"], ctx);
+  const report = JSON.parse(ctx.stdout.text);
+  assert.deepEqual(report.shape.landmarks, { main: 1 });
+  assert.equal(report.regionScripts.length, 1,
+    "an agent reading --json gets the same facts as a human reading the text");
 });

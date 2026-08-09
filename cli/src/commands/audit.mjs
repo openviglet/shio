@@ -28,7 +28,9 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { requireBrowser } from "../browser.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { LANDMARKS, PER_RULE_CAP, classify, describe, parseWidths, probe, readShape } from "../audit.mjs";
+import {
+  LANDMARKS, PER_RULE_CAP, classify, describe, parseWidths, probe, readRegionScripts, readShape,
+} from "../audit.mjs";
 import { pageTarget, resolveUrl } from "../snapshot.mjs";
 import { helpText } from "../help.mjs";
 
@@ -90,14 +92,27 @@ export async function run(flags, positionals, ctx) {
     },
     ctx,
   );
-  const { findings, counts, capped } = classify(observed, { contrast: flags.contrast });
+  // `shape` and `regionScripts` are destructured and forwarded, which SH392 had to fix before it
+  // could add the second one: `classify` has returned a shape since SH526 and this call site took
+  // only three of its keys, so the line its own comment says is "printed whether or not it produced
+  // a finding" was never printed by the command at all, and `--json` never carried it either. The
+  // unit tests could not see it — they call `classify` and `describe` directly, and each was right.
+  const { findings, counts, capped, shape, regionScripts } =
+    classify(observed, { contrast: flags.contrast });
 
   if (flags.json) {
     ctx.stdout.write(
-      `${JSON.stringify({ target, url: resolved.url, widths, counts, findings, capped }, null, 2)}\n`,
+      `${JSON.stringify(
+        { target, url: resolved.url, widths, counts, findings, capped, shape, regionScripts },
+        null,
+        2,
+      )}\n`,
     );
   } else {
-    ctx.stdout.write(describe({ target, url: resolved.url, widths, findings, counts, capped }, flags));
+    ctx.stdout.write(describe(
+      { target, url: resolved.url, widths, findings, counts, capped, shape, regionScripts },
+      flags,
+    ));
     if (resolved.preview) {
       // The banner is excluded from the findings, so the reader is told which page this was: a
       // draft through Shio's renderer is not what a visitor gets, and "the page is fine" means
@@ -189,7 +204,10 @@ async function inspect(url, { widths, credentials, flags, browser: playwright },
         // source and runs with no module scope, so `probe` cannot call it. Same page, same moment,
         // one more round trip inside the browser.
         const shape = await page.evaluate(readShape, LANDMARKS);
-        probes.push({ width, ...result, shape });
+        // SH392 — the render model's one code-valued field, finally executed by something. Its own
+        // evaluate for the same reason as `readShape` one line up.
+        const regionScripts = await page.evaluate(readRegionScripts);
+        probes.push({ width, ...result, shape, regionScripts });
       } finally {
         await page.close();
       }

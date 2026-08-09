@@ -1463,28 +1463,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.28 The field whose value is a program is the one nothing runs (SH392)
-
-SH248 settled that a `Region`'s `JAVASCRIPT` is never evaluated in the JVM and is
-shipped to the browser instead — the resolution of the Block D non-goal, and correct.
-The consequence nobody has picked up is that **this repository never executes it**.
-`ShRenderNoScriptEngineTest` asserts the opposite property (that the server *cannot* run
-it), the composer's test asserts the emission, and SH336's click interception is
-asserted as a script string. A region whose nav never opens, whose accordion throws on
-load, or whose selector matches nothing renders, hashes, lints and verifies clean.
-
-So the honest state is that the render model's one code-valued field is guaranteed to be
-*delivered* and not to *work*. SH391's harness is what changes that at a marginal cost:
-the page is already being loaded in a browser, so a console error, an uncaught
-rejection, and a declared behaviour that did not happen are findings beside the visual
-ones rather than a second mechanism.
-
-Two boundaries to keep. This is **not** a general test framework for content — an
-author's script is theirs, and the claim is only that it loads without erroring and that
-what the region declares it does happens. And it stays a **CLI gate**, never a `verify`
-finding: the server cannot see it, and one defect reported by two subsystems is two
-reports that disagree.
-
 ### XV.30 The window belongs in the query, and the reason it was not put there is a correctness argument (SH419)
 
 SH384's first deliverable was the measurement, and it found something the sweep
