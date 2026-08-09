@@ -362,33 +362,6 @@ the work.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.44 The redirect the crawler followed and the inventory forgot (SH563)
-
-The first run of SH560's corpus found this, which is the argument that corpus was filed
-on.
-
-`visit` follows one hop by hand, on purpose: the comment says the redirect should be
-*visible* in the inventory rather than erased by the fetch layer, and it returns `{
-...result, redirectedTo: pathOf(target) }`. `buildInventory` then builds the page row
-from `path`, `title`, `description`, `lang`, `status`, `depth`, `links`, `assets`,
-`forms`, `textChars` and three conditionals — and `redirectedTo` is in none of them. Its
-own JSDoc lists the field as part of a `visited` entry, so it is documented and dropped
-in one file.
-
-This is what SH467 is about, one phase earlier. `/docs/guia` 301s to `/docs/guia/` and
-both answer; the capture records **two pages with the same content** and no statement
-that one is the other's redirect. A conversion writes two Pages from that, so the
-replica serves the body twice and redirects neither — the source's canonical choice is
-gone, and the 301 every external link to the old form needs cannot be rebuilt, because
-nothing downstream knows there was one.
-
-The status is not the workaround. `entry.status` is the status of the response the crawl
-ended on, which is the 200: by the time the row is built the 301 is resolved, so a
-reader cannot tell a redirected path from a served one.
-
-Cheap, and its assertion exists and is red — group E of `source-corpus.test.mjs` asserts
-the field for this reason (SH527: the assertion that would have caught it).
-
 ### IX.45 An absolute href becomes a field value, and the rebase never sees it (SH564)
 
 `propose` extracted `ctaHref = "https://awkward.test/docs/guia"` from an anchor whose

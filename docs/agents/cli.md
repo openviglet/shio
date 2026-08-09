@@ -100,6 +100,13 @@ look broken while an untrue one went unstated. Four rules the walk keeps. **One 
 off-host link is recorded and never followed. **A seed that redirects off-host is refused**, naming
 the host it actually served, because `example.com → www.example.com` followed silently files every
 path under an origin nobody named; a *page* redirecting off-host mid-crawl is just an outbound link.
+**A same-origin hop is followed by hand and then *recorded*, on the row of the path that redirected
+(SH563)**: the row keeps its own `path`, the body of the hop's target, and `redirectedTo`. `status`
+is not the substitute — by the time the row is built the 301 is resolved, so it holds the 200 and a
+redirected path is indistinguishable from a served one; without the field `/docs/guia` and
+`/docs/guia/` are two pages with the same body and no statement that one is the other's canonical,
+so a conversion writes the body twice and rebuilds neither the choice nor the 301 every external
+link to the old spelling needs.
 **robots.txt bounds it** — an exact agent group beats `*` outright rather than merging with it, the
 longest rule wins, `Allow` wins a tie, and `--ignore-robots` is recorded *in the inventory* so a
 capture taken without permission cannot later look like one taken with it. **Sequential over a

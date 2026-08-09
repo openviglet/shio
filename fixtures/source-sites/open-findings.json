@@ -18,12 +18,6 @@
       "archetype": "awkward",
       "assertion": "title-entity-decoded",
       "what": "scanPage reads <title> into the page row without decoding its entities, so a source title of `Awkward &amp;amp; company` is stored verbatim and escaped again on render. <title> is RCDATA, not raw text — SH550's exclusion was written for <script> and <style>."
-    },
-    {
-      "id": "SH563",
-      "archetype": "awkward",
-      "assertion": "redirect-recorded",
-      "what": "buildInventory drops the redirectedTo that visit returns, so /antigo and /docs/guia/ are two pages with the same body and no record that one is the other's redirect."
     }
   ]
 }

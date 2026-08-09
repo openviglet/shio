@@ -1308,6 +1308,16 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       forms: doc.forms.length,
       textChars: doc.textChars,
       ...(doc.baseHref ? { baseHref: doc.baseHref } : {}),
+      // SH563 — the hop this page was reached through. `visit` follows one redirect by hand and
+      // returns `redirectedTo` precisely so the 301 is VISIBLE in the inventory rather than erased
+      // by the fetch layer; its own JSDoc listed the field and this row dropped it, so it was
+      // documented and discarded in one file. `status` is not the workaround: by the time the row
+      // is built the redirect is resolved, so it holds the 200 and a reader cannot tell a
+      // redirected path from a served one. Without it `/docs/guia` and `/docs/guia/` are captured
+      // as two pages with the same body and no statement that one is the other's canonical, so a
+      // conversion writes the body twice and rebuilds neither the choice nor the 301 that every
+      // external link to the old form needs.
+      ...(entry.redirectedTo ? { redirectedTo: entry.redirectedTo } : {}),
       ...(entry.rendered ? { rendered: true } : {}),
       // SH592 — what this page said about being asked for again, so the next `--refresh` can ask
       // conditionally and be told 304 instead of being handed the page. Optional by design and NOT

@@ -823,10 +823,14 @@ function langOf(markup) {
  * that lists what is there, or refuse and say which page to make the front door. **Writing neither a
  * page nor a note is the one that is not**, and that is what this replaces.</p>
  *
- * <p>The first is unavailable rather than rejected: `buildInventory` drops the `redirectedTo` that
- * `visit` returns, which is its own open task — so "the locale the source redirected to" is not a
- * fact this run holds, and inventing it from the first path would be a guess wearing a redirect's
- * clothes.</p>
+ * <p>The first is unavailable for this archetype rather than rejected, and since SH563 the reason is
+ * the source's rather than the capture's: the inventory now carries `redirectedTo` on any row the
+ * crawl reached through a hop, so "the locale the source redirected to" is a fact a run *can* hold —
+ * but a source whose `/` **404s** never redirected anywhere, so no row carries it and there is
+ * nothing to reproduce. Inventing the target from the first path would still be a guess wearing a
+ * redirect's clothes. The case where `/` does 301 does not reach here at all: the crawl records a
+ * page at `/`, so the `PAGES_FOLDER` check below returns null and the source's own front door is
+ * written.</p>
  *
  * <p>So the default is the second and `--home` is the third, **turned from a refusal into an
  * instruction** (P6). A refusal would stop a conversion in which every page is right over a page the

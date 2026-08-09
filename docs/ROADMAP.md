@@ -21,7 +21,6 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH563** (deps: SH560 ✅) **A page reached through a redirect is stored with no record that it was one** — visit returns redirectedTo and buildInventory never copies it into the page row, so both spellings are captured as two pages and the replica reproduces neither. → §IX.44
 - 📋 **SH564** (deps: SH560 ✅, SH466 ✅) **A section field holding a link keeps the source's own host, so an accepted block's button leaves the replica** — SH466 rebases root-relative hrefs at render and rightly leaves an absolute one alone, so ctaHref keeps the source's host and nothing tells it from outbound. → §IX.45
 - 📋 **SH565** (deps: SH560 ✅, SH476 ✅, SH550 ✅) **A page title carrying an entity is stored undecoded, so every replicated title doubles it** — SH476 decodes text as it becomes a field and SH550 decodes attributes, and scanPage reads title into the row through neither, so & renders as &amp; on both paths. → §IX.46
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
