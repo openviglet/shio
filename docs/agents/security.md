@@ -216,3 +216,41 @@ a literal in one file, and the question is whether each literal still denotes an
 **Proved by injecting one.** A `/ghost-of-a-retired-console/**` added to a `permitAll()` block
 failed the build naming the entry; the line was then reverted. A lint that has only ever been run
 on a clean tree is green for two indistinguishable reasons.
+
+## Form submissions: the door is scoped, and it is never anonymous (SH364)
+
+SH247 rendered the fields and deliberately left the receiving half open, because a public endpoint
+that writes content is a security decision and not a rendering one. SH364 took it. **Submissions
+are token-scoped; Shio grows no anonymous write route.** The rejected alternative is the 2018 shape
+— a genuinely public endpoint bounded only by site config — and it was rejected one iteration after
+SH363 shipped an instrument whose entire purpose is proving no unauthenticated write route exists
+by accident.
+
+**The token is public by construction, so the scope is the control rather than the secrecy.** It
+sits in a page a stranger can read. A `FORM` scope therefore names one site and may do exactly one
+thing: create a `DRAFT` post of an eligible type in that site's configured folder. No publish, no
+read, no move, no second site.
+
+**Eligibility excludes every system post-type, and that predicate carries the whole severity.**
+`PageLayout`, `Region` and `Theme` are Handlebars, compiled and executed by the renderer — so a form
+that could create one is not a spam problem, it is a stranger writing a template this instance
+runs. The rule is the site's allow-list *intersected with* "not a system type": an allow-list alone
+still lets an operator name `Theme` by mistake.
+
+**The destination is site configuration, never a template setting.** This is the one part of 2018's
+`ShFormConfiguration` not adopted: it carried `folder` on the template, and a folder chosen in a
+template is a folder an attacker chooses, because a template is content and content is what a
+compromised author edits. `/api/v2/site-webhook` is the precedent — a table keyed by site, its own
+API, no column on `ShSite`.
+
+**Owner is the token.** An anonymous submission has no user to attribute, and naming the token is
+both true and what an operator needs when one form starts producing rubbish. Retention is a
+non-question: it is a post, so the trash, the export, the ACL and the agent surface already apply.
+
+`ShRenderFormTest.theHelperNamesNoDestination` holds the half that is decidable before the endpoint
+exists — `{{#form}}` emits no `action`, no `/api/` path and no token, and the page's single `action`
+stays the author's. The page says what the form is *about*; the site says where it *goes*; neither
+can answer the other's question. SH631 (the scope), SH632 (the site's destination) and SH633 (the
+endpoint) build it, and SH633 must classify its route `AUTHENTICATED` in
+`ShAnonymousRouteAccessTest` — the one endpoint on the product where a future reader is likeliest
+to reason it "should" be allow-listed.

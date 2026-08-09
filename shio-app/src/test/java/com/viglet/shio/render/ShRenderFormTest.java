@@ -222,6 +222,40 @@ class ShRenderFormTest {
                 .doesNotContain("<fieldset");
     }
 
+    @Test
+    @DisplayName("the helper never names where a submission goes — the destination is not the "
+            + "template's to choose (SH364)")
+    void theHelperNamesNoDestination() {
+        String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
+
+        // SH364 scoped the receiving half and the security decision that scopes it is this one: the
+        // target folder and the eligible post-type are named by the SITE, never by the page. A
+        // folder chosen in a template is a folder an attacker chooses, because a template is
+        // content and content is what a compromised author edits. So when the endpoint exists, the
+        // helper must still not know its address — the only thing that would put a Shio-issued
+        // destination into a page is this helper starting to emit one.
+        assertThat(html)
+                .as("""
+                        the helper emits fields, and a field is a name/label/widget/input/required \
+                        row. An `action`, a form id, a token or an /api/ path appearing in what it \
+                        produced would mean the renderer had become the thing that decides where a \
+                        stranger's data lands (SH364).""")
+                .doesNotContain("/api/v2/cda/form")
+                .doesNotContain("/api/v2/form")
+                .doesNotContain("data-shio-form-action")
+                .doesNotContain("formaction");
+
+        // The one `action` on the page is the author's, unchanged and pointing off-instance. Held
+        // explicitly so a future helper that "helpfully" rewrote it would fail here rather than
+        // silently redirect every form on every rendered page.
+        assertThat(html.split("action=\"", -1).length - 1)
+                .as("""
+                        exactly one action attribute, and it is the one the layout wrote. The \
+                        helper rewriting or adding one is the same defect as emitting markup, one \
+                        attribute smaller (SH364).""")
+                .isEqualTo(1);
+    }
+
     // ── fixture ─────────────────────────────────────────────────────────────────────
 
     private ShFolder folder(ShSite site, Instant when) {

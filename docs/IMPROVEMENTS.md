@@ -1463,29 +1463,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.26 The form's receiving half, now that it has a design (SH364)
-
-SH247 shipped the rendering half and left this deliberately. What changed is that it is
-no longer an open question: FSP's `ShFormConfiguration` carries `createPost` and
-`folder`, so **a submission becomes a post in a named folder** — no storage subsystem,
-no retention policy of its own, because the trash, the export, the ACL and the agent
-surface already apply to a post.
-
-What is genuinely undecided is the door, and it is a security decision rather than a
-rendering one. A public endpoint that writes content needs, at minimum: the folder named
-by the **site** rather than by the form (a folder chosen in a template is a folder an
-attacker chooses), the post created `DRAFT` so SH7's review queue is the moderation
-step, a rate limit per subject, and a honeypot — the cheapest spam control that costs an
-author nothing.
-
-Three things worth settling before code. **Whether the CMS should accept this at all**,
-given the renderer is preview-grade and production delivery is Next.js over the CDA: the
-front end posting to its own handler and calling the CDA is a legitimate answer that
-leaves Shio's write surface closed. **What the post-type may be** — an allow-list on the
-site, or any type, which is the difference between a contact form and a
-content-injection endpoint. And **what a submission is worth keeping**: a post carries
-an owner, and an anonymous one has none.
-
 ### XV.28 The field whose value is a program is the one nothing runs (SH392)
 
 SH248 settled that a `Region`'s `JAVASCRIPT` is never evaluated in the JVM and is
@@ -1626,6 +1603,80 @@ change only new conversions see, leaving old sites bound to a name the code no l
 emits, or as something that carries the existing ones across. The second needs a
 statement about what `convert` may rewrite on a site that already exists, which the
 product has not made anywhere else.
+
+### XV.38 The destination is site configuration, because a template is content (SH632)
+
+2018's `ShFormConfiguration` carried `folder` — a **template** setting. That is the one
+part of the 2018 answer SH364 does not adopt, and the reason is a sentence: a folder
+chosen in a template is a folder an attacker chooses, because a template is content and
+content is what a compromised author edits.
+
+So the target folder and the eligible post-types are configuration **of the site**,
+reachable by an operator and not by a page. `/api/v2/site-webhook` is the precedent
+worth following — a table keyed by site, its own API, no column added to `ShSite` — and
+it is the precedent for the same reason: per-site delivery configuration that an
+operator owns.
+
+This is also what keeps the renderer honest. `{{#form type="Contact"}}` names a *type*
+and nothing else; it does not know an address and must not learn one, which
+`ShRenderFormTest.theHelperNamesNoDestination` now holds. The page says what the form is
+about; the site says where it goes; neither can answer the other's question.
+
+The third of SH364's questions resolves here too. **What is a submission worth
+keeping?** It is a post, so the trash, the export, the ACL and the agent surface already
+apply and it needs no retention policy of its own. Its owner is the **token** rather
+than a person — an anonymous submission has no user to attribute, and naming the token
+is both true and the thing an operator needs when one form starts producing rubbish.
+
+### XV.40 The scope is the control, because the token is public by construction
+
+SH364 settled the door: submissions are **token-scoped and never anonymous**. The token
+sits in a page a stranger can read, so secrecy is not what protects anything — the
+**scope** is, and that makes the scope the whole security design rather than a field on
+it.
+
+A `FORM` scope names one site and may do exactly one thing: create a `DRAFT` post of an
+eligible type in that site's configured folder. It cannot publish, cannot read, cannot
+move, cannot touch another site.
+
+**Eligibility excludes every system post-type, and that is not tidiness.** `PageLayout`,
+`Region` and `Theme` are Handlebars, compiled and executed by the renderer. A form that
+could create one is not a spam problem, it is a stranger writing a template this
+instance runs — the whole endpoint's severity turns on this one predicate, which is why
+it belongs in the scope rather than in a check the endpoint remembers to call.
+
+So the answer to *what post-type may be submitted* is an allow-list on the site,
+intersected with "not a system type" — an allow-list alone would still let an operator
+name `Theme` by mistake, and that is not a mistake worth leaving available.
+
+`ShApiTokenScope` already exists and `ShApiTokenFilter` already maps a scope to a role,
+so this composes rather than forks (P10). What is new is a scope whose authority is
+bounded by *data* — a site, a folder, a type list — where the existing ones are bounded
+by verb.
+
+### XV.41 The endpoint, once nothing about it is still undecided (SH633)
+
+With the scope bounded (§XV.40) and the destination owned by the site (§XV.38), what is
+left is ordinary. `POST` one document, get a `DRAFT` post back or a refusal.
+
+Four properties, none of them novel here, which is the argument for this rather than a
+submissions subsystem:
+
+- **`DRAFT` only, always.** SH7's review queue is the moderation step, so a submission is visible to
+  a curator and invisible to a visitor, and nothing new decides what "approved" means.
+- **The per-token bucket the CDA already has** (`shio.cda.rate-limit`). A form token is an API
+  token, so it is already limited; what this needs is a *tight* default, because the caller is the
+  internet rather than one integrator.
+- **A honeypot field** — the cheapest spam control that costs an author nothing and a visitor
+  nothing: rendered hidden, and a submission must leave it empty.
+- **Classified `AUTHENTICATED` in `ShAnonymousRouteAccessTest`.** Not a formality here: this is the
+  one endpoint whose whole purpose is to be reachable from a public page, so it is where a future
+  reader is likeliest to reason that it "should" be allow-listed. SH363's instrument answers that
+  with a build failure instead of a discussion.
+
+The teaching refusals matter more than usual because the caller is a browser nobody
+controls: a non-eligible type, a full bucket and a tripped honeypot are three different
+answers, and only the first two should say so.
 
 ## XVI. The human half (Block O) — what reading the console next found
 
