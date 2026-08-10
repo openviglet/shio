@@ -1488,31 +1488,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.36 The other half of the label, and the migration inside it (SH573)
-
-SH559 fixed the reader's problem: the preview banner now states `verbatim`, `authorable`
-or `mixed`, computed from the page's own fields, so nobody has to infer a mode from a
-name. It deliberately did not fix the name, and this is that half.
-
-`convert.mjs` still calls the one generated layout `<site> (fidelity)`. That was
-accurate when one layout served one mode. SH464 made a single layout serve all three, so
-the word has been decoration since — decoration that looks like a fact, which is why
-SH559 had to *quote* the title rather than print it. A quoted wrong name is a smaller
-defect, not a closed one.
-
-The reason it was left is the whole content of this task. The title is the key in
-`site.postTypeLayout`: `convert` writes the binding and the post's `TITLE` from one
-constant, so a new conversion is self-consistent the moment that constant changes. A
-site converted *before* is not — its stored binding names the old title, and re-running
-`convert` rewrites both, which is a write nobody asked for on a site somebody may have
-edited since.
-
-So the decision is not what to call it. It is whether the rename ships as a constant
-change only new conversions see, leaving old sites bound to a name the code no longer
-emits, or as something that carries the existing ones across. The second needs a
-statement about what `convert` may rewrite on a site that already exists, which the
-product has not made anywhere else.
-
 ### XV.38 The destination is site configuration, because a template is content (SH632)
 
 2018's `ShFormConfiguration` carried `folder` — a **template** setting. That is the one

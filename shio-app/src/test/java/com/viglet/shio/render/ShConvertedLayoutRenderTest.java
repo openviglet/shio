@@ -120,6 +120,18 @@ class ShConvertedLayoutRenderTest {
     private static final Path VOCABULARY_THEME =
             Path.of("..", "cli", "src", "vocabulary-theme.mjs");
 
+    /**
+     * Deliberately the name {@code convert} no longer writes (SH573).
+     *
+     * <p>SH573 renamed the generated layout to {@code <site> (layout)} because {@code (fidelity)}
+     * was a mode claim on a template that has served all three modes since SH464. This fixture keeps
+     * the old spelling <b>on purpose</b>, and it is stronger for it: the property under test is that
+     * nothing downstream reads meaning out of this title — the banner computes the mode from the
+     * page's own fields (SH559) and the renderer resolves a layout by binding. A fixture titled
+     * after the mode it does <em>not</em> serve is the adversarial case for exactly that.</p>
+     *
+     * <p>So this is not a rename somebody forgot. Changing it would weaken the test.</p>
+     */
     private static final String LAYOUT_TITLE = "Sh464 (fidelity)";
 
     private static final String BACKSLASH = "\\";

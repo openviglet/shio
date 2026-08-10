@@ -2243,3 +2243,31 @@ two CDA reads answer **403 from the security chain**, which runs before any `@Co
 first (**SH622**). Mutating examples are **declared unexecuted** and printed with the reason rather
 than dropped: a suite silently covering half its subjects reads exactly like one covering all of
 them.
+
+**The generated layout is `<site> (layout)`, and the rename is the interesting part (SH573).**
+`convert` called it `<site> (fidelity)`, which was accurate when one layout served one mode and has
+been decoration since **SH464 made a single layout serve all three** — decoration shaped like a
+fact, which is the worst kind. SH559 fixed the reader's half by computing the mode from the page's
+own fields for the preview banner, and had to *quote* this title rather than print it, because
+somebody looking at `layout <site> (fidelity)` beside an unstyled page reasonably concluded the
+conversion had picked the wrong mode. A quoted wrong name is a smaller defect, not a closed one.
+
+**Why a rename is safe here, which is what the task was actually about.** The string is both the key
+in `site.postTypeLayout` *and* the layout post's `TITLE`, and they are written from **one call in
+one document**. So a new conversion is self-consistent the moment the constant changes; a site
+converted before and never re-run stays self-consistent too — its binding and its post both carry
+the old title, and it renders correctly forever, the two vintages differing by a word; and a re-run
+**migrates it and cannot half-migrate it**, because the layout post is addressed by *url*
+(`/theme/layout`) rather than by title, so the re-run updates that same post and writes the matching
+binding in the same document. No orphan, and no window where the binding names a title no post has.
+
+So existing sites are carried across **on their next conversion and never behind anybody's back** —
+a re-run is a write the operator asked for and already rewrites this post's `HTML`; what SH573
+deliberately does not do is reach into a site nobody re-converted, which would be a write nobody
+asked for on a site somebody may have edited since. `convert.test.mjs` asserts the two are one
+string, and that the title names no mode at all — they are two literals in two places in the output,
+and an edit that changed one would produce a site whose every page renders empty.
+
+`ShConvertedLayoutRenderTest` keeps a fixture titled `Sh464 (fidelity)` **on purpose**: the property
+under test is that nothing downstream reads meaning out of this title, and a layout named after a
+mode it does not serve is the adversarial case for exactly that.

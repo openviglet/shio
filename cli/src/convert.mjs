@@ -63,7 +63,45 @@ export const THEME_FOLDER = "/theme";
 export const FIDELITY_LAYOUT_URL = `${THEME_FOLDER}/layout`;
 /** Where the captured `Theme` post lives — named once, because the layout now references it. */
 export const CAPTURED_THEME_URL = `${THEME_FOLDER}/captured`;
-export const fidelityLayoutTitle = (site) => `${site} (fidelity)`;
+
+/**
+ * What the one generated layout is called (SH573).
+ *
+ * <h3>Why it stopped saying `(fidelity)`</h3>
+ *
+ * <p>That was accurate when one layout served one mode. **SH464 made a single layout serve all
+ * three**, so the word had been decoration since — decoration shaped like a fact, which is the worst
+ * kind: SH559 had to *quote* this title in the preview banner rather than print it, because a
+ * reader looking at `layout <site> (fidelity)` beside an unstyled page reasonably concluded the
+ * conversion had picked the wrong mode. A quoted wrong name is a smaller defect, not a closed one.
+ * The banner states the mode from the page's own fields; this states what the post is.</p>
+ *
+ * <h3>The migration, which is the actual content of SH573</h3>
+ *
+ * <p>This string is the key in `site.postTypeLayout` **and** the layout post's `TITLE`, and that is
+ * what makes a rename safe rather than a schema change. Both are written from this one function in
+ * one document, so:</p>
+ *
+ * <ul>
+ *   <li><b>A new conversion is self-consistent</b> the moment the constant changes.</li>
+ *   <li><b>A site converted before and never re-run stays self-consistent too</b> — its stored
+ *       binding names the old title and its layout post carries the old title, so it renders
+ *       correctly forever. Nothing dangles; the two vintages simply differ by a word.</li>
+ *   <li><b>A re-run migrates it</b>, and cannot half-migrate it. The layout post is addressed by
+ *       <em>url</em> (`/theme/layout`), so a re-run updates the same post rather than creating a
+ *       second one, and the binding it writes in the same document comes from the same call. The
+ *       old title is not left behind as an orphan and there is no window where the binding names a
+ *       title no post has.</li>
+ * </ul>
+ *
+ * <p>So the answer to "does the rename carry existing sites across" is <b>yes, on their next
+ * conversion, and never behind anybody's back</b>. Re-running `convert` is already a write the
+ * operator asked for, and it already rewrites this post's `HTML`; what SH573 does not do is reach
+ * into a site nobody re-converted, which would be a write nobody asked for on a site somebody may
+ * have edited since. `ShConvertedLayoutRenderTest` is the standing proof that the renderer never
+ * reads meaning out of this title.</p>
+ */
+export const generatedLayoutTitle = (site) => `${site} (layout)`;
 
 /**
  * Where a composed page lands, and the post-type that composes it (SH438).
@@ -228,7 +266,7 @@ export function buildConversion({
       ...(vocabulary.length ? { postTypes: vocabulary } : {}),
       // SH449 — the edge that turns a layout into a rendered page. Written only when there is a
       // layout to bind, so a document that does not need it is the same bytes it was before (P5).
-      ...(pages.length ? { postTypeLayout: { [PAGE_TYPE]: fidelityLayoutTitle(site) } } : {}),
+      ...(pages.length ? { postTypeLayout: { [PAGE_TYPE]: generatedLayoutTitle(site) } } : {}),
       folders: folders.map((path) => ({ path })),
       posts,
     },
@@ -653,7 +691,7 @@ function pageLayout(markup, site, theme, capturedFor = false) {
     type: "PageLayout",
     folder: THEME_FOLDER,
     data: {
-      TITLE: fidelityLayoutTitle(site),
+      TITLE: generatedLayoutTitle(site),
       // A THEME naming a post the site does not have is a marked failure at render time
       // (`data-shio-theme-missing`), so it is named only when that theme post is in this document.
       ...(theme ? { THEME: theme } : {}),

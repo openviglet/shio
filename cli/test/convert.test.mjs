@@ -403,10 +403,30 @@ test("SH449: nothing accepted writes the page verbatim, which is what fidelity m
     "and inlines the captured theme, which is the one thing a replica must not take from the source");
   assert.deepEqual(
     document.postTypeLayout,
-    { Page: "Acme (fidelity)" },
+    { Page: "Acme (layout)" },
     "SH328/SH449: the binding rides the document. A layout nobody bound renders nothing, and this "
       + "is the one edge no post.upsert can express — without it --out would be un-appliable",
   );
+  // SH573 — the binding and the layout post's TITLE are the same string, which is the whole reason
+  // renaming this label is safe. They are written from one call in one document, so a conversion
+  // cannot emit a binding naming a title no post has; and because the post is addressed by URL, a
+  // re-run of `convert` on a site converted under the old name updates that post and its binding
+  // together. Asserted rather than trusted: they are two literals in two places in the output, and
+  // a future edit that changed one would produce a site whose every page renders nothing.
+  assert.equal(
+    layout.data.TITLE,
+    document.postTypeLayout[Object.keys(document.postTypeLayout)[0]],
+    "SH573: the layout's TITLE and the postTypeLayout binding must be one string — a site whose "
+      + "binding names a title no post carries resolves no layout, and every page renders empty",
+  );
+  assert.doesNotMatch(
+    layout.data.TITLE,
+    /fidelity|verbatim|authorable|mixed/i,
+    "SH573: the title states what the post IS, not which mode it serves. SH464 made one layout "
+      + "serve all three, so a mode in this name is decoration shaped like a fact — which is why "
+      + "SH559's banner had to quote it rather than print it",
+  );
+
   assert.deepEqual(
     document.postTypes,
     ["Page"],

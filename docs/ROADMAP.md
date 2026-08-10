@@ -86,7 +86,6 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-- 📋 **SH573** (deps: SH559 ✅) **A generated layout's title claims a mode that one layout has not determined since SH464** — convert.mjs still mints <site> (fidelity) for the layout every mode renders through, and SH559 could only quote it because the title is a postTypeLayout key. → §XV.36
 - 📋 **SH631** (deps: —) **A form submission has no scope to arrive on, so the endpoint cannot be written safely** — A FORM token has to name one site, and its eligible post-types have to exclude every system type, because a submission that creates a PageLayout is server-side template execution. → §XV.40
 - 📋 **SH632** (deps: —) **Nothing on a site says which folder a submission lands in or which types may be submitted** — The destination has to be site configuration and never template content, so it needs a home beside the site rather than a setting a page can choose. → §XV.38
 - 📋 **SH633** (deps: SH631, SH632) **A rendered form still posts nowhere once the scope and the destination exist** — The endpoint itself: DRAFT only into the site's folder, honeypot, and the per-token bucket the CDA already has, classified AUTHENTICATED in the anonymous-access table. → §XV.41
