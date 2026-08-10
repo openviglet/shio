@@ -15,6 +15,7 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.api.agent.ShAgentDesiredStateService;
+import com.viglet.shio.api.agent.ShAgentProofService;
 import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.api.agent.ShAgentSessionContext;
@@ -51,11 +52,14 @@ public class ShApplyTool implements ShMcpTool {
 
     private final ShAgentDesiredStateService shAgentDesiredStateService;
     private final ShBlueprintService shBlueprintService;
+    private final ShAgentProofService shAgentProofService;
 
     public ShApplyTool(ShAgentDesiredStateService shAgentDesiredStateService,
-                       ShBlueprintService shBlueprintService) {
+                       ShBlueprintService shBlueprintService,
+                       ShAgentProofService shAgentProofService) {
         this.shAgentDesiredStateService = shAgentDesiredStateService;
         this.shBlueprintService = shBlueprintService;
+        this.shAgentProofService = shAgentProofService;
     }
 
     @Override
@@ -70,11 +74,20 @@ public class ShApplyTool implements ShMcpTool {
         // decision-changing fact is kept — idempotent, the blueprint verb, dryRun and changed=0 —
         // and what went is the sentence explaining *why* idempotence is useful, which a caller
         // that has read "applying twice changes nothing" does not need spelled out.
+        //
+        // SH227 trimmed it again, to fund `verify`, and took the other direction the task named:
+        // the blueprint clause was restating the `blueprint` parameter's own schema description.
+        // A caller reads both, so the sentence bought nothing but the word "instead" — and what
+        // survives still says the verb exists and where the packages live, which is the part the
+        // schema line cannot say from inside a parameter. The `dryRun=true shows the diff` clause
+        // went the same way and for the same reason — the parameter one line down says "Report the
+        // diff and write nothing", which is the same instruction with the consequence attached.
+        // What could not be dropped is `changed=0 means no drift`, because nothing else on the
+        // surface tells a caller how to read a successful apply that did nothing.
         return "Declare what a site section should contain and make it so. Unlike shio_write "
                 + "this is a statement, not a script: applying the same document twice changes "
-                + "nothing, so it is safe to re-send after a compaction. Set `blueprint` to apply "
-                + "a ready-made section from shio://blueprints instead of declaring one. "
-                + "dryRun=true shows the diff; changed=0 means no drift.";
+                + "nothing, so it is safe to re-send after a compaction. `blueprint` applies a "
+                + "ready-made one from shio://blueprints. changed=0 means no drift.";
     }
 
     @Override
@@ -95,8 +108,11 @@ public class ShApplyTool implements ShMcpTool {
                                 "type", "object",
                                 "required", List.of("url"),
                                 "properties", Map.of(
+                                        // "in this document" was the wording SH227 spent last, and
+                                        // "here" says it: the fact that has to survive is that `url`
+                                        // is what the apply MATCHES on, not a display field.
                                         "url", ShMcpTool.string(
-                                                "Friendly URL — the post's identity in this document."),
+                                                "Friendly URL — the post's identity here."),
                                         "type", ShMcpTool.string("Post-type name; needed to create."),
                                         "folder", ShMcpTool.string("Folder path; needed to create."),
                                         "data", ShMcpTool.object("Field values."),
@@ -112,7 +128,14 @@ public class ShApplyTool implements ShMcpTool {
                         "Delete posts inside the declared folders that this document does not "
                                 + "declare. Requires `folders`."),
                 "dryRun", ShMcpTool.bool("Report the diff and write nothing."),
-                "confirm", ShMcpTool.string("dryRun's token; required to delete.")),
+                "confirm", ShMcpTool.string("dryRun's token; required to delete."),
+                // SH227 — the same argument SH157 gave shio_write, arriving on the tool that
+                // wanted it more. A desired-state apply writes a whole section in one call, so it
+                // is the write most likely to want a lint of what it just did, and until now the
+                // finer-grained tool was the only one that could ask. The blueprint verb below
+                // has always verified unconditionally; this closes the document branch, which is
+                // the half that returned a changeset and no proof.
+                "verify", ShMcpTool.bool("Lint what this run touched and return the findings.")),
                 List.of("site"));
     }
 
@@ -140,9 +163,14 @@ public class ShApplyTool implements ShMcpTool {
         ShAgentDesiredState desired = new ShAgentDesiredState(site, folders(arguments),
                 posts(arguments), ShMcpArgs.bool(arguments, "prune"),
                 ShMcpArgs.string(arguments, "confirm"));
-        return ShAgentReadTerse.changes(dryRun
+        // The proof is attached after the write, not inside it: ShAgentProofService opens its own
+        // read-only transaction precisely because the changes must have committed before anything
+        // lints them. On a dryRun there is nothing committed to lint, and it says so by declining
+        // rather than by reporting a clean site that does not exist yet.
+        return ShAgentReadTerse.changes(shAgentProofService.attach(dryRun
                 ? shAgentDesiredStateService.plan(desired, false, actor)
-                : shAgentDesiredStateService.apply(desired, false, actor));
+                : shAgentDesiredStateService.apply(desired, false, actor),
+                ShMcpArgs.bool(arguments, "verify")));
     }
 
     /**

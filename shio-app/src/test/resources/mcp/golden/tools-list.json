@@ -66,6 +66,10 @@
           "site" : {
             "description" : "#string",
             "type" : "string"
+          },
+          "verify" : {
+            "description" : "#string",
+            "type" : "boolean"
           }
         },
         "required" : [ "site" ],

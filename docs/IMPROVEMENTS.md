@@ -397,26 +397,6 @@ the SH22 join hazard the same walk used to carry.
 > baseline getting leaner, and what it left behind is mostly the shape of that argument
 > getting harder: the calls that remain are real work.
 
-### XIII.7 `shio_apply` cannot ask for its own proof (SH227)
-
-SH157 gave `shio_write` a `verify` argument for about fifteen tokens of schema, and could
-not give it to `shio_apply`. The measured tool sits at **457 against a 460 per-tool
-ceiling** — there is no room, and the ceiling exists precisely to make that a decision
-rather than a drift.
-
-The awkward part is which tool got it. A desired-state apply writes a whole section at
-once, so it is the write *most* likely to want a lint of what it just did; the batch that
-did get the argument is the finer-grained one. An MCP client therefore still spends the
-closing turn on exactly the operation where folding it in saves most.
-
-The fix is a trim, not a raise. `shio_apply` is the tool the budget file has been warning
-about since Block J — it is the only one carrying two verbs, and its description has grown
-each time one of them gained an option. Two directions are worth measuring before choosing:
-state the blueprint verb in one clause instead of a sentence, or move the parameter
-documentation that duplicates the schema out of the description. If neither buys fifteen
-tokens, the honest answer is that the eleventh tool (SH160) used the headroom and this one
-needs the twelfth slot's argument instead.
-
 ### XIII.8 A write proves only its posts (SH228)
 
 The SH157 proof collects the `post:` addresses a run touched and lints those. Everything

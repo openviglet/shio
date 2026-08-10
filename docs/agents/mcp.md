@@ -236,3 +236,44 @@ construction where a list in a README is right until the next release.
 **Landed in the order the task set**: the assertion first, red on line 28 naming the four tools it
 found there, then the deletion. A guard written after the fix would have been a guard nobody had
 seen fail.
+
+## `shio_apply` proves its own writes (SH227)
+
+`shio_apply` takes `verify: true` and returns the lint of what the apply touched, in the
+same encoding `GET /agent/verify` uses — the argument SH157 gave `shio_write` and could
+not afford here.
+
+**The gap was on the wrong tool.** A desired-state apply writes a whole section in one
+call, so it is the write *most* likely to want a lint of what it just did; the batch that
+got the argument is the finer-grained one. The blueprint verb on this same tool has always
+verified unconditionally (`ShBlueprintApplied.Verified`), which left the **document**
+branch as the only unproved write on the MCP surface.
+
+**Where the budget actually was.** The task argued from `shio_apply` at 457 against a 460
+per-tool ceiling. That figure was one revision stale — SH342 had already trimmed the tool
+to 435 — so the per-tool ceiling was never the binding constraint. `mcp.tools.list.total`
+was: at 2395 with 2390 of tools in it, the list had been a wall for any new argument
+anywhere. Read the per-tool number before planning a trim; `ShMcpToolBudgetTest` prints
+every tool when it fails, and forcing it to fail is the cheapest way to get the table.
+
+**What the trims were, and the rule they came from.** All three were description prose
+restating a parameter the model reads one line later:
+
+| Dropped | Kept |
+|---|---|
+| "Set `blueprint` to apply a ready-made section … instead of declaring one" | that the verb exists, and `shio://blueprints` |
+| "dryRun=true shows the diff" | `changed=0 means no drift` |
+| "the post's identity in this document" | "the post's identity here" |
+
+They gave back 10 of the ~26 the argument cost; the remaining 5 raised the total to 2400.
+A trim that funds only part of a raise is still the right order — it is what makes the
+raise a measured remainder rather than the first answer.
+
+**The wire is golden-tested.** `ShMcpWireConformanceTest` holds
+`src/test/resources/mcp/golden/tools-list.json`; a new argument is an intended protocol
+change, regenerated with `-Dshio.mcp.golden.update=true` and reviewed as a diff. Here it
+was four lines, which is the point of the check.
+
+**One thing the proof will not do.** `ShAgentProofService` lints *post* addresses, so a
+folder-only apply attaches nothing. A test that declares only folders passes for the wrong
+reason.

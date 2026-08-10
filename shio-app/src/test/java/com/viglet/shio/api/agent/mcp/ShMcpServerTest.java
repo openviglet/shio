@@ -11,8 +11,10 @@ package com.viglet.shio.api.agent.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.StreamSupport;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -146,6 +148,61 @@ class ShMcpServerTest {
         assertThat(result.get("isError").asBoolean()).isFalse();
         assertThat(result.get("content").get(0).get("text").asString())
                 .startsWith("shio-context ");
+    }
+
+    @Test
+    @DisplayName("SH227: shio_apply can ask for its own proof, the way shio_write already could")
+    void applyCanAskForItsOwnProof() {
+        // The gap SH157 left. It gave `verify` to shio_write for about fifteen tokens and could
+        // not afford it here, so the write MOST likely to want a lint — a desired-state apply
+        // writes a whole section in one call — was the one that had to spend a closing turn on
+        // GET /agent/verify. The blueprint verb on this same tool has always verified
+        // unconditionally, which made the document branch the only unproved write on the surface.
+        //
+        // Driven entirely over MCP on purpose: the site is created with shio_write's `site.upsert`
+        // (free — one value in an enum that already existed, which is why shio_apply does not carry
+        // a createSite argument), so this asserts the surface a client actually has.
+        String site = "sh227-" + UUID.randomUUID().toString().substring(0, 8);
+        ObjectNode upsert = objectMapper.createObjectNode();
+        upsert.put("op", "site.upsert");
+        upsert.put("address", "site:" + site);
+        // `render.provision` in the same batch, because the seeded catalogue this context starts
+        // with does not carry Article — and the render types are the ones an op exists to create,
+        // so nothing here mutates the shared post-type catalogue by hand (SH289's trap).
+        ObjectNode provision = objectMapper.createObjectNode();
+        provision.put("op", "render.provision");
+        provision.put("address", "site:" + site);
+        ObjectNode writeArgs = objectMapper.createObjectNode();
+        writeArgs.set("ops", objectMapper.createArrayNode().add(upsert).add(provision));
+        assertThat(callTool("shio_write", writeArgs).get("isError").asBoolean())
+                .as("the site has to exist before a document can be applied to it")
+                .isFalse();
+
+        ObjectNode applyArgs = objectMapper.createObjectNode();
+        applyArgs.put("site", site);
+        // A post, not just a folder: the proof lints post addresses, so a folder-only document
+        // has nothing to attach and would have made this test pass for the wrong reason. `Article`
+        // is provisioned by the batch above.
+        applyArgs.set("folders", objectMapper.createArrayNode().add("/sh227"));
+        ObjectNode post = objectMapper.createObjectNode();
+        post.put("url", "/sh227/hello");
+        post.put("type", "Region");
+        post.put("folder", "/sh227");
+        post.set("data", objectMapper.createObjectNode().put("TITLE", "Hello"));
+        applyArgs.set("posts", objectMapper.createArrayNode().add(post));
+        applyArgs.put("verify", true);
+        String proved = text(callTool("shio_apply", applyArgs));
+
+        applyArgs.remove("verify");
+        String unproved = text(callTool("shio_apply", applyArgs));
+
+        assertThat(proved)
+                .as("""
+                        `verify` on shio_apply returns the lint of what the apply touched, in the                         same encoding GET /agent/verify uses — so the closing turn of the                         write-then-check loop is an argument rather than a round trip (SH227).""")
+                .contains("report ");
+        assertThat(unproved)
+                .as("and it stays opt-in: an apply that did not ask pays nothing for the proof")
+                .doesNotContain("report ");
     }
 
     @Test
@@ -311,5 +368,16 @@ class ShMcpServerTest {
         JsonNode error = call("prompts/get", params).get("error");
 
         assertThat(error.get("data").toString()).contains("new-site");
+    }
+
+    private JsonNode callTool(String name, ObjectNode arguments) {
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put("name", name);
+        params.set("arguments", arguments);
+        return call("tools/call", params).get("result");
+    }
+
+    private static String text(JsonNode result) {
+        return result.get("content").get(0).get("text").asString();
     }
 }
