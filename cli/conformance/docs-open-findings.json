@@ -1,21 +1,5 @@
 {
   "note": "SH499 — the published-example assertions that are red at HEAD, each owned by an open task. The fifth ledger in the family cli/test/known-debt.test.mjs joins, and it is a NAMED LIST rather than a ceiling for the reason stated there: a ceiling lets one task pay the debt and the next spend it. Every entry is a case docs-examples.conformance.mjs reports rather than fails on, so the suite can live in `pnpm conformance` without crying wolf while still holding the assertion the SH338 order says must land before the fix. The list is checked in BOTH directions: an entry whose case has gone green FAILS the run, naming the id to delete.",
   "doc": "docs/agents/cli.md",
-  "findings": [
-    {
-      "id": "SH621",
-      "request": "GET /api/v2/post-type/Article",
-      "what": "An unknown post-type name answers 404 with Content-Length: 0 — no problem document, so a renamed type and a missing one are the same answer. The same miss on /api/v2/agent/read returns type/title/fix/allowed, so P6 is implemented on the agent surface only."
-    },
-    {
-      "id": "SH622",
-      "request": "GET /api/v2/cda/site",
-      "what": "The security chain answers 403 before any controller advice runs, so the body is Spring's {timestamp,status,error,path} and nothing names the scope the endpoint wanted."
-    },
-    {
-      "id": "SH622",
-      "request": "GET /api/v2/cda/post/{id}/editable",
-      "what": "Same cause as the row above, on the endpoint the Universal Editor page publishes. Held separately because it is a second page sending a reader at a silent 403, and a fix that only covers /cda/site would leave this one red."
-    }
-  ]
+  "findings": []
 }

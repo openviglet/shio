@@ -257,7 +257,11 @@ priority = [
   # the whole form-submission path (SH631/632/633 plus the two gaps building it exposed, SH636 and
   # SH637). `lint` reported it as `priority.block-empty` the moment the last line shipped, which is
   # the only reason this is a two-line edit and not a queue nobody re-read.
-  "Block H",
+  #
+  # Block H came off the same way when SH638 emptied it (2026-08-10) — the agent gateway, from the
+  # Turing backfill and the model proposal chain (SH523/524/525) through the sitemap's published
+  # field, `startHere`'s routing, the pack's omitted report, and the two teaching refusals a caller
+  # meets first (SH621, SH622). `lint` named it `priority.block-empty` on the last ship.
   "Block K",
   "Block J",
   "Block O",

@@ -36,6 +36,40 @@ export interface SectionProps<T = Record<string, unknown>> {
    */
   resolveAsset?: (value: string) => string;
   className?: string;
+  /**
+   * The section post's id, which turns the rendered markup into something the editor can edit
+   * (SH638).
+   *
+   * <h3>The host contract, which is the part that needed deciding</h3>
+   *
+   * The Java renderer emits `data-shio-post` / `data-shio-prop` itself, because it knows which post
+   * it is rendering. A headless host does not get that for free: it fetched the section over the
+   * CDA and React draws it, so **only the host knows the id**. Passing it here is that contract,
+   * stated in one optional prop rather than in prose a host has to find.
+   *
+   * Optional on purpose. A public page has no reason to carry editing metadata, and a host that
+   * omits it renders byte-identical markup to before — so the annotations cost nothing where they
+   * are not wanted, and the editor is opt-in per render rather than per build.
+   */
+  postId?: string;
+}
+
+/**
+ * The attributes that make one field editable in place (SH638).
+ *
+ * `data-shio-prop` names the field; `data-shio-prop-attr` names *which attribute* carries the value
+ * when it is not the element's text — an `href` or a `src`. Both forms exist because `shio
+ * annotations` counts both, and once a complete page read as 9 of 10 because only the first was
+ * counted (SH503's near-miss regression).
+ */
+export function editable(field: string, attribute?: string): Record<string, string> {
+  return attribute ? { "data-shio-prop": field, "data-shio-prop-attr": attribute }
+    : { "data-shio-prop": field };
+}
+
+/** The section root's own annotation: which post this markup is, and of what type. */
+export function editableSection(postId: string | undefined, type: string): Record<string, string> {
+  return postId ? { "data-shio-post": postId, "data-shio-post-type": type } : {};
 }
 
 export interface HeroData {

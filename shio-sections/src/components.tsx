@@ -32,41 +32,54 @@ import {
   type TestimonialData,
 } from "./types";
 import { SECTION_TYPES } from "./post-types";
+import { editable, editableSection } from "./types";
 
 const cx = (...parts: Array<string | undefined>) => parts.filter(Boolean).join(" ");
 
 /** Rich text arrives as HTML from the editor widget; rendered as such, deliberately. */
 const html = (value: string) => ({ __html: value });
 
-export function Hero({ data, resolveAsset = defaultResolveAsset, className }: SectionProps<HeroData>): JSX.Element {
+export function Hero({ data, resolveAsset = defaultResolveAsset, className, postId }: SectionProps<HeroData>): JSX.Element {
   const image = str(data.image);
   const ctaHref = str(data.ctaHref);
   const ctaLabel = str(data.ctaLabel);
   return (
-    <section className={cx("shio-section", "shio-hero", str(data.align) === "center" ? "shio-hero--center" : undefined, className)}>
-      {str(data.heading) && <h1 className="shio-hero__heading">{data.heading}</h1>}
-      {str(data.subheading) && <p className="shio-hero__subheading">{data.subheading}</p>}
-      {str(data.body) && <div className="shio-hero__body" dangerouslySetInnerHTML={html(data.body as string)} />}
+    <section className={cx("shio-section", "shio-hero", str(data.align) === "center" ? "shio-hero--center" : undefined, className)} {...editableSection(postId, "SectionHero")}>
+      {str(data.heading) && <h1 className="shio-hero__heading" {...editable("heading")}>{data.heading}</h1>}
+      {str(data.subheading) && <p className="shio-hero__subheading" {...editable("subheading")}>{data.subheading}</p>}
+      {str(data.body) && <div className="shio-hero__body" {...editable("body")} dangerouslySetInnerHTML={html(data.body as string)} />}
       {ctaHref && ctaLabel && (
-        <a className="shio-hero__cta" href={ctaHref}>
-          {ctaLabel}
+        // Two fields, two elements — one `data-shio-prop` per element is the contract, and a link
+        // carries both a target and a label. The span is markup this adds on purpose: SH503's
+        // defect was precisely a curator able to rename a button and unable to repoint it.
+        <a className="shio-hero__cta" href={ctaHref} {...editable("ctaHref", "href")}>
+          <span {...editable("ctaLabel")}>{ctaLabel}</span>
         </a>
       )}
-      {image && <img className="shio-hero__image" src={resolveAsset(image)} alt={str(data.heading) ?? ""} />}
+      {image && <img className="shio-hero__image" src={resolveAsset(image)} alt={str(data.heading) ?? ""} {...editable("image", "src")} />}
     </section>
   );
 }
 
-export function FeatureGrid({ data, className }: SectionProps<FeatureGridData>): JSX.Element {
+export function FeatureGrid({ data, className, postId }: SectionProps<FeatureGridData>): JSX.Element {
   const features = rows<{ title?: string; body?: string; icon?: string }>(data.features);
   return (
     <section
       className={cx("shio-section", "shio-features", className)}
       data-columns={str(data.columns) ?? "3"}
+      // A layout switch, and the attribute carries it verbatim — so it is editable as a value
+      // rather than as text, which is what `-prop-attr` is for.
+      {...editable("columns", "data-columns")}
+      {...editableSection(postId, "SectionFeatureGrid")}
     >
-      {str(data.heading) && <h2 className="shio-features__heading">{data.heading}</h2>}
-      {str(data.intro) && <p className="shio-features__intro">{data.intro}</p>}
-      <ul className="shio-features__list">
+      {str(data.heading) && <h2 className="shio-features__heading" {...editable("heading")}>{data.heading}</h2>}
+      {str(data.intro) && <p className="shio-features__intro" {...editable("intro")}>{data.intro}</p>}
+      {/* The collection is annotated; its ROWS are not. A relator row is its own post and the
+          editor needs that post's id to write to it — and `rows()` receives plain objects off the
+          wire with no id in them (SH475's shape). Annotating them as if they were editable would
+          be worse than leaving them alone: the editor would attach and have nowhere to save. The
+          gap is declared in `field-reachability.test.mjs` rather than papered over. */}
+      <ul className="shio-features__list" {...editable("features")}>
         {features.map((feature, index) => (
           <li className="shio-features__item" key={str(feature.title) ?? index}>
             {str(feature.icon) && <span className="shio-features__icon" data-icon={feature.icon} aria-hidden="true" />}
@@ -79,28 +92,28 @@ export function FeatureGrid({ data, className }: SectionProps<FeatureGridData>):
   );
 }
 
-export function Cta({ data, className }: SectionProps<CtaData>): JSX.Element {
+export function Cta({ data, className, postId }: SectionProps<CtaData>): JSX.Element {
   const ctaHref = str(data.ctaHref);
   const ctaLabel = str(data.ctaLabel);
   return (
-    <section className={cx("shio-section", "shio-cta", className)} data-variant={str(data.variant) ?? "primary"}>
-      {str(data.heading) && <h2 className="shio-cta__heading">{data.heading}</h2>}
-      {str(data.body) && <p className="shio-cta__body">{data.body}</p>}
+    <section className={cx("shio-section", "shio-cta", className)} data-variant={str(data.variant) ?? "primary"} {...editable("variant", "data-variant")} {...editableSection(postId, "SectionCta")}>
+      {str(data.heading) && <h2 className="shio-cta__heading" {...editable("heading")}>{data.heading}</h2>}
+      {str(data.body) && <p className="shio-cta__body" {...editable("body")}>{data.body}</p>}
       {ctaHref && ctaLabel && (
-        <a className="shio-cta__button" href={ctaHref}>
-          {ctaLabel}
+        <a className="shio-cta__button" href={ctaHref} {...editable("ctaHref", "href")}>
+          <span {...editable("ctaLabel")}>{ctaLabel}</span>
         </a>
       )}
     </section>
   );
 }
 
-export function LogoWall({ data, resolveAsset = defaultResolveAsset, className }: SectionProps<LogoWallData>): JSX.Element {
+export function LogoWall({ data, resolveAsset = defaultResolveAsset, className, postId }: SectionProps<LogoWallData>): JSX.Element {
   const logos = rows<{ name?: string; image?: string; href?: string }>(data.logos);
   return (
-    <section className={cx("shio-section", "shio-logos", className)}>
-      {str(data.heading) && <h2 className="shio-logos__heading">{data.heading}</h2>}
-      <ul className="shio-logos__list">
+    <section className={cx("shio-section", "shio-logos", className)} {...editableSection(postId, "SectionLogoWall")}>
+      {str(data.heading) && <h2 className="shio-logos__heading" {...editable("heading")}>{data.heading}</h2>}
+      <ul className="shio-logos__list" {...editable("logos")}>
         {logos.map((logo, index) => {
           const image = str(logo.image);
           // The company name is the alt text, always: a logo wall of images with no alt
@@ -123,11 +136,12 @@ export function LogoWall({ data, resolveAsset = defaultResolveAsset, className }
   );
 }
 
-export function Testimonial({ data, resolveAsset = defaultResolveAsset, className }: SectionProps<TestimonialData>): JSX.Element {
+export function Testimonial({ data, resolveAsset = defaultResolveAsset, className, postId }: SectionProps<TestimonialData>): JSX.Element {
   const quotes = rows<{ quote?: string; author?: string; role?: string; avatar?: string }>(data.quotes);
   return (
-    <section className={cx("shio-section", "shio-testimonials", className)}>
-      {str(data.heading) && <h2 className="shio-testimonials__heading">{data.heading}</h2>}
+    <section className={cx("shio-section", "shio-testimonials", className)} {...editableSection(postId, "SectionTestimonial")}>
+      {str(data.heading) && <h2 className="shio-testimonials__heading" {...editable("heading")}>{data.heading}</h2>}
+      <div hidden {...editable("quotes")} />
       {quotes.map((quote, index) => {
         const avatar = str(quote.avatar);
         return (
@@ -145,13 +159,13 @@ export function Testimonial({ data, resolveAsset = defaultResolveAsset, classNam
   );
 }
 
-export function Faq({ data, className }: SectionProps<FaqData>): JSX.Element {
+export function Faq({ data, className, postId }: SectionProps<FaqData>): JSX.Element {
   const questions = rows<{ question?: string; answer?: string }>(data.questions);
   return (
-    <section className={cx("shio-section", "shio-faq", className)}>
-      {str(data.heading) && <h2 className="shio-faq__heading">{data.heading}</h2>}
-      {str(data.intro) && <p className="shio-faq__intro">{data.intro}</p>}
-      <dl className="shio-faq__list">
+    <section className={cx("shio-section", "shio-faq", className)} {...editableSection(postId, "SectionFaq")}>
+      {str(data.heading) && <h2 className="shio-faq__heading" {...editable("heading")}>{data.heading}</h2>}
+      {str(data.intro) && <p className="shio-faq__intro" {...editable("intro")}>{data.intro}</p>}
+      <dl className="shio-faq__list" {...editable("questions")}>
         {questions.map((entry, index) => (
           <div className="shio-faq__item" key={str(entry.question) ?? index}>
             {str(entry.question) && <dt className="shio-faq__question">{entry.question}</dt>}
@@ -165,11 +179,11 @@ export function Faq({ data, className }: SectionProps<FaqData>): JSX.Element {
   );
 }
 
-export function RichText({ data, className }: SectionProps<RichTextData>): JSX.Element {
+export function RichText({ data, className, postId }: SectionProps<RichTextData>): JSX.Element {
   return (
-    <section className={cx("shio-section", "shio-richtext", className)}>
-      {str(data.heading) && <h2 className="shio-richtext__heading">{data.heading}</h2>}
-      {str(data.body) && <div className="shio-richtext__body" dangerouslySetInnerHTML={html(data.body as string)} />}
+    <section className={cx("shio-section", "shio-richtext", className)} {...editableSection(postId, "SectionRichText")}>
+      {str(data.heading) && <h2 className="shio-richtext__heading" {...editable("heading")}>{data.heading}</h2>}
+      {str(data.body) && <div className="shio-richtext__body" {...editable("body")} dangerouslySetInnerHTML={html(data.body as string)} />}
     </section>
   );
 }

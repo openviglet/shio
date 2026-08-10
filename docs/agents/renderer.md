@@ -1521,3 +1521,41 @@ its type.
 whole list rather than fixed in passing, because emitting the attribute is a change to every
 component *and* to what a headless host is expected to do with it — and because closing it one
 component at a time is then a diff that visibly shrinks a list.
+
+## A section is editable on the page (SH638)
+
+SH524's instrument counted it: **25 of 25** section fields carried no editing annotation, so every
+page composed from `@viglet/shio-sections` was content the Universal Editor could not reach. That
+matters because the package is what a conversion writes — SH464's authorable mode turns captured
+markup into fields a human edits, and if the component annotates none of them the mode delivers a
+model nobody can use *from the page*, putting the curator back in the console form the visual editor
+exists to remove.
+
+**The host contract was the part that needed deciding, and it is one optional prop.** The Java
+renderer emits `data-shio-post` / `data-shio-prop` itself because it knows which post it is
+rendering. A headless host does not: it fetched the section over the CDA and React drew it, so
+**only the host knows the id**. `SectionProps.postId` is that contract, stated in a prop rather than
+in prose a host has to find — and it is optional, so a public page carries no editing metadata and a
+host that omits it renders byte-identical markup to before.
+
+**A link needs two elements.** One `data-shio-prop` per element is the contract, and a CTA carries
+both a target and a label, so the label is now wrapped in a `<span>`. That markup is added on
+purpose: SH503's defect was exactly a curator able to rename a button and unable to repoint it.
+
+Two limits are **declared rather than papered over**:
+
+- **A relator's rows are not annotated.** A row is its own post and the editor needs that post's id
+  to write to it; `rows()` receives plain objects off the wire with no id. Annotating them anyway
+  would be worse than leaving them — the editor would attach and have nowhere to save, which is
+  SH475's shape. The collection carries the annotation; the rows do not.
+- **`SectionHero.align` is rendered as a class token**, not a value, so no attribute carries it
+  verbatim and there is nothing to attach to. `columns` and `variant` are the contrast that makes
+  this a distinction rather than an excuse: both are layout switches too, both land verbatim in a
+  `data-` attribute, and both *are* annotated.
+
+**SH524's instrument was checking `data-shio-field`, an attribute this product does not have.** The
+real vocabulary is `data-shio-prop` and `data-shio-prop-attr` — what `ShRegionComposer` emits and
+what `shio annotations` counts. The list it produced was right *by accident*, because nothing was
+annotated at all, so the instrument passed its own review while asserting the wrong name. That is
+precisely the failure an asserted list is supposed to prevent, and it survived a full review two
+iterations ago.

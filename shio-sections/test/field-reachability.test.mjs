@@ -50,12 +50,32 @@ const isRendered = (field) =>
 /**
  * Whether the rendered field carries an editing annotation.
  *
- * The Java renderer emits `data-shio-field` so the Universal Editor can put a control on the
- * rendered element. A React section rendered by a headless host has to emit the same thing or the
- * field is read-only on the page — which is exactly SH503: rendered, and annotated by nothing.
+ * <b>This checked `data-shio-field` and that attribute does not exist in this product.</b> SH638
+ * found it: the real vocabulary is `data-shio-prop` (the field) and `data-shio-prop-attr` (which
+ * attribute carries it when the value is not the element's text), which is what
+ * `cli/src/annotations.mjs` counts and what `ShRegionComposer` emits. The list this produced was
+ * right by accident — nothing was annotated at all — so the instrument passed its own review while
+ * asserting the wrong name, which is the failure mode an asserted list is supposed to prevent.
+ *
+ * Matched on the `editable(...)` helper rather than on the attribute text, because that is what the
+ * components call and a raw attribute in this file would now be the anomaly worth failing on.
  */
 const isAnnotated = (field) =>
-  SOURCE.includes(`data-shio-field="${field}"`) || SOURCE.includes(`shioField="${field}"`);
+  SOURCE.includes(`editable("${field}")`) || SOURCE.includes(`editable("${field}",`);
+
+/**
+ * Fields no attribute carries verbatim, so there is nothing for the editor to attach to.
+ *
+ * `SectionHero.align` is rendered as a *class token* (`shio-hero--center`), not as a value: the
+ * class attribute also carries three other things, so annotating it would point the editor at a
+ * string it must not rewrite. `columns` and `variant` are the contrast that makes this a real
+ * distinction rather than an excuse — both are layout switches too, and both land verbatim in a
+ * `data-` attribute, so both ARE annotated.
+ *
+ * The honest fix is a discrete attribute for it, which is a markup change with a class-name
+ * contract behind it and does not belong inside this task.
+ */
+const NOT_CARRIED_VERBATIM = new Set(["SectionHero.align"]);
 
 const sectionFields = () =>
   sectionPostTypes()
@@ -89,23 +109,44 @@ test("SH524: the types this package does not draw are declared, not inferred", (
   }
 });
 
-test("SH524: which rendered fields carry no editing annotation, held as a list", () => {
+test("SH524/SH638: every rendered field carries an editing annotation", () => {
   const unannotated = sectionFields().filter((entry) => {
     const field = entry.split(".")[1];
-    return isRendered(field) && !isAnnotated(field);
+    return isRendered(field) && !isAnnotated(field) && !NOT_CARRIED_VERBATIM.has(entry);
   });
 
-  // SH503's defect, generalised and counted for the first time: **no** section field is annotated,
-  // so every page composed from this package is rendered content a curator cannot edit in place.
-  // Asserted as the whole set rather than as a number, so closing it one component at a time is a
-  // diff that shrinks a visible list — and so that adding a section without annotations is the
-  // same diff, in the other direction.
+  // Was 25 of 25 when SH524 counted it: rendered, stored, and inert on the page — a conversion's
+  // authorable mode delivering a model the Universal Editor could not reach, which puts the curator
+  // back in the console form the visual editor exists to remove. SH638 closed it.
   assert.deepEqual(
     unannotated,
-    sectionFields(),
-    "Every section field is currently unannotated. This is the SH503 shape at package scale: " +
-      "rendered, stored, and inert on the page. It is held here as the whole list rather than " +
-      "fixed in passing, because emitting the annotation is a change to every component and to " +
-      "what the host application is expected to do with it — a task, not a line.",
+    [],
+    "A field the page renders and does not annotate is one a curator can see and cannot edit — " +
+      "SH503's defect, which was found by counting annotations against fields by hand.",
+  );
+});
+
+test("SH638: the one field no attribute carries is declared, not silently skipped", () => {
+  // A signed list of one, for the reason NOT_DRAWN_HERE is a list and not a rule: an exemption
+  // nobody can see is an exemption that grows.
+  for (const entry of NOT_CARRIED_VERBATIM) {
+    assert.ok(
+      sectionFields().includes(entry),
+      `${entry} is exempted and no longer a declared field — an exemption for something that does `
+        + `not exist is a line nobody removes and the next reader trusts.`,
+    );
+  }
+});
+
+test("SH638: a relator's rows are not annotated, and that is declared", () => {
+  // The honest limit. A relator row is its own post and the editor needs that post's id to write
+  // to it; `rows()` receives plain objects off the wire with no id in them. Annotating them anyway
+  // would be worse than leaving them: the editor would attach and have nowhere to save (SH475's
+  // shape). So the collection carries the annotation and the rows do not, and this says so rather
+  // than leaving a reader to infer it from an absence.
+  assert.match(
+    SOURCE,
+    /A relator row is its own post/,
+    "the reason rows are unannotated is written where somebody changing this file will read it",
   );
 });

@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block H — The Agent Gateway (MCP + agent-shaped protocol)
-
-- 📋 **SH638** (deps: SH524 ✅) **Every section field renders and none of them can be edited on the page** — SH524's instrument counted it: 25 of 25 section fields carry no data-shio-field, so a page composed from the React sections is content the Universal Editor cannot reach. → §VIII.39
-
 ## Block K — Perception & verification loop
 
 - 📋 **SH564** (deps: SH560 ✅, SH466 ✅) **A section field holding a link keeps the source's own host, so an accepted block's button leaves the replica** — SH466 rebases root-relative hrefs at render and rightly leaves an absolute one alone, so ctaHref keeps the source's host and nothing tells it from outbound. → §IX.45

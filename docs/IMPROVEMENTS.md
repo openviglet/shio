@@ -168,37 +168,6 @@ AI the product contains.
 
 # Part 1 — the reorientation (active design)
 
-## VIII. The Agent Gateway (Block H)
-
-> The core deliverable: an MCP surface designed for an agent. **Supersedes the old
-> SH24 epic** (SH32–SH37), which was CRUD-over-MCP — it would have faithfully
-> reproduced every discovery and write cost it was meant to remove. Full protocol
-> design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
-
-### VIII.39 Rendered, stored, and inert on the page (SH638)
-
-SH503 found `SectionHero.ctaHref` rendered into an `href` and annotated by nothing, so a
-curator could rename a button and never repoint it. SH524's instrument answered the
-general form of that question for the first time, and the answer is **25 of 25**: no
-field in `@viglet/shio-sections` carries `data-shio-field`, so every page composed from
-the package is content the Universal Editor cannot reach.
-
-That is worse than it sounds, because the package is what a conversion writes. SH464's
-authorable mode exists to turn captured markup into fields a human edits; if the section
-that renders those fields annotates none of them, the mode delivers a model nobody can
-use from the page — the curator is back in the console form, which is the round trip the
-visual editor exists to remove.
-
-The work is one change repeated: each component emits the attribute on the element
-carrying the value, and a relator row emits it per item with its index. What needs
-deciding first is the **host contract** — the Java renderer emits these annotations
-itself and a headless Next.js host does not, so the package has to declare what a host
-must do for the editor to attach at all.
-
-`field-reachability.test.mjs` holds the whole list as an equality, deliberately: closing
-this one component at a time visibly shrinks it, and adding a section with no
-annotations is the same diff in the other direction.
-
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
