@@ -24,6 +24,8 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import com.viglet.shio.api.agent.ShAgentIntents;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -420,5 +422,40 @@ class ShAgentP2ConformanceTest {
         message.put("method", "resources/read");
         message.putObject("params").put("uri", uri);
         return shMcpServer.handle(message).toString();
+    }
+    @Test
+    @DisplayName("SH601: every intent the benchmark scores is routed in the manifest a reader gets")
+    void theRoutingReachesAReader() {
+        List<String> startHere = shAgentManifestService.manifest().startHere();
+
+        // The half that could silently not happen. SH523's chain shows the shape: a table built for
+        // a benchmark and a table published to a reader can drift, and the score stays green while
+        // the reader is told nothing — so this asserts the published text carries every row.
+        for (ShAgentIntents.Intent intent : ShAgentIntents.INTENTS) {
+            assertThat(startHere)
+                    .as("""
+                            '%s' is scored by ShAgentDiscoveryCostTest and must also be ROUTED:                             the manifest was complete and still cost every round its discovery                             time, because completeness was never the constraint — mapping an                             intent onto 57 booleans was (SH601)""", intent.id())
+                    .anySatisfy(line -> {
+                        assertThat(line).contains(intent.when());
+                        assertThat(line).contains(intent.call());
+                    });
+        }
+    }
+
+    @Test
+    @DisplayName("SH601: the routing branches — it is not a second ordered plan")
+    void theRoutingIsAlternativesNotSteps() {
+        List<String> startHere = shAgentManifestService.manifest().startHere();
+
+        // The old shape was five ordered lines, and an ordered list reads as a sequence. If the
+        // rows arrived without saying they are alternatives, a reader would work through all six
+        // — which costs more than the list it replaced, not less.
+        assertThat(startHere)
+                .as("the branch announces itself, so the rows read as alternatives (SH601)")
+                .contains("then, whichever you need:");
+        assertThat(ShAgentIntents.lines())
+                .as("""
+                        and every row is `question → call`, keyed by what a reader arrives with                         rather than by capability — a row named after a capability puts the                         mapping back on the reader, which is the work this removes""")
+                .allSatisfy(line -> assertThat(line).contains(" → "));
     }
 }

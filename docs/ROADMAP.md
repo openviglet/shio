@@ -11,7 +11,6 @@
 
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
-- 📋 **SH601** (deps: SH597 ✅, SH598 ✅) **startHere is an inventory, so the one call leaves the choosing undone** — P2 promises one call replaces a session and what arrives is a list of everything, so a reader still has to map an intent onto it, which is the mapping that failed every round. → §VIII.35
 - 📋 **SH608** (deps: SH600 ✅) **The context pack narrows the same way the manifest did and still says nothing** — SH600 gave the manifest an omitted report and include=instance on the pack still drops the model, the sitemap and the conventions with a 200, the same silent projection one endpoint over. → §VIII.36
 - 📋 **SH621** (deps: —) **An unknown post-type name answers 404 with an empty body** — P6 stops at the agent surface, so the one name-keyed surface answers a typo with zero bytes and a caller cannot tell a renamed type from a missing one. → §VIII.37
 - 📋 **SH622** (deps: —) **A rejected credential is a bare Spring error, so the first 4xx an agent meets carries no instructions** — The security chain answers before any controller advice runs, so 401 and 403 arrive as timestamp/status/error/path and never name the scope the endpoint wanted. → §VIII.38

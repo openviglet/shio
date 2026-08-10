@@ -1354,3 +1354,44 @@ published page pays nothing per row.
 
 The fixture had to gain a published twin to make any of this observable — ten drafts and no live row
 is a shape in which the sitemap's own defect cannot be seen, which is how it survived SH545.
+
+## Inventory is not routing (SH601)
+
+**The manifest was complete, and that is the uncomfortable finding**: every round that lost time to
+discovery lost it holding a correct and complete list. Completeness was never the constraint. A
+reader arrives with an *intent* — *this run failed with a 500*, *what conventions does this instance
+already have* — and what the manifest offered was 57 booleans, 28 paths and a `limits` object.
+Mapping the first onto the second was the work, it was unbudgeted, and it is where the errors were:
+`diagnostics: true` is discoverable to a reader who already suspects diagnostics exist.
+
+`startHere` listed and did not branch. It now does: two facts true whatever the intent, then
+`then, whichever you need:` and six rows of **question → one call**.
+
+**Keyed by the question, not the capability.** That is what keeps it routing rather than a fifth
+registry (SH599 went the other way deliberately). A row named after a capability puts the mapping
+back on the reader, and adding a row *because the capability exists* is exactly how this becomes the
+thing it replaces. The set is closed and small, and three of the six are taken verbatim from rounds
+that got them wrong.
+
+**One table, two readers.** `ShAgentIntents` is in main and `ShAgentDiscoveryCostTest` reads it,
+which was SH601's own instruction — build the table once, score against it, then route with it. A
+benchmark whose intents were written separately would score a different set than an agent is told
+about, and the first time they drifted the score would still be green. `ShAgentP2ConformanceTest`
+asserts the other direction: every scored intent appears in the manifest a reader actually gets.
+
+**Paid for by deletion, not by a raise.** Three of the five old lines are gone — "write with batch",
+"then verify", and the addressing detail — because the routing now answers them per intent, and
+saying them twice would be the inventory this replaces at the cost the budget refuses. Measured
+after: manifest 2635/2650, **terse 2399/2400 — one token of headroom**, which is recorded in
+`token-budgets.properties` because this ceiling is now a wall for any new manifest line.
+
+**The trim overshot and an instrument caught it within the hour.** Dropping the MCP line took the
+eleven tool names out of what a reader can reach from one call — that line is the *only* place they
+are published — and SH598's reachability walk failed with all eleven in its NOT-NAMED list. It came
+back shortened rather than restored: the prose around the names carried no decision, and the names
+are the whole point of it.
+
+`ShAgentManifestTest` used to cap `startHere` at five lines, on the premise that a long list is a
+plan and a short one an instruction. The premise was half right, and this is the correction — five
+ordered lines were still a plan. The bound moved rather than being dropped: the **preamble** is
+asserted at two lines, because that is what every reader pays for whatever they came to do.

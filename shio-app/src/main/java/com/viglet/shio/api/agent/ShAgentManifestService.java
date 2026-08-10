@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent;
 
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -512,27 +513,40 @@ public class ShAgentManifestService {
     }
 
     /**
-     * The opening move. Kept short on purpose: a long list is a plan the agent
-     * has to evaluate, a short one is an instruction it can follow.
+     * The opening move, then the branch (SH601).
+     *
+     * <p>It used to be five ordered lines: read the pack, address content this way, write with
+     * batch, then verify, and MCP exists. That is a <b>plan</b>, and a reader does not arrive with
+     * a plan — they arrive with an intent. Mapping "this run failed with a 500" onto a list of
+     * everything was the unbudgeted work, and it is where the errors were.</p>
+     *
+     * <p>So: the two facts that are true whatever the intent, then {@link ShAgentIntents} — the
+     * question a reader arrives with, and the one call. Three of the five old lines are gone rather
+     * than kept beside it, which is what pays for the routing: "write with batch" and "then verify"
+     * are now the answers to two of the rows, and saying them twice would be the inventory this
+     * replaces, at the cost the budget refused.</p>
      */
     private List<String> startHere() {
-        return List.of(
-                "GET /api/v2/agent/context?format=terse — model, sitemap and conventions in one "
-                        + "call; store the returned `digest` and compare it next session before "
-                        + "re-reading anything",
-                "address content as post:<site>/<url> or folder:<site>/<path>; "
-                        + "GET /api/v2/agent/resolve turns one into an id when an endpoint needs it",
-                "write with POST /api/v2/agent/batch (atomic, addressed, dryRun-able) rather than "
-                        + "one id-keyed call per object — and before modelling a whole section by "
-                        + "hand, check GET /api/v2/agent/blueprints for a package that already "
-                        + "applies one",
-                "then verify instead of asking a human: GET /api/v2/agent/verify?format=terse "
-                        + "reports content and route defects with a fix each, and "
-                        + "GET /api/v2/agent/render?address=... proves a page's structure",
-                "over MCP: POST /mcp speaks the Model Context Protocol, with the same "
-                        + "capabilities as tools (shio_context, shio_find, shio_read, shio_write, "
-                        + "shio_apply, shio_publish, shio_assets, shio_changes, shio_verify, "
-                        + "shio_digest)");
+        List<String> lines = new ArrayList<>();
+        lines.add("GET /api/v2/agent/context?format=terse — model, sitemap and conventions in one "
+                + "call; store the returned `digest` and compare it next session before "
+                + "re-reading anything");
+        lines.add("address content as post:<site>/<url> or folder:<site>/<path>; "
+                + "GET /api/v2/agent/resolve turns one into an id when an endpoint needs it");
+        // The branch. Prefixed so a reader scanning for their own situation knows these are
+        // alternatives rather than further steps — an ordered list read as a sequence is exactly
+        // the misreading the old shape invited.
+        lines.add("then, whichever you need:");
+        lines.addAll(ShAgentIntents.lines());
+        // Kept, and the trim that dropped it was caught by SH598's reachability walk within the
+        // hour: this line is the ONLY place the tool names are published, so removing it took
+        // eleven tools out of what a reader can reach from one call. Shortened rather than
+        // restored — the prose around the names carried no decision, and the names are the whole
+        // point of it.
+        lines.add("over MCP: POST /mcp — tools shio_context, shio_find, shio_read, shio_write, "
+                + "shio_apply, shio_publish, shio_assets, shio_changes, shio_verify, shio_digest, "
+                + "shio_remember");
+        return List.copyOf(lines);
     }
 
     /** Same source as {@code /api/v2/system/info}: the jar manifest, {@code dev} in an IDE. */

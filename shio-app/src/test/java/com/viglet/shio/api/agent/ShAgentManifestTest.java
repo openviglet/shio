@@ -209,7 +209,22 @@ class ShAgentManifestTest {
     void startHerePointsAtTheOneCallThatReplacesASession() {
         List<String> startHere = shAgentManifestService.manifest().startHere();
 
-        assertThat(startHere).isNotEmpty().hasSizeLessThan(6);
+        // Until SH601 this asserted `hasSizeLessThan(6)`, on the premise that a long list is a plan
+        // the agent has to evaluate and a short one an instruction it can follow. The premise was
+        // half right and SH601 is the correction: five ordered lines were still a plan, because a
+        // reader arrives with an INTENT and had to map it onto them. So the bound moves rather than
+        // being dropped — what must stay short is the part read every time.
+        assertThat(startHere.subList(0, startHere.indexOf("then, whichever you need:")))
+                .as("""
+                        the unconditional preamble is what every reader pays for whatever they came                         to do, so it stays two lines: the one call that replaces a session, and how                         to address content (SH601)""")
+                .hasSize(2);
         assertThat(startHere.get(0)).contains("/agent/context");
+
+        // The branch is bounded by the intent table, which is closed and small by construction —
+        // and that is the thing to keep watching, because "add a row because the capability exists"
+        // is exactly how this becomes the inventory it replaces.
+        assertThat(startHere)
+                .as("preamble, the branch marker, one line per intent, and the MCP tool names")
+                .hasSize(2 + 1 + ShAgentIntents.INTENTS.size() + 1);
     }
 }

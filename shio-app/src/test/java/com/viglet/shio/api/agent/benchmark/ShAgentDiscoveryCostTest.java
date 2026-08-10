@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
+import com.viglet.shio.api.agent.ShAgentIntents;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -273,38 +274,61 @@ class ShAgentDiscoveryCostTest {
     }
 
     /**
-     * The set. Five jobs an agent actually arrives with, three of them taken verbatim from the
-     * rounds that got them wrong.
+     * The set — read from {@link ShAgentIntents}, which is also what the manifest routes with.
+     *
+     * <p>SH601's instruction, and the reason it is worth the indirection: <b>build the table once,
+     * score against it, then route with it.</b> A benchmark whose intents were written separately
+     * from the router's would score a different set than an agent is told about, and the first time
+     * the two drifted the score would still be green — which is the failure mode this whole file
+     * exists to catch one level down.</p>
+     *
+     * <p>What stays here is what only a test can hold: the <em>move</em> each intent's answer maps
+     * to, executed and required to succeed. The shared table names the call; this knows how to make
+     * it. The marker comes from the call itself, so a row whose published path changes is scored
+     * against the new one without anybody remembering to update two places.</p>
      */
     private List<Intent> intents() {
-        return List.of(
-                new Intent("diagnose-5xx",
-                        "a write answered 500 — what failed, without reading store/logs?",
-                        "/agent/diagnostics", "read the incident log",
-                        () -> get("/api/v2/agent/diagnostics").param("format", "terse")),
-                new Intent("recall-conventions",
-                        "has this instance already worked out the convention I am about to derive?",
-                        NOTE, "the pack carries it", null),
-                new Intent("reuse-a-blueprint",
-                        "build a marketing section — is there a package that already does it?",
-                        "/agent/blueprints", "read the catalogue",
-                        () -> get("/api/v2/agent/blueprints").param("format", "terse")),
-                new Intent("prove-the-work",
-                        "is what I just wrote correct, without asking a human to look?",
-                        "/agent/verify", "run the lint",
-                        () -> get("/api/v2/agent/verify")
-                                .param("site", siteName).param("format", "terse")),
-                new Intent("resume-a-session",
-                        "what changed while I was away?",
-                        "/agent/changes", "read the delta",
-                        () -> get("/api/v2/agent/changes")
-                                .param("site", siteName).param("format", "terse")),
-                new Intent("write-without-ids",
-                        "create a page without holding a UUID for it",
-                        "/agent/batch", "a dry-run addressed write",
-                        () -> post("/api/v2/agent/batch").param("format", "terse")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(dryRun())));
+        Map<String, Supplier<MockHttpServletRequestBuilder>> moves = moves();
+        return ShAgentIntents.INTENTS.stream()
+                .map(intent -> new Intent(intent.id(), intent.when(),
+                        // `recall-conventions` is answered by the pack *containing* the note, so
+                        // its marker is the note and not a path — the one row where the rung that
+                        // names it is the answer.
+                        "recall-conventions".equals(intent.id()) ? NOTE : pathOf(intent.call()),
+                        intent.call(), moves.get(intent.id())))
+                .toList();
+    }
+
+    /** The path an intent's call names, which is what a rung must contain for it to be knowable. */
+    private static String pathOf(String call) {
+        int start = call.indexOf("/api/v2");
+        if (start < 0) {
+            return call;
+        }
+        int end = call.indexOf('?', start);
+        String path = call.substring(start, end < 0 ? call.length() : end).trim();
+        // The rungs print the surface-relative form, which is what the manifest's index carries.
+        return path.replace("/api/v2", "");
+    }
+
+    /** How to make each call. The shared table says what to call; only a test can call it. */
+    private Map<String, Supplier<MockHttpServletRequestBuilder>> moves() {
+        Map<String, Supplier<MockHttpServletRequestBuilder>> moves = new LinkedHashMap<>();
+        moves.put("diagnose-5xx",
+                () -> get("/api/v2/agent/diagnostics").param("format", "terse"));
+        // Null: the pack that names it IS the answer, which is the cheapest a path can be.
+        moves.put("recall-conventions", null);
+        moves.put("reuse-a-blueprint",
+                () -> get("/api/v2/agent/blueprints").param("format", "terse"));
+        moves.put("prove-the-work",
+                () -> get("/api/v2/agent/verify").param("site", siteName).param("format", "terse"));
+        moves.put("resume-a-session",
+                () -> get("/api/v2/agent/changes").param("site", siteName).param("format", "terse"));
+        moves.put("write-without-ids",
+                () -> post("/api/v2/agent/batch").param("format", "terse")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(dryRun()));
+        return moves;
     }
 
     private String dryRun() {

@@ -175,28 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.35 Inventory is not routing (SH601)
-
-The manifest is complete. That is the finding, and it is the uncomfortable one: every
-round that lost time to discovery lost it holding a correct and complete list.
-Completeness was never the constraint.
-
-What a reader arrives with is an **intent** — *this run failed with a 500*, *I need to
-know what conventions this instance already has*, *I want a page like the one over
-there*. What the manifest offers is 57 booleans, 28 paths and a `limits` object. Mapping
-the first onto the second is the work, it is unbudgeted, and it is exactly where the
-errors were: `diagnostics` is discoverable to a reader who already suspects it exists.
-
-So P2's second half is routing. `startHere` exists and lists; it does not branch. A
-version that did would answer *given this intent, here is the one call*, for a small
-closed set of intents that covers what runs actually arrive with — a failure to explain,
-a convention to learn, a job that may already have a blueprint, a claim to prove.
-
-Two cautions. It must not become a fifth registry (SH599 is the opposite direction). And
-the intent set has to come from measurement, not from introspection: SH597's fixture is
-precisely a list of intents with a known right first move, so the benchmark and the
-router want the same table. Build the table once, score against it, then route with it.
-
 ### VIII.36 The other narrowed discovery response (SH608)
 
 SH600 closed this on the manifest: a projected document carries `omitted`, a section
