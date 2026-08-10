@@ -166,7 +166,7 @@ class ShFormSubmissionAPITest {
         assertThat(body.get("received")).isEqualTo(true);
         assertThat(body.get("state"))
                 .as("""
-                        DRAFT is not a parameter and never becomes one: SH7's review queue is the \
+                        DRAFT is not a parameter and never becomes one: the review queue is the \
                         moderation step, so a submission a stranger could publish is not a \
                         submission (SH633)""")
                 .isEqualTo("DRAFT");

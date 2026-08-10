@@ -175,33 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.24 The model's own reachability (SH524)
-
-`template-unknown-field` catches a template reading a field the type does not declare.
-Nothing catches the inverse — **a field no template renders** — and that inverse has now
-produced two defects, found by hand, weeks apart.
-
-`SectionFeatureGrid.features`, `SectionFaq.questions`, `SectionLogoWall.logos` and
-`SectionTestimonial.quotes` were declared, captured, stored and drawn nowhere: four of
-seven section types rendered as a bare heading (SH465). `SectionHero.ctaHref` was
-captured, stored, rendered into an `href` and annotated by nothing, so a curator could
-rename a button and not repoint it (SH503). Both are modelling failures that surfaced as
-rendering bugs, and both were found by counting annotations against fields by hand.
-
-**A field nothing renders is dead content.** It costs a curator a form control that changes nothing, it
-costs a capture the work of extracting it, and it makes every count of "how authorable is this page"
-wrong in the flattering direction.
-
-The project already owns this idea and is proud of it: `ShAgentP1ConformanceTest`
-classifies every capability by whether an agent can reach it, and holds the unreachable
-ones as an asserted list — a number that cannot drift without a reviewable diff. This is
-that instrument pointed at the content model instead of the API surface: for every
-declared field, does a template read it, and does the reader annotate it.
-
-The asserted-list shape matters more than the check. A field nobody renders is sometimes
-correct — a `SHA256` is delivery metadata — so the answer is a list somebody signed, not
-a refusal.
-
 ### VIII.25 Modelling by example, pointed inward (SH525)
 
 `propose` derives a post-type from markup nobody wrote for Shio: on `viglet.org` it
@@ -339,6 +312,30 @@ The fix is an entry point and an access-denied handler emitting the same problem
 document the advice does, with `fix` naming the scope and the call that mints one. The
 reason this was never noticed is the reason it is worth writing down: no test asks an
 unauthenticated question and reads the *body*.
+
+### VIII.39 Rendered, stored, and inert on the page (SH638)
+
+SH503 found `SectionHero.ctaHref` rendered into an `href` and annotated by nothing, so a
+curator could rename a button and never repoint it. SH524's instrument answered the
+general form of that question for the first time, and the answer is **25 of 25**: no
+field in `@viglet/shio-sections` carries `data-shio-field`, so every page composed from
+the package is content the Universal Editor cannot reach.
+
+That is worse than it sounds, because the package is what a conversion writes. SH464's
+authorable mode exists to turn captured markup into fields a human edits; if the section
+that renders those fields annotates none of them, the mode delivers a model nobody can
+use from the page — the curator is back in the console form, which is the round trip the
+visual editor exists to remove.
+
+The work is one change repeated: each component emits the attribute on the element
+carrying the value, and a relator row emits it per item with its index. What needs
+deciding first is the **host contract** — the Java renderer emits these annotations
+itself and a headless Next.js host does not, so the package has to declare what a host
+must do for the editor to attach at all.
+
+`field-reachability.test.mjs` holds the whole list as an equality, deliberately: closing
+this one component at a time visibly shrinks it, and adding a section with no
+annotations is the same diff in the other direction.
 
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 

@@ -1491,3 +1491,33 @@ anywhere the operator did not configure, which is the property that kept the fol
 content in the first place. `formHoneypot` reads `ShFormSubmissionAPI.HONEYPOT_FIELD` rather than
 spelling it again: a honeypot whose rendered name and checked name drift passes every submission and
 reports nothing anywhere.
+
+## The model's own reachability, as an asserted list (SH524)
+
+`template-unknown-field` catches a template reading a field the type does not declare. **Nothing
+caught the inverse** — a field no template renders — and that inverse produced two defects, found by
+hand, weeks apart: four of seven section types drawn as a bare heading (SH465), and a `ctaHref`
+rendered into an `href` and annotated by nothing, so a curator could rename a button and never
+repoint it (SH503). Both are modelling failures that surfaced as rendering bugs, and both were found
+by counting annotations against fields **by hand**.
+
+`shio-sections/test/field-reachability.test.mjs` is `ShAgentP1ConformanceTest`'s idea pointed at the
+content model instead of the API surface: for every declared field, does a component draw it, and
+does the drawing annotate it — with the gaps held as a **list somebody signed** rather than a
+refusal, because a field nobody renders is sometimes correct.
+
+**All 25 section fields render.** SH465's class is now closed by assertion rather than by memory,
+and a section added without a component drawing its fields fails the build naming the field.
+
+**The types this package does not draw are a declared list, not a rule.** `Menu`, `MenuItem` and
+`Page` are exempt because a `Page` is composed by the host application and a `Menu` is drawn by the
+Java renderer's `{{#menu}}`. Spelling that as "starts with `Section`" would have been shorter and
+would have silently absorbed a real section somebody forgot to draw — which is the defect the file
+exists for. A second assertion checks each exempted name still exists, so an exemption cannot outlive
+its type.
+
+**The annotation half came back 25 of 25 missing**, which is SH503 at package scale and is now
+**SH638**: every section field is rendered, stored, and inert on the page. It is asserted as the
+whole list rather than fixed in passing, because emitting the attribute is a change to every
+component *and* to what a headless host is expected to do with it — and because closing it one
+component at a time is then a diff that visibly shrinks a list.
