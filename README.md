@@ -59,7 +59,7 @@ one of those capabilities on a surface an agent can actually drive:
 | **Agent gateway** (`/api/v2/agent/**`) | A manifest, a context pack, planned batches, teaching errors, a review queue and a diagnostics endpoint |
 | **Content as files** (`shio/content/**`) | The whole site projected to front-mattered Markdown on disk, with a three-way merge back — so `Edit`, `Write` and `Grep` are all an agent needs to author |
 | **CLI** (`@viglet/shio`) | 30 verbs: `pull`, `push`, `apply`, `publish`, `verify`, `clone`, `convert`, `types`, `dev`, `deploy`, … |
-| **Content Delivery API** (`/api/v2/cda/**`) | Stable read-only REST + GraphQL, token-scoped, with zero-dependency TypeScript SDKs |
+| **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with zero-dependency TypeScript SDKs — plus two narrow writes: the Universal Editor's save-back, and form submissions landing as drafts |
 | **React console** | The human's half: content browser, 15 form widgets, Universal Editor, review queue, preview links |
 
 Keywords, so you can find this again: *headless CMS, agent-native CMS, AI CMS,
@@ -256,8 +256,10 @@ Per-area guides live in [docs/agents/](docs/agents/) —
 Yes — Apache License 2.0, self-hosted, no paid tier required. See [LICENSE](LICENSE).
 
 **Is it a headless CMS?**
-Yes. Content is delivered over a read-only REST and GraphQL Content Delivery API
-with token scopes, and there are TypeScript SDKs for it. Shio also *renders*
+Yes. Content is delivered over a REST and GraphQL Content Delivery API with token
+scopes — reads by default, and the only writes it accepts are narrow and scoped
+(the visual editor's save-back, and form submissions that land as drafts). There
+are TypeScript SDKs for it. Shio also *renders*
 pages itself if you want it to — layouts, regions, themes and a section
 vocabulary — so headless is a choice, not a constraint.
 
