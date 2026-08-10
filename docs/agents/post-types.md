@@ -163,3 +163,55 @@ says which name to look for.
 `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the
 orphan-removal replace — otherwise an update would cascade-delete the shared widget catalog.
 
+
+## What a model change would cost, before it is made (SH523)
+
+Modelling was the least agent-native thing in the product, and the contrast was **inside** it. For
+**content**, SH379 gives a proposal: what would change, what it costs, accept it an entry at a time.
+For the **model** there was no such artefact — you write a post-type, push it, and find what broke
+afterwards.
+
+**`PUT /api/v2/post-type/{name}?dryRun=true`** returns the proposal instead of writing. A dry run on
+the write an agent was going to make anyway, and **not** a `/post-type/{name}/proposal` of its own:
+a new endpoint with no MCP tool behind it is a REST-only capability (P1), and SH262 made exactly
+this call at exactly this fork when it attached template impact to `shio_read` rather than adding
+`GET /agent/impact`.
+
+Four questions, and they divide in a way worth knowing:
+
+| Finding | Asks |
+|---|---|
+| `required-field-violated` | which published posts would violate a field this proposal makes required |
+| `removed-field-still-read` | which templates interpolate a field this proposal removes |
+| `declared-field-unread` | which declared fields no template reads |
+| `stored-key-undeclared` | which stored keys no field declares |
+
+The first two are about a **change** and cannot be asked without one. The last two are about the
+model **as it stands** and are true with or without a proposal — so passing no body change at all is
+a legitimate way to review a model nobody is currently editing.
+
+**Why a proposal and not a lint.** A model change is a *decision with alternatives*: making a field
+required is either a data cleanup or a mistake, and **only the count of violating posts tells them
+apart**. A refusal cannot say that. It is also what makes modelling incremental — the safe move used
+to be to declare a field optional and never tighten it, because tightening was the change nobody
+could see the cost of. `ShModelProposalTest.aCleanTighteningIsSilent` is the other half of that: a
+field nothing violates costs nothing, which is the answer that lets somebody actually tighten.
+
+`stored-key-undeclared` is **SH474's defect asked as a question**. A `File` post stores `SHA256`,
+`SIZE`, `WIDTH` and `HEIGHT` against a type declaring one field, and it took a lint firing 66 times
+to surface that. `declared-field-unread` is deliberately **not** called a defect — a field can be
+delivered over the CDA with no template reading it, and a proposal that cried defect there is one
+nobody reads twice.
+
+`count` and `sample` are separate fields because they answer different questions: *cleanup or
+mistake* is the count, *which ones* is the sample. The sample is capped at ten and the count never
+is, so a proposal about a large type stays both readable and actionable.
+
+**Two instruments priced this and both were right.** `ShAnonymousRouteAccessTest` classified the new
+mapping, and `ShSilentCatchInventoryTest` refused the `catch` that treats unparseable `data` as
+empty until the decision was written down: the degradation is not invisible, it is *already reported
+by somebody else* — malformed `data` is `verify`'s own finding — and a second incident for one
+defect is two reports that can disagree. What the catch buys is that one unparseable post does not
+count as violating every required field and drown the finding somebody asked for.
+
+SH524 and SH525 build on this.

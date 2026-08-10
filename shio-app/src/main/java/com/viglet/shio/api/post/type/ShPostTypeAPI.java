@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.agent.ShAgentBodyEtag;
+import com.viglet.shio.api.post.type.dto.ShModelProposal;
+import org.springframework.web.bind.annotation.RequestParam;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeRename;
 import com.viglet.shio.api.post.type.dto.ShPostTypeRenamed;
@@ -66,11 +68,14 @@ import lombok.extern.slf4j.Slf4j;
 public class ShPostTypeAPI {
 
     private final ShPostTypeAdminService shPostTypeAdminService;
+    private final ShModelProposalService shModelProposalService;
     private final ShAgentBodyEtag shAgentBodyEtag;
 
     public ShPostTypeAPI(ShPostTypeAdminService shPostTypeAdminService,
-                         ShAgentBodyEtag shAgentBodyEtag) {
+                         ShAgentBodyEtag shAgentBodyEtag,
+                          ShModelProposalService shModelProposalService) {
         this.shPostTypeAdminService = shPostTypeAdminService;
+        this.shModelProposalService = shModelProposalService;
         this.shAgentBodyEtag = shAgentBodyEtag;
     }
 
@@ -117,6 +122,27 @@ public class ShPostTypeAPI {
         log.info("Created post-type '{}' ({} field(s)) via the post-type API",
                 created.name(), created.fields() != null ? created.fields().size() : 0);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * What this write would cost, without making it (SH523).
+     *
+     * <p>A {@code dryRun} on the write an agent was going to make anyway, rather than a
+     * {@code /post-type/{name}/proposal} of its own: a new endpoint would be a REST-only capability
+     * with no MCP tool behind it, and the tool count is capped (SH262's reasoning at the same
+     * fork). The body is the definition being considered, so the same call answers "what would this
+     * cost" and "do it" — which is what makes the cost askable at the moment it matters rather than
+     * after the push.</p>
+     *
+     * <p>Also answerable with no body change at all: the two findings about the model <em>as it
+     * stands</em> — declared fields nothing reads, stored keys nothing declares — are true of the
+     * type today, so sending it back to itself is a legitimate way to ask.</p>
+     */
+    @PutMapping(value = "/{name}", params = "dryRun")
+    public ShModelProposal propose(@PathVariable String name,
+                                   @RequestBody ShPostTypeDef body,
+                                   @RequestParam(name = "dryRun") boolean dryRun) {
+        return shModelProposalService.propose(name, dryRun ? body : null);
     }
 
     @PutMapping("/{name}")

@@ -96,7 +96,16 @@ class ShSilentCatchInventoryTest {
             // catches `ShPageRedirectException` to skip the page, which is SH385's shape one layer
             // along: a `Redirect` post is a working route with no page to read, so the catch IS the
             // handling. Counted rather than exempted, so the population stays a diff.
-            "api", 57,
+            //
+            // 58 since SH523: `ShModelProposalService.dataOf` treats an unparseable `data` column as
+            // an empty object. Deliberately silent, and the third shape this list already knows —
+            // the degradation is not invisible, it is *already reported by somebody else*. Malformed
+            // `data` is `verify`'s own finding with its own address and fix, and recording a second
+            // incident for one defect is two reports that can disagree, which is the argument this
+            // codebase makes at every fork of this kind. What the catch buys is that the proposal
+            // stays readable: a post whose data will not parse would otherwise count as violating
+            // every required field, and drown the finding somebody actually asked for.
+            "api", 58,
             "tenant", 4,
             "blueprint", 2,
             "exchange", 2,

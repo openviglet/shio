@@ -175,32 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.23 The model's half of the proposal (SH523)
-
-Modelling is the least agent-native thing here, and the contrast is inside the product.
-For **content**, SH379 gives a proposal: what would change, what it costs, accept it an
-entry at a time. For the **model** there is no such artefact — I write a post-type, push
-it, and find what broke later.
-
-What I could not ask, in fifteen rounds of needing to: which posts would violate a field
-I am about to make required; which templates read a field I am about to remove; which
-declared fields nothing reads; which stored keys no type declares. That last one is not
-hypothetical — a `File` post has stored `SHA256`, `SIZE`, `WIDTH` and `HEIGHT` against a
-type declaring one field, and it took a lint firing 66 times to surface (SH474).
-
-`impact <address>` already answers the neighbouring question for templates — what a
-layout change would affect — so the shape is established and this is the model's half of
-it.
-
-The proposal is the right artefact rather than a lint, because a model change is a
-**decision with alternatives**: making a field required is either a data cleanup or a
-mistake, and only the count of violating posts tells them apart. A refusal cannot say
-that; a proposal can, and I can accept the parts I mean.
-
-It is also what makes modelling incremental. Today the safe move is to declare a field
-optional and never tighten it, because tightening is the change nobody can see the cost
-of.
-
 ### VIII.24 The model's own reachability (SH524)
 
 `template-unknown-field` catches a template reading a field the type does not declare.
