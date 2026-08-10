@@ -264,7 +264,9 @@ public class ShAgentVerifyService {
      * @param limit   findings to return; {@code null} = configured default. The report
      *                always counts what it produced, so a cut is visible
      * @param folder  a {@code folder:} address or id: this folder and its descendants
-     * @param address one or more comma-separated {@code post:} addresses
+     * @param address one or more comma-separated {@code post:} or {@code folder:} addresses.
+     *                A folder here is the folder <b>itself</b> as a subject; use {@code folder}
+     *                for the subtree (SH228)
      * @param since   an SH88 cursor: only what changed after it
      */
     public ShAgentReport verify(String site, String checks, Integer limit, String folder,
@@ -457,7 +459,19 @@ public class ShAgentVerifyService {
         if (!isBlank(address)) {
             List<String> addresses = split(address);
             for (String each : addresses) {
-                keep(rows, shPostUnifiedRepository.findById(addressResolver.resolve(each).id()));
+                // SH228 — a `folder:` address is a legal subject here, and it means something
+                // `folder=` deliberately does not: **this folder**, not this folder and its
+                // descendants. The distinction is the whole reason the two params both exist
+                // after this change. A write proof names the folders a run created, and a
+                // just-created folder's subtree is empty by construction — scoping to the
+                // subtree would have made the proof's reach depend on what happened to be
+                // underneath, which is not what "prove what I just wrote" asks.
+                ShAgentResolved resolved = addressResolver.resolve(each);
+                if ("folder".equals(resolved.kind())) {
+                    folderIds.add(resolved.id());
+                } else {
+                    keep(rows, shPostUnifiedRepository.findById(resolved.id()));
+                }
             }
             parts.add(addresses.size() + " address(es)");
         }

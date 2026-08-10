@@ -181,9 +181,15 @@ public class ShAgentProofService {
         if (!verify || changes.dryRun()) {
             return changes;
         }
-        List<String> addresses = postAddresses(changes, row -> true);
+        List<String> addresses = provenAddresses(changes, row -> true);
         if (addresses.isEmpty()) {
-            return changes;
+            // SH228 — an absent proof is not the same answer as a clean one, and until now a
+            // caller could not tell "I asked and nothing was wrong" from "I asked and the key
+            // never came". It comes back explicitly empty instead. What it must NOT do is call
+            // verify with a blank scope: blank means the full pass, so a run that touched
+            // nothing lintable would have linted the whole instance and reported findings about
+            // objects it never wrote.
+            return changes.withProof(nothingToProve());
         }
         ShAgentReport report = shAgentVerifyService.verify(null, null, null, null,
                 String.join(",", addresses), null);
@@ -195,7 +201,7 @@ public class ShAgentProofService {
         // An op that did not upsert wrote no fields, so a finding against its address was
         // already true before this run. Naming those is the difference between a report and
         // an accusation.
-        List<String> untouched = postAddresses(changes,
+        List<String> untouched = provenAddresses(changes,
                 row -> row.op() != null && !row.op().endsWith(".upsert"));
 
         List<String> notes = new ArrayList<>(report.notes() == null ? List.of() : report.notes());
@@ -242,7 +248,11 @@ public class ShAgentProofService {
         int ceiling = maxDigests(pages);
         Set<String> addresses = new TreeSet<>();
         boolean cut = false;
-        for (String touched : postAddresses(changes, row -> true)) {
+        // Posts only, and unlike the proof this one stays that way (SH228). A digest is a real
+        // render of a page; a folder has none, so widening this would ask the renderer for the
+        // hash of something that does not render.
+        for (String touched : provenAddresses(changes, row -> true).stream()
+                .filter(each -> each.startsWith("post:")).toList()) {
             for (String affected : affectedPages(touched)) {
                 if (addresses.size() >= ceiling) {
                     cut = true;
@@ -332,13 +342,45 @@ public class ShAgentProofService {
         }
     }
 
-    private static List<String> postAddresses(ShAgentChangeSet changes,
-                                              java.util.function.Predicate<ShAgentChangeSet.Change> keep) {
+    /**
+     * The addresses a run touched that the lint has rules for (SH228).
+     *
+     * <p>Posts <b>and folders</b>. It was posts only, which meant a batch of {@code folder.upsert}
+     * ops came back with no {@code proof} key at all — indistinguishable from "asked for, and
+     * nothing was wrong". The lint has always had folder rules (an empty folder is one of its
+     * warnings), so the report existed and was simply never asked for, and "scaffold the
+     * structure, then fill it" is a real first step whose whole point is to be checked before
+     * content goes in.</p>
+     *
+     * <p>Everything else a run can name is still dropped, and deliberately. A {@code site:}
+     * address has no bounded lint — proving a site means the full pass, which is not what a write
+     * proof is: it would report findings about objects this run never wrote, at a cost that scales
+     * with the instance rather than with the batch.</p>
+     */
+    private static List<String> provenAddresses(ShAgentChangeSet changes,
+                                                java.util.function.Predicate<ShAgentChangeSet.Change> keep) {
         return changes.results().stream()
-                .filter(row -> row.address() != null && row.address().startsWith("post:"))
+                .filter(row -> row.address() != null
+                        && (row.address().startsWith("post:") || row.address().startsWith("folder:")))
                 .filter(keep)
                 .map(ShAgentChangeSet.Change::address)
                 .distinct()
                 .toList();
+    }
+
+    /**
+     * The explicit clean report a run gets when it wrote nothing the lint has rules for.
+     *
+     * <p>`verify` itself answers {@code ok} over zero objects rather than answering nothing, and a
+     * caller that asked for a proof deserves the same shape. The scope says what happened in the
+     * words the caller can act on, rather than leaving the empty report looking like a bug.</p>
+     */
+    private static ShAgentReport nothingToProve() {
+        return new ShAgentReport(true, List.of(), 0, 0, 0, 0, false, null,
+                "0 lintable address(es)",
+                List.of("This run wrote nothing the lint has rules for — only posts and folders "
+                        + "are proven. The report is empty because there was nothing in scope, "
+                        + "not because the checks passed over your content."),
+                List.of());
     }
 }

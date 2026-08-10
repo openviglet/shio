@@ -396,6 +396,7 @@
 - **SH513** — A refusal whose body is valid JSON but not a teaching document now prints the fields it does carry - Spring's default names the endpoint in path and the CLI was discarding it - while a body holding any SH80 key prints exactly as before. One choke point, so it reaches every write the CLI makes.
 - **SH597** — ShAgentDiscoveryCostTest scores the path rather than a surface: six intents with a known right first move, each walked from an empty context until a cold-start read names the move, then the move executed and required to succeed. Measured 10604 tokens across six independent cold starts, and it prints which rung answered each — two of the six are reachable only from the ~2400-token endpoint index, because `startHere` names neither /agent/diagnostics nor /agent/changes.
 - **SH227** — shio_apply takes a verify argument, so a desired-state apply returns the lint of what it touched instead of costing a closing round trip.
+- **SH228** — A write proof now covers the folders a run touched as well as its posts, and a run with nothing lintable gets an explicit empty report instead of no proof key.
 
 ## Block N — Realignment of what already shipped (SH74)
 

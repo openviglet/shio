@@ -397,24 +397,6 @@ the SH22 join hazard the same walk used to carry.
 > baseline getting leaner, and what it left behind is mostly the shape of that argument
 > getting harder: the calls that remain are real work.
 
-### XIII.8 A write proves only its posts (SH228)
-
-The SH157 proof collects the `post:` addresses a run touched and lints those. Everything
-else it silently drops — so a batch of `folder.upsert` ops comes back with **no `proof` key
-at all**, which an agent cannot distinguish from "asked for, and nothing was wrong".
-
-That is the wrong answer twice over. The lint already has rules that apply to folders (an
-empty folder is one of its warnings), so the report exists and is simply not being asked
-for; and "scaffold the structure, then fill it" is a real, common first step whose whole
-point is to be checked before content goes in.
-
-Two things to decide. Whether a folder address can be handed to `verify`'s SH143 `address=`
-scope at all, or whether it needs `folder=` (which is a subtree, and a subtree of a
-just-created folder is empty by construction — so it may report the very warning the
-scaffold expects). And what an *empty* proof should look like: absent is currently
-ambiguous, and a caller that asked for verification deserves an explicit clean report, the
-same way `verify` itself answers `ok` with no findings rather than nothing.
-
 ### XIII.9 Nothing checks that an ETag covers every parameter that changes the bytes (SH229)
 
 SH116 wrote the rule down clearly — *a tag identifies a representation, so `format`, `ids`

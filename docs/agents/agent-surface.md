@@ -1678,3 +1678,41 @@ resolving it leniently: looked up, it would restore whichever **live** post happ
 and restore ops add to both sides equally, so that comparison is untouched — what changed is only
 the size. **The next op should re-run the trade rather than move the line again**, which is
 **SH647**.
+
+## A write proves its folders too, and says so when it proves nothing (SH228)
+
+`ShAgentProofService` collects the `post:` **and** `folder:` addresses a run touched. It
+was posts only, so a batch of `folder.upsert` ops came back with **no `proof` key at all**
+— which a caller cannot tell apart from "asked for, and nothing was wrong". The lint has
+always had folder rules (`empty-folder` is one of its warnings); the report existed and
+was simply never asked for, and "scaffold the structure, then fill it" is a real first
+step whose whole point is to be checked before content goes in.
+
+**`address=` accepts a folder, and it is not `folder=`.** The two now mean different
+things on purpose:
+
+| Param | Scope |
+|---|---|
+| `address=folder:<site>/<chain>` | **that folder**, as a report subject |
+| `folder=folder:<site>/<chain>` | that folder **and its descendants** |
+
+A write proof names the folders a run created, and a just-created folder's subtree is
+empty by construction — scoping to the subtree would make the proof's reach depend on
+whatever happens to sit underneath, which is not what "prove what I just wrote" asks.
+Before this, a folder address handed to `address=` resolved and was then looked up as a
+post, found nothing, and was dropped silently while the scope still reported
+`1 address(es)`.
+
+**An empty proof is explicit.** `nothingToProve()` returns `ok` over zero objects with a
+note saying *why* it is empty. The trap in that half — and the reason it is a method
+rather than a fall-through — is that an empty scope must never reach `verify` as blank
+params: **blank means the full pass**, so a run that wrote nothing lintable would have
+linted the whole instance and reported findings about objects it never touched.
+
+**What stays out.** A `site:` address has no bounded lint — proving a site *is* the full
+pass, at a cost that scales with the instance rather than with the batch. And digests stay
+posts-only: a digest is a real render, and a folder has no page to render.
+
+**One thing to know before writing a test here.** `ShBenchmarkIsolationLintTest` (SH318)
+refuses `verify(null, …)` in a class sharing a context, by call shape rather than by a
+list — a scoped call still trips it if the first argument is `null`. Pass the site.

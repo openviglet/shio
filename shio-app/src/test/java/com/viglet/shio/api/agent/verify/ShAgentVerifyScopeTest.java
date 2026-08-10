@@ -29,6 +29,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.ShAgentProofService;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentChangesService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
@@ -83,6 +85,8 @@ class ShAgentVerifyScopeTest {
     private ShAgentVerifyService shAgentVerifyService;
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private ShAgentProofService shAgentProofService;
     @Autowired
     private ShAgentChangesService shAgentChangesService;
     @Autowired
@@ -366,5 +370,99 @@ class ShAgentVerifyScopeTest {
         assertThatThrownBy(() -> scoped("post:" + siteName + base + "/inside/home", null, null))
                 .isInstanceOf(ShAgentVerifyService.UnknownFolderScopeException.class)
                 .hasMessageContaining("not to a folder");
+    }
+
+    @Test
+    @Order(40)
+    @DisplayName("SH228: a folder address is that folder, while `folder=` is that folder's subtree")
+    void aFolderAddressIsASubjectNotASubtree() {
+        // The distinction that makes both params worth having. A write proof names the folders a
+        // run created; scoping those to their subtrees would make the proof's reach depend on
+        // whatever happens to sit underneath, which is not what "prove what I just wrote" asks.
+        //
+        // The pair is built so the two answers differ: the parent holds a subfolder (so it is not
+        // empty), and the child holds nothing (so it is). `empty-folder` therefore fires for the
+        // child and never for the parent, which is what lets each assertion below mean one thing.
+        String tree = base + "-sh228-tree";
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                        new Op(ShAgentBatchService.FOLDER_UPSERT,
+                                "folder:" + siteName + tree, null, null, null),
+                        new Op(ShAgentBatchService.FOLDER_UPSERT,
+                                "folder:" + siteName + tree + "/child", null, null, null))),
+                        false, "tester"));
+        String parent = "folder:" + siteName + tree;
+        String child = parent + "/child";
+
+        assertThat(findings(scoped(null, child, null)))
+                .as("""
+                        a folder handed to `address=` is a subject the lint reports on. Before                         SH228 it resolved and was then looked up as a post, found nothing, and                         was dropped without a word — the scope still said "1 address(es)".""")
+                .contains("empty-folder");
+        assertThat(findings(scoped(null, parent, null)))
+                .as("and only that folder: the child is not in scope, so its warning is not this "
+                        + "run's to report")
+                .doesNotContain("empty-folder");
+        assertThat(findings(scoped(parent, null, null)))
+                .as("`folder=` is unchanged and still descends, which is why the two are not the "
+                        + "same parameter wearing two names")
+                .contains("empty-folder");
+    }
+
+    private static List<String> findings(ShAgentReport report) {
+        return report.findings().stream().map(Finding::rule).toList();
+    }
+
+    @Test
+    @Order(41)
+    @DisplayName("SH228: a batch of folder upserts comes back with a proof")
+    void aFolderOnlyWriteIsProven() {
+        // The defect. The proof collected `post:` addresses and dropped everything else, so a
+        // scaffolding batch — "create the structure, then fill it", a real and common first step
+        // — returned NO proof key at all, which a caller cannot tell apart from "asked for, and
+        // nothing was wrong". The lint has had folder rules the whole time; they were simply
+        // never asked for.
+        String scaffold = base + "-sh228";
+        ShAgentChangeSet written = new TransactionTemplate(transactionManager).execute(status ->
+                shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                        new Op(ShAgentBatchService.FOLDER_UPSERT,
+                                "folder:" + siteName + scaffold, null, null, null))),
+                        false, "tester"));
+
+        ShAgentChangeSet proven = shAgentProofService.attach(written, true);
+
+        assertThat(proven.proof())
+                .as("""
+                        a write that asked to be proved gets a report; an absent one is not a                         weaker answer than a clean one, it is a different answer and the caller                         cannot tell which it got (SH228).""")
+                .isNotNull();
+        assertThat(proven.proof().findings())
+                .as("""
+                        and it is the folder's own rule that fires: a folder created with nothing                         in it yet is exactly the "looks done but isn't" the lint warns about,                         which is the finding a scaffolding run most wants back.""")
+                .anySatisfy(finding -> assertThat(finding.rule()).isEqualTo("empty-folder"));
+    }
+
+    @Test
+    @Order(42)
+    @DisplayName("SH228: a run with nothing lintable is told so, rather than told nothing")
+    void anEmptyProofIsExplicit() {
+        // The other half of the same ambiguity, and the trap in fixing it: the empty case must
+        // not fall through to a blank scope, because blank means the FULL pass — a run that
+        // wrote nothing lintable would have linted the whole instance and reported findings
+        // about objects it never touched.
+        ShAgentChangeSet written = new TransactionTemplate(transactionManager).execute(status ->
+                shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                        new Op(ShAgentBatchService.SITE_UPSERT,
+                                "site:sh228-" + UUID.randomUUID().toString().substring(0, 8),
+                                null, null, null))),
+                        false, "tester"));
+
+        ShAgentChangeSet proven = shAgentProofService.attach(written, true);
+
+        assertThat(proven.proof()).isNotNull();
+        assertThat(proven.proof().ok()).isTrue();
+        assertThat(proven.proof().findings()).isEmpty();
+        assertThat(proven.proof().notes())
+                .as("""
+                        an empty report that does not say why it is empty reads as a clean bill                         of health for content it never looked at — so the note names the reason                         rather than leaving the caller to infer it (SH228).""")
+                .isNotEmpty();
     }
 }
