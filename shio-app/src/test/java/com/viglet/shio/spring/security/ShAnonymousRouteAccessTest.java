@@ -130,6 +130,10 @@ class ShAnonymousRouteAccessTest {
 			new Route("/api/v2/role/**", "/api/v2/role", Access.AUTHENTICATED),
 			new Route("/api/v2/site/**", "/api/v2/site/x", Access.AUTHENTICATED),
 			new Route("/api/v2/site-webhook/**", "/api/v2/site-webhook/x", Access.AUTHENTICATED),
+			// SH632 — where a site's submissions land. AUTHENTICATED and worth reading twice: this is
+			// the configuration a PUBLIC endpoint (SH633) will consult, so the temptation to open it
+			// up is real and wrong. An operator sets the destination; the public path only reads it.
+			new Route("/api/v2/site-form/**", "/api/v2/site-form/x", Access.AUTHENTICATED),
 			new Route("/api/v2/staticfile/**", "/api/v2/staticfile/upload", Access.AUTHENTICATED),
 			new Route("/api/v2/system/**", "/api/v2/system/info", Access.AUTHENTICATED),
 			new Route("/api/v2/tenant/**", "/api/v2/tenant/current", Access.AUTHENTICATED),

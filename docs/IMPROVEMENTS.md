@@ -1488,34 +1488,11 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.38 The destination is site configuration, because a template is content (SH632)
-
-2018's `ShFormConfiguration` carried `folder` — a **template** setting. That is the one
-part of the 2018 answer SH364 does not adopt, and the reason is a sentence: a folder
-chosen in a template is a folder an attacker chooses, because a template is content and
-content is what a compromised author edits.
-
-So the target folder and the eligible post-types are configuration **of the site**,
-reachable by an operator and not by a page. `/api/v2/site-webhook` is the precedent
-worth following — a table keyed by site, its own API, no column added to `ShSite` — and
-it is the precedent for the same reason: per-site delivery configuration that an
-operator owns.
-
-This is also what keeps the renderer honest. `{{#form type="Contact"}}` names a *type*
-and nothing else; it does not know an address and must not learn one, which
-`ShRenderFormTest.theHelperNamesNoDestination` now holds. The page says what the form is
-about; the site says where it goes; neither can answer the other's question.
-
-The third of SH364's questions resolves here too. **What is a submission worth
-keeping?** It is a post, so the trash, the export, the ACL and the agent surface already
-apply and it needs no retention policy of its own. Its owner is the **token** rather
-than a person — an anonymous submission has no user to attribute, and naming the token
-is both true and the thing an operator needs when one form starts producing rubbish.
-
 ### XV.41 The endpoint, once nothing about it is still undecided (SH633)
 
-With the scope bounded (SH631, shipped) and the destination owned by the site (§XV.38),
-what is left is ordinary. `POST` one document, get a `DRAFT` post back or a refusal.
+With the scope bounded (SH631) and the destination owned by the site (SH632), both
+shipped, what is left is ordinary. `POST` one document, get a `DRAFT` post back or a
+refusal.
 
 Four properties, none of them novel here, which is the argument for this rather than a
 submissions subsystem:
@@ -1527,15 +1504,15 @@ submissions subsystem:
   internet rather than one integrator.
 - **A honeypot field** — the cheapest spam control that costs an author nothing and a visitor
   nothing: rendered hidden, and a submission must leave it empty.
-- **Classified `AUTHENTICATED` in `ShAnonymousRouteAccessTest`.** Not a formality here: this is the
-  one endpoint whose whole purpose is to be reachable from a public page, so it is where a future
-  reader is likeliest to reason that it "should" be allow-listed. SH363's instrument answers that
-  with a build failure instead of a discussion.
+- **Classified `AUTHENTICATED` in `ShAnonymousRouteAccessTest`.** Not a formality: this is the one
+  endpoint whose whole purpose is to be reachable from a public page, so it is where a future reader
+  is likeliest to reason that it "should" be allow-listed. SH363's instrument answers that with a
+  build failure instead of a discussion.
 
-The teaching refusals matter more than usual because the caller is a browser nobody
-controls: a non-eligible type, a full bucket and a tripped honeypot are three different
-answers, and only the first two should say so. `ShFormEligibility.eligibleNames` exists
-for the first of them.
+The endpoint reads `sh_site_form` and refuses when the row is absent, disabled, names a
+folder that does not exist, or names a type `ShFormEligibility` rejects. The teaching
+refusals matter more than usual because the caller is a browser nobody controls: only
+the first two may say why, and `eligibleNames` exists for them.
 
 ### XV.42 The scan that is left, and the reason it was not removed with the rest (SH634)
 

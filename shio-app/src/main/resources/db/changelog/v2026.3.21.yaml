@@ -1,0 +1,84 @@
+databaseChangeLog:
+  # SH632 — where a site's form submissions land, and which post-types it invites.
+  #
+  # A table keyed by site rather than columns on the site, following `site_webhook` and for its
+  # reason: per-site delivery configuration an operator owns, which a site does not need to carry in
+  # order to be a site. 2018's ShFormConfiguration carried `folder` as a *template* setting and that
+  # is the one part of its answer SH364 does not adopt — a folder chosen in a template is a folder an
+  # attacker chooses, because a template is content and content is what a compromised author edits.
+  #
+  # `tenant_id` lowercase and NOT NULL, the SH22 shape: `@TenantId` lives on the entity, and a
+  # quoted-vs-unquoted casing mismatch here is a predicate that silently matches nothing on
+  # PostgreSQL rather than an error anybody sees.
+  #
+  # Nothing here stores a submission. A submission is a post, so the trash, the export, the ACL and
+  # the agent surface already apply to it; this row says only which folder, which types, and whether
+  # the site is accepting at all.
+  - changeSet:
+      id: sh632-create-sh-site-form
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_site_form
+      changes:
+        - createTable:
+            tableName: sh_site_form
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_site_form
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: VARCHAR(255)
+              # A name chain within the site (`/contact`), not a folder id: an id is unreadable in
+              # an operator's screen and does not survive an export/import.
+              - column:
+                  name: folder_url
+                  type: VARCHAR(1024)
+              # Comma-separated post-type names, read through ShFormEligibility — which intersects
+              # them with "not a system type", so a row naming Theme is inert rather than dangerous.
+              - column:
+                  name: allowed_types
+                  type: VARCHAR(2048)
+              # Defaults to false so creating the row is not the same act as opening the door.
+              - column:
+                  name: enabled
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: created_date
+                  type: TIMESTAMP
+              - column:
+                  name: owner
+                  type: VARCHAR(255)
+
+  # The endpoint reads by site on every submission, which is traffic from the internet rather than
+  # from a console. Indexed for that read and not for the listing, which an operator does once.
+  - changeSet:
+      id: sh632-index-sh-site-form-site
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: IDX_sh_site_form_site
+      changes:
+        - createIndex:
+            indexName: IDX_sh_site_form_site
+            tableName: sh_site_form
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: site_id

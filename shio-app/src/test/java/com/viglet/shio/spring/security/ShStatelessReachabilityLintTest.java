@@ -179,6 +179,24 @@ class ShStatelessReachabilityLintTest {
                 "exchange providers — instance wiring, not content"));
         byPath.put("/api/v2/config/email", new Requirement(Reason.CONSOLE_ADMIN,
                 "SMTP credentials; an agent writing these could redirect mail"));
+        // SH632 — and this one is worth reading rather than skimming, because P1 says a
+        // console-only feature is incomplete and this is deliberately console-only.
+        //
+        // Every other row here is CONSOLE_ADMIN because the capability is *stronger* than the
+        // agent's own. This one is not: an agent can already create a folder and a post-type, so
+        // naming a folder and a list of types adds nothing it lacks. What `enabled` adds is
+        // different in kind — it converts an authenticated capability into a PUBLIC one, opening a
+        // door the internet can write through. That is the single decision on this surface a human
+        // has to make, and P7 is what makes it a boundary rather than a gap.
+        //
+        // So the agent's half is not missing: it builds the form — the post-type, the template, the
+        // folder — and asks the operator to open the door. Recorded here rather than argued again,
+        // and if that ever reads as too strict, the fix is a scope that may configure but not
+        // enable, NOT moving this row.
+        byPath.put("/api/v2/site-form", new Requirement(Reason.CONSOLE_ADMIN,
+                "where a site's public submissions land and whether it accepts them at all "
+                + "(SH632); enabling one converts an authenticated capability into a public write "
+                + "path, which is the operator's decision and not the agent's"));
         // SH327 — /api/v2/render/** is CSRF-narrowed now, so it left this list the only way an
         // entry may: the capability became reachable and the lint refused to let the note outlive
         // the gap. It is classified in ShAgentP1ConformanceTest as an AGENT_ROUTE instead.

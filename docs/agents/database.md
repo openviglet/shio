@@ -142,3 +142,38 @@ succeeds or fails on class-loading order: `ShTenantSuspendedAccessTest` failed s
 passed on every re-run. A flake is worse than a break, because it teaches people that red might mean
 nothing. If you add another agent, append to `argLine` the same way.
 
+
+## `sh_site_form` — where a site's submissions land (SH632)
+
+A table keyed by site, following `site_webhook` and for its reason: per-site delivery configuration
+an operator owns, which a site does not need to carry in order to be a site. Columns are the SH22
+shape — lowercase `tenant_id`, `NOT NULL`, `@TenantId` on the entity — and `site_id` is a plain
+column rather than an association, because navigating past `.id` of an `ShObject` subclass emits the
+tenant predicate against an alias that has no such column.
+
+**The design decision is what is *not* here.** 2018's `ShFormConfiguration` carried `folder` as a
+**template** setting, and that is the one part of the 2018 answer SH364 does not adopt: a folder
+chosen in a template is a folder an attacker chooses, because a template is content and content is
+what a compromised author edits. So the destination is configuration *of the site*.
+
+Nothing here stores a submission. A submission **is a post**, so the trash, the export, the ACL and
+the agent surface already apply — that was SH364's third question and it resolves by not building
+anything. A row says only: which folder, which types, whether the site is accepting.
+
+**Both defaults point at refusal.** `enabled` is `false` on create, so making the row is not the same
+act as opening the door; an empty `allowed_types` invites nothing rather than everything. The API
+refuses a second row for a site and names the one to edit instead (P6), because two configurations
+mean the endpoint resolves to whichever sorts first and an operator editing the other would watch
+their change have no effect — a defect with no symptom where it is made.
+
+**Two guards classified it before it could ship quietly**, which is worth recording because both
+failed the build rather than being remembered:
+
+- `ShAnonymousRouteAccessTest` (SH363) refused the new mappings until declared `AUTHENTICATED`.
+- `ShStatelessReachabilityLintTest` (SH339) refused until the P1 question was answered in writing.
+  It is **`CONSOLE_ADMIN`**, and unlike every other row there the reason is not that the capability
+  is stronger than the agent's: an agent can already create a folder and a post-type, so naming
+  those adds nothing. What `enabled` adds is different in kind — it converts an authenticated
+  capability into a **public** one. The agent still builds the form; the human opens the door. If
+  that ever reads as too strict the fix is a scope that may configure but not enable, not moving the
+  row.
