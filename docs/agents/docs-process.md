@@ -352,3 +352,34 @@ which reads as progress.
 **Why this rather than 88 paragraphs.** SH529's contribution was that a list is not a decision. But
 a decision written 88 times without evidence is a list wearing prose; the measurement is what makes
 each entry actionable, and it took one script rather than a day of reading.
+
+## Block K's sweep — what the four surfaces actually needed (2026-08-10)
+
+Recorded because the sweep's value is in the *verdicts*, not in the edits, and three of the four
+surfaces needed nothing.
+
+**`docs-shio`** took the block's only user-facing half: `state=` on `/agent/read` (with the rule that
+an absent row is a **404 that says which**, never a quiet fall back to the draft) and `shio diff
+--against published` in the CLI verb table. A third page earned a section nobody would have thought
+to look for — `multi-tenancy.md` now says that **background work runs per tenant**, because "the
+timer fired for everyone" is the assumption an operator carries and it was true only on a
+single-tenant install.
+
+**The COVERAGE summary was wrong before this block touched it.** It claimed 5 🔴 orphans; the tables
+have held **6** since the file shipped — `shio audit`'s eleven rules were listed as an orphan and
+never counted. Corrected, and the correction is annotated: an independent count of every
+status-bearing row comes to 48 against the 40 the summary was authored for, so the ✅/🧩 figures are
+carried forward plus this block's one new row rather than recounted. **Reconciling that taxonomy is
+its own task, not something to guess at inside a sweep** — a summary that is confidently wrong is
+worse than one that says which half it is sure of.
+
+**`shio-site` needed no claim changed, and that is the verdict rather than an omission.** Its P9 line
+names the *kind* of proof — "a lint, the routes, a render digest" — rather than an inventory, so a
+fourth proof does not falsify it. The one figure the block moved, `tools/list` up ten tokens for
+`shio_read`'s new argument, the build regenerated from `token-budgets.properties` with nothing typed
+by hand: the whole reason that generator exists, doing its job unattended.
+
+**The root README needed nothing, and a test says so.** `readme-surface.test.mjs` holds the verb
+count against the command registry and the MCP tool list against the server; Block K added neither, so
+the counts stayed right without anybody checking them. That is SH338's rule paying off — the surface
+most likely to rot is the one with an instrument on it.

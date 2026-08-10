@@ -9,8 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block K — Perception & verification loop
-
 ## Block I — Content as files (local-first authoring)
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin

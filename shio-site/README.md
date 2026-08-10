@@ -117,6 +117,14 @@ instance (SH540) is all that is left, and it is what turns the scripted session
 in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
 
+Block K closed on 2026-08-10 and changed no claim here, which is the verdict rather than
+an omission: its user-facing half is `state=` on the agent read and `shio diff --against
+published`, and the page's P9 line names the *kind* of proof ("a lint, the routes, a render
+digest") rather than an inventory. The one figure it moved — `tools/list`, up ten tokens for
+`shio_read`'s new argument — the build regenerated from
+`shio-app/src/test/resources/token-budgets.properties` with nothing typed by hand, which is
+what that generator exists for.
+
 Block H closed on 2026-08-10 and the P2 comparison gained a row for it: the manifest
 now **routes** an intent to one call rather than listing everything, which is the
 finding that block ended on — it was already complete, and completeness was never the

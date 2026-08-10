@@ -17,7 +17,7 @@
       "key": "mcp.tools.list.total",
       "label": "Every MCP tool schema",
       "note": "tools/list, re-sent on every turn before any work happens",
-      "tokens": 2375
+      "tokens": 2385
     },
     {
       "key": "benchmark.build-marketing-site.tokens",
