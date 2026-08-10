@@ -92,7 +92,21 @@ public class ShBlueprintRegistry {
      * URL change that implies, is not something a package the user did not write gets to do.
      * The unknown-key check below already refuses it as a 409; do not "complete" this list.</p>
      */
-    private static final List<String> CONTENT_KEYS = List.of("folders", "posts");
+    /**
+     * What a content document may declare (SH395).
+     *
+     * <p>`postTypes` and `postTypeLayout` joined `folders` and `posts` because six packages shipped
+     * and <b>not one declared a Theme, a PageLayout or a binding</b> — so applying any of them left
+     * the pages rendering through SH169's labelled fallback, which is a safety net and not a design.
+     * What an agent then did by hand is the most trap-dense sequence in the product, learned one
+     * teaching error at a time: P2 backwards, in the flow this product is named for.</p>
+     *
+     * <p>Still not `site` (it comes from the request) and still not `prune` (never a package's
+     * decision). The two that were added are the two a package can answer for itself: which render
+     * types its templates need, and which layout its own post-types bind to.</p>
+     */
+    static final List<String> CONTENT_KEYS =
+            List.of("folders", "posts", "postTypes", "postTypeLayout");
 
     private final ShBlueprintCodec codec;
     private final ShBlueprintProperties properties;
@@ -477,8 +491,9 @@ public class ShBlueprintRegistry {
             if (!CONTENT_KEYS.contains(key)) {
                 throw new BlueprintFormatException(blueprint + "/" + path,
                         "unknown key '" + key + "'. A blueprint's content document declares "
-                                + "`folders` and `posts` only: `site` comes from the request, and "
-                                + "`prune` is never a package's decision to make");
+                                + "`folders`, `posts`, `postTypes` and `postTypeLayout` only: "
+                                + "`site` comes from the request, and `prune` is never a package's "
+                                + "decision to make");
             }
         }
     }
@@ -506,6 +521,35 @@ public class ShBlueprintRegistry {
         }
     }
 
+    /**
+     * The render fields, which hold a <b>Handlebars</b> template and not blueprint prose (SH395).
+     *
+     * <h2>Two templating languages, one delimiter</h2>
+     *
+     * <p>A blueprint parameter is `{{name}}` and so is a Handlebars expression, so a package that
+     * carried a `PageLayout` was refused at load: `{{post.title}}`, `{{theme.css}}` and
+     * `{{#query}}` all read as parameters nobody declared. <b>That is why not one of the six
+     * packages shipped a layout</b> — the format could not express one, and the section that
+     * described the gap read it as an authoring omission.</p>
+     *
+     * <p>So the unknown-placeholder check is lifted <em>inside these fields and nowhere else</em>.
+     * Substitution still runs there, which is the point: a layout may say `{{blogTitle}}` in its
+     * masthead and get the caller's value, while `{{post.title}}` passes through to the renderer
+     * untouched.</p>
+     *
+     * <h2>What the exemption costs, stated rather than hidden</h2>
+     *
+     * <p>A <em>typo'd</em> parameter inside a template — `{{blogTitel}}` — is no longer caught
+     * here. It cannot be: the check's whole basis is that an undeclared name is a mistake, and in
+     * a Handlebars template an undeclared name is the normal case. The trade is bounded by being
+     * field-scoped, and the renderer has its own answer for a field that resolves to nothing.</p>
+     *
+     * <p>Named explicitly rather than inferred from the post's type: a `Region`'s `HTML` and a
+     * `Theme`'s `CSS` are the same kind of content wherever they appear, and a rule keyed on type
+     * would need to know the render vocabulary here, which is the coupling P10 refuses.</p>
+     */
+    static final Set<String> TEMPLATE_FIELDS = ShBlueprintParams.TEMPLATE_FIELDS;
+
     private void walk(JsonNode node, String blueprint, Set<String> declared,
                       List<String> available) {
         if (node == null) {
@@ -513,8 +557,15 @@ public class ShBlueprintRegistry {
         }
         if (node.isString()) {
             check(node.asString(), blueprint, declared, available);
-        } else if (node.isArray() || node.isObject()) {
+        } else if (node.isArray()) {
             node.forEach(child -> walk(child, blueprint, declared, available));
+        } else if (node.isObject()) {
+            for (String key : node.propertyNames()) {
+                if (TEMPLATE_FIELDS.contains(key)) {
+                    continue;
+                }
+                walk(node.get(key), blueprint, declared, available);
+            }
         }
     }
 

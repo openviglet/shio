@@ -154,11 +154,59 @@ public final class ShBlueprintParams {
         if (node.isObject()) {
             ObjectNode object = JsonNodeFactory.instance.objectNode();
             for (String name : node.propertyNames()) {
-                object.set(name, substitute(node.get(name), values, blueprint));
+                JsonNode child = node.get(name);
+                // SH395 — a render field holds a Handlebars template, and the two languages share
+                // `{{ }}`. Substituting there still has to happen (a layout may say
+                // `{{blogTitle}}` in its masthead), but an UNKNOWN name is the renderer's
+                // expression rather than a package's typo — `{{post.title}}`, `{{theme.css}}`,
+                // `{{#query}}`. So it passes through instead of refusing the apply.
+                object.set(name, TEMPLATE_FIELDS.contains(name) && child != null && child.isString()
+                        ? JsonNodeFactory.instance.stringNode(
+                                template(child.asString(), values))
+                        : substitute(child, values, blueprint));
             }
             return object;
         }
         return node;
+    }
+
+    /**
+     * The render fields, whose contents are a template in another language (SH395).
+     *
+     * <p>Kept in step with {@code ShBlueprintRegistry.TEMPLATE_FIELDS} by
+     * {@code ShBlueprintTemplateFieldTest}: the load-time check and the substitution have to agree
+     * about which fields are templates, and two lists that drift would refuse a package at load
+     * that substitution would have accepted, or the reverse — which is worse, because it lands as
+     * a `{{post.title}}` written into somebody's page.</p>
+     */
+    public static final java.util.Set<String> TEMPLATE_FIELDS =
+            java.util.Set.of("HTML", "CSS", "JAVASCRIPT");
+
+    /**
+     * Substitutes the declared parameters into a template and leaves everything else alone.
+     *
+     * <p>The trade this makes, stated rather than hidden: a <b>typo'd</b> parameter here —
+     * `{{blogTitel}}` — is not caught, and cannot be. The check's whole basis is that an
+     * undeclared name is a mistake, and inside a Handlebars template an undeclared name is the
+     * normal case. Bounded by being field-scoped, and the renderer has its own answer for an
+     * expression that resolves to nothing.</p>
+     */
+    public static String template(String raw, Map<String, String> values) {
+        if (raw == null || raw.indexOf('{') < 0) {
+            return raw;
+        }
+        Matcher matcher = PLACEHOLDER.matcher(raw);
+        StringBuilder out = new StringBuilder();
+        int last = 0;
+        while (matcher.find()) {
+            String value = values.get(matcher.group(1));
+            if (value == null) {
+                continue;
+            }
+            out.append(raw, last, matcher.start()).append(value);
+            last = matcher.end();
+        }
+        return out.append(raw, last, raw.length()).toString();
     }
 
     /**

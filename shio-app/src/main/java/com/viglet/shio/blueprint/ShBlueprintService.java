@@ -208,10 +208,30 @@ public class ShBlueprintService {
         document.put("site", site);
         ArrayNode folders = document.putArray("folders");
         ArrayNode posts = document.putArray("posts");
+        // SH395 — the render model, merged the same way. `postTypes` compiles to `render.provision`
+        // and `postTypeLayout` to the site binding, both of which the desired-state service already
+        // emits BEFORE the folders and posts: the model exists before anything is written against
+        // it, which is the order the traps are about.
+        ArrayNode postTypes = codec.array();
+        ObjectNode binding = codec.object();
         for (JsonNode raw : blueprint.content()) {
             JsonNode tree = ShBlueprintParams.substitute(raw, values, blueprint.name());
             append(folders, tree.get("folders"));
             append(posts, tree.get("posts"));
+            append(postTypes, tree.get("postTypes"));
+            JsonNode declaredBinding = tree.get("postTypeLayout");
+            if (declaredBinding != null && declaredBinding.isObject()) {
+                declaredBinding.propertyNames()
+                        .forEach(name -> binding.set(name, declaredBinding.get(name)));
+            }
+        }
+        // Absent rather than empty, both of them: the desired-state service branches on
+        // `!isEmpty()`, and an empty array here would be an op that provisions nothing.
+        if (!postTypes.isEmpty()) {
+            document.set("postTypes", postTypes);
+        }
+        if (!binding.isEmpty()) {
+            document.set("postTypeLayout", binding);
         }
         // `prune` is absent, not false-by-omission: see ShBlueprintManifest. A package
         // never decides that content it has not heard of should be deleted.

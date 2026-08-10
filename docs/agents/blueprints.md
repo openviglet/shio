@@ -358,3 +358,37 @@ parser in Java, because a second implementation of the format is what the pin is
 
 *(Found while writing it: the first parser read `1.0.0` as `1`, because its terminator alternation
 included `.`. That looks right in every test that only checks the package name.)*
+
+## Two templating languages, one delimiter (SH395, partial)
+
+SH395 asks why six packages ship and **not one declares a `Theme`, a `PageLayout` or a binding**, so
+applying any of them leaves the pages on SH169's labelled fallback. §XI.16 read that as an authoring
+omission. It is not.
+
+**A blueprint parameter is `{{name}}` and so is a Handlebars expression.** A package carrying a
+layout was refused at load *and* again at substitution — `{{post.title}}`, `{{theme.css}}` and
+`{{#query}}` all read as parameters nobody declared. **The format could not express a layout**, which
+is why nobody wrote one.
+
+The unknown-name refusal is now lifted inside the render fields — `HTML`, `CSS`, `JAVASCRIPT` — and
+nowhere else. Substitution still runs there, which is the point: a layout may say `{{blogTitle}}` in
+its masthead and get the caller's value, while the renderer's own expressions pass through untouched.
+
+**What the exemption costs, stated rather than hidden:** a typo'd parameter inside a template
+(`{{blogTitel}}`) is no longer caught, and cannot be — the check's basis is that an undeclared name
+is a mistake, and inside Handlebars an undeclared name is the normal case. Bounded by being
+field-scoped, and outside those fields the refusal is unchanged. The registry and the substituter
+read **one** set, because two would drift in a direction where the quiet failure writes
+`{{post.title}}` into somebody's page.
+
+A content document may also declare `postTypes` and `postTypeLayout` now, which compile to
+`render.provision` and the site binding. The desired-state service already emitted both *before* any
+folder or post, so the ordering the traps are about was never the problem.
+
+### Why this is partial
+
+**No package ships a layout yet, so SH395's symptom stands** and the task is `⏳` rather than
+shipped. Trying to write one for `blog` turned up the next question: `Theme` and `PageLayout` are
+seeded system types, but a blueprint apply in a bare instance did not resolve them — so a package
+that declares a template needs its post-types question answered before the JSON is worth writing.
+Recorded in §XI.16 rather than guessed at here.

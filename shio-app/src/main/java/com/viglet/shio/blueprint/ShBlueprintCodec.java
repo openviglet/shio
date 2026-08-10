@@ -62,4 +62,9 @@ public class ShBlueprintCodec {
     public tools.jackson.databind.node.ObjectNode object() {
         return mapper.createObjectNode();
     }
+
+    /** A fresh, empty array node — SH395's merged `postTypes`, before it is known to be non-empty. */
+    public tools.jackson.databind.node.ArrayNode array() {
+        return mapper.createArrayNode();
+    }
 }

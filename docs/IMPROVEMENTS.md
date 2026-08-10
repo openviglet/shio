@@ -218,25 +218,27 @@ next.
 
 ### XI.16 The appliable unit stops where the visible site starts (SH395)
 
-Six packages ship — `blog`, `docs`, `landing`, `marketing-site`, `nextjs-starter`,
-`product-catalog` — and **not one declares a `Theme`, a `PageLayout`, a `Region` or a
-`site.postTypeLayout` binding**. SH280 records the consequence in passing ("no
-first-party blueprint ships a layout, so this is an agent-built-site exposure"), and
-that is the whole gap: apply a blueprint and the pages render through SH169's labelled
-fallback, which is a safety net and not a design.
+Six packages ship and **not one declares a `Theme`, a `PageLayout`, a `Region` or a
+`site.postTypeLayout` binding**, so applying one yields content whose design is SH169's
+labelled fallback — a safety net, not a design.
 
-What the agent then does by hand is the most trap-dense sequence in the product:
-`render.provision`, three templates whose fields are keyed the 2018 way, a `TITLE` that
-must be set or nothing can address the template (SH277), a flat `postTypeLayout` map
-keyed by post-type, a theme resolved by title, and a **publish** of every template or a
-published render 409s (SH280). Each trap has a teaching error, which means it is learned
-one failure at a time — P2 backwards, in the one flow the product is named for.
+**The reason turned out not to be an authoring omission.** A blueprint parameter is
+`{{name}}` and so is a Handlebars expression, so a package carrying a layout was refused
+at load *and* at substitution: `{{post.title}}`, `{{theme.css}}` and `{{#query}}` all
+read as parameters nobody declared. **The format could not express a layout.** That is
+now lifted inside the render fields (`HTML`, `CSS`, `JAVASCRIPT`) and nowhere else, so a
+layout may still say `{{blogTitle}}` in its masthead while the renderer's own
+expressions pass through. The cost is stated: a typo'd parameter inside a template is no
+longer caught, and cannot be — inside Handlebars an undeclared name is the normal case.
 
-So `CONTENT_KEYS` gains the render model: a package may declare templates and its
-binding, `apply` provisions the types first (SH152's `ensure`, never an upsert) and
-publishes the templates it wrote, because a draft-only layout is the state that 409s.
-One command, one visible site — and the packages become the place the render conventions
-are *demonstrated* rather than described.
+The content document now also takes `postTypes` and `postTypeLayout`, which compile to
+`render.provision` and the site binding. The desired-state service already emitted both
+*before* any folder or post, so the ordering the traps are about was never the problem.
+
+**What remains is a package that ships a layout**, and one thing found while trying:
+`Theme` and `PageLayout` are seeded system types, but a blueprint apply in a bare
+instance does not resolve them, so a package that declares a template needs its
+post-types question answered first. That is the next step and it is not a line of JSON.
 
 ### XI.18 The fourth registry is the one that is published (SH604)
 
