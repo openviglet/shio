@@ -94,6 +94,9 @@ class ShBlueprintApplyTest {
     @PersistenceContext
     private EntityManager entityManager;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.viglet.shio.api.agent.verify.ShAgentVerifyService shAgentVerifyService;
+
     private String siteName;
 
     private void withTransaction(Runnable work) {
@@ -190,6 +193,20 @@ class ShBlueprintApplyTest {
         assertThat(applied.content().changed()).isEqualTo(7);
         assertThat(applied.verify()).isNotNull();
         assertThat(applied.verify().missing()).isEmpty();
+        // SH635 — this assertion has failed twice, in a full suite, and never alone: `errors()` came
+        // back as 2 where 0 was expected, and both times the run was green on the next attempt with
+        // the same code. There was nothing to diagnose from, because the number is all the assertion
+        // says and the next `clean` removes target/surefire-reports/ (SH354).
+        //
+        // So the capture is permanent rather than something somebody adds after the next occurrence.
+        // It costs one extra verify on a run that has already failed and nothing at all on a green
+        // one, and it turns an unreproducible red into a report naming the rule, the address and the
+        // message. That is the whole difference between a flake somebody re-runs and a defect
+        // somebody fixes.
+        if (applied.verify().errors() != 0) {
+            System.out.println("SH635: unexpected verify errors on blueprint site " + siteName + " -> "
+                    + shAgentVerifyService.verify(siteName, "content", 200).findings());
+        }
         assertThat(applied.verify().errors()).isZero();
         assertThat(applied.verify().ok()).isTrue();
         // No front-end files in this package: reported as absent rather than as an empty

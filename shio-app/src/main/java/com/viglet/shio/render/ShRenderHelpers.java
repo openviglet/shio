@@ -36,6 +36,8 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
+import org.springframework.data.domain.PageRequest;
+
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository.ShListingKey;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
@@ -902,6 +904,23 @@ public class ShRenderHelpers {
             return new Listing(List.of(), 0);
         }
 
+        // SH634 — the window itself, when the order can be spelled portably. `newest` and `oldest`
+        // are date sorts, and `coalesce(date, floor)` gives every engine the null placement the
+        // Java comparator has; `title` cannot follow, because Java's CASE_INSENSITIVE_ORDER and a
+        // database collation are not the same function and the difference would move page
+        // boundaries per deployment. So `title` keeps the SH419 path, which is correct and scans —
+        // declared here rather than left for somebody to discover from the benchmark.
+        if (windowable(sort)) {
+            List<ShListingKey> rows = "oldest".equals(sort.toLowerCase(java.util.Locale.ROOT))
+                    ? shPostUnifiedRepository.findListingWindowOldest(folder, statesFor(state),
+                            state, typeId, DATE_FLOOR, PageRequest.of(page - 1, limit))
+                    : shPostUnifiedRepository.findListingWindowNewest(folder, statesFor(state),
+                            state, typeId, DATE_FLOOR, PageRequest.of(page - 1, limit));
+            long total = shPostUnifiedRepository.countListingWindow(folder, statesFor(state),
+                    state, typeId);
+            return new Listing(load(rows), (int) total);
+        }
+
         List<ShListingKey> keys = ShRenderState.preferDraftKeys(
                 shPostUnifiedRepository.findListingKeys(folder, statesFor(state)), state);
         List<ShListingKey> matching = keys.stream()
@@ -912,6 +931,28 @@ public class ShRenderHelpers {
         List<ShListingKey> wanted = window(matching, page, limit);
         return new Listing(load(wanted), matching.size());
     }
+
+    /**
+     * Which sorts the query can order by and get the same sequence the comparators do (SH634).
+     *
+     * <p>Only the date sorts. `title` is Java's {@code CASE_INSENSITIVE_ORDER} over a value that may
+     * be null, and no database collation is that function — pushing it down would reorder somebody's
+     * archive on one engine and not another, which is the class of defect the whole `coalesce`
+     * argument exists to avoid. It stays on the SH419 path: correct, and scanning.</p>
+     */
+    private static boolean windowable(String sort) {
+        String normalized = sort.toLowerCase(java.util.Locale.ROOT);
+        return "newest".equals(normalized) || "oldest".equals(normalized);
+    }
+
+    /**
+     * The instant a null {@code date} sorts as (SH634).
+     *
+     * <p>Below every real one, so {@code desc} puts nulls last and {@code asc} puts them first —
+     * exactly what {@code Comparator.nullsLast(reverseOrder())} and its reverse do. A literal rather
+     * than {@code Instant.MIN}, which no JDBC driver will bind to a timestamp column.</p>
+     */
+    private static final java.time.Instant DATE_FLOOR = java.time.Instant.parse("1000-01-01T00:00:00Z");
 
     /** The page's rows, loaded whole in one statement and put back into the window's order. */
     private List<ShPostUnified> load(List<ShListingKey> wanted) {

@@ -1420,3 +1420,45 @@ The template's HTML is read through `ShPageRenderService.htmlOf`, added for this
 `themeTitleOf` already exists (SH281): the graph and the page must not come to disagree about what a
 template *says*, and the whole value of a static rule over template source is that it is the source
 the renderer will use.
+
+## The window is in the query now, and the measurement had to be rebuilt first (SH634)
+
+SH419 took a listing from **213 entity rows loaded to render 10** down to **2** by folding and
+sorting over sort keys and reading only the survivors whole. It did not remove the **scan**.
+
+**The instrument that proved SH419 was structurally blind to what SH419 left.**
+`getEntityLoadCount()` counts entities and a projection is not one, so the whole-folder key read
+showed up as *nothing*. The first deliverable was therefore a second measurement — rows every query
+in the session **returned** — and it put a number on the complaint: **228 rows to render 10, ratio
+22, identical for page 1 and page 19**, while the entity ratio read 1. After the fix: **31, ratio
+3.** Ceiling `render.listing.max-rows-scanned-per-row-rendered` = 6, for the reason the entity
+ceiling is 4 and not 2 — the number carries the page frame as well as the listing, and what it must
+catch is a return to scanning the folder, which at this fixture is 22 and not 5.
+
+**The fold is one predicate that is correct for both renders**, which is why there is one query
+rather than two that can disagree: `p.state = :preferred or not exists (a :preferred row for this id
+in this folder)`. For a draft render (`states` = both, `preferred` = `DRAFT`) that keeps the draft
+when there is one and the published row otherwise — exactly `preferDraftKeys`. For a published
+render (`states` = `PUBLISHED` only, `preferred` = `PUBLISHED`) the left side is true for every row,
+so it excludes nothing and costs nothing.
+
+**`coalesce(date, floor)` is what made the ORDER BY portable**, which was SH419's fourth objection
+and the one that had no answer. `date` is nullable and the comparator is `nullsLast`, so the clause
+needs explicit null placement — and `NULLS LAST` is not portable: MariaDB has no such syntax, and it
+and PostgreSQL disagree about where a `DESC` null falls by default. Mapping null to an instant below
+every real one makes `desc` put nulls last and `asc` put them first on every engine. **`verify
+-DskipITs=false` with Docker up is what turns that into a proof** — `ShPostgresSchemaIT` and
+`ShMariaDbSchemaIT` ran 3/3 each rather than skipping.
+
+**`sort="title"` deliberately keeps the scan.** Java's `CASE_INSENSITIVE_ORDER` over a possibly-null
+value is not any database collation, and pushing it down would reorder somebody's archive on one
+engine and not another — the exact defect the `coalesce` argument exists to avoid. `field=` keeps it
+too, being a predicate over the post's JSON. Both are declared in the code and visible in the
+benchmark rather than left to be discovered.
+
+**One thing that is not SH634's**: `ShBlueprintApplyTest` failed again in a full suite during this
+work — `errors()` 2 where 0 was expected — and was green on the next run with the same code, the
+second occurrence of SH635. The number survived SH572's double-reporting fix, so that hypothesis is
+disproved: the 2 is two real findings, not one counted twice. The assertion now **prints the
+findings when it fails**, so the third occurrence names the rule and the address instead of a
+number. That is SH354's lesson applied to a red nobody was present for.

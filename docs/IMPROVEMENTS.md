@@ -1488,30 +1488,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.42 The scan that is left, and the reason it was not removed with the rest (SH634)
-
-SH419 took the listing from **213 entity rows loaded to render 10** down to **2 per
-row**: the fold, the filters and the sort run over sort keys, and only the survivors are
-read whole. It did not remove the scan. The keys query is still `where folder = ? and
-state in (?)`, so a 5000-post archive reads 5000 tuples to draw ten — five scalar
-columns and no JSON, but O(folder) all the same.
-
-Two of SH384's three objections are now answered rather than avoided. The **fold** runs
-over keys before anything loads; the **exact total** is the size of the folded, filtered
-key list, free and still exact.
-
-The third is unchanged and a fourth is new. The **`field=` filter** is a predicate over
-the post's JSON, so that path still reads whole rows — declared, not quietly excepted.
-And **the ORDER BY cannot be pushed down portably**: `date` is nullable and the
-comparator is `nullsLast`, so the clause needs explicit null placement. MariaDB has no
-`NULLS LAST`, and it and PostgreSQL disagree about where a `DESC` null falls by default
-— a listing whose page boundaries differ by engine moves SH101's digest for a change
-nobody made, on one deployment and not another.
-
-So what is left is not "add a `Pageable`". It is deciding how the order is expressed so
-every engine produces one sequence, and that decision wants the cross-database ITs
-actually running.
-
 ### XV.43 The two things a form template cannot know, and the helper already knows one (SH636)
 
 `{{#form type="Contact"}}` yields the post-type's fields, in order, each with its widget

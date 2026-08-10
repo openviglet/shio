@@ -210,6 +210,32 @@ class ShRenderListingPageBenchmarkTest {
                 .isLessThan(unpaged + PER_PAGE);
     }
 
+    @Test
+    @DisplayName("SH634: and the rows the queries RETURN, which the entity counter cannot see")
+    void theScanIsMeasured() {
+        long first = scanned("/archive-page-1");
+        long deep = scanned("/archive-page-19");
+
+        measured.put("render.listing.rows-scanned-first-page", first);
+        measured.put("render.listing.rows-scanned-last-page", deep);
+        long ratio = first / PER_PAGE;
+        measured.put("render.listing.rows-scanned-per-row-rendered", ratio);
+
+        // The finding SH419 left behind, now with a number. The key query is still
+        // `where folder = ? and state in (?)`, so it returns the whole folder however small the
+        // page is — cheap tuples, five scalar columns and no JSON, but O(folder) all the same.
+        assertThat(deep)
+                .as("""
+                        the last page scans what the first does (%d against %d), which is the                         signature of a window applied after the read rather than inside it""",
+                        deep, first)
+                .isLessThan(first + PER_PAGE);
+
+        assertThat(ratio)
+                .as("""
+                        rows RETURNED per row rendered. The ceiling is on the ratio, not the count,                         so enlarging the fixture cannot absorb the finding — the same rule the                         entity ratio above follows, applied to the cost that outlived it.""")
+                .isLessThanOrEqualTo(ceiling("render.listing.max-rows-scanned-per-row-rendered"));
+    }
+
     @AfterAll
     void report() {
         StringBuilder out = new StringBuilder("\nSH384 — listing cost, measured (entity rows loaded):\n");
@@ -237,6 +263,40 @@ class ShRenderListingPageBenchmarkTest {
             loaded[0] = statistics.getEntityLoadCount() - before;
         });
         return loaded[0];
+    }
+
+    /**
+     * Rows a listing's queries <b>return</b>, which is the cost {@link #loads} cannot see (SH634).
+     *
+     * <p>SH419 took entity loads from 213-per-10 to 2, by deciding the window over sort keys and
+     * reading only the survivors whole. A projection is not an entity, so
+     * {@code getEntityLoadCount()} counts none of those keys — the instrument that proved SH419
+     * is structurally blind to what SH419 left behind. This one is not: it sums the rows every
+     * query in the session returned, so a whole-folder key scan shows up at its real size.</p>
+     *
+     * <p>Statistics are cumulative on the SessionFactory and query stats are keyed by HQL, so this
+     * takes a delta across every query string known before and after — a query seen for the first
+     * time inside the window has a zero baseline, which is the honest reading.</p>
+     */
+    private long scanned(String url) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.setReadOnly(true);
+        long[] rows = new long[1];
+        tx.executeWithoutResult(status -> {
+            Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+            long before = queryRows(statistics);
+            renderService.digest("post:" + siteName + url, null);
+            rows[0] = queryRows(statistics) - before;
+        });
+        return rows[0];
+    }
+
+    private static long queryRows(Statistics statistics) {
+        long total = 0;
+        for (String query : statistics.getQueries()) {
+            total += statistics.getQueryStatistics(query).getExecutionRowCount();
+        }
+        return total;
     }
 
     private long ceiling(String key) {

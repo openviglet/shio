@@ -257,6 +257,101 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<ShPostUnified> findByIdInAndState(Collection<String> ids, ShPostState state);
 
     /**
+     * One page of a listing, decided <b>in the query</b> (SH634).
+     *
+     * <h3>What SH419 left, measured</h3>
+     *
+     * <p>SH419 took entity loads from 213-per-10 to 2 by folding and sorting over
+     * {@link #findListingKeys}' tuples and reading only the survivors whole. The scan stayed:
+     * {@code ShRenderListingPageBenchmarkTest} measures <b>228 rows returned to render 10</b>,
+     * identical for page 1 and page 19, because the key query still reads the whole folder. Cheap
+     * tuples — five scalar columns, no JSON — but O(folder), and invisible to the instrument that
+     * proved SH419, since {@code getEntityLoadCount()} does not count a projection.</p>
+     *
+     * <h3>The fold, in one predicate that is correct for both renders</h3>
+     *
+     * <p>{@code p.state = :preferred or not exists (a :preferred row for this id in this folder)}.
+     * For a <b>draft</b> render ({@code states} = both, {@code preferred} = {@code DRAFT}) that keeps
+     * the draft when there is one and the published row otherwise — exactly
+     * {@code ShRenderState.preferDraftKeys}. For a <b>published</b> render ({@code states} =
+     * {@code PUBLISHED} only, {@code preferred} = {@code PUBLISHED}) the left side is true for every
+     * row, so the predicate costs nothing and excludes nothing. One query rather than two that can
+     * disagree.</p>
+     *
+     * <h3>Why the ORDER BY spells its own null handling</h3>
+     *
+     * <p>{@code date} is nullable and the comparator it mirrors is {@code nullsLast}, so the clause
+     * needs explicit null placement — and {@code NULLS LAST} is not portable: MariaDB has no such
+     * syntax, and it and PostgreSQL disagree about where a {@code DESC} null falls by default. A
+     * listing whose page boundaries differ by engine moves SH101's digest for a change nobody made,
+     * on one deployment and not another. {@code coalesce(p.date, :floor)} maps a null to an instant
+     * below every real one, so {@code DESC} puts nulls last and {@code ASC} puts them first on every
+     * engine — which is what the Java comparators do. {@code ShPostgresSchemaIT} and
+     * {@code ShMariaDbSchemaIT} are what make that a proof rather than a claim.</p>
+     */
+    @Query("""
+            select new com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository$ShListingKey(
+                p.id, p.state, p.date, p.title, p.shPostType.id)
+            from ShPostUnified p
+            where p.shFolder = :folder and p.state in :states
+              and (:typeId is null or p.shPostType.id = :typeId)
+              and (p.state = :preferred or not exists (
+                    select 1 from ShPostUnified d
+                    where d.id = p.id and d.state = :preferred and d.shFolder = :folder))
+            order by coalesce(p.date, :floor) desc, p.id asc""")
+    List<ShListingKey> findListingWindowNewest(@Param("folder") ShFolder folder,
+                                               @Param("states") Collection<ShPostState> states,
+                                               @Param("preferred") ShPostState preferred,
+                                               @Param("typeId") String typeId,
+                                               @Param("floor") Instant floor,
+                                               Pageable pageable);
+
+    /**
+     * The same window, oldest first (SH634).
+     *
+     * <p>{@code oldest} is {@code byDateThenId().reversed()} — which reverses the id tiebreak too,
+     * so it is {@code date asc, id desc} and still total. Spelled as its own query rather than a
+     * {@code Sort}, because the {@code coalesce} the null handling needs is an expression and a
+     * derived {@code Sort} can only name properties.</p>
+     */
+    @Query("""
+            select new com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository$ShListingKey(
+                p.id, p.state, p.date, p.title, p.shPostType.id)
+            from ShPostUnified p
+            where p.shFolder = :folder and p.state in :states
+              and (:typeId is null or p.shPostType.id = :typeId)
+              and (p.state = :preferred or not exists (
+                    select 1 from ShPostUnified d
+                    where d.id = p.id and d.state = :preferred and d.shFolder = :folder))
+            order by coalesce(p.date, :floor) asc, p.id desc""")
+    List<ShListingKey> findListingWindowOldest(@Param("folder") ShFolder folder,
+                                               @Param("states") Collection<ShPostState> states,
+                                               @Param("preferred") ShPostState preferred,
+                                               @Param("typeId") String typeId,
+                                               @Param("floor") Instant floor,
+                                               Pageable pageable);
+
+    /**
+     * How many rows that window is a page of (SH634).
+     *
+     * <p>The pager's totals are exact and always were, so a windowed read owes a second query with
+     * the <b>same</b> predicates. Written beside them and asserted against the unwindowed path in
+     * {@code ShRenderListingPageTest}, because a count that drifts from its query is a pager that
+     * lies — and lies quietly, since the rows on screen still look right.</p>
+     */
+    @Query("""
+            select count(p) from ShPostUnified p
+            where p.shFolder = :folder and p.state in :states
+              and (:typeId is null or p.shPostType.id = :typeId)
+              and (p.state = :preferred or not exists (
+                    select 1 from ShPostUnified d
+                    where d.id = p.id and d.state = :preferred and d.shFolder = :folder))""")
+    long countListingWindow(@Param("folder") ShFolder folder,
+                            @Param("states") Collection<ShPostState> states,
+                            @Param("preferred") ShPostState preferred,
+                            @Param("typeId") String typeId);
+
+    /**
      * One page of a folder's posts, one row per logical id, DRAFT preferred — the console
      * content browser's listing (SH165).
      *
