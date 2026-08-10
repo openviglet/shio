@@ -87,13 +87,12 @@ class ShOffThreadTenantLintTest {
 
             "schedule/ShPostScheduler.java",
             """
-            The sweep has no tenant by construction — it is a timer, not a request — and carrying \
-            one would be meaningless because there is no one tenant it belongs to. That makes it a \
-            different defect from SH612 rather than an instance of it: its finders read \
-            ShPostUnified, which is @TenantId, so under the default discriminator a non-default \
-            tenant's scheduled publish is not found at all and never fires. Filed as SH639; \
-            recorded here rather than fixed, because the fix is a sweep that iterates tenants and \
-            that is a task, not a line.""");
+            The sweep has no tenant by construction — it is a timer, not a request — so there \
+            is nothing for ShTenantHandoff.capture to capture. SH639 fixed the consequence \
+            the other way round: the sweep now ITERATES the tenants and runs one pass under \
+            each, through runAs rather than by binding the context itself, because the \
+            timer's thread is reused. Still declared rather than detected, because what makes \
+            it correct is the iteration and this lint can only see the boundary.""");
 
     @Test
     @DisplayName("SH612: every thread boundary either carries the tenant or is declared")

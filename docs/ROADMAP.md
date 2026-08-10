@@ -11,7 +11,6 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH639** (deps: SH22 ✅) **A scheduled publish never fires for any tenant but the default, because the sweep runs with no tenant bound** — ShPostUnified is @TenantId, so the finder's implicit predicate is the default discriminator and a due post of another tenant is never returned. → §IX.69
 - 📋 **SH640** (deps: SH619 ✅, SH522 ✅) **shio diff --against published is still refused, though the read it was blocked on now exists** — SH619 built read?state=published, so the fourth declaration SH522 named is now assemblable from two reads - what is missing is the verb and a field-level comparison. → §IX.70
 - 📋 **SH642** (deps: SH630 ✅, SH529 ✅) **88 debt entries revealed by SH630 carry no verdict, so a considered list and an unexamined one look alike** — SH529 gave every DEBT group an EARNS or DOES NOT verdict; the ids prose was paying have never been through that pass. → §IX.72
 

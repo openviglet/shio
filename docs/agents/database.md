@@ -224,3 +224,46 @@ exemption naming that task, so the exemption is a pointer rather than a silence.
 
 Validated with `-DskipITs=false` — a tenancy change is the case the ITs exist for, and both schema
 ITs were confirmed to have *run* rather than skipped without Docker.
+
+## The sweep that ran as nobody (SH639)
+
+`ShPostScheduler.sweep()` is a timer, so it runs on a thread that never had a tenant bound — and
+`ShPostUnified` carries `@TenantId`, so Hibernate appended the default discriminator to
+`findScheduledPublishDue`. **A post another tenant scheduled was not published late: it was never
+found.** Nothing threw, so the incident log had nothing to say either.
+
+It is the same absence SH612 found in the two off-thread incident recorders, one layer earlier and
+with a larger consequence. SH612 misfiled the *record* of a failure; this silently declined to do
+the work.
+
+### Iterating, because a timer has no tenant to carry
+
+SH612's fix captures the tenant on the committing thread. There is nothing to capture here, so the
+sweep runs **one pass per tenant** — through `ShTenantHandoff.runAs` rather than by binding the
+context itself, because the timer's thread is reused and a tenant left bound would stamp the next
+tick with the last tenant of this one.
+
+Three questions the shape had to answer:
+
+- **A suspended tenant is skipped.** Publishing for an account the platform has stopped is the one
+  outcome worse than publishing late — the request path already answers them 403, and a timer that
+  ignored that would be a way around the suspension that leaves no request behind.
+- **A tenant provisioned mid-sweep waits for the next tick.** The list is read once, so a pass runs
+  over a consistent set; the next tick is sixty seconds away and a post due now was due before that
+  tenant existed.
+- **One tenant's failure does not abandon the rest**, for the reason each post already is caught
+  individually: a sweep that stopped at the first bad row would let one tenant's broken content
+  silence every other tenant's schedule.
+
+**A single-tenant install still runs exactly one pass with nothing bound** and never reads the
+tenant table, so the common install pays nothing for this.
+
+### The coverage that existed could not see it
+
+`ShPostUnifiedAPITest` exercises the transition by calling `publishScheduled(id)` directly — the
+thing the sweep *delegates to*. It proves the publish works and says nothing about whether the sweep
+ever finds the row, and the defect lived entirely in the finder's implicit predicate, which is the
+one part that test bypasses. **`ShScheduledSweepTenantIT`** drives `sweep()` itself; it was
+confirmed to fail with the fix reverted, and it is an IT because `shio.multi-tenant=true` is what
+makes the discriminator mean anything (and because the alternative was a fifth multi-tenant Spring
+context in the unit suite).
