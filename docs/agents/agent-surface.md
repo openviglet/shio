@@ -1325,3 +1325,32 @@ post-type needs the same three lines, and the one that did not deleted `Text` an
 `Ace Editor - Javascript` for the whole JVM — surfacing as `Widget 'Text' is not seeded` thrown by
 production code several steps from the cause.
 
+
+## The sitemap's third answer to "is this live" (SH553)
+
+SH545 gave `/agent/read` and `/agent/find` a `published` field and left the context pack as the
+third surface with one word for two questions. `folderPosts` fetches both state rows, drops the
+published one and reports `state` from what is left — so **a session that opened by reading the pack
+was told every page of a fully published site is a draft.** P2 makes that the worst of the three
+places for it: the pack is the call that replaces a session, so the agent learned the structure and
+was misinformed about the state of everything in it.
+
+**Free of queries here, which is the difference from the two surfaces SH545 fixed.** `/agent/read`
+pays a PK lookup per row to answer this; the pack's walk was already fetching both state rows *in
+order to discard one*, so the fact was in hand and being thrown away. `folderRows` keeps it.
+
+**It was left out of SH545 on a measurement, not caution**, so the measurement came first here too:
+two of that task's three designs were refused by benchmarks — an unconditional field cost
+`addressing@scale` its floor, and a full convention sentence cost `discovery` its own. The sitemap is
+the token-heaviest of the three surfaces (one node per post) and carries an SH116 digest, so a field
+there changes what a cached pack compares against. Measured before and after: **`addressing@scale`
+unmoved at 62 agent tokens**, because the field is conditional and only a published post pays for it.
+
+**`Node` uses `NON_DEFAULT`, not `NON_NULL`, so nothing about SH545's shape transferred unexamined.**
+Whether a `Boolean` false is omitted is a property of *this* record, and it is asserted rather than
+assumed — on the object *and* on the serialized JSON, because the question the budget cares about is
+what goes over the wire. A draft passes `null` and the key is absent entirely, so a site with no
+published page pays nothing per row.
+
+The fixture had to gain a published twin to make any of this observable — ten drafts and no live row
+is a shape in which the sitemap's own defect cannot be seen, which is how it survived SH545.

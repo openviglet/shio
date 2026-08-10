@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -268,7 +269,8 @@ public class ShAgentContextService {
             return;
         }
         List<ShFolder> children = childFolders(folder);
-        List<ShPostUnified> posts = folderPosts(folder);
+        FolderRows rows = folderRows(folder);
+        List<ShPostUnified> posts = rows.posts();
 
         ShAgentContext.Node folderNode = new ShAgentContext.Node(KIND_FOLDER, path,
                 ids ? folder.getId() : null,
@@ -281,7 +283,11 @@ public class ShAgentContextService {
                     ids ? post.getId() : null,
                     post.getShPostType() == null ? null : post.getShPostType().getName(),
                     post.getState() == null ? null : post.getState().name(),
-                    post.getFurl(), post.getTitle(), 0, 0);
+                    post.getFurl(), post.getTitle(), 0, 0,
+                    // Only when true, which is SH545's rule and this record's own: a draft says
+                    // nothing rather than saying `false`, so a site with no published page pays
+                    // nothing per row for the field.
+                    rows.live().contains(post.getId()) ? Boolean.TRUE : null);
             if (!offer(postNode, post.getId(), nodes, tokens, cursor, maxNodes)) {
                 return;
             }
@@ -342,17 +348,37 @@ public class ShAgentContextService {
      * {@code /list} applies, so the two views of a folder never disagree.
      */
     private List<ShPostUnified> folderPosts(ShFolder folder) {
+        return folderRows(folder).posts();
+    }
+
+    /**
+     * A folder's posts, deduped draft-preferred, <b>and which of them are also live</b> (SH553).
+     *
+     * <p>The published ids come out of the same read at no cost, which is the difference between
+     * this surface and the two SH545 fixed. {@code /agent/read} pays a PK lookup per row to answer
+     * the same question; here the walk already fetches both state rows in order to drop one, so the
+     * fact was in hand and being discarded.</p>
+     */
+    private FolderRows folderRows(ShFolder folder) {
         Map<String, ShPostUnified> byId = new LinkedHashMap<>();
+        Set<String> live = new HashSet<>();
         for (ShPostUnified post : shPostUnifiedRepository.findByShFolderAndStateIn(folder, BOTH_STATES)) {
+            if (post.getState() == ShPostState.PUBLISHED) {
+                live.add(post.getId());
+            }
             ShPostUnified existing = byId.get(post.getId());
             if (existing == null || post.getState() == ShPostState.DRAFT) {
                 byId.put(post.getId(), post);
             }
         }
-        return byId.values().stream()
+        return new FolderRows(byId.values().stream()
                 .sorted(Comparator.comparing((ShPostUnified post) -> nullSafe(post.getTitle()))
                         .thenComparing(ShPostUnified::getId))
-                .toList();
+                .toList(), live);
+    }
+
+    /** One folder's rows and the ids among them that have a PUBLISHED twin (SH553). */
+    private record FolderRows(List<ShPostUnified> posts, Set<String> live) {
     }
 
     /**

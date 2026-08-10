@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -131,6 +132,22 @@ class ShAgentContextTest {
                         String.format("Post %02d", i), "/blog/post-" + i);
                 if (i == 0) {
                     firstPostId = id;
+                    // SH553 — one of the ten is also live, the way `publish()` writes it: a second
+                    // row sharing the id, with the draft left in place. Without a published twin in
+                    // the fixture the sitemap's own defect is unobservable, which is how it
+                    // survived SH545.
+                    ShPostUnified live = new ShPostUnified();
+                    live.setId(id);
+                    live.setState(ShPostState.PUBLISHED);
+                    live.setShSite(site);
+                    live.setShFolder(blog);
+                    live.setShPostType(postType);
+                    live.setTitle(String.format("Post %02d", i));
+                    live.setFurl("/blog/post-" + i);
+                    live.setData("{}");
+                    live.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+                    live.setOwner("admin");
+                    entityManager.persist(live);
                 }
             }
         });
@@ -193,6 +210,45 @@ class ShAgentContextTest {
     void modelIsSortedByNameSoTheDigestIsStable() {
         List<String> names = context().model().stream().map(ShAgentContext.Type::name).toList();
         assertThat(names).isSorted();
+    }
+
+    @Test
+    @DisplayName("SH553: the sitemap says which pages are also live, not DRAFT for all of them")
+    void theSitemapReportsPublished() {
+        List<ShAgentContext.Node> posts = context().sitemap().stream()
+                .filter(node -> "post".equals(node.kind()))
+                .toList();
+
+        // The defect, and P2 is why it mattered: the pack is the call that replaces a session, so an
+        // agent that opens with it learned the structure and was then misinformed about the state of
+        // every page in a fully published site.
+        assertThat(posts).filteredOn(node -> Boolean.TRUE.equals(node.published()))
+                .as("""
+                        the published twin is reported, though the row the walk kept is the DRAFT                         one — `folderPosts` prefers the draft, which is exactly what made every                         page read as a draft (SH553)""")
+                .hasSize(1)
+                .allSatisfy(node -> assertThat(node.url()).isEqualTo("/blog/post-0"));
+    }
+
+    @Test
+    @DisplayName("SH553: a draft omits the field entirely rather than saying published:false")
+    void aDraftSaysNothingAboutBeingPublished() throws Exception {
+        // Asserted rather than assumed, which the task asked for by name: `Node` uses NON_DEFAULT
+        // and not NON_NULL, so whether a `Boolean` false is omitted does not transfer from SH545's
+        // reasoning about `ShAgentDoc` — it has to be checked on this record.
+        List<ShAgentContext.Node> drafts = context().sitemap().stream()
+                .filter(node -> "post".equals(node.kind()))
+                .filter(node -> !"/blog/post-0".equals(node.url()))
+                .toList();
+        assertThat(drafts).isNotEmpty().allSatisfy(node ->
+                assertThat(node.published())
+                        .as("null and not FALSE, so the row has nothing to serialize")
+                        .isNull());
+
+        String json = new tools.jackson.databind.ObjectMapper().writeValueAsString(drafts.get(0));
+        assertThat(json)
+                .as("""
+                        and the wire agrees: a site with no published page pays nothing per row for                         this field, which is the measurement that let it be added at all — the                         sitemap is one node per post and the token-heaviest of the three surfaces                         SH545 touched (SH553)""")
+                .doesNotContain("published");
     }
 
     @Test

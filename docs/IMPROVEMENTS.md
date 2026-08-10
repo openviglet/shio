@@ -175,27 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.30 The sitemap still has the word SH545 replaced (SH553)
-
-`folderPosts` fetches both state rows, drops the published one and reports `state` from
-what is left, which is the same defect SH545 fixed on `/agent/read` and `/agent/find` —
-so a session that starts by reading the pack is told every page of a fully published
-site is a draft.
-
-It was left out of SH545 deliberately and the reason is a measurement, not caution. Two
-of that task's three designs were refused by benchmarks: an unconditional field cost
-`addressing@scale` its floor and a full convention sentence cost `discovery` its own.
-The sitemap is the token-heaviest of the three surfaces — one node per post — and it
-carries an SH116 digest, so a field there changes what a cached pack compares against,
-and that has to be measured before it is added rather than after.
-
-What makes it worth doing anyway is what the pack is for. P2 says one call replaces a
-session, and the call it names is this one: an agent that reads the pack to learn what a
-site holds learns the structure and is then misinformed about the state of every page in
-it. `Node` also uses `NON_DEFAULT` rather than `NON_NULL`, so the conditional shape
-SH545 settled on does not transfer unexamined — whether a `Boolean` false is omitted
-there has to be asserted rather than assumed.
-
 ### VIII.35 Inventory is not routing (SH601)
 
 The manifest is complete. That is the finding, and it is the uncomfortable one: every

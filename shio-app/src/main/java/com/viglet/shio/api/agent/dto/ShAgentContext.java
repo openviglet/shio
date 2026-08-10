@@ -161,6 +161,12 @@ public record ShAgentContext(
      * @param title the post's title (posts only)
      * @param folders child folder count (folders only)
      * @param posts   contained post count (folders only)
+     * @param published SH553 — whether this post is also live, which {@code state} cannot say.
+     *                  {@code folderPosts} prefers the DRAFT row, so a page serving publicly for
+     *                  weeks reported {@code state: DRAFT} and a session that opened with the pack
+     *                  was misinformed about every page of a fully published site. {@code null}
+     *                  rather than {@code false} when it is not: the row does not pay for what it
+     *                  has nothing to say about, which is this record's own rule one line down
      */
     // The same rule the terse encoding follows, applied to JSON (SH78): a row does
     // not pay for what it has nothing to say about. Without this, every post row
@@ -169,7 +175,13 @@ public record ShAgentContext(
     // JSON expensive for an agent in the first place.
     @JsonInclude(Include.NON_DEFAULT)
     public record Node(String kind, String path, String id, String type, String state,
-                       String url, String title, long folders, long posts) {
+                       String url, String title, long folders, long posts, Boolean published) {
+
+        /** The nine-field form, before SH553 gave the sitemap the word SH545 replaced. */
+        public Node(String kind, String path, String id, String type, String state,
+                    String url, String title, long folders, long posts) {
+            this(kind, path, id, type, state, url, title, folders, posts, null);
+        }
     }
 
     /**
