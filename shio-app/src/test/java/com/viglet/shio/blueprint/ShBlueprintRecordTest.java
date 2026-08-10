@@ -92,4 +92,25 @@ class ShBlueprintRecordTest {
         assertThat(note).contains(" more)");
         assertThat(note).contains("param00=");
     }
+
+    @Test
+    @DisplayName("SH220: the sentence is a format the CLI parses, so its shape is pinned here")
+    void theFormatIsAContractWithTheCli() {
+        // SH220 made `shio apply --blueprint` read this note back and default a re-apply to the
+        // values that built the site. That puts the format in two languages: written here, parsed
+        // in `cli/src/blueprint-record.mjs`. Nothing else joins them, so a reworded sentence would
+        // leave the CLI silently defaulting nothing — and "nothing to default" is exactly what a
+        // first apply looks like, which is the failure that would never be noticed.
+        //
+        // Pinned as the literal string rather than by re-implementing the parser in Java: a
+        // second implementation of the format is the thing this is protecting against.
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("blogTitle", "Notes");
+        params.put("authorName", "Ada");
+
+        assertThat(ShBlueprintRecord.noteFor("blog", "1.0.0", params))
+                .as("""
+                        the CLI splits on ' — params: ', then on ';', then on the first '='                         of each pair, and reads a trailing '(+n more)' as the admission of a cut.                         Change any of those four and change cli/src/blueprint-record.mjs in the                         same commit (SH220).""")
+                .isEqualTo("Built from blueprint 'blog' 1.0.0 — params: authorName=Ada; blogTitle=Notes");
+    }
 }

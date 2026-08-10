@@ -216,23 +216,6 @@ next.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.14 A re-apply defaults to what the site was built with (SH220)
-
-SH155 records the package, its version and its parameters as an instance-memory note, so
-"which blueprint is this site" is answerable. What it does not yet do is make the *next*
-apply cheaper: re-applying still means re-supplying every `--param`, from memory or from a
-transcript.
-
-That is not merely tedious, it is a correctness problem. A parameter the operator
-misremembers does not fail — it rebuilds the site with a different brand, headline or CTA,
-and `changed: n` reports it as ordinary work. The safe default is the value that produced
-the site.
-
-The record is already there and already parseable (sorted `name=value`, `site` excluded). The
-work is `shio apply --blueprint` reading it, and — this is the load-bearing half — **saying
-which values it defaulted**, because a parameter that was silently supplied is one nobody
-reviews. An explicit `--param` always wins over the record.
-
 ### XI.15 Make write-free planning structural, not remembered (SH221)
 
 SH153 removed the last write from a blueprint plan, and the reasoning generalises further

@@ -29,6 +29,7 @@ import { join } from "node:path";
 import { ShioAgentClient } from "../agent-client.mjs";
 // SH447 — one parser for `--param`/`--params`, shared with `init`, which had neither.
 import { coerceParams, readParams } from "../blueprint-params.mjs";
+import { describeDefaults, recordFor, withRecordDefaults } from "../blueprint-record.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { writeProjectFiles } from "../project-files.mjs";
 import { retellUnknownSite } from "../unknown-site.mjs";
@@ -207,7 +208,18 @@ async function applyBlueprint(flags, positionals, ctx) {
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
 
   const detail = await client.blueprint(name, { files: true });
-  const params = coerceParams(await readParams(flags, ctx, "apply"), detail?.manifest?.params);
+
+  // SH220 — what this site was built with, as the default for what it is being rebuilt with.
+  // A parameter the operator misremembers does not fail: it rebuilds the site with a different
+  // brand or headline and `changed: n` reports it as ordinary work. Read before coercion, so a
+  // recorded value goes through the same schema the flag's would.
+  const given = await readParams(flags, ctx, "apply");
+  const record = site ? recordFor(await recordNotes(client, site, ctx), name) : null;
+  const defaults = withRecordDefaults(given, record);
+  // Said, always, and before the apply runs. A parameter that was silently supplied is one
+  // nobody reviews, which would make this feature the second way to rebuild a site wrong.
+  ctx.stdout.write(describeDefaults(defaults, name));
+  const params = coerceParams(defaults.params, detail?.manifest?.params);
   const planOnly = Boolean(flags.check || flags.dryRun);
   const result = await client.applyBlueprint(name, {
     site,
@@ -253,6 +265,29 @@ async function applyBlueprint(flags, positionals, ctx) {
   return result;
 }
 
+
+
+/**
+ * The site's memory notes, or none (SH220).
+ *
+ * <p>A failure here is not a failure of the apply. The record is a convenience — the caller can
+ * always pass every parameter — so an instance that is too old to have SH114's memory, or a
+ * credential that cannot read it, degrades to "no defaults" rather than refusing the command. It
+ * says so on stderr, because a silent degradation is how "it defaulted nothing" becomes
+ * indistinguishable from "there was nothing to default".</p>
+ */
+async function recordNotes(client, site, ctx) {
+  try {
+    const memory = await client.memory({ site });
+    return memory?.notes ?? [];
+  } catch (error) {
+    ctx.stderr.write(
+      `shio apply: could not read this site's blueprint record (${error.message}), so no `
+        + "parameter defaults were applied. Pass --param for anything that matters.\n",
+    );
+    return [];
+  }
+}
 
 /**
  * Writes the package's front-end files into the project — see

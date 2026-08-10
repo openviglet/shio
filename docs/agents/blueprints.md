@@ -311,3 +311,50 @@ no restart, and no second surface to learn.
 
 **It rebuilds rather than merges.** A registry that only ever grew would keep answering `apply` for a
 package whose files an operator has deleted.
+
+## A re-apply defaults to what the site was built with (SH220)
+
+SH155 records the package, its version and its parameters as an instance-memory note. Re-applying
+still meant re-supplying every `--param` from memory or from a transcript — **and that is a
+correctness problem, not a tedium one.** A parameter the operator misremembers does not fail: it
+rebuilds the site with a different brand, headline or CTA, and `changed: n` reports it as ordinary
+work. The safe default is the value that produced the site.
+
+`shio apply --blueprint <name> --site <site>` now reads that record and fills in what the caller did
+not pass.
+
+**An explicit `--param` always wins.** The record is a default, not a policy — an operator
+re-applying with a new headline is doing the thing the flag is for, and a record that overrode it
+would make the site unchangeable through the command that changes it.
+
+**And it says which values it defaulted**, always, before the apply runs. That is the load-bearing
+half: a parameter that was silently supplied is one nobody reviews, which would make this feature a
+second way to rebuild a site wrong rather than a fix for the first. Nothing is printed when nothing
+was defaulted — a line saying "0 parameters taken" on every first apply is how a reader learns to
+skip the output that matters.
+
+### The hazard the task did not name: the record is prose, and it can be cut
+
+`ShBlueprintRecord.noteFor` writes a sentence bounded at 400 characters, and when the parameters do
+not fit it ends with `(+3 more)`. **That admission is the only reason the record is safe to parse
+back.** A reader that dropped it would supply *some* parameters and omit others — the same defect
+this task is about, arriving from the other side and silently. So `truncated` travels with the
+values, and the caller is told: *the record does not name 3 of its parameters, so those fall back to
+the package's defaults.* Worded as a limit rather than a failure, because the record did not lose
+them; it never held them.
+
+Two smaller decisions in the parser, both from cases that exist: a value is everything after the
+**first** `=` (a CTA href with a tracking parameter is ordinary), and the record chosen is the one
+whose blueprint name matches — a site can carry several, and re-applying `docs` into a site that
+also has `blog` must not inherit `blog`'s brand.
+
+### The format now lives in two languages
+
+Written in Java, parsed in `cli/src/blueprint-record.mjs`, with nothing joining them. So
+`ShBlueprintRecordTest` pins the literal sentence and names the CLI file to change with it —
+**a reworded sentence would leave the CLI silently defaulting nothing, and "nothing to default" is
+exactly what a first apply looks like.** Pinned as a string rather than by re-implementing the
+parser in Java, because a second implementation of the format is what the pin is protecting against.
+
+*(Found while writing it: the first parser read `1.0.0` as `1`, because its terminator alternation
+included `.`. That looks right in every test that only checks the package name.)*
