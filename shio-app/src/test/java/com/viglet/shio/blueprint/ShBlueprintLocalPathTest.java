@@ -151,8 +151,19 @@ class ShBlueprintLocalPathTest {
 
         // "It loaded" has to mean the same thing whichever source it came from — otherwise
         // the directory is a way to smuggle a package past the validation the format exists for.
-        assertThatThrownBy(() -> registryAt(dir).names())
-                .isInstanceOf(ShBlueprintRegistry.BlueprintFormatException.class);
+        // That property is untouched by SH217: the package is still REFUSED, and the only thing
+        // that changed is the blast radius. What used to happen is that it took the catalogue with
+        // it, which is not stricter validation — it is the same validation charged to everybody.
+        ShBlueprintRegistry registry = registryAt(dir);
+
+        assertThat(registry.names())
+                .as("the malformed package did not load, which is what validation means here")
+                .doesNotContain("acme-broken");
+        assertThat(registry.rejected())
+                .as("and it is named rather than silently absent — silence would be the smuggling "
+                        + "this test was written against, arriving by the other door (SH217)")
+                .singleElement()
+                .satisfies(row -> assertThat(row.name()).isEqualTo("acme-broken"));
     }
 
     @Test
@@ -171,12 +182,95 @@ class ShBlueprintLocalPathTest {
                 """);
 
         // The rule that matters most once packages can come from elsewhere: the target site
-        // is the caller's, and a package the user did not write does not get to choose it.
-        assertThatThrownBy(() -> registryAt(dir).names())
-                .isInstanceOf(ShBlueprintRegistry.BlueprintFormatException.class)
-                .satisfies(failure -> assertThat(
-                        ((ShBlueprintRegistry.BlueprintFormatException) failure)
-                                .problem().toProblemDetail().getDetail())
-                        .contains("site"));
+        // is the caller's, and a package the user did not write does not get to choose it. SH217
+        // isolates the refusal and does not soften it — a package that names a site is not
+        // available to apply, and the reason still says which rule it broke.
+        ShBlueprintRegistry registry = registryAt(dir);
+
+        assertThat(registry.names()).doesNotContain("acme-greedy");
+        assertThat(registry.rejected())
+                .singleElement()
+                .satisfies(row -> {
+                    assertThat(row.name()).isEqualTo("acme-greedy");
+                    assertThat(row.reason()).contains("site");
+                });
+    }
+
+    // --- SH217: the community half's load-bearing property ---
+
+    /** A package whose manifest is not a package: the shape a stranger's mistake takes. */
+    private static void writeBrokenPackage(Path root, String name) throws IOException {
+        Path dir = Files.createDirectories(root.resolve(name));
+        Files.writeString(dir.resolve(ShBlueprintManifest.FILE_NAME), """
+                {
+                  "formatVersion": 1,
+                  "name": "NAME",
+                  "title": "Broken",
+                  "version": "0.1.0",
+                  "content": ["missing.json"]
+                }
+                """.replace("NAME", name));
+    }
+
+    @Test
+    @DisplayName("SH217: a local package that will not load is refused on its own")
+    void oneBadPackageDoesNotTakeTheCatalogueDown(@TempDir Path dir) throws IOException {
+        // The property the community half needs before it needs an index: a package a stranger
+        // wrote must not be able to disable the catalogue. Measured rather than imagined - during
+        // SH216 one FIRST-PARTY manifest missing one parameter made GET /agent/blueprints answer
+        // 4xx for all six packages and failed forty-one tests. A directory anybody can drop a
+        // folder into is the same defect with a worse author.
+        writePackage(dir, "good-local");
+        writeBrokenPackage(dir, "broken-local");
+
+        ShBlueprintRegistry registry = registryAt(dir);
+
+        assertThat(registry.all()).containsKey("good-local");
+        assertThat(registry.all())
+                .as("""
+                        the first-party packages and the operator's other one still load. Before \
+                        SH217 the whole registry threw, so one malformed directory made the \
+                        catalogue unavailable to every caller (SH217).""")
+                .containsKey("blog")
+                .doesNotContainKey("broken-local");
+    }
+
+    @Test
+    @DisplayName("SH217: the refusal names the package and says why, which is the author's loop")
+    void theRefusalIsReadable(@TempDir Path dir) throws IOException {
+        // The validation pass SH217 asks for, with no new contract: an author points an instance
+        // at their directory and reads the refusal out of the surface they were going to publish
+        // against. The name is the DIRECTORY's - the manifest is the thing that failed, so reading
+        // a field out of it is how a report about a broken file becomes a second failure.
+        writeBrokenPackage(dir, "broken-local");
+
+        assertThat(registryAt(dir).rejected())
+                .singleElement()
+                .satisfies(row -> {
+                    assertThat(row.name()).isEqualTo("broken-local");
+                    assertThat(row.origin()).isEqualTo(dir.toString());
+                    assertThat(row.reason()).isNotBlank();
+                });
+    }
+
+    @Test
+    @DisplayName("SH217: a first-party package that will not load still fails the registry")
+    void theClasspathHalfStillFailsLoudly(@TempDir Path dir) throws IOException {
+        // Not an inconsistency with the two above - the same rule read from both sides. A failure
+        // is isolated exactly when its author is somebody the operator did not choose to trust
+        // with the catalogue. A first-party package that will not load is OUR build defect, and a
+        // registry that quietly shipped five of six would hide it until somebody counted.
+        //
+        // Asserted as the ABSENCE of a rejection rather than by breaking the classpath, which no
+        // test can do: what is checkable is that nothing first-party is ever reported here, so the
+        // isolation cannot silently widen to cover the packages it must not cover.
+        writePackage(dir, "good-local");
+
+        assertThat(registryAt(dir).rejected())
+                .as("isolation covers the operator's directory and nothing else")
+                .isEmpty();
+        assertThat(registryAt(dir).all().values())
+                .anySatisfy(blueprint ->
+                        assertThat(blueprint.origin()).isEqualTo(ShBlueprint.CLASSPATH));
     }
 }

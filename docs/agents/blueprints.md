@@ -227,3 +227,46 @@ would pass just as well if the overlay carried the wrong file.
   registry that could not load. The teaching error was right: *a placeholder with no parameter behind
   it would silently leave a gap in the content*. Adding `projectName` to the three manifests is the
   fix, and the failure is the argument for the check.
+
+## A stranger's package cannot take the catalogue down (SH217)
+
+SH96 shipped the local half of the registry: the classpath, plus one directory an operator names.
+That is a real trust model — whoever can set `shio.blueprint.path` can already put a jar on the
+classpath — but it left one property the *community* half needs before it needs an index.
+
+**A package that failed validation failed the whole registry.** Not hypothetical: during SH216 a
+single first-party manifest missing a single parameter made `GET /api/v2/agent/blueprints` answer
+4xx for all six packages, and forty-one tests failed on a catalogue that could not load. A directory
+anybody can drop a folder into is that defect with a worse author.
+
+So a **local** package that will not load is now refused on its own, named, and reported; the rest of
+the catalogue is unaffected.
+
+### The three cases, which are one rule read from three sides
+
+| What happened | What the registry does | Why |
+|---|---|---|
+| A **first-party** package will not load | still fails the whole registry | it is our build defect, and shipping five of six would hide it until somebody counted |
+| A **local** package will not load | refused alone, reported as a `BLUEPRINT` incident | its author is not somebody the operator chose to trust with the catalogue |
+| A **local** package collides with a first-party name | still fails the whole registry | a conflict about what a name *means*, not one package's problem — SH96's reasoning is unchanged: shadowing rewrites every existing `blog` apply, ignoring makes the operator's package do nothing |
+
+**Refused is not softened.** A package that names its own site is still unavailable to apply, and the
+reason still says which rule it broke. What changed is the blast radius — the old behaviour was not
+stricter validation, it was the same validation charged to everybody.
+
+### Where the refusal surfaces, and why not in the catalogue
+
+`GET /agent/diagnostics`, as a `BLUEPRINT` incident. A refused package is not something the instance
+carries, so it does not belong in the list of what it carries — and wrapping that list in an envelope
+would charge every caller tokens on every call to be told nothing was refused (P3). An incident costs
+nothing until there is one.
+
+**That is also the validation pass SH217 asked for, with no new contract**: an author points an
+instance at their directory and reads the refusal out of the surface they were going to publish
+against. The reported reason is the teaching error's **detail**, not its title — the title is the
+class of problem ("Blueprint package is malformed") and the detail is the sentence naming which rule
+broke, which is the round trip the error format exists to remove.
+
+Distribution — the `shio-blueprint-*` convention, a curated index, a provenance signal — is **SH643**,
+because a curated index needs a place to live and somebody to say what goes in it. That is a decision
+about the project rather than a change to it.

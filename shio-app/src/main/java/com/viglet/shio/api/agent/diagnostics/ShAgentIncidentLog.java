@@ -106,7 +106,22 @@ public class ShAgentIncidentLog {
          * only when the content is wrong <em>and</em> the symptom is silence. Folding by subject keeps
          * one broken post to one entry however many times it renders.</p>
          */
-        CONTENT;
+        CONTENT,
+
+        /**
+         * SH217 — a blueprint package the operator added would not load.
+         *
+         * <p>Its own kind, and the reason is the remedy rather than the cause: every other kind
+         * here is something the instance was <em>doing</em> that failed, and the fix is to retry
+         * it or to fix the target. This is a package that was never usable, and the fix belongs to
+         * whoever wrote it — which for the community half of the registry is not the operator.</p>
+         *
+         * <p>Silence is the answer on almost every instance, and that is the point of routing it
+         * here rather than into the catalogue: wrapping a listing in an envelope would cost every
+         * caller tokens on every call to be told nothing was refused (P3), while an incident costs
+         * nothing until there is one.</p>
+         */
+        BLUEPRINT;
 
         public String wireName() {
             return name().toLowerCase(Locale.ROOT).replace('_', '-');

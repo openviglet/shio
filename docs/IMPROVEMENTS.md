@@ -216,30 +216,6 @@ next.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.5 The community half of the registry (SH217)
-
-SH96 shipped the local half: the classpath, plus one directory an operator names. That is a real
-trust model — whoever can set `shio.blueprint.path` can already put a jar on the classpath, so it
-grants no new authority, and whoever set it is vouching for what is in it. Collisions refuse
-rather than shadow, an unreadable path fails rather than yielding fewer packages, and every
-package reports its source.
-
-What that does *not* cover is a package a stranger wrote. "An operator put it there" is a subject
-for a sentence about trust; "it resolved from npm" is not, and that difference is the remaining
-task. A blueprint provisions post-types and writes pages under the caller's credentials, so
-fetch-by-URL moves the decision from a person to a network — the shape of every supply-chain
-incident anyone has had.
-
-What this task owns: the `shio-blueprint-*` naming convention (absorbs old SH28/SH29/SH31); a
-validation pass a publisher can run *before* publishing — SH92's load-time checks exposed as a
-command, so an author's mistake is caught by the author; a written statement of what an applied
-package may do, which SH151/SH152 made answerable by making the dangerous parts opt-in; a
-curated index; and a provenance signal stronger than a directory listing.
-
-The format needs nothing. A package is a directory validated on load, `formatVersion` refuses
-one written for a newer instance rather than mis-reading it, and SH96 proved the validation is
-source-independent: "it loaded" already means the same thing wherever it came from.
-
 ### XI.12 A release leaves the generated packages stale (SH218)
 
 `publish-js-sdk.yml` bumps every publishable package, rewrites the dependency ranges in
@@ -379,6 +355,32 @@ is a promise and this one is the guard.
 
 Expect it to be red on the first run, and expect the missing files to be interesting:
 what leaves the box is a decision nobody has made deliberately.
+
+### XI.20 How a stranger's package earns its place (SH643)
+
+SH217 built the property the community half needs **first**: a local package that will
+not load is refused on its own and named, so a package the operator did not write cannot
+take the catalogue down with it. That also gave an author the validation loop the task
+asked for, with no new contract — point an instance at the directory and read the
+refusal out of the listing you were going to publish against.
+
+What it did not build is everything about **distribution**:
+
+- the `shio-blueprint-*` naming convention, which absorbs the old SH28/SH29/SH31;
+- a written statement of what an applied package may do, which SH151/SH152 made
+  answerable by making the dangerous parts opt-in;
+- a curated index;
+- a provenance signal stronger than a directory listing.
+
+The reason to split rather than keep one line open: the first is registry code and these
+are **policy plus somewhere to publish it**. A curated index needs a place to live and
+somebody to say what goes in it, which is a decision about the project rather than a
+change to it — and a task mixing the two gets the code half done and the policy half
+dropped.
+
+The format needs nothing. A package is a directory validated on load, `formatVersion`
+refuses one written for a newer instance, and SH96 proved the validation is
+source-independent: "it loaded" already means the same thing wherever it came from.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

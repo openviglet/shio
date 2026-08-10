@@ -92,6 +92,25 @@ public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes
     }
 
     /**
+     * A package the operator added that would not load, and why (SH217).
+     *
+     * <p>The community half of the registry needs one property before it needs an index: <b>a
+     * package a stranger wrote must not be able to disable the catalogue.</b> So a local package
+     * that fails validation is refused on its own and reported here, while a first-party one
+     * still fails the registry — the trust boundary SH96 drew, read from the other side.</p>
+     *
+     * <p>It is also the validation pass an author runs before publishing, with no new contract:
+     * point an instance at the directory and read the refusal out of the listing.</p>
+     *
+     * @param name   the package's DIRECTORY name — the manifest is what failed, so reading a
+     *               field out of it would make a report about a broken file fail twice
+     * @param origin the configured path it came from, so a reader knows this is not first-party
+     * @param reason the teaching error's own title, which already says what to fix (P6)
+     */
+    public record Rejected(String name, String origin, String reason) {
+    }
+
+    /**
      * Summarize for the listing.
      *
      * <p>{@code origin} is reported only for a package the operator added (SH96). Stamping

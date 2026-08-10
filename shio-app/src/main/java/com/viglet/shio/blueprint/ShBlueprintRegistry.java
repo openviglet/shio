@@ -30,6 +30,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.error.ShProblem;
+import org.springframework.beans.factory.ObjectProvider;
+
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.blueprint.dto.ShBlueprint;
@@ -97,15 +100,40 @@ public class ShBlueprintRegistry {
     /** Sorted by name so the listing is byte-stable across boots and instances (P5). */
     private volatile Map<String, ShBlueprint> cache;
 
+    /**
+     * Local packages that would not load, and why (SH217).
+     *
+     * <p>Written by the same pass that fills {@link #cache}, so the two are always one snapshot:
+     * a reader asking what is available and a reader asking what was refused are looking at the
+     * same load.</p>
+     */
+    private volatile List<ShBlueprint.Rejected> rejected = List.of();
+
+    /**
+     * SH217 — an {@link ObjectProvider} so the two test constructors keep working.
+     *
+     * <p>The registry is built directly in several tests, and a required dependency would make
+     * every one of them construct a diagnostics log to read a catalogue. The refusal is reported
+     * when there is somewhere to report it and dropped when there is not, which is the right
+     * failure for a channel whose whole purpose is that silence costs nothing.</p>
+     */
+    private final ObjectProvider<ShAgentIncidentLog> incidents;
+
     @org.springframework.beans.factory.annotation.Autowired
-    public ShBlueprintRegistry(ShBlueprintCodec codec, ShBlueprintProperties properties) {
+    public ShBlueprintRegistry(ShBlueprintCodec codec, ShBlueprintProperties properties,
+                               ObjectProvider<ShAgentIncidentLog> incidents) {
         this.codec = codec;
         this.properties = properties;
+        this.incidents = incidents;
+    }
+
+    public ShBlueprintRegistry(ShBlueprintCodec codec, ShBlueprintProperties properties) {
+        this(codec, properties, null);
     }
 
     /** The classpath-only registry — the shape {@code ShBlueprintRegistryTest} constructs. */
     public ShBlueprintRegistry(ShBlueprintCodec codec) {
-        this(codec, new ShBlueprintProperties());
+        this(codec, new ShBlueprintProperties(), null);
     }
 
     /** Every blueprint this instance carries, by name, in name order. */
@@ -158,14 +186,114 @@ public class ShBlueprintRegistry {
             throw new UnreadableRegistryException(unreadable);
         }
         for (Resource manifest : manifests) {
+            // A first-party package that will not load is OUR build defect, and it still fails
+            // the whole registry. That is not an inconsistency with the branch below — it is the
+            // same rule read from both sides: a failure is isolated exactly when its author is
+            // somebody the operator did not choose to trust with the catalogue.
             put(loaded, read(manifest, ShBlueprint.CLASSPATH));
         }
+        List<ShBlueprint.Rejected> refused = new ArrayList<>();
         // The classpath first, always: a local package cannot be loaded before the
         // first-party one it collides with, so the error can name which is which.
         for (Resource manifest : localManifests()) {
-            put(loaded, read(manifest, properties.getPath().trim()));
+            ShBlueprint blueprint;
+            try {
+                blueprint = read(manifest, properties.getPath().trim());
+            } catch (ShTeachingException invalid) {
+                // SH217 — the community half's load-bearing property. A package the operator
+                // added is refused ON ITS OWN and named; before this, one malformed directory
+                // made `GET /agent/blueprints` answer 4xx for the WHOLE catalogue, so a stranger's
+                // package could take the first-party ones down with it. Measured, not imagined:
+                // one first-party manifest missing one parameter did exactly that during SH216,
+                // and forty-one tests failed on a registry that could not load.
+                //
+                // It is also the validation loop SH217 asks for, with no new contract: an author
+                // points an instance at their directory and reads the refusal back out of the
+                // listing they were going to publish against.
+                ShBlueprint.Rejected row = new ShBlueprint.Rejected(packageName(manifest),
+                        properties.getPath().trim(), reasonOf(invalid));
+                refused.add(row);
+                report(row);
+                continue;
+            }
+            // OUTSIDE the catch, and that is the distinction SH96 drew: a package that will not
+            // load is one package's problem, while a package that COLLIDES is a conflict about
+            // what a name means. Shadowing would change what every existing `blog` apply does
+            // without saying so, and ignoring would make the operator's package quietly do
+            // nothing — so a collision still fails the registry, naming both origins.
+            put(loaded, blueprint);
         }
+        rejected = List.copyOf(refused);
         return java.util.Collections.unmodifiableMap(loaded);
+    }
+
+    /**
+     * The directory name, which is all that is knowable about a package that would not parse.
+     *
+     * <p>Deliberately not the manifest's {@code name}: the manifest is the thing that failed, so
+     * reading a field out of it is how a report about a broken file becomes a second failure.</p>
+     */
+    private static String packageName(Resource manifest) {
+        try {
+            Path file = Path.of(manifest.getURI());
+            Path parent = file.getParent();
+            return parent == null ? manifest.getFilename() : parent.getFileName().toString();
+        } catch (IOException | RuntimeException unreadable) {
+            return manifest.getDescription();
+        }
+    }
+
+    /**
+     * The teaching error's own words (P6), preferring the <b>detail</b> over the title.
+     *
+     * <p>The title is the class of problem — "Blueprint package is malformed" — and the detail is
+     * the sentence that names which rule broke and where. A reader given only the title has to go
+     * and reproduce the failure to learn anything, which is the round trip the whole error format
+     * exists to remove.</p>
+     */
+    private static String reasonOf(ShTeachingException invalid) {
+        var problem = invalid.problem().toProblemDetail();
+        String detail = problem.getDetail();
+        if (detail != null && !detail.isBlank()) {
+            return detail;
+        }
+        String title = problem.getTitle();
+        return title == null || title.isBlank() ? invalid.getMessage() : title;
+    }
+
+    /**
+     * Local packages that would not load, newest load first (SH217).
+     *
+     * <p>Empty on almost every instance, which is why the listing omits it entirely rather than
+     * reporting a zero: silence is the answer that costs nothing (P3), and its presence is the
+     * signal.</p>
+     */
+    public List<ShBlueprint.Rejected> rejected() {
+        all();
+        return rejected;
+    }
+
+    /**
+     * Puts one refusal where an operator will meet it (SH217).
+     *
+     * <p>{@code GET /agent/diagnostics} rather than the catalogue: a refused package is not
+     * something this instance carries, so it does not belong in the list of what it carries, and
+     * an envelope around that list would charge every caller for the answer "nothing was refused".
+     * The incident's {@code fix} is deliberately about the <em>package</em> — for a stranger's
+     * package the operator cannot fix it, and telling them to is worse than telling them who
+     * can.</p>
+     */
+    private void report(ShBlueprint.Rejected row) {
+        ShAgentIncidentLog log = incidents == null ? null : incidents.getIfAvailable();
+        if (log == null) {
+            return;
+        }
+        log.record(ShAgentIncidentLog.Kind.BLUEPRINT, row.name(),
+                "this package would not load: " + row.reason(),
+                "Fix the package and restart, or take it out of " + row.origin()
+                        + ". The rest of the catalogue is unaffected — a package the operator "
+                        + "added cannot stop the others loading (SH217).",
+                null, null);
     }
 
     /**

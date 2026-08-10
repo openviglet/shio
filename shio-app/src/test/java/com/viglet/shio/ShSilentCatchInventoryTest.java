@@ -112,7 +112,20 @@ class ShSilentCatchInventoryTest {
             // every required field, and drown the finding somebody actually asked for.
             "api", 58,
             "tenant", 4,
-            "blueprint", 2,
+            // 4 since SH217, and the two are different judgements filed under one number.
+            //
+            // The first is a catch that DOES record — the registry refuses one local package and
+            // reports it as a BLUEPRINT incident — but it records through a helper, and this lint
+            // keys on the text of the catch block. That is the same blindness the `api` and
+            // `render` entries above are counted for, and the same answer: counted rather than
+            // exempted, so the population stays a diff.
+            //
+            // The second is genuinely silent, and deliberately: `packageName` falls back to the
+            // resource's description when the manifest's URI will not resolve. It runs while
+            // building a report ABOUT a broken package, so an incident there would be a failure to
+            // describe a failure — and the fallback still names the package well enough for an
+            // operator to find it, which is the whole job.
+            "blueprint", 4,
             "exchange", 2,
             // 3 since SH384: a bad `page=` falls back to page one, beside the bad `limit=` that
             // falls back to the default. Deliberately not recorded — that value comes off a URL a
