@@ -664,3 +664,48 @@ The new test classes changed surefire's ordering, which turned SH635's twice-see
 `ShBlueprintApplyTest` failure into a **deterministic** one — and its permanent capture then named
 the cause on the first red run. Declared in [`red-suites.json`](../../red-suites.json) against
 SH635 rather than fixed here.
+
+## A release commits what `emit` produced, and now reads it first (SH218)
+
+`publish-js-sdk.yml` bumps every publishable package, re-runs `emit`, and commits the generated
+trees. **Half of SH218 was already built** — the re-emit step exists, and the task's own reasoning
+for it stands: without it the trees keep the old dependency range and `emit.test.mjs` turns the
+*next* push red, so a release's side effect gets reported against whoever pushed after it and the
+obvious reading of a red build ("what did I break?") is wrong.
+
+What was not built is the section's last sentence: **a job that regenerates content should fail
+loudly if the regeneration changes something it did not expect.** It did not. `emit` ran, and
+whatever came out was committed unread.
+
+The drift test cannot cover this. It runs on a push and answers *"the tree matches its source"* —
+which is true immediately after the release commits, because the release committed exactly what
+`emit` wrote. The unchecked moment is the one where a job writes into
+`shio-app/src/main/resources/` and commits it in the same breath.
+
+### The rule is about files, not lines
+
+A release changes **versions**. A generated file appearing or disappearing during one is either an
+overlay somebody edited without running `emit`, or a generator that broke — and a release commit is
+the worst possible place for either, because it is the one nobody reviews.
+
+So an **addition or deletion** under the generated trees fails the release; a **modification** is
+expected, and is printed on success too (P9: "it changed six files" is the cheapest proof the step
+ran at all). Deliberately *not* "every changed line must be a semver range": that reads the diff's
+text, and a rule that has to parse a diff to decide whether a release is sound will one day be wrong
+about a quoted string.
+
+A rename is classified as an **addition**. Porcelain reports `R old -> new`, and reading that as one
+path with an arrow in it would file a renamed generated file as a modification — the surprise this
+exists to catch, arriving in the one shape that looks innocent.
+
+The decision lives in `create-shio-app/src/emit-guard.mjs` as a pure function, so the rule is
+assertable without putting a working tree into six states; `scripts/emit-guard.mjs` is the wiring,
+and the step runs **before the publish steps**, because a surprise found after pushing to the
+registry is one nobody can act on.
+
+**One slip worth recording**: the test asserting that ordering first searched the workflow for
+`npm publish` and found it in a comment near the top explaining how `pnpm publish` rewrites
+`workspace:*` — SH613's lesson arriving in a YAML file. It now matches the step declaration. The
+same pass fixed a comment that still said `emit` composes *three* packages; SH216 took it to six,
+which is the kind of number a comment should not carry when `PACKAGES` is the list and a test
+asserts it.

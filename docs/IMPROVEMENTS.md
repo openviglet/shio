@@ -216,24 +216,6 @@ next.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.12 A release leaves the generated packages stale (SH218)
-
-`publish-js-sdk.yml` bumps every publishable package, rewrites the dependency ranges in
-`create-shio-app/template/package.json`, and commits. It does not re-run `emit`. The
-template is the *source* of three generated trees — `nextjs-starter`, and since SH156
-`marketing-site` and `landing` — each of which carries its own copy of that `package.json`
-with the old range baked in.
-
-Nothing fails during the release. The drift test fails on the **next** push, which means a
-release's side effect is reported against whoever pushed after it, and the obvious reading
-of a red build ("what did I break?") is wrong. That misattribution is the actual cost; the
-stale range is trivially fixed by the command the failure already names.
-
-The fix is one step in the workflow: run `emit` after the bump and add the three package
-directories to the commit. Worth doing carefully rather than quickly, because it makes the
-release job write into `shio-app/src/main/resources/`, and a job that regenerates content
-should fail loudly if the regeneration changes something it did not expect.
-
 ### XI.13 Reloading the local package directory (SH219)
 
 `ShBlueprintRegistry` caches on first access and never invalidates. That was free when the

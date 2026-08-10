@@ -138,8 +138,11 @@ jobs:
 
       # ── Re-emit the carried front-end files, because the bump changes them ──
       #
-      # `emit` composes the three blueprint packages from `create-shio-app/template/`
-      # and `shio-sections/front-end/`, and the range it writes for a *needed*
+      # `emit` composes the blueprint packages from `create-shio-app/template/`,
+      # `shio-sections/front-end/` and — since SH216 — `create-shio-app/overlays/`. It said
+      # "three" until that task took it to six, which is the kind of number a comment should
+      # not carry: `PACKAGES` in emit.mjs is the list, and `emit.test.mjs` asserts it.
+      # The range it writes for a *needed*
       # package is `rangeFor(name) ?? ^<workspace version>` (emit.mjs). While
       # `@viglet/shio-sections` is unpublished `rangeFor` answers `null`, so the
       # fallback applies and the emitted range **is** the workspace version — which
@@ -151,6 +154,22 @@ jobs:
       # one version, and before the build so a failure here costs no publish.
       - name: Re-emit the blueprint packages
         run: pnpm -C create-shio-app run emit
+
+      # ── And read what it produced, because the next step COMMITS it (SH218) ──
+      #
+      # The drift test cannot cover this. It runs on a push and answers "the tree matches its
+      # source"; the release runs `emit` and then commits whatever came out, so nobody checks
+      # that the output was the output anybody expected. A job that regenerates content into
+      # `shio-app/src/main/resources/` and commits it unread can land anything.
+      #
+      # The rule is about files rather than lines: a release changes VERSIONS, and a generated
+      # file appearing or disappearing during one is either an overlay somebody edited without
+      # running `emit` or a generator that broke. A release commit is the worst place for either,
+      # because it is the one nobody reviews.
+      #
+      # Runs before the build, so a surprise costs no publish.
+      - name: Check the re-emit changed only what a release changes
+        run: pnpm -C create-shio-app run emit:check
 
       # ── What the release deliberately does NOT touch: the scaffold's ranges ──
       #
