@@ -879,6 +879,12 @@ export const COMPARE_GROUPS: CompareGroup[] = [
         feature: "A digest so a later session can skip re-reading it",
         cells: ["yes", "no", "no", "no", "no"],
       },
+      {
+        // SH601 — the finding behind this row is that the manifest was already complete, and
+        // completeness was never the constraint: mapping an intent onto it was the unbudgeted work.
+        feature: "The manifest routes an intent to the one call, instead of listing everything",
+        cells: ["yes", "no", "no", "no", "no"],
+      },
     ],
   },
   {

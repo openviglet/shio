@@ -116,3 +116,8 @@ Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the public read-only demo
 instance (SH540) is all that is left, and it is what turns the scripted session
 in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
+
+Block H closed on 2026-08-10 and the P2 comparison gained a row for it: the manifest
+now **routes** an intent to one call rather than listing everything, which is the
+finding that block ended on — it was already complete, and completeness was never the
+constraint.
