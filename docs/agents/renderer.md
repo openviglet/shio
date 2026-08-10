@@ -1348,3 +1348,40 @@ The rendering is its own method (`emit`) so the save/restore bracket is structur
 in `ShRenderListingPageTest` against a layout that nests one `{{#query}}` in another, and both were
 **verified to fail with the restore disabled** — a nested-listing test that has only run against the
 fix is green for two indistinguishable reasons.
+
+## A layout can say it omits the site's scripts on purpose (SH421)
+
+SH389's `site-scripts-dropped` warns for **every** bound layout in a site that declares scripts and
+whose HTML never names `site.scripts`. That is right for the case it was built for — a set of pages
+with no consent banner, rendering perfectly, which is a compliance defect nothing else can see. It
+is wrong for a transactional email template, a print sheet, an AMP-shaped variant or an embed a
+partner iframes: each is a legitimate layout that must **not** load a chat widget, and its author had
+no way to say so. SH388's lesson makes that fatal rather than annoying — *a lint over templates that
+fires on correct work is one authors learn to skip, and the true finding goes unread with it.*
+
+**`PageLayout.NO_SITE_SCRIPTS`**, a `Check Box`, is the declared opt-out. A **field** and not a
+baseline acceptance, for the reason SH385 put a redirect's source on the post rather than in a side
+table: the decision belongs where the person changing the layout reads it. A suppression file records
+that somebody once dismissed a warning; this records that the omission is *intentional*, in the
+content, beside the HTML that omits them. The finding's `fix` now names **both** ways out (P6) —
+emit them, or tick the box.
+
+**Unticked by default**, which is the load-bearing default: an opt-out that defaulted the other way
+would silence the rule for a whole estate on upgrade, and SH389's finding is a compliance defect that
+renders perfectly.
+
+**One reader for what a ticked box means.** `ShPostFieldFlags.isTrue` is now shared, because the
+value is not a `Boolean` on the wire — `"1"` from the console, `"on"` from a form, `true` from
+`post.upsert` — and this gave that coercion a second caller in another package. SH245's rule, and the
+disagreement it prevents is concrete: a layout whose opt-out the lint failed to recognise gets warned
+about anyway.
+
+**Two guards caught this being added, and both were right.** `ShRenderModelSourceTest` refuses a
+field the 2018 model cannot carry unless it is declared in `INVENTED` **with its reason** — so the
+divergence is a decision somebody wrote down rather than a difference nobody noticed (SH277's shape).
+And `specsFor` is the single source for both `ensure` and the reconcile repair list, so the field
+reaches old instances as well as new ones without a second edit.
+
+`ShSiteScriptsDroppedTest` holds both directions against two byte-identical layouts differing only in
+the flag — and both assertions were **verified to fail with the opt-out disabled**, because a test
+that only asserts the silence would pass just as well if the rule had been deleted.

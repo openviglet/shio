@@ -268,7 +268,14 @@ public class ShRenderPostTypes {
                     field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),
                     field(ShSystemPostTypeAttr.THEME, "Theme", ShSystemWidget.TEXT, 3, false),
                     field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
-                            ShSystemWidget.ACE_JS, 4, false));
+                            ShSystemWidget.ACE_JS, 4, false),
+                    // SH421 — the declared opt-out from `site-scripts-dropped`. A Check Box for
+                    // `Redirect.PERMANENT`'s reason: it is a yes/no an author ticks, and the widget
+                    // catalogue already has one. Not required, and unticked by default, so every
+                    // layout that exists today keeps being checked — an opt-out that defaulted to
+                    // "opted out" would silence the rule for the whole estate on upgrade.
+                    field(ShSystemPostTypeAttr.NO_SITE_SCRIPTS, "Omits site scripts on purpose",
+                            ShSystemWidget.CHECK_BOX, 5, false));
             case ShSystemPostType.REGION -> List.of(
                     titleField(),
                     field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),

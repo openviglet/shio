@@ -33,6 +33,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.post.type.ShPostFieldFlags;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.render.ShRegionComposer.ShRenderedRegion;
@@ -483,13 +484,14 @@ public class ShPageRenderService {
      * through {@code post.upsert}, and a redirect written by either has to mean the same thing — a 301
      * that silently became a 302 because the value arrived as a string is the kind of defect nobody
      * finds by looking at the content.</p>
+     *
+     * <p>Moved to {@link ShPostFieldFlags} by SH421, which gave {@code PageLayout} a flag of its own
+     * and therefore gave this coercion a second caller in a different package. Delegating rather
+     * than copying is SH245's rule, and here the disagreement it prevents is concrete: a layout
+     * whose opt-out the lint failed to recognise is warned about anyway.</p>
      */
     private static boolean isTrue(Object value) {
-        if (value instanceof Boolean flag) {
-            return flag;
-        }
-        String text = value == null ? "" : value.toString().trim();
-        return "1".equals(text) || "true".equalsIgnoreCase(text) || "on".equalsIgnoreCase(text);
+        return ShPostFieldFlags.isTrue(value);
     }
 
     /**

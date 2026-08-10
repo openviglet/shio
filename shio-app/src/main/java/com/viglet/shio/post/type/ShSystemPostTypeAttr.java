@@ -69,6 +69,23 @@ public class ShSystemPostTypeAttr {
 	 */
 	public static final String SCRIPTS = "SCRIPTS";
 
+	/**
+	 * A {@code PageLayout} that omits the site's scripts <b>on purpose</b> (SH421).
+	 *
+	 * <p>SH389's {@code site-scripts-dropped} warns for every bound layout whose HTML never names
+	 * {@code site.scripts}, which is right for the case it was written for — a set of pages with no
+	 * consent banner, rendering perfectly — and wrong for a transactional email template, a print
+	 * sheet, an AMP-shaped variant or an embed a partner iframes. Each of those is a legitimate
+	 * layout that must <em>not</em> load a chat widget, and before this its author had no way to say
+	 * so.</p>
+	 *
+	 * <p>A field and not a baseline acceptance, for the reason SH385 put a redirect's source on the
+	 * post rather than in a side table: the decision belongs where the person changing the layout
+	 * reads it. A suppression file records that somebody once dismissed a warning; this records that
+	 * the omission is <b>intentional</b>, in the content, next to the HTML that omits them.</p>
+	 */
+	public static final String NO_SITE_SCRIPTS = "NO_SITE_SCRIPTS";
+
 	public static final String TO = "TO";
 	public static final String PERMANENT = "PERMANENT";
 	public static final String CONTENT = "CONTENT";

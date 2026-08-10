@@ -1463,29 +1463,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.32 A lint over templates fires on correct work or nobody reads it (SH421)
-
-SH389's `site-scripts-dropped` is the rule that makes the task's fix real: moving a
-site's scripts into one ordered list stops the duplication and does nothing about a
-layout that never emits them, which is a set of pages with no consent banner rendering
-perfectly.
-
-It has one false-positive shape, introduced with it and worth closing before somebody
-meets it. The rule fires for **every** bound layout in a site that declares scripts, and
-some layouts omit them deliberately: a transactional email template, a print sheet, an
-AMP-shaped variant, an embed a partner iframes. Each is a legitimate layout that must
-not load a chat widget, and its author has no way to say so.
-
-The lesson SH388 wrote down applies directly: a lint over templates that fires on
-correct work is one authors learn to skip, and the true finding goes unread with it.
-
-Two shapes to choose between. A **baseline acceptance** already works and costs nothing
-to build, but records the decision away from the layout it is about. A **field on the
-layout** — a declared opt-out — puts it where an author reads it and makes the omission
-intentional in the content rather than in a suppression file, at the cost of one more
-field on a system post-type. The second is probably right for the same reason SH385 put
-a redirect's source on the post rather than in a side table.
-
 ### XV.35 The reference the graph can now see, and still cannot check (SH572)
 
 SH558 taught `ShTemplateGraph` to read the literal address in a `getRelation` block,

@@ -50,6 +50,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.post.type.ShPostFieldFlags;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -801,6 +802,14 @@ public class ShAgentVerifyService {
             if (html != null && html.contains("site.scripts")) {
                 continue;
             }
+            // SH421 — the author has said this layout omits them on purpose. A transactional email
+            // template, a print sheet, an AMP variant or a partner embed must NOT load a chat
+            // widget, and before the field existed each of them was warned about forever. SH388's
+            // lesson is the whole reason this is worth a field: a lint over templates that fires on
+            // correct work is one authors learn to skip, and the true finding goes unread with it.
+            if (ShPostFieldFlags.isTrue(fieldValue(layout, ShSystemPostTypeAttr.NO_SITE_SCRIPTS))) {
+                continue;
+            }
             var impact = templateGraph.impactOf(layout);
             if (impact.isEmpty() || !impact.get().isUsed()) {
                 continue;
@@ -815,7 +824,10 @@ public class ShAgentVerifyService {
                             + " {{#if defer}}defer{{/if}}></script>{{/each}}` in the head, and the "
                             + "same for site.scripts.bodyStart and site.scripts.bodyEnd. Shio never "
                             + "injects a script a layout did not ask for (P10), which is why this is "
-                            + "reported rather than fixed."));
+                            + "reported rather than fixed. If this layout omits them deliberately — "
+                            + "a transactional email, a print sheet, an AMP variant, a partner embed "
+                            + "— tick `" + ShSystemPostTypeAttr.NO_SITE_SCRIPTS + "` on it and this "
+                            + "stops asking (SH421)."));
         }
     }
 

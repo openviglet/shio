@@ -118,7 +118,14 @@ class ShRenderModelSourceTest {
             "Theme.TOKENS", "SH195 — the 2018 model has no token vocabulary at all, which is the "
                     + "defect that task exists to fix rather than a difference to reconcile. The "
                     + "field is optional and empty means 'render on the CSS alone', so an imported "
-                    + "2018 theme arrives without it and renders exactly as it did."));
+                    + "2018 theme arrives without it and renders exactly as it did.",
+            "PageLayout.NO_SITE_SCRIPTS", "SH421 — it answers a question the 2018 model could not "
+                    + "ask: there were no site-wide scripts to omit, because SH389 is what gave a "
+                    + "site one ordered list of them. The field exists to let a layout say its "
+                    + "omission is deliberate, so an imported 2018 layout arrives with it unticked "
+                    + "— which is the same state every layout that exists today is in, and means "
+                    + "`site-scripts-dropped` keeps checking it. An invention that defaulted the "
+                    + "other way would silence the rule for a whole estate on upgrade."));
 
     /**
      * A field both models declare with a different widget, with the reason.
