@@ -236,3 +236,32 @@ walks these trees for `SH<n>` and cannot tell an assertion from a comment, so na
 **pays off its debt**. It happened three times while SH356 was being written, and the workaround
 was to stop naming the ids — prose degraded to protect a counter. SH630 is the repair; until it
 ships, name in a suite file only the ids that file actually asserts.
+
+## The debt reader counts an id a suite *names* (SH567)
+
+`assertion-debt.test.mjs` decides a task is asserted by finding its id in a suite file. That is what
+makes it cheap and what makes it wrong in one specific way: **a mention is not an assertion.**
+
+It has now happened three times in one run, each time costing a red build and a correction:
+
+- A backend test's assertion message said "SH7's review queue is the moderation step" while
+  asserting something else entirely. The id came off the debt list; the debt was not paid.
+- A new site test named `SH530` in its header prose, as a reference to that task's rule.
+- A test filed under `SH537` asserted route parity — which is `SH532`'s claim, not SH537's.
+
+The rule that follows: **name an id only where the file asserts it**, and write cross-references
+without the bare token. Nothing enforces this — the reader cannot tell prose from proof, which is
+precisely why the discipline sits with the writer.
+
+**A second trap, found in the same task.** `shio-site/package.json`'s `test` script named its three
+files by hand, so a fourth was scanned by the reader and **never executed**: the debt would have
+read as paid by assertions nobody ran. It is a glob now. The general shape is worth carrying — an
+instrument that reads a tree and a runner that reads a list will diverge, and the divergence is
+silent in the direction that looks like progress.
+
+SH567's own subject turned out to be already fixed (the reader walks `shio-site/scripts`), so the
+task became its second half: re-judging the ten. Three are now asserted beside the script that owns
+each — the generated token figures, the prerender's route table, the Markdown twin — and the debt
+went 39 → 36. What is left of that group is the **copy**, which is the harder half and the reason
+the group ranks second by return-risk: a marketing claim that has gone false is invisible until
+somebody reads the page against the product.

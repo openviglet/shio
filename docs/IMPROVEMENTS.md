@@ -190,26 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.47 The reader does not read the tree it names (SH567)
-
-SH527's reader holds a named DEBT list, and one of its groups is *the public site in
-`shio-site/`, which has no test tree at all — the cheapest group to fix and the one
-whose absence is least defensible*. That sentence is now false: SH566 shipped
-`shio-site/scripts/scroll-ownership.test.mjs` and an opt-in browser test beside it, both
-naming their id.
-
-The reader still walks 285 suite files and none of them is in that tree, so SH566
-arrived in `+ actual` on the next run and the suite went red on a task that had done
-exactly what the rule asks. The debt read 44 where it should read 43, and the fix a
-reviewer is steered toward is the wrong one: adding SH566 to DEBT would record *this
-task cannot carry an assertion* about a task that carries two.
-
-The comment already names the remedy and calls it cheap. What it did not anticipate is
-that the list would go wrong in this direction — an entry earned by a tree the reader
-cannot see is indistinguishable, at the assertion, from an entry earned by a fix nobody
-tested. The nine SH530–SH539 entries in the same group should be re-judged in the same
-pass: some of them may now be asserted too.
-
 ### IX.48 A source that answers a request badly, which no fixture has ever been (SH569)
 
 The shared fixture says why it is not this, and it is right about itself: *nothing 404s

@@ -165,13 +165,20 @@ const DEBT = [
   // absent. They ranked first for return-risk rather than for cost — an absence has NOBODY looking
   // at it, so a reversal is the one kind of regression with no human in its path. Writing it found
   // SH21 unfinished; see the class note.
-  // EARNS, and is now the cheapest group left. The public site in `shio-site/`: when this reader
-  // shipped, the note read "no test tree at all"; SH566 and SH571 have since put two suites in
-  // `scripts/`, and neither covers these ten — the prerender, the token budgets and the copy, each
-  // assertable beside the script that owns it. Second by return-risk: a marketing claim that has
-  // gone false is invisible until somebody reads the page against the product, which is the failure
-  // SH530's own rule (every claim is about a real surface) exists to prevent and cannot self-check.
-  "SH530", "SH531", "SH532", "SH533", "SH534", "SH535", "SH536", "SH537", "SH538", "SH539",
+  // PARTLY PAID (SH567). The public site in `shio-site/`: when this reader shipped, the note read
+  // "no test tree at all", and the three the note named as assertable — the token budgets, the
+  // prerender's route table and the Markdown twin — now are, in `scripts/site-claims.test.mjs`
+  // (SH533, SH532, SH537). What is left is the COPY, which is the harder half and the reason this
+  // group ranked second by return-risk: a marketing claim that has gone false is invisible until
+  // somebody reads the page against the product, and the site's own rule (every claim is about a
+  // real surface) is the one rule a marketing site cannot self-check.
+  //
+  // SH530 and SH537 both came off on the first attempt and both were FALSE payments — the reader
+  // counts an id a suite names, and the first draft named SH530 in prose and put SH537 on a test
+  // that asserted route parity (which is SH532's claim). It is the same shape as the review-queue
+  // entry two tasks ago, whose id an assertion message mentioned without asserting it — and naming
+  // THAT id here would pay it off a third time, which is why this sentence does not.
+  "SH530", "SH531", "SH534", "SH535", "SH536", "SH538", "SH539",
   // EARNS, all six, and they are the same shape as the removals: a lint over the repository rather
   // than a test of a behaviour, and nothing human-facing to notice a reversal. A mutating test
   // forcing its precondition (SH296), `noRollbackFor` on the class (SH352), the plugin's version

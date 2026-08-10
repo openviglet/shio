@@ -11,7 +11,6 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560 ✅) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
 - 📋 **SH570** (deps: SH560 ✅, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
 - 📋 **SH602** (deps: SH594 ✅) **Friction is found only when somebody reads a transcript back by hand** — Every finding in twelve rounds came from a session being narrated afterwards, so a refusal, a 404 and a question asked under the wrong name are lost the moment it ends. → §IX.59
