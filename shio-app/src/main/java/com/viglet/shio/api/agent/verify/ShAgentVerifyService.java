@@ -434,7 +434,10 @@ public class ShAgentVerifyService {
     private ShAgentVerifyScope scope(List<ShSite> sites, String site, String folder,
                                      String address, String since) {
         if (isBlank(folder) && isBlank(address) && isBlank(since)) {
-            return ShAgentVerifyScope.full(readable(sites));
+            // SH635 — `site` blank is the full pass, and the only run that may report a post
+            // belonging to no site. The three scope params below never can: each names something
+            // inside a site, so an orphan is by construction not among what the caller asked for.
+            return ShAgentVerifyScope.full(readable(sites, isBlank(site)));
         }
         Map<String, ShPostUnified> rows = new LinkedHashMap<>();
         Set<String> folderIds = new LinkedHashSet<>();
@@ -534,14 +537,31 @@ public class ShAgentVerifyService {
         return row.getShFolder() == null ? null : row.getShFolder().getId();
     }
 
-    /** Every readable row, both states, plus the site-less ones nobody else asks for. */
-    private List<ShPostUnified> readable(List<ShSite> sites) {
+    /**
+     * Every readable row, both states — plus the site-less ones <b>on a full pass only</b>.
+     *
+     * <p>SH635 — this is the rule {@link #folders} states one method up and has always applied:
+     * <em>"an orphan belongs to no site, so no scope can name it, and a scoped run that swept them
+     * all in would report content the caller did not ask about — while a full pass would still
+     * catch it."</em> Posts did not get it. A caller asking {@code verify?site=blog} was told about
+     * every site-less post in the instance, as an <b>error</b>, against an address in no site of
+     * theirs and with a {@code fix} they cannot carry out — the post is not theirs to move.</p>
+     *
+     * <p>Nothing stops being reported: a run with no {@code site=} still asks for exactly these
+     * rows, which is the only way they are visible at all (see
+     * {@code ShPostUnifiedRepository#findWithoutSite}). What changes is who is told.</p>
+     *
+     * @param fullPass whether the caller named no site, so the answer covers the whole instance
+     */
+    private List<ShPostUnified> readable(List<ShSite> sites, boolean fullPass) {
         List<ShPostUnified> rows = new ArrayList<>();
         for (ShSite each : sites) {
             rows.addAll(shPostUnifiedRepository.findByShSite_IdAndStateIn(each.getId(), BOTH_STATES));
         }
-        // Site-less posts are nobody's rows, which is exactly why they need asking for.
-        rows.addAll(shPostUnifiedRepository.findWithoutSite(BOTH_STATES));
+        if (fullPass) {
+            // Site-less posts are nobody's rows, which is exactly why they need asking for.
+            rows.addAll(shPostUnifiedRepository.findWithoutSite(BOTH_STATES));
+        }
         return rows;
     }
 

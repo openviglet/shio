@@ -1508,3 +1508,40 @@ The slot it cost was declared: `ShContextCacheHeadroomTest` went 62 → 63 and
 `spring.test.context.cache.maxSize` 64 → 68. This is the archetypal case SH315's rule says may not
 share a context — another suite's content makes "from nothing" a statement about test order rather
 than about the protocol.
+
+## A post belonging to no site is not the problem of a site that asked (SH635)
+
+`ShAgentVerifyService.readable(...)` appended **every site-less post in the instance** to every
+scope — including a run that named a site. So a caller asking `verify?site=blog` was handed an
+`error` about a post at an address in no site of theirs, carrying a `fix` they cannot carry out:
+the post is not theirs to move. That is P6 inverted — an instruction the reader is unable to follow
+— and P7, a report about content the caller never asked about.
+
+**The rule was already written, one method away.** `folders(...)` says it plainly: *an orphan
+belongs to no site, so no scope can name it, and a scoped run that swept them all in would report
+content the caller did not ask about — while a full pass would still catch it.* Folders got it;
+posts never did. The fix is `readable(sites, fullPass)`, with the full pass being exactly the run
+that named no site. Nothing stops being reported — a `verify` with no `site=` still asks for these
+rows by name, which is the only way they are visible at all.
+
+### Why this took three red runs to find
+
+It presented as a **flake**. `ShBlueprintApplyTest` asserts its blueprint site verifies clean, and
+whether it did depended on whether another class sharing the context had left a site-less row
+behind — which depends on suite order. Twice red, green on every re-run, and nothing about the
+symptom pointed at scoping.
+
+Three things closed it, in this order, and none alone would have:
+
+- **The permanent capture.** SH635's earlier half prints every finding at that assertion on a
+  failing run. It costs nothing on a green one, and it turned the third red from a number into the
+  two `orphan-post` findings that named the cause immediately. SH354's point: the next `clean`
+  removes `target/surefire-reports/`, so a red that is not captured *as it happens* is a red nobody
+  can investigate.
+- **An unrelated task's reordering.** SH613 added test classes, surefire's order changed, and the
+  intermittent failure became deterministic.
+- **An existing lint refusing the fix's own test.** The assertion needs `verify(null, …)` — an
+  instance-wide read, the only call that can see an orphan — and `ShBenchmarkIsolationLintTest`
+  caught it on the shared context (SH315). It now lives in `ShAgentOrphanScopeTest` with a database
+  of its own, and `DECLARED_CONTEXTS` moved with it. That refusal was worth more than the assertion
+  it blocked: without the second half, "never report orphans" would have satisfied the first.

@@ -1,14 +1,5 @@
 {
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
-  "exceptions": [
-    {
-      "suite": "java",
-      "test": "com.viglet.shio.blueprint.ShBlueprintApplyTest",
-      "task": "SH635",
-      "declared": "2026-08-10",
-      "expires": "2026-08-13",
-      "why": "Two assertions fail in the FULL suite and pass alone: the blueprint site's verify reports two orphan-post errors. SH635's permanent capture named them on this run, so the flake is now a diagnosed defect - the orphan-post rule is instance-wide, so posts another test left belonging to no site are attributed to the site being verified. SH613 did not cause it; adding test classes reordered the suite and made two prior intermittent failures deterministic, which is why this is short-dated rather than a fortnight."
-    }
-  ]
+  "exceptions": []
 }

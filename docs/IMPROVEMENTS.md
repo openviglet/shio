@@ -262,31 +262,6 @@ inside an assertion's message argument, or require an explicit marker the way th
 four ledgers require an owner. The first is a parse; the second is a convention nobody
 applies by accident.
 
-### IX.68 A red run nobody could reproduce, recorded rather than forgotten (SH635)
-
-SH572 added `dangling-relation` and the first full suite after it came back **red**:
-`ShBlueprintApplyTest.applyKeepsThePackagesPromise` expected `verify().errors() == 0`
-and got **2**, and `applyingTwiceConverges` failed with it. The same code then ran green
-four times — the class alone, and three full suites — and printing every finding at that
-assertion showed an empty list.
-
-One mechanism was found and fixed in the same commit, and it explains the **2** exactly:
-the rule keyed its broken templates by post id and then walked `scan.posts()`, which
-carries a DRAFT row and a PUBLISHED row sharing one id. A published template reported
-one defect twice, and whether the site has a published row depends on what ran before it
-— which is what an order-dependent red looks like.
-
-What it does not explain is why any relation dangled in a blueprint at all: no
-first-party package contains a `getRelation` literal, and the site is UUID-named so
-nothing else writes into it. The fix is real and the diagnosis is incomplete, which is
-why this is a task rather than a commit paragraph.
-
-SH354 is why it is written down: a run that is red once and green after is the one
-nobody can investigate later, because the next `clean` removes
-`target/surefire-reports/`. What would close this is a way to re-run the suite in a
-**recorded** order — surefire's `runOrder` with the seed printed — so an order-dependent
-finding is reproducible on demand instead of waited for.
-
 ### IX.69 The sweep that runs as nobody (SH639)
 
 `ShPostScheduler.sweep()` is a timer, so it runs on a thread that never had a tenant

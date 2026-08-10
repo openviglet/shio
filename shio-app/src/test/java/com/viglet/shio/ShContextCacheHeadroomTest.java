@@ -139,8 +139,14 @@ class ShContextCacheHeadroomTest {
      * anybody else was affected. Reading through ShSourceText makes the count what it always
      * claimed to be, and the direction matters: the budget was reported as MORE spent than it is,
      * so the wall SH423 exists to warn about was two slots further away than the warning said.
+     *
+     * SH635 then spent one of them, back to 62. ShAgentOrphanScopeTest asserts on an
+     * INSTANCE-WIDE read — `verify(null, …)`, the only call that can see a post belonging to no
+     * site — which SH315's rule and ShBenchmarkIsolationLintTest both refuse on a shared context.
+     * It was written into a shared-context class first and that lint caught it, which is the
+     * intended order of events.
      */
-    private static final int DECLARED_CONTEXTS = 61;
+    private static final int DECLARED_CONTEXTS = 62;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY
