@@ -190,31 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.49 Markup a browser repairs, and a scanner does not (SH570)
-
-SH569's archetype fails at the fetch layer; this one is a 200 whose body is wrong, and
-the two are separate because a scanner cannot report what a fetch already refused.
-
-Nothing in the corpus or the shared fixture is malformed. Every page was typed by
-somebody who closed their tags, so `tokenize`, `scanPage` and `stripNonMarkup` have only
-ever been measured against markup a browser would not have had to repair — and a real
-source is repaired constantly and silently. The list, one trait per known cost:
-
-- an **unclosed** `<div>` or `<section>`, so a block's extent is a guess;
-- **no `<title>`**, which `Page` requires and SH544 proved is load-bearing;
-- an **absurdly long** title — SH544's 265 characters, as a fixture rather than a story;
-- a **nested form**, which the parser must not treat as two;
-- a `<base href>` that **disagrees** with the serving path, so every relative reference has two
-  possible resolutions and only one is the browser's;
-- a declared `charset` the **bytes contradict**, which is where mojibake enters as content rather
-  than as a terminal artefact.
-
-The last needs care, because the checklist records getting it wrong from the other
-direction: judge encoding on **bytes**, never on what a terminal prints. So the
-assertion compares the stored field against the source's bytes, and the fixture carries
-the mis-declared charset deliberately — an archetype whose own encoding is ambiguous
-cannot be the one that settles an encoding question.
-
 ### IX.59 The findings nobody narrated (SH602)
 
 Twelve rounds produced roughly forty tasks. Every one of them came from the same place:

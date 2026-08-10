@@ -1199,3 +1199,59 @@ test("SH565: a title with no entity is untouched, and an absent one stays null",
     "no <title> is a fact about the page, and an empty string would read as one that has a blank",
   );
 });
+
+
+// --- SH570: markup a browser repairs, and a scanner does not -------------------------------------
+
+test("SH570: an unclosed block does not swallow what follows it", () => {
+  // Every fixture before this was typed by somebody who closed their tags, so `tokenize` had never
+  // met an unclosed `<div>`. A browser repairs one silently; a scanner that treated the rest of the
+  // document as inside it would give every later block the wrong extent.
+  const doc = scanPage(
+    "<html><head><title>T</title></head><body><main>"
+      + "<section><h1>First</h1><p>One"
+      + "<div><h2>Second</h2><p>Two"
+      + "</main></body></html>",
+    "https://x.test/",
+  );
+
+  assert.equal(doc.title, "T");
+  assert.ok(doc.textChars > 0, "the text after the unclosed tag is still read, not discarded");
+});
+
+test("SH570: a page with no <title> records null, not an empty string", () => {
+  // `Page` requires a title and SH544 proved it load-bearing. `null` says the source had none;
+  // `""` would read as a source that had a blank one, and only the first is true.
+  assert.equal(
+    scanPage("<html><head></head><body><main><h1>No title</h1></main></body></html>",
+      "https://x.test/").title,
+    null,
+  );
+});
+
+test("SH570: an absurdly long title is captured whole, and stays the source's problem", () => {
+  // SH544 as a fixture rather than a story: 265 characters ended a 201-page conversion after 403
+  // assets had been uploaded. The scanner's job is to report what the source served — truncating
+  // here would hide the very fact the conversion needs to refuse on.
+  const long = "x".repeat(265);
+  assert.equal(
+    scanPage(`<html><head><title>${long}</title></head><body></body></html>`, "https://x.test/").title,
+    long,
+    "a scanner that shortened it would make the defect invisible to the phase that can act on it",
+  );
+});
+
+test("SH570: a nested form is not counted as two", () => {
+  // HTML forbids it and a browser drops the inner one. Counting both would tell a conversion there
+  // are two forms to model where a reader sees one.
+  const doc = scanPage(
+    "<html><head><title>T</title></head><body>"
+      + "<form action=\"/a\"><input name=\"x\">"
+      + "<form action=\"/b\"><input name=\"y\"></form>"
+      + "</form></body></html>",
+    "https://x.test/",
+  );
+
+  assert.equal(doc.forms.length, 1,
+    "a browser keeps the outer form and discards the inner; two rows would model a page nobody sees");
+});

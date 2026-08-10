@@ -340,6 +340,28 @@ describe("SH560 group B: the capture of each archetype is what it declares", () 
             + "from inside a stylesheet is the one that goes missing while every test passes (SH452)",
         );
 
+        // SH570 — judged on the BYTES, never on what a terminal prints, because the checklist
+        // records getting this wrong from the other direction. The fixture serves UTF-8 bytes under
+        // a `charset=iso-8859-1` header on purpose: an archetype whose own encoding is ambiguous
+        // cannot be the one that settles an encoding question. So the stored field is compared with
+        // the source file this run served, read as the bytes it is.
+        for (const [path, file] of Object.entries(declaration.expect.bytesTitle ?? {})) {
+          holding(entry.id, `bytes-title-${slug(path)}`, async () => {
+            const served = await readFile(join(entry.dir, file), "utf8");
+            const expected = /<title>([\s\S]*?)<\/title>/i.exec(served)?.[1]?.trim();
+            const row = (inventory.pages ?? []).find((page) => page.path === path);
+            assert.ok(row, `${entry.id}: ${path} was not captured, so its encoding proves nothing`);
+            assert.equal(
+              row.title,
+              expected,
+              `${entry.id} / SH570: the stored title must be the source's bytes decoded as they `
+                + "are, not as a mis-declared charset header claims. Mojibake that enters here is "
+                + "CONTENT — it survives into the replica and a curator cannot tell it from a "
+                + "character the author typed.",
+            );
+          });
+        }
+
         // SH569 — the assertion this archetype exists to make first. A non-HTML 200 and a page the
         // crawl could not read are DIFFERENT claims: `data` is what was never a page, `problems` is
         // what failed. SH431 collapsed them, and twenty-four of `openviglet.github.io`'s data files

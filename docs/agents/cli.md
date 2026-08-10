@@ -2382,3 +2382,32 @@ timeout. There is now a budget of five: a real source chains two or three legiti
 `/a/` → the canonical host), so a budget tight enough to refuse those would report a working page as
 broken; what has to be stopped is the cycle, and a cycle exceeds any budget. Exceeding it is a
 reported row — never a crash, never a silent omission.
+
+**Markup a browser repairs, and a scanner does not (SH570).** SH569's archetype fails at the *fetch*
+layer; this one is a **200 whose body is wrong**, and the two are separate because a scanner cannot
+report what a fetch already refused. Nothing else in the corpus is malformed — every page was typed
+by somebody who closed their tags, so `tokenize`, `scanPage` and `stripNonMarkup` had only ever been
+measured against markup a browser would not have had to repair, and a real source is repaired
+constantly and silently.
+
+The `malformed` archetype serves six: an unclosed `<div>`/`<section>` so a block's extent is a
+guess; **no `<title>`**, which `Page` requires; a **265-character** title, which is SH544 as a
+fixture rather than as a story; a **nested form**, which the parser must not read as two; a
+`<base href>` that disagrees with the serving path; and a declared **charset the bytes contradict**.
+
+**The four scanner behaviours were already right and are now asserted** — an unclosed block does not
+swallow what follows, an absent title records `null` and not `""` (a source that had none is not a
+source with a blank one), a long title is captured **whole** because truncating would hide the fact
+the conversion must refuse on, and a nested form counts once.
+
+**The base-href trait asserts a report, not a repair.** `clone` resolves relative URLs against the
+page rather than the declared base — and *says so* in a note. That is the honest behaviour to hold:
+the disagreement is stated where a reader can act on it instead of being silently recorded as one of
+the two possible resolutions.
+
+**The encoding assertion is judged on bytes, never on what a terminal prints**, which the checklist
+records getting wrong from the other direction. The fixture serves UTF-8 under a
+`charset=iso-8859-1` header on purpose — an archetype whose own encoding is ambiguous cannot be the
+one that settles an encoding question — and the assertion compares the stored title against the
+source file this run served. It was verified to **fail** when pointed at a different file: it runs
+inside `holding(...)` and is `async`, which is exactly the shape that can pass while never executing.

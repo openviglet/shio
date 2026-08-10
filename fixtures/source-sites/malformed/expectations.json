@@ -1,0 +1,60 @@
+{
+  "id": "malformed",
+  "title": "A source whose markup a browser has to repair",
+  "trait": "site",
+  "catches": [
+    "SH544"
+  ],
+  "why": "SH569's archetype fails at the FETCH layer; this is a 200 whose body is wrong, and the two are separate because a scanner cannot report what a fetch already refused. Nothing else in the corpus is malformed — every page was typed by somebody who closed their tags, so `tokenize`, `scanPage` and `stripNonMarkup` had only ever been measured against markup a browser would not have had to repair, and a real source is repaired constantly and silently. Six traits, one per known cost: an unclosed div and section so a block's extent is a guess; no <title> at all, which Page requires; a 265-character title, which is SH544 as a fixture rather than as a story; a nested form the parser must not read as two; a <base href> that disagrees with the serving path, so every relative reference has two resolutions and only one is the browser's; and a declared charset the bytes contradict, which is where mojibake enters as CONTENT rather than as a terminal artefact. That last one is judged on the bytes and never on what a terminal prints — the checklist records getting it wrong from the other direction.",
+  "clone": {
+    "depth": 2,
+    "assets": true,
+    "markup": true
+  },
+  "routes": {
+    "/mojibake": {
+      "status": 200,
+      "type": "text/html; charset=iso-8859-1",
+      "file": "site/mojibake.html"
+    },
+    "/untitled": {
+      "status": 200,
+      "type": "text/html",
+      "file": "site/untitled.html"
+    }
+  },
+  "expect": {
+    "pages": [
+      "/",
+      "/mojibake",
+      "/untitled"
+    ],
+    "unfollowed": [],
+    "problems": [
+      "/deep/page"
+    ],
+    "assets": [],
+    "notes": [
+      {
+        "match": "base href",
+        "catches": "SH544",
+        "means": "the crawl states that it resolved relative URLs against the page and not against the declared base, so the one resolution a browser would not have chosen is reported rather than silently recorded"
+      }
+    ],
+    "bytesTitle": {
+      "/mojibake": "site/mojibake.html"
+    }
+  },
+  "addressable": [
+    "/",
+    "/mojibake",
+    "/untitled"
+  ],
+  "unaddressable": [],
+  "propose": {
+    "accept": "all"
+  },
+  "scenarios": {
+    "authorable": true
+  }
+}

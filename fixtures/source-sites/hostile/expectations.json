@@ -3,8 +3,7 @@
   "title": "A source that answers a request badly",
   "trait": "site",
   "catches": [
-    "SH431",
-    "SH544"
+    "SH431"
   ],
   "why": "The shared fixture says why it is not this and is right about itself: nothing 404s, because an unreadable page is its own finding and one in the fixture would blur the rule being asserted. Correct for a seam test, and exactly the hole — every source this work was driven against answered some request badly, and the two that cost most were both fetch-layer. SH431: twenty-four of openviglet.github.io's data files were 200s of application/json, linked on purpose, filed as `problems` — where the coverage gate reads them as pages that could not be read at all and downgrades EVERY count in the report to a lower bound. A wrong classification, not a wrong fetch. SH544: a 265-character title ended a 201-page conversion AFTER 403 assets had been uploaded, blocking every retest until it was fixed. So the subject is not that a request fails; it is that the run does not die and the report is honest about what it got.",
   "clone": {
