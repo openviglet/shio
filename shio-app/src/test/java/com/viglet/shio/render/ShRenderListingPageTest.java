@@ -89,7 +89,9 @@ class ShRenderListingPageTest {
 
             // One post-type per shape, so one layout each and one page each. A page's own listing call
             // is what is under test, and a layout is the only place a call can live.
-            String[] shapes = { "one", "two", "four", "oldest", "title", "finance", "counts", "plain" };
+            String[] shapes = { "one", "two", "four", "oldest", "title", "finance", "counts", "plain",
+                    // SH420 — a listing inside a listing.
+                    "nested" };
             StringBuilder bindings = new StringBuilder("{");
             for (int index = 0; index < shapes.length; index++) {
                 bindings.append(index == 0 ? "" : ",")
@@ -132,6 +134,9 @@ class ShRenderListingPageTest {
                     layout("folder=\\\"/articles\\\" limit=9 field=\\\"industry\\\" value=\\\"finance\\\""), when);
             post(site, root, layoutType, "L_counts", "/l-counts", pager("folder=\\\"/articles\\\" limit=2 page=2"), when);
             post(site, root, layoutType, "L_plain", "/l-plain", layout("folder=\\\"/articles\\\" limit=9"), when);
+            // SH420 — a listing inside a listing, which is the shape the pager idiom breaks on: an
+            // archive whose cards list their own children, or a hub whose sections carry a listing.
+            post(site, root, layoutType, "L_nested", "/l-nested", nested(), when);
 
             for (String shape : shapes) {
                 post(site, root, postType("Sh384" + shape + tag, (byte) 0, when),
@@ -224,6 +229,43 @@ class ShRenderListingPageTest {
         return out;
     }
 
+    @Test
+    @DisplayName("SH420: an inner listing does not clobber the outer block's @last, @index or @first")
+    void aNestedListingKeepsTheOuterBlocksPosition() {
+        String html = render("/nested");
+
+        // The defect, measured before the fix: the pager was drawn 2 of 2 where 1 was expected. The
+        // inner block's final iteration sets `@last = true`, the outer body reads it afterwards, and
+        // both writes landed in one shared data scope.
+        assertThat(html.split("class=\"pager\"", -1).length - 1)
+                .as("""
+                        the pager is drawn ONCE, on the outer listing's last row. `{{#if @last}}` is                         the only place a template can emit one — a block helper's body repeats per                         row and Handlebars gives no way to write into the enclosing scope — so a                         nested listing corrupting it makes the documented idiom wrong in exactly the                         page a real site draws a pager on (SH420).""")
+                .isEqualTo(1);
+
+        // `@index` has the same defect and is asserted separately: it is what a template uses for
+        // striping and numbering, so a wrong one is silent rather than doubled markup.
+        assertThat(html)
+                .as("the outer row's own index survives the inner listing (SH420)")
+                .contains("<b>outer-index=0</b>")
+                .contains("<b>outer-index=1</b>");
+
+        // And the pager's own numbers are the OUTER listing's, not the inner's — the inner asked for
+        // limit=3 over the same folder, so a leaked `@pages` would read 3 where the outer's is 5.
+        assertThat(html)
+                .as("the pager reports the outer listing's paging, not the inner's (SH420)")
+                .containsPattern("page 1 of \\d+");
+
+        // The subtle half of the restore, and why it puts back `null` rather than `false`: once the
+        // block closes, `@last` must be ABSENT again. A template reading it outside any listing is
+        // asking a question with no answer — and before this fix it got `true`, the last row's value
+        // left behind.
+        assertThat(html)
+                .as("""
+                        a data variable this helper owns does not outlive its block: `{{#if @last}}` \
+                        after `{{/query}}` renders nothing, because nothing set it (SH420)""")
+                .doesNotContain("class=\"leak\"");
+    }
+
     private String render(String url) {
         return shPageRenderService.render(siteName, url, ShPostState.DRAFT).html();
     }
@@ -244,6 +286,25 @@ class ShRenderListingPageTest {
                 + "<span>prev={{@prevPage}} next={{@nextPage}}</span>"
                 + "<span>hasPrev={{@hasPrev}} hasNext={{@hasNext}}</span>"
                 + "{{/if}}{{/query}}</body></html>\"}";
+    }
+
+    /**
+     * An outer listing whose body holds an inner listing and then reads {@code @last} (SH420).
+     *
+     * <p>The outer draws two rows and its pager exactly once. The inner runs to completion inside
+     * each of them, so if the two blocks share one data scope the inner's final {@code @last = true}
+     * is what the outer body reads afterwards — and the pager is drawn on every outer row.</p>
+     */
+    private static String nested() {
+        return "{\"HTML\":\"<html><body>{{#query folder=\\\"/articles\\\" limit=2 page=1}}"
+                + "<i>{{title}}</i>"
+                + "<ul>{{#query folder=\\\"/articles\\\" limit=3}}<li>{{title}}</li>{{/query}}</ul>"
+                + "<b>outer-index={{@index}}</b>"
+                + "{{#if @last}}<span class=\\\"pager\\\">page {{@page}} of {{@pages}}</span>{{/if}}"
+                + "{{/query}}"
+                // Outside every listing: nothing set `@last` here, so nothing may render.
+                + "{{#if @last}}<span class=\\\"leak\\\">after</span>{{/if}}"
+                + "</body></html>\"}";
     }
 
     private ShPostType postType(String name, byte system, Instant when) {

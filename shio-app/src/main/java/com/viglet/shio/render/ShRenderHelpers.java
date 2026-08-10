@@ -751,6 +751,61 @@ public class ShRenderHelpers {
         // `fn` so a template can read them inside the block, which is the only scope Handlebars gives a
         // block helper — there is no way to write into the enclosing one, and inventing a mechanism
         // for it would be a second one to learn.
+        //
+        // SH420 — and taken back afterwards. All ten land in ONE data scope shared with every
+        // enclosing block, so an inner listing was overwriting the outer's position: a layout whose
+        // outer `{{#query}}` body held an inner one and then read `{{#if @last}}` drew its pager on
+        // every outer row, because the inner block's final iteration leaves `@last = true` behind and
+        // the outer body reads it next. Measured 2 of 2 where 1 was expected. `restore` puts back
+        // exactly what was there — including *absent*, which is not the same as false: an outer
+        // `{{#if @last}}` outside any listing must stay unrendered rather than become `false`.
+        //
+        // Save-and-restore of the three the design offered, because it is the only one that costs a
+        // template nothing. Namespacing (`@query.last`) is a rename and therefore a break, and moving
+        // them onto the row gives up drawing a pager once — which is the entire reason they are data
+        // variables rather than row keys.
+        Map<String, Object> outer = saved(options);
+        try {
+            return emit(options, page, pages, listing, rows);
+        } finally {
+            restore(options, outer);
+        }
+    }
+
+    /** The ten data variables `{{#query}}` owns, in the order the pager reads them. */
+    private static final List<String> LISTING_DATA = List.of(
+            "page", "pages", "total", "hasPrev", "hasNext", "prevPage", "nextPage",
+            "index", "first", "last");
+
+    /**
+     * What an enclosing block had in the shared data scope, so this one can put it back (SH420).
+     *
+     * <p>A {@link LinkedHashMap} and not a {@code Map.of}, because a value of {@code null} —
+     * "nothing was there" — is exactly the case that has to survive the round trip, and the immutable
+     * factories reject it. Restoring `false` where there had been nothing would light up an
+     * `{{#if @last}}` that a template put outside any listing on purpose.</p>
+     */
+    private static Map<String, Object> saved(Options options) {
+        Map<String, Object> held = new LinkedHashMap<>();
+        for (String key : LISTING_DATA) {
+            held.put(key, options.data(key));
+        }
+        return held;
+    }
+
+    private static void restore(Options options, Map<String, Object> held) {
+        held.forEach(options::data);
+    }
+
+    /**
+     * The block's own rendering, with the ten data variables set (SH420).
+     *
+     * <p>Split out of {@code query} for one reason: it is everything that must happen <b>between</b>
+     * the save and the restore, and a `try`/`finally` around a body this long invites somebody to add
+     * a return path outside it. Its own method makes the bracket structural.</p>
+     */
+    private CharSequence emit(Options options, int page, int pages, Listing listing,
+                              List<Map<String, Object>> rows) throws IOException {
         options.data("page", page);
         options.data("pages", pages);
         options.data("total", listing.total());

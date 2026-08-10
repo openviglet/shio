@@ -85,7 +85,6 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-- 📋 **SH420** (deps: SH384 ✅) **A nested listing clobbers the outer block's @last** — Measured: an outer row reading {{#if @last}} after an inner query renders twice, because both blocks write @index and @last into one shared data scope. → §XV.31
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
 - 📋 **SH572** (deps: SH558 ✅) **A template relating an address the site has not got renders nothing and reports nothing** — SH297 proves a missing THEME field but no rule reads a getRelation literal, so a typo is a silent else branch on every page. → §XV.35
 - 📋 **SH573** (deps: SH559 ✅) **A generated layout's title claims a mode that one layout has not determined since SH464** — convert.mjs still mints <site> (fidelity) for the layout every mode renders through, and SH559 could only quote it because the title is a postTypeLayout key. → §XV.36

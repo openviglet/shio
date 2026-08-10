@@ -1463,31 +1463,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.31 The pager idiom SH384 documented is unreliable in exactly the page that needs it (SH420)
-
-SH384 published `@page`, `@pages`, `@total`, `@first` and `@last` as Handlebars data
-variables so a pager could be drawn **once**: a block helper's body repeats per row and
-there is no way to write into the enclosing scope, so `{{#if @last}}` is the only place
-a template can emit one.
-
-That idiom breaks as soon as a listing contains a listing, and the failure was verified
-rather than reasoned about. A layout whose outer `{{#query}}` body holds an inner
-`{{#query}}` and then reads `{{#if @last}}` renders the pager **on every outer row** —
-measured 2 of 2 where 1 was expected. The inner block's final iteration sets `@last =
-true`, the outer body reads it afterwards, and both writes land in one scope. `@index`
-and `@first` have the same defect.
-
-The page shape that hits it is not exotic: an archive whose cards list their own
-children, or a hub whose sections include a listing. So the documented way to draw a
-pager is wrong precisely where a real site would draw one.
-
-Three candidate fixes, and the choice is part of the task. **Save and restore** the five
-values around `options.fn`, the smallest change, leaving the shared scope. **Namespace**
-them per call (`@query.last`), which is a template-visible rename and therefore a break.
-Or **push them onto the row**, giving up drawing a pager once — the option SH384
-rejected for repeating markup per item, worth re-examining now the alternative is known
-unsound.
-
 ### XV.32 A lint over templates fires on correct work or nobody reads it (SH421)
 
 SH389's `site-scripts-dropped` is the rule that makes the task's fix real: moving a

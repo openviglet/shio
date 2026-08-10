@@ -1318,3 +1318,33 @@ JSON is what it needs. Declared here and in the benchmark rather than quietly ex
 The benchmark's own claim **inverted** rather than being replaced — it asserted `first > PER_PAGE`
 (the folder reaches the reader) and now asserts `first < ARCHIVE` (it does not). A benchmark that
 stops asserting the thing it was written about is one that passes for a reason nobody checked.
+
+## A listing inside a listing keeps its own place (SH420)
+
+SH384 published `@page`, `@pages`, `@total`, `@first`, `@last` and the rest as Handlebars **data
+variables** so a pager could be drawn *once*: a block helper's body repeats per row and there is no
+way to write into the enclosing scope, so `{{#if @last}}` is the only place a template can emit one.
+
+All ten land in **one data scope shared with every enclosing block**, so the documented idiom broke
+on the page shape that most needs it — an archive whose cards list their own children, a hub whose
+sections carry a listing. The inner block's final iteration leaves `@last = true` behind, the outer
+body reads it next, and the pager is drawn on **every outer row**: measured 2 of 2 where 1 was
+expected. `@index` and `@first` had it too, and there is a second symptom the original report did
+not name — the values also outlive the block, so `{{#if @last}}` written *after* `{{/query}}`
+rendered as well.
+
+**`query` now saves the ten before its block and puts them back after.** Of the three candidates the
+task offered this is the only one that costs a template nothing: namespacing them (`@query.last`) is
+a rename and therefore a break, and moving them onto the row gives up drawing a pager once — which
+is the entire reason they are data variables and not row keys.
+
+**Absent is restored as absent, not as `false`.** The saved map is a `LinkedHashMap` and not
+`Map.of` precisely because `null` — *nothing was there* — is the value that has to survive the round
+trip. Restoring `false` would light up an `{{#if @last}}` a template put outside any listing on
+purpose, trading one wrong render for a quieter one.
+
+The rendering is its own method (`emit`) so the save/restore bracket is structural rather than a
+`try`/`finally` around a long body that invites a return path outside it. Both halves are asserted
+in `ShRenderListingPageTest` against a layout that nests one `{{#query}}` in another, and both were
+**verified to fail with the restore disabled** — a nested-listing test that has only run against the
+fix is green for two indistinguishable reasons.
