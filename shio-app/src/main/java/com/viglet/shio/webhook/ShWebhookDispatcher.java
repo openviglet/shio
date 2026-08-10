@@ -19,6 +19,8 @@ import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.persistence.model.webhook.ShSiteWebhook;
 import com.viglet.shio.persistence.repository.webhook.ShSiteWebhookRepository;
+import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.tenant.ShTenantHandoff;
 
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
@@ -119,9 +121,17 @@ public class ShWebhookDispatcher {
                 .signatureHeaderName(ShWebhookSigner.SIGNATURE_HEADER)
                 .build();
 
+        // SH612 — read here, on the thread that committed, because the dispatcher's pool thread
+        // never had one and `ShTenantContext` is a thread-local. Without it the incident below is
+        // stamped with the default discriminator and filed away from the operator whose site
+        // failed — see ShTenantHandoff. Named at the boundary rather than wrapped, because the
+        // `BiConsumer` type a wrapper would have to return cannot be inferred through it.
+        String tenant = ShTenantContext.getTenantId();
+
         // Off the request thread: a slow/failing subscriber must never block the
         // editor's publish response. The shared dispatcher owns the async pool.
-        dispatcher.dispatchAsync(request, policy).whenComplete((result, error) -> {
+        dispatcher.dispatchAsync(request, policy).whenComplete((result, error) ->
+                ShTenantHandoff.runAs(tenant, () -> {
             if (error != null) {
                 log.warn("Webhook '{}' dispatch errored for {}: {}",
                         target.getName(), target.getUrl(), error.getMessage());
@@ -158,7 +168,7 @@ public class ShWebhookDispatcher {
                         "gave up after " + result.attempts() + " attempt(s), last status "
                                 + result.statusCode(), RETRY_FIX, null, event.siteId());
             }
-        });
+        }));
     }
 
     private byte[] buildBody(ShPostLifecycleEvent event) {

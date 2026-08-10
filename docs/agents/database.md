@@ -177,3 +177,50 @@ failed the build rather than being remembered:
   capability into a **public** one. The agent still builds the form; the human opens the door. If
   that ever reads as too strict the fix is a scope that may configure but not enable, not moving the
   row.
+
+## The tenant a pool thread does not have (SH612)
+
+`ShTenantContext` is a thread-local and `@TenantId` is resolved from it at the moment a Hibernate
+session opens. Two recorders wrote from a pool thread that never had one set — the webhook
+dispatcher inside `dispatchAsync(...).whenComplete(...)` and the Turing listener inside
+`executor.execute(...)`. Both run past `AFTER_COMMIT`, where there is no request, no session and no
+tenant, so the store's `REQUIRES_NEW` write was stamped with the default discriminator, `shio`.
+
+**SH22 did not miss this so much as never reach it.** Until SH204 the row held a URL, a message and
+a timestamp, and being filed under the wrong tenant made it *invisible* rather than *wrong*. SH204
+added a site id, so a misfiled row now carries an identifier belonging to a tenant that cannot see
+it: it matches no scoped read and resolves to no name in an unrestricted one. Nothing leaks — but
+the operator whose site actually failed is the one person who cannot see the failure, and the
+webhook that never arrived is exactly the incident a tenant is paying for.
+
+**`ShTenantHandoff` carries it the way `siteId` and `what` are already carried**: a plain value read
+while the tenant is still bound, carried by the lambda, applied on the far side. Nothing queries and
+nothing lazily initialises, which is what makes a value safe to cross this boundary at all.
+
+**The restore is not housekeeping — it is the other half of the fix.** A pool thread is *reused*.
+Setting the tenant and walking away leaves it bound for whatever the pool runs there next, and that
+task's write is then stamped with a tenant it never had — a foreign row **created** rather than one
+misfiled, which is strictly worse than the defect being repaired. So the previous value is saved and
+put back in a `finally`, and an absent capture **clears** rather than sets: `ShTenantResolver` falls
+back to the default when nothing is bound, so "no tenant" has a meaning and it is not "keep whatever
+the last task left".
+
+### The instrument, and the third boundary it found
+
+What decides whether reading two recorders was enough is a question a reading cannot answer — *does
+any other `@TenantId` write happen off-thread?* Per SH338, the instrument lands with the fix:
+**`ShOffThreadTenantLintTest`** classifies every thread boundary in `shio-app` as either
+tenant-carrying or **declared, with a reason**. It strips comments first, because this project
+explains its thread boundaries in prose and a lint that fires on the sentence describing a hazard is
+one nobody keeps. It also asserts the walk still reaches the two files SH612 repaired — a scan that
+found nothing passes a source lint perfectly.
+
+It answered a question nobody had asked. `ShPostScheduler` is a timer with no tenant by
+construction, and its finders read `ShPostUnified`, which is `@TenantId` — so under the default
+discriminator **a non-default tenant's scheduled publish is not found at all and never fires**. That
+is a different defect from SH612 rather than an instance of it (there is nothing to capture; the fix
+is a sweep that iterates tenants), and it is **SH639**. The lint holds the file as a declared
+exemption naming that task, so the exemption is a pointer rather than a silence.
+
+Validated with `-DskipITs=false` — a tenancy change is the case the ITs exist for, and both schema
+ITs were confirmed to have *run* rather than skipped without Docker.

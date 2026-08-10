@@ -20,6 +20,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.tenant.ShTenantHandoff;
 import com.viglet.shio.webhook.ShPostLifecycleEvent;
 import com.viglet.turing.client.sn.job.TurSNJobItem;
 
@@ -158,7 +159,11 @@ public class ShTuringIndexListener {
      */
     private void submit(TurSNJobItem item, String what, String siteId) {
         try {
-            executor.execute(() -> run(item, what, siteId));
+            // SH612 — and the tenant is the third such value, for exactly the reason the two
+            // above are: the executor thread never had one, so the incident `run` may record was
+            // being written under the default discriminator and filed away from the operator
+            // whose site it belongs to. Captured here, on the thread that still has it.
+            executor.execute(ShTenantHandoff.capture(() -> run(item, what, siteId)));
         } catch (java.util.concurrent.RejectedExecutionException e) {
             // The queue is full, which means Turing has been unreachable long enough for publishes
             // to pile up. Dropping is the right call — the alternatives are blocking the editor or

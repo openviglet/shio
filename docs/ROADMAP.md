@@ -11,12 +11,12 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH612** (deps: SH204 ✅, SH22 ✅) **An incident recorded from a pool thread is filed under the default tenant, and now it carries a site id too** — The two async recorders write with no ShTenantContext, so a non-default tenant's failure lands under shio, and SH204 gave that misfiled row a foreign site id. → §IX.63
 - 📋 **SH613** (deps: SH206 ✅, SH322 ✅) **A textual lint reads prose, so writing about a rule can fail the build for breaking it** — SH206 hit this and fixed one lint; 17 of the 22 source-scanning tests still match their own subject inside a comment, and nothing says which of them mean to. → §IX.64
 - 📋 **SH615** (deps: SH109 ✅, SH207 ✅) **The review queue's per-run pending count never reaches zero, because publishing keeps the draft** — A run stays 'N to review' forever and its Approve button never settles, since the count asks whether a DRAFT row exists and the editable draft always does. → §IX.65
 - 📋 **SH619** (deps: SH522 ✅, SH545 ✅) **A draft cannot be compared with what is live, because the read surface cannot return the published row** — Every agent read is DRAFT-preferred with no state parameter, so 'what will change when I publish this' has no answer outside the console's own diff dialog. → §IX.66
 - 📋 **SH630** (deps: —) **Naming a task id in a comment marks it asserted, so a debt is paid by mentioning it** — The SH527 walk greps suite files for ids and cannot tell an assertion from prose, so three ids left the debt list in one task because a new file explained why they were relevant. → §IX.67
 - 📋 **SH635** (deps: —) **The blueprint apply suite reported two verify errors once and none on four later runs** — Seen while SH572 landed a rule: applyKeepsThePackagesPromise wanted zero errors and got two, then the same code was green four times, so an order-dependent finding leaks into a UUID-named site. → §IX.68
+- 📋 **SH639** (deps: SH22 ✅) **A scheduled publish never fires for any tenant but the default, because the sweep runs with no tenant bound** — ShPostUnified is @TenantId, so the finder's implicit predicate is the default discriminator and a due post of another tenant is never returned. → §IX.69
 
 ## Block I — Content as files (local-first authoring)
 

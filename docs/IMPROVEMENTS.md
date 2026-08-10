@@ -190,31 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.63 The tenant a pool thread does not have (SH612)
-
-`ShAgentIncident` carries `@TenantId`, and `ShTenantContext` is a thread-local. Two
-recorders write from a pool thread that never had one set: the webhook dispatcher inside
-`dispatchAsync(...).whenComplete(...)`, and the Turing listener inside
-`executor.execute(...)`. Both run past `AFTER_COMMIT`, so there is no request, no
-session and no tenant — the store's `REQUIRES_NEW` write is stamped with the default
-discriminator, `shio`.
-
-SH22 did not miss this so much as never reach it. Until SH204 the row held a URL, a
-message and a timestamp, and being filed under the wrong tenant made it invisible rather
-than wrong. SH204 added a site id, so a misfiled row now carries an identifier belonging
-to a tenant that cannot see it.
-
-The consequence is quiet, and worth stating precisely. The row is visible only to the
-default tenant, whose readable sites never include the foreign id, so it matches no
-scoped read and resolves to no name in an unrestricted one. Nothing leaks — but the
-operator whose site actually failed is the one person who cannot see the failure, and
-the webhook that never arrived is exactly the incident a tenant is paying for.
-
-The fix is to carry the tenant across the boundary the way `siteId` and `what` already
-are: capture it on the committing thread, restore it around the write. What decides the
-shape is whether any other `@TenantId` write happens off-thread — a question for a lint
-rather than a reading.
-
 ### IX.64 The lints that read what is written about them (SH613)
 
 `ShRenderCacheReachLintTest` scanned raw file text for `@Transactional`. SH206 removed
@@ -337,6 +312,30 @@ nobody can investigate later, because the next `clean` removes
 `target/surefire-reports/`. What would close this is a way to re-run the suite in a
 **recorded** order — surefire's `runOrder` with the seed printed — so an order-dependent
 finding is reproducible on demand instead of waited for.
+
+### IX.69 The sweep that runs as nobody (SH639)
+
+`ShPostScheduler.sweep()` is a timer, so it runs on a thread that never had a tenant
+bound — the same absence SH612 found in the two off-thread incident recorders, arriving
+one layer earlier and with a larger consequence.
+
+SH612 carried the tenant across the boundary so a *record of a failure* reached the
+operator it belongs to. This is not a record: `findScheduledPublishDue` reads
+`ShPostUnified`, which carries `@TenantId`, so Hibernate appends the discriminator
+predicate and the sweep asks only for the default tenant's due posts. A post another
+tenant scheduled is not published late — it is **never found**, and the incident log has
+nothing to say about it because nothing threw.
+
+The shape of the fix is what makes this a task rather than a line. A timer has no one
+tenant, so there is nothing to capture: it has to *iterate* the tenants that exist and
+run the sweep once under each, which puts a read of the tenant store on the sweep path
+and needs an answer for a suspended tenant, for a tenant provisioned mid-sweep, and for
+what one tenant's failure does to the rest.
+
+Found by `ShOffThreadTenantLintTest`, which SH612 landed to answer "does any other
+`@TenantId` write happen off-thread". It answered a question nobody had asked — and it
+holds this file as a declared exemption naming this task, so the exemption is a pointer
+rather than a silence.
 
 ## X. Content as files (Block I)
 

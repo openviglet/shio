@@ -12,6 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +30,8 @@ import com.viglet.shio.api.agent.diagnostics.dto.ShAgentDiagnostics;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.repository.agent.ShAgentIncidentRepository;
+import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.tenant.ShTenantHandoff;
 
 /**
  * SH144 — the incident record survives a restart, and rides the SH88 cursor.
@@ -362,6 +367,51 @@ class ShAgentDurableIncidentTest {
         assertThat(ShAgentChangeCursor.later(tieA, early)).isEqualTo(early);
         assertThat(ShAgentChangeCursor.later(null, late)).isEqualTo(late);
         assertThat(ShAgentChangeCursor.later(late, "")).isEqualTo(late);
+    }
+
+    @Test
+    @DisplayName("SH612: an incident recorded off-thread is filed under the tenant that published")
+    void anOffThreadIncidentKeepsItsTenant() throws Exception {
+        // The defect at the boundary it crossed (SH527). Both recorders write past AFTER_COMMIT
+        // from a pool thread, and @TenantId is resolved from a thread-local when the session
+        // opens — so before ShTenantHandoff the row went to `shio` whoever published, carrying a
+        // site id SH204 had just added that belongs to a tenant which cannot see the row.
+        //
+        // Asserted through a real second thread rather than by setting the context and calling
+        // record() here, because "the value survives a hand-off" is the entire claim and a
+        // same-thread write would have passed before the fix.
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            ShTenantContext.setTenantId("sh612-acme");
+            Runnable offThread = ShTenantHandoff.capture(() ->
+                    incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK,
+                            "https://acme.example.com/hook", "gave up after 3 attempt(s)",
+                            "Check the target is up.", null, "site-of-acme"));
+            ShTenantContext.clear();
+            pool.submit(offThread).get(5, TimeUnit.SECONDS);
+
+            ShTenantContext.setTenantId("sh612-acme");
+            assertThat(repository.findAll())
+                    .as("""
+                            the operator whose site failed is the one person who has to be able to \
+                            see it, and a webhook that never arrived is exactly the incident a \
+                            tenant is paying for (SH612)""")
+                    .extracting(ShAgentIncident::getSubject)
+                    .contains("https://acme.example.com/hook");
+
+            ShTenantContext.clear();
+            assertThat(repository.findAll())
+                    .as("and it is not ALSO under the default tenant — a row visible to whoever "
+                            + "did not fail is how this stayed invisible through SH22")
+                    .extracting(ShAgentIncident::getSubject)
+                    .doesNotContain("https://acme.example.com/hook");
+        } finally {
+            // Tenant-scoped, so the default-tenant clear() in @BeforeEach would never reach it.
+            ShTenantContext.setTenantId("sh612-acme");
+            store.clear();
+            ShTenantContext.clear();
+            pool.shutdown();
+        }
     }
 
     /**
