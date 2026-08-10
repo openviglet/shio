@@ -158,6 +158,15 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.POST_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Trash a post. Needs `confirm` from its own dry run."),
+            // SH222 — the undo `post.delete` has always promised in its own reply. Addressed by
+            // `id:` because a trashed post has no reachable path; the ids come from
+            // `find?trash=true`, which is the read half.
+            new OpSpec(ShAgentBatchService.POST_RESTORE,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(),
+                    "Undo a trash. `id:` address from find?trash=true. No confirm."),
+            new OpSpec(ShAgentBatchService.FOLDER_RESTORE,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(),
+                    "Undo a folder trash, with its posts. `id:` address."),
             // SH186 — the one addressless op. It acts on the instance's model rather than on a post, a
             // folder or a site, and `address` is optional only so a row can echo the site being built.
             new OpSpec(ShAgentBatchService.RENDER_PROVISION,

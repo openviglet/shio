@@ -287,29 +287,6 @@ that will not load is refused on its own without taking the catalogue with it.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.6 An agent can fill the trash and cannot read it (SH222)
-
-`post.delete` and `folder.delete` both answer `"to trash (restorable)"`, deliberately — an
-agent that believes it destroyed something will not offer the human the undo. But that string
-is the *only* place the trash appears on the agent surface. There is no `/agent` read that
-lists it, no MCP tool, and no `shio` command; `GET /api/v2/post-unified/trash`,
-`POST .../untrash`, `GET /api/v2/folder/trash` and `POST .../untrash` are console endpoints.
-
-So the protocol tells the caller an undo exists and gives it no way to reach it. That inverts P1
-on the capability an agent needs most immediately after a mistake, and it is where "the console
-can do it" is least comforting: the mistake is usually noticed by the agent, seconds later.
-
-Two design questions, neither settled:
-
-- **How much surface does it cost?** A read plus a restore is two more operations, and the MCP
-  tool budget is per turn (SH132). The cheap shape is a verb on an existing tool, not a new one
-  — `shio_write` already carries the addressed write vocabulary. The listing is the harder half:
-  a read of things with no address any more, which is what SH172's `id:` fallback exists for.
-- **Does a restore need a confirm token?** SH108's rule is that a *destructive* op needs the
-  plan it was shown. A restore is not destructive but not free — it can bring back content a
-  human deliberately removed. Probably no token and a change-set entry naming what came back,
-  since SH200's restore is already audited.
-
 ### XII.7 Deleting a site is SH200 one level up, and worse (SH223)
 
 `ShSiteWriteService.delete` removes the `ShSite` entity and lets the JPA cascade
@@ -590,6 +567,29 @@ The fix is to extend the task to its real end: apply, provision, bind, publish, 
 consequences to accept — the budget rises (a truthful number is the point, not a small
 one), and the benchmark starts covering the flow SH277 named as the one nothing tested
 end to end, which is how that defect survived four blocks.
+
+### XIII.21 The vocabulary has spent its room (SH647)
+
+SH346 chose the ops vocabulary over the manifest as the place a writer learns the keys,
+and the number that made that a decision rather than an opinion was **447 estimated
+tokens** — enough to call the manifest option a 19% regression. The ceiling was set at
+600, described in its own comment as "room for two or three more ops".
+
+SH222 added two and the measurement is **640**. The room is spent.
+
+What has *not* changed is the trade itself: restore ops add to both sides equally,
+because a manifest carrying the vocabulary would carry these too. So SH222 raised the
+ceiling to 680 with that re-examination written beside it rather than moving the line
+quietly, which is what the assertion's own message forbids.
+
+The **next** op is different. A ceiling raised twice is a ceiling nobody believes, and
+the question SH346 answered deserves re-running against today's numbers rather than 447:
+is a vocabulary every writer pays for still cheaper than a manifest section only a
+writer asks for, now that it is 43% larger than when that was decided?
+
+Two things to measure before deciding: what the manifest option costs today, and whether
+the growth is ops or prose — the per-op descriptions have grown independently of the op
+count, and if that is most of it the answer is trimming rather than re-choosing.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 

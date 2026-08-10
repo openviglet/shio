@@ -65,6 +65,7 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.utils.ShStableMap;
+import com.viglet.shio.tenant.ShTenantContext;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -119,6 +120,29 @@ public class ShAgentBatchService {
     public static final String POST_DELETE = "post.delete";
 
     /**
+     * SH222 — the undo the protocol already promised.
+     *
+     * <p>{@code post.delete} answers {@code "to trash (restorable)"} deliberately: an agent that
+     * believes it destroyed something will not offer the human the undo. That string was the
+     * <b>only</b> place the trash appeared on this surface — no read listed it, no tool reached it,
+     * no CLI command restored it — so the protocol told a caller an undo existed and gave it no way
+     * to get there. That inverts P1 on the capability an agent needs most immediately after a
+     * mistake, and it is where "the console can do it" is least comforting: the mistake is usually
+     * noticed by the agent, seconds later.</p>
+     *
+     * <p><b>A verb on the existing vocabulary, not a new tool.</b> `shio_write` already carries the
+     * addressed write ops, so a restore costs no MCP schema — and the tool budget is paid on every
+     * turn of every session (SH132), while a restore happens once in a hundred.</p>
+     *
+     * <p><b>Addressed by {@code id:}</b>, which is what SH172's fallback is for: a trashed post has
+     * no reachable path, so there is nothing else to name it with.</p>
+     */
+    public static final String POST_RESTORE = "post.restore";
+
+    /** SH222 — the folder half; restores the subtree that went into the trash with it. */
+    public static final String FOLDER_RESTORE = "folder.restore";
+
+    /**
      * Creates a site (SH170) — the step the whole product is for, and the only op that took an
      * agent off this surface entirely.
      */
@@ -161,7 +185,8 @@ public class ShAgentBatchService {
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT,
-            POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, RENDER_PROVISION);
+            POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
+            FOLDER_RESTORE, RENDER_PROVISION);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -622,6 +647,8 @@ public class ShAgentBatchService {
             case POST_PUBLISH -> postPublish(op, session);
             case POST_UNPUBLISH -> postUnpublish(op, session);
             case POST_DELETE -> postDelete(op, session);
+            case POST_RESTORE -> postRestore(op, session);
+            case FOLDER_RESTORE -> folderRestore(op, session);
             case RENDER_PROVISION -> renderProvision(op, session);
             default -> throw new UnknownOpException(op.op());
         };
@@ -1856,6 +1883,83 @@ public class ShAgentBatchService {
         // SH55: this is the reversible trash, not a purge. Say so — an agent that
         // believes it destroyed something will not offer the human the undo.
         return session.change(op, address, Change.DELETE, "to trash (restorable)", id);
+    }
+
+    /**
+     * SH222 — brings a trashed post back.
+     *
+     * <h2>No confirm token, and that is a decision rather than an omission</h2>
+     *
+     * <p>SH108's rule is that a <em>destructive</em> op needs the plan it was shown. A restore is
+     * not destructive: nothing is lost by running it, and the thing it undoes is itself reversible.
+     * It is not free either — it can bring back content a human deliberately removed — so it is
+     * <b>audited</b> ({@code ShContentAction.RESTORE}, which SH200 already records) and it answers
+     * with what came back. A token here would put a round trip in front of the one call somebody
+     * makes in a hurry, to protect against an act the next delete undoes.</p>
+     */
+    private Change postRestore(ShAgentBatch.Op op, Session session) {
+        String id = trashedId(op);
+        if (session.dryRun) {
+            // The dry run reads the trash rather than answering "would restore": a plan that said
+            // yes about a post nobody trashed is the plan an agent acts on.
+            return shPostUnifiedRepository.findTrashedById(id, ShTenantContext.getTenantId()).isEmpty()
+                    ? session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id)
+                    : session.change(op, ShAddress.id(id), Change.UPDATE, "from trash", id);
+        }
+        shContentAclService.requireWrite(id);
+        return shPostUnifiedWriteService.restoreFromTrash(id, session.actor)
+                ? session.change(op, ShAddress.id(id), Change.UPDATE, "from trash", id)
+                // NOOP rather than a refusal: an id that is not in the trash is either already
+                // restored or was purged, and both are states the caller wanted to reach.
+                : session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id);
+    }
+
+    /** SH222 — the folder half, which brings its subtree's posts back with it (SH200). */
+    private Change folderRestore(ShAgentBatch.Op op, Session session) {
+        String id = trashedId(op);
+        if (session.dryRun) {
+            return session.change(op, ShAddress.id(id), Change.UPDATE, "from trash, with its subtree", id);
+        }
+        return shFolderWriteService.restore(id, session.actor)
+                ? session.change(op, ShAddress.id(id), Change.UPDATE, "from trash, with its subtree", id)
+                : session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id);
+    }
+
+    /**
+     * The id a restore names, which is the only form a trashed object has (SH222).
+     *
+     * <p>A trashed post has no reachable friendly URL, so {@code post:<site>/<path>} cannot name it
+     * — SH172's {@code id:} fallback exists for exactly this. Refused with the reason rather than
+     * resolved leniently: a caller passing a path here has misread what the trash is, and silently
+     * looking one up would restore whichever live post happens to share it.</p>
+     */
+    private static String trashedId(ShAgentBatch.Op op) {
+        String raw = op.address() == null ? "" : op.address().trim();
+        if (raw.isEmpty()) {
+            // The same refusal every other op gives for a missing address, rather than a bespoke
+            // one: `ShAgentOpsContractTest` checks that a key the vocabulary calls required is
+            // enforced, and a caller who forgot the address has the same problem here as anywhere.
+            throw new MissingOpFieldException("address", op.op(), null,
+                    "id:<uuid>", "Every op names what it acts on by address.");
+        }
+        if (!raw.startsWith("id:")) {
+            throw new TrashAddressException(raw);
+        }
+        return raw.substring("id:".length()).trim();
+    }
+
+    /** A 400: a restore was addressed by path, which a trashed object does not have. */
+    public static class TrashAddressException extends ShTeachingException {
+
+        public TrashAddressException(String sent) {
+            super(ShProblem.badRequest("trash-address",
+                            "'" + sent + "' does not name something in the trash")
+                    .withDetail("A trashed post or folder has no reachable path, so it is named by "
+                            + "id. List the trash with GET /api/v2/agent/find?trash=true, which "
+                            + "answers with the id: addresses a restore takes.")
+                    .withFix("Use the `id:` address from the trash listing.")
+                    .withExample("id:0f1e2d3c-4b5a-6789-0abc-def012345678"));
+        }
     }
 
     // --- resolution helpers, shared with the desired-state compiler ---

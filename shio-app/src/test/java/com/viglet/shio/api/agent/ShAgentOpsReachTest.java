@@ -175,10 +175,22 @@ class ShAgentOpsReachTest {
         // trade wants re-running. It is asserted at all because an unmeasured cost is the defect
         // `agents.md` names first, and because 447 is what makes the manifest option a 19% regression
         // rather than a rounding error: without the number that sentence is an opinion.
+        // SH222 raised this from 600 to 680, measured at 640, and the raise is the loud kind this
+        // message forbids doing quietly — so here is the re-examination it asks for.
+        //
+        // What SH346 decided was the ops vocabulary versus the MANIFEST as the place a writer
+        // learns the keys, and 447 is what made the manifest option a 19% regression rather than a
+        // rounding error. Two restore ops do not touch that comparison: they add to both sides
+        // equally, because a manifest carrying the vocabulary would carry these too. The trade
+        // stands; what has changed is only the vocabulary's size.
+        //
+        // What the number is now: the room SH346 left — "two or three more ops" — is spent. The
+        // NEXT op is the one that should re-run the trade properly rather than move this line
+        // again, and that is filed rather than left as a sentence here.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
-                .isLessThan(600);
+                .isLessThan(680);
     }
 
     private ShAgentContext pack(String include) {

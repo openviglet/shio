@@ -161,8 +161,12 @@ class ShContextCacheHeadroomTest {
      * ShBlueprintApplyTest bends one ON PURPOSE to prove a mismatch is reported, so every later
      * apply in that class meets it. ShBlueprintRendersTest asserts what a whole apply produces and
      * cannot share a bent model.
+     *
+     * SH222 spent one more, to 66. ShAgentTrashTest deletes content and then asserts what the TRASH
+     * holds, which is instance-wide by construction — on a shared context another test's deletion
+     * is indistinguishable from its own, and the listing assertion would be about suite order.
      */
-    private static final int DECLARED_CONTEXTS = 65;
+    private static final int DECLARED_CONTEXTS = 66;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

@@ -1630,3 +1630,51 @@ report a property nobody has.
 It gets its own database (SH315) for a sharper reason than usual: statistics are cumulative on the
 `SessionFactory`, so a sibling test writing content on a shared context would be indistinguishable
 from the defect. That is not added noise — it inverts the answer.
+
+## The undo the protocol already promised (SH222)
+
+`post.delete` answers `"to trash (restorable)"` on purpose — an agent that believes it destroyed
+something will not offer the human the undo. **That string was the only place the trash appeared on
+the agent surface.** No read listed it, no MCP tool reached it, no CLI command restored it, while
+`GET /api/v2/post-unified/trash` and its `untrash` twin are console endpoints. So the protocol told
+a caller an undo existed and gave it nowhere to go — P1 inverted on the capability an agent needs
+most immediately after a mistake, and the place "the console can do it" is least comforting, because
+the mistake is usually noticed by the agent, seconds later.
+
+### Both design questions, settled
+
+**How much surface does it cost?** A verb on the existing vocabulary, not a new tool: `post.restore`
+and `folder.restore` ride `shio_write`, so a restore costs no MCP schema — and the tool budget is
+paid on every turn of every session while a restore happens once in a hundred. The listing is
+`find?trash=true`, a shape over the read that already lists posts (P10) rather than a fourth read.
+
+**Does a restore need a confirm token?** No. SH108's rule is that a *destructive* op needs the plan
+it was shown; a restore destroys nothing and the thing it undoes is itself reversible. It is not
+free — it can bring back content a human deliberately removed — so it is **audited** (SH200's
+`RESTORE` action) and answers with what came back. A token would put a round trip in front of the
+one call somebody makes in a hurry.
+
+**The listing forces the `id:` form**, and that was not obvious: a trashed post *keeps its friendly
+URL*, so the address resolver still builds a path — one that does not resolve, because the post is
+not live. Handing that back would give a caller a name that reads like every other row and answers
+nothing. SH172's `id:` fallback exists for exactly this, and a restore refuses a path rather than
+resolving it leniently: looked up, it would restore whichever **live** post happens to share it.
+
+### Two defects found while building it
+
+- **`ShTenantContext.getTenantId()` is null when nothing is bound**, and `findTrash` compares it to
+  a column — so the first listing reported an **empty trash on a single-tenant instance**, the one
+  wrong answer this call must never give. `ShPostUnifiedWriteService` already carried the
+  null-to-default fallback; the new read did not.
+- **A required key the vocabulary declares must be enforced the way every other op enforces it.**
+  `ShAgentOpsContractTest` caught a bespoke refusal that the planner did not treat as one — the
+  published list has to be the enforced list.
+
+### It spent the vocabulary's remaining room
+
+`ShAgentOpsReachTest` holds the op vocabulary under 600 tokens, with a message that says growth is
+"a reason to re-open the surface choice, not to raise the number quietly". Two ops took it to
+**640**. The raise to 680 is the loud kind: SH346's trade was the vocabulary *versus the manifest*,
+and restore ops add to both sides equally, so that comparison is untouched — what changed is only
+the size. **The next op should re-run the trade rather than move the line again**, which is
+**SH647**.

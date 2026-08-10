@@ -38,6 +38,7 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.tenant.ShTenantContext;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -136,15 +137,38 @@ public class ShAgentReadService {
      */
     public ShAgentFound find(String site, String type, String folder, String q,
                              Integer limit, boolean ids, String after) {
+        return find(site, type, folder, q, limit, ids, after, false);
+    }
+
+    /**
+     * @param trash SH222 — list what is <b>in the trash</b> instead of what is live.
+     *
+     *              <p>A shape over this read rather than an endpoint of its own (P10): the trash is
+     *              a listing of posts, and `find` is the listing. It also means the answer already
+     *              carries what a restore needs — SH172's {@code id:} address, which is the only
+     *              form a trashed post has, because it no longer has a reachable path.</p>
+     *
+     *              <p>The protocol used to say {@code "to trash (restorable)"} on every delete and
+     *              give the caller nowhere to go with it. This is the read half of that undo;
+     *              {@code post.restore} and {@code folder.restore} are the write half.</p>
+     */
+    public ShAgentFound find(String site, String type, String folder, String q,
+                             Integer limit, boolean ids, String after, boolean trash) {
         List<ShSite> sites = siteAccess.readable(site);
         int cap = limit == null || limit <= 0
                 ? properties.getRead().getDefaultLimit()
                 : Math.min(limit, properties.getRead().getMaxLimit());
         String from = cursorFrom(after);
 
-        List<ShPostUnified> matches = q != null && !q.isBlank()
-                ? searchText(sites, q)
-                : byFilters(sites, type);
+        List<ShPostUnified> matches;
+        if (trash) {
+            // Never `q` and never the live filters: a trashed row is outside every index those
+            // read, and quietly answering from them would report an empty trash on an instance
+            // whose trash is full — the one answer this call must not give.
+            matches = trashed(sites, type);
+        } else {
+            matches = q != null && !q.isBlank() ? searchText(sites, q) : byFilters(sites, type);
+        }
 
         Set<String> folderIds = folderScope(sites, folder);
         // SH545 — taken before `dedupe`, which is the only place both rows of a post are in hand.
@@ -153,7 +177,7 @@ public class ShAgentReadService {
         List<ShAgentFound.Row> rows = dedupe(matches).stream()
                 .filter(post -> folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> type == null || type.isBlank() || matchesType(post, type))
-                .map(post -> row(post, ids, live.contains(post.getId())))
+                .map(post -> row(post, ids, live.contains(post.getId()), trash))
                 .filter(row -> from == null || row.address().compareTo(from) > 0)
                 .sorted(Comparator.comparing(ShAgentFound.Row::address))
                 .toList();
@@ -477,6 +501,31 @@ public class ShAgentReadService {
                 sites.stream().map(ShSite::getId).toList(), BOTH_STATES, q);
     }
 
+    /**
+     * The trash, narrowed to the sites this credential may read (SH222).
+     *
+     * <p>The allow-list applies exactly as it does to a live listing. A trashed post is still
+     * somebody's content, and a read that widened at the moment content was deleted would make
+     * deletion a way to see more than you may.</p>
+     */
+    private List<ShPostUnified> trashed(List<ShSite> sites, String type) {
+        Set<String> readable = sites.stream().map(ShSite::getId).collect(java.util.stream.Collectors
+                .toCollection(LinkedHashSet::new));
+        ShPostType postType = type == null || type.isBlank() ? null : requireType(type);
+        // The null-to-default fallback ShPostUnifiedWriteService already carries. `getTenantId()`
+        // answers null when nothing is bound, and the query compares to a literal — so passing it
+        // straight through matches no row and reports an EMPTY TRASH on a single-tenant instance,
+        // which is the one wrong answer this call must never give.
+        String tenant = ShTenantContext.getTenantId();
+        return shPostUnifiedRepository
+                .findTrash(tenant != null ? tenant : ShTenantContext.DEFAULT_TENANT).stream()
+                .filter(post -> post.getShSite() != null && readable.contains(post.getShSite().getId()))
+                .filter(post -> postType == null
+                        || (post.getShPostType() != null
+                                && postType.getId().equals(post.getShPostType().getId())))
+                .toList();
+    }
+
     private List<ShPostUnified> byFilters(List<ShSite> sites, String type) {
         ShPostType postType = type == null || type.isBlank() ? null : requireType(type);
         List<ShPostUnified> rows = new ArrayList<>();
@@ -547,8 +596,22 @@ public class ShAgentReadService {
     // --- shaping ---
 
     private ShAgentFound.Row row(ShPostUnified post, boolean ids, boolean live) {
+        return row(post, ids, live, false);
+    }
+
+    /**
+     * @param trashed SH222 — force the {@code id:} form.
+     *
+     *                <p>A trashed post <b>keeps its friendly URL</b>, so {@code addressOf} still
+     *                builds a path address — and that address does not resolve, because the post is
+     *                not live. Handing it back would give a caller a name that reads like every
+     *                other row and answers nothing, which is worse than no listing: the one thing
+     *                this call exists to produce is an address a restore can take.</p>
+     */
+    private ShAgentFound.Row row(ShPostUnified post, boolean ids, boolean live, boolean trashed) {
         return new ShAgentFound.Row(
-                shAddressResolver.addressOf(post).toString(),
+                trashed ? ShAddress.id(post.getId()).toString()
+                        : shAddressResolver.addressOf(post).toString(),
                 post.getShPostType() == null ? null : post.getShPostType().getName(),
                 post.getState() == null ? null : post.getState().name(),
                 post.getTitle(),

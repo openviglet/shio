@@ -300,13 +300,17 @@ public class ShAgentAPI {
             @RequestParam(name = "type", required = false) String type,
             @RequestParam(name = "folder", required = false) String folder,
             @RequestParam(name = "q", required = false) String q,
+            // SH222 — the read half of the undo every delete already promises. A parameter on the
+            // listing rather than an endpoint of its own: the trash is a list of posts, and this is
+            // the call that lists posts (P10).
+            @RequestParam(name = "trash", required = false, defaultValue = "false") boolean trash,
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
             @RequestParam(name = "after", required = false) String after,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
-        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after);
+        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after, trash);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("find", ShAgentReadTerse.found(found), ifNoneMatch)
                 : shAgentBodyEtag.json("find", found, ifNoneMatch);
