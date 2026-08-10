@@ -470,3 +470,47 @@ somebody else's change is the one a later reader will misattribute.
 `ShBlueprintRendersTest` gets its own database: post-types are instance-wide, and
 `ShBlueprintApplyTest` bends one **on purpose** to prove a mismatch is reported, so every later apply
 in that class meets it. This assertion was written there first and failed on exactly that.
+
+## What an applied package may do, stated once (SH643)
+
+A blueprint provisions post-types and writes pages **under the credentials of whoever applies it**.
+That is fine while every package ships in the jar and the only other source is a directory an
+operator chose — SH96's model, where *somebody decided* is the whole of the trust. It stops being
+fine the moment a package can come from a stranger, and the first thing a stranger needs is not an
+index: it is a statement of what applying one can and cannot do to them.
+
+**Every bound already existed.** What did not exist is anywhere they were true together — they lived
+in six comments across four classes, which is a security model somebody has to reconstruct by
+reading the implementation. `ShBlueprintBoundsTest` is that reconstruction, done once and pinned:
+a package cannot name its own site, cannot prune, cannot overwrite a model it did not create, and
+cannot create a site or widen a post-type without an explicit flag; a failure is isolated; and the
+`shio-blueprint-` prefix is reserved for packages that did not ship with the instance.
+
+**Deliberately not new restrictions.** Writing the statement is the task; tightening the model on
+the strength of having written it would be answering a question nobody asked with a change nobody
+reviewed.
+
+The prefix is **reserved, not required**. Reserving it costs nothing and makes it mean something —
+a reader seeing `shio-blueprint-acme` knows it is not first-party. Whether a stranger's package
+*must* carry it is distribution policy, because it decides who may publish under the product's name,
+and that belongs with the index.
+
+### It found a published claim that had stopped being true
+
+`docs-shio/blueprints.md` told readers *"an unknown parameter is a teaching error, never quietly
+dropped"*. **SH395 made that false** in this same session: inside a template field (`HTML`, `CSS`,
+`JAVASCRIPT`) an unknown name belongs to the page renderer and passes through. The page now says so,
+including the cost — a mistyped parameter *inside a template* is not caught, because there an
+undeclared name is the normal case. Two rules were added beside it: one package's failure is not the
+catalogue's (SH217), and a package cannot come from a URL.
+
+That is the argument for writing the statement down rather than leaving it in comments. The
+contradiction was three commits old and nothing would have found it, because the two halves are in
+different repositories.
+
+### What is deferred, and what should trigger it
+
+The **index** and a **provenance signal** are SH646. They are not code — they are a place for the
+list to live and somebody to say what enters it — and there is **no third-party package**, so an
+index would be infrastructure ahead of its problem. The trigger is the first package somebody
+outside the project asks to publish: the decision is cheap then because it has a subject.

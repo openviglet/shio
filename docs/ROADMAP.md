@@ -13,7 +13,7 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 💭 **SH643** (deps: SH217 ✅) **A package a stranger wrote can be refused safely, and nothing says how it earns a place** — SH217 built the isolation and the author's validation loop; the naming convention, the index and a provenance signal are distribution policy rather than registry code. → §XI.20
+- 💭 **SH646** (deps: SH643 ✅) **There is no index of third-party packages and no provenance stronger than a directory listing** — Where the list lives and who says what enters it is a decision about the project rather than a change to it, and no third-party package exists yet to shape it. → §XI.21
 
 ## Block L — Agent safety & human-in-the-loop
 

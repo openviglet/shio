@@ -242,31 +242,28 @@ under a shared path. The second is one this repository has hit before.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.20 How a stranger's package earns its place (SH643)
+### XI.21 Where the list lives, and who vouches (SH646)
 
-SH217 built the property the community half needs **first**: a local package that will
-not load is refused on its own and named, so a package the operator did not write cannot
-take the catalogue down with it. That also gave an author the validation loop the task
-asked for, with no new contract — point an instance at the directory and read the
-refusal out of the listing you were going to publish against.
+SH643 wrote down what an applied package may do and reserved the `shio-blueprint-`
+prefix so it can mean something. What it did not build is the **index** and a
+**provenance signal stronger than "it was in a directory"**, because those are not code:
+they are a place for the list to live and somebody to say what enters it.
 
-What it did not build is everything about **distribution**:
+Four homes, each with a real cost. **npm by naming convention** needs no infrastructure
+and inherits npm's provenance, but nobody curates — the product would point at a surface
+it does not control. **A curated JSON in the repository** makes the vouching explicit
+and reviewable in git, and costs recurring review. **A docs-site page** is that curation
+plus one more artefact to keep current. **Waiting** is free.
 
-- the `shio-blueprint-*` naming convention, which absorbs the old SH28/SH29/SH31;
-- a written statement of what an applied package may do, which SH151/SH152 made
-  answerable by making the dangerous parts opt-in;
-- a curated index;
-- a provenance signal stronger than a directory listing.
+Waiting is the choice, and not out of caution: there is **no third-party package**. An
+index with nothing to index is infrastructure ahead of its problem, and the first real
+package is what settles whether authors want a registry or a review — a question whose
+answer is currently a guess.
 
-The reason to split rather than keep one line open: the first is registry code and these
-are **policy plus somewhere to publish it**. A curated index needs a place to live and
-somebody to say what goes in it, which is a decision about the project rather than a
-change to it — and a task mixing the two gets the code half done and the policy half
-dropped.
-
-The format needs nothing. A package is a directory validated on load, `formatVersion`
-refuses one written for a newer instance, and SH96 proved the validation is
-source-independent: "it loaded" already means the same thing wherever it came from.
+What should trigger this is the first package somebody outside the project asks to
+publish. The decision is cheap then because it has a subject, and the code half is
+already there: the bounds are stated and asserted, the prefix is reserved, and a package
+that will not load is refused on its own without taking the catalogue with it.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
