@@ -162,11 +162,39 @@ test("compose replaces by path and leaves the rest alone", () => {
   ]);
 });
 
-test("blog, docs and product-catalog are left out on purpose", () => {
-  // They do not compose sections, so the overlay would ship them a dependency they never
-  // import. Named here so that including one later looks like the decision it is.
+test("SH216: every package is named here, and what it carries is the decision", () => {
+  // This asserted that blog, docs and product-catalog were LEFT OUT, and said why: they do not
+  // compose sections, so the section overlay would ship them a dependency they never import.
+  // That reason still holds and is why they carry an overlay of their own instead — the list is
+  // the record of which packages exist, and the assertion below is the record of what each gets.
   assert.deepEqual(
-    PACKAGES.map((p) => p.name),
-    ["nextjs-starter", "marketing-site", "landing"]
+    PACKAGES.map((pkg) => pkg.name),
+    ["nextjs-starter", "marketing-site", "landing", "blog", "docs", "product-catalog"],
   );
+});
+
+test("SH216: only the section packages bring a dependency with them", () => {
+  // The distinction the whole task turns on. A section overlay carries a VOCABULARY, so it
+  // declares `needs`; an index page uses the SDK the starter already depends on, so it declares
+  // none. A `needs` appearing on one of the three would be the defect SH156 refused to ship.
+  const withNeeds = PACKAGES.filter((pkg) => pkg.needs?.length).map((pkg) => pkg.name);
+  assert.deepEqual(withNeeds, ["marketing-site", "landing"],
+    "an index page that dragged in @viglet/shio-sections would make its package claim a front "
+      + "end it does not have — the thing SH156 declined to do for these three");
+});
+
+test("SH216: each index package carries exactly one page the starter does not", () => {
+  // The claim is per-model, so the route differs per package and that is the point: one overlay
+  // could not have produced three shapes. Asserted on the composed tree rather than on the
+  // emitted one, so it is about what `emit` WOULD write.
+  const routes = {
+    blog: "app/blog/page.tsx",
+    docs: "app/docs/page.tsx",
+    "product-catalog": "app/products/page.tsx",
+  };
+  for (const [name, route] of Object.entries(routes)) {
+    const pkg = PACKAGES.find((entry) => entry.name === name);
+    assert.ok(pkg?.overlay, `${name} has no overlay`);
+    assert.ok(existsSync(join(pkg.overlay, route)), `${name} is missing ${route}`);
+  }
 });

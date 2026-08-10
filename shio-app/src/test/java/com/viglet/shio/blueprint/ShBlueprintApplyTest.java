@@ -209,9 +209,17 @@ class ShBlueprintApplyTest {
         }
         assertThat(applied.verify().errors()).isZero();
         assertThat(applied.verify().ok()).isTrue();
-        // No front-end files in this package: reported as absent rather than as an empty
-        // list, so an MCP-only caller is not told it has files it does not have.
-        assertThat(applied.files()).isNull();
+        // SH216 — this package now carries an index page of its own, so `files` is a list where
+        // it used to be absent. The rule that made it absent still holds (a package with no front
+        // end reports `null` rather than `[]`, so an MCP-only caller is not told it has files it
+        // does not have); what changed is that no first-party package is in that state any more.
+        //
+        // Asserted on the ROUTE rather than on the count: the point of SH216 is that the page is
+        // about the model — the posts, newest first, at a URL the catch-all cannot produce — and a
+        // count would pass just as well if the overlay carried the wrong file.
+        assertThat(applied.files())
+                .extracting(ShBlueprintApplied.CarriedFile::path)
+                .contains("app/blog/page.tsx", "app/[...slug]/page.tsx");
 
         withTransaction(() -> {
             assertThat(shPostTypeRepository.findByName("Article")).isNotNull();

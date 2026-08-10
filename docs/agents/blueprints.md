@@ -185,3 +185,45 @@ blueprint whose install fails. The refusal's own text is read from `published.mj
 package ships it recommends `--blueprint marketing-site` instead — and the conformance measurement
 flips with it: while the table says unpublished, npm **must** refuse that template, and once it does
 not the same line requires a clean install.
+
+## The three packages that carry an index page (SH216)
+
+SH156 gave `landing` and `marketing-site` a front end and deliberately stopped there. `blog`, `docs`
+and `product-catalog` do not compose sections — their models are ordinary posts with an HTML field,
+which the starter's catch-all already renders — so the section overlay would ship them a dependency
+they never import and let three packages claim a front end no better than the plain starter's.
+
+What each was actually missing is **one page the starter cannot provide, because it is about the
+model rather than about any page**: the posts newest first at `/blog`, a navigation tree at `/docs`,
+a grid at `/products`. Three shapes, which is exactly why it is three overlays and not one.
+
+### Where a per-package overlay lives, which was the open question
+
+**`create-shio-app/overlays/<name>/`.** The section overlay lives in `shio-sections` because *the
+vocabulary owns how it renders* — the same argument that puts its post-type defs in
+`src/post-types.ts`. These have no vocabulary, so the owner is whoever owns the starter, which is
+`create-shio-app`.
+
+**Not beside the blueprint**, which was the tempting answer: `blueprints/<name>/files/` is the tree
+`emit` *writes*, so a source overlay in the same directory would put input and output in one place
+and leave the drift test comparing a thing with itself.
+
+**None of the three declares `needs`**, and that is the whole distinction from the section overlay:
+an index page uses the SDK the starter already depends on, while a section overlay brings a
+vocabulary with it. `ShBlueprintApplyTest` asserts the route rather than a file count — a count
+would pass just as well if the overlay carried the wrong file.
+
+### Two things the work turned up
+
+- **The SDK's two-call design shapes what an index page can show.** `query` returns *summaries* —
+  title, summary, furl, date — and no `attrs`. So the blog list sorts on the post's `date` rather
+  than the Article's own `publishedAt`, and the author is on the post's page: fetching fifty posts to
+  print fifty bylines is the N+1 that design exists to refuse. The catalogue is the one page that
+  pays for a second call, because a catalogue without prices is not a catalogue, and it bounds the
+  cost with a named `PAGE_SIZE` rather than a `size` somebody passes.
+- **Carrying a front end means declaring the parameter it uses.** The starter tree contains
+  `{{projectName}}`, which only the two section packages declared — so the first emit made
+  `GET /agent/blueprints` answer **400** for the whole catalogue, and forty-one tests failed on a
+  registry that could not load. The teaching error was right: *a placeholder with no parameter behind
+  it would silently leave a gap in the content*. Adding `projectName` to the three manifests is the
+  fix, and the failure is the argument for the check.

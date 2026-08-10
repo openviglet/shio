@@ -280,7 +280,6 @@ const REVEALED = {
   "SH153"  : "ShBlueprintApplyTest.java",
   "SH154"  : "ShSectionCompositionTest.java",
   "SH155"  : "ShBlueprintApplyTest.java",
-  "SH156"  : "emit.test.mjs",
   "SH173"  : "content-assets.test.mjs",
   "SH175"  : "ShAgentOpsContractTest.java",
   "SH176"  : "ShAgentSourceAttributionTest.java",

@@ -45,6 +45,25 @@ const BLUEPRINTS = fileURLToPath(
  */
 const SECTIONS_OVERLAY = fileURLToPath(new URL("../../shio-sections/front-end/", import.meta.url));
 
+/**
+ * A package's own index page, one directory per package (SH216).
+ *
+ * <h2>Why these live here and the section overlay does not</h2>
+ *
+ * <p>The section overlay lives in `shio-sections` because <b>the vocabulary owns how it
+ * renders</b> — the same argument that puts its post-type defs in `src/post-types.ts`. These have
+ * no vocabulary. `blog`, `docs` and `product-catalog` are ordinary posts with an HTML field, and
+ * what each is missing is one page the starter cannot provide because it is about the *model*
+ * rather than about any page: the posts newest first, the documentation tree, the catalogue grid.
+ * That belongs to whoever owns the starter, which is this package.</p>
+ *
+ * <p><b>Not beside the blueprint</b>, which was the tempting answer: `blueprints/<name>/files/` is
+ * the tree `emit` <em>writes</em>, so a source overlay in the same directory would put input and
+ * output in one place and make the drift test compare a thing with itself.</p>
+ */
+const packageOverlay = (name) =>
+  fileURLToPath(new URL(`../overlays/${name}/`, import.meta.url));
+
 /** `@viglet/shio-sections`' own package.json — the version the overlay depends on. */
 const SECTIONS_MANIFEST = fileURLToPath(
   new URL("../../shio-sections/package.json", import.meta.url)
@@ -57,17 +76,24 @@ const SECTIONS_MANIFEST = fileURLToPath(
  * list is: a package that stops carrying a front end is a decision, and it should look
  * like one here.</p>
  *
- * <p><b>`blog`, `docs` and `product-catalog` are deliberately absent.</b> They do not
- * compose sections — their models are ordinary posts with an HTML field, which the
- * starter's catch-all already renders — so what they are missing is an <em>index</em> page
- * over their own content, which is per-package and not this overlay. Giving them the
- * section tree would ship a dependency they never import, and would make three packages
- * claim a front end that renders their pages no better than the starter does.</p>
+ * <p><b>`blog`, `docs` and `product-catalog` carry an index page instead of the section
+ * overlay (SH216).</b> They do not compose sections — their models are ordinary posts with an
+ * HTML field, which the starter's catch-all already renders — so the section tree would ship a
+ * dependency they never import and let three packages claim a front end that renders their pages
+ * no better than the plain starter does. What each was actually missing is one page the starter
+ * cannot provide because it is about the <em>model</em>: a post list at `/blog`, a navigation tree
+ * at `/docs`, a grid at `/products`. Three shapes, which is exactly why it is three overlays and
+ * not one.</p>
  */
 export const PACKAGES = [
   { name: "nextjs-starter", overlay: null },
   { name: "marketing-site", overlay: SECTIONS_OVERLAY, needs: ["@viglet/shio-sections"] },
   { name: "landing", overlay: SECTIONS_OVERLAY, needs: ["@viglet/shio-sections"] },
+  // No `needs`: an index page uses the SDK the starter already depends on. That is the whole
+  // distinction from the section overlay, which brings a vocabulary with it.
+  { name: "blog", overlay: packageOverlay("blog") },
+  { name: "docs", overlay: packageOverlay("docs") },
+  { name: "product-catalog", overlay: packageOverlay("product-catalog") },
 ];
 
 /** Where the carried tree lives inside a package. */
