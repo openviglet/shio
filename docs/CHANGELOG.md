@@ -397,6 +397,7 @@
 - **SH597** — ShAgentDiscoveryCostTest scores the path rather than a surface: six intents with a known right first move, each walked from an empty context until a cold-start read names the move, then the move executed and required to succeed. Measured 10604 tokens across six independent cold starts, and it prints which rung answered each — two of the six are reachable only from the ~2400-token endpoint index, because `startHere` names neither /agent/diagnostics nor /agent/changes.
 - **SH227** — shio_apply takes a verify argument, so a desired-state apply returns the lint of what it touched instead of costing a closing round trip.
 - **SH228** — A write proof now covers the folders a run touched as well as its posts, and a run with nothing lintable gets an explicit empty report instead of no proof key.
+- **SH229** — A lint walks every conditional endpoint's request params and fails when one is missing from the entity tag, with exemptions that have to say why.
 
 ## Block N — Realignment of what already shipped (SH74)
 

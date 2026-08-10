@@ -397,28 +397,6 @@ the SH22 join hazard the same walk used to carry.
 > baseline getting leaner, and what it left behind is mostly the shape of that argument
 > getting harder: the calls that remain are real work.
 
-### XIII.9 Nothing checks that an ETag covers every parameter that changes the bytes (SH229)
-
-SH116 wrote the rule down clearly — *a tag identifies a representation, so `format`, `ids`
-and `fields` all belong in it* — and then SH157 found `include` missing from the context
-pack's own tag, three blocks later. Two projections of one unchanged pack shared a tag off
-the same digest, so a caller asking for `include=model` could revalidate against a full
-pack's cached copy and keep a pack with no sitemap in it. Nothing failed; nothing could
-have.
-
-SH174 then had to derive the same guard by hand for the manifest, and SH159 sidestepped it
-entirely by hashing the rendered body — which is exact, and is also an admission that
-getting the discriminator list right by hand is not something to keep doing.
-
-This is the **SH136 shape exactly**: an invariant about how code is *written*, invisible to
-behavioural tests because any single request is internally consistent. It wants the same
-answer — a lint. The tractable form is a test that, for each conditional endpoint, walks its
-`@RequestParam`s and fails when one is absent from the tag's inputs, with an explicit
-exemption list for the parameters that genuinely do not change the bytes (`budget`, which
-only bounds a walk that is already reflected in the content, is the interesting case to get
-right). The alternative — make `ShAgentBodyEtag` the only way to build a tag on this surface
-— is stronger and costs the three discovery endpoints their cheap digest-based path.
-
 ### XIII.10 The manifest's weight is prose, and terse barely touches it (SH230)
 
 SH174 measured it:

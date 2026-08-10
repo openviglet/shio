@@ -1716,3 +1716,45 @@ posts-only: a digest is a real render, and a folder has no page to render.
 **One thing to know before writing a test here.** `ShBenchmarkIsolationLintTest` (SH318)
 refuses `verify(null, …)` in a class sharing a context, by call shape rather than by a
 list — a scoped call still trips it if the first argument is `null`. Pass the site.
+
+## An entity tag covers every parameter that changes the bytes (SH229)
+
+`ShAgentEtagCoverageLintTest` walks every endpoint taking `If-None-Match` and fails when a
+`@RequestParam` is missing from the tag. It exists because SH116 wrote the rule down
+clearly and SH157 still found `include` missing from the context pack's tag three blocks
+later — two projections of one unchanged pack sharing a tag off the same digest, so a
+caller asking for `include=model` could revalidate against a full pack's cached copy and
+**keep a pack with no sitemap in it**. Nothing failed, and nothing could have: any single
+request is internally consistent, so the defect only exists between two requests that never
+meet in one test.
+
+**Three buckets, derived from the source rather than declared:**
+
+| Bucket | Rule |
+|---|---|
+| `ShAgentBodyEtag` (6 of 9) | tag is the rendered bytes' hash — covers everything by construction. **Prefer this.** |
+| Hand-built `ShAgentEtag.of(…)` (3) | every param must reach the tag's arguments, or sit in `EXEMPT` with a reason |
+| Anything else (1) | the endpoint sits in `ENDPOINT_EXEMPT` naming where its tag comes from |
+
+**A `digest()` call counts for nothing, and that is the design.** Coverage is traced
+through local assignments — `Representation.of(format)` used as `representation.name()`
+counts — but a digest is opaque. This is what makes the lint reproduce SH157 rather than
+excuse it: `include` *did* flow into the pack, and the pack's digest *was* in the tag, but
+the digest is taken **before** the projection is applied. A lint that trusted dataflow into
+a digest would have called that bug covered.
+
+The cost is that a parameter genuinely covered *through* the digest needs a hand-written
+exemption. That is the right way round — an exemption is a sentence a reviewer can disagree
+with; a silent inference is not. `context.budget` is the interesting one: it truncates the
+walk, and the nodes it drops *are* content the digest covers, while the `Budget` record
+describing the ceiling is attached after the digest so a narrower ceiling over identical
+content stays the same representation.
+
+**Two corrections made before it shipped**, both the same shape as the bug it guards:
+
+- It filtered sources by `*API.java` first. A controller named otherwise would have been
+  skipped in silence, and a lint with a blind spot reads exactly like a lint that found
+  nothing. The header is the definition of a conditional read, so the header is the filter.
+- `ShSourceScanLintTest` (SH613) refused it until it declared `@ShSourceScan(CODE)` — a
+  javadoc paragraph explaining why a parameter is *not* in a tag is precisely the sentence
+  a raw-text scan would mistake for the tag containing it.
