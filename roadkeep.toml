@@ -251,7 +251,12 @@ priority = [
   # `priority drop`, which refuses while the queue lives in this file: it wants `priority migrate`
   # first, and moving the whole queue into docs/ROADMAP.md is a structural decision that does not
   # belong inside a block sweep.
-  "Block P",
+  #
+  # Block P came off the same way when SH637 emptied it (2026-08-10) — the renderer's listing
+  # window, the nested-listing fix, the scripts opt-out, the relation check, the layout rename and
+  # the whole form-submission path (SH631/632/633 plus the two gaps building it exposed, SH636 and
+  # SH637). `lint` reported it as `priority.block-empty` the moment the last line shipped, which is
+  # the only reason this is a two-line edit and not a queue nobody re-read.
   "Block H",
   "Block K",
   "Block J",
