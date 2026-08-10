@@ -189,6 +189,17 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      * null check on the FK column, which needs no join and therefore does not trip the
      * SH22 tenant-join hazard documented above.</p>
      */
+    /**
+     * One post's folder id, for the ACL walk that must not need a session (SH225).
+     *
+     * <p>{@code p.shFolder.id} and no further — the target is an {@code ShObject} subclass, so
+     * navigating past {@code .id} would emit the tenant predicate against an alias that has no
+     * such column. {@code distinct} because a post is two rows and both carry the same folder.</p>
+     */
+    @Query("select distinct p.shFolder.id from ShPostUnified p where p.id = :id "
+            + "and p.shFolder is not null")
+    Optional<String> findFolderIdOf(@Param("id") String id);
+
     @Query("select p from ShPostUnified p where p.shSite is null and p.state in :states")
     List<ShPostUnified> findWithoutSite(@Param("states") Collection<ShPostState> states);
 

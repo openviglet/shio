@@ -165,6 +165,12 @@ class ShContextCacheHeadroomTest {
      * SH222 spent one more, to 66. ShAgentTrashTest deletes content and then asserts what the TRASH
      * holds, which is instance-wide by construction — on a shared context another test's deletion
      * is indistinguishable from its own, and the listing assertion would be about suite order.
+     *
+     * SH225 spent one and then gave it back. It added a context to run with
+     * `spring.jpa.open-in-view=false`, on the prediction that the ACL walk would throw without a
+     * session; the association turned out to be EAGER and all three tests passed on the unfixed
+     * code. A green-either-way test is not worth a slot when two remain, so it was withdrawn and
+     * the assertion that does fail (ShContentAclEntryPointTest) needs no context at all.
      */
     private static final int DECLARED_CONTEXTS = 66;
 

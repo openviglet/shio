@@ -311,30 +311,6 @@ that will not load is refused on its own without taking the catalogue with it.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.9 The ACL check depends on `open-in-view` and does not say so (SH225)
-
-`ShContentAclService.requireRead`/`requireWrite` carry no `@Transactional`, and they reach
-`canRead`/`canWrite` by **self-invocation** — which does not pass through the Spring proxy, so
-the annotation on those methods never applies. The permission decision then walks a folder's
-lazy `parentFolder` chain with whatever persistence session the caller happens to have.
-
-Inside the app there is one, because `spring.jpa.open-in-view` defaults to true. Anywhere else
-there is not: a scheduled job, an internal service call, or a test that calls a controller bean
-directly gets a `LazyInitializationException` **instead of a permission decision**. SH201's test
-found it by being the first thing to ask the ACL a question outside a request, and had to open a
-transaction of its own to get an answer at all.
-
-Two reasons this deserves a task rather than a one-line annotation:
-
-- A guard whose failure mode is "explodes" beats one that fails open, but it is still not a
-  guard: the code that has to work is the code that *denies*, and it currently depends on a
-  setting whose entire purpose is to be turnable off. Somebody will turn it off for the reasons
-  people always do, and the symptom will be 500s on authorization, in production, under load.
-- The fix is not only the annotation. `aclChain` walking lazy associations is why a session is
-  needed at all; resolving the chain with an id-keyed query would make the check
-  session-independent, which is what a security decision should be. That also takes the SH22
-  join hazard out of the walk.
-
 ### XII.10 A trashed folder is excluded by convention, not by invariant (SH226)
 
 SH200 made every read in `ShFolderRepository` exclude a trashed folder, which covers navigation,
@@ -382,6 +358,31 @@ worst moment.
 Worth doing as its own task rather than inside a service fix: SH200 chose exactly this
 shape one level down, so the precedent is clear and the cost is schema plus a listing
 rule, not design.
+
+### XII.16 Nothing stops a fetch-type change from breaking authorization (SH650)
+
+SH225 set out to make a permission decision independent of `spring.jpa.open-in-view` and
+found the premise already false: `ShFolder.parentFolder` is a plain `@ManyToOne`, and
+JPA's default there is EAGER, so the ancestor chain arrived with the `findById`. A test
+written to catch the predicted `LazyInitializationException` — `open-in-view` off, three
+levels deep — passed on the unfixed code.
+
+The dependency was real one level down. The check worked *because of an entity mapping's
+default fetch type*. Marking that association `LAZY` is the ordinary JPA hygiene move,
+someone will make it for reasons unrelated to permissions, and before SH225 it would
+have broken **authorization** — as a 500 rather than a denial, which is neither an allow
+nor a deny and cannot be handled as either.
+
+SH225 removed the dependency by walking the chain by id, and could not stop the next
+edit putting it back, because the property is a *shape*: the walk must not navigate an
+association. `ShContentAclEntryPointTest` asserts the annotation half by reflection;
+this half has no fixture that can express it, since any behavioural test is green on
+both sides — which is why that one was withdrawn rather than kept as reassurance.
+
+So the deliverable is the instrument, per SH338: a lint failing when the chain walk
+reaches for the entity graph. The narrow form scans that one class; the form worth
+having asks which security-relevant reads navigate associations at all, which overlaps
+the SH22 join hazard the same walk used to carry.
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 

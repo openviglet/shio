@@ -23,6 +23,7 @@ import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.viglet.shio.bean.ShFolderTinyBean;
@@ -156,6 +157,23 @@ public interface ShFolderRepository extends JpaRepository<ShFolder, String> {
 	 * uses the FK column already on ShFolder, so this forces no join onto the JOINED
 	 * ShObject root and no SH22 tenant predicate against a subclass alias.</p>
 	 */
+	/**
+	 * One folder's parent id, for a walk that must not need a session (SH225).
+	 *
+	 * <p>{@code ShContentAclService} climbed the chain through the lazy {@code parentFolder}
+	 * association, so a <b>permission decision</b> needed an open persistence context — which inside
+	 * the app it had, because {@code spring.jpa.open-in-view} defaults to true, and outside it did
+	 * not. A security check that answers {@code LazyInitializationException} instead of yes or no is
+	 * the wrong failure, and it depended on a setting whose entire purpose is to be turnable off.</p>
+	 *
+	 * <p>{@code parentFolder.id} and no further: the target is an {@code ShObject} subclass, so a
+	 * navigation past {@code .id} would emit the tenant predicate against a subclass alias that has
+	 * no such column (agents.md's first invariant). The projection also keeps the walk off the
+	 * entity graph entirely, which is what makes it session-independent.</p>
+	 */
+	@Query("select f.parentFolder.id from ShFolder f where f.id = :id")
+	Optional<String> findParentIdOf(@Param("id") String id);
+
 	@Query("select distinct f.parentFolder.id from ShFolder f where f.parentFolder is not null")
 	Set<String> findParentFolderIds();
 

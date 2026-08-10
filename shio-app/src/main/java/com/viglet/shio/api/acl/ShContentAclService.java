@@ -9,6 +9,7 @@
 package com.viglet.shio.api.acl;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ import com.viglet.shio.persistence.repository.acl.ShContentAclRepository;
 import com.viglet.shio.persistence.repository.auth.ShGroupRepository;
 import com.viglet.shio.persistence.repository.auth.ShRoleRepository;
 import com.viglet.shio.persistence.repository.auth.ShUserRepository;
+import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
@@ -64,6 +66,7 @@ public class ShContentAclService {
 
     private final ShContentAclRepository shContentAclRepository;
     private final ShObjectRepository shObjectRepository;
+    private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShUserRepository shUserRepository;
     private final ShGroupRepository shGroupRepository;
@@ -71,12 +74,14 @@ public class ShContentAclService {
 
     public ShContentAclService(ShContentAclRepository shContentAclRepository,
                                ShObjectRepository shObjectRepository,
+                               ShFolderRepository shFolderRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShUserRepository shUserRepository,
                                ShGroupRepository shGroupRepository,
                                ShRoleRepository shRoleRepository) {
         this.shContentAclRepository = shContentAclRepository;
         this.shObjectRepository = shObjectRepository;
+        this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shUserRepository = shUserRepository;
         this.shGroupRepository = shGroupRepository;
@@ -94,6 +99,15 @@ public class ShContentAclService {
     }
 
     /** Throw {@link AccessDeniedException} (→ 403) unless the current user may read it. */
+    /**
+     * SH225 — annotated because this is the <b>entry point</b>, not because `canRead` is.
+     *
+     * <p>These reach `canRead`/`canWrite` by self-invocation, which never crosses the proxy — so
+     * the annotation on those methods never applied and the check ran in whatever transaction the
+     * caller happened to have. Annotating here is what makes one exist; the inner annotation is
+     * decoration, kept because the methods are also called directly.</p>
+     */
+    @Transactional(readOnly = true)
     public void requireRead(String objectId) {
         if (!canRead(objectId)) {
             throw new AccessDeniedException("No read permission on " + objectId);
@@ -101,6 +115,8 @@ public class ShContentAclService {
     }
 
     /** Throw {@link AccessDeniedException} (→ 403) unless the current user may write it. */
+    /** SH225 — see {@link #requireRead}: the annotation belongs on the entry point. */
+    @Transactional(readOnly = true)
     public void requireWrite(String objectId) {
         if (!canWrite(objectId)) {
             throw new AccessDeniedException("No write permission on " + objectId);
@@ -143,30 +159,62 @@ public class ShContentAclService {
     }
 
     /** The object's id followed by its folder and that folder's ancestors, nearest first. */
+    /**
+     * The object's id followed by its folder and that folder's ancestors, nearest first.
+     *
+     * <h2>Climbed by id, not by association (SH225)</h2>
+     *
+     * <p>This used to walk {@code folder.getParentFolder()}, which is lazy — so a permission
+     * decision needed an open persistence context and got one only because
+     * {@code spring.jpa.open-in-view} defaults to true. Outside a request it answered a
+     * {@code LazyInitializationException} instead of yes or no, and <b>the code that has to work is
+     * the code that denies</b>.</p>
+     *
+     * <p>An id-keyed query per level costs the same round trips the association walk did — it was
+     * lazy, so each hop was already a query — and it takes the SH22 join hazard out of a security
+     * check as well. A chain is a handful of levels deep, and a deeper one is a content model
+     * problem rather than a reason to keep the graph walk.</p>
+     *
+     * <p>The visited set is not just deduplication: a folder cycle would otherwise spin here
+     * forever, in the one place an instance cannot afford to.</p>
+     */
     private List<String> aclChain(String objectId) {
         List<String> chain = new ArrayList<>();
         chain.add(objectId);
-        for (ShFolder f = startFolder(objectId); f != null; f = f.getParentFolder()) {
-            if (!chain.contains(f.getId())) {
-                chain.add(f.getId());
+        // `visited` is separate from `chain` on purpose, and the first draft of SH225 conflated
+        // them: for a folder, `startFolderId` returns the object's own id, which `chain` already
+        // holds — so a single contains() guard doing double duty as the cycle brake stopped the
+        // walk before its first hop, and every folder silently stopped inheriting its parent's
+        // ACL. Deduplication and termination are two questions; `visited.add` answers only the
+        // second, and a folder cycle is the one loop an authorization check cannot afford.
+        Set<String> visited = new LinkedHashSet<>();
+        for (String folderId = startFolderId(objectId);
+                folderId != null && visited.add(folderId);
+                folderId = shFolderRepository.findParentIdOf(folderId).orElse(null)) {
+            if (!chain.contains(folderId)) {
+                chain.add(folderId);
             }
         }
         return chain;
     }
 
-    /** The folder whose ancestor chain we walk: the object itself if a folder, else a post's folder. */
-    private ShFolder startFolder(String objectId) {
+    /**
+     * Where the ancestor walk starts: the object itself if a folder, else a post's folder (SH225).
+     *
+     * <p>Returns an <b>id</b> rather than an entity, so nothing downstream can be tempted back onto
+     * the lazy graph. The post's folder is read through its own id projection for the same reason —
+     * {@code post.getShFolder()} is an association, and reading it here would put the session
+     * dependency back one line below where it was removed.</p>
+     */
+    private String startFolderId(String objectId) {
         ShObject object = shObjectRepository.findById(objectId).orElse(null);
         if (object instanceof ShFolder folder) {
-            return folder;
+            return folder.getId();
         }
         if (object != null) {
             return null; // a site or post-type — no folder chain
         }
-        return shPostUnifiedRepository.findById(objectId).stream()
-                .findFirst()
-                .map(ShPostUnified::getShFolder)
-                .orElse(null);
+        return shPostUnifiedRepository.findFolderIdOf(objectId).orElse(null);
     }
 
     private Principals currentPrincipals(String username) {

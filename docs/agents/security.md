@@ -444,3 +444,41 @@ now read bytes. One existing test had to change with it: `ShPreviewChallengeTest
 `{"error":"Unauthorized"}` literally, and SH450's actual claim — a browser-challenged refusal and a
 programmatic one differ in the *header* and nothing else — is now asserted as that comparison
 instead of as a copy of the old bytes.
+
+## What an ACL decision is allowed to depend on (SH225)
+
+`ShContentAclService.requireRead`/`requireWrite` carry `@Transactional(readOnly = true)`
+themselves, and `aclChain` climbs the folder tree with
+`ShFolderRepository.findParentIdOf` rather than through `parentFolder`.
+
+**Both halves came from the same finding, and the task's premise was wrong about it.**
+SH225 was filed saying the check needed `spring.jpa.open-in-view` because the walk touched
+a *lazy* association. It is not lazy — `ShFolder.parentFolder` is a plain `@ManyToOne`, and
+JPA's default there is EAGER, so the whole chain arrived with the `findById`. A
+`@SpringBootTest` with `open-in-view=false` over a three-level chain passed on the unfixed
+code. It was withdrawn: a test that is green either way is not evidence, and it was
+spending one of the two remaining slots under `ShContextCacheHeadroomTest` to be green.
+
+What *was* real is the dependency one level down. The check worked because of an entity
+mapping's default fetch type, so the first person to mark that association `LAZY` — the
+ordinary JPA hygiene move, made for reasons with nothing to do with permissions — would
+have broken **authorization**, and broken it as a 500 rather than as a denial. Neither an
+allow nor a deny, and not handleable as either. Hence the rule:
+
+> **A permission decision may not depend on a fetch strategy.** Resolve the chain by id.
+
+Nothing enforces that yet, because the property is a *shape* and no fixture can express it
+— any behavioural test is green on both sides. That instrument is SH650.
+
+The half that does have an assertion is the annotation. `requireRead`/`requireWrite` reached
+`canRead`/`canWrite` by **self-invocation**, which never crosses the Spring proxy, so the
+`@Transactional` on those methods never applied to the path callers take — the third time
+this session (SH357, SH358). `ShContentAclEntryPointTest` checks it by reflection at no
+context cost, and it fails on the code SH225 replaced.
+
+**One regression the change introduced and the suite caught.** The first draft used a single
+`chain.contains` guard for both deduplication and cycle-braking. For a folder,
+`startFolderId` returns the object's own id, which `chain` already holds — so the walk
+stopped before its first hop and every folder silently stopped inheriting its parent's ACL.
+Deduplication and termination are two questions; `visited.add` answers only the second.
+`ShContentAclServiceTest.aclInheritsDownTheFolderTreeToSubfolderAndPost` is what failed.
