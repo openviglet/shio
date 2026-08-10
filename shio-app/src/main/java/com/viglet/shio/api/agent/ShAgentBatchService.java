@@ -29,6 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.site.ShSiteWriteService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import com.viglet.shio.turing.ShTuringIndexService;
+import com.viglet.turing.client.sn.job.TurSNJobItem;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
@@ -137,6 +142,22 @@ public class ShAgentBatchService {
      */
     public static final String RENDER_PROVISION = "render.provision";
 
+    /**
+     * SH413 — reindexing rides {@code site.upsert} rather than being a twelfth op name.
+     *
+     * <p>It was written as {@code search.reindex} first, and {@code ShAgentOpsReachTest} refused
+     * it: the op vocabulary is priced at 600 estimated tokens and a twelfth name took it to 659.
+     * That assertion says what to do about it in as many words — "a reason to <b>re-open the
+     * surface choice</b>, not to raise the number quietly" — and SH326 had already made the same
+     * trade for the same reason, folding a repair verb into {@code render.provision} as
+     * {@code data.reconcile} because a vocabulary is paid by every caller that reads it (P3).</p>
+     *
+     * <p>So {@code data.reindex:true} on {@code site.upsert}: "make this site as declared, and make
+     * its search correct", asked of a new site and of an old one — which is the shape SH326 named
+     * and costs one documented key instead of a name every {@code tools/list} carries forever.</p>
+     */
+    public static final String REINDEX_KEY = "reindex";
+
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT,
@@ -180,6 +201,8 @@ public class ShAgentBatchService {
     /** SH607 — the SH95 vocabulary, so `render.provision` can install what a conversion writes. */
     private final ShVocabularyPostTypes shVocabularyPostTypes;
     private final ShPostLinks shPostLinks;
+    /** SH413 — the same service SH84's listener indexes through, so there is one mapping. */
+    private final ShTuringIndexService shTuringIndexService;
 
     public ShAgentBatchService(ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
@@ -196,7 +219,8 @@ public class ShAgentBatchService {
                                ShTemplateTitles shTemplateTitles,
                                ShRenderPostTypes shRenderPostTypes,
                                ShVocabularyPostTypes shVocabularyPostTypes,
-                               ShPostLinks shPostLinks) {
+                               ShPostLinks shPostLinks,
+                               ShTuringIndexService shTuringIndexService) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -213,6 +237,7 @@ public class ShAgentBatchService {
         this.shRenderPostTypes = shRenderPostTypes;
         this.shVocabularyPostTypes = shVocabularyPostTypes;
         this.shPostLinks = shPostLinks;
+        this.shTuringIndexService = shTuringIndexService;
     }
 
     /**
@@ -592,6 +617,106 @@ public class ShAgentBatchService {
         };
     }
 
+    /** A plain integer out of an op's `data`, or the default when it is absent or not a number. */
+    private static int number(JsonNode data, String field, int fallback) {
+        JsonNode value = data == null ? null : data.get(field);
+        return value != null && value.isNumber() ? value.asInt() : fallback;
+    }
+
+    // --- search ops (SH413) ---
+
+    /**
+     * The default page of posts one call indexes, and the reason there is a page at all.
+     *
+     * <p>SH84's sender is single-threaded and already reports a queue-full incident when jobs
+     * arrive in bulk. A site of ten thousand posts turned into ten thousand queued jobs is
+     * therefore not a slow backfill, it is <b>an outage of the publish path</b> — the thing this
+     * op exists to help would be broken by the op running. So a call does a page and says how far
+     * it got, and the caller decides whether to ask for the next one.</p>
+     */
+    private static final int REINDEX_PAGE = 200;
+
+    /** The most one call will take, however large a {@code limit} the caller asks for. */
+    private static final int REINDEX_MAX = 1000;
+
+    /**
+     * Indexes one site's already-published content (SH413).
+     *
+     * <p>Built on {@link ShTuringIndexService#indexItem}, the same method the {@code AFTER_COMMIT}
+     * listener uses, so there is <b>one</b> document mapping and not two that can drift — a
+     * backfilled post and a freshly-published one must be the same document in the index, or the
+     * search results depend on which path wrote them.</p>
+     *
+     * <h3>What it reports, and why that is the deliverable</h3>
+     *
+     * <p>Returning silently would leave the operator exactly where SH84 left them: unable to tell
+     * "indexed nothing because it is off", "indexed nothing because this site routes nowhere" and
+     * "indexed everything" apart. So the detail names how many were sent, how many the routing
+     * skipped, and <b>how many remain</b> — which is what makes the paging usable rather than a
+     * silent truncation (P9).</p>
+     *
+     * <p>{@code data.limit} bounds one call; {@code data.from} is the offset to resume at. Both are
+     * plain numbers rather than a cursor, because the set is ordered by the repository and a
+     * backfill that has to be exactly-once is a backfill that cannot be re-run — and re-running
+     * this one is harmless, since indexing a document twice is indexing it once.</p>
+     */
+    /** What a reindex did: the line to append, and whether anything actually moved. */
+    private record Reindexed(String detail, boolean changed) {
+    }
+
+    private Reindexed reindex(ShAgentBatch.Op op, Session session, String name, ShSite target) {
+        // Off, or pointed at nothing. Reported rather than refused: an agent running a standard
+        // build sequence against an instance that does not index should not have its batch fail,
+        // and `searchIndexing` in the manifest is what tells it beforehand (SH413).
+        if (!shTuringIndexService.active()) {
+            return new Reindexed(", search indexing is off on this instance", false);
+        }
+        if (shTuringIndexService.snSiteFor(name).isEmpty()) {
+            return new Reindexed(", '" + name + "' routes to no search index", false);
+        }
+
+        int from = Math.max(number(op.data(), "from", 0), 0);
+        int limit = Math.clamp(number(op.data(), "limit", REINDEX_PAGE), 1, REINDEX_MAX);
+        Page<ShPostUnified> page = shPostUnifiedRepository.findByShSite_IdAndState(
+                target.getId(), ShPostState.PUBLISHED,
+                PageRequest.of(from / limit, limit, Sort.by("id")));
+        long total = page.getTotalElements();
+        long remaining = Math.max(total - (long) from - page.getNumberOfElements(), 0);
+
+        if (page.getNumberOfElements() == 0) {
+            return new Reindexed(total == 0 ? ", no published posts to index"
+                    : ", nothing to index at offset " + from + " of " + total, false);
+        }
+        if (session.dryRun) {
+            return new Reindexed(", would index " + page.getNumberOfElements()
+                    + " published post(s) of " + total
+                    + (remaining > 0 ? ", " + remaining + " left after this call" : ""), true);
+        }
+
+        int sent = 0;
+        int skipped = 0;
+        for (ShPostUnified post : page.getContent()) {
+            Optional<TurSNJobItem> item = shTuringIndexService.indexItem(post);
+            if (item.isEmpty()) {
+                skipped += 1;
+                continue;
+            }
+            if (shTuringIndexService.send(item.get(), "index " + post.getId())) {
+                sent += 1;
+            } else {
+                skipped += 1;
+            }
+        }
+        // `changed` is true even when every send was refused: the op did reach out, and a caller
+        // told "noop" about a run that tried and failed would read it as "already indexed".
+        return new Reindexed(", indexed " + sent + " of " + page.getNumberOfElements()
+                + " published post(s)"
+                + (skipped > 0 ? ", " + skipped + " not accepted" : "")
+                + " (" + total + " in this site"
+                + (remaining > 0 ? ", " + remaining + " left: call again with from="
+                        + (from + page.getNumberOfElements()) : ", none left") + ")", true);
+    }
+
     // --- render ops (SH186) ---
 
     /**
@@ -806,7 +931,13 @@ public class ShAgentBatchService {
         payload.setFurl(text(op.data(), "furl"));
         payload.setScratch(scratch ? Boolean.TRUE : null);
         ShSite created = shSiteWriteService.createBlank(payload, bindings, session.actor);
-        return session.change(op, address, Change.CREATE, detail, created.getId());
+        // SH413 — a brand-new site has nothing published, so this is almost always a no-op line.
+        // Read anyway, because refusing the key on the create branch would make `data.reindex`
+        // mean two different things depending on whether the site already existed.
+        Reindexed indexed = flag(op.data(), REINDEX_KEY)
+                ? reindex(op, session, name, created) : new Reindexed("", false);
+        return session.change(op, address, Change.CREATE, detail + indexed.detail(),
+                created.getId());
     }
 
     /**
@@ -904,12 +1035,29 @@ public class ShAgentBatchService {
                     : "kept the existing " + String.join(", ", fill.kept())
                             + " — an upsert fills what is empty and never replaces a value a "
                             + "human set; change it in the console";
-            return session.change(op, address, Change.NOOP, detail, site.getId());
+            // SH413 — the branch this key exists for: a site that already has content, which is
+            // exactly the operator SH84's publish-time seam left with an empty index. A reindex
+            // makes the op a real change, so it stops being a NOOP when one happened.
+            Reindexed indexed = flag(op.data(), REINDEX_KEY)
+                    ? reindex(op, session, address.site(), site) : new Reindexed("", false);
+            // A reindex that found nothing to send leaves this a noop, because nothing moved. One
+            // that sent is an update, even if every send was refused — see `Reindexed`.
+            return indexed.changed()
+                    ? session.change(op, address, Change.UPDATE,
+                            (detail == null ? "no fields to fill" : detail) + indexed.detail(),
+                            site.getId())
+                    : session.change(op, address, Change.NOOP,
+                            (detail == null ? null : detail) == null && !indexed.detail().isEmpty()
+                                    ? indexed.detail().substring(2)
+                                    : detail + indexed.detail(),
+                            site.getId());
         }
         String detail = "filled " + String.join(", ", fill.filled())
                 + (fill.kept().isEmpty() ? ""
                         : "; kept the existing " + String.join(", ", fill.kept()));
-        return session.change(op, address, Change.UPDATE, detail, site.getId());
+        Reindexed indexed = flag(op.data(), REINDEX_KEY)
+                ? reindex(op, session, address.site(), site) : new Reindexed("", false);
+        return session.change(op, address, Change.UPDATE, detail + indexed.detail(), site.getId());
     }
 
     /**

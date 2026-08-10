@@ -117,7 +117,9 @@ public final class ShAgentOps {
                     "Create a blank site, or fill an empty url/description/furl on one that "
                             + "exists. `data.postTypeLayout` binds a post-type to a PageLayout "
                             + "title, per key. `data.scratch:true` marks the new site DISPOSABLE, "
-                            + "on the CREATE only. Never replaces a value somebody set."),
+                            + "on the CREATE only. `data.reindex:true` back-fills the search "
+                            + "index, paged by `data.limit`/`data.from`. Never replaces a value "
+                            + "somebody set."),
             new OpSpec(ShAgentBatchService.SITE_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Remove a site and every folder and post in it. Needs `confirm` from its "
@@ -162,8 +164,7 @@ public final class ShAgentOps {
                     List.of(), List.of(), List.of(), List.of(ADDRESS, DATA),
                     "Create the PageLayout/Region/Theme post-types this instance renders with, "
                             + "idempotently. Do this once before writing a layout: post.upsert "
-                            + "cannot create a system type, and until they exist /preview has "
-                            + "nothing to compose. `data.reconcile:true` also adds fields an "
+                            + "cannot create a system type. `data.reconcile:true` also adds an "
                             + "older instance's render types are missing. `data.types` installs "
                             + "SH95 vocabulary types by name (Page, SectionHero) - a bare "
                             + "instance ships none. Takes no address."));

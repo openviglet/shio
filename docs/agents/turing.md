@@ -166,3 +166,47 @@ day somebody gives indexing an operation, that classification has to change with
   nothing until each post is next published. → **SH413**
 - **No `TurSNJobAttributeSpec`**, so facets over post-type fields are not expressible. → the
   spec-per-post-type task, once somebody needs one.
+
+## Indexing what was already published (SH413)
+
+SH84 indexes `AFTER_COMMIT` on a publish. That is the right seam and it covers exactly one case:
+content published *after* indexing was switched on. An operator switching it on is normally doing so
+for a site that **already exists**, and for them the index stayed empty with no error anywhere — the
+honest failure of SH84's own design, and the one that reads as "the integration does not work".
+
+**`site.upsert` with `data.reindex:true`** indexes a site's already-published posts, through the
+same `ShTuringIndexService.indexItem` the listener uses — one document mapping, not two that can
+drift, because a backfilled post and a freshly-published one must be the same document or search
+results depend on which path wrote them.
+
+**Bounded, and the bound is the point.** `data.limit` (200, max 1000) pages one call and
+`data.from` resumes. SH84's sender is single-threaded and already reports a queue-full incident when
+jobs arrive in bulk, so ten thousand posts becoming ten thousand queued jobs is not a slow backfill —
+it is an **outage of the publish path**, and the thing this exists to help would be broken by it
+running. The reply says how many were sent, how many were not accepted, and how many are left with
+the offset to resume at, because a silent truncation reads as "indexed everything" (P9).
+
+**It is a data key and not a twelfth op name, and an instrument decided that.** It was written as
+`search.reindex` first; `ShAgentOpsReachTest` refused it — the op vocabulary is priced at 600
+estimated tokens and a twelfth name took it to 659 — and that assertion says what to do in as many
+words: *"a reason to re-open the surface choice, not to raise the number quietly."* SH326 had
+already made the identical trade, folding a repair verb into `render.provision` as
+`data.reconcile`, because a vocabulary is paid by every caller that reads it (P3). So the shape is
+"make this site as declared, and make its search correct", asked of a new site and of an old one.
+
+Three smaller decisions:
+
+- **Reported, not refused, when the instance does not index.** An agent running a standard build
+  sequence against an instance with no Turing should not have its batch fail; `searchIndexing` in
+  the manifest is what tells it beforehand.
+- **A reindex that sent nothing leaves the op a `noop`**, because nothing moved. One that *sent* is
+  an `update` even if every send was refused — a caller told "noop" about a run that tried and
+  failed would read it as "already indexed".
+- **The key is read on the create branch too**, where it is almost always a no-op line. Refusing it
+  there would make `data.reindex` mean two different things depending on whether the site existed.
+
+`ShAgentSearchReindexTest` runs it for real against a **dead port**, so `send` genuinely fails and
+the report has to be honest about it. That test also **costs no Spring context**: written first with
+property overrides, it was priced at one of the two slots left under the cache ceiling, so it
+mutates the `ShTuringProperties` bean and restores it instead (SH315 permits sharing for a test that
+only reads its own fixtures).

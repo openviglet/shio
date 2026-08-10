@@ -175,26 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.16 Reindex an instance that was already full (SH413)
-
-SH84's seam is `AFTER_COMMIT` on a lifecycle event, which is the right seam and covers
-exactly one case: content published *after* indexing was switched on. The operator who
-turns it on is normally doing so for a site that already exists, and for them the index
-stays empty with no error anywhere — the honest failure of SH84's own design, and the
-one that reads as "the integration does not work".
-
-What it needs is a backfill over the `PUBLISHED` rows of one site, built through the
-same `ShTuringIndexService.indexItem` the listener uses so there is one mapping and not
-two, and reporting what it sent rather than returning silently (P9). It is an operation
-an agent invokes, unlike the routing, which is deployment configuration — so P1 puts it
-on the agent surface as a batch op rather than in the console, and the `searchIndexing`
-manifest flag is what tells a caller whether invoking it would do anything at all.
-
-The bound matters more than the shape: a site with ten thousand posts must not become
-ten thousand queued jobs on the single-threaded sender, which is the queue-full incident
-SH84 already reports arriving in bulk. A page size, and a report that says how far it
-got, are the difference between a backfill and an outage of the publish path.
-
 ### VIII.23 The model's half of the proposal (SH523)
 
 Modelling is the least agent-native thing here, and the contrast is inside the product.
