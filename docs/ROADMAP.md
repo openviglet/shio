@@ -13,7 +13,6 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH518** (deps: SH509 ✅) **A blueprint-built site cannot be seen, because the layout generator only runs on the replication path** — apply --blueprint writes 13 authorable posts and no PageLayout or Theme, so /preview answers 400 while convert writes both. → §XVII.70
 - 📋 **SH604** (deps: SH599 ✅) **The plugin's prose enumerates the tool surface, so it is a copy that drifts the moment one ships** — Its README lists ten tools and four resources against a server carrying eleven and seven, so remember and diagnostics both shipped and the plugin never learned either. → §XI.18
 - 📋 **SH605** (deps: SH598 ✅, SH604) **Nothing proves the published artefacts alone carry the path, since every run so far had the repo beside it** — Twelve rounds read agents.md, docs/agents and a repo-local skill without noticing, so a stranger gets a surface nobody has driven without its source tree. → §XI.19
 - 💭 **SH643** (deps: SH217 ✅) **A package a stranger wrote can be refused safely, and nothing says how it earns a place** — SH217 built the isolation and the author's validation loop; the naming convention, the index and a provenance signal are distribution policy rather than registry code. → §XI.20

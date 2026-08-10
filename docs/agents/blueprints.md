@@ -424,3 +424,49 @@ late, and the same isolation SH635's flake wanted.
 
 **The other five packages still ship no design.** The mechanism is theirs to use; `marketing-site` is
 the one SH396 needs.
+
+## The generator was on the replication path (SH518)
+
+`shio apply --blueprint marketing-site --site X` wrote everything it promised — eight post-types,
+four folders, thirteen posts, three pages composed of ten sections, every field authorable — and then
+`/preview/X/` answered **400, binds no layout for post-type 'Page'**. The generator that writes a
+`Theme` and a `PageLayout` existed, on the **replication** path: `convert` writes both. So a site
+that started from a blueprint could not be looked at inside Shio, and getting one to render meant
+harvesting those two posts from a throwaway conversion, retitling them and binding the site by hand.
+
+That is backwards for the product. **Replication is the unusual case; a blueprint is how something
+new starts**, and it is the demo a stranger asks for.
+
+### Declared in the package, not generated in Java
+
+§XVII.70 offered both. Declaring won for two reasons:
+
+- SH395 had just made a package able to carry its design, and a blueprint stays *a declaration of
+  content* rather than gaining a code path that writes some of it.
+- **A converter's layout and a package's are different artefacts.** `convert`'s exists for
+  replication *fidelity* — it reproduces a captured page. A package's is a *designed starting
+  point*. Sharing them would couple the product's design to the fidelity of somebody else's site,
+  and the first time one needed to change, the other would be the reason it could not.
+
+`marketing-site` and `landing` now ship a section-rendering layout, a theme and a `Page → layout`
+binding. The assertion **renders the applied page** and finds `data-shio-section`, `data-shio-prop`
+(so it is editable, not merely visible) and the theme's own custom property.
+
+### The token regression, measured and raised
+
+P3 makes this a build failure rather than a footnote, and it was: `build-marketing-site` went
+**2700 → 3375** and `add-type-and-10-posts` **1800 → 2063**.
+
+The trim-first rule was applied and is the wrong lever here — what grew is the *report* of ops the
+caller asked for, so shrinking it means saying less about what was written. And the cost it replaces
+is worse on this very metric: the four hand-run ops the task records cost a throwaway conversion and
+four calls no budget counts, because nobody could automate them. Raised to 3400 and 2100 with that
+written beside the numbers; the ratio still clears its floor at 2.3x.
+
+`add-type-and-10-posts` moved for a reason that is not its own task — it shares an instance with the
+blueprint catalogue — and that is stated where the number is, because a figure that moved for
+somebody else's change is the one a later reader will misattribute.
+
+`ShBlueprintRendersTest` gets its own database: post-types are instance-wide, and
+`ShBlueprintApplyTest` bends one **on purpose** to prove a mismatch is reported, so every later apply
+in that class meets it. This assertion was written there first and failed on exactly that.

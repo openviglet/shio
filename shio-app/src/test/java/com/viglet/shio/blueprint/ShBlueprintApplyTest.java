@@ -39,6 +39,7 @@ import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.render.ShPageRenderService;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.api.agent.ShAgentBatchService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -430,7 +431,13 @@ class ShBlueprintApplyTest {
         assertThat(applied.createdSite()).isEqualTo(name);
         assertThat(shSiteRepository.findByName(name)).isNotNull();
         // Blank: the package's own pages are creates, not updates over a bootstrap template.
+        //
+        // SH518 narrowed this to the CONTENT ops. Binding the layout is a `site.upsert` that
+        // reports `update` — the site row exists and gains `postTypeLayout.Page` — and that is
+        // the feature rather than a bootstrap template being written over. The claim this test
+        // makes is about the package's pages, so it now says so instead of reading every op.
         assertThat(applied.content().results())
+                .filteredOn(change -> !ShAgentBatchService.SITE_UPSERT.equals(change.op()))
                 .allSatisfy(change -> assertThat(change.action()).isNotEqualTo("update"));
     }
 

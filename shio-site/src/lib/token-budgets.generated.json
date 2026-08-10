@@ -23,21 +23,21 @@
       "key": "benchmark.build-marketing-site.tokens",
       "label": "Build a site, end to end",
       "note": "the whole task, measured to the verify — not to a page a person opened",
-      "tokens": 2700
+      "tokens": 3400
     }
   ],
   "tasks": [
     {
       "label": "Build a marketing site",
       "calls": 4,
-      "tokens": 2700,
+      "tokens": 3400,
       "callRatio": 3,
       "tokenRatio": 2
     },
     {
       "label": "Add a type and ten posts",
       "calls": 3,
-      "tokens": 1800,
+      "tokens": 2100,
       "callRatio": 3.6,
       "tokenRatio": 3
     },

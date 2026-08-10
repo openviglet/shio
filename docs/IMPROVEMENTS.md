@@ -1116,33 +1116,6 @@ should not be offered for a site whose pages hold sections — `init --site` kno
 site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
 than silently useless.
 
-### XVII.70 The generator is on the wrong path (SH518)
-
-`shio apply --blueprint marketing-site --site X` writes what it promises: 8 post-types,
-4 folders, 13 posts — three pages composed of ten sections, every field authorable. Then
-`/preview/X/` answers **400, binds no layout for post-type 'Page'**, because the
-blueprint declares no `PageLayout`, no `Theme` and no `postTypeLayout`. None of the six
-blueprints does.
-
-The generator exists and is in the wrong place. `convert` writes `Theme (captured)`,
-`Theme (Shio)` and a `PageLayout` — SH464, SH508 and SH509 — but only on the replication
-path, so a site that starts from a blueprint cannot be looked at inside Shio. Getting
-the clothing-shop site to render meant harvesting those two posts from a throwaway
-conversion, retitling them and binding the site by hand: four ops that the blueprint
-should have carried.
-
-That is backwards for the product. Replication is the *unusual* case; a blueprint is how
-something new starts, and it is the demo a stranger asks for. So the path that was never
-designed to render one can, and the path designed to start one cannot.
-
-The fix is to move the generator rather than copy it into six blueprints. `apply
---blueprint` already provisions post-types and knows the site, so it can write the
-layout and the Shio theme the same way `convert` does — one code path, and a blueprint
-stays a declaration of content.
-
-The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
-answers 200 with `data-shio-prop` on it.
-
 ### XVII.79 An assertion that names the fix instead of the defect (SH568)
 
 SH560's corpus holds its red assertions as a named list, and every entry is checked in

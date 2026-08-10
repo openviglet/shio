@@ -156,8 +156,13 @@ class ShContextCacheHeadroomTest {
      * ShBlueprintApplyTest applies whole packages — provisioning render post-types, writing a Theme
      * and a PageLayout, asserting instance-wide counts — so another test's minimal `Theme` type made
      * it refuse a field. It is the same isolation SH635's flake wanted.
+     *
+     * SH518 spent one more, to 65, for the sibling of that reason: post-types are instance-wide and
+     * ShBlueprintApplyTest bends one ON PURPOSE to prove a mismatch is reported, so every later
+     * apply in that class meets it. ShBlueprintRendersTest asserts what a whole apply produces and
+     * cannot share a bent model.
      */
-    private static final int DECLARED_CONTEXTS = 64;
+    private static final int DECLARED_CONTEXTS = 65;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY
