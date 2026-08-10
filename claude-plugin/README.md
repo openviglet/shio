@@ -25,10 +25,10 @@ shio mcp` is the equivalent without the plugin.
 
 ## What it adds
 
-**MCP server** — `shio`, exposing `shio_context`, `shio_find`, `shio_read`, `shio_write`,
-`shio_apply`, `shio_publish`, `shio_assets`, `shio_changes`, `shio_verify`, `shio_digest`,
-plus the `shio://manifest`, `shio://blueprints`, `shio://context` and
-`shio://schema/{postType}` resources.
+**MCP server** — `shio`. Ask it what it exposes rather than reading a list here: the
+`shio://manifest` resource is the instance describing itself, and it is right by construction
+where a list in a README is right until the next release. Start with `shio_context`, which
+answers "what is here" in one call.
 
 **Skills** — loaded when the work calls for them, not on every turn:
 

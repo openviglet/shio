@@ -14,7 +14,7 @@
  */
 import assert from "node:assert/strict";
 import { readFile, readdir, stat } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
@@ -197,3 +197,69 @@ test("the AGENTS.md fragment states the rules that are expensive to learn by mis
     assert.deepEqual(leaked, [], `${file}: internal task ids do not ship — found ${leaked.join(" ")}`);
   }
 });
+
+/**
+ * SH604 — the published artefacts do not enumerate the tool surface.
+ *
+ * The README listed ten tools and four resources against a server carrying eleven and seven, so
+ * `shio_remember` and `shio://diagnostics` had both shipped and the plugin had never learned
+ * either. Both are the ones that cost most to miss: `remember` is where a convention survives a
+ * session, and `diagnostics` is what makes a 5xx readable to somebody whose only surface is MCP.
+ *
+ * **The rule is not "regenerate the list".** Naming a tool to teach a rule is teaching; enumerating
+ * tools is a copy — and a copy in the one artefact whose reader cannot check it against the source.
+ * So the fragment naming `shio_apply` while stating what apply guarantees stays, and an inventory
+ * is refused by count: three or more distinct tool names in one line is a list, whatever it calls
+ * itself.
+ */
+test("SH604: no published artefact carries an inventory of the tool surface", async () => {
+  // Everything that ships, not the three the id-leak guard happened to name. The skills and
+  // commands are the artefacts a reader meets *after* installing, and they are where teaching
+  // lives — each names one tool while stating a rule, which is why they pass a rule that refuses
+  // three. Walking them is what makes the distinction a property of the plugin rather than of the
+  // file somebody remembered to check.
+  for (const file of await published()) {
+    const text = await readFile(file, "utf8");
+    for (const [index, line] of text.split("\n").entries()) {
+      const tools = new Set(line.match(/\bshio_[a-z]+\b/g) ?? []);
+      const resources = new Set(line.match(/shio:\/\/[a-z]+/g) ?? []);
+      assert.ok(
+        tools.size < 3 && resources.size < 3,
+        `${relative(plugin, file)}:${index + 1} enumerates the surface (${[...tools, ...resources].join(", ")}). `
+          + "An inventory here is a copy of something the reader can ask the instance for, and it "
+          + "is wrong the first time a tool ships — it listed ten of eleven for two releases. "
+          + "Name one to teach a rule; route to `shio://manifest` for the list.",
+      );
+    }
+  }
+});
+
+/**
+ * SH604 — and the artefacts route to the thing that cannot be stale.
+ *
+ * Deleting the list is only half: a reader who came for the surface has to leave with something.
+ * `shio://manifest` is the instance describing itself, which is the one answer that is right by
+ * construction.
+ */
+test("SH604: the README sends a reader to the manifest instead", async () => {
+  const readme = await readFile(join(plugin, "README.md"), "utf8");
+  assert.match(readme, /shio:\/\/manifest/,
+    "the README must point at the resource that answers what this plugin exposes");
+});
+
+/** Every file the plugin ships that a reader can read: markdown and the manifest. */
+async function published() {
+  const out = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== "test" && entry.name !== "node_modules") await walk(path);
+      } else if (/\.(md|json)$/.test(entry.name)) {
+        out.push(path);
+      }
+    }
+  };
+  await walk(plugin);
+  return out.sort();
+}

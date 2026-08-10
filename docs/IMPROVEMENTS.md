@@ -194,6 +194,32 @@ fallback was null in the deployment it demands, and a "flake" that was a scoping
 perception loop that cannot perceive itself is the failure this block should expect
 next.
 
+### IX.73 One failure a run in ten, with no name (SH645)
+
+`pnpm test` has twice reported `cli test: ℹ fail 1` on a tree whose backend and JS
+suites were otherwise green, and neither time was the failing test's name captured — the
+runs were greped for the summary line, which is the one thing that survives when the
+output is filtered.
+
+It does not reproduce. Nine consecutive `pnpm test` runs after the sightings were clean,
+and `node --test --test-force-exit "test/*.test.mjs"` run directly in `cli/` has never
+failed: 1348 pass, 0 fail, every time.
+
+That combination is the shape SH354 is about, and the reason this is a task rather than
+a note: a red that is green on the next attempt teaches people that red means nothing,
+and it does that whether or not the red is true. Two sightings is already where the
+habit forms.
+
+What would close it is **capture rather than diagnosis**. `pnpm test` runs eight
+packages and prints each one's summary, so the failing assertion's text is somewhere in
+the output that was thrown away — the fix is a runner invocation that keeps the whole
+log, or a per-package reporter that writes one, so the next sighting names a test
+instead of a count.
+
+Two cheap things to rule out first, both consistent with the evidence: a temp-directory
+or port collision between packages running concurrently, and a test whose fixture writes
+under a shared path. The second is one this repository has hit before.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -215,31 +241,6 @@ next.
 > plugin are shipped — see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
-
-### XI.18 The fourth registry is the one that is published (SH604)
-
-Measured at `0f4a906f`. The MCP server registers **11 tools** and **7 resources**.
-`claude-plugin/README.md` states 10 and 4. Missing: `shio_remember`, and the
-`shio://diagnostics`, `shio://ops` and `shio://blueprint/` resources.
-
-The two it is wrong about are the two that cost the most: `remember` is where a
-convention survives a session, `diagnostics` is what SH596 shipped precisely so a plugin
-user could read a 5xx. Both landed within three commits of the README, and the README is
-the artefact a new installation reads first.
-
-So SH599's three registries are four, and the fourth is the published one — the only one
-whose reader cannot check it against the source.
-
-The rule is not "regenerate the list". It is that **naming a tool to teach a rule is
-teaching, and enumerating tools is a copy**. The AGENTS fragment naming `shio_apply`
-while stating what apply guarantees is the first kind and should stay. README lines
-28–29 are an inventory of a surface the reader can ask the instance for, and every one
-of those is a copy with a half-life.
-
-Two moves, in order: assert the enumeration equals the server's, so the build fails when
-a tool ships; then delete the enumeration in favour of routing to `shio://manifest`, so
-there is nothing left to assert. The leak guard added for internal ids is the same shape
-and the same file — one more walk over the published artefacts.
 
 ### XI.19 The clean room, and what is actually in the box (SH605)
 

@@ -205,3 +205,34 @@ instance** cannot, which is also why the replication procedure moved out of this
 `.claude/skills/` — 223 lines that existed in one clone — into `shio-replicate`, keeping only
 what is true of any instance.
 
+
+## The fourth registry is the published one (SH604)
+
+SH599 counted three registries of the tool surface and kept them in step. There were four, and the
+fourth is `claude-plugin/README.md` — **the only one whose reader cannot check it against the
+source.** It listed **ten tools and four resources** against a server carrying **eleven and seven**,
+so `shio_remember` and `shio://diagnostics` had both shipped and the plugin had never learned
+either.
+
+Those two cost the most to miss: `remember` is where a convention survives a session, and
+`diagnostics` is what makes a 5xx readable to somebody whose only surface is MCP. Both landed within
+three commits of the README, and the README is what a new installation reads first.
+
+### The rule is not "regenerate the list"
+
+**Naming a tool to teach a rule is teaching; enumerating tools is a copy.** The AGENTS fragment
+naming `shio_apply` while stating what apply guarantees should stay. An inventory of a surface the
+reader can ask the instance for should not exist at all.
+
+So the guard refuses **three or more distinct tool or resource names on one line** — an inventory by
+count, whatever it calls itself — and it walks **every published file**, not the three the id-leak
+guard happened to name. The skills and commands pass unchanged, because each names one tool while
+stating a rule. That is what makes the distinction a property of the plugin rather than of the file
+somebody remembered to check.
+
+The README now routes to `shio://manifest`: the instance describing itself, which is right by
+construction where a list in a README is right until the next release.
+
+**Landed in the order the task set**: the assertion first, red on line 28 naming the four tools it
+found there, then the deletion. A guard written after the fix would have been a guard nobody had
+seen fail.

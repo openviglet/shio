@@ -13,8 +13,7 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH604** (deps: SH599 ✅) **The plugin's prose enumerates the tool surface, so it is a copy that drifts the moment one ships** — Its README lists ten tools and four resources against a server carrying eleven and seven, so remember and diagnostics both shipped and the plugin never learned either. → §XI.18
-- 📋 **SH605** (deps: SH598 ✅, SH604) **Nothing proves the published artefacts alone carry the path, since every run so far had the repo beside it** — Twelve rounds read agents.md, docs/agents and a repo-local skill without noticing, so a stranger gets a surface nobody has driven without its source tree. → §XI.19
+- 📋 **SH605** (deps: SH598 ✅, SH604 ✅) **Nothing proves the published artefacts alone carry the path, since every run so far had the repo beside it** — Twelve rounds read agents.md, docs/agents and a repo-local skill without noticing, so a stranger gets a surface nobody has driven without its source tree. → §XI.19
 - 💭 **SH643** (deps: SH217 ✅) **A package a stranger wrote can be refused safely, and nothing says how it earns a place** — SH217 built the isolation and the author's validation loop; the naming convention, the index and a provenance signal are distribution policy rather than registry code. → §XI.20
 
 ## Block L — Agent safety & human-in-the-loop
@@ -40,6 +39,7 @@
 ## Block N — Realignment of what already shipped
 
 - ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P ✅) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
+- 📋 **SH645** (deps: —) **The cli suite reports one failure under pnpm test about once in ten runs, naming no test** — The workspace runner's per-package summary is all that survives a filtered run, so two sightings captured a count and no name. → §IX.73
 
 ## Block O — The human half (the console the curator uses)
 
