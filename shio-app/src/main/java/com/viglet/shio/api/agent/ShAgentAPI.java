@@ -317,6 +317,9 @@ public class ShAgentAPI {
      *
      * @param address repeatable — several posts in one call
      * @param fields  comma-separated field names; omit for the whole document
+     * @param state   SH619 — {@code published} reads what is live and {@code draft} the editable
+     *                copy; omit it for the draft-preferred default. Two reads of one address at
+     *                two moments is the fact-level "what will change when I publish this"
      * @param ifNoneMatch a tag from a previous read (SH159). The projection is part of the
      *                    representation, so a two-field read never answers {@code 304} to a
      *                    caller holding the whole document — that falls out of tagging the
@@ -329,6 +332,7 @@ public class ShAgentAPI {
             @RequestParam(name = "fields", required = false) String fields,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
             @RequestParam(name = "include", required = false) String include,
+            @RequestParam(name = "state", required = false) String state,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
@@ -336,8 +340,14 @@ public class ShAgentAPI {
         // read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool is a
         // REST-only capability (P1) and the tool count is capped at 12 with 11 used; `shio_read`
         // carries it with no extra schema, and the subject of a read is already an address.
+        //
+        // SH619 — `state` is a parameter here for the same reason, and it is why the answer to
+        // "what will change when I publish this" is a read rather than a `diff` endpoint: the
+        // comparison is two reads of one address at two moments, which composes (P10) instead of
+        // adding a third contract that would then need its own tool, its own budget and its own
+        // conformance row.
         List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids,
-                includes(include, "impact"));
+                includes(include, "impact"), state);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);

@@ -190,30 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.66 The moment the read surface cannot reach (SH619)
-
-SH522 named four declarations to judge an artefact against. Three are settled: the
-capture and the proposal are built, and the document turned out to be `apply --check`
-under another name. The fourth — the same address at an earlier moment — is not built,
-and the reason is worth recording because it is not effort.
-
-`GET /api/v2/agent/read` is **DRAFT-preferred and takes no `state`**. SH545 added
-`published` so a caller can tell whether a live row exists, which is the right field and
-answers a different question: whether, not what. So the published row's *fields* are
-unreachable from the agent surface, and a fact-level comparison of draft against live
-cannot be assembled at all — not expensively, not at all.
-
-The rendered published page is reachable (`/preview`, `/sites/**`), so a *pixel* answer
-exists and `snapshot` gives it. What does not exist is the cheap one: which fields
-changed, which is the question somebody asks before publishing and the one the SH14
-dialog answers for exactly one post at a time, in a browser, to a human.
-
-The work is therefore a read before it is a diff. Either `read?state=published` — small,
-and it makes `state` mean what its own javadoc says it means — or a projection that
-returns both rows where they differ, which is closer to what a caller wants and costs a
-shape nobody has designed. Deciding that is the task; `shio diff --against published` is
-what it unblocks.
-
 ### IX.67 The debt reader cannot tell an assertion from a mention (SH630)
 
 Found by using it. SH356's ratchet shipped with a header explaining why it holds SH361's
@@ -261,6 +237,54 @@ Found by `ShOffThreadTenantLintTest`, which SH612 landed to answer "does any oth
 `@TenantId` write happen off-thread". It answered a question nobody had asked — and it
 holds this file as a declared exemption naming this task, so the exemption is a pointer
 rather than a silence.
+
+### IX.70 The declaration that is now assemblable (SH640)
+
+SH522 named four declarations `shio diff` should judge an artefact against. Three were
+settled: the capture and the proposal are built, and the document turned out to be
+`apply --check` under another name. The fourth — the same address at an earlier moment —
+was refused, and the refusal said why: `/api/v2/agent/read` was DRAFT-preferred and took
+no `state`, so the live row's fields could not be fetched at all.
+
+SH619 removed that block. `read?state=published` returns the published row, and the
+comparison an agent wants is now two reads of one address at two moments. What is left
+is the verb, and one design question the read deliberately did not answer: whether
+`--against published` prints a **field-level** difference — which fields changed, the
+question somebody asks before publishing — or reuses the capture comparison's shape.
+
+The second half is what makes this a task rather than deleting an error message. A
+field-level diff has to decide what counts as a change in a rich-text body, how a
+missing field differs from an empty one, and whether the answer is per post or per site.
+The console's SH14 dialog answers exactly one of those, for one post, to a human.
+
+Filed from the refusal itself: the message in `cli/src/commands/diff.mjs` named SH619 as
+the blocker, so shipping SH619 without this would have left the CLI teaching a premise
+that had stopped being true — the failure this repository files tasks to avoid rather
+than discovers later.
+
+### IX.71 A mention is not an assertion, in the reader that says so (SH641)
+
+`assertion-debt.test.mjs` computes the debt by matching `\bSH\d+\b` over the raw text of
+every suite file. That cannot tell an assertion message carrying an id from a javadoc
+sentence naming one for context, and the difference is the reader's entire subject.
+
+It has been paid falsely three times, each caught by hand: prose naming a task, a test
+named for one id that asserted another's claim, and a correction comment naming a third.
+SH630 hardened the reader against its own declaration block, but left the general case —
+and it recurred immediately. SH619's javadoc explained which surface used to answer a
+question, named the console dialog's task id in passing, and took that id off the debt
+list without asserting anything about it.
+
+This is the JS twin of SH613, which found seventeen Java lints scanning prose and gave
+them one stripper and a declaration. The same two moves apply, and the second is the
+interesting one: stripping comments alone would be **wrong**, because an assertion
+message is a string literal and that is exactly where an id belongs. So the rule is
+narrower — an id counts inside a string literal or a `@DisplayName`, and not inside a
+comment.
+
+What it must not do is fail ids already asserted correctly. The reader prints both
+counts every run, so the first deliverable is the delta between the two rules, measured
+before either is enforced.
 
 ## X. Content as files (Block I)
 

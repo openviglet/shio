@@ -417,6 +417,98 @@ class ShAgentReadTest {
         assertThat(doc.data().propertyNames()).containsExactly("headline");
     }
 
+    // --- SH619: the moment the read surface could not reach ---
+
+    /**
+     * The question that had no answer, asserted as two reads of one address.
+     *
+     * <p>Every agent read was draft-preferred and took no {@code state}, so the published row's
+     * <b>fields</b> were unreachable: "what will change when I publish this" could not be assembled
+     * at all — not expensively, not at all. The rendered live page was reachable, so a <i>pixel</i>
+     * answer existed; the cheap one, which fields differ, existed only inside the console's own
+     * diff dialog, one post at a time, in a browser, to a human.</p>
+     *
+     * <p>That dialog's task id is deliberately not named here: {@code assertion-debt.test.mjs}
+     * counts any id appearing in a suite file, so writing it would mark it asserted by a sentence
+     * that asserts nothing about it (SH641).</p>
+     *
+     * <p>Written as the comparison rather than as two separate reads, because the comparison is the
+     * capability. It is also the argument for a parameter over a {@code diff} endpoint (P10): the
+     * answer composes out of the read surface instead of becoming a third contract.</p>
+     */
+    @Test
+    @DisplayName("SH619: draft against live is two reads of one address, and they differ")
+    void aDraftCanBeComparedWithWhatIsLive() {
+        // Outside `base`, for the reason the fixture states one method down: the find
+        // assertions are counts over that folder, so a post written into it makes their answer
+        // depend on test order. Worth stating rather than just obeying — the warning is in a
+        // comment on one post, and the next writer reads the test above it instead.
+        String address = "post:" + siteName + "/sh619-live-" + suffix();
+        run(new Op(ShAgentBatchService.POST_UPSERT, address, postTypeName, "/",
+                data("As published", "The body that went live")));
+        run(new Op(ShAgentBatchService.POST_PUBLISH, address, null, null, null));
+        run(new Op(ShAgentBatchService.POST_UPSERT, address, postTypeName, "/",
+                data("Edited since", "The body nobody has released")));
+
+        ShAgentDoc draft = read(address, null);
+        ShAgentDoc live = read(address, "published");
+
+        assertThat(draft.data().get("headline").asString()).isEqualTo("Edited since");
+        assertThat(live.data().get("headline").asString())
+                .as("""
+                        the live row's FIELDS, which nothing on this surface could return. SH545                         added `published`, and that answers WHETHER a live row exists — the right                         field for that question and a different one from this (SH619).""")
+                .isEqualTo("As published");
+        assertThat(live.state()).isEqualTo("PUBLISHED");
+    }
+
+    @Test
+    @DisplayName("SH619: state=draft is the editable copy even when a published row exists")
+    void draftIsAddressableInItsOwnRight() {
+        String address = "post:" + siteName + "/sh619-explicit-" + suffix();
+        run(new Op(ShAgentBatchService.POST_UPSERT, address, postTypeName, "/",
+                data("First", "First body")));
+        run(new Op(ShAgentBatchService.POST_PUBLISH, address, null, null, null));
+
+        assertThat(read(address, "draft").state()).isEqualTo("DRAFT");
+    }
+
+    @Test
+    @DisplayName("SH619: asking for a row the post has not got says which, and does not fall back")
+    void anAbsentRowIsA404ThatSaysWhich() {
+        // The fallback is the tempting answer and the single worst one available: a caller
+        // comparing draft against live would be handed the draft twice and conclude nothing
+        // changed — which is the exact wrong answer this capability exists to stop being
+        // unavoidable.
+        String address = "post:" + siteName + "/sh619-draft-only-" + suffix();
+        run(new Op(ShAgentBatchService.POST_UPSERT, address, postTypeName, "/",
+                data("Only a draft", "Never released")));
+
+        assertThatThrownBy(() -> read(address, "published"))
+                .isInstanceOf(ShAgentReadService.NoSuchStateException.class)
+                .satisfies(thrown -> assertThat(thrown.getMessage()).contains("published"));
+    }
+
+    @Test
+    @DisplayName("SH619: an unknown state is refused with the two that exist")
+    void anUnknownStateIsRefused() {
+        // P6, and not pedantry: falling back to the draft-preferred default on a typo answers a
+        // question the caller did not ask, in a shape indistinguishable from a correct answer.
+        assertThatThrownBy(() -> read("post:" + siteName + base + "/alpha", "live"))
+                .isInstanceOf(ShAgentReadService.UnknownStateException.class);
+    }
+
+    private static String suffix() {
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private void run(Op op) {
+        shAgentBatchService.run(new ShAgentBatch(false, List.of(op)), false, "tester");
+    }
+
+    private ShAgentDoc read(String address, String state) {
+        return shAgentReadService.read(List.of(address), null, false, false, state).get(0);
+    }
+
     // --- teaching errors ---
 
     @Test

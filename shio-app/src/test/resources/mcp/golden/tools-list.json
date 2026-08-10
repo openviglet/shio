@@ -237,6 +237,10 @@
           "impact" : {
             "description" : "#string",
             "type" : "boolean"
+          },
+          "state" : {
+            "description" : "#string",
+            "type" : "string"
           }
         },
         "required" : [ "address" ],

@@ -85,9 +85,10 @@ export async function run(flags, positionals, ctx) {
         + "The other two declarations SH522 named are settled rather than pending:\n"
         + "  document  - `shio apply --check <file>` already plans a desired-state document\n"
         + "              against the instance and exits non-zero if anything would change.\n"
-        + "  published - blocked on a read rather than on this verb: /api/v2/agent/read is\n"
-        + "              DRAFT-preferred and takes no state, so the live row's fields cannot\n"
-        + "              be fetched at all (SH619).",
+        + "  published - no longer blocked on the read: SH619 added `state` to\n"
+        + "              /api/v2/agent/read, so the live row's fields are fetchable and\n"
+        + "              the comparison is two reads of one address. The verb and the\n"
+        + "              shape of a field-level difference are what remain (SH640).",
     );
   }
 

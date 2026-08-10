@@ -1545,3 +1545,48 @@ Three things closed it, in this order, and none alone would have:
   caught it on the shared context (SH315). It now lives in `ShAgentOrphanScopeTest` with a database
   of its own, and `DECLARED_CONTEXTS` moved with it. That refusal was worth more than the assertion
   it blocked: without the second half, "never report orphans" would have satisfied the first.
+
+## The moment the read surface could not reach (SH619)
+
+`GET /api/v2/agent/read` was **draft-preferred and took no `state`**. SH545 added `published`, which
+says *whether* a live row exists — the right field for that question. What no call could return was
+the published row's **fields**, so a fact-level comparison of draft against live could not be
+assembled at all: not expensively, at any price. The rendered live page is reachable (`/preview`,
+`/sites/**`), so a *pixel* answer existed; the cheap one — which fields changed, the question
+somebody asks before publishing — lived only inside the console's diff dialog, one post at a time,
+in a browser, to a human.
+
+### The decision: a parameter, not a diff endpoint
+
+SH619 named two candidate shapes. `state=` won on P10: the comparison is **two reads of one address
+at two moments**, which composes out of the read surface. A `diff` endpoint would be a third
+contract needing its own MCP tool, its own budget line and its own conformance row — for an answer
+callers can assemble. It also makes `state` mean what its own javadoc always said it meant.
+
+**`state` names a row, and an absent row is a 404 that says which** — never a fallback to the
+draft-preferred one. The fallback is the tempting implementation and the single worst answer
+available: a caller comparing draft against live would be handed the draft twice and conclude
+nothing changed, which is the exact wrong answer this capability exists to stop being unavoidable.
+`no-such-state` distinguishes *never published* (publish it) from *has only a published row*
+(an uploaded file, which has no draft to compare).
+
+### It landed on MCP too, and the budget moved in the documented order
+
+P1: a capability reachable only over REST is incomplete. `shio_read` gained `state`, which put
+`tools/list` 22 tokens over. **The trim came first**, as it did for SH262 and SH342: the description
+went 186 → 172 by dropping wording ("Pass `fields` to fetch only what you are about to change" →
+"Project with `fields`"), which funded 14, and only the remaining 8 moved the budget line. Both
+things a model acts on — draft-preference, and that an unprojected rich-text body is the expensive
+case — still say why.
+
+### Two findings the work turned up
+
+- **`cli/src/commands/diff.mjs` was teaching a premise that stopped being true.** Its `--against
+  published` refusal said the read "is DRAFT-preferred and takes no state (SH619)". Shipping the
+  read without correcting that message would have left the CLI explaining a block that no longer
+  exists. The message now names what remains, and the verb is **SH640**.
+- **`assertion-debt.test.mjs` matches any `SH\d+` in a suite file.** A javadoc here named the
+  console dialog's task in passing and took that id off the debt list without asserting anything
+  about it — a false payment, the fourth. It is the JS twin of SH613, filed as **SH641**, and the
+  rule there has to be narrower than "strip comments": an assertion message *is* a string literal,
+  which is exactly where an id belongs.

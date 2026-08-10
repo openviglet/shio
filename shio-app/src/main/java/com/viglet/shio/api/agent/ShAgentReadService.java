@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
+import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -235,11 +236,39 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact) {
-        return readDocs(addresses, fields, ids, impact);
+        return readDocs(addresses, fields, ids, impact, null);
+    }
+
+    /**
+     * @param state SH619 — which row to read: {@code published}, {@code draft}, or {@code null} for
+     *              the draft-preferred default every other caller gets. See {@link #rowFor}
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state) {
+        return readDocs(addresses, fields, ids, impact, wanted(state));
+    }
+
+    /**
+     * The {@code state=} parameter, resolved (SH619).
+     *
+     * <p>P6: an unknown value is refused with the two that exist rather than silently falling back
+     * to the default, because a typo that reads as "draft-preferred" answers a question the caller
+     * did not ask and looks like a correct answer.</p>
+     */
+    private static ShPostState wanted(String state) {
+        if (state == null || state.isBlank()) {
+            return null;
+        }
+        String text = state.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (text) {
+            case "published" -> ShPostState.PUBLISHED;
+            case "draft" -> ShPostState.DRAFT;
+            default -> throw new UnknownStateException(state);
+        };
     }
 
     private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
-                                      boolean impact) {
+                                      boolean impact, ShPostState state) {
         if (addresses == null || addresses.isEmpty()) {
             throw new NoAddressException();
         }
@@ -254,11 +283,11 @@ public class ShAgentReadService {
             // back to reading them one at a time to find out which one was wrong. A single
             // address still throws, because a one-address read that 404s is correct.
             if (addresses.size() == 1) {
-                docs.add(doc(address, wanted, ids, impact));
+                docs.add(doc(address, wanted, ids, impact, state));
                 continue;
             }
             try {
-                docs.add(doc(address, wanted, ids, impact));
+                docs.add(doc(address, wanted, ids, impact, state));
             } catch (ShTeachingException failure) {
                 docs.add(failed(address, failure));
             }
@@ -284,10 +313,10 @@ public class ShAgentReadService {
                         fix == null ? null : fix.toString()));
     }
 
-    private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids, boolean impact) {
+    private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids, boolean impact,
+                           ShPostState state) {
         var resolved = shAddressResolver.resolve(rawAddress);
-        ShPostUnified post = draftPreferred(resolved.id())
-                .orElseThrow(() -> new NotAPostException(rawAddress, resolved.kind()));
+        ShPostUnified post = rowFor(rawAddress, resolved, state);
         JsonNode data = readTree(post.getData());
         JsonNode projected = fields.isEmpty() ? data : project(data, fields, post);
         return new ShAgentDoc(
@@ -560,6 +589,38 @@ public class ShAgentReadService {
         return List.copyOf(byId.values());
     }
 
+    /**
+     * The row this read is about (SH619).
+     *
+     * <h2>The moment the read surface could not reach</h2>
+     *
+     * <p>Every agent read is draft-preferred and took no {@code state}, so the published row's
+     * <em>fields</em> were unreachable and "what will change when I publish this" had no answer
+     * outside the console's own diff dialog — one post at a time, in a browser, to a human. SH545
+     * added {@code published}, which answers <b>whether</b> a live row exists and is the right
+     * field for that; this answers <b>what</b> is in it.</p>
+     *
+     * <p>A {@code state} that names a row the post does not have is a <b>404 that says which</b>,
+     * never a fallback to the draft-preferred row. The fallback is the tempting one and it is the
+     * single worst answer available here: a caller comparing draft against live would be handed
+     * the draft twice and conclude that nothing changed.</p>
+     *
+     * <p>{@code null} keeps the default every other caller already gets, so nothing that omits the
+     * parameter can behave differently — which is what makes this additive rather than a change to
+     * the read contract.</p>
+     */
+    private ShPostUnified rowFor(String rawAddress, ShAgentResolved resolved,
+                                 ShPostState state) {
+        if (state == null) {
+            return draftPreferred(resolved.id())
+                    .orElseThrow(() -> new NotAPostException(rawAddress, resolved.kind()));
+        }
+        return shPostUnifiedRepository.findByIdAndState(resolved.id(), state)
+                .orElseThrow(() -> draftPreferred(resolved.id()).isPresent()
+                        ? new NoSuchStateException(rawAddress, state)
+                        : new NotAPostException(rawAddress, resolved.kind()));
+    }
+
     private Optional<ShPostUnified> draftPreferred(String postId) {
         Optional<ShPostUnified> draft =
                 shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT);
@@ -630,6 +691,50 @@ public class ShAgentReadService {
                     .withFix("To see what is inside a folder, use GET /api/v2/agent/find?folder=… "
                             + "or read the sitemap in GET /api/v2/agent/context.")
                     .withExample("post:Blog/blog/hello-world"));
+        }
+    }
+
+    /** A 400: {@code state=} took a value that is not one of the two rows a post can have. */
+    public static class UnknownStateException extends ShTeachingException {
+
+        public UnknownStateException(String sent) {
+            super(ShProblem.badRequest("unknown-state", "'" + sent + "' is not a post state")
+                    .withDetail("A post has at most two rows: the draft that is edited and the "
+                            + "published one that is served. `state` picks which to read.")
+                    .withAllowed(List.of("draft", "published"))
+                    .withDidYouMeanFrom(sent)
+                    .withFix("Use `state=published` to read what is live, `state=draft` for the "
+                            + "editable copy, or omit `state` for the draft-preferred default.")
+                    .withExample("?address=post:Blog/blog/hello-world&state=published"));
+        }
+    }
+
+    /**
+     * A 404: the row asked for does not exist, though the post does (SH619).
+     *
+     * <p>The distinction is the whole value of the message. "No published row" means <b>never
+     * published</b>, and the caller's next move is to publish it; "no draft row" means an SH38
+     * uploaded file, which has only the one row and is not a thing to publish. Answering either
+     * with the draft-preferred row instead — the tempting fallback — would tell a caller comparing
+     * draft against live that <em>nothing changed</em>, which is the one wrong answer this whole
+     * capability exists to stop being unavoidable.</p>
+     */
+    public static class NoSuchStateException extends ShTeachingException {
+
+        public NoSuchStateException(String address, ShPostState wanted) {
+            super(ShProblem.of("no-such-state", org.springframework.http.HttpStatus.NOT_FOUND,
+                            "'" + address + "' has no "
+                                    + wanted.name().toLowerCase(java.util.Locale.ROOT) + " row")
+                    .withDetail(wanted == ShPostState.PUBLISHED
+                            ? "The post exists and has never been published, so there is nothing "
+                                    + "live to compare against."
+                            : "The post exists only as a published row, which is what an uploaded "
+                                    + "file looks like: it has no editable draft.")
+                    .withFix(wanted == ShPostState.PUBLISHED
+                            ? "Publish it with a post.publish op (POST /api/v2/agent/batch), or "
+                                    + "read it without `state` to get the draft."
+                            : "Read it without `state`, which returns the row that exists.")
+                    .withExample("?address=" + address));
         }
     }
 

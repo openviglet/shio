@@ -54,9 +54,12 @@ public class ShReadTool implements ShMcpTool {
         // wording ("the current content of one or more posts" → "post content"), not teaching: the
         // draft-preference and the reason to project both still say why, which is what a model acts
         // on. It came out 22 tokens lighter than before the argument was added.
+        // SH619 trimmed it again for the same reason, before raising the budget: what went is
+        // wording, and the two things a model acts on — that reads are draft-preferred, and that
+        // an unprojected body is the expensive case — both still say why.
         return "Read post content by address (drafts preferred, so you see your own unpublished "
-                + "edits). Pass `fields` to fetch only what you are about to change — an unneeded "
-                + "rich-text body is the most expensive read there is.";
+                + "edits). Project with `fields`: an unneeded rich-text body is the most "
+                + "expensive read there is.";
     }
 
     @Override
@@ -68,9 +71,13 @@ public class ShReadTool implements ShMcpTool {
                 "address", ShMcpTool.strings(
                         "Post addresses, e.g. post:Blog/blog/hello-world."),
                 "fields", ShMcpTool.strings(
-                        "Field names to return; omit for all of them."),
+                        "Names to return; omit for all."),
                 "impact", ShMcpTool.bool(
-                        "For a layout or region, report what renders through it.")),
+                        "For a layout or region, report what renders through it."),
+                // SH619 — the only way to see what is LIVE. Two reads of one address, with and
+                // without this, is "what will change when I publish", which nothing could answer.
+                "state", ShMcpTool.string(
+                        "`published` reads the live row, not the draft.")),
                 List.of("address"));
     }
 
@@ -80,6 +87,7 @@ public class ShReadTool implements ShMcpTool {
                 ShMcpArgs.strings(arguments, "address"),
                 ShMcpArgs.strings(arguments, "fields"),
                 false,
-                ShMcpArgs.bool(arguments, "impact")));
+                ShMcpArgs.bool(arguments, "impact"),
+                ShMcpArgs.string(arguments, "state")));
     }
 }
