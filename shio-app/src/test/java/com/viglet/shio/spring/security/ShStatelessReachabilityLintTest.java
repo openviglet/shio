@@ -28,6 +28,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH339 — <b>every mutating path is usable without a cookie, or says why not.</b>
  *
@@ -55,6 +58,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShStatelessReachabilityLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
@@ -464,7 +468,8 @@ class ShStatelessReachabilityLintTest {
         try (Stream<Path> files = Files.walk(MAIN)) {
             Map<String, String> byName = new TreeMap<>();
             files.filter(path -> path.toString().endsWith(".java"))
-                    .forEach(path -> byName.put(path.getFileName().toString(), read(path)));
+                    .forEach(path -> byName.put(path.getFileName().toString(),
+                            ShSourceText.code(read(path))));
             assertThat(byName).containsKey(CONFIG.getFileName().toString());
             return byName;
         } catch (IOException e) {

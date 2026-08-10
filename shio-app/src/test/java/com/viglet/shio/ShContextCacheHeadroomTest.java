@@ -24,6 +24,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH347 — <b>the Spring test context cache has a ceiling, and it must not be invisible.</b>
  *
@@ -85,6 +88,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShContextCacheHeadroomTest {
 
     private static final Path TEST_SOURCES = Path.of("src", "test", "java");
@@ -125,7 +129,18 @@ class ShContextCacheHeadroomTest {
      *
      * <p>The headroom is printed on every run, so approach is visible rather than only arrival.</p>
      */
-    private static final int DECLARED_CONTEXTS = 63;
+    /*
+     * SH613 lowered this from 63 to 61, and the two it removed were never there.
+     *
+     * The scan read raw file text, so a javadoc naming `@SpringBootTest` or quoting a
+     * `properties = "spring.datasource.url=…"` counted as a class declaring one. Four files carried
+     * such a mention — including two lints that are not Spring tests at all, and this file, which
+     * had already noticed the problem for ITSELF and excluded itself rather than asking whether
+     * anybody else was affected. Reading through ShSourceText makes the count what it always
+     * claimed to be, and the direction matters: the budget was reported as MORE spent than it is,
+     * so the wall SH423 exists to warn about was two slots further away than the warning said.
+     */
+    private static final int DECLARED_CONTEXTS = 61;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY
@@ -388,7 +403,7 @@ class ShContextCacheHeadroomTest {
 
     private static String read(Path path) {
         try {
-            return Files.readString(path);
+            return ShSourceText.code(Files.readString(path));
         } catch (IOException e) {
             throw new UncheckedIOException("cannot read " + path.toAbsolutePath(), e);
         }

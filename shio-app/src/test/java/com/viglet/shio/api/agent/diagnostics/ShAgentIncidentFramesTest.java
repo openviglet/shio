@@ -19,6 +19,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH190 — an incident carries the frame it threw from.
  *
@@ -34,6 +37,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShAgentIncidentFramesTest {
 
     @Test
@@ -142,7 +146,7 @@ class ShAgentIncidentFramesTest {
         List<String> offenders = new ArrayList<>();
         try (Stream<Path> files = Files.walk(root)) {
             for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
-                String source = Files.readString(file);
+                String source = ShSourceText.code(Files.readString(file));
                 if (!source.contains("incidentLog.record(")) {
                     continue;
                 }

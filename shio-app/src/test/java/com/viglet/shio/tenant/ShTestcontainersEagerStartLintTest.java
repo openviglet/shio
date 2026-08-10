@@ -23,6 +23,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH416 — a {@code @Container} field read from {@code @DynamicPropertySource} must be started
  * eagerly, because the extension does not start it in time.
@@ -61,6 +64,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShTestcontainersEagerStartLintTest {
 
     private static final Path TEST_SOURCES = Path.of("src", "test", "java");
@@ -77,7 +81,7 @@ class ShTestcontainersEagerStartLintTest {
 
         try (Stream<Path> sources = Files.walk(TEST_SOURCES)) {
             for (Path source : sources.filter(p -> p.toString().endsWith(".java")).toList()) {
-                String body = Files.readString(source, StandardCharsets.UTF_8);
+                String body = ShSourceText.code(Files.readString(source, StandardCharsets.UTF_8));
                 if (!body.contains("@Container") || !body.contains("@DynamicPropertySource")) {
                     continue;
                 }

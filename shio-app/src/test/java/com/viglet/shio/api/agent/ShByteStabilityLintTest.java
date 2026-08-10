@@ -22,6 +22,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+
 /**
  * SH136 — <b>byte stability is a build guard, not a habit.</b>
  *
@@ -50,6 +52,9 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(value = ShSourceScan.Reads.BOTH,
+        reason = "The rule is about code and the waiver is a `byte-stable-exempt` comment on the line,"
+                + " which is the whole escape hatch this lint was designed around.")
 class ShByteStabilityLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java");

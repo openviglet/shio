@@ -23,6 +23,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH279 — picking one row out of an unordered {@code Set} is a P5 violation you cannot see.
  *
@@ -48,6 +51,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShRootFolderReaderLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
@@ -118,7 +122,7 @@ class ShRootFolderReaderLintTest {
 
     private static String read(Path path) {
         try {
-            return Files.readString(path);
+            return ShSourceText.code(Files.readString(path));
         } catch (IOException e) {
             throw new UncheckedIOException("cannot read " + path.toAbsolutePath(), e);
         }

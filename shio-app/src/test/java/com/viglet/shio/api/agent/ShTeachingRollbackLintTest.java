@@ -27,6 +27,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH345 — <b>a read-only transaction that throws a teaching exception must not mark itself
  * rollback-only.</b>
@@ -66,6 +69,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShTeachingRollbackLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
@@ -234,7 +238,7 @@ class ShTeachingRollbackLintTest {
 
     private static String read(Path path) {
         try {
-            return Files.readString(path);
+            return ShSourceText.code(Files.readString(path));
         } catch (IOException e) {
             throw new UncheckedIOException("cannot read " + path.toAbsolutePath(), e);
         }

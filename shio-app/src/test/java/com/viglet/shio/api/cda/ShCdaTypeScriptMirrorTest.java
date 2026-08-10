@@ -27,6 +27,9 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH162 — the mirror-completeness guard: every component of every CDA read
  * record has a matching property in {@code @viglet/shio-client}'s
@@ -55,6 +58,7 @@ import org.junit.jupiter.api.Test;
  * matches nothing passes forever, so the extraction is asserted against known
  * content and against a synthetic drift it must reject.</p>
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShCdaTypeScriptMirrorTest {
 
     /** The SDK's hand-written mirror of the read contract. */
@@ -208,7 +212,9 @@ class ShCdaTypeScriptMirrorTest {
         assertThat(Files.isRegularFile(TYPES_TS))
                 .as("Expected the SDK type mirror at %s (run from the shio-app module directory)", TYPES_TS)
                 .isTrue();
-        return Files.readString(TYPES_TS, StandardCharsets.UTF_8);
+        // SH613 — TypeScript shares Java's comment syntax, so the shared stripper applies and a
+        // commented-out property cannot be read as a declared one.
+        return ShSourceText.code(Files.readString(TYPES_TS, StandardCharsets.UTF_8));
     }
 
     private static Set<String> dtoRecordNames() throws IOException {

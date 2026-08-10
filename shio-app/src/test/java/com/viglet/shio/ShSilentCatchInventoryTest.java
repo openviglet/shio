@@ -26,6 +26,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+
 /**
  * SH270 — a {@code catch} that neither records nor rethrows leaves no trace, and the number of them
  * is a decision rather than an accident.
@@ -55,6 +57,9 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(value = ShSourceScan.Reads.BOTH,
+        reason = "The population is catch blocks in code; what keeps one out of the count is the comment"
+                + " beside it, so stripping either half would make the inventory report the wrong number.")
 class ShSilentCatchInventoryTest {
 
     private static final Path SOURCES = Path.of("src", "main", "java", "com", "viglet", "shio");

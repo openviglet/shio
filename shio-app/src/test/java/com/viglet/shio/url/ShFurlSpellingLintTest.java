@@ -25,6 +25,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH583 — one generator decides which spellings of a path name the same post, and nothing may
  * write a second one.
@@ -58,6 +61,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShFurlSpellingLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
@@ -105,7 +109,7 @@ class ShFurlSpellingLintTest {
             int lineNumber = 0;
             for (String line : body.split("\r?\n")) {
                 lineNumber++;
-                String code = stripComment(line);
+                String code = ShSourceText.codeLine(line);
                 if (CANDIDATE_GENERATOR.matcher(code).find()) {
                     offenders.add(file + ":" + lineNumber + " —" + code.stripTrailing());
                 }
@@ -200,16 +204,6 @@ class ShFurlSpellingLintTest {
 
     private static boolean matches(String code) {
         return CANDIDATE_GENERATOR.matcher(code).find();
-    }
-
-    /** Drops comment lines so the rule can be described in a javadoc without failing the build. */
-    private static String stripComment(String line) {
-        String trimmed = line.trim();
-        if (trimmed.startsWith("*") || trimmed.startsWith("/*") || trimmed.startsWith("//")) {
-            return "";
-        }
-        int comment = line.indexOf("//");
-        return comment >= 0 ? line.substring(0, comment) : line;
     }
 
     private static Map<String, String> sources() {

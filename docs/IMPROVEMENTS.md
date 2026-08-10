@@ -190,32 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.64 The lints that read what is written about them (SH613)
-
-`ShRenderCacheReachLintTest` scanned raw file text for `@Transactional`. SH206 removed
-that annotation from `ShAgentVerifyService` and explained in the javadoc why — and the
-build went red, because a sentence naming the annotation is indistinguishable from
-declaring it. The lint had done this since it was written; nothing had previously needed
-to write about the rule.
-
-The measurement: **22 tests walk `src/main/java` and read source, and 17 of them do no
-comment stripping.** SH206 fixed one. The other 16 are not all defects, and that is the
-actual finding — some read comments **on purpose**, and the two shapes are
-indistinguishable from outside. `ShSilentCatchInventoryTest` looks for exemption
-comments, `ShAgentTransactionalOverloadLintTest` skips comment lines as it goes, and
-`ShFolderSite`'s guard keys on a `ShFolderSite-exempt:` marker. Those are correct. A
-lint that greps for a symbol and happens to hit a javadoc mention is not, and today
-nothing separates them.
-
-Two things worth having, in this order. A **shared stripper** — SH206 wrote a string-
-and text-block-aware one as a private method, which is the second copy this repository
-will want and the first it should not have. And a **declaration**: a scanning test
-states whether it reads code, prose, or both, so the accidental case becomes visible
-instead of waiting for somebody to describe a rule in the file it guards.
-
-The cost of leaving it is not a red build. It is the quieter thing: a reader who hits
-this once learns not to write the comment.
-
 ### IX.65 The count that cannot go down (SH615)
 
 `ShReviewSession.pending` asks, for each of a run's audit entries, whether its post has

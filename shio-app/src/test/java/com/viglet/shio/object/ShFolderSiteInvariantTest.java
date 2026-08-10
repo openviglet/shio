@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 
@@ -68,6 +69,9 @@ import com.viglet.shio.persistence.model.site.ShSite;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(value = ShSourceScan.Reads.BOTH,
+        reason = "The breach is a `getShSite()` call and the waiver is the `ShFolderSite-exempt` comment"
+                + " on or above the line naming the reason, which agents.md documents as the exemption form.")
 class ShFolderSiteInvariantTest {
 
     private static final Path MAIN_ROOT = Path.of("src/main/java/com/viglet/shio");

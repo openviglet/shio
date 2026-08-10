@@ -26,6 +26,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH293 — a post-type name this system declares must be a post-type this system creates.
  *
@@ -55,6 +58,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShSystemPostTypeInventoryTest {
 
     private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
@@ -188,7 +192,7 @@ class ShSystemPostTypeInventoryTest {
             new TreeSet<>(files.filter(path -> path.toString().endsWith(".java"))
                     .filter(path -> !path.getFileName().toString().equals("ShSystemPostType.java"))
                     .map(Path::toString).toList())
-                    .forEach(path -> bodies.add(read(Path.of(path))));
+                    .forEach(path -> bodies.add(ShSourceText.code(read(Path.of(path)))));
             return bodies;
         } catch (IOException e) {
             throw new UncheckedIOException(e);

@@ -22,6 +22,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH574 — this repository is on Jackson 3, and the rule is narrower than a grep for the old
  * group id.
@@ -65,6 +68,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShJacksonVersionLintTest {
 
     private static final List<Path> SOURCE_ROOTS =
@@ -100,7 +104,11 @@ class ShJacksonVersionLintTest {
                     scanned++;
                     List<String> lines = Files.readAllLines(source, StandardCharsets.UTF_8);
                     for (int line = 0; line < lines.size(); line++) {
-                        if (JACKSON_2_IMPORT.matcher(lines.get(line)).find()) {
+                        // SH613 — per line, because this reports `file:line` and a stripped
+                        // file no longer numbers the same. The pom scan below stays raw: it is
+                        // XML, where `//` is a path separator.
+                        if (JACKSON_2_IMPORT.matcher(ShSourceText.codeLine(lines.get(line)))
+                                .find()) {
                             offenders.add("%s:%d: %s"
                                     .formatted(source, line + 1, lines.get(line).trim()));
                         }
@@ -140,7 +148,7 @@ class ShJacksonVersionLintTest {
             try (Stream<Path> sources = Files.walk(root)) {
                 for (Path source : sources.filter(p -> p.toString().endsWith(".java")).toList()) {
                     for (String line : Files.readAllLines(source, StandardCharsets.UTF_8)) {
-                        if (ANNOTATION_IMPORT.matcher(line).find()) {
+                        if (ANNOTATION_IMPORT.matcher(ShSourceText.codeLine(line)).find()) {
                             annotationImports++;
                         }
                     }

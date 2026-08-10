@@ -23,6 +23,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH122 — build-time guard for the SH22 {@code @TenantId} join hazard.
  *
@@ -49,6 +52,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShTenantJoinLintTest {
 
     private static final Path REPOSITORY_ROOT =
@@ -123,7 +127,7 @@ class ShTenantJoinLintTest {
         int lineNumber = 0;
         for (String line : text.split("\n", -1)) {
             lineNumber++;
-            String code = stripComment(line);
+            String code = ShSourceText.codeLine(line);
             if (code.isBlank()) {
                 continue;
             }
@@ -149,20 +153,6 @@ class ShTenantJoinLintTest {
                     .formatted(source.getFileName(), lineNumber,
                             matcher.group(1), matcher.group(2), matcher.group(1)));
         }
-    }
-
-    /**
-     * Drops {@code //} line comments so the rule can be *described* in a javadoc or a
-     * warning note without the description itself failing the build — the note above
-     * {@code findByShPostType_IdAndState} does exactly that.
-     */
-    private static String stripComment(String line) {
-        String trimmed = line.trim();
-        if (trimmed.startsWith("*") || trimmed.startsWith("/*") || trimmed.startsWith("//")) {
-            return "";
-        }
-        int comment = line.indexOf("//");
-        return comment >= 0 ? line.substring(0, comment) : line;
     }
 
     @Test

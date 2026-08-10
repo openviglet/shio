@@ -26,6 +26,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH300 — the rendered DOM is a contract, and the document that states it is checked.
  *
@@ -49,6 +52,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShRenderedDomContractTest {
 
     private static final Path DOC =
@@ -182,7 +186,10 @@ class ShRenderedDomContractTest {
         try (Stream<Path> files = Files.walk(RENDER_JAVA)) {
             Map<String, String> byName = new TreeMap<>();
             files.filter(path -> path.toString().endsWith(".java"))
-                    .forEach(path -> byName.put(path.getFileName().toString(), read(path)));
+                    .forEach(path -> byName.put(path.getFileName().toString(),
+                            // SH613 — code only, and only here: `read` also serves a markdown
+                            // doc and a JS bundle, where a `//` is not always a comment.
+                            ShSourceText.code(read(path))));
             return List.copyOf(byName.values()).stream();
         } catch (IOException e) {
             throw new UncheckedIOException(e);

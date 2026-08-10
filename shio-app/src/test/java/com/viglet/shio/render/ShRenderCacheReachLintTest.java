@@ -25,6 +25,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH313 — which render paths get SH311's cache, asserted instead of assumed.
  *
@@ -64,6 +67,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShRenderCacheReachLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
@@ -94,7 +98,7 @@ class ShRenderCacheReachLintTest {
         callers.forEach((name, source) -> {
             // SH206 — code only. This used to scan the raw file, so a javadoc sentence mentioning
             // the annotation was indistinguishable from declaring it.
-            String body = code(source);
+            String body = ShSourceText.code(source);
             Matcher matcher = TRANSACTIONAL.matcher(body);
             while (matcher.find()) {
                 String arguments = matcher.group(1) == null ? "" : matcher.group(1);
@@ -132,7 +136,7 @@ class ShRenderCacheReachLintTest {
                 public class Example {
                 }
                 """;
-        assertThat(TRANSACTIONAL.matcher(code(prose)).find())
+        assertThat(TRANSACTIONAL.matcher(ShSourceText.code(prose)).find())
                 .as("a sentence about the rule must not be readable as a breach of it")
                 .isFalse();
 
@@ -143,7 +147,7 @@ class ShRenderCacheReachLintTest {
                     }
                 }
                 """;
-        assertThat(TRANSACTIONAL.matcher(code(declared)).find())
+        assertThat(TRANSACTIONAL.matcher(ShSourceText.code(declared)).find())
                 .as("and the real declaration still matches, or stripping comments broke the lint")
                 .isTrue();
 
@@ -153,46 +157,6 @@ class ShRenderCacheReachLintTest {
                 .as("a template with no read-only setting is the writing case, spelled in code")
                 .isFalse();
         assertThat(SETS_READ_ONLY.matcher("definition.setReadOnly(true);").find()).isTrue();
-    }
-
-    /**
-     * The file with its comments removed (SH206).
-     *
-     * <p>String and text-block aware, because this repository is full of both and a URL's
-     * {@code //} inside a literal is not a comment. Deliberately a small state machine rather than
-     * a regex: comment stripping is the one job a regex cannot do on a language with nested quoting
-     * rules, and getting it wrong here silently blinds the lint rather than failing it.</p>
-     */
-    private static String code(String source) {
-        StringBuilder out = new StringBuilder(source.length());
-        int i = 0;
-        while (i < source.length()) {
-            char c = source.charAt(i);
-            if (source.startsWith("\"\"\"", i)) {
-                int end = source.indexOf("\"\"\"", i + 3);
-                int stop = end < 0 ? source.length() : end + 3;
-                out.append(source, i, stop);
-                i = stop;
-            } else if (c == '"' || c == '\'') {
-                int j = i + 1;
-                while (j < source.length() && source.charAt(j) != c) {
-                    j += source.charAt(j) == '\\' ? 2 : 1;
-                }
-                int stop = Math.min(j + 1, source.length());
-                out.append(source, i, stop);
-                i = stop;
-            } else if (source.startsWith("//", i)) {
-                int end = source.indexOf('\n', i);
-                i = end < 0 ? source.length() : end;
-            } else if (source.startsWith("/*", i)) {
-                int end = source.indexOf("*/", i + 2);
-                i = end < 0 ? source.length() : end + 2;
-            } else {
-                out.append(c);
-                i++;
-            }
-        }
-        return out.toString();
     }
 
     @Test

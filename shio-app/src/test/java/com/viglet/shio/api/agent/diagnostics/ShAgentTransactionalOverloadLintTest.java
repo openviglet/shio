@@ -26,6 +26,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+
 /**
  * SH357 — within one class, either <b>every</b> overload of a name carries {@code @Transactional}
  * or none does.
@@ -60,6 +62,9 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(value = ShSourceScan.Reads.BOTH,
+        reason = "It skips comment lines while scanning and then reads one back: the escape is a"
+                + " `@Transactional-overload-exempt:` marker, so the prose is where the decision lives.")
 class ShAgentTransactionalOverloadLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java");

@@ -22,6 +22,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * Every thread boundary in the application, classified (SH612).
  *
@@ -45,13 +48,15 @@ import org.junit.jupiter.api.Test;
  *
  * <h2>Comments are stripped first</h2>
  *
- * <p>Because they are where this project explains its thread boundaries, and a lint that fires on
+ * <p>Via {@link ShSourceText} (SH613), because they are where this project explains its thread
+ * boundaries, and a lint that fires on
  * the sentence describing a hazard rather than on the hazard is one nobody keeps. {@code
  * ShScheduleProperties} is the live example: it names {@code @Scheduled} in a javadoc and hands
  * nothing to any thread.</p>
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShOffThreadTenantLintTest {
 
     private static final Path SOURCE = Path.of("src/main/java/com/viglet/shio");
@@ -96,7 +101,7 @@ class ShOffThreadTenantLintTest {
         List<String> boundaries = new ArrayList<>();
         List<String> uncarried = new ArrayList<>();
         for (Path file : sources()) {
-            String body = withoutComments(Files.readString(file, StandardCharsets.UTF_8));
+            String body = ShSourceText.code(Files.readString(file, StandardCharsets.UTF_8));
             if (BOUNDARIES.stream().noneMatch(body::contains)) {
                 continue;
             }
@@ -149,10 +154,5 @@ class ShOffThreadTenantLintTest {
 
     private static String relative(Path file) {
         return SOURCE.relativize(file).toString().replace('\\', '/');
-    }
-
-    /** Block and line comments removed, so prose about a hazard is not read as the hazard. */
-    private static String withoutComments(String source) {
-        return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)//.*$", "");
     }
 }

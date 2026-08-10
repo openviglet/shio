@@ -608,3 +608,59 @@ cannot be constructed — `java.net.URL` refuses it outright with *"no !/ in spe
 bound stays in the code, because a `substring` running off the end inside build identity would turn
 a diagnostic into a startup failure, but there is no test for it and the reason is written where the
 next reader will look for one.
+
+## The lints that read what is written about them (SH613)
+
+`ShRenderCacheReachLintTest` scanned raw file text for `@Transactional`. SH206 removed that
+annotation from `ShAgentVerifyService`, explained in the javadoc **why** — and the build went red,
+because a sentence naming the annotation is indistinguishable from declaring it. **A lint whose
+finding can be produced by writing about the rule is one people learn to route around by not writing
+about it**, which costs exactly the explanation the next reader needs.
+
+SH206 fixed the one lint in front of it. The population was never counted.
+
+### The measurement, and the shape of the finding
+
+**20 tests read Java source** (the instrument prints the list and each one's mode on every run, so
+the number is not written down here). Of those, **ten were reading prose by accident**. The other
+ten were not defects — and that is the actual finding: `ShSilentCatchInventoryTest` looks for
+exemption markers, `ShFolderSiteInvariantTest` keys on `ShFolderSite-exempt`, and
+`ShByteStabilityLintTest` waives a line by the comment beside it. **From outside, deliberate and
+accidental prose-reading are the same scan.** "Strip comments everywhere" would have broken three
+correct lints.
+
+So the answer is a declaration, not a rule. `@ShSourceScan(CODE | PROSE | BOTH)` states what a scan
+reads, and `ShSourceScanLintTest` holds it: **CODE must actually use `ShSourceText`** — a scan that
+claims to read code and then greps raw text is SH206's defect wearing a label — and PROSE/BOTH must
+carry a written reason, because an accident cannot explain itself.
+
+### Five strippers, not two
+
+SH613 estimated this was "the second copy the repository will want and the first it should not
+have". There were **five**: a whole-file state machine, three byte-identical per-line
+`stripComment` methods, and an inline skip inside a loop. The three per-line copies used
+`line.indexOf("//")`, which truncates a URL inside a string literal — in a repository full of URLs
+and address grammars. **A rule enforced by five implementations is five rules.** `ShSourceText.code`
+(literal- and text-block-aware, the one of the five that was correct) and `codeLine` (for the scans
+that report `file:line` and so cannot lose the numbering) are now the only two.
+
+### What the fix measured: two Spring contexts that were never there
+
+`ShContextCacheHeadroomTest` asserts the context count **exactly**, so a slot cannot be spent
+without somebody being asked. Reading through the stripper took it from **63 to 61**: four files
+carried a `@SpringBootTest` or a quoted `properties = "spring.datasource.url=…"` **in a javadoc**,
+including two lints that are not Spring tests at all.
+
+The direction matters. The budget was reported as *more* spent than it is, so the wall SH423 exists
+to warn about was two slots further away than the warning said. And that file had **already noticed
+the hazard for itself** — it excludes its own source because its examples would count — without
+asking whether anything else was affected. That is the whole argument for an instrument over a fix:
+the reader who spots a defect in front of them is the reader least likely to ask how many others
+there are.
+
+### One side effect worth recording
+
+The new test classes changed surefire's ordering, which turned SH635's twice-seen intermittent
+`ShBlueprintApplyTest` failure into a **deterministic** one — and its permanent capture then named
+the cause on the first red run. Declared in [`red-suites.json`](../../red-suites.json) against
+SH635 rather than fixed here.

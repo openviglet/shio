@@ -24,6 +24,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH323 — a friendly URL is not unique by construction, so no <em>derived</em> finder over it may
  * return an {@code Optional}.
@@ -49,6 +52,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShFurlReaderLintTest {
 
     private static final Path REPOSITORIES =
@@ -87,7 +91,7 @@ class ShFurlReaderLintTest {
             int lineNumber = 0;
             for (String line : body.split("\r?\n")) {
                 lineNumber++;
-                String code = stripComment(line);
+                String code = ShSourceText.codeLine(line);
                 if (isDerivedOptionalOverFurl(code)) {
                     offenders.add(file + ":" + lineNumber + " —" + code.stripTrailing());
                 }
@@ -146,16 +150,6 @@ class ShFurlReaderLintTest {
                         reads as flakiness in delivery rather than as the defect `verify` names.""")
                 .contains("List<ShPostUnified> findByShSite_IdAndFurlAndStateOrderByIdAsc(")
                 .contains("List<ShPostUnified> findByShSite_IdAndFurlAndStateAndLocaleOrderByIdAsc(");
-    }
-
-    /** Drops comment lines so the rule can be described in a javadoc without failing the build. */
-    private static String stripComment(String line) {
-        String trimmed = line.trim();
-        if (trimmed.startsWith("*") || trimmed.startsWith("/*") || trimmed.startsWith("//")) {
-            return "";
-        }
-        int comment = line.indexOf("//");
-        return comment >= 0 ? line.substring(0, comment) : line;
     }
 
     private static Map<String, String> sources() {
