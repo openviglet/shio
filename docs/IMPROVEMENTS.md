@@ -190,32 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.61 The gate whose fallback is null in the shape it demands (SH609)
-
-SH460 asks two questions in one: is this instance running the code under test, and can a
-matching commit still say so. On a clean tree the hash answers it. On a **dirty** tree
-the hash no longer describes what compiled, so SH500 falls back to `builtAt` — and that
-field is `null` on precisely the deployment the gate insists on.
-
-`ShAgentBuildIdentity.resolveBuiltAt` reads the timestamp off
-`CodeSource.getLocation()`. Under `java -jar` that is a Spring Boot nested URL
-(`jar:file:…!/BOOT-INF/classes!/`), which `Paths.get` refuses; the `catch` treats it as
-unreadable and returns `null`, honestly, leaving the fallback with nothing.
-`spring-boot:run` would resolve it — `target/classes` is a directory — but
-`requireLiveBuild` rejects a dev-mode instance for reporting no commit. Each shape
-supplies exactly the field the other lacks, and the intersection is empty.
-
-The consequence is not a wrong answer but a gate that is off during the only state
-anyone runs it in: a working tree with edits in it. `SHIO_CONFORMANCE_ALLOW_STALE=1`
-becomes the standing incantation, and an escape hatch used on every run is a check
-deleted slowly — the shape SH579's ledger exists to refuse.
-
-The fix is small and on the Java side: a Boot fat jar has its own `lastModifiedTime`,
-reachable before the nested-URL conversion or from the attribute the repackage step
-writes. And the assertion is the deliverable (SH527) — a case that resolves the identity
-from a fat-jar `CodeSource` and requires a timestamp, so the null cannot return the next
-time the packaging changes.
-
 ### IX.63 The tenant a pool thread does not have (SH612)
 
 `ShAgentIncident` carries `@TenantId`, and `ShTenantContext` is a thread-local. Two

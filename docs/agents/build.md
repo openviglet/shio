@@ -577,3 +577,34 @@ automatically — which is why the order is load-bearing, since `shio-sections` 
 - `/thirdparty/**` → `classpath:/META-INF/resources/webjars/`
 - `/console/**` → React SPA (permitAll in security)
 
+
+## The gate whose fallback was null in the shape it demands (SH609)
+
+SH460 asks two questions at once: is this instance running the code under test, and can a matching
+commit still say so. On a clean tree the commit hash answers it. On a **dirty** tree the hash no
+longer describes what compiled, so SH500 falls back to `builtAt` — and that field was `null` on
+precisely the deployment the conformance gate insists on.
+
+`ShAgentBuildIdentity` read the timestamp off `CodeSource.getLocation()`. Under `java -jar` that is
+a Spring Boot **nested** URL — `jar:file:/opt/shio.jar!/BOOT-INF/classes!/` — and `Paths.get(uri)`
+refuses it: the scheme is `jar:`, there is no filesystem provider for it, and the call throws. The
+throw was caught and the field became absent.
+
+**The consequence was not a wrong answer but a gate that was off in the only state anybody runs it
+in.** A working tree with edits in it is the normal case, so `SHIO_CONFORMANCE_ALLOW_STALE=1` became
+the standing incantation — and an escape hatch used on every run is a check deleted slowly, which is
+the shape SH579's ledger exists to refuse.
+
+Everything before the first `!/` is the outer jar, and its own `lastModifiedTime` is the right
+answer: a repackaged jar is written once, so its timestamp is exactly *when this artifact was
+produced*. The exploded `target/classes` case is untouched, and it is still the newest-class walk
+there, because the change that makes an instance stale is usually in some other class.
+
+**The assertion is the deliverable** (SH527): a case that resolves the identity from a fat-jar
+`CodeSource` and requires a timestamp, so the null cannot return the next time packaging changes.
+
+One test was written and deleted rather than weakened: `jar:file:/x.jar` with no nesting marker
+cannot be constructed — `java.net.URL` refuses it outright with *"no !/ in spec"*. The defensive
+bound stays in the code, because a `substring` running off the end inside build identity would turn
+a diagnostic into a startup failure, but there is no test for it and the reason is written where the
+next reader will look for one.

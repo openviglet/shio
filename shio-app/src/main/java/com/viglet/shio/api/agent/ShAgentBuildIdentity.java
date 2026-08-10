@@ -9,6 +9,8 @@
 package com.viglet.shio.api.agent;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -91,7 +93,44 @@ public class ShAgentBuildIdentity {
         CodeSource source = ShAgentBuildIdentity.class.getProtectionDomain().getCodeSource();
         return source == null || source.getLocation() == null
                 ? null
-                : Paths.get(source.getLocation().toURI());
+                : pathOf(source.getLocation());
+    }
+
+    /**
+     * The file a {@code CodeSource} location names, including the fat-jar case (SH609).
+     *
+     * <h3>The shape that returned null</h3>
+     *
+     * <p>Under {@code java -jar} Boot's location is a <b>nested</b> URL —
+     * {@code jar:file:/opt/shio.jar!/BOOT-INF/classes!/} — and {@code Paths.get(uri)} refuses it:
+     * the scheme is {@code jar:}, not {@code file:}, so there is no default filesystem provider for
+     * it and the call throws. The throw was caught and {@code builtAt} became {@code null} on
+     * <em>precisely the deployment the conformance gate insists on</em>.</p>
+     *
+     * <p>The consequence was not a wrong answer but a gate that was off in the only state anybody
+     * runs it in. SH500 falls back to {@code builtAt} on a dirty tree — where the commit hash no
+     * longer describes what compiled — so with the field null, {@code SHIO_CONFORMANCE_ALLOW_STALE=1}
+     * became the standing incantation, and an escape hatch used on every run is a check deleted
+     * slowly.</p>
+     *
+     * <p>The outer jar has its own {@code lastModifiedTime} and it is the right answer: a repackaged
+     * jar is written once, so its timestamp is exactly "when this artifact was produced". Everything
+     * before the first {@code !/} is that file, and the separator is Boot's own nesting marker
+     * rather than a guess about path syntax.</p>
+     */
+    static Path pathOf(URL location) throws URISyntaxException {
+        String form = location.toString();
+        if (!form.startsWith("jar:")) {
+            return Paths.get(location.toURI());
+        }
+        // `java.net.URL` refuses a `jar:` URL without `!/` outright — "no !/ in spec" — so the
+        // unnested form cannot reach here through a real location. The bound is kept anyway rather
+        // than asserted: a `substring` that could run off the end inside build identity would turn
+        // a diagnostic into a startup failure, and there is no test for it because there is no way
+        // to construct the input.
+        int nested = form.indexOf("!/");
+        String outer = nested < 0 ? form.substring(4) : form.substring(4, nested);
+        return Paths.get(URI.create(outer));
     }
 
     /** The abbreviated commit this artifact was built from, or {@code null} outside a build. */

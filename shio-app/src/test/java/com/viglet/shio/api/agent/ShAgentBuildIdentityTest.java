@@ -112,4 +112,40 @@ class ShAgentBuildIdentityTest {
             Files.deleteIfExists(probe);
         }
     }
+
+    @Test
+    @DisplayName("SH609: a Boot fat-jar CodeSource resolves to the jar, not to null")
+    void aFatJarLocationResolves(@org.junit.jupiter.api.io.TempDir Path dir) throws Exception {
+        // The shape that returned null. Under `java -jar` Boot's CodeSource is a NESTED URL, and
+        // `Paths.get(uri)` refuses it: the scheme is `jar:`, so there is no filesystem provider and
+        // the call throws. The throw was caught and `builtAt` became null on precisely the
+        // deployment the conformance gate insists on — so SH500's dirty-tree fallback had nothing
+        // to fall back to, and SHIO_CONFORMANCE_ALLOW_STALE=1 became the standing incantation.
+        Path jar = dir.resolve("shio.jar");
+        Files.writeString(jar, "not really a jar, and it does not need to be");
+
+        java.net.URL nested = java.net.URI.create(
+                "jar:" + jar.toUri() + "!/BOOT-INF/classes!/").toURL();
+
+        Path resolved = ShAgentBuildIdentity.pathOf(nested);
+
+        assertThat(resolved)
+                .as("""
+                        everything before the first `!/` is the outer jar, and its own                         lastModifiedTime is exactly "when this artifact was produced" — a                         repackaged jar is written once (SH609)""")
+                .isEqualTo(jar);
+        assertThat(Files.getLastModifiedTime(resolved).toInstant())
+                .as("and it is readable, which is the whole point: an absent timestamp turns the "
+                        + "gate off in the only state anybody runs it in")
+                .isNotNull();
+    }
+
+    @Test
+    @DisplayName("SH609: an exploded classes directory is unchanged")
+    void anExplodedLocationStillResolves(@org.junit.jupiter.api.io.TempDir Path dir) throws Exception {
+        // The half that must not break — this is what a Maven build serves, and it is where the
+        // newest-class walk happens.
+        assertThat(ShAgentBuildIdentity.pathOf(dir.toUri().toURL())).isEqualTo(dir);
+    }
+
+
 }
