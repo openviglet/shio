@@ -701,7 +701,14 @@ export function scanPage(html, pageUrl) {
 
   for (const token of tokenize(stripNonMarkup(html))) {
     if (token.type === "text") {
-      if (inTitle && !doc.title) doc.title = collapse(token.text) || null;
+      // SH565 — decoded here, which is the seam both earlier fixes routed around. SH476 decodes
+      // text "when it becomes a field" (`propose.mjs`' `text()` and `alt`) and SH550 decodes
+      // attribute VALUES, stating in its own words that raw-text bodies are not decoded. A
+      // `<title>` is RCDATA: entity-bearing, and reached by neither. So `Northwind &amp; Co` was
+      // stored as the five characters `&amp;` and re-escaped on the way out, on BOTH paths — the
+      // title does not travel through `propose`, so fidelity is wrong too, where SH476 was
+      // authorable only. It compounds on re-capture: each pass escapes what the last one stored.
+      if (inTitle && !doc.title) doc.title = collapse(decodeEntities(token.text)) || null;
       // SH468 — a separator, because an append after the first crosses an element boundary: the
       // tokenizer emits one text token per run, so two of them in one anchor were separated by a
       // tag. Without one a 48×48 brand tile beside its label produced `DuDumont DEP`, `ShShio CMS`,

@@ -46,14 +46,17 @@ test("SH528: the fixture exhibits every trait that broke a real replica", async 
 
   await t.test("SH476/SH565: a `&` escaped twice, in the title a scanner reads first", async () => {
     const { doc } = await scan(source.origin, "/traits");
-    // The trait, not its cure. SH565 is open: `scanPage` reads the title into the row through a
-    // path that decodes neither entity, so `&amp;amp;` arrives whole and a replica's title doubles
-    // it. Pinned as it behaves today so the fix has something offline to turn green — that is the
-    // whole point of a catalogue, and asserting the repair here would make this file fail for a
-    // defect it exists to preserve.
-    assert.equal(doc.title, "Terms &amp;amp; Conditions",
-      "decoded once this is `Terms &amp; Conditions` and twice `Terms & Conditions`; the scanner "
-        + "does neither, which is SH565 and is now reproducible without a network");
+    // The trait was pinned here as it behaved — `Terms &amp;amp; Conditions`, decoded neither time
+    // — precisely so SH565 would have something offline to turn green. It has, so this now pins the
+    // cure, and the source bytes it is read from are unchanged: the catalogue's job is to keep the
+    // awkward input, not the wrong output.
+    //
+    // Decoded ONCE. `&amp;amp;` is an author escaping an ampersand-entity deliberately, so the
+    // correct reading is the literal text `&amp;`; a second pass would yield `&` and lose the
+    // distinction the author was drawing (`decodeEntities` is single-pass for that reason).
+    assert.equal(doc.title, "Terms &amp; Conditions",
+      "decoded once — twice would be `Terms & Conditions`, which is a different title from the one "
+        + "the source wrote (SH565)");
   });
 
   await t.test("SH507: a query string on an asset path", async () => {

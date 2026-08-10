@@ -190,32 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.46 The title is RCDATA, and both entity fixes routed around it (SH565)
-
-Measured: `scanPage("<title>Northwind &amp; Co</title>")` yields the five characters
-`&amp;`, and `decodeEntities` on the same string yields `&`. The decoder is right and
-nothing calls it here.
-
-Two shipped fixes and the title falls between them. SH476 decodes text "when it becomes
-a field" — `propose.mjs`' `text()` and `alt`. SH550 decodes attribute values, and states
-the exclusion in its own words: raw-text bodies are not decoded. `decodeEntities`
-appears exactly twice in `clone.mjs`, once in `parseAttrs` and once as its own export.
-
-`<title>` is neither an attribute nor raw text. In HTML it is **RCDATA**: a `<` inside
-it is data, and an entity inside it *is* decoded — which is what separates it from
-`<script>` and `<style>`, the elements SH550's exclusion was written for. Lumping them
-together is the whole defect, and `title` is the one RCDATA element a capture reads.
-
-It reaches further than the other two did, because the title does not travel through
-`propose`. `scanPage` puts it on `doc.title`, `buildInventory` copies it onto the page
-row, and `convert` writes it into `Page.data.title` — so **fidelity and authorable are
-both wrong**, where SH476 was authorable only. Every source page with an ampersand in
-its title is affected, and it compounds on re-capture the way SH476 does: each pass
-escapes what the last one stored.
-
-Its assertion is `source-corpus.test.mjs` group D, on the `awkward` archetype, red,
-comparing the stored title against the source's own bytes.
-
 ### IX.47 The reader does not read the tree it names (SH567)
 
 SH527's reader holds a named DEBT list, and one of its groups is *the public site in

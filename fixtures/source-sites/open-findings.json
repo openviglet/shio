@@ -6,12 +6,6 @@
       "archetype": "theme-heavy",
       "assertion": "layout-raw-field-CSS",
       "what": "The generated layout emits {{CSS}} with two braces inside the getRelation block. Re-filed from SH555 by SH594's reader: SH555 shipped on the RENDER side (those fields are Handlebars.SafeString), so this assertion and that fix now disagree about whether two braces are a defect, and SH606 is the round that picks."
-    },
-    {
-      "id": "SH565",
-      "archetype": "awkward",
-      "assertion": "title-entity-decoded",
-      "what": "scanPage reads <title> into the page row without decoding its entities, so a source title of `Awkward &amp;amp; company` is stored verbatim and escaped again on render. <title> is RCDATA, not raw text — SH550's exclusion was written for <script> and <style>."
     }
   ]
 }

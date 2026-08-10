@@ -2335,3 +2335,24 @@ foreign would leave the very link this is about pointing off-site; and `clone` r
 `{origin, seed}`, so reading the object where a string is wanted is **silent** — `new URL({…})`
 throws, the catch returns the href untouched, and the fix looks applied while every assertion stays
 exactly as red as it was.
+
+**A captured `<title>` is decoded where it is read (SH565).** Measured:
+`scanPage("<title>Northwind &amp; Co</title>")` yielded the five characters `&amp;` while
+`decodeEntities` on the same string yielded `&`. The decoder was right and **nothing called it
+here** — a `<title>` is RCDATA, and both earlier entity fixes routed around it. SH476 decodes text
+*"when it becomes a field"* (`propose.mjs`'s `text()` and `alt`); SH550 decodes attribute *values*
+and states the exclusion in its own words: raw-text bodies are not decoded.
+
+It reached further than either of them. The title does not travel through `propose` — `scanPage`
+puts it on `doc.title`, `buildInventory` copies it to the page row, `convert` writes it into
+`Page.data.title` — so **fidelity and authorable were both wrong**, where SH476's defect was
+authorable only. And it compounded on re-capture: each pass escaped what the last one stored.
+
+**Decoded once**, which is the part worth stating. `&amp;amp;` is an author escaping an
+ampersand-entity deliberately, so the correct reading is the literal text `&amp;`; a second pass
+would yield `&` and lose the distinction the author was drawing. `decodeEntities` is single-pass for
+exactly that, and the fix must not smuggle a second one in.
+
+`cli/test/fixture-traits.test.mjs` pinned this trait **as the defect**, on purpose — "so the fix has
+something offline to turn green". It now pins the cure, and the fixture's source bytes are
+unchanged: a trait catalogue's job is to keep the awkward input, not the wrong output.

@@ -1161,3 +1161,41 @@ test("SH586: no origin and a malformed one leave the markup untouched", () => {
   assert.equal(rebaseOwnOrigin(html, "not a url"), html);
   assert.equal(rebaseOwnOrigin(null, "https://x.test"), null);
 });
+
+
+test("SH565: a <title> is decoded as it is captured, on both conversion paths", () => {
+  // Measured before the fix: `scanPage` yielded the five characters `&amp;` while `decodeEntities`
+  // on the same string yielded `&`. The decoder was right and nothing called it here — a `<title>`
+  // is RCDATA, which SH476 (text becoming a field) and SH550 (attribute values) both routed around.
+  assert.equal(
+    scanPage("<html><head><title>Northwind &amp; Co</title></head><body></body></html>",
+      "https://x.test/").title,
+    "Northwind & Co",
+    "the title does not travel through `propose`, so this was wrong on the fidelity path too — "
+      + "where SH476's defect was authorable only",
+  );
+});
+
+test("SH565: one pass, so a doubly-escaped title keeps the entity its author wrote", () => {
+  // The `awkward` archetype's own title. `&amp;amp;` is an author escaping an ampersand-entity on
+  // purpose: decoding once yields the literal text `&amp;`, and a second pass would decode that to
+  // `&` and lose the distinction. `decodeEntities` is single-pass for exactly this, and the fix
+  // must not smuggle in a second one.
+  assert.equal(
+    scanPage("<html><head><title>Awkward &amp;amp; company</title></head><body></body></html>",
+      "https://x.test/").title,
+    "Awkward &amp; company",
+  );
+});
+
+test("SH565: a title with no entity is untouched, and an absent one stays null", () => {
+  assert.equal(
+    scanPage("<html><head><title>Plain title</title></head><body></body></html>", "https://x.test/").title,
+    "Plain title",
+  );
+  assert.equal(
+    scanPage("<html><head></head><body></body></html>", "https://x.test/").title,
+    null,
+    "no <title> is a fact about the page, and an empty string would read as one that has a blank",
+  );
+});
