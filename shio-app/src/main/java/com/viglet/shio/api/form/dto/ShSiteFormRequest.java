@@ -14,8 +14,9 @@ package com.viglet.shio.api.form.dto;
  * @param siteId       the site this configures; not updatable afterwards
  * @param folderUrl    the folder a submission lands in, as a name chain within the site
  * @param allowedTypes comma-separated post-type names this site invites; empty invites nothing
- * @param enabled      whether the site accepts submissions at all
+ * @param enabled        whether the site accepts submissions at all
+ * @param allowedOrigins comma-separated browser origins that may submit; empty allows none
  */
 public record ShSiteFormRequest(String siteId, String folderUrl, String allowedTypes,
-                                boolean enabled) {
+                                boolean enabled, String allowedOrigins) {
 }

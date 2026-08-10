@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -122,6 +123,7 @@ public class ShFormSubmissionAPI {
 
     @PostMapping("/{siteName}")
     public ResponseEntity<Object> submit(@PathVariable String siteName,
+                                         @RequestHeader(value = "Origin", required = false) String origin,
                                          @RequestBody ShFormSubmission body) {
         ShSite site = shSiteRepository.findByName(siteName);
         if (site == null) {
@@ -160,6 +162,19 @@ public class ShFormSubmissionAPI {
                     "This site invites: " + String.join(", ", eligible(allowed))
                             + ". A system post-type is never eligible whatever the list says — "
                             + "PageLayout, Region and Theme are templates this instance executes.");
+        }
+
+        // SH637 — the control, and CORS is not it. CORS protects the browser and a non-browser
+        // client ignores it entirely, so an origin allowed only there is allowed only against
+        // callers who were going to behave. Checked here, where the tenant is resolved and every
+        // caller is subject to it, and after the configuration refusals above so an operator whose
+        // site is misconfigured is told that rather than this.
+        if (!originAllowed(config, origin)) {
+            return refuse(403, "'" + origin + "' is not an origin this site accepts forms from",
+                    "Add it to allowedOrigins on /api/v2/site-form (comma-separated, scheme and "
+                            + "host as the browser sends them, e.g. https://www.acme.com). Empty "
+                            + "allows no browser origin, which is the safe default rather than an "
+                            + "oversight.");
         }
 
         ShFolder folder = folderOf(site, config.getFolderUrl());
@@ -212,6 +227,36 @@ public class ShFormSubmissionAPI {
         }
         data.remove(HONEYPOT_FIELD);
         return data;
+    }
+
+    /**
+     * Whether this site accepts a submission from this browser origin (SH637).
+     *
+     * <p>A request with <b>no</b> {@code Origin} passes: that header is something a browser adds,
+     * so its absence means a server-to-server caller — curl, an integration — and refusing those
+     * would break the documented request while stopping nobody, since a caller who wanted to lie
+     * about it simply would not send one. What the header is good for is the case it is honest in:
+     * a browser cannot forge it, so a page on an origin this site has not named cannot spend the
+     * token that is sitting in its markup.</p>
+     *
+     * <p>Compared exactly, after trimming. No suffix matching and no wildcards: {@code acme.com}
+     * accepting {@code evil-acme.com} is the classic origin-check defect, and a list an operator
+     * types is short enough that every entry can be spelled in full.</p>
+     */
+    private static boolean originAllowed(ShSiteForm config, String origin) {
+        if (origin == null || origin.isBlank()) {
+            return true;
+        }
+        String allowed = config.getAllowedOrigins();
+        if (allowed == null || allowed.isBlank()) {
+            return false;
+        }
+        for (String entry : allowed.split(",")) {
+            if (entry.trim().equalsIgnoreCase(origin.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Whether the hidden field carries anything, at the top level or inside the fields. */

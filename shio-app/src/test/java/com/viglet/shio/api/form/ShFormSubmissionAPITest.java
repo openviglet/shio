@@ -140,7 +140,8 @@ class ShFormSubmissionAPITest {
         configApi.list().stream()
                 .filter(form -> siteId.equals(form.getSiteId()))
                 .forEach(form -> configApi.delete(form.getId()));
-        configApi.create(new ShSiteFormRequest(siteId, folderUrl, allowedTypes, enabled), null);
+        configApi.create(new ShSiteFormRequest(siteId, folderUrl, allowedTypes, enabled,
+                "https://www.acme.com"), null);
     }
 
     private long submissionsInSite() {
@@ -156,7 +157,7 @@ class ShFormSubmissionAPITest {
     void aSubmissionLandsAsADraft() {
         configure("/enquiries", contactType, true);
 
-        ResponseEntity<Object> response = api.submit(siteName,
+        ResponseEntity<Object> response = api.submit(siteName, null,
                 submission(contactType, Map.of("TITLE", "Hello", "MESSAGE", "Please call"), null));
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -192,7 +193,7 @@ class ShFormSubmissionAPITest {
         configure("/enquiries", contactType + "," + ShSystemPostType.THEME, true);
         long before = submissionsInSite();
 
-        ResponseEntity<Object> response = api.submit(siteName,
+        ResponseEntity<Object> response = api.submit(siteName, null,
                 submission(ShSystemPostType.THEME, Map.of("CSS", "body{}"), null));
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
@@ -212,7 +213,7 @@ class ShFormSubmissionAPITest {
         configure("/enquiries", contactType, false);
         long before = submissionsInSite();
 
-        ResponseEntity<Object> response = api.submit(siteName,
+        ResponseEntity<Object> response = api.submit(siteName, null,
                 submission(contactType, Map.of("TITLE", "Hello"), null));
 
         assertThat(response.getStatusCode().value()).isEqualTo(403);
@@ -229,7 +230,7 @@ class ShFormSubmissionAPITest {
         configure("/nowhere", contactType, true);
         long before = submissionsInSite();
 
-        ResponseEntity<Object> response = api.submit(siteName,
+        ResponseEntity<Object> response = api.submit(siteName, null,
                 submission(contactType, Map.of("TITLE", "Hello"), null));
 
         assertThat(response.getStatusCode().value()).isEqualTo(500);
@@ -245,7 +246,7 @@ class ShFormSubmissionAPITest {
         configure("/enquiries", contactType, true);
         long before = submissionsInSite();
 
-        ResponseEntity<Object> tripped = api.submit(siteName,
+        ResponseEntity<Object> tripped = api.submit(siteName, null,
                 submission(contactType, Map.of("TITLE", "Buy pills"), "i-am-a-bot"));
 
         assertThat(tripped.getStatusCode().value()).isEqualTo(200);
@@ -269,7 +270,7 @@ class ShFormSubmissionAPITest {
         data.put("TITLE", "Hello");
         // Present and empty, which is what a real browser posts from a hidden input nobody typed in.
         data.put(ShFormSubmissionAPI.HONEYPOT_FIELD, "");
-        ResponseEntity<Object> response = api.submit(siteName,
+        ResponseEntity<Object> response = api.submit(siteName, null,
                 new ShFormSubmission(contactType, data, null));
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -284,9 +285,77 @@ class ShFormSubmissionAPITest {
     }
 
     @Test
+    @DisplayName("SH637: a browser origin the site has not named is refused, and writes nothing")
+    void anUnnamedOriginIsRefused() {
+        configure("/enquiries", contactType, true);
+        long before = submissionsInSite();
+
+        ResponseEntity<Object> response = api.submit(siteName, "https://evil.example",
+                submission(contactType, Map.of("TITLE", "Hello"), null));
+
+        assertThat(response.getStatusCode().value())
+                .as("""
+                        CORS is not the control — it protects the browser and a non-browser client                         ignores it, so an origin allowed only there is allowed only against callers                         who were going to behave. This check runs on every caller (SH637)""")
+                .isEqualTo(403);
+        assertThat(response.getBody().toString()).contains("allowedOrigins");
+        assertThat(submissionsInSite()).isEqualTo(before);
+    }
+
+    @Test
+    @DisplayName("SH637: the origin the site named is accepted, matched exactly")
+    void theNamedOriginIsAccepted() {
+        configure("/enquiries", contactType, true);
+
+        assertThat(api.submit(siteName, "https://www.acme.com",
+                submission(contactType, Map.of("TITLE", "Hello"), null))
+                .getStatusCode().value())
+                .isEqualTo(200);
+
+        // Exactly, and that is the point: suffix matching is how `acme.com` comes to accept
+        // `evil-acme.com`, which is the classic form of this defect.
+        assertThat(api.submit(siteName, "https://evil-www.acme.com",
+                submission(contactType, Map.of("TITLE", "Hello"), null))
+                .getStatusCode().value())
+                .as("no suffix matching and no wildcards (SH637)")
+                .isEqualTo(403);
+    }
+
+    @Test
+    @DisplayName("SH637: a caller sending no Origin at all is unaffected")
+    void aServerToServerCallerIsUnaffected() {
+        // `Origin` is something a BROWSER adds. Refusing its absence would break the documented
+        // curl while stopping nobody, since a caller who wanted to lie about it would simply not
+        // send one. What the header is good for is the case it is honest in: a browser cannot
+        // forge it, so a page on an origin this site has not named cannot spend the token in its
+        // own markup.
+        configure("/enquiries", contactType, true);
+
+        assertThat(api.submit(siteName, null,
+                submission(contactType, Map.of("TITLE", "Hello"), null))
+                .getStatusCode().value())
+                .isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("SH637: a site with no origins named accepts no browser at all")
+    void anEmptyListAllowsNoBrowser() {
+        configApi.list().stream()
+                .filter(form -> siteId.equals(form.getSiteId()))
+                .forEach(form -> configApi.delete(form.getId()));
+        configApi.create(new ShSiteFormRequest(siteId, "/enquiries", contactType, true, null), null);
+
+        assertThat(api.submit(siteName, "https://www.acme.com",
+                submission(contactType, Map.of("TITLE", "Hello"), null))
+                .getStatusCode().value())
+                .as("""
+                        empty means none rather than any — the direction every default on this                         path takes, and the safe one when the caller is the internet (SH632, P7)""")
+                .isEqualTo(403);
+    }
+
+    @Test
     @DisplayName("SH633: an unknown site is refused before anything else is read")
     void anUnknownSiteRefuses() {
-        ResponseEntity<Object> response = api.submit("sh633-no-such-site",
+        ResponseEntity<Object> response = api.submit("sh633-no-such-site", null,
                 submission(contactType, Map.of("TITLE", "Hello"), null));
 
         assertThat(response.getStatusCode().value()).isEqualTo(404);

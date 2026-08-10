@@ -1,0 +1,28 @@
+databaseChangeLog:
+  # SH637 — which origins may spend a site's form token.
+  #
+  # CORS is not the control: it protects the browser, and a non-browser client ignores it. The
+  # control is this column, checked against the request's `Origin` in ShFormSubmissionAPI, where
+  # the tenant is resolved and every caller is subject to it. Per site rather than per instance,
+  # because a form token names one site — a global list would let any configured origin post to
+  # every site's form, which is the scope SH631 spent a whole task bounding.
+  #
+  # Nullable and empty by default, which reads as "no browser origin" rather than "any": the same
+  # direction every default on this path takes (SH632), and the safe one when the caller is the
+  # internet.
+  - changeSet:
+      id: sh637-sh-site-form-allowed-origins
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_site_form
+                columnName: allowed_origins
+      changes:
+        - addColumn:
+            tableName: sh_site_form
+            columns:
+              - column:
+                  name: allowed_origins
+                  type: VARCHAR(2048)

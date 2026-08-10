@@ -55,7 +55,8 @@ class ShSiteFormAPITest {
     private ShSiteFormRepository repository;
 
     private static ShSiteFormRequest request(String siteId, boolean enabled) {
-        return new ShSiteFormRequest(siteId, "/contact", "Contact,Enquiry", enabled);
+        return new ShSiteFormRequest(siteId, "/contact", "Contact,Enquiry", enabled,
+                "https://www.acme.com");
     }
 
     private static String site() {
@@ -109,7 +110,7 @@ class ShSiteFormAPITest {
         ShSiteForm created = (ShSiteForm) api.create(request(siteId, false), null).getBody();
 
         ResponseEntity<ShSiteForm> updated = api.update(created.getId(),
-                new ShSiteFormRequest(site(), "/enquiries", "Enquiry", true));
+                new ShSiteFormRequest(site(), "/enquiries", "Enquiry", true, "https://x.example"));
 
         assertThat(updated.getStatusCode().value()).isEqualTo(200);
         assertThat(updated.getBody().getSiteId())
@@ -125,7 +126,7 @@ class ShSiteFormAPITest {
     @Test
     @DisplayName("SH632: a configuration with no site is refused with what to pass")
     void theSiteIsRequired() {
-        ResponseEntity<Object> refused = api.create(new ShSiteFormRequest(null, "/x", "Contact", true), null);
+        ResponseEntity<Object> refused = api.create(new ShSiteFormRequest(null, "/x", "Contact", true, null), null);
 
         assertThat(refused.getStatusCode().value()).isEqualTo(400);
         assertThat(refused.getBody().toString())

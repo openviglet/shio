@@ -143,8 +143,38 @@ interceptor.
 - Login flow: React sends `GET /api/v2` with Basic auth header via `fetch()`, then redirects to `/console`
 
 ### CORS
-- `Customizer.withDefaults()` in security config
-- `WebMvcConfigurer.addCorsMappings` for `/api/**` with `allowedOriginPatterns("http://localhost:*")`, `allowCredentials(true)`, `exposedHeaders("X-XSRF-TOKEN")`
+
+**This section described a mechanism that did not exist, and SH637 is what found it.** It claimed a
+`WebMvcConfigurer.addCorsMappings` for `/api/**` with `allowedOriginPatterns("http://localhost:*")`
+and `allowCredentials(true)`. There was no such method and no `CorsConfigurationSource` bean
+anywhere in `shio-app` — so `http.cors(Customizer.withDefaults())` configured **nothing**, and every
+cross-origin request failed preflight. Nobody noticed because nothing needed CORS: the console
+reaches the API same-origin through the dev proxy. It surfaced only when SH633 shipped an endpoint
+whose whole purpose is to be called from another origin, and it had been read at least once by
+somebody checking the CORS posture, who would have come away satisfied. **A doc describing a control
+that is absent is worse than no doc.**
+
+What exists now:
+
+- `http.cors(Customizer.withDefaults())` in `ShSecurityConfig`, as before.
+- **One** `CorsConfigurationSource`, `ShFormCorsConfig`, registering **only**
+  `/api/v2/cda/form/**`: `POST`/`OPTIONS`, headers `Content-Type` and `Key`,
+  `allowCredentials(false)` (the endpoint authenticates by header, not cookie), `maxAge` 1h.
+  `UrlBasedCorsConfigurationSource` returns `null` for any other path, which means no CORS headers —
+  byte-identical to the previous behaviour everywhere else.
+
+**CORS is not the control here, and the split is deliberate.** CORS protects the *browser*; a
+non-browser client ignores it, so an origin allowed only there is allowed only against callers who
+were going to behave. The control is `sh_site_form.allowed_origins`, checked against the request's
+`Origin` in `ShFormSubmissionAPI` — per site, because a form token names one site and a global list
+would let any configured origin post to every site's form. Empty means **no browser origin**, and a
+request with no `Origin` at all passes: that header is something a browser adds, so refusing its
+absence would break the documented `curl` while stopping nobody. Matched **exactly** — suffix
+matching is how `acme.com` comes to accept `evil-acme.com`.
+
+Per-site origins are *not* resolved in the CORS layer, and that was tried first: `ShTenantFilter` is
+registered after `BasicAuthenticationFilter` while CORS runs at the head of the chain, so a
+`@TenantId` read at preflight time runs with no tenant resolved and answers for the wrong one.
 
 ### Security Config Key Points
 - Uses `PathPatternRequestMatcher.withDefaults()` with `mvc.matcher()` (same as Turing)
@@ -337,3 +367,38 @@ Two ordering facts that are easy to get wrong and would both fail closed:
   purpose is to be reachable from a public page, so it is exactly where a future reader reasons it
   "should" be allow-listed. It must not be: the page carries the token, and the token is the
   authorization — allow-listing it would turn a scoped write into an anonymous one.
+
+## The form endpoint's origins (SH637)
+
+SH633 shipped an endpoint whose whole purpose is to be called from another origin, and it could not
+be: `http.cors(Customizer.withDefaults())` had **no `CorsConfigurationSource` bean** to configure it,
+so every preflight failed. Correct, tested, and unreachable from its only caller. Nothing had
+noticed because nothing needed CORS — the console reaches the API same-origin through the dev proxy.
+
+**`ShFormCorsConfig` registers one path.** `UrlBasedCorsConfigurationSource` returns `null` for a
+path it does not know and a null configuration means no CORS headers, so opening
+`/api/v2/cda/form/**` leaves every other endpoint byte-identical to before. `allowCredentials` is
+`false`: the endpoint authenticates by `Key` header, not cookie.
+
+**CORS is not the control, and that decides the whole shape.** It protects the *browser*; a
+non-browser client ignores it, so an origin allowed only there is allowed only against callers who
+were going to behave. The control is `sh_site_form.allowed_origins`, checked against `Origin` in the
+endpoint — per site, because a form token names one site and a global list would let any configured
+origin post to every site's form, which is the scope SH631 spent a task bounding. So the CORS layer
+is deliberately permissive (`*` patterns) and the endpoint is not.
+
+Three decisions in the check: **matched exactly**, because suffix matching is how `acme.com` comes
+to accept `evil-acme.com`; **empty means none**, the direction every default on this path takes; and
+**no `Origin` at all passes**, because that header is something a browser adds — refusing its absence
+would break the documented `curl` while stopping nobody, since a caller who wanted to lie about it
+would simply omit it. What the header is good for is the case it is honest in: a browser cannot
+forge it, so a page on an unnamed origin cannot spend the token sitting in its own markup.
+
+**Per-site origins are not resolved in the CORS layer, and that was the first attempt.**
+`ShTenantFilter` is registered after `BasicAuthenticationFilter` while CORS runs at the head of the
+chain, so a `@TenantId` read at preflight time runs with no tenant resolved and answers for the
+wrong one. The layering is not a preference; it is what the filter order permits.
+
+The stale `### CORS` section above is the other half of this task and the more uncomfortable one: it
+documented an `addCorsMappings` the code never had, and would have satisfied anybody auditing the
+posture.

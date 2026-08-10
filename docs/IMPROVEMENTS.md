@@ -1488,33 +1488,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.44 The endpoint nothing can reach from the page it was built for (SH637)
-
-SH633's endpoint is meant to be posted to by a form on the customer's own site. That
-request is **cross-origin** by construction — the page is on `www.acme.com` and the
-instance answers somewhere else — so the browser sends a preflight before it sends
-anything.
-
-`ShSecurityConfig` calls `http.cors(Customizer.withDefaults())`, and there is **no
-`CorsConfigurationSource` bean and no `addCorsMappings` anywhere in `shio-app`**. With
-nothing to configure it, that call contributes no allowed origin, so every cross-origin
-POST to the form endpoint fails before the filter chain sees it. The endpoint is
-correct, tested and unreachable from the only caller it exists for.
-
-Two things follow, and the second is the one worth being uncomfortable about.
-`docs/agents/security.md` documents `addCorsMappings` for `/api/**` with
-`allowedOriginPatterns("http://localhost:*")` — a mechanism the code does not have. A
-doc describing a control that is absent is worse than no doc: it is the
-premise-in-a-comment defect, and anybody auditing the CORS posture would have read it
-and stopped.
-
-The design question is not "add CORS". It is **which origins**, and the answer has to be
-per-site rather than global: a form token names one site, so the origins allowed to
-spend it are that site's, which makes this a field beside the folder and the type list
-in `sh_site_form` rather than an instance-wide property. A global allow-list would let
-any configured origin post to every site's form, which is the scope SH631 spent a whole
-task bounding.
-
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none

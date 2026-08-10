@@ -95,6 +95,7 @@ public class ShSiteFormAPI {
         form.setSiteId(body.siteId());
         form.setFolderUrl(body.folderUrl());
         form.setAllowedTypes(body.allowedTypes());
+        form.setAllowedOrigins(body.allowedOrigins());
         // Never defaulted to true, whatever the body says about the rest: creating the row is not
         // the same act as opening the door (P7).
         form.setEnabled(body.enabled());
@@ -117,6 +118,7 @@ public class ShSiteFormAPI {
                     // leave the first site accepting nothing.
                     existing.setFolderUrl(body.folderUrl());
                     existing.setAllowedTypes(body.allowedTypes());
+                    existing.setAllowedOrigins(body.allowedOrigins());
                     existing.setEnabled(body.enabled());
                     shSiteFormRepository.saveAndFlush(existing);
                     return ResponseEntity.ok(existing);

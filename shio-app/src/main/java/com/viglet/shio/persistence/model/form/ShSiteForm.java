@@ -106,6 +106,23 @@ public class ShSiteForm implements Serializable {
     @Column(name = "enabled")
     private boolean enabled;
 
+    /**
+     * Which browser origins may spend this site's form token, comma-separated (SH637).
+     *
+     * <p>The <b>control</b>, and CORS is not: CORS protects the browser and a non-browser client
+     * ignores it, so anything enforced only there is enforced only against callers who were going
+     * to behave. This is checked against the request's {@code Origin} in the endpoint, where the
+     * tenant is resolved and every caller is subject to it.</p>
+     *
+     * <p>Per site rather than per instance because a form token names one site — a global list
+     * would let any configured origin post to every site's form, which is the scope SH631 spent a
+     * task bounding. <b>Empty means no browser origin</b>, not "any": a request with no
+     * {@code Origin} at all (curl, a server-to-server call) is unaffected, because that header is
+     * something a browser adds and not something a caller can be trusted to omit honestly.</p>
+     */
+    @Column(name = "allowed_origins", length = 2048)
+    private String allowedOrigins;
+
     @Column(name = "created_date")
     private Instant createdDate;
 

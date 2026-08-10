@@ -75,7 +75,7 @@
 
 ## Block N — Realignment of what already shipped
 
-- ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
+- ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P ✅) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
 
 ## Block O — The human half (the console the curator uses)
 
@@ -85,8 +85,6 @@
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
 
 ## Block P — The visible site (what the human actually looks at)
-
-- 📋 **SH637** (deps: SH633 ✅) **A form on the customer's own domain cannot reach the submission endpoint at all** — No CorsConfigurationSource bean exists, so http.cors(withDefaults()) configures nothing and a cross-origin POST fails preflight - and security.md documents an addCorsMappings the code lacks. → §XV.44
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
