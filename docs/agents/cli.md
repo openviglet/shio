@@ -2459,3 +2459,46 @@ gate a publish on it without parsing anything.
 the parser already collects repeats under the *same* key when the flag is declared in `REPEATABLE`,
 which `address` now is. `SH435`'s help lint named it, which is the case that rule exists for: a flag
 a caller can only find by reading the source.
+
+## The clean room, and what is actually in the box (SH605)
+
+Every measurement this project has was taken with the source tree on disk. The reader had
+`agents.md`, `docs/agents/**`, `docs/specs/**` and a repo-local skill, and used them **without
+noticing** — which is what using them looks like. So "is Shio discoverable" had never actually been
+asked; what was measured is "is Shio discoverable to a reader holding its repository".
+
+`cli/test/clean-room.test.mjs` asks the real question. **The box comes from `npm pack --dry-run
+--json`**, not from a list, so it cannot drift from the `files` field, an `.npmignore`, or a
+directory somebody added; the plugin ships as a directory, so its box is that directory minus its
+own tests.
+
+Five assertions, each about a different way the repository can leak into the product:
+
+1. No reader-facing file names a repo-only path (`agents.md`, `docs/agents/**`, `.claude/skills/**`,
+   …). Scoped to markdown and help texts: a javadoc naming the test that guards a rule is a note to
+   whoever maintains the code, while sending a stranger to `docs/agents/renderer.md` is a different
+   act.
+2. Every relative link in published markdown resolves **inside** the box — a link is a promise the
+   file is there.
+3. The box names a **first move** on each of the three surfaces a stranger can arrive through:
+   `shio context`, `shio_context`, `shio://manifest`. A box that stranded nobody and taught nothing
+   would pass 1 and 2 and still leave a reader with no way in.
+4. The walk is not empty, because a packer answering with no files would pass everything above.
+5. Nothing tells a reader to run a command only a checkout has — `./mvnw`, a workspace filter, the
+   commit script, roadkeep. This is the leak a path check cannot see: **a build command reads as
+   ordinary advice.**
+
+### It came back green, which the section did not expect
+
+§XI.19 said "expect it to be red on the first run, and expect the missing files to be interesting".
+It was green. The reason is worth recording rather than treating as luck: **the nine repo-local
+skills are contributor-facing** — they route to `docs/agents/**` for people changing Shio — and the
+plugin's four are usage-facing and self-contained. The split was already right; nobody had checked
+that it was.
+
+Green on a first run is also the state where an instrument is least trustworthy, so it was proved
+by **planting a leak**: a README line with a `docs/agents` link and a `./mvnw` command fails three
+of the five, naming the file and line. The tree was restored immediately.
+
+What this does **not** assert is that the teaching in the box is sufficient — only that it is
+self-contained and has an entry point. That is SH603's job, and this is its enforcement half.

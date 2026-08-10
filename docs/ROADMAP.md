@@ -13,7 +13,6 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH605** (deps: SH598 ✅, SH604 ✅) **Nothing proves the published artefacts alone carry the path, since every run so far had the repo beside it** — Twelve rounds read agents.md, docs/agents and a repo-local skill without noticing, so a stranger gets a surface nobody has driven without its source tree. → §XI.19
 - 💭 **SH643** (deps: SH217 ✅) **A package a stranger wrote can be refused safely, and nothing says how it earns a place** — SH217 built the isolation and the author's validation loop; the naming convention, the index and a provenance signal are distribution policy rather than registry code. → §XI.20
 
 ## Block L — Agent safety & human-in-the-loop
