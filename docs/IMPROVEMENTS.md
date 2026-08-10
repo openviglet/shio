@@ -170,47 +170,29 @@ AI the product contains.
 
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
-> The agent cannot see. Two of the three human round trips in a typical build existed only
-> for that reason, which made this the cheapest large win after Block H — a human cycle is
-> the most expensive unit in the system by orders of magnitude.
->
-> ✅ **Shipped whole**: SH99–SH104, SH141–SH144, SH154, SH169. The implementation reports
-> live in [CHANGELOG.md](CHANGELOG.md) Block K; per the maintenance rules the design
-> subsections are gone rather than left behind as history `git log` already holds.
->
-> **What the block established, and what later work should not relitigate:** `ok` is false
-> only for an *error*, because a gate that fails on what the CMS cannot prove is a gate
-> people bypass — and every mechanism the block added afterwards (SH141's delivery proof,
-> SH142's accepted findings, SH114-declared front-end routes) turns a warning into a fact or
-> an explicit decision instead of tightening the gate. Everything the agent reads is cheap and
-> textual; the one expensive artifact, SH102's PNG, is scoped for a human and stays off the
-> agent surface (`visualSnapshot` is still `false`, correctly — there is no call for it).
-> **§XV.4 (SH187)** is where that scoping is revisited for the other reader.
->
-> The subsections below are the **open follow-ups closing the block produced**. They are here
-> and not in the changelog because none of them has shipped.
+The agent cannot see. Two of the three human round trips in a typical build existed only
+for that reason, which made this the cheapest large win after Block H — a human cycle is
+the most expensive unit in the system by orders of magnitude.
 
-### IX.72 88 entries with no verdict (SH642)
+✅ **Shipped whole**: SH99–SH104, SH141–SH144, SH154, SH169, and the follow-ups closing
+the block produced (SH609–SH642). The implementation reports live in
+[CHANGELOG.md](CHANGELOG.md) Block K; the design subsections are gone rather than left
+behind as history `git log` already holds.
 
-SH630 changed what counts as an assertion and the debt went from 35 to 124. Nothing
-regressed and none of the 88 is a new defect: prose had been paying them since the
-reader shipped, and the number that appeared is the one it always should have reported.
+**What the block established, and what later work should not relitigate:** `ok` is false
+only for an *error*, because a gate that fails on what the CMS cannot prove is a gate
+people bypass — and every mechanism added afterwards (SH141's delivery proof, SH142's
+accepted findings, SH114-declared routes) turns a warning into a fact or an explicit
+decision rather than tightening the gate. Everything the agent reads is cheap and
+textual; SH102's PNG is scoped for a human. **§XV.4 (SH187)** revisits that for the
+other reader.
 
-What they lack is a **decision**. SH529's contribution was that a list is not one, so
-every group in `DEBT` carries an EARNS or a DOES NOT with the reason — a one-line fix to
-a message does not earn a test, and saying so is the work rather than a way out of it.
-The 88 have never been through that pass, which is why they sit in `REVEALED` rather
-than merged: 35 considered decisions and 88 unexamined ones in one list would read as
-settled when a third of it is.
-
-The work is the triage, not 88 tests. Expect most to say DOES NOT — the ids skew early,
-and much of that is foundational work whose defect cannot return in the shape it had.
-Look hardest at the recent entries, because a recent task's defect is one the code still
-has the conditions for.
-
-Two things it must not do. It must not become a ceiling: both lists name every id
-because a number lets one task pay the debt and the next spend it. And a DOES NOT still
-earns a written reason, or a reader cannot tell a decision from an omission.
+**The follow-ups taught a second lesson, about the block's own instruments.** Four of
+the eleven were defects *in* a guard rather than in the product: a lint that read prose
+as code, a debt reader that could not tell a mention from an assertion, a gate whose
+fallback was null in the deployment it demands, and a "flake" that was a scoping bug. A
+perception loop that cannot perceive itself is the failure this block should expect
+next.
 
 ## X. Content as files (Block I)
 

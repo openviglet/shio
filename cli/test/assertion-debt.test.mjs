@@ -206,34 +206,155 @@ const DEBT = [
 ].sort(byId);
 
 /**
- * Debt that was always there and was being paid by prose — revealed by SH630, untriaged.
+ * Debt that was always there and was being paid by prose — revealed by SH630, triaged by SH642.
  *
- * <p>These 88 ids were on nobody's list because a comment somewhere named them, and the walk could
- * not tell a comment from an assertion. They are not new defects and nothing regressed: the rule
- * changed, and the count it always should have reported appeared. The debt went 35 to 124 in one
- * commit, which is the honest size of a blind spot that had been retiring entries silently since
- * the reader shipped.</p>
+ * <h2>What the triage found, and it changes what the number means</h2>
  *
- * <p><b>Held apart from DEBT on purpose.</b> Every group in DEBT carries an SH529 verdict — EARNS
- * or DOES NOT, with the shape the assertion would take — and none of these has been through that
- * pass. Merging them would make 35 considered decisions indistinguishable from 88 unexamined ones,
- * which is the same failure as a ceiling: it would let the list look settled while nobody had
- * looked. Triage is its own task.</p>
+ * <p>These ids were on nobody's list because a comment somewhere named them, and the walk could
+ * not tell a comment from an assertion. SH642 asked SH529's question of each — <b>which of these
+ * earn an assertion?</b> — and the answer was not the expected one. <b>Every one of the 88 is
+ * already named by a suite file, and 63 of them within twelve lines of an assertion.</b> None is
+ * silent; none is named only in source.</p>
  *
- * <p>They are still a named list rather than a number, so this can only shrink through a diff that
- * says which and why.</p>
+ * <p>So the verdict for this whole population is neither EARNS nor DOES NOT in the SH529 sense.
+ * It is: <b>the test exists and does not carry the id where this reader can see it.</b> That is a
+ * different kind of debt from the original 35, which are tasks with nothing standing behind
+ * them, and folding the two would misprice both.</p>
+ *
+ * <h2>Each entry names its evidence, which is also the payment instruction</h2>
+ *
+ * <p>The file recorded against an id is one that names it today. Paying the entry off means
+ * moving the id out of that file's prose and into the message of the assertion it sits beside —
+ * <b>if</b> that assertion is genuinely the one that would have caught the defect, which is the
+ * judgement no measurement can make. Where it is not, the entry earns a real assertion and the
+ * pointer is where to start looking rather than the answer.</p>
+ *
+ * <p>{@code CLOSE} is the 63 whose mention sits beside an assertion; {@code HEADER} is the 25
+ * named in a class docstring, where the file is about the task and no one assertion carries it.
+ * The second group is the more expensive half and it is marked so nobody starts with it by
+ * accident.</p>
+ *
+ * <p>Still a named list rather than a number, so it can only shrink through a diff that says
+ * which and why.</p>
  */
-const REVEALED = [
-  "SH3", "SH4", "SH5", "SH9", "SH12", "SH26", "SH39", "SH40", "SH43", "SH51",
-  "SH52", "SH53", "SH58", "SH61", "SH63", "SH64", "SH65", "SH69", "SH70", "SH71",
-  "SH72", "SH75", "SH76", "SH78", "SH83", "SH86", "SH87", "SH89", "SH90", "SH92",
-  "SH93", "SH94", "SH96", "SH97", "SH100", "SH104", "SH113", "SH115", "SH122", "SH123",
-  "SH125", "SH126", "SH128", "SH129", "SH147", "SH148", "SH149", "SH151", "SH153", "SH154",
-  "SH155", "SH156", "SH163", "SH164", "SH173", "SH175", "SH176", "SH191", "SH196", "SH198",
-  "SH199", "SH201", "SH203", "SH214", "SH236", "SH246", "SH276", "SH283", "SH284", "SH288",
-  "SH300", "SH306", "SH322", "SH324", "SH333", "SH337", "SH358", "SH360", "SH376", "SH381",
-  "SH383", "SH390", "SH458", "SH529", "SH544", "SH567", "SH569", "SH620",
-];
+const REVEALED = {
+  // CLOSE — the mention is within a dozen lines of an assertion in this file.
+  "SH3"    : "ShCdaRateLimiterTest.java",
+  "SH4"    : "ShApiTokenFilterTest.java",
+  "SH5"    : "ShApiTokenFilterTest.java",
+  "SH9"    : "scaffold.test.mjs",
+  "SH12"   : "ShFolderTrashTest.java",
+  "SH26"   : "ShLiquibaseChangelogAgnosticTest.java",
+  "SH39"   : "ShStaticFileAPITest.java",
+  "SH40"   : "ShStaticFileAPITest.java",
+  "SH43"   : "ShStaticFileAPITest.java",
+  "SH51"   : "ShFolderTrashTest.java",
+  "SH52"   : "ShAgentManifestTest.java",
+  "SH58"   : "ShEmailConfigServiceTest.java",
+  "SH61"   : "ShStaticFileAPITest.java",
+  "SH63"   : "emit.test.mjs",
+  "SH71"   : "ShAgentBatchTest.java",
+  "SH72"   : "impact.test.mjs",
+  "SH75"   : "ShAgentJsonLeanTest.java",
+  "SH76"   : "ShAgentManifestTest.java",
+  "SH78"   : "ShAgentResponseBudgetTest.java",
+  "SH83"   : "ShMcpServerTest.java",
+  "SH89"   : "content-assets.test.mjs",
+  "SH90"   : "content-commands.test.mjs",
+  "SH92"   : "ShAgentManifestTest.java",
+  "SH93"   : "ShAgentManifestTest.java",
+  "SH94"   : "ShBlueprintRegistryTest.java",
+  "SH96"   : "blueprints.test.mjs",
+  "SH100"  : "ShAddressResolverTest.java",
+  "SH104"  : "ShAgentP1ConformanceTest.java",
+  "SH113"  : "ShAgentJsonLeanTest.java",
+  "SH115"  : "remember.test.mjs",
+  "SH122"  : "ShTenantJoinHazardTest.java",
+  "SH123"  : "ShAgentReadTest.java",
+  "SH125"  : "ShAgentJsonLeanTest.java",
+  "SH128"  : "ShAgentMoveAndPruneTest.java",
+  "SH147"  : "ShAgentChangesTest.java",
+  "SH148"  : "content-commands.test.mjs",
+  "SH149"  : "content-commands.test.mjs",
+  "SH151"  : "ShAgentBatchTest.java",
+  "SH153"  : "ShBlueprintApplyTest.java",
+  "SH154"  : "ShSectionCompositionTest.java",
+  "SH155"  : "ShBlueprintApplyTest.java",
+  "SH156"  : "emit.test.mjs",
+  "SH173"  : "content-assets.test.mjs",
+  "SH175"  : "ShAgentOpsContractTest.java",
+  "SH176"  : "ShAgentSourceAttributionTest.java",
+  "SH191"  : "content-commands.test.mjs",
+  "SH196"  : "ShAgentSafetyTest.java",
+  "SH198"  : "content-commands.test.mjs",
+  "SH199"  : "content-commands.test.mjs",
+  "SH203"  : "ShObjectCopyNamingTest.java",
+  "SH214"  : "content-commands.test.mjs",
+  "SH236"  : "ShPostTypeRenameTest.java",
+  "SH288"  : "ShAgentP1ConformanceTest.java",
+  "SH300"  : "render.conformance.mjs",
+  "SH306"  : "ShEditorBridgeTest.java",
+  "SH324"  : "ShCdaWriteTest.java",
+  "SH337"  : "ShHeadConventionsTest.java",
+  "SH360"  : "ShTemplateFieldLintTest.java",
+  "SH376"  : "ShAgentCommitOrderTest.java",
+  "SH381"  : "ShConvertedLayoutRenderTest.java",
+  "SH458"  : "render.conformance.mjs",
+  "SH544"  : "clone.test.mjs",
+  "SH569"  : "source-corpus.test.mjs",
+
+  // HEADER — named in a class docstring: the file is about the task, and which assertion
+  // carries it is the judgement this pointer cannot make.
+  "SH53"   : "ShContentLocaleTest.java",  // header
+  "SH64"   : "compile.test.mjs",  // header
+  "SH65"   : "ShAgentDesiredStateTest.java",  // header
+  "SH69"   : "ShSiteExportServiceTest.java",  // header
+  "SH70"   : "ShImportRendersSourceTest.java",  // header
+  "SH86"   : "content-files.test.mjs",  // header
+  "SH87"   : "content-commands.test.mjs",  // header
+  "SH97"   : "plugin.test.mjs",  // header
+  "SH126"  : "context.test.mjs",  // header
+  "SH129"  : "apply.test.mjs",  // header
+  "SH163"  : "ShPostTypeRenameTest.java",  // header
+  "SH164"  : "ShAgentSourceAttributionTest.java",  // header
+  "SH201"  : "ShObjectMoveAuthorizationTest.java",  // header
+  "SH246"  : "ShAgentRenderedDigestTest.java",  // header
+  "SH276"  : "ShContextCacheHeadroomTest.java",  // header
+  "SH283"  : "ShContextCacheHeadroomTest.java",  // header
+  "SH284"  : "shio-editor-bridge.test.mjs",  // header
+  "SH322"  : "ShTestcontainersEagerStartLintTest.java",  // header
+  "SH333"  : "i18n-parity.test.mjs",  // header
+  "SH358"  : "ShAgentDiagnosticsCeilingTest.java",  // header
+  "SH383"  : "ShRenderLocaleTest.java",  // header
+  "SH390"  : "ShRenderImageTest.java",  // header
+  "SH529"  : "ShRemovalsStayedRemovedTest.java",  // header
+  "SH567"  : "site-claims.test.mjs",  // header
+  "SH620"  : "ShRemovalsStayedRemovedTest.java",  // header
+};
+
+/**
+ * The 25 named in a class docstring rather than beside an assertion (SH642).
+ *
+ * <p>The more expensive half, marked so nobody starts with it by accident: the file is about the
+ * task and no one assertion carries it, so which assertion earns the id is a judgement no
+ * measurement makes. The other 63 are a one-line move.</p>
+ */
+const HEADER = new Set([
+  "SH53", "SH64", "SH65", "SH69", "SH70", "SH86", "SH87", "SH97", "SH126", "SH129",
+  "SH163", "SH164", "SH201", "SH246", "SH276", "SH283", "SH284", "SH322", "SH333", "SH358",
+  "SH383", "SH390", "SH529", "SH567", "SH620",
+]);
+
+/** The ids of the above, which is what the debt comparison needs. */
+const REVEALED_IDS = Object.keys(REVEALED);
+
+/**
+ * The 63 whose mention sits beside an assertion — the cheap half, and where to start.
+ *
+ * Derived from the file rather than declared twice: the `// header` marker is the one distinction
+ * between the two groups, and a second list of ids would be a second thing to keep in step.
+ */
+const CLOSE = REVEALED_IDS.filter((id) => !HEADER.has(id));
 
 /* debt-declaration:end */
 
@@ -365,15 +486,26 @@ test("SH527: every shipped task carries an assertion, or is on the declared debt
   // Printed on every run, which is what makes the number a fact somebody sees rather than one this
   // file holds. §IX.36's own sentence: that number is the debt, and it only goes down when somebody
   // pays it.
+  // SH642 — two numbers, because they are two different debts and one figure mispriced both.
+  // The original list is work with NOTHING standing behind it. The revealed one is work whose
+  // test exists and does not carry the id where this reader can see it: every one of those 88 is
+  // named by a suite file, 63 of them within a dozen lines of an assertion. "124 in debt" read as
+  // "124 tasks with no assertion", which was false of two thirds of it.
+  const unnamed = debt.filter((id) => !Object.hasOwn(REVEALED, id)).length;
   console.log(
     `SH527: ${shipped.size} shipped, ${shipped.size - debt.length - elsewhere.size} asserted, `
       + `${debt.length} in debt, ${elsewhere.size} delivered in another repository `
       + `(${files} suite files read)`,
   );
+  console.log(
+    `SH642: of the debt, ${unnamed} have no suite naming them at all; `
+      + `${debt.length - unnamed} are named by a suite and not by an assertion `
+      + `(${CLOSE.length} of those beside one)`,
+  );
 
   assert.deepEqual(
     debt,
-    [...DEBT, ...REVEALED].sort(byId),
+    [...DEBT, ...REVEALED_IDS].sort(byId),
     "A defect closes with an assertion carrying its id — the assertion that would have CAUGHT it, "
       + "at the boundary it crossed, not a unit test of the fix's internals.\n"
       + "If a task you just shipped is in `+ actual`, that is this rule: add the assertion, and name "
@@ -401,7 +533,7 @@ test("SH527: the reader is not vacuous — it reads real suites and a real ledge
     + "region — the assertion for SH527 is these very test names, so a reader that could not see "
     + "them would report itself as debt, which it did until the exclusion moved off the file");
   assert.ok(
-    ![...DEBT, ...REVEALED].some((id) => found.has(id)),
+    ![...DEBT, ...REVEALED_IDS].some((id) => found.has(id)),
     "and nothing on the declared debt is actually asserted: a stale entry here hides a real one",
   );
 });
@@ -469,7 +601,49 @@ test("SH630: the revealed debt is held apart from the triaged debt", () => {
   // A named list, never a ceiling — and two lists rather than one, because every DEBT group carries
   // an SH529 verdict and none of REVEALED has been through that pass. Merging them would make
   // considered decisions indistinguishable from unexamined ones.
-  const overlap = REVEALED.filter((id) => DEBT.includes(id));
+  const overlap = REVEALED_IDS.filter((id) => DEBT.includes(id));
   assert.deepEqual(overlap, [], "an id on both lists is counted twice and paid off once");
-  assert.ok(REVEALED.length > 0, "and the list is not empty: SH630 revealed what prose was paying");
+  assert.ok(REVEALED_IDS.length > 0, "and the list is not empty: SH630 revealed what prose was paying");
+});
+
+test("SH642: every revealed entry points at a file that still names it", async () => {
+  // The pointer IS the triage: it says where the assertion probably already is, which turns paying
+  // an entry off from a search into a one-line move. A pointer at a file that no longer mentions
+  // the task is worse than none — it sends the next reader somewhere and wastes the trip.
+  const { found } = await assertedIds();
+  assert.ok(found.size > 0, "the walk read something");
+
+  const named = new Map();
+  for (const suite of SUITES) {
+    // The same normalisation `assertedIds` does: an entry is a tree name, or a tree with a file
+    // pattern (SH579's `shio-site/scripts`, whose suites sit beside the scripts they test).
+    const { tree, only } = typeof suite === "string" ? { tree: suite, only: null } : suite;
+    for (const path of walk(join(ROOT, tree))) {
+      if (only && !only.test(path)) continue;
+      const name = path.split(/[/\\]/).pop();
+      named.set(name, (named.get(name) ?? "") + (await readFile(path, "utf8")));
+    }
+  }
+
+  const rotted = [];
+  for (const [id, file] of Object.entries(REVEALED)) {
+    const body = named.get(file);
+    if (!body) rotted.push(`${id} -> ${file} (no such suite file)`);
+    else if (!new RegExp(`\\b${id}\\b`).test(body)) rotted.push(`${id} -> ${file} (no longer names it)`);
+  }
+
+  assert.deepEqual(rotted, [],
+    "a revealed entry names the suite file that mentions the task, so paying it off is moving the "
+      + "id into that file's assertion rather than hunting for one. A pointer nobody maintains is "
+      + "a line the next reader trusts and should not (SH642)");
+});
+
+test("SH642: the header group names ids the map actually holds", () => {
+  // Two lists that describe one population drift, and this one would drift silently: an id in
+  // HEADER and not in REVEALED just makes CLOSE one longer, which reads as progress.
+  const stray = [...HEADER].filter((id) => !Object.hasOwn(REVEALED, id));
+  assert.deepEqual(stray, [], "a header id the map does not hold inflates the cheap half by "
+    + "subtraction, which is the one direction a debt count must not be wrong in");
+  assert.equal(CLOSE.length + HEADER.size, REVEALED_IDS.length,
+    "and the two groups partition the revealed list rather than overlapping it");
 });

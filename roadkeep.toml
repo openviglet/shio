@@ -262,7 +262,13 @@ priority = [
   # Turing backfill and the model proposal chain (SH523/524/525) through the sitemap's published
   # field, `startHere`'s routing, the pack's omitted report, and the two teaching refusals a caller
   # meets first (SH621, SH622). `lint` named it `priority.block-empty` on the last ship.
-  "Block K",
+  #
+  # Block K came off the same way when SH642 emptied it (2026-08-10) — the perception loop's
+  # follow-ups: the tenant a pool thread does not have and the sweep that ran as nobody
+  # (SH612/SH639), the lints that read what is written about them (SH613) and the debt reader that
+  # could not tell an assertion from a mention (SH630/SH642), the review count that could not go
+  # down (SH615), the read's `state` and the diff it unblocked (SH619/SH640), the fat-jar build
+  # identity (SH609), and the flake that turned out to be a scoping defect (SH635).
   "Block J",
   "Block O",
   "Block L",

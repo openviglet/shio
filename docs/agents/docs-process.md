@@ -318,3 +318,37 @@ different costume. Triage is **SH642**.
 **SH641 was retired as a duplicate**: filed one commit earlier because SH630 was misread as shipped.
 Its one distinct argument — that an assertion message *is* a string literal, so stripping comments
 alone would be wrong — is carried here, where the measurement then showed both rules agree.
+
+## The triage that changed what the number meant (SH642)
+
+SH630 took the debt from 35 to 124 by fixing what counts as an assertion. SH642 asked SH529's
+question of the 88 it revealed — **which of these earn an assertion?** — and the answer was not one
+of SH529's two.
+
+**Every one of the 88 is already named by a suite file, and 63 of them within a dozen lines of an
+assertion.** None is silent; none is named only in source. So the verdict for the whole population
+is neither EARNS nor DOES NOT: **the test exists and does not carry the id where the reader can see
+it.**
+
+That is a different debt from the original 35, which are tasks with *nothing standing behind them* —
+and one figure mispriced both. `124 in debt` read as "124 tasks with no assertion", which was false
+of two thirds of it. The reader now prints two numbers.
+
+### The pointer is the verdict and the payment instruction at once
+
+`REVEALED` is a map from id to the suite file that names it today, split into two groups:
+
+- **CLOSE (63)** — the mention sits beside an assertion. Paying the entry off is moving the id out
+  of that file's prose and into the assertion's message, *if* that assertion is genuinely the one
+  that would have caught the defect — the judgement no measurement makes.
+- **HEADER (25)** — named in a class docstring: the file is about the task and no single assertion
+  carries it. The expensive half, marked so nobody starts with it by accident.
+
+Two guards keep the triage from rotting: every pointer must still name its task (a pointer at a file
+that no longer mentions it sends the next reader on a wasted trip), and the two groups must
+partition the map — an id in `HEADER` but not in `REVEALED` would lengthen `CLOSE` by subtraction,
+which reads as progress.
+
+**Why this rather than 88 paragraphs.** SH529's contribution was that a list is not a decision. But
+a decision written 88 times without evidence is a list wearing prose; the measurement is what makes
+each entry actionable, and it took one script rather than a day of reading.
