@@ -190,30 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.67 The debt reader cannot tell an assertion from a mention (SH630)
-
-Found by using it. SH356's ratchet shipped with a header explaining why it holds SH361's
-outcome and why it deliberately does not assert a cross-file rule, naming three other
-ids to say so. All three left the debt list on the next run. Nothing asserted them; a
-file had said their numbers out loud.
-
-The walk's own header already argues one half of this — a glob over the whole repository
-would count an id in a source comment, so it is restricted to suite trees. That narrows
-the population and does not address the mechanism: **inside** a walked file, a comment
-and an assertion message are the same bytes to a regex.
-
-The direction of the failure is what makes it worth fixing. It never invents debt, it
-only *retires* it — silently, in a diff about something else, at the moment somebody is
-writing carefully about why a task matters. The better the comment, the more debt it
-pays. And the workaround this session used was to **stop naming the ids**, which
-degrades the prose to protect the counter: the instrument now shapes what may be written
-about the code it reads.
-
-Two candidate repairs, and a count decides between them. Restrict recognition to an id
-inside an assertion's message argument, or require an explicit marker the way the other
-four ledgers require an owner. The first is a parse; the second is a convention nobody
-applies by accident.
-
 ### IX.69 The sweep that runs as nobody (SH639)
 
 `ShPostScheduler.sweep()` is a timer, so it runs on a thread that never had a tenant
@@ -262,29 +238,27 @@ the blocker, so shipping SH619 without this would have left the CLI teaching a p
 that had stopped being true — the failure this repository files tasks to avoid rather
 than discovers later.
 
-### IX.71 A mention is not an assertion, in the reader that says so (SH641)
+### IX.72 88 entries with no verdict (SH642)
 
-`assertion-debt.test.mjs` computes the debt by matching `\bSH\d+\b` over the raw text of
-every suite file. That cannot tell an assertion message carrying an id from a javadoc
-sentence naming one for context, and the difference is the reader's entire subject.
+SH630 changed what counts as an assertion and the debt went from 35 to 124. Nothing
+regressed and none of the 88 is a new defect: prose had been paying them since the
+reader shipped, and the number that appeared is the one it always should have reported.
 
-It has been paid falsely three times, each caught by hand: prose naming a task, a test
-named for one id that asserted another's claim, and a correction comment naming a third.
-SH630 hardened the reader against its own declaration block, but left the general case —
-and it recurred immediately. SH619's javadoc explained which surface used to answer a
-question, named the console dialog's task id in passing, and took that id off the debt
-list without asserting anything about it.
+What they lack is a **decision**. SH529's contribution was that a list is not one, so
+every group in `DEBT` carries an EARNS or a DOES NOT with the reason — a one-line fix to
+a message does not earn a test, and saying so is the work rather than a way out of it.
+The 88 have never been through that pass, which is why they sit in `REVEALED` rather
+than merged: 35 considered decisions and 88 unexamined ones in one list would read as
+settled when a third of it is.
 
-This is the JS twin of SH613, which found seventeen Java lints scanning prose and gave
-them one stripper and a declaration. The same two moves apply, and the second is the
-interesting one: stripping comments alone would be **wrong**, because an assertion
-message is a string literal and that is exactly where an id belongs. So the rule is
-narrower — an id counts inside a string literal or a `@DisplayName`, and not inside a
-comment.
+The work is the triage, not 88 tests. Expect most to say DOES NOT — the ids skew early,
+and much of that is foundational work whose defect cannot return in the shape it had.
+Look hardest at the recent entries, because a recent task's defect is one the code still
+has the conditions for.
 
-What it must not do is fail ids already asserted correctly. The reader prints both
-counts every run, so the first deliverable is the delta between the two rules, measured
-before either is enforced.
+Two things it must not do. It must not become a ceiling: both lists name every id
+because a number lets one task pay the debt and the next spend it. And a DOES NOT still
+earns a written reason, or a reader cannot tell a decision from an omission.
 
 ## X. Content as files (Block I)
 

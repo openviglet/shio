@@ -205,6 +205,36 @@ const DEBT = [
   "SH238",
 ].sort(byId);
 
+/**
+ * Debt that was always there and was being paid by prose — revealed by SH630, untriaged.
+ *
+ * <p>These 88 ids were on nobody's list because a comment somewhere named them, and the walk could
+ * not tell a comment from an assertion. They are not new defects and nothing regressed: the rule
+ * changed, and the count it always should have reported appeared. The debt went 35 to 124 in one
+ * commit, which is the honest size of a blind spot that had been retiring entries silently since
+ * the reader shipped.</p>
+ *
+ * <p><b>Held apart from DEBT on purpose.</b> Every group in DEBT carries an SH529 verdict — EARNS
+ * or DOES NOT, with the shape the assertion would take — and none of these has been through that
+ * pass. Merging them would make 35 considered decisions indistinguishable from 88 unexamined ones,
+ * which is the same failure as a ceiling: it would let the list look settled while nobody had
+ * looked. Triage is its own task.</p>
+ *
+ * <p>They are still a named list rather than a number, so this can only shrink through a diff that
+ * says which and why.</p>
+ */
+const REVEALED = [
+  "SH3", "SH4", "SH5", "SH9", "SH12", "SH26", "SH39", "SH40", "SH43", "SH51",
+  "SH52", "SH53", "SH58", "SH61", "SH63", "SH64", "SH65", "SH69", "SH70", "SH71",
+  "SH72", "SH75", "SH76", "SH78", "SH83", "SH86", "SH87", "SH89", "SH90", "SH92",
+  "SH93", "SH94", "SH96", "SH97", "SH100", "SH104", "SH113", "SH115", "SH122", "SH123",
+  "SH125", "SH126", "SH128", "SH129", "SH147", "SH148", "SH149", "SH151", "SH153", "SH154",
+  "SH155", "SH156", "SH163", "SH164", "SH173", "SH175", "SH176", "SH191", "SH196", "SH198",
+  "SH199", "SH201", "SH203", "SH214", "SH236", "SH246", "SH276", "SH283", "SH284", "SH288",
+  "SH300", "SH306", "SH322", "SH324", "SH333", "SH337", "SH358", "SH360", "SH376", "SH381",
+  "SH383", "SH390", "SH458", "SH529", "SH544", "SH567", "SH569", "SH620",
+];
+
 /* debt-declaration:end */
 
 function byId(a, b) {
@@ -227,10 +257,79 @@ async function assertedIds() {
       if (only && !only.test(path)) continue;
       files += 1;
       const body = withoutDeclaration(await readFile(path, "utf8"));
-      for (const id of body.match(/\bSH\d+\b/g) ?? []) found.add(id);
+      for (const id of assertedIn(body, path.endsWith(".java"))) found.add(id);
     }
   }
   return { found, files };
+}
+
+/**
+ * The ids one file **asserts**, as opposed to the ids it mentions (SH630).
+ *
+ * <h2>The failure this replaces</h2>
+ *
+ * <p>The walk matched task ids over raw text, so a comment and an assertion message were the same
+ * bytes. The direction of that failure is what made it worth fixing: it never invented debt, it
+ * only *retired* it — silently, in a diff about something else, at the moment somebody was writing
+ * carefully about why a task mattered. <b>The better the comment, the more debt it paid.</b> And
+ * the workaround was to stop naming ids in prose, which degrades the writing to protect the
+ * counter — the instrument shaping what may be written about the code it reads.</p>
+ *
+ * <h2>The count that chose the rule</h2>
+ *
+ * <p>SH630 named two candidate repairs and said a count decides between them. Measured over the
+ * whole suite corpus:</p>
+ *
+ * <pre>
+ *   raw text (the old rule)             524 ids
+ *   not on a full-line comment          428 ids
+ *   ...and inside a string literal      428 ids   &lt;- identical
+ * </pre>
+ *
+ * <p><b>The two candidates give the same answer</b>, so the parse buys nothing: every id that
+ * survives the comment rule is already inside an assertion message or a name. The simpler rule
+ * wins, and the second candidate — an explicit marker convention — is not needed to distinguish
+ * anything. <b>96 ids were being paid by prose.</b></p>
+ *
+ * <h2>Why this is per line and holds no state</h2>
+ *
+ * <p>The first attempt used a proper comment stripper and it <b>desynced</b>:
+ * {@code replication.conformance.mjs} contains a regex literal with a double quote inside it, which
+ * the scanner read as a string opening, and every line after it in that file was misclassified. It
+ * reported a plausible number and was wrong — the exact hazard SH613 names, where a broken stripper
+ * blinds the instrument rather than failing it. So this carries no cross-line state beyond a text-
+ * block parity, and a regex literal cannot derail it.</p>
+ *
+ * <p>Conservative on purpose: an id in a trailing comment <i>after</i> code on the same line still
+ * counts. That errs toward keeping a payment rather than inventing debt, which is the direction a
+ * ledger should be wrong in.</p>
+ */
+function assertedIn(body, java) {
+  const found = new Set();
+  let inTextBlock = false;
+  for (const line of body.split("\n")) {
+    const wasInBlock = inTextBlock;
+    // Java only, and the reason is this file. A text-block fence is three double quotes, and
+    // the FIRST version of this line contained one — inside its own regex — so `assertedIn`
+    // flipped into block mode while reading itself, counted every comment below as code, and
+    // reported two ids as asserted that nothing asserts. JavaScript has no text blocks, so
+    // the toggle has no business running over a `.mjs` file; scoping it is both the fix and
+    // the honest rule. Third time in this one task that a scanner was quietly wrong rather
+    // than loudly broken, which is the whole argument for measuring before deciding.
+    if (java && ((line.match(FENCE) ?? []).length) % 2 === 1) inTextBlock = !inTextBlock;
+    if (!wasInBlock && isProse(line)) continue;
+    for (const id of line.match(/\bSH\d+\b/g) ?? []) found.add(id);
+  }
+  return found;
+}
+
+/** The Java text-block fence, BUILT rather than written, so this source contains no fence. */
+const FENCE = new RegExp(String.fromCharCode(34).repeat(3), "g");
+
+/** A line that is nothing but comment. No state, so no regex literal can derail it. */
+function isProse(line) {
+  const text = line.trim();
+  return text.startsWith("//") || text.startsWith("*") || text.startsWith("/*");
 }
 
 /** A file with this reader's own declaration cut out, and every other file unchanged. */
@@ -274,7 +373,7 @@ test("SH527: every shipped task carries an assertion, or is on the declared debt
 
   assert.deepEqual(
     debt,
-    DEBT,
+    [...DEBT, ...REVEALED].sort(byId),
     "A defect closes with an assertion carrying its id — the assertion that would have CAUGHT it, "
       + "at the boundary it crossed, not a unit test of the fix's internals.\n"
       + "If a task you just shipped is in `+ actual`, that is this rule: add the assertion, and name "
@@ -302,7 +401,75 @@ test("SH527: the reader is not vacuous — it reads real suites and a real ledge
     + "region — the assertion for SH527 is these very test names, so a reader that could not see "
     + "them would report itself as debt, which it did until the exclusion moved off the file");
   assert.ok(
-    !DEBT.some((id) => found.has(id)),
+    ![...DEBT, ...REVEALED].some((id) => found.has(id)),
     "and nothing on the declared debt is actually asserted: a stale entry here hides a real one",
   );
+});
+
+test("SH630: a comment naming an id does not assert it, and an assertion message does", () => {
+  // The assertion that would have caught it. SH356's ratchet shipped with a header explaining why
+  // it holds one outcome and deliberately does not assert a cross-file rule, naming three other
+  // ids to say so — and all three left the debt list on the next run. Nothing asserted them; a file
+  // had said their numbers out loud.
+  const prose = [
+    "/**",
+    " * Explains why SH9101 matters and why this does not assert it.",
+    " */",
+    "// SH9102 is mentioned here for context only",
+    "const x = 1;",
+  ].join("\n");
+  assert.deepEqual([...assertedIn(prose, false)], [], "a file that only TALKS about a task asserts nothing "
+    + "about it — and the old rule paid a debt for every sentence like that, so the better the "
+    + "comment the more it paid");
+
+  const asserted = [
+    '  test("SH9103: the thing holds", () => {',
+    '    assert.ok(value, "SH9104: and this is why");',
+    "  });",
+  ].join("\n");
+  assert.deepEqual([...assertedIn(asserted, false)].sort(), ["SH9103", "SH9104"],
+    "an id in a test name or an assertion message is exactly what this reader is looking for; a "
+    + "rule that lost those would report the whole ledger as debt and read as a stricter one");
+});
+
+test("SH630: the example ids here are not real tasks, and that is not fussiness", async () => {
+  // The first version of these tests used SH333 as a plausible-looking example and paid that
+  // task's debt off — this file asserts nothing whatever about SH333. The header two hundred lines
+  // up says the same about itself: a reader that reads itself has to be careful what it says out
+  // loud. Four digits starting at 9 are past anything the ledger will reach for a long time, and
+  // this checks rather than trusts that.
+  const shipped = await shippedIds();
+  for (const id of ["SH9101", "SH9102", "SH9103", "SH9104", "SH9105", "SH9106", "SH9107"]) {
+    assert.ok(!shipped.has(id),
+      `${id} is used above as an illustration and is a real shipped task, so this file now pays `
+      + "its debt by example — which is the exact defect SH630 fixed");
+  }
+});
+
+test("SH630: a regex literal holding a quote cannot derail the scan", () => {
+  // Not hypothetical, and the reason this rule holds no cross-line state. The first implementation
+  // was a proper comment stripper, and `replication.conformance.mjs` contains a regex literal with
+  // a double quote inside it: the scanner took it for a string opening and misclassified every line
+  // after it in that file. It reported a plausible number and was wrong, which is the failure shape
+  // a stripper has — it blinds the instrument instead of failing it.
+  const source = [
+    String.raw`    assert.ok(!/url\\("?/.test(css), "SH9105: the theme resolves");`,
+    "    // SH9106 is only mentioned",
+    String.raw`    assert.ok(true, "SH9107: still counted after the regex");`,
+  ].join("\n");
+
+  const found = assertedIn(source, false);
+  assert.ok(found.has("SH9105"), "the line carrying the regex still asserts its own id");
+  assert.ok(found.has("SH9107"), "and the scan is still correct AFTER it — the desync that made "
+    + "this necessary swallowed everything downstream");
+  assert.ok(!found.has("SH9106"), "while the comment between them asserts nothing");
+});
+
+test("SH630: the revealed debt is held apart from the triaged debt", () => {
+  // A named list, never a ceiling — and two lists rather than one, because every DEBT group carries
+  // an SH529 verdict and none of REVEALED has been through that pass. Merging them would make
+  // considered decisions indistinguishable from unexamined ones.
+  const overlap = REVEALED.filter((id) => DEBT.includes(id));
+  assert.deepEqual(overlap, [], "an id on both lists is counted twice and paid off once");
+  assert.ok(REVEALED.length > 0, "and the list is not empty: SH630 revealed what prose was paying");
 });

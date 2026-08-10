@@ -265,3 +265,56 @@ each — the generated token figures, the prerender's route table, the Markdown 
 went 39 → 36. What is left of that group is the **copy**, which is the harder half and the reason
 the group ranks second by return-risk: a marketing claim that has gone false is invisible until
 somebody reads the page against the product.
+
+## The debt reader could not tell an assertion from a mention (SH630)
+
+`assertion-debt.test.mjs` matched `SH\d+` over the raw text of every suite file, so a comment and an
+assertion message were the same bytes. **The direction of the failure is what made it worth
+fixing**: it never invented debt, it only *retired* it — silently, in a diff about something else, at
+the moment somebody was writing carefully about why a task mattered. The better the comment, the
+more debt it paid. And the workaround in use was to **stop naming ids in prose**, which degrades the
+writing to protect the counter: the instrument shaping what may be written about the code it reads.
+
+### The count chose the rule
+
+SH630 named two candidate repairs — restrict recognition to an assertion's message argument, or
+require an explicit marker — and said a count decides. Measured over the suite corpus:
+
+| rule | ids |
+|---|---|
+| raw text (the old rule) | 524 |
+| not on a full-line comment | 428 |
+| …and inside a string literal | **428** |
+
+**The two candidates give the same answer.** Every id that survives the comment rule is already
+inside an assertion message or a test name, so the parse buys nothing and the marker convention is
+not needed to distinguish anything. The simpler rule wins. **96 ids were being paid by prose.**
+
+### Three scanners, quietly wrong
+
+The rule holds no cross-line state outside Java, and that is not a simplification — it is what three
+failures cost:
+
+1. The first measurement used a proper comment stripper. `replication.conformance.mjs` contains a
+   regex literal with a double quote inside it; the scanner read it as a string opening and
+   misclassified **every line after it** in that file. It reported a plausible number and was wrong.
+2. The example ids in the new tests were `SH333`/`SH529` — real tasks — so the tests **paid those
+   debts by illustration**. Now `SH91xx`, checked against the ledger rather than trusted.
+3. The Java text-block toggle read `"""`… and the line containing that check **contained one**, so
+   the reader flipped into block mode while reading itself and counted its own comments as code. The
+   fence is now built with `String.fromCharCode`, and the toggle only runs on `.java`.
+
+Each was silently wrong rather than loudly broken, which is exactly why the task said a count
+decides and why the measurement is the first deliverable rather than a step toward one.
+
+### The debt went 35 → 124, and the 88 are held apart
+
+Nothing regressed; the number the reader always should have reported appeared. They sit in
+**`REVEALED`**, not merged into `DEBT`, because every `DEBT` group carries an SH529 verdict — EARNS
+or DOES NOT, with the reason — and none of these has been through that pass. Merging would make 35
+considered decisions indistinguishable from 88 unexamined ones, which is the ceiling failure in a
+different costume. Triage is **SH642**.
+
+**SH641 was retired as a duplicate**: filed one commit earlier because SH630 was misread as shipped.
+Its one distinct argument — that an assertion message *is* a string literal, so stripping comments
+alone would be wrong — is carried here, where the measurement then showed both rules agree.
