@@ -1590,3 +1590,43 @@ case — still say why.
   about it — a false payment, the fourth. It is the JS twin of SH613, filed as **SH641**, and the
   rule there has to be narrower than "strip comments": an assertion message *is* a string literal,
   which is exactly where an id belongs.
+
+## A plan writes nothing, and the database says so (SH221)
+
+SH153 removed the last write from a blueprint plan, and its reasoning generalises further than the
+fix did. `POST /agent/plan` and a `dryRun` batch write nothing today, but nothing **enforced** it:
+the property was maintained by every author remembering it — and the last time it was not, **the
+reason was good.** The planner needed to resolve a post-type the run would create, and a
+rollback-only transaction was the obvious way to get one. That reason will recur, and it will be
+just as locally defensible.
+
+### The proposed fix was the right instinct and the wrong instrument
+
+§XI.15 proposed wrapping the dry-run paths in a `readOnly` transaction. Trying to scope it turned up
+two reasons not to:
+
+**The entry points are shared.** All three `run(...)` overloads serve plan and apply alike, and
+`dryRun` is a field of the request body rather than a different call — so the flag cannot move onto
+the class, and dispatching to a second annotated method from inside the service is a self-invocation
+that never crosses the proxy.
+
+**And `readOnly` does not mean the same thing on the three engines this product supports.** Spring
+marks the JDBC connection read-only and Hibernate stops flushing; **PostgreSQL refuses the write
+outright, while H2 and MariaDB accept a connection that is merely *advertised* as read-only.** A
+guarantee that holds on one of three engines is not structural — it is a flag that happens to be
+enforced where CI runs Postgres, which is the shape of a rule people trust further than it goes.
+
+### Counting the writes instead
+
+`ShPlanWritesNothingTest` reads Hibernate's `Statistics` around each dry-run path and asserts the
+instance inserted, updated and deleted **nothing**. That is engine-independent and states the
+property directly, so the next author who reaches for a rollback-only transaction to resolve
+something that does not exist yet fails by name, on every database.
+
+Three cases, and the third is the one that makes the other two mean anything: a **real** apply must
+move the counter. A statistics reader that counted nothing would pass both guarantees for ever and
+report a property nobody has.
+
+It gets its own database (SH315) for a sharper reason than usual: statistics are cumulative on the
+`SessionFactory`, so a sibling test writing content on a shared context would be indistinguishable
+from the defect. That is not added noise — it inverts the answer.

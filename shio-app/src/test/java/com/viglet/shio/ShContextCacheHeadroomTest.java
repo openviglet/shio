@@ -145,8 +145,14 @@ class ShContextCacheHeadroomTest {
      * site — which SH315's rule and ShBenchmarkIsolationLintTest both refuse on a shared context.
      * It was written into a shared-context class first and that lint caught it, which is the
      * intended order of events.
+     *
+     * SH221 spent another, to 63. ShPlanWritesNothingTest counts the mutations Hibernate performed
+     * while a plan runs, and those statistics are cumulative on the SessionFactory — a sibling test
+     * writing content on the shared context would be indistinguishable from the defect it exists to
+     * catch. SH315's rule, in the one shape where sharing does not merely add noise but inverts the
+     * answer.
      */
-    private static final int DECLARED_CONTEXTS = 62;
+    private static final int DECLARED_CONTEXTS = 63;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

@@ -216,24 +216,6 @@ next.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.15 Make write-free planning structural, not remembered (SH221)
-
-SH153 removed the last write from a blueprint plan, and the reasoning generalises further
-than the fix did. `POST /agent/plan` and a `dryRun` batch write nothing today, but nothing
-*enforces* that: the property is maintained by every author remembering it, and the last time
-it was not, the reason was good — the planner needed to resolve a post-type the run would
-create, and a rollback-only transaction was the obvious way to get one.
-
-That reason will recur. The next resource a plan needs to resolve before it exists will make
-the same argument, and it will be just as locally defensible.
-
-Wrapping the dry-run paths in a `readOnly` transaction makes the guarantee structural: the
-database refuses the write instead of a reviewer catching it. This is the same argument
-`ShByteStabilityLintTest` makes about `Map.copyOf` — a contract that can only be honoured by
-remembering belongs inside a mechanism (§VIII.11). The open question is scope, since the
-batch service's entry points are shared between plan and apply and the flag cannot simply be
-moved onto the class.
-
 ### XI.16 The appliable unit stops where the visible site starts (SH395)
 
 Six packages ship — `blog`, `docs`, `landing`, `marketing-site`, `nextjs-starter`,
