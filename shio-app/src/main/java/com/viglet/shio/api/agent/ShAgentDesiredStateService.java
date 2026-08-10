@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
+import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -183,9 +184,24 @@ public class ShAgentDesiredStateService {
         // is what made `shio convert` unable to run against a fresh instance at all. Compiled to
         // `render.provision` rather than taught to this class, which is P10 and also what gives the
         // dry run its answer — `Declared.withPostTypesFrom` reads this very op.
-        if (desired.postTypes() != null && !desired.postTypes().isEmpty()) {
+        //
+        // SH395 — and a document that WRITES a template needs the render model whether or not it
+        // named a vocabulary. `render.provision` has always ensured the render five; the only way
+        // to reach it was `postTypes`, which is the SH95 *vocabulary* list — so a document
+        // declaring a `PageLayout` post could not ask for the type that post is of, and applying
+        // one into a fresh instance failed on a post-type nobody could have provisioned.
+        //
+        // Inferred rather than declared, which this codebase is usually reluctant to do. It is
+        // right here for one reason: a document that writes a PageLayout has already said it needs
+        // PageLayout, and making the author say it twice is the trap SH395 is about — the model
+        // and the content are one intention, and splitting them is what P2 exists to refuse.
+        boolean writesTemplates = desired.posts() != null && desired.posts().stream()
+                .map(ShAgentDesiredState.Post::type)
+                .anyMatch(type -> type != null && ShRenderPostTypes.NAMES.contains(type));
+        List<String> vocabulary = desired.postTypes() == null ? List.of() : desired.postTypes();
+        if (!vocabulary.isEmpty() || writesTemplates) {
             ops.add(op(ShAgentBatchService.RENDER_PROVISION, null, null, null,
-                    postTypeData(desired.postTypes())));
+                    postTypeData(vocabulary)));
         }
         // SH439 — `createSite` first, before the folder a post needs. It is the whole flag: the op
         // is `site.upsert`, so an apply creates the site and a *plan* resolves against it too,

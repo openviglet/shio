@@ -37,6 +37,8 @@ import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.render.ShPageRenderService;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -65,7 +67,15 @@ import tools.jackson.databind.ObjectMapper;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+// SH395 — its own database, and SH315's rule arriving late. This class APPLIES WHOLE PACKAGES:
+// it provisions the render post-types, writes a Theme and a PageLayout, and asserts instance-wide
+// counts. On the shared context another test's minimal `Theme` post-type — created without the
+// `CSS` field this one writes — makes the apply refuse a field the type "has no place for", which
+// is a true statement about a type this package did not create. It is also the isolation SH635's
+// flake wanted: that defect was another test's orphan post reaching this class's verify.
+@SpringBootTest(properties =
+        "spring.datasource.url=jdbc:h2:mem:shio-blueprint-apply;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true")
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
 class ShBlueprintApplyTest {
@@ -76,6 +86,8 @@ class ShBlueprintApplyTest {
 
     @Autowired
     private ShBlueprintService shBlueprintService;
+    @Autowired
+    private ShPageRenderService shPageRenderService;
     @Autowired
     private ShAddressResolver shAddressResolver;
     @Autowired
@@ -155,7 +167,11 @@ class ShBlueprintApplyTest {
                 .containsExactly(org.assertj.core.api.Assertions.tuple("Article", "create"));
         // The whole point of provisioning inside the plan's transaction: without it every
         // post row below would have failed with "no post-type named Article".
-        assertThat(plan.content().changed()).isEqualTo(7);
+        // SH395 — 14 since the package started shipping its own design: the /theme folder, a
+        // Theme and a PageLayout with a publish each, the render.provision the templates imply,
+        // and the site binding. The number is asserted rather than bounded because it is the
+        // measure of what "one command, one visible site" costs.
+        assertThat(plan.content().changed()).isEqualTo(14);
         assertThat(plan.content().results())
                 .extracting(change -> change.address())
                 .contains("post:" + siteName + "/blog/hello-world");
@@ -190,7 +206,7 @@ class ShBlueprintApplyTest {
                     assertThat(postType.action()).isEqualTo("create");
                     assertThat(postType.missing()).isNull();
                 });
-        assertThat(applied.content().changed()).isEqualTo(7);
+        assertThat(applied.content().changed()).isEqualTo(14);
         assertThat(applied.verify()).isNotNull();
         assertThat(applied.verify().missing()).isEmpty();
         // SH635 — this assertion has failed twice, in a full suite, and never alone: `errors()` came
@@ -226,6 +242,40 @@ class ShBlueprintApplyTest {
             assertThat(shAddressResolver.find(ShAddress.post(siteName, "/blog/hello-world")))
                     .isPresent();
         });
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("SH395: the applied site renders through the package's own layout")
+    void theAppliedSiteIsVisible() {
+        // The claim SH395 is about, and the only assertion that can make it: one command, one
+        // site somebody can look at. Everything else in this class proves the CONTENT arrived —
+        // which was true before, and left every page on SH169's labelled fallback.
+        //
+        // Its own site and its own apply: `createSite()` reassigns `siteName`, so a test that
+        // read the one an earlier @Order left behind would be asserting against whichever
+        // sibling ran last. That is the fixture equivalent of the bug this class exists for.
+        createSite();
+        shBlueprintService.apply("blog", siteName,
+                params("{\"blogTitle\":\"The Acme Blog\",\"authorName\":\"Acme Editorial\"}"),
+                "admin");
+
+        String html = shPageRenderService
+                .render(siteName, "/blog/hello-world", ShPostState.PUBLISHED).html();
+
+        assertThat(html)
+                .as("""
+                        the page came through the package's PageLayout, not the fallback. Before                         SH395 no first-party package could ship one: a blueprint parameter and a                         Handlebars expression are both curly-braced, so the format refused                         `{{post.title}}` as a parameter nobody declared.""")
+                .contains("Welcome to")
+                .doesNotContain("data-shio-fallback");
+        assertThat(html)
+                .as("and the theme it names resolved, so the layout's `{{theme.css}}` is a "
+                        + "stylesheet rather than an empty <style>")
+                .contains("--ink");
+        assertThat(html)
+                .as("while the package's own parameter substituted in the masthead — the half "
+                        + "the template-field exemption had to keep working")
+                .contains("The Acme Blog");
     }
 
     @Test
@@ -576,7 +626,11 @@ class ShBlueprintApplyTest {
         assertThat(plan.content().results())
                 .extracting(change -> change.address())
                 .contains("post:" + siteName + "/blog/hello-world");
-        assertThat(plan.content().changed()).isEqualTo(7);
+        // SH395 — 14 since the package started shipping its own design: the /theme folder, a
+        // Theme and a PageLayout with a publish each, the render.provision the templates imply,
+        // and the site binding. The number is asserted rather than bounded because it is the
+        // measure of what "one command, one visible site" costs.
+        assertThat(plan.content().changed()).isEqualTo(14);
     }
 
     @Test

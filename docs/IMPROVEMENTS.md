@@ -216,30 +216,6 @@ next.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.16 The appliable unit stops where the visible site starts (SH395)
-
-Six packages ship and **not one declares a `Theme`, a `PageLayout`, a `Region` or a
-`site.postTypeLayout` binding**, so applying one yields content whose design is SH169's
-labelled fallback — a safety net, not a design.
-
-**The reason turned out not to be an authoring omission.** A blueprint parameter is
-`{{name}}` and so is a Handlebars expression, so a package carrying a layout was refused
-at load *and* at substitution: `{{post.title}}`, `{{theme.css}}` and `{{#query}}` all
-read as parameters nobody declared. **The format could not express a layout.** That is
-now lifted inside the render fields (`HTML`, `CSS`, `JAVASCRIPT`) and nowhere else, so a
-layout may still say `{{blogTitle}}` in its masthead while the renderer's own
-expressions pass through. The cost is stated: a typo'd parameter inside a template is no
-longer caught, and cannot be — inside Handlebars an undeclared name is the normal case.
-
-The content document now also takes `postTypes` and `postTypeLayout`, which compile to
-`render.provision` and the site binding. The desired-state service already emitted both
-*before* any folder or post, so the ordering the traps are about was never the problem.
-
-**What remains is a package that ships a layout**, and one thing found while trying:
-`Theme` and `PageLayout` are seeded system types, but a blueprint apply in a bare
-instance does not resolve them, so a package that declares a template needs its
-post-types question answered first. That is the next step and it is not a line of JSON.
-
 ### XI.18 The fourth registry is the one that is published (SH604)
 
 Measured at `0f4a906f`. The MCP server registers **11 tools** and **7 resources**.

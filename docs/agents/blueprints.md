@@ -392,3 +392,35 @@ shipped. Trying to write one for `blog` turned up the next question: `Theme` and
 seeded system types, but a blueprint apply in a bare instance did not resolve them — so a package
 that declares a template needs its post-types question answered before the JSON is worth writing.
 Recorded in §XI.16 rather than guessed at here.
+
+### And the two gaps behind it (SH395, completed)
+
+The collision above was the first blocker. Removing it exposed two more, both of the same shape —
+a capability that existed and could not be *reached* from a package:
+
+**`render.provision` was reachable only by naming vocabulary.** The op has always ensured the render
+five (`PageLayout`, `Region`, `Theme`, `Redirect`, `SiteScripts`), but the only way a document could
+emit it was `postTypes`, which is the SH95 *section vocabulary* list. So a document that declared a
+`PageLayout` post could not ask for the type that post is of, and applying one into a bare instance
+failed on a post-type nobody could have provisioned. A document that **writes a template** now
+implies the provision — inferred rather than declared, which this codebase is usually reluctant to
+do, and right here because a document writing a `PageLayout` has already said it needs `PageLayout`.
+Making the author say it twice is the trap the task is about.
+
+**And a plan refused what the same plan would have created** — SH153, one type-family along.
+`Declared.withPostTypesFrom` read only `data.types`, so the render five were invisible to a dry run:
+an apply worked and `--dry-run` did not, which is the worst of the three outcomes, because the dry
+run is the call an agent makes to find out whether the real one is safe.
+
+`blog` now ships a `Theme`, a `PageLayout` and an `Article → layout` binding, and the assertion
+**renders the applied site** rather than counting its content — `contains("--ink")` proves the theme
+resolved, and `contains("The Acme Blog")` proves the package's own parameter still substituted inside
+the template, which is the half the exemption had to keep working.
+
+`ShBlueprintApplyTest` gained its own database on the way. It applies whole packages and asserts
+instance-wide counts, and on the shared context another test's minimal `Theme` post-type — created
+without the `CSS` field this package writes — made the apply refuse a field. SH315's rule arriving
+late, and the same isolation SH635's flake wanted.
+
+**The other five packages still ship no design.** The mechanism is theirs to use; `marketing-site` is
+the one SH396 needs.

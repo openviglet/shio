@@ -13,7 +13,6 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- ⏳ **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — The format could not express a layout - a blueprint parameter and a Handlebars expression are both curly-braced - which is fixed, so what remains is a package that ships one. → §XI.16
 - 📋 **SH518** (deps: SH509 ✅) **A blueprint-built site cannot be seen, because the layout generator only runs on the replication path** — apply --blueprint writes 13 authorable posts and no PageLayout or Theme, so /preview answers 400 while convert writes both. → §XVII.70
 - 📋 **SH604** (deps: SH599 ✅) **The plugin's prose enumerates the tool surface, so it is a copy that drifts the moment one ships** — Its README lists ten tools and four resources against a server carrying eleven and seven, so remember and diagnostics both shipped and the plugin never learned either. → §XI.18
 - 📋 **SH605** (deps: SH598 ✅, SH604) **Nothing proves the published artefacts alone carry the path, since every run so far had the repo beside it** — Twelve rounds read agents.md, docs/agents and a repo-local skill without noticing, so a stranger gets a surface nobody has driven without its source tree. → §XI.19
@@ -37,7 +36,7 @@
 - 💭 **SH231** (deps: SH161 ✅) **An instance's own notes travel nowhere** — A site's notes ride its export and the instance's own travel nowhere, which is right for an import and wrong for a move. → §XIII.11
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
 - 📋 **SH394** (deps: SH132 ✅, SH208 ✅) **The CLI's discovery surface has no budget, so it reads as free** — tools/list is capped at 2375 tokens and checked every build while shio --help is 14 KB nobody measures, so the two surfaces cannot be compared on the cost that decides between them. → §XIII.13
-- 📋 **SH396** (deps: SH112 ✅, SH395) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
+- 📋 **SH396** (deps: SH112 ✅, SH395 ✅) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
 
 ## Block N — Realignment of what already shipped
 

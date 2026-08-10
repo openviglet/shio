@@ -109,13 +109,17 @@ class ShBlueprintRegistryTest {
     }
 
     @Test
-    @DisplayName("blog: one post-type, one folder, three published samples")
+    @DisplayName("SH395: blog carries its own design, not just its content")
     void blogIsWhatItSaysItIs() {
         ShBlueprint blog = registry.require("blog");
 
         assertThat(blog.postTypeNames()).containsExactly("Article");
-        assertThat(blog.declaredFolders()).isEqualTo(1);
-        assertThat(blog.declaredPosts()).isEqualTo(3);
+        // Two folders and five posts since SH395: `/theme` holding a Theme and a PageLayout,
+        // beside `/blog` and its three samples. Before it, applying this package left every page
+        // on SH169's labelled fallback — a safety net, not a design — because the format could
+        // not express a layout at all.
+        assertThat(blog.declaredFolders()).isEqualTo(2);
+        assertThat(blog.declaredPosts()).isEqualTo(5);
         assertThat(blog.manifest().verify().posts()).contains("/blog/hello-world");
         assertThat(blog.manifest().verify().checks()).isEqualTo("content");
     }
@@ -166,10 +170,13 @@ class ShBlueprintRegistryTest {
             assertThat(ShBlueprintParams.properties(blueprint.manifest().params()))
                     .as("%s params", blueprint.name())
                     .doesNotContainKey("site");
+            // SH395 added `postTypes` and `postTypeLayout` — the two a package CAN answer for
+            // itself. `site` and `prune` stay out for the reasons this test is named for: the
+            // first comes from the request, and the second is never a package's decision.
             blueprint.content().forEach(document ->
                     assertThat(document.propertyNames())
                             .as("%s content keys", blueprint.name())
-                            .allMatch(key -> "folders".equals(key) || "posts".equals(key)));
+                            .allMatch(ShBlueprintRegistry.CONTENT_KEYS::contains));
         }
     }
 

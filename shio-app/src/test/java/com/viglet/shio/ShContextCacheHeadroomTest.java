@@ -151,8 +151,13 @@ class ShContextCacheHeadroomTest {
      * writing content on the shared context would be indistinguishable from the defect it exists to
      * catch. SH315's rule, in the one shape where sharing does not merely add noise but inverts the
      * answer.
+     *
+     * SH395 spent one more, to 64, and it is SH315's rule arriving late rather than a new appetite:
+     * ShBlueprintApplyTest applies whole packages — provisioning render post-types, writing a Theme
+     * and a PageLayout, asserting instance-wide counts — so another test's minimal `Theme` type made
+     * it refuse a field. It is the same isolation SH635's flake wanted.
      */
-    private static final int DECLARED_CONTEXTS = 63;
+    private static final int DECLARED_CONTEXTS = 64;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

@@ -2,9 +2,33 @@
   "folders": [
     {
       "path": "/blog"
+    },
+    {
+      "path": "/theme"
     }
   ],
   "posts": [
+    {
+      "url": "/theme/blog",
+      "type": "Theme",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Blog theme",
+        "CSS": ":root { --ink: #1a1a1a; --muted: #5b6470; --rule: #e6e8eb; --accent: #0b5fff; }\n* { box-sizing: border-box; }\nbody { margin: 0; color: var(--ink); background: #fff;\n  font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif; }\n.shio-container { max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }\n.shio-masthead { border-bottom: 1px solid var(--rule); padding: 1.25rem 0; margin-bottom: 2.5rem; }\n.shio-masthead a { color: var(--ink); text-decoration: none; font-weight: 600; }\nh1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .5rem; }\n.shio-summary { color: var(--muted); font-size: 1.125rem; margin: 0 0 1.5rem; }\n.shio-byline { color: var(--muted); font-size: .875rem; margin: 0 0 2rem; }\n.shio-body :is(p, ul, ol) { margin: 0 0 1.25rem; }\n.shio-body code { background: #f4f5f7; padding: .1em .35em; border-radius: 3px; }\na { color: var(--accent); }\nfooter { border-top: 1px solid var(--rule); margin-top: 3rem; padding: 1.5rem 0; color: var(--muted); }\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Blog layout",
+        "THEME": "Blog theme",
+        "HTML": "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}}</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n<style>{{theme.css}}</style>\n</head>\n<body>\n<header class=\"shio-masthead\"><div class=\"shio-container\"><a href=\"/blog\">{{blogTitle}}</a></div></header>\n<main class=\"shio-container\">\n<article>\n<h1 sh-field=\"headline\">{{headline}}</h1>\n{{#if summary}}<p class=\"shio-summary\" sh-field=\"summary\">{{summary}}</p>{{/if}}\n<p class=\"shio-byline\">{{#if author}}<span sh-field=\"author\">{{author}}</span>{{/if}}{{#if publishedAt}} &middot; <span sh-field=\"publishedAt\">{{publishedAt}}</span>{{/if}}</p>\n<div class=\"shio-body\" sh-field=\"body\">{{{body}}}</div>\n</article>\n</main>\n<footer class=\"shio-container\">\n<nav aria-label=\"More posts\"><ul>\n{{#query type=\"Article\" sort=\"title\" limit=\"10\"}}<li><a href=\"{{link}}\">{{title}}</a></li>{{/query}}\n</ul></nav>\n</footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
     {
       "url": "/blog/hello-world",
       "type": "Article",
@@ -50,5 +74,8 @@
       },
       "publish": true
     }
-  ]
+  ],
+  "postTypeLayout": {
+    "Article": "Blog layout"
+  }
 }

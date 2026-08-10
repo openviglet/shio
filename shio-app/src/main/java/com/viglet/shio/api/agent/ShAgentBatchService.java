@@ -373,6 +373,16 @@ public class ShAgentBatchService {
                 if (!RENDER_PROVISION.equals(op.op())) {
                     continue;
                 }
+                // SH395 — the render five, which this op ALWAYS ensures whatever `data.types`
+                // says. They were missing here, and the consequence was the exact shape SH153
+                // fixed one type-family along: a plan that declared a `PageLayout` post refused
+                // on the post-type the same plan would have created. An apply worked and a plan
+                // did not, which is the worst of the three possible outcomes — `--dry-run` is
+                // the call an agent makes to find out whether the real one is safe.
+                for (String name : ShRenderPostTypes.NAMES) {
+                    Set<String> fields = fieldsOf.apply(name);
+                    union.putIfAbsent(name, fields.isEmpty() ? Set.of() : fields);
+                }
                 for (String name : strings(op.data(), "types")) {
                     Set<String> fields = fieldsOf.apply(name);
                     if (!fields.isEmpty()) {
