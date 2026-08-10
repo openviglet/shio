@@ -292,6 +292,10 @@ export class ShioAgentClient {
     const params = new URLSearchParams();
     for (const address of addresses) params.append("address", address);
     if (options.include) params.set("include", options.include);
+    // SH619/SH640 - `published` reads the live row instead of the draft, which is the only way to
+    // ask what a publish would change. Absent means the draft-preferred default every other caller
+    // wants, so nothing that omits it behaves differently.
+    if (options.state) params.set("state", options.state);
     const url = `${this.baseUrl}/api/v2/agent/read?${params.toString()}`;
     const res = await this.fetch(url, {
       method: "GET",

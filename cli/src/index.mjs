@@ -81,8 +81,10 @@ const BOOLEANS = [
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
-// apply a package with defaults the caller believed they had overridden (SH93).
-const REPEATABLE = ["param"];
+// apply a package with defaults the caller believed they had overridden (SH93). `address` is a
+// set for the same reason (SH640): `diff --against published --address a --address b` asks about
+// both, and last-one-wins would quietly answer about one of them.
+const REPEATABLE = ["param", "address"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),

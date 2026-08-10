@@ -766,3 +766,134 @@ function describeModes(modes) {
   if (!named.length || (named.length === 1 && named[0][0] === "fidelity")) return "";
   return `, ${named.map(([name, count]) => `${count} ${name}`).join(" + ")}`;
 }
+
+/**
+ * A draft against what is live, field by field (SH640).
+ *
+ * <h2>Three decisions, and the read deliberately left them here</h2>
+ *
+ * <p><b>What counts as a change in a rich-text body: any difference at all.</b> The comparison is
+ * on the stored string, verbatim. Publishing copies the draft's value across unchanged, so any
+ * difference is one a curator made — and a normalising comparison would hide a whitespace-only
+ * edit that the CDA then serves differently. It also stays on the right side of a non-goal: a
+ * semantic HTML comparison is the first step toward an instance that runs a browser.</p>
+ *
+ * <p>What is <em>reported</em> is that the field changed and by how much, never the text. A
+ * rich-text body is the most expensive thing this could print (P3), and "which fields changed" is
+ * the question — the values are one {@code shio read} away, at the caller's choosing.</p>
+ *
+ * <p><b>A missing field and an empty one are different findings.</b> Deleting a field's value and
+ * never declaring the field are different acts: {@code added} is present in the draft and absent
+ * live, {@code removed} is the reverse, {@code changed} is present in both and different. An empty
+ * string is a <em>value</em>, so {@code ""} against absent is added or removed, and {@code ""}
+ * against {@code "x"} is changed. Folding them would tell a curator that something is different
+ * and nothing about which act produced it.</p>
+ *
+ * <p><b>The answer is per site, listed per post</b>, because the question is asked before
+ * publishing a batch — an agent has just written several pages and wants to know what goes live.
+ * One post is the same call with one address.</p>
+ *
+ * <h2>A post with no live row is not a difference</h2>
+ *
+ * <p>It is a {@code new} row, and it is counted apart. Every field of a page that has never been
+ * published would otherwise read as "added", which is true and useless: it would bury the three
+ * fields that changed on a page somebody is actually revising under two hundred that did not.</p>
+ *
+ * @param rows one per address: {@code {address, draft, live}}, where {@code live} is {@code null}
+ *             when the post has never been published
+ */
+export function comparePublished(rows) {
+  const posts = [];
+  for (const row of rows ?? []) {
+    const address = String(row?.address ?? "");
+    const draft = publishedFields(row?.draft);
+    if (!row?.live) {
+      posts.push({ address, status: "new", fields: [], names: Object.keys(draft).sort() });
+      continue;
+    }
+    const live = publishedFields(row.live);
+    const fields = [];
+    for (const name of new Set([...Object.keys(draft), ...Object.keys(live)].sort())) {
+      const inDraft = Object.hasOwn(draft, name);
+      const inLive = Object.hasOwn(live, name);
+      if (inDraft && !inLive) fields.push({ field: name, change: "added", size: sizeOf(draft[name]) });
+      else if (!inDraft && inLive) fields.push({ field: name, change: "removed", size: sizeOf(live[name]) });
+      else if (!same(draft[name], live[name])) {
+        fields.push({
+          field: name,
+          change: "changed",
+          size: sizeOf(draft[name]) - sizeOf(live[name]),
+        });
+      }
+    }
+    posts.push({
+      address,
+      status: fields.length ? "changed" : "unchanged",
+      fields,
+      names: [],
+    });
+  }
+  posts.sort((a, b) => a.address.localeCompare(b.address));
+  return {
+    posts,
+    changed: posts.filter((post) => post.status === "changed").length,
+    unchanged: posts.filter((post) => post.status === "unchanged").length,
+    fresh: posts.filter((post) => post.status === "new").length,
+  };
+}
+
+/** A doc's data object, or an empty one — never null, so `hasOwn` is the only membership test. */
+function publishedFields(doc) {
+  const data = doc?.data;
+  return data && typeof data === "object" && !Array.isArray(data) ? data : {};
+}
+
+/** Verbatim, and structural for anything that is not a string. */
+function same(left, right) {
+  if (typeof left === "string" && typeof right === "string") return left === right;
+  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+}
+
+function sizeOf(value) {
+  if (value === null || value === undefined) return 0;
+  return typeof value === "string" ? value.length : JSON.stringify(value).length;
+}
+
+/**
+ * What a reader sees, leading with the answer (the same rule {@link describeDiff} follows).
+ *
+ * <p>An unchanged post prints nothing at all beyond the headline count. The question is what will
+ * change when this is published, and a report that lists the pages that will not is one nobody
+ * reads to the end.</p>
+ */
+export function describePublishedDiff(comparison, options = {}) {
+  const { posts, changed, unchanged, fresh } = comparison;
+  const limit = Number(options.limit) > 0 ? Number(options.limit) : 20;
+  const lines = [];
+
+  lines.push(changed === 0 && fresh === 0
+    ? `shio diff: nothing would change — ${unchanged} post(s) match what is already live.`
+    : `shio diff: publishing would change ${changed} post(s)`
+      + `${fresh ? `, and put ${fresh} live for the first time` : ""}`
+      + `${unchanged ? ` (${unchanged} already match)` : ""}.`);
+
+  const interesting = posts.filter((post) => post.status !== "unchanged");
+  if (interesting.length) lines.push("");
+  for (const post of interesting.slice(0, limit)) {
+    if (post.status === "new") {
+      lines.push(`  NEW      ${post.address}  (${post.names.length} field(s), never published)`);
+      continue;
+    }
+    lines.push(`  CHANGED  ${post.address}`);
+    for (const field of post.fields) {
+      // The size delta rather than the text: a rich-text body is the most expensive thing this
+      // could print, and the values are one `shio read` away when somebody wants them.
+      const delta = field.change === "changed"
+        ? ` (${field.size >= 0 ? "+" : ""}${field.size} chars)`
+        : ` (${field.size} chars)`;
+      lines.push(`    ${field.change.padEnd(8)} ${field.field}${delta}`);
+    }
+  }
+  if (interesting.length > limit) lines.push(`  … ${interesting.length - limit} more`);
+  return `${lines.join("\n").trimEnd()}\n`;
+}

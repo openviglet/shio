@@ -37,7 +37,8 @@ import {
 } from "../clone.mjs";
 import { describeMigration, migrateInventory } from "../inventory-migrate.mjs";
 import {
-  assertMode, compareCapture, compareProposal, describeDiff, describeProposalDiff,
+  assertMode, compareCapture, comparePublished, compareProposal, describeDiff,
+  describePublishedDiff, describeProposalDiff,
 } from "../diff.mjs";
 import { PLAN_FILE, PROPOSAL_FILE } from "../propose.mjs";
 import { SECTIONS_FOLDER } from "../convert.mjs";
@@ -56,9 +57,14 @@ export const HELP = helpText("diff");
  * first one's finding, and keeping them apart is what lets a reader tell "the conversion did not
  * do what it promised" from "it did, and the layout is wrong".</p>
  *
- * <p>The document and an earlier moment remain unbuilt, and the refusal names them.</p>
+ * <p>`published` (SH640) is the fourth SH522 named — the same address at an earlier moment. It
+ * was refused until SH619 gave the read a `state`, because the live row's fields could not be
+ * fetched at all; the comparison is two reads of one address and no third contract.</p>
+ *
+ * <p>The document is settled rather than pending: `shio apply --check <file>` already plans a
+ * desired-state document against the instance and exits non-zero if anything would change.</p>
  */
-const AGAINST = ["capture", "proposal"];
+const AGAINST = ["capture", "proposal", "published"];
 
 export async function run(flags, positionals, ctx) {
   const site = typeof flags.site === "string" && flags.site.trim()
@@ -76,19 +82,13 @@ export async function run(flags, positionals, ctx) {
     ? flags.against.trim()
     : "capture";
   if (!AGAINST.includes(against)) {
-    // P6, and it names what does not exist yet rather than pretending the flag is closed: the
-    // proposal, the document and an earlier moment are all declarations this verb should judge
-    // against, and saying so is more useful than "allowed: capture".
+    // P6, and it names what does not exist rather than pretending the flag is closed.
     throw new Error(
       `shio diff: --against ${against} is not built.\n`
         + `  allowed: ${AGAINST.join(", ")}\n`
-        + "The other two declarations SH522 named are settled rather than pending:\n"
+        + "The fourth declaration SH522 named is settled rather than pending:\n"
         + "  document  - `shio apply --check <file>` already plans a desired-state document\n"
-        + "              against the instance and exits non-zero if anything would change.\n"
-        + "  published - no longer blocked on the read: SH619 added `state` to\n"
-        + "              /api/v2/agent/read, so the live row's fields are fetchable and\n"
-        + "              the comparison is two reads of one address. The verb and the\n"
-        + "              shape of a field-level difference are what remain (SH640).",
+        + "              against the instance and exits non-zero if anything would change.",
     );
   }
 
@@ -97,6 +97,10 @@ export async function run(flags, positionals, ctx) {
   // *finding* a mode rather than one of them.
   const asked = typeof flags.mode === "string" && flags.mode.trim() ? flags.mode.trim() : "auto";
   if (asked !== "auto") assertMode(asked);
+
+  if (against === "published") {
+    return againstPublished(site, flags, ctx);
+  }
 
   if (against === "proposal") {
     // Before the inventory read: this comparison never touches the capture, and paying for a
@@ -349,4 +353,83 @@ async function storedMarkup(inventory, ctx) {
 
 function basic(user, password) {
   return `Basic ${Buffer.from(`${user ?? ""}:${password ?? ""}`, "utf8").toString("base64")}`;
+}
+
+/**
+ * `--against published` - the draft against what is live (SH640).
+ *
+ * <h2>Two reads of one address, which is why this is a verb and not an endpoint</h2>
+ *
+ * <p>SH619 decided the shape: `state` is a parameter on the read, so the comparison composes out of
+ * the read surface (P10) instead of becoming a third contract with its own tool and its own budget.
+ * This is that composition, and it is the whole of the client half.</p>
+ *
+ * <h2>Only the posts that have a live row are read twice</h2>
+ *
+ * <p>`find` reports `published` per row (SH545), so a post that has never been live is known to be
+ * new without asking for it a second time. That is not a micro-optimisation: on a site being built,
+ * most posts have no live row, and reading each of them twice would double the most expensive call
+ * in the CLI to learn something the first call already said.</p>
+ */
+async function againstPublished(site, flags, ctx) {
+  const { ShioAgentClient } = await import("../agent-client.mjs");
+  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+  const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+
+  // `--address` narrows to the posts somebody is about to publish. Without it the answer is the
+  // site's, because "what will change when I publish" is asked before a batch rather than before
+  // one page - see comparePublished's third decision.
+  // Declared repeatable in `index.mjs`, so the parser hands back an array. Read through `.flat()`
+  // anyway: a single `--address` from a caller that built the flags object by hand is a string,
+  // and a comparison that silently ignored it would answer about the whole site instead.
+  const asked = [flags.address].flat()
+    .filter((value) => typeof value === "string" && value.trim())
+    .map((value) => value.trim());
+
+  let subjects;
+  if (asked.length) {
+    const docs = await client.read(asked);
+    subjects = (Array.isArray(docs) ? docs : []).map((doc) => ({
+      address: String(doc?.address ?? ""),
+      draft: doc,
+      published: doc?.published === true,
+    }));
+  } else {
+    const { results, truncated } = await client.findAll({ site });
+    if (truncated) {
+      // SH146's rule, said out loud: a short list is not a smaller answer, it is one with holes,
+      // and a diff with holes reads as "nothing else changed".
+      ctx.stderr.write(
+        "shio diff: the instance returned a short list and no cursor to continue, so this "
+          + "comparison does not cover every post.\n",
+      );
+    }
+    const addresses = (results ?? []).map((row) => String(row?.address ?? "")).filter(Boolean);
+    const live = new Set((results ?? []).filter((row) => row?.published === true)
+      .map((row) => String(row?.address ?? "")));
+    const docs = addresses.length ? await client.read(addresses) : [];
+    subjects = (Array.isArray(docs) ? docs : []).map((doc) => ({
+      address: String(doc?.address ?? ""),
+      draft: doc,
+      published: live.has(String(doc?.address ?? "")),
+    }));
+  }
+
+  const rows = [];
+  for (const subject of subjects) {
+    if (!subject.published) {
+      rows.push({ address: subject.address, draft: subject.draft, live: null });
+      continue;
+    }
+    const [live] = await client.read([subject.address], { state: "published" });
+    rows.push({ address: subject.address, draft: subject.draft, live: live ?? null });
+  }
+
+  const comparison = comparePublished(rows);
+  ctx.stdout.write(flags.json
+    ? `${JSON.stringify(comparison, null, 2)}\n`
+    : describePublishedDiff(comparison, flags));
+  // Exit code carries the answer, the way `apply --check` does: a caller can gate a publish on it
+  // without parsing anything.
+  return comparison.changed === 0 && comparison.fresh === 0 ? 0 : 1;
 }

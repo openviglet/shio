@@ -190,30 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.70 The declaration that is now assemblable (SH640)
-
-SH522 named four declarations `shio diff` should judge an artefact against. Three were
-settled: the capture and the proposal are built, and the document turned out to be
-`apply --check` under another name. The fourth — the same address at an earlier moment —
-was refused, and the refusal said why: `/api/v2/agent/read` was DRAFT-preferred and took
-no `state`, so the live row's fields could not be fetched at all.
-
-SH619 removed that block. `read?state=published` returns the published row, and the
-comparison an agent wants is now two reads of one address at two moments. What is left
-is the verb, and one design question the read deliberately did not answer: whether
-`--against published` prints a **field-level** difference — which fields changed, the
-question somebody asks before publishing — or reuses the capture comparison's shape.
-
-The second half is what makes this a task rather than deleting an error message. A
-field-level diff has to decide what counts as a change in a rich-text body, how a
-missing field differs from an empty one, and whether the answer is per post or per site.
-The console's SH14 dialog answers exactly one of those, for one post, to a human.
-
-Filed from the refusal itself: the message in `cli/src/commands/diff.mjs` named SH619 as
-the blocker, so shipping SH619 without this would have left the CLI teaching a premise
-that had stopped being true — the failure this repository files tasks to avoid rather
-than discovers later.
-
 ### IX.72 88 entries with no verdict (SH642)
 
 SH630 changed what counts as an assertion and the debt went from 35 to 124. Nothing

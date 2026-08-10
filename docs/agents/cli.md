@@ -2411,3 +2411,51 @@ records getting wrong from the other direction. The fixture serves UTF-8 under a
 one that settles an encoding question — and the assertion compares the stored title against the
 source file this run served. It was verified to **fail** when pointed at a different file: it runs
 inside `holding(...)` and is `async`, which is exactly the shape that can pass while never executing.
+
+## `shio diff --against published` — the draft against what is live (SH640)
+
+SH522 named four declarations `shio diff` should judge an artefact against. Three were settled; the
+fourth — **the same address at an earlier moment** — was refused because `/api/v2/agent/read` was
+draft-preferred and could not return the live row's fields at all. SH619 removed that block, and this
+is the verb.
+
+It is a verb rather than an endpoint because SH619 already decided the shape: `state` is a parameter
+on the read, so **the comparison is two reads of one address** and composes out of the existing
+surface (P10) instead of becoming a third contract with its own tool and budget.
+
+### The three questions the read deliberately left here
+
+**Rich text compares verbatim.** Publishing copies the draft's value across unchanged, so any
+difference is one a curator made — and a normalising comparison would hide a whitespace-only edit
+that the CDA then serves differently. It also stays on the right side of a non-goal: a semantic HTML
+comparison is the first step toward an instance that runs a browser. What is *reported* is that the
+field changed and by how many characters, never the text (P3 — a rich-text body is the most
+expensive thing this could print, and the values are one `shio read` away).
+
+**A missing field and an empty one are different findings.** `added` is present in the draft and
+absent live, `removed` is the reverse, `changed` is present in both and different. An empty string is
+a **value**, so `""` against absent is added/removed and `""` against `"x"` is changed. Deleting a
+value and never declaring the field are different acts; folding them tells a curator that something
+differs and nothing about which act produced it.
+
+**The answer is per site, listed per post**, because "what will change when I publish" is asked
+before a *batch* — an agent has just written several pages. `--address` (repeatable) narrows it to
+one.
+
+### Two things that fall out of the design
+
+- **A post with no live row is `new`, counted apart.** Every field of a never-published page would
+  otherwise read as `added` — true, and useless: it buries the three fields that changed on a page
+  somebody is revising under two hundred that did not.
+- **Only posts `find` already reported as live are read twice.** `find` carries `published` per row
+  (SH545), so a post that has never been live is known to be new without a second read. On a site
+  being built most posts are in that state, and reading each twice would double the most expensive
+  call in the CLI to learn what the first call already said.
+
+Exits non-zero when anything would change, the same contract `apply --check` carries, so a caller can
+gate a publish on it without parsing anything.
+
+**One lint caught a real slip**: the first version read a `--addresses` flag that does not exist —
+the parser already collects repeats under the *same* key when the flag is declared in `REPEATABLE`,
+which `address` now is. `SH435`'s help lint named it, which is the case that rule exists for: a flag
+a caller can only find by reading the source.

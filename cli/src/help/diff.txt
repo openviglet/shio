@@ -19,6 +19,12 @@ the counts ARE a claim about, and defaults to reading it off the conversion plan
                                   said the conversion would make. Reads documents, not the
                                   wire: "the conversion did not do what it promised" and
                                   "it did, and the layout is wrong" are different findings
+                       published - the draft against what is live: which fields would
+                                  change if you published now. Two reads of one address,
+                                  so it needs no capture and no plan
+  --address <address>  Narrow --against published to these posts (repeatable). Without it
+                       the answer is the site's, because "what will change when I publish"
+                       is asked before a batch rather than before one page
   --plan <file>        Read the accepted decisions from somewhere else (--against proposal)
   --proposal <file>    Read the candidates from somewhere else (--against proposal)
   --mode <how>         auto (default), fidelity, mixed or authorable
@@ -31,3 +37,5 @@ Examples:
   shio diff --site Acme --json
   shio diff --site Acme --against proposal   # did the write make what the plan accepted
   shio diff --site Acme --mode fidelity      # judge every fact, whatever the plan says
+  shio diff --site Acme --against published  # what goes live if you publish now
+  shio diff --site Acme --against published --address post:Acme/blog/hello-world

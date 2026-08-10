@@ -18,7 +18,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { buildInventory, countAssets, countLinks, INVENTORY_FILE, scanPage } from "../src/clone.mjs";
-import { compareCapture, describeDiff } from "../src/diff.mjs";
+import {
+  compareCapture, comparePublished, describeDiff, describePublishedDiff,
+} from "../src/diff.mjs";
 import * as diff from "../src/commands/diff.mjs";
 import { norm } from "./support/paths.mjs";
 
@@ -154,14 +156,15 @@ test("SH522: the refusal sends a reader somewhere, and never to a verb that now 
   await assert.rejects(
     () => diff.run({ site: "Acme", against: "document" }, [], ctxWith()),
     (error) => {
-      assert.match(error.message, /allowed: capture, proposal/);
+      assert.match(error.message, /allowed: capture, proposal, published/);
       assert.match(error.message, /shio apply --check/,
         "the document comparison is not unbuilt — it is `apply --check` under another name, and a "
           + "refusal that called it 'not implemented' would send somebody to build a second reader "
           + "for a question already answered");
-      assert.match(error.message, /SH619/,
-        "and the published one is blocked on a read rather than on this verb, which is a different "
-          + "thing to know: /agent/read is DRAFT-preferred and cannot return the live row's fields");
+      assert.ok(!/DRAFT-preferred/.test(error.message),
+        "SH640 built the published comparison, so the refusal must stop explaining why it cannot "
+          + "exist — this test is named for exactly that, and the sentence it now removes was "
+          + "true for one commit");
       // The list shrinks as the chain is walked. This is the half a refusal usually gets wrong:
       // naming something as missing after it ships sends a reader away from a verb they have.
       assert.ok(!/The proposal \(what was intended\)/.test(error.message),
@@ -813,3 +816,164 @@ test("SH590: a by-design invariant is labelled, not filtered — saying it once 
   assert.equal(group.claimed, false);
   assert.match(describeDiff(comparison), /by design — said once rather than per page/);
 });
+
+
+// --- SH640: the draft against what is live ---
+
+/** A read's shape, reduced to what the comparison touches. */
+const doc = (address, data) => ({ address, data });
+
+test("SH640: only the fields that differ are reported, and by how much", () => {
+  const comparison = comparePublished([
+    {
+      address: "post:Acme/blog/hello",
+      draft: doc("post:Acme/blog/hello", { title: "Hello, revised", body: "<p>Longer now.</p>" }),
+      live: doc("post:Acme/blog/hello", { title: "Hello", body: "<p>Short.</p>" }),
+    },
+    {
+      address: "post:Acme/blog/settled",
+      draft: doc("post:Acme/blog/settled", { title: "Settled", body: "<p>Same.</p>" }),
+      live: doc("post:Acme/blog/settled", { title: "Settled", body: "<p>Same.</p>" }),
+    },
+  ]);
+
+  assert.equal(comparison.changed, 1);
+  assert.equal(comparison.unchanged, 1);
+  const changed = comparison.posts.find((post) => post.status === "changed");
+  assert.deepEqual(changed.fields.map((field) => field.field), ["body", "title"]);
+  assert.ok(changed.fields.every((field) => field.change === "changed"));
+  assert.ok(changed.fields.some((field) => field.size > 0),
+    "the size delta is what travels, not the text: a rich-text body is the most expensive thing "
+      + "this could print, and the values are one `shio read` away");
+});
+
+test("SH640: a missing field and an empty one are different findings", () => {
+  // The second of the three decisions the read deliberately left to this verb. Deleting a field's
+  // value and never declaring the field are different acts, and a diff that folded them would tell
+  // a curator something is different and nothing about which act produced it.
+  const comparison = comparePublished([{
+    address: "post:Acme/blog/fields",
+    draft: doc("post:Acme/blog/fields", { kept: "same", emptied: "", appeared: "new" }),
+    live: doc("post:Acme/blog/fields", { kept: "same", emptied: "had text", vanished: "gone" }),
+  }]);
+
+  const changes = Object.fromEntries(
+    comparison.posts[0].fields.map((field) => [field.field, field.change]),
+  );
+  assert.deepEqual(changes, { appeared: "added", emptied: "changed", vanished: "removed" },
+    "an empty string is a VALUE: `\"\"` against absent is added or removed, and `\"\"` against "
+      + "text is changed");
+  assert.ok(!Object.hasOwn(changes, "kept"), "and a field nobody touched is not a finding");
+});
+
+test("SH640: whitespace is a change, because publishing copies the value verbatim", () => {
+  // The first decision. A normalising comparison would hide an edit the CDA then serves
+  // differently — and a semantic HTML comparison is the first step toward an instance that runs a
+  // browser, which is a non-goal.
+  const comparison = comparePublished([{
+    address: "post:Acme/blog/space",
+    draft: doc("post:Acme/blog/space", { body: "<p>One.</p>\n<p>Two.</p>" }),
+    live: doc("post:Acme/blog/space", { body: "<p>One.</p><p>Two.</p>" }),
+  }]);
+
+  assert.equal(comparison.changed, 1);
+  assert.equal(comparison.posts[0].fields[0].field, "body");
+});
+
+test("SH640: a post with no live row is new, not a page of added fields", () => {
+  // Every field of a page that has never been published would otherwise read as "added" — true,
+  // and useless: it buries the three fields that changed on a page somebody is revising under two
+  // hundred that did not.
+  const comparison = comparePublished([{
+    address: "post:Acme/blog/fresh",
+    draft: doc("post:Acme/blog/fresh", { title: "Fresh", body: "<p>New.</p>", summary: "s" }),
+    live: null,
+  }]);
+
+  assert.equal(comparison.fresh, 1);
+  assert.equal(comparison.changed, 0);
+  assert.deepEqual(comparison.posts[0].fields, []);
+  assert.deepEqual(comparison.posts[0].names, ["body", "summary", "title"]);
+});
+
+test("SH640: a site that matches what is live says so in one line", () => {
+  const report = describePublishedDiff(comparePublished([{
+    address: "post:Acme/blog/settled",
+    draft: doc("post:Acme/blog/settled", { title: "Settled" }),
+    live: doc("post:Acme/blog/settled", { title: "Settled" }),
+  }]));
+
+  assert.match(report, /nothing would change/);
+  assert.equal(report.trim().split("\n").length, 1,
+    "an unchanged post prints nothing beyond the headline: the question is what WILL change, and "
+      + "a report listing the pages that will not is one nobody reads to the end");
+});
+
+test("SH640: the order is the address, so two runs of one instance print one report", () => {
+  // P5. A comparison a reader cannot diff against yesterday's is one they stop running.
+  const rows = ["post:Acme/z", "post:Acme/a", "post:Acme/m"].map((address) => ({
+    address,
+    draft: doc(address, { title: "x" }),
+    live: null,
+  }));
+  assert.deepEqual(
+    comparePublished(rows).posts.map((post) => post.address),
+    ["post:Acme/a", "post:Acme/m", "post:Acme/z"],
+  );
+});
+
+test("SH640: the verb asks for the live row only where one exists, and exits on the answer", async () => {
+  // The wiring, which the pure comparison above cannot see: `find` reports `published` per row
+  // (SH545), so a post that has never been live is known to be new WITHOUT a second read. On a
+  // site being built most posts have no live row, and reading each twice would double the most
+  // expensive call in the CLI to learn something the first call already said.
+  const asked = [];
+  const ctx = {
+    env: { SHIO_URL: "http://shio.test", SHIO_USER: "admin", SHIO_PASSWORD: "secret" },
+    cwd: norm("/repo"),
+    stdout: { write: (chunk) => { ctx.out.text += chunk; } },
+    stderr: { write: () => {} },
+    out: { text: "" },
+    fs: { async readFile() { const e = new Error("ENOENT"); e.code = "ENOENT"; throw e; } },
+    async fetch(url) {
+      const at = new URL(url);
+      asked.push(`${at.pathname}?${at.searchParams.toString()}`);
+      if (at.pathname.endsWith("/find")) {
+        return json({
+          results: [
+            { address: "post:Acme/live", published: true },
+            { address: "post:Acme/never", published: false },
+          ],
+        });
+      }
+      const addresses = at.searchParams.getAll("address");
+      const state = at.searchParams.get("state");
+      return json(addresses.map((address) => ({
+        address,
+        data: { title: state === "published" ? "As published" : `Draft of ${address}` },
+      })));
+    },
+  };
+
+  const code = await diff.run({ site: "Acme", against: "published" }, [], ctx);
+
+  const live = asked.filter((call) => call.includes("state=published"));
+  assert.equal(live.length, 1, "exactly one read asked for the live row");
+  assert.ok(live[0].includes("post%3AAcme%2Flive"),
+    "and it asked for the post that HAS one — the row `find` already said was never published "
+      + "must not be read a second time to be told so again");
+  assert.equal(code, 1, "a difference exits non-zero, so a caller can gate a publish on it "
+    + "without parsing anything — the same contract `apply --check` carries");
+  assert.match(ctx.out.text, /publishing would change 1 post/);
+  assert.match(ctx.out.text, /NEW\s+post:Acme\/never/);
+});
+
+/** A fetch response carrying JSON, which is all the agent client reads. */
+function json(body) {
+  return {
+    ok: true,
+    status: 200,
+    async json() { return body; },
+    async text() { return JSON.stringify(body); },
+  };
+}
