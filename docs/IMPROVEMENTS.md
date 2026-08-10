@@ -1512,36 +1512,10 @@ apply and it needs no retention policy of its own. Its owner is the **token** ra
 than a person — an anonymous submission has no user to attribute, and naming the token
 is both true and the thing an operator needs when one form starts producing rubbish.
 
-### XV.40 The scope is the control, because the token is public by construction
-
-SH364 settled the door: submissions are **token-scoped and never anonymous**. The token
-sits in a page a stranger can read, so secrecy is not what protects anything — the
-**scope** is, and that makes the scope the whole security design rather than a field on
-it.
-
-A `FORM` scope names one site and may do exactly one thing: create a `DRAFT` post of an
-eligible type in that site's configured folder. It cannot publish, cannot read, cannot
-move, cannot touch another site.
-
-**Eligibility excludes every system post-type, and that is not tidiness.** `PageLayout`,
-`Region` and `Theme` are Handlebars, compiled and executed by the renderer. A form that
-could create one is not a spam problem, it is a stranger writing a template this
-instance runs — the whole endpoint's severity turns on this one predicate, which is why
-it belongs in the scope rather than in a check the endpoint remembers to call.
-
-So the answer to *what post-type may be submitted* is an allow-list on the site,
-intersected with "not a system type" — an allow-list alone would still let an operator
-name `Theme` by mistake, and that is not a mistake worth leaving available.
-
-`ShApiTokenScope` already exists and `ShApiTokenFilter` already maps a scope to a role,
-so this composes rather than forks (P10). What is new is a scope whose authority is
-bounded by *data* — a site, a folder, a type list — where the existing ones are bounded
-by verb.
-
 ### XV.41 The endpoint, once nothing about it is still undecided (SH633)
 
-With the scope bounded (§XV.40) and the destination owned by the site (§XV.38), what is
-left is ordinary. `POST` one document, get a `DRAFT` post back or a refusal.
+With the scope bounded (SH631, shipped) and the destination owned by the site (§XV.38),
+what is left is ordinary. `POST` one document, get a `DRAFT` post back or a refusal.
 
 Four properties, none of them novel here, which is the argument for this rather than a
 submissions subsystem:
@@ -1560,7 +1534,8 @@ submissions subsystem:
 
 The teaching refusals matter more than usual because the caller is a browser nobody
 controls: a non-eligible type, a full bucket and a tripped honeypot are three different
-answers, and only the first two should say so.
+answers, and only the first two should say so. `ShFormEligibility.eligibleNames` exists
+for the first of them.
 
 ### XV.42 The scan that is left, and the reason it was not removed with the rest (SH634)
 

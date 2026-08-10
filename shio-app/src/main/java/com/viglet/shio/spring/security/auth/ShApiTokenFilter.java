@@ -80,6 +80,18 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     private static final String AGENT_PATH_PREFIX = "/api/v2/agent";
 
     /**
+     * Where a rendered form may POST (SH631), and the only path a {@code FORM} token may use a
+     * method other than GET on.
+     *
+     * <p>Under the CDA namespace on purpose: a submission is delivery-side traffic from a public
+     * page, and putting it there means it inherits the confinement, the rate limiter and the
+     * {@code Key} header the other delivery surfaces already have, rather than becoming a fourth
+     * write contract (P10). The endpoint itself is SH633; naming the prefix here is what lets the
+     * scope be bounded without it.</p>
+     */
+    private static final String FORM_PATH_PREFIX = "/api/v2/cda/form";
+
+    /**
      * The MCP endpoint (SH75) is the same surface again, reached over a different
      * transport. Like GraphQL it reads via {@code POST}, so the SH2 GET-only gate is
      * skipped for it — but unlike GraphQL, MCP <em>can</em> write, so the per-tool
@@ -223,6 +235,15 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
      * definition, so it also carries ROLE_CDA_PREVIEW regardless of scope.
      */
     private static List<GrantedAuthority> authoritiesFor(ShApiTokenScope scope, ShApiTokenEnv env) {
+        // SH631 — FORM returns before the common grant, and that is the whole point of the scope
+        // rather than an optimisation. Every scope below starts from ROLE_CDA + ROLE_USER and adds
+        // capability, which is right while the weakest of them may still read the delivery API. A
+        // form token may not: it rides in a page a stranger can read, so ROLE_CDA would hand the
+        // whole site to anyone who viewed the source — the privilege escalation §XII forbids, and
+        // the same reasoning that keeps AGENT away from ROLE_CDA_WRITE below.
+        if (scope == ShApiTokenScope.FORM) {
+            return List.of(new SimpleGrantedAuthority("ROLE_FORM"));
+        }
         var authorities = new ArrayList<GrantedAuthority>(List.of(
                 new SimpleGrantedAuthority("ROLE_CDA"),
                 new SimpleGrantedAuthority("ROLE_USER")));
@@ -251,6 +272,13 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         if (scope == ShApiTokenScope.WRITE || graphQl) {
             return true;
         }
+        // SH631 — a submission is a POST and a FORM token may make exactly that one, on exactly this
+        // path. Bounding the method here rather than leaving it to the authorization rule means a
+        // form token cannot POST anywhere else even if a future mapping under /api/v2/cda/** were
+        // to grant ROLE_FORM by accident.
+        if (scope == ShApiTokenScope.FORM) {
+            return isFormPath(request);
+        }
         return scope == ShApiTokenScope.AGENT && (isAgentPath(request) || isMcpPath(request));
     }
 
@@ -261,6 +289,10 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     private static boolean isGraphQlPath(HttpServletRequest request) {
         String path = relativePath(request);
         return path.equals(GRAPHQL_PATH) || path.startsWith(GRAPHQL_PATH + "/");
+    }
+
+    private static boolean isFormPath(HttpServletRequest request) {
+        return relativePath(request).startsWith(FORM_PATH_PREFIX);
     }
 
     private static boolean isAgentPath(HttpServletRequest request) {

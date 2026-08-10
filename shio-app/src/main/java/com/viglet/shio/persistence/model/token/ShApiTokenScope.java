@@ -37,5 +37,37 @@ public enum ShApiTokenScope {
     READ,
     PREVIEW,
     WRITE,
-    AGENT
+    AGENT,
+
+    /**
+     * The credential a rendered form carries (SH631), and the first scope bounded by <b>data</b>
+     * rather than by verb.
+     *
+     * <h2>The token is public by construction, so the scope is the control</h2>
+     *
+     * <p>SH364 settled that Shio receives submissions token-scoped and <b>never anonymously</b>.
+     * This token sits in a page a stranger can read, so secrecy protects nothing: what protects the
+     * instance is that the credential can do exactly one thing — create a {@code DRAFT} post of an
+     * eligible type in one site's configured folder. It cannot publish, cannot read, cannot move and
+     * cannot touch a second site.</p>
+     *
+     * <h2>It carries neither {@code ROLE_CDA} nor {@code ROLE_USER}, unlike every scope above</h2>
+     *
+     * <p>That is the load-bearing difference and it is a departure from the shape the other four
+     * share. Every one of them grants {@code ROLE_CDA} + {@code ROLE_USER} and then <em>adds</em>
+     * capability, which is right when the weakest scope is still allowed to read the delivery API.
+     * A form token is not: granting it {@code ROLE_CDA} would let anyone who viewed the page's
+     * source read the whole site through {@code GET /api/v2/cda/**}, which is the privilege
+     * escalation §XII's invariant forbids — the same reasoning that keeps {@code AGENT} away from
+     * {@code ROLE_CDA_WRITE}, one scope further down.</p>
+     *
+     * <h2>Eligibility excludes every system post-type, and that predicate carries the severity</h2>
+     *
+     * <p>{@code PageLayout}, {@code Region} and {@code Theme} are Handlebars, compiled and executed
+     * by the renderer. A form that could create one is not a spam problem — it is a stranger writing
+     * a template this instance runs. So eligibility is the site's allow-list <b>intersected with</b>
+     * "not a system type" ({@code ShFormEligibility}); an allow-list alone would still let an
+     * operator name {@code Theme} by mistake, and that is not a mistake worth leaving available.</p>
+     */
+    FORM
 }

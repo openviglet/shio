@@ -254,3 +254,43 @@ can answer the other's question. SH631 (the scope), SH632 (the site's destinatio
 endpoint) build it, and SH633 must classify its route `AUTHENTICATED` in
 `ShAnonymousRouteAccessTest` — the one endpoint on the product where a future reader is likeliest
 to reason it "should" be allow-listed.
+
+## The FORM scope, and the one line that makes it a scope rather than a label (SH631)
+
+SH364 settled that submissions are token-scoped and never anonymous. `ShApiTokenScope.FORM` is that
+credential, and it is the first scope bounded by **data** — a site, a folder, a type list — where
+the other four are bounded by verb.
+
+**It carries `ROLE_FORM` and nothing else.** Every scope above it starts from `ROLE_CDA` +
+`ROLE_USER` and *adds* capability, which is right while the weakest of them may still read the
+delivery API. A form token may not: it rides in a page a stranger can read, so `ROLE_CDA` would hand
+the whole site to anyone who viewed the source — the privilege escalation §XII forbids, arriving
+through the one credential that is public by construction. `authoritiesFor` therefore **returns
+before** the common grant rather than subtracting afterwards, which is the difference between a rule
+and an omission somebody later "tidies".
+
+**A non-GET method only under `/api/v2/cda/form`.** Bounded in the filter rather than left to the
+authorization rule, so a form token cannot POST elsewhere under `/api/v2/cda/**` even if a future
+mapping accepted `ROLE_FORM` by accident. Under the CDA namespace on purpose: a submission is
+delivery-side traffic from a public page, so it inherits the confinement, the rate limiter and the
+`Key` header the other delivery surfaces already have, instead of becoming a fourth write contract
+(P10).
+
+**`ShFormEligibility` is the floor the endpoint's severity turns on.** The rate limit, the honeypot
+and the `DRAFT` default each bound how *much* or how *visible* the damage is; this bounds whether
+there is a class of damage at all, because `PageLayout`, `Region` and `Theme` are Handlebars the
+renderer compiles and executes. It refuses a platform type **two ways at once** — by its `system`
+flag *and* by its name — deliberately, because those fail differently: the flag is data an import or
+a restore can carry wrongly, and the name list is code that cannot describe a type this build has
+not heard of. A type satisfying one and not the other is exactly the case worth refusing. `Redirect`,
+`SiteScripts` and `File` are on the list too: a submission that could write a `Redirect` could point
+any URL of the site anywhere, and one that could write `SiteScripts` could add a `<script src>` to
+every page — the same defect in different clothes.
+
+Every default points at refusal: an unresolved type is not eligible, and an empty allow-list invites
+nothing rather than everything. `eligibleNames` exists so SH633's refusal can tell an operator what
+they *could* have typed (P6) instead of leaving them to discover it by absence.
+
+The endpoint is SH633 and the site's allow-list and folder are SH632; until both land a `FORM` token
+authenticates on a path that answers 404, which is inert and is the point of shipping the bound
+first.

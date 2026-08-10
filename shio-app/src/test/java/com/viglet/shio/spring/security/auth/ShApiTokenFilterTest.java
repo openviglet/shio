@@ -214,6 +214,59 @@ class ShApiTokenFilterTest {
     }
 
     @Test
+    void formTokenCarriesNeitherRoleCdaNorRoleUser() throws Exception {
+        // SH631 — the load-bearing property of the scope, and the one every other scope inverts.
+        // A form token rides in a page a stranger can read, so ROLE_CDA would hand the whole site
+        // to anyone who viewed the source: the privilege escalation the agent path's invariant
+        // forbids, arriving through the one credential that is public by construction.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.FORM, Set.of("siteA"))));
+        MockHttpServletRequest req = request("POST", "/api/v2/cda/form/siteA");
+
+        filter().doFilter(req, new MockHttpServletResponse(), new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth).isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority")
+                .as("exactly one authority, and it is not one any CDA rule accepts")
+                .containsExactly("ROLE_FORM");
+        assertThat(auth.getAuthorities()).extracting("authority")
+                .doesNotContain("ROLE_CDA", "ROLE_USER", "ROLE_CDA_WRITE", "ROLE_CDA_PREVIEW",
+                        "ROLE_AGENT");
+    }
+
+    @Test
+    void formTokenMayPostOnlyOnTheFormPath() throws Exception {
+        // The method gate is bounded to the path here rather than left to the authorization rule,
+        // so a form token cannot POST elsewhere under /api/v2/cda/** even if a future mapping were
+        // to accept ROLE_FORM by accident.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.FORM, Set.of("siteA"))));
+        MockHttpServletRequest req = request("POST", "/api/v2/cda/post/abc");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(req, res, new MockFilterChain());
+
+        assertThat(res.getStatus()).isEqualTo(403);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void formTokenOnTheAgentSurfaceIsRefused() throws Exception {
+        // The scope may not write on the agent surface either — that is AGENT's, and a form token
+        // reaching it would be the escalation one namespace over.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.FORM, Set.of("siteA"))));
+        MockHttpServletRequest req = request("POST", "/api/v2/agent/batch");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(req, res, new MockFilterChain());
+
+        assertThat(res.getStatus()).isEqualTo(403);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void readTokenOnCdaNonGetIsForbidden() throws Exception {
         when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
