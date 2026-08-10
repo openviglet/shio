@@ -220,6 +220,30 @@ Two cheap things to rule out first, both consistent with the evidence: a temp-di
 or port collision between packages running concurrently, and a test whose fixture writes
 under a shared path. The second is one this repository has hit before.
 
+### IX.74 Twelve promises nothing carries (SH649)
+
+`roadkeep lint` reports twelve `body.promise` problems, all in `IMPROVEMENTS.md` §0.x —
+the positioning and non-goals sections — where prose names task ids to point at the
+epics they belong to. (They are not repeated here: naming them is the defect, and this
+section would be the thirteenth.)
+
+The rule's concern is not wording. An id in this project's own prefix is read as
+**claimed**, so `next-id` derives past it and a number nobody will ever use is burned;
+worse, a later reader follows the pointer and finds nothing carrying it.
+
+They are **pre-existing**, and not introduced by whichever task first surfaced them: the
+count is twelve with and without that change, so the rule arrived with a roadkeep
+upgrade rather than the prose changing. Worth saying, because the obvious reading of a
+newly-red lint is that the last commit did it.
+
+Two ways to close each, and they are different decisions. Where the prose means "the
+epic this belongs to", the fix is to name the id that actually carries a line. Where it
+means "for example", the fix is to spell the example outside the id prefix so nothing
+reads it as a claim.
+
+Small, mechanical, and worth doing before the next `add`: every one of these is a number
+the deriver has already skipped.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -286,26 +310,6 @@ that will not load is refused on its own without taking the catalogue with it.
 
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
-
-### XII.8 A permanent deletion is the one write nobody records (SH224)
-
-`ShPostUnifiedWriteService.purge` fires the `DELETE` lifecycle event — so the SH12 webhook is
-delivered and SH38's listener removes the stored bytes — and writes **no audit row at all**. The
-reversible half of the trash is fully recorded (SH55's `delete` writes one, and since SH200 a
-deleted section writes one per post); the irreversible half records nothing.
-
-That is backwards. "Who destroyed this, and when" is a question about the deletion that cannot
-be undone, and it is the only content transition the SH51 trail does not carry. It also means a
-purge is invisible to `/agent/changes`, so a caller walking the feed sees a post enter the trash
-and never learns it is now gone for good — the two states a reader most needs to tell apart.
-
-The obvious objection is that the post no longer exists, so the entry has no address. SH88
-already answers that: an entry whose object is gone travels with its title and a `null` address,
-and the feed says so in `notes`. The row is worth having on exactly those terms.
-
-Scope note: a folder purge can now take forty posts in one call, which is what moves this from
-tidy to worth doing. Whether that writes forty rows or one plus forty is the same question
-SH200 answered on the delete side, and it should be answered the same way.
 
 ### XII.9 The ACL check depends on `open-in-view` and does not say so (SH225)
 

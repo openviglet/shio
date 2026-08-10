@@ -23,7 +23,17 @@ public enum ShContentAction {
     PUBLISH("Published"),
     UNPUBLISH("Unpublished"),
     DELETE("Deleted"),
-    RESTORE("Restored");
+    RESTORE("Restored"),
+
+    /**
+     * SH224 — a permanent deletion, which is not a {@link #DELETE}.
+     *
+     * <p>Its own verb because the two are the states a reader most needs to tell apart: a `DELETE`
+     * is the reversible trash and a caller walking the feed can still act on it, while this one
+     * cannot be undone by anybody. Folding them would make the feed say a post left twice and never
+     * say which time was final.</p>
+     */
+    PURGE("Destroyed");
 
     private final String verb;
 

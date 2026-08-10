@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -30,6 +31,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -50,6 +52,8 @@ class ShPostTrashTest {
     private ShPostUnifiedWriteService writeService;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
+    @Autowired
+    private ShHistoryRepository shHistoryRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -136,11 +140,59 @@ class ShPostTrashTest {
         writeService.delete(postId, "admin");
         assertThat(inTrash(postId)).isTrue();
 
-        assertThat(writeService.purge(postId)).isTrue();
+        assertThat(writeService.purge(postId, "admin")).isTrue();
 
         assertThat(inTrash(postId)).isFalse();
         assertThat(shPostUnifiedRepository.findById(postId)).isEmpty();
         // A second purge is a no-op (already gone).
-        assertThat(writeService.purge(postId)).isFalse();
+        assertThat(writeService.purge(postId, "admin")).isFalse();
     }
+
+    @Test
+    @DisplayName("SH224: a purge writes the row that says who destroyed it")
+    void aPurgeIsAudited() {
+        // The one write nobody recorded. `purge` fired the DELETE lifecycle event — so the webhook
+        // went and the stored bytes were removed — and wrote no audit row at all. The REVERSIBLE
+        // half of the trash was fully recorded and the irreversible half recorded nothing, which is
+        // backwards: "who destroyed this, and when" is a question about the deletion that cannot be
+        // undone.
+        String postId = createPost("Doomed");
+        writeService.delete(postId, "curator");
+
+        assertThat(writeService.purge(postId, "curator")).isTrue();
+
+        assertThat(shHistoryRepository.findAll())
+                .as("""
+                        the row names the post that no longer exists, which SH88 already knows how \
+                        to carry: an entry whose object is gone travels with its title and a null \
+                        address. That is the shape, and the reason the row is worth having despite \
+                        naming something unreachable (SH224).""")
+                .anySatisfy(row -> {
+                    assertThat(row.getShObject()).isEqualTo(postId);
+                    assertThat(row.getAction()).isEqualTo("PURGE");
+                    assertThat(row.getOwner()).isEqualTo("curator");
+                    // The verb, not the title. Whether this fixture's post carries an entity
+                    // title is the fixture's business — what SH224 claims is that the row says a
+                    // DESTRUCTION happened, in words a reader of the feed can act on.
+                    assertThat(row.getDescription()).startsWith("Destroyed");
+                });
+    }
+
+    @Test
+    @DisplayName("SH224: a purge is its own action, not a second DELETE")
+    void aPurgeIsNotADelete() {
+        // The two states a reader most needs to tell apart. A caller walking /agent/changes saw a
+        // post enter the trash and never learned it was gone for good; folding the two would make
+        // the feed say a post left twice and never say which time was final.
+        String postId = createPost("Also doomed");
+        writeService.delete(postId, "curator");
+        writeService.purge(postId, "curator");
+
+        assertThat(shHistoryRepository.findAll())
+                .filteredOn(row -> postId.equals(row.getShObject()))
+                .as("one DELETE for the trash and one PURGE for the destruction, in that order")
+                .extracting(row -> row.getAction())
+                .containsSubsequence("DELETE", "PURGE");
+    }
+
 }

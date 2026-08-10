@@ -323,6 +323,9 @@ public class ShReviewService {
             case RESTORE -> {
                 return Optional.of("a restore is already an undo");
             }
+            case PURGE -> {
+                return Optional.of("permanently deleted — there is nothing left to restore");
+            }
         }
         return Optional.empty();
     }
@@ -526,6 +529,11 @@ public class ShReviewService {
             case UNPUBLISH -> draft;
             case DELETE -> trashed;
             case RESTORE -> false;
+            // SH224 — a purge is the one transition with no undo at all: the rows are gone, so
+            // there is nothing for the queue to put back. It is recorded precisely BECAUSE it
+            // cannot be reversed, and offering an Approve/Revert on it would be the queue
+            // promising something no code can deliver.
+            case PURGE -> false;
         };
     }
 

@@ -135,9 +135,9 @@ public class ShFolderAPI {
      * cleanup run here and not on the reversible delete above).
      */
     @DeleteMapping("/{id}/purge")
-    public ResponseEntity<Void> purge(@PathVariable String id) {
+    public ResponseEntity<Void> purge(@PathVariable String id, Principal principal) {
         shContentAclService.requireWrite(id);
-        return shFolderWriteService.purge(id)
+        return shFolderWriteService.purge(id, principal != null ? principal.getName() : null)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }

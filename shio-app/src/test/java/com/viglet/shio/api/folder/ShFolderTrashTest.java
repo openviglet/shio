@@ -179,7 +179,7 @@ class ShFolderTrashTest {
         shFolderWriteService.delete(section, "curator");
         assertThat(deleteEventsFor(postId)).isEmpty();
 
-        assertThat(shFolderWriteService.purge(section)).isTrue();
+        assertThat(shFolderWriteService.purge(section, "admin")).isTrue();
         // This is the event SH38's cleanup listener and the SH12 webhook hang off — the old
         // cascade fired it for nobody, so the stored bytes leaked forever.
         assertThat(deleteEventsFor(postId)).hasSize(1);
@@ -243,7 +243,7 @@ class ShFolderTrashTest {
         String section = createFolder(rootFolderId, "Live");
 
         assertThat(shFolderWriteService.restore(section, "curator")).isFalse();
-        assertThat(shFolderWriteService.purge(section)).isFalse();
+        assertThat(shFolderWriteService.purge(section, "admin")).isFalse();
         assertThat(shFolderRepository.findById(section)).isPresent();
     }
 

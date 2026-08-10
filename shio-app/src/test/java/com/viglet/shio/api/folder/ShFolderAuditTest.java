@@ -275,7 +275,7 @@ class ShFolderAuditTest {
             inTx(() -> shFolderWriteService.delete(created, "agent"));
             return created;
         });
-        inTx(() -> shFolderWriteService.purge(section));
+        inTx(() -> shFolderWriteService.purge(section, "admin"));
         assertThat(shFolderRepository.findAnyById(section)).isEmpty();
 
         ShReviewDetail detail = shReviewService.detail(session);

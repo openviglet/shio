@@ -370,3 +370,41 @@ you deleted"* is a teaching error somebody has to write.
 
 Filed as **SH648**. The precedent is clear and the cost is schema plus a listing rule, not design —
 which is precisely why it should not ride along inside a service fix.
+
+## The one write nobody recorded (SH224)
+
+`ShPostUnifiedWriteService.purge` fired the `DELETE` lifecycle event — so the SH12 webhook went and
+SH38's listener removed the stored bytes — and wrote **no audit row at all**. The reversible half of
+the trash was fully recorded; **the irreversible half recorded nothing**. That is backwards: "who
+destroyed this, and when" is a question about the deletion that cannot be undone.
+
+It also left a purge invisible to `/agent/changes`, so a caller walking the feed saw a post enter
+the trash and never learned it was gone for good — the two states a reader most needs to tell apart.
+
+### `PURGE` is its own action
+
+Not a second `DELETE`. Folding them would make the feed say a post left twice and never say which
+time was final, and the review queue would offer an undo for something no code can reverse — so
+`ShReviewService` answers *"permanently deleted — there is nothing left to restore"* rather than a
+generic refusal. The compiler enforced that decision: adding a value to the action enum broke three
+switches, which is the closed set doing its job.
+
+The row is written **before the rows are gone**, so the title and site come off the entity while it
+still exists. SH88 already carries an entry whose object has vanished — it travels with its title
+and a `null` address — which is exactly the shape this needs.
+
+`purge` now takes the actor the endpoints already had; a cascade passes `null` honestly rather than
+attributing the destruction to whoever happened to be nearest.
+
+### The overload lint was right and I was wrong twice
+
+Threading the actor produced a `purge(id)` / `purge(id, actor)` pair. The first attempt kept the old
+signature delegating to the new one — and **a delegation between overloads is a self-invocation that
+never crosses the proxy**, so the native purge ran with no transaction and said so
+(`No active transaction for update or delete query`). Annotating both was the second wrong answer:
+`ShAgentTransactionalOverloadLintTest` refuses the *shape*, not the annotation, and its message says
+to collapse the pair. Collapsing is what shipped, and two callers learned one argument.
+
+*(Unrelated, and found while shipping this: `roadkeep lint` reports twelve pre-existing
+`body.promise` problems in `IMPROVEMENTS.md` §0.x — twelve with and without this change, so a
+roadkeep upgrade surfaced them rather than any commit causing them. Filed as SH649.)*

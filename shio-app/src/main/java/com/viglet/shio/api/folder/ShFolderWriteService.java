@@ -390,7 +390,17 @@ public class ShFolderWriteService {
      * @return {@code false} when the id is not a trashed folder
      */
     @Transactional
-    public boolean purge(String id) {
+    /**
+     * @param actor SH224 — carried down so each purged post's row names who asked.
+     *
+     *              <p>One method rather than an overload pair keeping the old signature:
+     *              {@code ShAgentTransactionalOverloadLintTest} refuses a pair where one carries
+     *              {@code @Transactional}, and its advice is to collapse rather than annotate both,
+     *              because the delegation between them is a self-invocation that never crosses the
+     *              proxy. Two callers had to learn one argument; that is cheaper than a pair whose
+     *              semantics depend on which overload resolved.</p>
+     */
+    public boolean purge(String id, String actor) {
         Optional<ShFolder> found = shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed);
         if (found.isEmpty()) {
             return false;
@@ -401,11 +411,11 @@ public class ShFolderWriteService {
         // folder_id FK and block the folder rows.
         for (ShFolder node : nodes) {
             for (ShPostUnified post : livePostsIn(node)) {
-                shPostUnifiedWriteService.delete(post.getId(), null);
+                shPostUnifiedWriteService.delete(post.getId(), actor);
             }
         }
         for (ShPostUnified post : trashedPostsIn(nodes)) {
-            shPostUnifiedWriteService.purge(post.getId());
+            shPostUnifiedWriteService.purge(post.getId(), actor);
         }
         // A purge is native DML (it has to be — @SQLRestriction hides the rows it deletes), so
         // the post entities it removed are still managed here. Flushing and clearing before the

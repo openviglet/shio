@@ -243,9 +243,11 @@ public class ShPostUnifiedAPI {
 
     /** SH55 — permanently delete a trashed post (irreversible; fires byte-cleanup + webhook). */
     @DeleteMapping("/{id}/purge")
-    public ResponseEntity<Void> purge(@PathVariable String id) {
+    public ResponseEntity<Void> purge(@PathVariable String id, Principal principal) {
         shContentAclService.requireWrite(id);
-        return shPostUnifiedWriteService.purge(id)
+        // SH224 — the actor, because the irreversible half of the trash is the one that most needs
+        // attributing. It was the only content transition the audit trail did not carry.
+        return shPostUnifiedWriteService.purge(id, principal != null ? principal.getName() : null)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }

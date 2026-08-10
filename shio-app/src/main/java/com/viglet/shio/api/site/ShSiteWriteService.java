@@ -461,7 +461,7 @@ public class ShSiteWriteService {
             // Trash first because `purge` operates *on* the trash and refuses a live folder — the
             // two halves are one gesture here, since a site delete has no undo to preserve.
             shFolderWriteService.delete(rootFolderId, actor);
-            shFolderWriteService.purge(rootFolderId);
+            shFolderWriteService.purge(rootFolderId, actor);
         }
         return shSiteRepository.findById(id).map(site -> {
             String name = site.getName();

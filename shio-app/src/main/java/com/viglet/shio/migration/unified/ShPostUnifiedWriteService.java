@@ -606,14 +606,47 @@ public class ShPostUnifiedWriteService {
      * SH12 webhook run; the row itself is removed with a native delete that
      * bypasses the soft-delete {@code @SQLRestriction}.
      */
+    /**
+     * Permanently deletes a trashed post, and records that somebody did (SH224).
+     *
+     * <h2>The one write nobody recorded</h2>
+     *
+     * <p>This fired the {@code DELETE} lifecycle event — so the SH12 webhook went and SH38's
+     * listener removed the stored bytes — and wrote <b>no audit row at all</b>. The reversible half
+     * of the trash is fully recorded, and the irreversible half recorded nothing, which is
+     * backwards: "who destroyed this, and when" is a question about the deletion that
+     * <em>cannot be undone</em>.</p>
+     *
+     * <p>It also left a purge invisible to {@code /agent/changes}, so a caller walking the feed saw
+     * a post enter the trash and never learned it was gone for good — the two states a reader most
+     * needs to tell apart.</p>
+     *
+     * <h2>The row is written before the rows are gone</h2>
+     *
+     * <p>The title and the site come off the entity, so they are read while it still exists. SH88
+     * already carries an entry whose object has vanished — it travels with its title and a
+     * {@code null} address, and the feed says so in {@code notes} — which is exactly the shape this
+     * row needs and the reason it is worth having despite naming something unreachable.</p>
+     *
+     * @param actor who asked; {@code null} when a cascade did (a folder or site purge), which the
+     *              row carries honestly rather than attributing to whoever happened to be nearest
+     */
+    // One method, not a pair. The first attempt kept a one-argument overload delegating here, and
+    // that delegation is a self-invocation: the proxy never applies, so the native purge ran with
+    // no transaction and said so. SH358's lint refuses the shape outright, and its advice — collapse
+    // rather than annotate both — is what this is.
     @Transactional
-    public boolean purge(String postId) {
+    public boolean purge(String postId, String actor) {
         List<ShPostUnified> rows = shPostUnifiedRepository.findTrashedById(postId, tenantId());
         if (rows.isEmpty()) {
             return false;
         }
-        ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, rows.get(0));
+        ShPostUnified row = rows.get(0);
+        String title = row.getTitle();
+        String siteId = siteIdOf(row);
+        ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, row);
         shPostUnifiedRepository.purge(postId, tenantId());
+        shContentAuditService.record(ShContentAction.PURGE, postId, siteId, title, actor);
         eventPublisher.publishEvent(event);
         return true;
     }
