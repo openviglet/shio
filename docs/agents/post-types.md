@@ -215,3 +215,31 @@ defect is two reports that can disagree. What the catch buys is that one unparse
 count as violating every required field and drown the finding somebody asked for.
 
 SH524 and SH525 build on this.
+
+## The 404 that said nothing (SH621)
+
+SH499's execution instrument issued the requests `docs-shio` publishes, and this was its first
+finding: `GET /api/v2/post-type/Article` on a bare instance answered **404 with
+`Content-Length: 0`** — not a thin problem document, no body at all. The same miss one surface over
+(`/agent/read` on a nonexistent address) answered a full RFC 9457 document with `fix` and `allowed`.
+**P6 was implemented on `/api/v2/agent/**` and nowhere else.**
+
+That is the wrong half to have covered. Post-types are **the one name-keyed surface** — SH117
+retired the id-keyed twin — so a name is the only thing a caller can get wrong here, and a typo is
+the likeliest way to arrive at this 404 at all. `didYouMean` was already a solved mechanism on this
+codebase; this is the endpoint it was invented for.
+
+**The cost was not cosmetic.** With zero bytes back, a renamed type and a type that never existed
+are the same answer, and the caller's next move — retry, create, or ask a human — depends on which.
+An agent that cannot tell them apart guesses, and guessing on a model change is how a second
+post-type gets created beside the one that was meant. So the `fix` names *both* moves: create it,
+or ask `?dryRun=true` (SH523) what adopting a definition would cost first.
+
+Two things about the test worth keeping:
+
+- **The body is asserted on the bytes, not on a parsed field.** "No body at all" is exactly what a
+  test deserializing a DTO would have missed, and it was the defect's whole signature.
+- **The fixture creates its own post-type.** The first draft assumed `Text` was seeded in the shared
+  context; it is not, so every assertion read 404 and `allowed` was empty. `allowed` and
+  `didYouMean` are claims about a *population*, so borrowing another test's would have made them
+  statements about suite order — SH315's rule, arrived at the hard way.

@@ -175,27 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.37 The 404 that says nothing, on the surface a typo is likeliest (SH621)
-
-SH499's execution instrument issued the requests `docs-shio` publishes and this was its
-first finding: `GET /api/v2/post-type/Article` on a bare instance answers **404 with
-`Content-Length: 0`**. Not a thin problem document — no body at all.
-
-Compare the same miss one surface over. `GET /api/v2/agent/read?address=post:nosuch/x`
-answers a full RFC 9457 document: `type`, `title`, `detail`, `fix` naming the call that
-lists the options, and `allowed` carrying the names. P6 is implemented, and it is
-implemented on `/api/v2/agent/**` only.
-
-That is the wrong half to have covered, because post types are **the one name-keyed
-surface** (SH117 retired the id-keyed twin), so a name is the only thing a caller can
-get wrong and a typo is the likeliest way to arrive here. `didYouMean` is a solved
-mechanism on this codebase and this is the endpoint it was invented for.
-
-The gap is not cosmetic: with zero bytes back, a renamed type and a type that never
-existed are the same answer, and the caller's next move — retry, create, or ask a human
-— depends on which. An agent that cannot tell them apart guesses, and guessing on a
-model change is how a second post-type gets created beside the one that was meant.
-
 ### VIII.38 P6 is a controller-advice property, and the first error is not thrown by a controller (SH622)
 
 The other two findings of SH499's first execution run were `GET /api/v2/cda/site` and

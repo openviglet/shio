@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.viglet.shio.api.agent.ShAgentBodyEtag;
 import com.viglet.shio.api.post.type.dto.ShModelProposal;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeRename;
 import com.viglet.shio.api.post.type.dto.ShPostTypeRenamed;
@@ -105,7 +107,52 @@ public class ShPostTypeAPI {
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
         return shPostTypeAdminService.get(name)
                 .map(def -> shAgentBodyEtag.json("post-type." + name, def, ifNoneMatch))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                // SH621 — a refusal that teaches, where `notFound().build()` sent zero bytes.
+                .orElseThrow(() -> new UnknownPostTypeException(name, declaredNames()));
+    }
+
+    /** Every declared name, for the refusal above to suggest from and list. */
+    private java.util.List<String> declaredNames() {
+        return shPostTypeAdminService.list().stream().map(ShPostTypeDef::name).toList();
+    }
+
+    /**
+     * An unknown post-type name (SH621).
+     *
+     * <h3>Why this endpoint and not another</h3>
+     *
+     * <p>SH499's execution instrument issued the requests {@code docs-shio} publishes and this was
+     * its first finding: {@code GET /api/v2/post-type/Article} on a bare instance answered
+     * <b>404 with {@code Content-Length: 0}</b> — not a thin problem document, no body at all —
+     * while the same miss one surface over ({@code /agent/read} on a nonexistent address) answered
+     * a full RFC 9457 document with {@code fix} and {@code allowed}. P6 was implemented on
+     * {@code /api/v2/agent/**} only, which is the wrong half to have covered: post-types are
+     * <b>the one name-keyed surface</b> (SH117 retired the id-keyed twin), so a name is the only
+     * thing a caller can get wrong here and a typo is the likeliest way to arrive.</p>
+     *
+     * <h3>What the zero bytes cost</h3>
+     *
+     * <p>A renamed type and a type that never existed were the same answer, and the caller's next
+     * move — retry, create, or ask a human — depends on which. An agent that cannot tell them apart
+     * guesses, and guessing on a model change is how a second post-type gets created beside the one
+     * that was meant.</p>
+     */
+    public static class UnknownPostTypeException extends ShTeachingException {
+
+        public UnknownPostTypeException(String name, java.util.List<String> declared) {
+            super(ShProblem.of("unknown-post-type", HttpStatus.NOT_FOUND,
+                            "No post-type named `" + name + "`")
+                    .withDetail("This instance declares " + declared.size() + " post-type(s), and "
+                            + "none of them is that. A name is the only key this surface has "
+                            + "(SH117), so a miss here is a spelling, a rename, or a type that "
+                            + "was never created — and those need different next moves.")
+                    .withAllowed(new java.util.TreeSet<>(declared))
+                    .withDidYouMeanFrom(name)
+                    .withFix("Create it with PUT /api/v2/post-type/" + name + ", or ask "
+                            + "PUT /api/v2/post-type/" + name + "?dryRun=true what adopting a "
+                            + "definition would cost first. GET /api/v2/post-type lists what is "
+                            + "here."));
+        }
     }
 
     /**
