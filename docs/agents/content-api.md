@@ -339,3 +339,34 @@ that had to precede it is the audited row, matching `ShPostUnifiedWriteService#p
   own table) — so copy/move resolves folder ids via `ShObjectRepository` and post ids
   via `ShPostUnifiedRepository`. `/list` dedups posts by id, DRAFT-preferred.
 
+
+## Deleting a site now says that it happened (SH223)
+
+§XII.7 described `ShSiteWriteService.delete` as removing the `ShSite` and letting the JPA cascade
+take its folders, so every post left past the trash with no audit, no feed entry and no `DELETE`
+event. **That is no longer what the code does** — it trashes each root folder first and then purges
+it, so the posts leave through SH55's trash with their SH51 rows, the SH88 feed and the events. The
+section had gone stale, and reading it before writing anything is what caught that.
+
+What was still true is narrower and worth fixing: **the site itself was unaudited.** Its posts were
+recorded one level down and its folders two, so a reader of the feed saw every page of a site leave
+and nothing saying the site had — an inference the audit trail exists to remove, on the largest
+deletion in the product.
+
+`ShContentSubject` gains `SITE` beside `POST` and `FOLDER`, and the delete records itself **after
+the delete succeeds**, because an audit row for something that did not happen is worse than none.
+
+### What is still open, and why it is not here
+
+**Is a deleted site trashed, or only its content?** Today it is purged, so there is no undo at site
+level while there is one at every level below. Trashing the content and removing the site row cannot
+work — the posts keep their `folder_id` and the root folders their `site_id`, which is exactly why
+SH200 gave the folder a `deleted_date` rather than deleting it.
+
+So the site needs one too, and that is a Liquibase change, a filter on every read that lists sites,
+and the cross-DB ITs a schema move brings. It also drags a second question: a trashed site still
+occupies its name and friendly URL, so re-creating it collides and *"that name is taken by something
+you deleted"* is a teaching error somebody has to write.
+
+Filed as **SH648**. The precedent is clear and the cost is schema plus a listing rule, not design —
+which is precisely why it should not ride along inside a service fix.

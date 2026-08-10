@@ -287,30 +287,6 @@ that will not load is refused on its own without taking the catalogue with it.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.7 Deleting a site is SH200 one level up, and worse (SH223)
-
-`ShSiteWriteService.delete` removes the `ShSite` entity and lets the JPA cascade
-(`ShSite#shFolders`, `CascadeType.ALL`) take its folders. Every post in the site therefore
-leaves the same way a folder's posts used to before SH200: past the SH55 trash, with no SH51
-audit row, invisible to the SH88 feed, unrevertable by the SH109 queue, and with no `DELETE`
-lifecycle event — so no webhook and no SH38 byte cleanup.
-
-Same defect, largest blast radius; the argument for fixing it is SH200's: **the most
-destructive operation must not be the least recoverable and the least observable.**
-
-The fix is a delegation, not a third cascade — the site's root folders go through
-`ShFolderWriteService`, the one place that knows what deleting a subtree means. Two things to
-decide while doing it:
-
-- **Is a deleted site trashed too, or only its content?** Trashing the content and removing the
-  site row cannot work, for the reason it could not for a folder: the posts keep their
-  `folder_id` and the root folders their `site_id`. So either the site gets a `deleted_date` of
-  its own — consistent, and a site can then be restored whole — or the delete stays a purge and
-  must fire the events and write the audit itself. SH200 chose the first one level down.
-- **What does the site listing owe the curator?** A trashed site still occupies its name and
-  friendly URL, so re-creating it collides, and "that name is taken by something you deleted"
-  is a teaching error somebody must write.
-
 ### XII.8 A permanent deletion is the one write nobody records (SH224)
 
 `ShPostUnifiedWriteService.purge` fires the `DELETE` lifecycle event — so the SH12 webhook is
@@ -377,6 +353,31 @@ Two candidate answers, not exclusive:
 - **A resolver**, in the `ShFolderSite.of` mould: one method that resolves an object id and drops
   a trashed folder, so the correct form is also the shortest one. The lint then has something to
   point at, which is what made SH128's guard teachable rather than annoying.
+
+### XII.13 A site the trash cannot hold (SH648)
+
+SH223 found its symptom mostly fixed: `ShSiteWriteService.delete` already trashes each
+root folder before purging it, so the posts leave through SH55's trash with their audit
+rows, the SH88 feed and the `DELETE` events. What it did not record was **the site
+itself**, which SH223 added.
+
+What is still open is that task's first design question: **is a deleted site trashed, or
+only its content?** Today it is purged, so there is no undo at site level while there is
+one at every level below.
+
+Trashing the content and removing the site row cannot work, for the reason it could not
+for a folder: the posts keep their `folder_id` and the root folders their `site_id`. So
+the site needs a `deleted_date` of its own — a Liquibase change, a filter on every read
+that lists sites, and the cross-DB ITs a schema move brings.
+
+It drags the second question with it. A trashed site still occupies its name and
+friendly URL, so re-creating it collides; "that name is taken by something you deleted"
+is a teaching error somebody has to write, and it is the kind a caller meets at the
+worst moment.
+
+Worth doing as its own task rather than inside a service fix: SH200 chose exactly this
+shape one level down, so the precedent is clear and the cost is schema plus a listing
+rule, not design.
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 

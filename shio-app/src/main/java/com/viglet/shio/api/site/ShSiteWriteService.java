@@ -19,6 +19,9 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.history.ShContentAuditService;
+import com.viglet.shio.api.history.ShContentAction;
+import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.exchange.site.ShBootstrapSiteProvider;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -46,16 +49,19 @@ public class ShSiteWriteService {
     private final ObjectMapper objectMapper;
     /** SH454 — deleting a subtree is the folder writer's verb, and there is one of it (SH245). */
     private final ShFolderWriteService shFolderWriteService;
+    private final ShContentAuditService shContentAuditService;
 
     public ShSiteWriteService(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
                               ShBootstrapSiteProvider bootstrapSiteProvider,
                               ObjectMapper objectMapper,
-                              ShFolderWriteService shFolderWriteService) {
+                              ShFolderWriteService shFolderWriteService,
+                              ShContentAuditService shContentAuditService) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.bootstrapSiteProvider = bootstrapSiteProvider;
         this.objectMapper = objectMapper;
         this.shFolderWriteService = shFolderWriteService;
+        this.shContentAuditService = shContentAuditService;
     }
 
     @Transactional
@@ -458,7 +464,14 @@ public class ShSiteWriteService {
             shFolderWriteService.purge(rootFolderId);
         }
         return shSiteRepository.findById(id).map(site -> {
+            String name = site.getName();
             shSiteRepository.delete(site);
+            // SH223 — the row the largest deletion in the product never wrote. Its posts and
+            // folders were audited one and two levels down, so a reader of the SH88 feed saw every
+            // page of a site leave and nothing saying the site had. Written AFTER the delete
+            // succeeded, because an audit row for something that did not happen is worse than none.
+            shContentAuditService.record(ShContentAction.DELETE, ShContentSubject.SITE, id, id,
+                    name, actor, "the site and everything in it");
             return true;
         }).orElse(false);
     }

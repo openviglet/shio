@@ -42,7 +42,17 @@ public enum ShContentSubject {
     POST,
 
     /** A folder, i.e. a section of a site: addressed {@code folder:<site>/<name-chain>} (SH79). */
-    FOLDER;
+    FOLDER,
+
+    /**
+     * A whole site: addressed {@code site:<name>} (SH79), and the subject SH223 added.
+     *
+     * <p>Its posts and folders were already audited one and two levels down — the site itself was
+     * not, so the largest deletion in the product was the only one that left no row saying it
+     * happened. A feed that records every page of a site leaving and never records the site is a
+     * feed a reader has to infer the event from, which is the inference SH51 exists to remove.</p>
+     */
+    SITE;
 
     /** The lower-case form used on the wire, which is also its SH79 address scheme. */
     public String wire() {

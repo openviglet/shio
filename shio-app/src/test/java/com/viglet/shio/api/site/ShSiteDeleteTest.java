@@ -30,6 +30,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -67,6 +68,8 @@ class ShSiteDeleteTest {
     private ShSiteWriteService shSiteWriteService;
     @Autowired
     private ShSiteRepository shSiteRepository;
+    @Autowired
+    private ShHistoryRepository shHistoryRepository;
     @Autowired
     private ShFolderRepository shFolderRepository;
     @Autowired
@@ -160,5 +163,33 @@ class ShSiteDeleteTest {
     }
 
     private record Content(List<String> folderIds, List<String> postIds) {
+    }
+
+    @Test
+    @DisplayName("SH223: deleting a site writes the row that says the site went")
+    void theSiteItselfIsAudited() {
+        // The largest deletion in the product was the only one that left nothing behind saying it
+        // happened. Its POSTS were audited (SH51) and its FOLDERS were (SH200) — one and two
+        // levels down — so a reader of the SH88 feed saw every page of a site leave and nothing
+        // saying the site had. That is an inference the feed exists to remove.
+        String name = "sh223-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        ShSite site = new ShSite();
+        site.setName(name);
+        site.setDate(java.time.Instant.parse("2026-01-01T00:00:00Z"));
+        site.setOwner("admin");
+        shSiteRepository.save(site);
+        String siteId = site.getId();
+
+        shSiteWriteService.delete(siteId, "curator");
+
+        assertThat(shHistoryRepository.findAll())
+                .as("""
+                        one row, naming the site, written after the delete succeeded — an audit \
+                        row for something that did not happen is worse than none (SH223).""")
+                .anySatisfy(row -> {
+                    assertThat(row.getShObject()).isEqualTo(siteId);
+                    assertThat(row.getAction()).isEqualTo("DELETE");
+                    assertThat(row.getOwner()).isEqualTo("curator");
+                });
     }
 }
