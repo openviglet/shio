@@ -175,31 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.25 Modelling by example, pointed inward (SH525)
-
-`propose` derives a post-type from markup nobody wrote for Shio: on `viglet.org` it
-offered `BlockBuildTheFuture` with `heading:text, body:htmlEditor, image:file,
-items:relator`, inferred from one page's structure. That is data modelling by example,
-it works, and it exists only inside conversion — pointed at a stranger's site.
-
-Point it at mine. Three product pages written as content, and the question "what
-post-type are these three instances of" has the same answer computed the same way. The
-capability is built; only its input is hard-wired to a capture.
-
-It is the modelling verb I have most wanted and never had. Writing a post-type from
-nothing means naming fields before knowing what they hold, which is the wrong order — a
-model is easier to see once three instances exist and disagree. Today the only route is
-to author blind, discover the shape, then rewrite the type and migrate what already used
-it.
-
-Two things it should carry that the conversion version does not need. **Which instances
-disagree**, since a field two of three share is a different proposal from one all three
-do, and the disagreement is the interesting part. And **what it would cost to adopt**,
-which is SH523's plan — inferring a type is only useful if applying it is reviewable.
-
-The honest limit belongs in the report: three instances of a thing are evidence about
-those three. A proposal, not a conclusion — which is what `propose` already gets right.
-
 ### VIII.30 The sitemap still has the word SH545 replaced (SH553)
 
 `folderPosts` fetches both state rows, drops the published one and reports `state` from

@@ -2271,3 +2271,38 @@ and an edit that changed one would produce a site whose every page renders empty
 `ShConvertedLayoutRenderTest` keeps a fixture titled `Sh464 (fidelity)` **on purpose**: the property
 under test is that nothing downstream reads meaning out of this title, and a layout named after a
 mode it does not serve is the adversarial case for exactly that.
+
+**`shio propose --from <address>…` is the same verb pointed inward (SH525).** `propose` derives a
+post-type from markup nobody wrote for Shio — on `viglet.org` it offered `BlockBuildTheFuture` with
+`heading:text, body:htmlEditor, image:file, items:relator`, inferred from one page's structure.
+That is data modelling by example, it works, and it existed only inside conversion. `--from` asks
+the identical question about content you wrote: *what post-type are these instances of.* A flag and
+not a verb, because the task's own diagnosis was right — the capability was built and only its input
+was hard-wired to a capture.
+
+Why it is worth having: writing a post-type from nothing means naming fields before knowing what
+they hold, which is the wrong order. A model is easier to see once three instances exist and
+disagree, and the route before this was to author blind, discover the shape, then rewrite the type
+and migrate what already used it.
+
+**Two things the conversion version does not need, and they are where the value is.**
+
+- **Which instances disagree.** A field two of three share is a different proposal from one all
+  three do, so every field carries `in/of` and the addresses that lack it. That is the difference
+  between a required field, an optional one, a data gap and a second type — and none of those is
+  visible from a count.
+- **A minority field is reported and not proposed.** One instance in three carrying `ISBN` is more
+  likely another type's field than an optional one, and sweeping it in produces exactly the
+  over-wide type this exists to avoid. It lands in `outliers`, because "these instances carry
+  something the others do not" is a finding about the model and hiding it makes the proposal look
+  more settled than the evidence is.
+
+Two smaller rules that change the answer: **an empty value is absent**, so a field every instance
+declares and none fills is not evidence of a field — counting it would make the disagreement read
+as agreement; and **an absent value does not vote on the kind**, or every partly-filled field would
+infer as `text`. The kinds are `@viglet/shio-model`'s own vocabulary, so a type proposed from
+instances and one proposed from a capture are the same artefact and can be compared.
+
+The report ends by saying what it is: *a proposal, not a conclusion — N instances are evidence about
+those N.* That property is the one most easily lost when the input stops being a stranger's site and
+starts being content the reader wrote, which is why it is asserted rather than merely written.

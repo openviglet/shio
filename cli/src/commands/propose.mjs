@@ -54,6 +54,12 @@ import {
   serializeProposal,
 } from "../propose.mjs";
 import { DEFAULT_MIN_REFS, buildTheme } from "../theme.mjs";
+import {
+  describeInstanceProposal,
+  proposeFromInstances,
+} from "../propose-instances.mjs";
+import { ShioAgentClient } from "../agent-client.mjs";
+import { resolveAdmin } from "../context.mjs";
 import { helpText } from "../help.mjs";
 
 /**
@@ -67,6 +73,15 @@ import { helpText } from "../help.mjs";
 export const HELP = helpText("propose");
 
 export async function run(flags, positionals, ctx) {
+  // SH525 — the same verb pointed inward. `propose` derives a post-type from markup nobody wrote
+  // for Shio; `--from <address>...` asks the identical question about content the reader wrote:
+  // what post-type are these instances of. A flag on this command rather than a verb of its own,
+  // because the capability was already built and only its input was hard-wired to a capture.
+  const from = addresses(flags.from);
+  if (from.length) {
+    return proposeFromContent(from, flags, ctx);
+  }
+
   const { inventory, plan, proposal, markup, theme } = await proposalFor(flags, ctx, "propose");
 
   const accepting = acceptIds(flags, positionals);
@@ -431,4 +446,51 @@ async function readJson(path, ctx) {
 async function write(path, body, ctx) {
   await ctx.fs.mkdir(dirname(path), { recursive: true });
   await ctx.fs.writeFile(path, body, "utf8");
+}
+
+
+/** `--from a --from b` and `--from a,b` are the same list; an agent writes whichever it has. */
+function addresses(raw) {
+  if (!raw) return [];
+  const values = Array.isArray(raw) ? raw : [raw];
+  return values
+    .flatMap((value) => String(value).split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Model from instances that already exist (SH525).
+ *
+ * <p>Reads through the agent surface rather than the database, so what it models from is what an
+ * agent would read — a proposal computed from rows nobody could fetch would be a proposal about a
+ * different instance. `--name` is the type to propose; without one the report is still worth
+ * reading, so it defaults rather than refusing.</p>
+ */
+async function proposeFromContent(from, flags, ctx) {
+  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+  const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+  const docs = await client.read(from, {});
+  const instances = (Array.isArray(docs) ? docs : [])
+    .filter((doc) => doc && !doc.error)
+    .map((doc) => ({ address: doc.address, data: doc.data ?? {} }));
+
+  const missing = from.filter((address) => !instances.some((row) => row.address === address));
+  if (missing.length) {
+    // Named rather than silently modelled around: a proposal computed from two of the three
+    // addresses somebody passed is a proposal about a set they did not ask about (P6).
+    ctx.stderr.write(`shio propose: could not read ${missing.join(", ")}
+`);
+  }
+
+  const proposal = proposeFromInstances(instances, typeName(flags, instances));
+  ctx.stdout.write(describeInstanceProposal(proposal));
+  return proposal ? 0 : 1;
+}
+
+/** The proposed type's name: what was asked for, else the shared type of the instances read. */
+function typeName(flags, instances) {
+  if (typeof flags.name === "string" && flags.name.trim()) return flags.name.trim();
+  const types = [...new Set(instances.map((row) => row.type).filter(Boolean))];
+  return types.length === 1 ? types[0] : "ProposedType";
 }
