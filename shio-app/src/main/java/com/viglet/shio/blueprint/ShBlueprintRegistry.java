@@ -162,6 +162,49 @@ public class ShBlueprintRegistry {
     }
 
     /**
+     * Re-reads the configured directory, and answers what changed (SH219).
+     *
+     * <h2>Explicit, because a watcher would put the moment in the wrong hands</h2>
+     *
+     * <p>The cache was free while the classpath was the only source: packages cannot change inside
+     * a running JVM, so a cache with no invalidation was not a cache with a bug, it was a constant.
+     * SH96 changed the premise — an operator can drop a package into {@code shio.blueprint.path}
+     * and nothing sees it until a restart, which is the wrong default for a directory whose whole
+     * point is iterating on a package.</p>
+     *
+     * <p><b>Not a watcher.</b> A registry that re-scanned itself would re-run validation at a
+     * moment nobody chose, so a half-saved manifest would change what the catalogue says between
+     * two applies — an author's editing state becoming every caller's problem. An explicit reload
+     * puts the moment in a person's hands, which is the same argument SH96 makes about the
+     * directory: the trust model is that somebody decided.</p>
+     *
+     * <p>SH217 made the failure mode smaller but not absent, and the difference is worth stating:
+     * a half-saved <em>local</em> manifest is now refused on its own and the catalogue survives, so
+     * the cost of a badly-timed reload is one package missing rather than all of them. What a
+     * reload still cannot make safe is a <em>collision</em>, which fails the registry by design —
+     * so the answer names what loaded, and a caller who gets fewer packages than they expected can
+     * see it in the reply rather than by applying one and finding out.</p>
+     *
+     * @return what the instance carries now, and what it refused
+     */
+    public synchronized Reload reload() {
+        cache = null;
+        rejected = List.of();
+        Map<String, ShBlueprint> loaded = all();
+        return new Reload(loaded.size(), List.copyOf(rejected));
+    }
+
+    /**
+     * The answer to a reload: what is there now, and what would not load.
+     *
+     * @param loaded   how many packages the catalogue holds, first-party included — the number a
+     *                 caller compares against what they expected
+     * @param rejected the local packages refused, each with its reason (SH217)
+     */
+    public record Reload(int loaded, List<ShBlueprint.Rejected> rejected) {
+    }
+
+    /**
      * One blueprint by name.
      *
      * @throws UnknownBlueprintException naming every blueprint that does exist, with the

@@ -155,6 +155,19 @@ public class ShSecurityConfig {
     private static final String AGENT_PATH = "/api/v2/agent/**";
 
     /**
+     * The one path under {@link #AGENT_PATH} that needs more than {@code authenticated()} (SH219).
+     *
+     * <p>Re-reading the operator's package directory changes what every later call to this instance
+     * can apply, so it is a write however little it stores — and the role is the statement SH96
+     * makes about the directory: whoever configured the path is vouching for what is in it, so
+     * whoever reloads it should be somebody the instance already trusts with that.</p>
+     *
+     * <p>It must precede the agent namespace's own rule in both chains, or the blanket
+     * {@code authenticated()} would answer first and the role would never be checked.</p>
+     */
+    private static final String BLUEPRINT_RELOAD_PATH = "/api/v2/agent/blueprints/reload";
+
+    /**
      * The SH109 review queue. Console-authenticated, and reached by both kinds of caller: the
      * browser (session + XSRF cookie) and a script or CI job with HTTP Basic and no session.
      * So it gets SH117's narrowed exemption rather than a blanket one — the same discriminator,
@@ -338,6 +351,10 @@ public class ShSecurityConfig {
                         mvc.matcher(HttpMethod.POST, TENANT_SIGNUP_PATH),
                         mvc.matcher(HttpMethod.POST, TENANT_SWITCH_PATH))
                         .authenticated();
+                // SH219 — the blueprint reload is the one admin-gated path on the agent surface.
+                authorizeRequests.requestMatchers(
+                        mvc.matcher(HttpMethod.POST, BLUEPRINT_RELOAD_PATH))
+                        .hasRole("ADMIN");
                 // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                 authorizeRequests.requestMatchers(
                         mvc.matcher(HttpMethod.POST, TENANT_PATH),
@@ -414,6 +431,10 @@ public class ShSecurityConfig {
                         // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, GRAPHQL_PATH))
                                 .hasRole("CDA");
+                        // SH219 — the blueprint reload, admin-gated on this chain too.
+                        authorizeRequests.requestMatchers(
+                                mvc.matcher(HttpMethod.POST, BLUEPRINT_RELOAD_PATH))
+                                .hasRole("ADMIN");
                         // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                         authorizeRequests.requestMatchers(
                                 mvc.matcher(HttpMethod.POST, TENANT_PATH),

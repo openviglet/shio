@@ -354,6 +354,26 @@ public class ShAgentAPI {
     }
 
     /**
+     * Re-reads the operator's package directory (SH219).
+     *
+     * <p><b>Admin-only, and a POST.</b> It changes what every later call to this instance can
+     * apply, which is a write however little it stores — and the role is the same statement SH96
+     * makes about the directory itself: whoever configured the path is vouching for what is in it,
+     * so whoever reloads it should be somebody the instance already trusts with that.</p>
+     *
+     * <p>It answers with the counts rather than the catalogue. A caller who has just added a
+     * package wants to know whether it is there, and re-sending every summary to say so would
+     * charge them the listing they can ask for when they want it (P3). {@code rejected} carries the
+     * ones that would not load, with the reason SH217 records — which makes this the author's loop
+     * closed in a single call: drop the package in, reload, read why it was refused.</p>
+     */
+    @PostMapping("/blueprints/reload")
+    @Operation(summary = "Re-read the operator-configured blueprint directory (admin)")
+    public ShBlueprintRegistry.Reload reloadBlueprints() {
+        return shBlueprintRegistry.reload();
+    }
+
+    /**
      * Apply N content operations as one transaction (SH81).
      *
      * <p>Every op names its target by address, so a twelve-page structure is one call

@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -272,5 +273,77 @@ class ShBlueprintLocalPathTest {
         assertThat(registryAt(dir).all().values())
                 .anySatisfy(blueprint ->
                         assertThat(blueprint.origin()).isEqualTo(ShBlueprint.CLASSPATH));
+    }
+
+    // --- SH219: the directory reloads without a restart ---
+
+    @Test
+    @DisplayName("SH219: a package dropped in after the first read is invisible until a reload")
+    void reloadPicksUpANewPackage(@TempDir Path dir) throws IOException {
+        // The whole defect, in the order an operator meets it. The registry caches on first access
+        // and never invalidated - free while the classpath was the only source, because packages
+        // cannot change inside a running JVM, and wrong the moment a directory could.
+        ShBlueprintRegistry registry = registryAt(dir);
+        assertThat(registry.names()).doesNotContain("late-arrival");
+
+        writePackage(dir, "late-arrival");
+
+        assertThat(registry.names())
+                .as("""
+                        still invisible, and that is the cache doing what it was built to do. An \
+                        operator who has just dropped a package in and sees nothing has no way to \
+                        tell this from a package that failed to load (SH219).""")
+                .doesNotContain("late-arrival");
+
+        ShBlueprintRegistry.Reload reload = registry.reload();
+
+        assertThat(registry.names()).contains("late-arrival");
+        assertThat(reload.loaded())
+                .as("the answer is the count a caller compares against what they expected, "
+                        + "not the catalogue they can ask for when they want it (P3)")
+                .isEqualTo(registry.names().size());
+    }
+
+    @Test
+    @DisplayName("SH219: the reload answers with what would not load, which closes the author's loop")
+    void reloadReportsWhatItRefused(@TempDir Path dir) throws IOException {
+        // Drop the package in, reload, read why it was refused - one call, no restart, and no
+        // second surface to learn. SH217 recorded the refusal; SH219 is what makes it reachable
+        // while somebody is still editing the package.
+        ShBlueprintRegistry registry = registryAt(dir);
+        registry.names();
+
+        writeBrokenPackage(dir, "still-broken");
+        ShBlueprintRegistry.Reload reload = registry.reload();
+
+        assertThat(reload.rejected())
+                .singleElement()
+                .satisfies(row -> {
+                    assertThat(row.name()).isEqualTo("still-broken");
+                    assertThat(row.reason()).isNotBlank();
+                });
+        assertThat(registry.names())
+                .as("and the rest of the catalogue reloaded around it (SH217)")
+                .contains("blog");
+    }
+
+    @Test
+    @DisplayName("SH219: a package removed from the directory goes away on reload")
+    void reloadForgetsARemovedPackage(@TempDir Path dir) throws IOException {
+        // The half a cache-refresh usually forgets. `reload` rebuilds rather than merges, so a
+        // package an operator deleted stops being appliable - and a registry that only ever grew
+        // would keep answering `apply` for a package whose files are gone.
+        writePackage(dir, "temporary");
+        ShBlueprintRegistry registry = registryAt(dir);
+        assertThat(registry.names()).contains("temporary");
+
+        try (Stream<Path> files = Files.walk(dir.resolve("temporary"))) {
+            for (Path path : files.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                Files.delete(path);
+            }
+        }
+
+        assertThat(registry.reload().loaded()).isEqualTo(registry.names().size());
+        assertThat(registry.names()).doesNotContain("temporary");
     }
 }

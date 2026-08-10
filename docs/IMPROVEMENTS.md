@@ -216,22 +216,6 @@ next.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.13 Reloading the local package directory (SH219)
-
-`ShBlueprintRegistry` caches on first access and never invalidates. That was free when the
-classpath was the only source: packages cannot change inside a running JVM, so a cache with
-no invalidation was not a cache with a bug, it was a constant.
-
-SH96 changed the premise. An operator can now drop a package into `shio.blueprint.path`, and
-nothing will see it until the process restarts — for a directory whose whole point is local
-iteration on a package, that is the wrong default and the one thing everybody will hit first.
-
-What it should *not* be is a watcher. A registry that re-scanned itself would re-run
-validation at a moment nobody chose, and a half-saved manifest would take the whole registry
-down between two applies — turning an author's editing state into an outage for every caller.
-An explicit `ROLE_ADMIN` reload puts the moment in a person's hands, which is the same
-argument SH96 makes about the directory itself: the trust model is that somebody decided.
-
 ### XI.14 A re-apply defaults to what the site was built with (SH220)
 
 SH155 records the package, its version and its parameters as an instance-memory note, so

@@ -270,3 +270,44 @@ broke, which is the round trip the error format exists to remove.
 Distribution — the `shio-blueprint-*` convention, a curated index, a provenance signal — is **SH643**,
 because a curated index needs a place to live and somebody to say what goes in it. That is a decision
 about the project rather than a change to it.
+
+## Reloading the local package directory (SH219)
+
+`ShBlueprintRegistry` caches on first access and never invalidated. That was **free** while the
+classpath was the only source — packages cannot change inside a running JVM, so a cache with no
+invalidation was not a cache with a bug, it was a constant. SH96 changed the premise: an operator
+can drop a package into `shio.blueprint.path` and nothing sees it until the process restarts, which
+is the wrong default for a directory whose whole point is iterating on a package.
+
+`POST /api/v2/agent/blueprints/reload`, **admin-only**.
+
+### Explicit, not a watcher
+
+A registry that re-scanned itself would re-run validation at a moment nobody chose, so a half-saved
+manifest would change what the catalogue says between two applies — an author's editing state
+becoming every caller's problem. An explicit reload puts the moment in a person's hands, which is
+the same argument SH96 makes about the directory: **the trust model is that somebody decided.**
+
+SH217 made that failure smaller without removing it, and the difference is worth stating: a
+half-saved *local* manifest is now refused on its own and the catalogue survives, so a badly-timed
+reload costs one package rather than all of them. What a reload still cannot make safe is a
+**collision**, which fails the registry by design — so the answer names how many packages loaded,
+and a caller who gets fewer than they expected sees it in the reply rather than by applying one and
+finding out.
+
+### Why admin, and why it answers with counts
+
+The role is the same statement SH96 makes about the path: whoever configured it is vouching for what
+is in it, so whoever reloads it should be somebody the instance already trusts with that. It is the
+one path under `/api/v2/agent/**` that needs more than `authenticated()`, and it has to precede the
+namespace's own rule **in both security chains** or the blanket rule answers first and the role is
+never checked.
+
+It answers with `loaded` and `rejected` rather than the catalogue. A caller who has just added a
+package wants to know whether it is there; re-sending every summary to say so would charge them a
+listing they can ask for when they want it (P3). And `rejected` carries SH217's reasons, which makes
+this **the author's loop closed in one call**: drop the package in, reload, read why it was refused —
+no restart, and no second surface to learn.
+
+**It rebuilds rather than merges.** A registry that only ever grew would keep answering `apply` for a
+package whose files an operator has deleted.
