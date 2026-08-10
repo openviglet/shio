@@ -49,6 +49,20 @@ public class ShSecurityConfig {
     public static final String ERROR_PATH = "/error/**";
     /** The CDA namespace (SH1) — read (GET) for ROLE_CDA, write (SH10) for ROLE_CDA_WRITE. */
     private static final String CDA_PATH = "/api/v2/cda/**";
+
+    /**
+     * Where a rendered form posts (SH633).
+     *
+     * <p>Must precede the {@code POST CDA_PATH} rule, which requires {@code ROLE_CDA_WRITE} — a
+     * {@code FORM} token deliberately carries neither that nor {@code ROLE_CDA} (SH631), so without
+     * this rule first the endpoint is unreachable by the only credential meant to call it. A
+     * narrower matcher ahead of a broader one is the ordering the CDA write surface already
+     * depends on.</p>
+     */
+    private static final String FORM_PATH = "/api/v2/cda/form/**";
+
+    /** Role a FORM-scope token carries, and the only thing it carries (SH631). */
+    private static final String ROLE_FORM = "FORM";
     /**
      * GraphQL delivery (SH4) — a CDA surface, token-authenticated POST reads.
      * The one exemption SH167 deliberately left blanket: the schema exposes no
@@ -298,6 +312,10 @@ public class ShSecurityConfig {
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
                 // carries ROLE_CDA_WRITE (see ShApiTokenFilter).
+                // SH633 — ahead of the CDA write rule, for the reason on FORM_PATH: a form token
+                // has no ROLE_CDA_WRITE and must not be given one.
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, FORM_PATH))
+                        .hasRole(ROLE_FORM);
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PATCH, CDA_PATH))
                         .hasRole(ROLE_CDA_WRITE);
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, CDA_PATH))
@@ -376,6 +394,10 @@ public class ShSecurityConfig {
                                 mvc.matcher(LOGIN_PATH)).permitAll();
                         // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
                         // carries ROLE_CDA_WRITE (see ShApiTokenFilter).
+                        // SH633 — ahead of the CDA write rule, for the reason on FORM_PATH: a form token
+                        // has no ROLE_CDA_WRITE and must not be given one.
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, FORM_PATH))
+                                .hasRole(ROLE_FORM);
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PATCH, CDA_PATH))
                                 .hasRole(ROLE_CDA_WRITE);
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, CDA_PATH))

@@ -86,7 +86,6 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-- 📋 **SH633** (deps: SH631 ✅, SH632 ✅) **A rendered form still posts nowhere once the scope and the destination exist** — The endpoint itself: DRAFT only into the site's folder, honeypot, and the per-token bucket the CDA already has, classified AUTHENTICATED in the anonymous-access table. → §XV.41
 - 📋 **SH634** (deps: SH419 ✅) **A listing still scans the folder, in sort keys rather than in entities** — SH419 stopped loading rows it will not draw and the scan is still O(folder); a windowed query needs the fold, the exact total and a portable ORDER BY, which MariaDB has no NULLS LAST for. → §XV.42
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)

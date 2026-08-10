@@ -112,6 +112,12 @@ class ShAnonymousRouteAccessTest {
 			new Route("/api/v2", "/api/v2", Access.AUTHENTICATED),
 			new Route("/api/v2/agent/**", "/api/v2/agent/manifest", Access.AUTHENTICATED),
 			new Route("/api/v2/api-token/**", "/api/v2/api-token", Access.AUTHENTICATED),
+			// SH633 — its own row ahead of the /api/v2/cda/** one, though that would have covered it.
+			// This is the single endpoint in the product whose whole purpose is to be reachable from a
+			// public page, so it is exactly where a future reader reasons that it "should" be
+			// allow-listed. It must not be: the page carries a FORM token (SH631) and the token is the
+			// authorization. Allow-listing it would turn a scoped write into an anonymous one.
+			new Route("/api/v2/cda/form/**", "/api/v2/cda/form/acme", Access.AUTHENTICATED),
 			new Route("/api/v2/cda/**", "/api/v2/cda/site", Access.AUTHENTICATED),
 			new Route("/api/v2/config/**", "/api/v2/config/email", Access.AUTHENTICATED),
 			new Route("/api/v2/folder/**", "/api/v2/folder/x", Access.AUTHENTICATED),

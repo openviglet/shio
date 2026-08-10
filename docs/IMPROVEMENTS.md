@@ -1488,32 +1488,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.41 The endpoint, once nothing about it is still undecided (SH633)
-
-With the scope bounded (SH631) and the destination owned by the site (SH632), both
-shipped, what is left is ordinary. `POST` one document, get a `DRAFT` post back or a
-refusal.
-
-Four properties, none of them novel here, which is the argument for this rather than a
-submissions subsystem:
-
-- **`DRAFT` only, always.** SH7's review queue is the moderation step, so a submission is visible to
-  a curator and invisible to a visitor, and nothing new decides what "approved" means.
-- **The per-token bucket the CDA already has** (`shio.cda.rate-limit`). A form token is an API
-  token, so it is already limited; what this needs is a *tight* default, because the caller is the
-  internet rather than one integrator.
-- **A honeypot field** — the cheapest spam control that costs an author nothing and a visitor
-  nothing: rendered hidden, and a submission must leave it empty.
-- **Classified `AUTHENTICATED` in `ShAnonymousRouteAccessTest`.** Not a formality: this is the one
-  endpoint whose whole purpose is to be reachable from a public page, so it is where a future reader
-  is likeliest to reason that it "should" be allow-listed. SH363's instrument answers that with a
-  build failure instead of a discussion.
-
-The endpoint reads `sh_site_form` and refuses when the row is absent, disabled, names a
-folder that does not exist, or names a type `ShFormEligibility` rejects. The teaching
-refusals matter more than usual because the caller is a browser nobody controls: only
-the first two may say why, and `eligibleNames` exists for them.
-
 ### XV.42 The scan that is left, and the reason it was not removed with the rest (SH634)
 
 SH419 took the listing from **213 entity rows loaded to render 10** down to **2 per

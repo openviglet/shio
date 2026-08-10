@@ -294,3 +294,46 @@ they *could* have typed (P6) instead of leaving them to discover it by absence.
 The endpoint is SH633 and the site's allow-list and folder are SH632; until both land a `FORM` token
 authenticates on a path that answers 404, which is inert and is the point of shipping the bound
 first.
+
+## Where a rendered form posts (SH633)
+
+`POST /api/v2/cda/form/{site}` writes **one `DRAFT` post** into the site's configured folder, or
+refuses. It is deliberately ordinary, because SH631 bounded the scope and SH632 owned the
+destination — and there is no submissions subsystem, which is the argument rather than an omission:
+**a submission is a post**, so the trash, the export, the ACL, the review queue and the agent
+surface already apply to it.
+
+**`DRAFT` is not a parameter and never becomes one.** SH7's review queue is the moderation step, so
+a submission is visible to a curator and invisible to a visitor, and nothing here has to decide what
+"approved" means. The rate limit is the CDA bucket `ShApiTokenFilter` has already spent before the
+method runs — a form token *is* an API token, so what this needed was a tight default and not a
+mechanism.
+
+**The honeypot answers exactly as a success does.** `shio_hp` is a fixed field name, rendered hidden
+and required to be empty; a tripped one returns `{"received": true}` and writes nothing. A refusal
+naming the field would be a free description of how to evade it, so there is no signal to tune
+against. When empty it is *stripped* from the stored data — a spam-control artefact in every content
+record is not content.
+
+**Which refusals may teach.** P6 is bounded here in a way it is nowhere else on the agent surface,
+because the caller is a browser nobody controls. A **configuration** refusal is a message to the
+operator and says everything: the site invites nothing, the folder is missing, the type is not on
+the list, here is what is. It prints only the *eligible* names — a site whose list says `Theme` must
+not be told it invites `Theme`, or an operator goes looking for a bug that is their configuration. A
+**honeypot** refusal says nothing at all.
+
+**A missing folder refuses rather than creating one**: a public path that can create folders is a
+public path that can fill a disk. Owner is `form-token:<id>` — the **token**, not a person: an
+anonymous submission has no user to attribute, and naming the credential is what an operator needs
+when one form starts producing rubbish, without identifying a visitor.
+
+Two ordering facts that are easy to get wrong and would both fail closed:
+
+- The `POST /api/v2/cda/form/**` rule must precede `POST /api/v2/cda/**`, which requires
+  `ROLE_CDA_WRITE` — a `FORM` token carries neither that nor `ROLE_CDA`, so without it the endpoint
+  is unreachable by the only credential meant to call it. **Both** security chains carry it.
+- It has its **own** `AUTHENTICATED` row in `ShAnonymousRouteAccessTest`, ahead of the
+  `/api/v2/cda/**` row that already covered it. This is the one endpoint in the product whose whole
+  purpose is to be reachable from a public page, so it is exactly where a future reader reasons it
+  "should" be allow-listed. It must not be: the page carries the token, and the token is the
+  authorization — allow-listing it would turn a scoped write into an anonymous one.
