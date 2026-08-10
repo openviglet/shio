@@ -1512,6 +1512,58 @@ So what is left is not "add a `Pageable`". It is deciding how the order is expre
 every engine produces one sequence, and that decision wants the cross-database ITs
 actually running.
 
+### XV.43 The two things a form template cannot know, and the helper already knows one (SH636)
+
+`{{#form type="Contact"}}` yields the post-type's fields, in order, each with its widget
+and whether it is required. SH632 was right that it must not know an address — the
+destination is the site's, not the page's. But it emits **no `action`** and **no
+honeypot input**, so an author writes both by hand and the second only works if they
+know the literal string `shio_hp`.
+
+That is a P8 failure rather than a missing convenience. The endpoint knows the field
+name, the helper knows the type, and the only thing joining them is a person
+remembering. A honeypot nobody renders is a spam control present in the code and absent
+from every page; a wrong action URL is a form that silently posts nowhere, the failure
+class SH572 was about one surface over.
+
+The shape that keeps SH632 intact: the helper learns no *folder*, it learns the
+**endpoint form**, derivable from the site being rendered and identical for every site —
+`/api/v2/cda/form/<site>`. Publishing `@action` and `@honeypot` beside the fields lets a
+template write `<form action="{{@action}}">` with neither literal in content.
+
+The token is the open question and should be decided rather than defaulted. Rendering it
+is what SH631 assumes — it is public by construction — but the helper has none to
+render, and a lookup here would make the renderer depend on the token store. A `token=`
+hash the layout passes keeps the renderer honest and makes the credential something an
+operator placed deliberately.
+
+### XV.44 The endpoint nothing can reach from the page it was built for (SH637)
+
+SH633's endpoint is meant to be posted to by a form on the customer's own site. That
+request is **cross-origin** by construction — the page is on `www.acme.com` and the
+instance answers somewhere else — so the browser sends a preflight before it sends
+anything.
+
+`ShSecurityConfig` calls `http.cors(Customizer.withDefaults())`, and there is **no
+`CorsConfigurationSource` bean and no `addCorsMappings` anywhere in `shio-app`**. With
+nothing to configure it, that call contributes no allowed origin, so every cross-origin
+POST to the form endpoint fails before the filter chain sees it. The endpoint is
+correct, tested and unreachable from the only caller it exists for.
+
+Two things follow, and the second is the one worth being uncomfortable about.
+`docs/agents/security.md` documents `addCorsMappings` for `/api/**` with
+`allowedOriginPatterns("http://localhost:*")` — a mechanism the code does not have. A
+doc describing a control that is absent is worse than no doc: it is the
+premise-in-a-comment defect, and anybody auditing the CORS posture would have read it
+and stopped.
+
+The design question is not "add CORS". It is **which origins**, and the answer has to be
+per-site rather than global: a form token names one site, so the origins allowed to
+spend it are that site's, which makes this a field beside the folder and the type list
+in `sh_site_form` rather than an instance-wide property. A global allow-list would let
+any configured origin post to every site's form, which is the scope SH631 spent a whole
+task bounding.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
