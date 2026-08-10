@@ -144,6 +144,16 @@ public final class ShProblem {
         return status;
     }
 
+    /** What the reader was told they might have meant, or {@code null} — SH602's strongest signal. */
+    public String didYouMean() {
+        return didYouMean;
+    }
+
+    /** What the refusal was about, which carries the reader's own wording. */
+    public String title() {
+        return title;
+    }
+
     /**
      * Renders the RFC 9457 body. Blank/empty extensions are omitted entirely
      * rather than serialized as {@code null}/{@code []}, so the response carries

@@ -1432,3 +1432,46 @@ it must not change the entity tag or a narrowed pack becomes uncacheable for exa
 narrowed to save tokens. That is asserted on `withOmitted` rather than by comparing a whole pack
 with a narrowed one — those two legitimately differ, because narrowing changes content, so that
 comparison would have passed while proving nothing.
+
+## The findings nobody narrated (SH602)
+
+Twelve rounds produced roughly forty tasks and **every one came from the same place**: a session
+ended, somebody read it back, and a pattern was noticed. That collector is expensive, lossy, and
+only runs when a human asks — so it does not run at all for readers who are not this one. Nobody is
+going to narrate a stranger's session.
+
+`ShAgentFrictionLog` counts what readers **asked for and did not get**, and `diagnostics` reports
+the top ten.
+
+**None of it is a failure, which is why nothing recorded it before.** The incident log holds what
+broke — a 5xx, a webhook that gave up. A 404 on a path an agent constructed is a *correct* answer; a
+`didYouMean` that fired is the surface *working*. Each is the instance behaving properly while a
+reader does not get what they came for, and together they are the whole discovery-friction record.
+They are reported as notes beside the incidents rather than as a section of their own, so nothing
+here reads as something having gone wrong.
+
+**Keyed by what was asked for, not by what broke** — that is what makes the output evidence. A key
+asked for often and answered never is a **missing capability with a name attached**, and the name is
+the reader's own, which beats anything a transcript review produces because a summariser writes the
+name *they* would have used.
+
+**A `didYouMean` that fired is a different kind from one that did not.** "Asked for a near-miss of
+something real" is a naming problem; "asked for something with no neighbour" is a missing
+capability. Folding them ranks them together and answers neither.
+
+**Recorded in one method** — the `@ExceptionHandler` every teaching refusal already passes through —
+so a rule added tomorrow is counted without anybody remembering to count it. A collector that had to
+be called at each throw site would have the same property as the one it replaces: it works until
+somebody forgets.
+
+In memory and bounded at 200 distinct names, on the incident log's terms: a counter that survived a
+restart is a second store to migrate, and one that grew without a ceiling is a denial of service
+keyed by a path an attacker chooses. The ceiling bounds **distinct names, not occurrences** — bounding
+occurrences would freeze the ranking the moment it filled, and the most-asked name would stop being
+the most-asked, which is the one thing the report is read for. Drops are reported, because a counter
+that silently stops counting reads exactly like a quiet instance.
+
+One correction worth keeping: the handler took the counter as a constructor argument, which broke
+`ShTeachingErrorTest` — it constructs the advice directly to assert a problem document's *shape*.
+Making a diagnostics aid a precondition of error handling is the wrong way round, and the no-arg
+constructor is back.

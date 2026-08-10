@@ -42,6 +42,10 @@ import com.viglet.shio.utils.ShStableMap;
 @Service
 public class ShAgentDiagnosticsService {
 
+    /** How many friction names the report prints — a ranking, not a log (SH602). */
+    private static final int FRICTION_ROWS = 10;
+
+    private final ShAgentFrictionLog frictionLog;
     private final ShAgentIncidentLog incidentLog;
     private final ShAgentIncidentStore store;
     private final ShWebhookProperties webhookProperties;
@@ -52,12 +56,14 @@ public class ShAgentDiagnosticsService {
                                      ShAgentIncidentStore store,
                                      ShWebhookProperties webhookProperties,
                                      ShAgentProperties properties,
-                                     ShSiteRepository shSiteRepository) {
+                                     ShSiteRepository shSiteRepository,
+                                     ShAgentFrictionLog frictionLog) {
         this.incidentLog = incidentLog;
         this.store = store;
         this.webhookProperties = webhookProperties;
         this.properties = properties;
         this.shSiteRepository = shSiteRepository;
+        this.frictionLog = frictionLog;
     }
 
     /**
@@ -195,6 +201,24 @@ public class ShAgentDiagnosticsService {
         if (returned < retained) {
             notes.add("Showing " + returned + " of " + retained
                     + " retained incidents; raise ?limit= for the rest.");
+        }
+        // SH602 — the friction ranking, reported as notes beside the incidents rather than as a
+        // section of its own. These are not failures and must not read as any: an incident is
+        // something that broke, and every row here is the instance answering correctly while a
+        // reader did not get what they came for. Keyed by what was ASKED FOR, so a name asked for
+        // often and answered never is a missing capability with the reader's own word attached.
+        List<ShAgentFrictionLog.Friction> friction = frictionLog.top(FRICTION_ROWS);
+        if (!friction.isEmpty()) {
+            notes.add("Discovery friction, most-asked first — none of these is a failure, and a "
+                    + "name asked for repeatedly is a capability somebody expected under that "
+                    + "name: " + friction.stream()
+                            .map(row -> row.name() + " (" + row.kind() + " ×" + row.count() + ")")
+                            .collect(java.util.stream.Collectors.joining("; ")));
+        }
+        if (frictionLog.dropped() > 0) {
+            // A counter that silently stops counting reads exactly like a quiet instance.
+            notes.add(frictionLog.dropped() + " further friction key(s) were not recorded — the "
+                    + "ranking holds " + ShAgentFrictionLog.MAX_KEYS + " distinct names at once.");
         }
         notes.add("Incidents also travel on GET /api/v2/agent/changes, so one since=<cursor> "
                 + "answers what changed and what broke.");

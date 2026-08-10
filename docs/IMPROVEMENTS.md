@@ -190,30 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.59 The findings nobody narrated (SH602)
-
-Twelve rounds produced roughly forty tasks. Every one of them came from the same place:
-a session ended, somebody read it back, and a pattern was noticed. That is an expensive
-and lossy collector, and it only ever runs when a human asks for it.
-
-The instance already has the parts. Durable incidents record what failed
-(`durableIncidents`), `diagnostics` explains a 5xx, `shio remember` survives a session,
-and `open-findings.json` is the ledger a finding lands in. What is missing is between
-them: the cheap signals that are not incidents. A 404 on a path an agent constructed. A
-4xx whose `didYouMean` fired. A capability asked for under a name that does not exist. A
-command run with a flag the notes had already recommended. None of those is a failure
-worth an incident, and together they are the whole discovery-friction record.
-
-The shape: the instance counts them, keyed by what was *asked for* rather than by what
-broke, and `diagnostics` reports the top of that list. A key asked for often and
-answered never is a missing capability with a name attached — which is strictly better
-evidence than anything a transcript review produces, because it is the reader's own
-vocabulary rather than a summariser's.
-
-This is the task that converts "we will find out by using it" from a hope into a
-pipeline. It matters most for readers who are not this one: nobody is going to narrate a
-stranger's session.
-
 ### IX.60 One reader, one instance, one shape (SH603)
 
 The strongest evidence this project has about its own protocol is twelve replication

@@ -13,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,13 +47,60 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  * @author Alexandre Oliveira
  * @since 2026.3
  */
+import com.viglet.shio.api.agent.diagnostics.ShAgentFrictionLog;
+
 @RestControllerAdvice
 public class ShApiExceptionHandler {
+
+    /**
+     * SH602 — the friction ranking, recorded where every teaching refusal already passes.
+     *
+     * <p>Optional so the handler works in a context that has no counter (a slice test, a tool
+     * constructing this class directly): a diagnostics aid that could break error handling would be
+     * a bad trade for a ranking.</p>
+     */
+    private final ObjectProvider<ShAgentFrictionLog> friction;
+
+    public ShApiExceptionHandler(ObjectProvider<ShAgentFrictionLog> friction) {
+        this.friction = friction;
+    }
+
+    /**
+     * Without a counter, which the note above already promised and the constructor above did not
+     * allow. A unit test constructs this class directly to assert the SHAPE of a problem document,
+     * and making a diagnostics aid a precondition of error handling is the wrong way round.
+     */
+    public ShApiExceptionHandler() {
+        this(null);
+    }
 
     @ExceptionHandler(ShTeachingException.class)
     public ResponseEntity<ProblemDetail> teaching(ShTeachingException exception) {
         ShProblem problem = exception.problem();
+        // Recorded HERE and not at each throw site, which is the whole reason this is affordable:
+        // every teaching refusal in the product passes through this method, so a rule added
+        // tomorrow is counted without anybody remembering to count it. SH602's collector was a
+        // human reading a transcript back, and its replacement must not have the same property.
+        record(problem);
         return respond(problem.status().value(), problem.toProblemDetail());
+    }
+
+    /**
+     * What a refusal says about the reader who caused it (SH602).
+     *
+     * <p>Keyed by the problem's <b>slug</b> and the value the reader used, never by the message: a
+     * message is prose that changes, and a ranking keyed on prose re-splits every time somebody
+     * edits a sentence. A `didYouMean` that fired is recorded separately from one that did not,
+     * because "asked for a near-miss of something real" and "asked for something with no neighbour"
+     * are different findings — the first is a naming problem, the second a missing capability.</p>
+     */
+    private void record(ShProblem problem) {
+        ShAgentFrictionLog log = friction == null ? null : friction.getIfAvailable();
+        if (log == null || problem.slug() == null) {
+            return;
+        }
+        log.record(problem.didYouMean() == null ? problem.slug() : problem.slug() + "+didYouMean",
+                problem.title());
     }
 
     /**
