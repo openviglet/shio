@@ -11,7 +11,6 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH564** (deps: SH560 ✅, SH466 ✅) **A section field holding a link keeps the source's own host, so an accepted block's button leaves the replica** — SH466 rebases root-relative hrefs at render and rightly leaves an absolute one alone, so ctaHref keeps the source's host and nothing tells it from outbound. → §IX.45
 - 📋 **SH565** (deps: SH560 ✅, SH476 ✅, SH550 ✅) **A page title carrying an entity is stored undecoded, so every replicated title doubles it** — SH476 decodes text as it becomes a field and SH550 decodes attributes, and scanPage reads title into the row through neither, so & renders as &amp; on both paths. → §IX.46
 - 📋 **SH567** (deps: —) **A task whose assertions live in shio-site reads as unasserted debt** — assertion-debt.test.mjs does not walk shio-site/scripts, so SH566 shipped two assertions and the reader counted it as the forty-fourth debt entry. → §IX.47
 - 📋 **SH569** (deps: SH560 ✅) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48

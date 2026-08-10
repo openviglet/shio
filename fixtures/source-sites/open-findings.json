@@ -8,12 +8,6 @@
       "what": "The generated layout emits {{CSS}} with two braces inside the getRelation block. Re-filed from SH555 by SH594's reader: SH555 shipped on the RENDER side (those fields are Handlebars.SafeString), so this assertion and that fix now disagree about whether two braces are a defect, and SH606 is the round that picks."
     },
     {
-      "id": "SH564",
-      "archetype": "awkward",
-      "assertion": "no-source-base-in-fields",
-      "what": "SectionHero.ctaHref holds https://awkward.test/docs/guia — an absolute href extracted whole, which the render-time rebase correctly leaves alone."
-    },
-    {
       "id": "SH565",
       "archetype": "awkward",
       "assertion": "title-entity-decoded",

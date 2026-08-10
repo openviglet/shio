@@ -2306,3 +2306,32 @@ instances and one proposed from a capture are the same artefact and can be compa
 The report ends by saying what it is: *a proposal, not a conclusion — N instances are evidence about
 those N.* That property is the one most easily lost when the input stops being a stranger's site and
 starts being content the reader wrote, which is why it is asserted rather than merely written.
+
+**An absolute href in a section field is rebased where the origin is known (SH564).** `propose`
+extracted `ctaHref = "https://awkward.test/docs/guia"` from an anchor and `convert` wrote it into
+`SectionHero` unchanged, so the accepted hero's button pointed at the original site. SH466 is not
+the fix and is not wrong: it rebases **root-relative** hrefs, at render, over the page's `content`.
+Neither half reaches this — `ctaHref` is a field rather than content, and an absolute URL is at
+render time indistinguishable from a link a curator meant to send off-site. The phase that can tell
+is the one that knows what the origin was.
+
+Stored as the **source-relative path**, which is how the theme already stores one (SH461: the
+rewritten CSS names `/img/x`, not the tree path, because that is what the instance resolves).
+
+**"Same host" is the obvious rule and the corpus was built to defeat it.** The `awkward` archetype
+declares its base as one origin and is served from another — which is what generated HTML does all
+the time, and what a staging host, a preview URL or an injected fixture produces. Under a same-host
+rule every unit test passed and its `ctaHref` stayed absolute. So an href is internal when its host
+matches the crawl origin **or when the capture holds that path**: a capture knows its own page set,
+and that fact survives the host being one the crawl never visited.
+
+**Only absolute references are touched**, and that was the second correction. Resolving every value
+against the origin turned `#top` into `/#top` — a same-page anchor repointed at the site root — and
+percent-encoded `{{ cta_url }}`. A relative value is already what a replica serves.
+
+Two smaller decisions: the host comparison is case-insensitive and default-port-blind, because
+`HTTPS://Acme.test` and `https://acme.test:443` are one origin to a browser and reading them as
+foreign would leave the very link this is about pointing off-site; and `clone` records `source` as
+`{origin, seed}`, so reading the object where a string is wanted is **silent** — `new URL({…})`
+throws, the catch returns the href untouched, and the fix looks applied while every assertion stays
+exactly as red as it was.

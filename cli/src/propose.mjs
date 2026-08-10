@@ -735,7 +735,7 @@ export function descendants(node) {
  * implementation that listed known-lossy cases instead would be silent about the case nobody thought
  * of, and this artefact's job is to be trusted about exactly that.
  */
-export function fieldsFor(type, block) {
+export function fieldsFor(type, block, origin = null, paths = null) {
   const spec = SECTION_TYPES[type];
   const consumed = new Set();
   const fields = {};
@@ -779,7 +779,7 @@ export function fieldsFor(type, block) {
   const link = descendants(block).find((node) => node.tag === "a" && !consumed.has(node) && text(node));
   if (link && spec.fields.includes("ctaLabel")) {
     fields.ctaLabel = text(link);
-    fields.ctaHref = link.attrs.href ?? "";
+    fields.ctaHref = sourceRelative(link.attrs.href ?? "", origin, paths);
     take(link);
   }
   const image = descendants(block).find((node) => node.tag === "img" && !consumed.has(node));
@@ -788,6 +788,65 @@ export function fieldsFor(type, block) {
     take(image);
   }
   return { fields, consumed, offered: [...offered].sort(byText) };
+}
+
+/**
+ * An href the capture's own origin serves, stored as the path the instance will resolve (SH564).
+ *
+ * <h3>Why here and not at render</h3>
+ *
+ * <p>SH466 rebases <b>root-relative</b> hrefs onto the site being served, in the renderer, over the
+ * page's `content`. Neither half reaches a section field: `ctaHref` is a field rather than content,
+ * and its value is an <em>absolute</em> URL — which at render time is indistinguishable from a link
+ * a curator meant to point off-site. So the phase that can tell is the one that knows what the
+ * origin was, and that is this one: `clone` recorded it and `propose` resolved each href against
+ * the page that carried it.</p>
+ *
+ * <h3>The form it is stored in</h3>
+ *
+ * <p>The source-relative path, which is how the theme already stores one: SH461's rewritten CSS
+ * names `/img/x` rather than a tree path, because that is what the instance resolves. An href whose
+ * host is anything else is genuinely external and is kept whole — a replica that rewrote those
+ * would break every outbound link the source meant.</p>
+ *
+ * <p>Case-insensitive on the host and blind to the port's default, because `HTTPS://Acme.test` and
+ * `https://acme.test:443` are the same origin to a browser and would otherwise read as foreign.</p>
+ */
+function normalizePath(path) {
+  const trimmed = String(path ?? "").replace(/\/+$/, "");
+  return trimmed === "" ? "/" : trimmed;
+}
+
+export function sourceRelative(href, origin, paths = null) {
+  const value = String(href ?? "").trim();
+  if (!value || !origin) return value;
+  // ONLY an absolute reference is a candidate, and resolving anything else against the origin is
+  // how this went wrong first: `#top` resolved to `/#top` — a same-page anchor repointed at the
+  // site root — and `{{ cta_url }}` came back percent-encoded. A relative value is already what a
+  // replica serves, and SH466 rebases the root-relative ones at render.
+  if (!/^([a-z][a-z0-9+.-]*:)?\/\//i.test(value)) return value;
+  let target;
+  let base;
+  try {
+    target = new URL(value, origin);
+    base = new URL(origin);
+  } catch {
+    // Unparseable even so. Left exactly as found: this recognises one origin, it does not
+    // validate hrefs, and rewriting something it failed to read would be the worse failure.
+    return value;
+  }
+  if (target.protocol !== "http:" && target.protocol !== "https:") return value;
+  const relative = `${target.pathname}${target.search}${target.hash}`;
+  if (target.host.toLowerCase() === base.host.toLowerCase()) return relative;
+  // A host the crawl never visited, naming a path the crawl DID capture. That is a source whose
+  // markup hardcodes its own canonical base — generated HTML does this constantly, and the crawl
+  // reached it at some other address (a staging host, a preview URL, an injected fixture). The
+  // href's host says nothing useful there; what settles it is that the capture holds the page.
+  //
+  // Without this the rule is "same host", which is exactly what the corpus's `awkward` archetype
+  // was built to defeat: it declares its base as one origin and is served from another, and its
+  // `ctaHref` stayed absolute while every unit test of the same-host case passed.
+  return paths && paths.has(normalizePath(target.pathname)) ? relative : value;
 }
 
 function unitFields(names, unit, take) {
@@ -1058,6 +1117,17 @@ function postTypeName(block, index) {
  */
 export function buildProposal({ inventory, markup, html, plan = {}, theme = null }) {
   const accepted = new Map((plan.accepted ?? []).map((entry) => [entry.block, entry]));
+  // SH564 — what `clone` recorded as the capture's origin, which is the only thing that can tell a
+  // link back into the source from a link the source meant to send a reader away.
+  // `clone` records it as `{origin, seed}` — the object, not the string. Reading the wrong half
+  // here is silent: `new URL({...})` throws, the catch returns the href untouched, and the fix
+  // looks applied while every assertion stays exactly as red as it was.
+  const origin = inventory.source?.origin ?? null;
+  // Every path this capture actually holds, so an absolute href can be recognised as internal even
+  // when its host is one the crawl never saw.
+  const capturedPaths = new Set((inventory.pages ?? [])
+    .map((page) => normalizePath(page.path))
+    .filter(Boolean));
   const candidates = new Map();
   const notes = [];
   // SH505/SH506 — what the walk refused to call a candidate, so the cut is stated rather than
@@ -1100,7 +1170,7 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
         // the first reading could not see. Keeping the stronger classification is why `first` is
         // passed in rather than inferred: the same signature legitimately gets two answers.
         if (!existing.type && guess) {
-          Object.assign(existing, describe(block, guess, existing.index));
+          Object.assign(existing, describe(block, guess, existing.index, origin, capturedPaths));
         }
         return;
       }
@@ -1110,7 +1180,7 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
         pages: [page.path],
         index,
         tag: block.tag,
-        ...describe(block, guess, candidates.size),
+        ...describe(block, guess, candidates.size, origin, capturedPaths),
       });
     });
   }
@@ -1403,7 +1473,7 @@ function needs(postType, field, why) {
 /** One comparator, so "sorted" means the same thing in every field of the file (P5). */
 const byText = (a, b) => (a === b ? 0 : a < b ? -1 : 1);
 
-function describe(block, guess, index) {
+function describe(block, guess, index, origin, capturedPaths) {
   if (!guess) {
     const postType = proposePostType(block, index);
     return {
@@ -1420,7 +1490,7 @@ function describe(block, guess, index) {
       ...(postType ? { postType } : {}),
     };
   }
-  const { fields, consumed, offered } = fieldsFor(guess.type, block);
+  const { fields, consumed, offered } = fieldsFor(guess.type, block, origin, capturedPaths);
   const missing = missingRequired(guess.type, fields);
   return {
     type: guess.type,

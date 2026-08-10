@@ -13,6 +13,8 @@
  * one candidate leaves every other one in fidelity mode.
  */
 import assert from "node:assert/strict";
+import { sourceRelative } from "../src/propose.mjs";
+
 import { test } from "node:test";
 
 import { INVENTORY_FILE, MARKUP_DIR, markupFileFor, parseAttrs, planMarkup, stripNonMarkup, tokenize } from "../src/clone.mjs";
@@ -1476,4 +1478,52 @@ test("SH582: a healthy proposal declines nothing and prints no line about it", a
   // them off the token budget of every working run (`propose-cost.test.mjs` measures exactly that).
   assert.ok(!/declined/.test(ctx.stdout.text));
   assert.ok(!/missing \(required\)/.test(ctx.stdout.text));
+});
+
+
+test("SH564: an href on the capture's own origin is stored as the path the instance resolves", () => {
+  // The defect: `propose` extracted an absolute href and `convert` wrote it into SectionHero
+  // unchanged, so the accepted hero's button pointed at the original site.
+  assert.equal(
+    sourceRelative("https://awkward.test/docs/guia", "https://awkward.test"),
+    "/docs/guia",
+    "stored the way the theme already stores one — SH461's rewritten CSS names /img/x rather than "
+      + "a tree path, because that is what the instance resolves",
+  );
+  assert.equal(sourceRelative("/docs/guia", "https://awkward.test"), "/docs/guia");
+  assert.equal(
+    sourceRelative("https://awkward.test/s?q=1#top", "https://awkward.test"),
+    "/s?q=1#top",
+    "the query and the fragment are part of the path a replica serves",
+  );
+});
+
+test("SH564: a genuinely external href is kept whole", () => {
+  // The half that must not break. SH466 rightly leaves an absolute href alone at render time
+  // because it cannot tell these apart; the point of doing it here is that this phase can.
+  assert.equal(
+    sourceRelative("https://elsewhere.test/docs", "https://awkward.test"),
+    "https://elsewhere.test/docs",
+    "a replica that rewrote these would break every outbound link the source meant",
+  );
+});
+
+test("SH564: the same origin spelled differently is still the same origin", () => {
+  assert.equal(sourceRelative("HTTPS://Awkward.test/a", "https://awkward.test"), "/a");
+  assert.equal(
+    sourceRelative("https://awkward.test:443/a", "https://awkward.test"),
+    "/a",
+    "a default port is not a different host to a browser, and reading it as foreign would leave "
+      + "the very link this task is about pointing off-site",
+  );
+});
+
+test("SH564: what is not a URL is left exactly as found", () => {
+  // A fragment, a mailto:, a template placeholder. This recognises one origin; it does not
+  // validate hrefs, and rewriting something it failed to parse would be the worse failure.
+  for (const value of ["#top", "mailto:a@b.test", "{{ cta_url }}", ""]) {
+    assert.equal(sourceRelative(value, "https://awkward.test"), value);
+  }
+  assert.equal(sourceRelative("https://awkward.test/a", null), "https://awkward.test/a",
+    "with no recorded origin there is nothing to compare against, so nothing is claimed");
 });

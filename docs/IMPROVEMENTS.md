@@ -190,31 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.45 An absolute href becomes a field value, and the rebase never sees it (SH564)
-
-`propose` extracted `ctaHref = "https://awkward.test/docs/guia"` from an anchor whose
-href was absolute, and `convert` wrote it into `SectionHero` unchanged. The button on
-the accepted hero then points at the original site.
-
-SH466 is not the fix and is not wrong. It rebases **root-relative** hrefs onto the site
-being served, and it does that in the renderer over the page's `content`. Neither half
-reaches this: `ctaHref` is a field, not content, and its value is an absolute URL with a
-foreign host — which at render time is indistinguishable from a link a curator meant to
-point off-site. Rewriting it there would break every deliberate outbound link on every
-page.
-
-So the phase that can tell is the one that knows what the origin was. `clone` records
-the source's origin and `propose` resolves each href against the page that carried it;
-an href whose host equals the capture's origin is the source's own path and should be
-stored the way the theme already stores one — as the **source-relative path** (SH461:
-the rewritten CSS names `/img/x`, not the tree path, because that is what the instance
-resolves). An href whose host is anything else is genuinely external and stays whole.
-
-The shape is the one this project keeps finding: the correction shipped half of itself.
-SH466 closed verbatim markup and left the authorable path, exactly as SH452 fixed a note
-and not the fetch. Its assertion is in `source-corpus.test.mjs` group D, red, naming the
-field.
-
 ### IX.46 The title is RCDATA, and both entity fixes routed around it (SH565)
 
 Measured: `scanPage("<title>Northwind &amp; Co</title>")` yields the five characters
