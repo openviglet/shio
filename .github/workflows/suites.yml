@@ -55,6 +55,73 @@ jobs:
 
       - run: pnpm test
 
+  # SH241 — the third gate, and the one only CI can give honestly.
+  #
+  # `clean test` is the command agents.md names, and the reason it must run here as well as
+  # locally is SH282: without `clean`, a call to a method that no longer exists prints "Nothing to
+  # compile" and BUILD SUCCESS, because the IDE compiled into `target/classes` on save and the
+  # `.class` outlived the `.java`. `ShIdeCompiledClassLintTest` protects the person about to
+  # commit; it cannot protect the branch, because a *stale but valid* class is indistinguishable
+  # from a compiled one. A job that starts from a clone has no stale anything.
+  #
+  # On push and pull request both: it is the cheapest of the three gates that needs a JVM, and the
+  # one whose failures are most often somebody else's file.
+  java:
+    name: mvnw clean test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: "zulu"
+          cache: maven
+
+      # `-Dskip.npm=true` because the console build is the `js` job's question, and paying for it
+      # here would make this the slowest job for a reason unrelated to what it asserts.
+      # `tee` rather than a pipe: SH354 — a filter that reads the total discards the `<<< FAILURE!`
+      # lines in the same breath, and then a red run leaves no record of which test failed.
+      - name: Run the suite
+        id: suite
+        run: |
+          set -o pipefail
+          ./mvnw -B -pl shio-app -am clean test -Dskip.npm=true 2>&1 | tee "$RUNNER_TEMP/java.log"
+
+      # SH283 — surefire's own `Results:` total is the authoritative one, and the reason to publish
+      # it here is that every alternative is a hand-derived number: `target/surefire-reports/`
+      # ACCUMULATES, so summing it after a targeted run inflates the next total, and `-q` suppresses
+      # the only line that is not a guess. `always()` because the count matters most when it is red.
+      - name: Publish the count as the run's headline
+        if: always()
+        run: |
+          {
+            echo "### Java suite"
+            echo
+            grep -E "Tests run:.*Failures.*Errors" "$RUNNER_TEMP/java.log" | tail -1 || echo "no surefire summary — the build failed before the tests ran"
+            echo
+            if grep -qE "<<< (FAILURE|ERROR)" "$RUNNER_TEMP/java.log"; then
+              echo "<details><summary>Failing tests</summary>"
+              echo
+              echo '```'
+              grep -E "<<< (FAILURE|ERROR)" "$RUNNER_TEMP/java.log"
+              echo '```'
+              echo
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The whole log, because the summary above is a headline and a diagnosis needs the run.
+      - name: Keep the run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-suite-log
+          path: ${{ runner.temp }}/java.log
+          if-no-files-found: warn
+
   # The opt-in suite, and the reason it is a separate job: it needs a running instance built from
   # the commit under test. `requireInstance` compares the manifest's commit against `git log -1`
   # before any scenario builds anything (SH460/SH500), so a job that boots a jar it did not build

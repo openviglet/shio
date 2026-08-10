@@ -319,7 +319,6 @@ const REVEALED = {
   "SH201"  : "ShObjectMoveAuthorizationTest.java",  // header
   "SH246"  : "ShAgentRenderedDigestTest.java",  // header
   "SH276"  : "ShContextCacheHeadroomTest.java",  // header
-  "SH283"  : "ShContextCacheHeadroomTest.java",  // header
   "SH284"  : "shio-editor-bridge.test.mjs",  // header
   "SH322"  : "ShTestcontainersEagerStartLintTest.java",  // header
   "SH333"  : "i18n-parity.test.mjs",  // header
@@ -340,7 +339,7 @@ const REVEALED = {
  */
 const HEADER = new Set([
   "SH53", "SH64", "SH65", "SH69", "SH70", "SH86", "SH87", "SH97", "SH126", "SH129",
-  "SH163", "SH164", "SH201", "SH246", "SH276", "SH283", "SH284", "SH322", "SH333", "SH358",
+  "SH163", "SH164", "SH201", "SH246", "SH276", "SH284", "SH322", "SH333", "SH358",
   "SH383", "SH390", "SH529", "SH567", "SH620",
 ]);
 

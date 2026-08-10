@@ -894,30 +894,6 @@ the cheap version is likely right: a write mapping on an API class whose body to
 `*Repository.save`/`delete` directly. Precision matters less than the build going red the day
 somebody adds the fifth one.
 
-### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
-
-Three workflows exist. `build.yml` (Maven + Sonar) and `codeql-analysis.yml` are
-`workflow_dispatch:`-only. `console-check.yml` triggers on `push: branches: [main]`, and
-the default branch is **`2026.3`**. So on a push to the branch everything is developed
-on, **nothing runs**.
-
-That matters most for SH182, which exists to catch what nothing else can see: console
-defects answer `200` and are invisible to Java tests, the CLI suite and the MCP golden,
-so the answer was a browser walking the routes in CI. A gate that does not run is a
-script. Not hypothetical — picking up Block O's follow-ups meant building the console,
-and it was **already red** (§XVI.2), unreported.
-
-**The sharper justification is SH284's, folded in here:** SH282 and SH283 were artefacts of a *local
-working tree* — an IDE writing classes into `target/classes`, and a reports directory accumulating
-across hand-run commands. Neither can happen in a job that starts from a clone, so **a clean-room
-build is the only thing that can tell a real green from a local one.** SH282's lint protects the
-person about to commit; CI protects the branch, and only CI catches a *stale but valid* class.
-
-Two consequences that carries: the workflow should publish surefire's summary as the
-run's headline, so no count is re-derived by hand (SH283's defect, SH354's at the
-terminal); and which jobs run on push versus pull request is a deliberate choice — the
-console check drives Chromium, the Java suite is cheap enough for both.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

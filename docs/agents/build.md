@@ -709,3 +709,44 @@ registry is one nobody can act on.
 same pass fixed a comment that still said `emit` composes *three* packages; SH216 took it to six,
 which is the kind of number a comment should not carry when `PACKAGES` is the list and a test
 asserts it.
+
+## The gates run on the branch the work happens on (SH241)
+
+Three workflows existed and none of them ran on a push: two were `workflow_dispatch`-only, and the
+console check triggered on `push: branches: [main]` while the default branch is **`2026.3`**. **A
+gate that does not run is a script** — and not hypothetically: picking up Block O's follow-ups meant
+building the console, and it was already red, unreported.
+
+SH579 fixed half of that before this task got to it. `suites.yml` runs `pnpm test` and
+`pnpm conformance` on push and pull request. What was still dispatch-only is **the Java suite** and
+**the console walk** — two of the three gates `agents.md` names.
+
+### The Java job is the one only CI can give honestly
+
+`./mvnw -pl shio-app -am clean test` from a clone. The reason it has to run here *as well as*
+locally is SH282: without `clean`, a call to a method that no longer exists prints *"Nothing to
+compile"* and BUILD SUCCESS, because the IDE compiled into `target/classes` on save and the `.class`
+outlived the `.java`. `ShIdeCompiledClassLintTest` protects the person about to commit; **it cannot
+protect the branch**, because a *stale but valid* class is indistinguishable from a compiled one. A
+job that starts from a clone has no stale anything.
+
+It publishes **surefire's own `Results:` line** as the run's headline, and `tee`s the log rather than
+piping it. Both are SH283 and SH354 in the one place a number is read by somebody who did not run
+the command: `target/surefire-reports/` accumulates, so summing it is wrong after any targeted run;
+`-q` suppresses the only authoritative line; and a filter that reads the total discards the
+`<<< FAILURE!` lines with it, leaving a red run that says which *count* and not which *test*.
+
+### The console walk goes on pull request, not push
+
+Deliberate, and the asymmetry is the decision. It boots a jar, provisions a site from a blueprint
+and drives Chromium — the most expensive gate here. On every push to a branch somebody is iterating
+on, that is the job people learn to cancel; a pull request is when "does the console still work" is
+actually being asked.
+
+### Asserted, because a trigger is invisible
+
+`cli/test/ci-gates.test.mjs` holds the triggers: the default branch is named, all three gates have a
+job that runs unasked, the console walk runs on a pull request, the Java job publishes surefire's
+count and never uses `-q`, and **no workflow names a branch this repository does not develop on** —
+the original defect was a *stale* branch name, which reads exactly like a configured one. Proved
+non-vacuous by restoring `push: branches: [main]`, which fires two of the five.

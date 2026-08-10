@@ -13,7 +13,17 @@
 # question a failure raises.
 name: Console check
 
+# SH241 — on pull request rather than on every push, and that split is the deliberate half of the
+# task. This job boots a jar, provisions a site and drives Chromium: it is the most expensive gate
+# here, and running it on every push to a branch somebody is iterating on is how a job becomes the
+# one people cancel. A pull request is the moment the question "does the console still work" is
+# actually being asked.
+#
+# It stayed `workflow_dispatch`-only while the other two moved, which is the same failure in
+# miniature: a gate that does not run is a script, and this one exists because the console is the
+# surface no API test can see.
 on:
+  pull_request:
   workflow_dispatch:
 
 jobs:
