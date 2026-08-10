@@ -721,6 +721,93 @@ class ShTemplateGraphTest {
     }
 
     @Test
+    @DisplayName("SH572: a relation naming an address the site has not got is an error")
+    void aDanglingRelationIsAnError() {
+        // Its own site, the SH281 precedent this class uses: a broken layout in the shared PER_CLASS
+        // fixture would make some other test's failure depend on which ran first.
+        String name = "sh572-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh572Page" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH572_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType themeType = postType(ShSystemPostType.THEME, (byte) 1, when);
+
+            // One character wrong. This is the whole defect: `/t-capturd` resolves to nothing,
+            // getRelation renders its else branch, and the page answers 200 with no CSS.
+            post(owner, root, layoutType, "SH572_LAYOUT", "/l",
+                    json("HTML", "<html><body>"
+                            + "{{#getRelation \"/t-captured\"}}<style>{{CSS}}</style>{{/getRelation}}"
+                            + "{{#getRelation \"/t-capturd\"}}<style>{{CSS}}</style>{{/getRelation}}"
+                            + "</body></html>"),
+                    when, ShPostState.DRAFT);
+            post(owner, root, themeType, "SH572_THEME", "/t-captured",
+                    json("CSS", "body{color:green}"), when, ShPostState.DRAFT);
+            post(owner, root, pageType, "Home", "/home", json("TEXT", "b"), when, ShPostState.DRAFT);
+        });
+
+        List<ShAgentReport.Finding> dangling = verifyService.verify(name, "content", 200).findings()
+                .stream()
+                .filter(finding -> "dangling-relation".equals(finding.rule()))
+                .toList();
+
+        assertThat(dangling)
+                .as("""
+                        the typo is reported and the address beside it is NOT — a rule that flagged                         both would be reporting `getRelation` rather than a broken reference, which                         is the false-positive shape SH421 had just finished removing next door.""")
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.rule()).isEqualTo("dangling-relation");
+                    // An ERROR, matching SH297's field twin: the template makes a claim about a
+                    // specific address and the claim is false. That symmetry IS the task.
+                    assertThat(finding.severity()).isEqualTo("error");
+                    assertThat(finding.address()).isEqualTo("post:" + name + "/l");
+                    assertThat(finding.message()).contains("/t-capturd");
+                    assertThat(finding.fix()).contains("post.upsert");
+                });
+    }
+
+    @Test
+    @DisplayName("SH572: a relation naming a field, not a literal, is not a finding")
+    void aPathExpressionRelationIsNotChecked() {
+        // `{{#getRelation sections}}` names a FIELD: what it points at is data, decided per page,
+        // and no static reading of a template can say what it resolves to. SH558's extractor is
+        // literal-only for that reason and this holds the boundary — a rule that guessed here would
+        // fire on every conversion the product writes.
+        String name = "sh572f-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh572fPage" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH572F_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            post(owner, root, layoutType, "SH572F_LAYOUT", "/l",
+                    json("HTML", "<html><body>"
+                            + "{{#getRelation sections}}<div>{{TITLE}}</div>{{/getRelation}}"
+                            + "</body></html>"),
+                    when, ShPostState.DRAFT);
+            post(owner, root, pageType, "Home", "/home", json("TEXT", "b"), when, ShPostState.DRAFT);
+        });
+
+        assertThat(verifyService.verify(name, "content", 200).findings())
+                .filteredOn(finding -> "dangling-relation".equals(finding.rule()))
+                .as("a path expression is data, so it is deliberately unchecked (SH558, SH572)")
+                .isEmpty();
+    }
+
+    @Test
     @DisplayName("digests are absent unless asked for, so nobody pays for a render they did not want")
     void digestsAreOptIn() {
         assertThat(proofService.attach(upsertOf("/r-nav"), false, false).digests()).isNull();

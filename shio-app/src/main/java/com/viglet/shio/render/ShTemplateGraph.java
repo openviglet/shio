@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -687,6 +688,84 @@ public class ShTemplateGraph {
             }
         }
         return broken;
+    }
+
+    /**
+     * Relation literals that resolve to no post in this site (SH572).
+     *
+     * <h3>The asymmetry this closes</h3>
+     *
+     * <p>SH558 taught this graph to read the literal address in a {@code getRelation} block, which
+     * closed {@code unused-theme} — and made the opposite gap legible for the first time, because
+     * the graph now resolves these references and can see one that resolves to nothing.</p>
+     *
+     * <p>SH297 already reports a layout whose {@code THEME} field names a theme the site has not
+     * got, as an <b>error</b>: the layout makes a claim and the claim is false, and a page rendered
+     * through it has no stylesheet. A relation literal has exactly the same consequence and had no
+     * rule at all — {@code getRelation} renders its else branch when nothing resolves, and the block
+     * deliberately does not mark the absence (SH247, and that is right: a dangling <em>field</em>
+     * reference is SH154's finding, with its own address and fix). So a field reference was checked
+     * and a template-literal reference was not, and {@code /theme/capturd} — one character —
+     * produced a page that renders 200, carries no captured CSS, and reported clean.</p>
+     *
+     * <h3>Any post, not just a Theme</h3>
+     *
+     * <p>{@link #relatedThemeTitles} resolves against {@code Theme} rows only, because its question
+     * is "is this theme reachable". This one asks whether the address denotes <b>anything</b>: a
+     * layout may legitimately relate a Region or an ordinary post, and reporting those as missing
+     * would be the false-positive shape SH421 had just finished removing from a neighbouring rule.
+     * What is left after that is unambiguous — an address this site has no post at, in either
+     * state.</p>
+     *
+     * <h3>Keyed by post id</h3>
+     *
+     * <p>{@link #missingThemes} keys by title because a binding names one. A literal can sit in a
+     * layout, a region <em>or</em> a theme, and those share a namespace with everything else — the
+     * reason {@link #impactOf} takes a post rather than a title. An id is the only key that cannot
+     * name the wrong post.</p>
+     *
+     * @return post id → the addresses it relates that resolve to nothing, both sorted
+     */
+    public Map<String, SortedSet<String>> danglingRelations(ShSite site) {
+        Set<String> present = new TreeSet<>();
+        List<ShPostUnified> rows = rowsOf(site, BOTH_STATES);
+        for (ShPostUnified post : rows) {
+            String url = normalizedFurl(post);
+            if (url != null) {
+                present.add(url);
+            }
+        }
+
+        Map<String, SortedSet<String>> broken = new TreeMap<>();
+        for (ShPostUnified post : rows) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (typeName == null || !ShRenderPostTypes.NAMES.contains(typeName)) {
+                continue;
+            }
+            for (String reference : relationLiterals(renderService.htmlOf(post))) {
+                String address = reference.startsWith("/") ? reference : "/" + reference;
+                if (!present.contains(address)) {
+                    broken.computeIfAbsent(post.getId(), key -> new TreeSet<>()).add(reference);
+                }
+            }
+        }
+        return broken;
+    }
+
+    /** Every literal argument of a {@code getRelation} block in this template, in source order. */
+    private static List<String> relationLiterals(String html) {
+        if (html == null || html.isBlank() || !html.contains(GET_RELATION)) {
+            return List.of();
+        }
+        List<String> found = new ArrayList<>();
+        Matcher matcher = RELATION_LITERAL.matcher(html);
+        while (matcher.find()) {
+            String reference = matcher.group(1) == null ? matcher.group(2) : matcher.group(1);
+            if (reference != null && !reference.isBlank()) {
+                found.add(reference);
+            }
+        }
+        return found;
     }
 
     /**

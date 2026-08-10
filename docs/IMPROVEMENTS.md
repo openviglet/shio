@@ -725,6 +725,31 @@ inside an assertion's message argument, or require an explicit marker the way th
 four ledgers require an owner. The first is a parse; the second is a convention nobody
 applies by accident.
 
+### IX.68 A red run nobody could reproduce, recorded rather than forgotten (SH635)
+
+SH572 added `dangling-relation` and the first full suite after it came back **red**:
+`ShBlueprintApplyTest.applyKeepsThePackagesPromise` expected `verify().errors() == 0`
+and got **2**, and `applyingTwiceConverges` failed with it. The same code then ran green
+four times — the class alone, and three full suites — and printing every finding at that
+assertion showed an empty list.
+
+One mechanism was found and fixed in the same commit, and it explains the **2** exactly:
+the rule keyed its broken templates by post id and then walked `scan.posts()`, which
+carries a DRAFT row and a PUBLISHED row sharing one id. A published template reported
+one defect twice, and whether the site has a published row depends on what ran before it
+— which is what an order-dependent red looks like.
+
+What it does not explain is why any relation dangled in a blueprint at all: no
+first-party package contains a `getRelation` literal, and the site is UUID-named so
+nothing else writes into it. The fix is real and the diagnosis is incomplete, which is
+why this is a task rather than a commit paragraph.
+
+SH354 is why it is written down: a run that is red once and green after is the one
+nobody can investigate later, because the next `clean` removes
+`target/surefire-reports/`. What would close this is a way to re-run the suite in a
+**recorded** order — surefire's `runOrder` with the seed printed — so an order-dependent
+finding is reproducible on demand instead of waited for.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1462,30 +1487,6 @@ script a whole site shares, referenced by each layout's `THEME` field.
 So the honest conclusion is that the old engine's *architecture* was better than what replaced
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
-
-### XV.35 The reference the graph can now see, and still cannot check (SH572)
-
-SH558 taught `ShTemplateGraph` to read the literal address in a `getRelation` block,
-which closed `unused-theme`. It also made the *opposite* gap legible for the first time,
-because the graph now resolves these references and can see when one resolves to
-nothing.
-
-SH297 already reports a layout whose `THEME` field names a theme the site has not got —
-an error, both ways, because a page rendered through it is missing its stylesheet. A
-relation literal has exactly the same consequence and no rule at all: `getRelation`
-renders its else branch when nothing resolves, and the block deliberately does not mark
-the absence (SH247, and it is right — a dangling *field* reference is SH154, with an
-address and a fix).
-
-The asymmetry is the defect. A field reference is checked and a template-literal
-reference is not, so `/theme/capturd` — one character — produces a page that renders
-200, carries no captured CSS, and reports clean. SH549 is how close this sits: that
-layout spells its address as a constant precisely because a literal argument had never
-been proved to resolve at all, and `ShConvertedLayoutRenderTest` exists to prove that
-one instance. Every other layout in the product gets nothing.
-
-The rule reads the same literals SH558 extracts and reports the ones that resolve to no
-post in the site, at whatever severity SH297 uses for its field twin.
 
 ### XV.36 The other half of the label, and the migration inside it (SH573)
 

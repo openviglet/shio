@@ -1385,3 +1385,38 @@ reaches old instances as well as new ones without a second edit.
 `ShSiteScriptsDroppedTest` holds both directions against two byte-identical layouts differing only in
 the flag — and both assertions were **verified to fail with the opt-out disabled**, because a test
 that only asserts the silence would pass just as well if the rule had been deleted.
+
+## A relation literal is checked the way a THEME field is (SH572)
+
+SH558 taught `ShTemplateGraph` to read the literal address in a `{{#getRelation "…"}}` block, which
+closed `unused-theme` — and made the opposite gap legible, because the graph now resolves these
+references and can see one that resolves to nothing.
+
+The defect was an **asymmetry**. SH297 reports a layout whose `THEME` field names a theme the site
+has not got, as an *error*: the layout makes a claim and the claim is false. A relation literal has
+the same consequence and had no rule at all, so `/theme/capturd` — one character — produced a page
+that renders 200, carries no captured CSS, and reported clean. `getRelation` renders its else branch
+when nothing resolves and deliberately does not mark the absence (SH247, and that is right — a
+dangling *field* reference is SH154's finding, with its own address and fix), which is exactly why
+the page cannot be the thing that tells you.
+
+`dangling-relation` is that rule, at SH297's severity because it is the same claim in a different
+spelling. Three decisions in it:
+
+- **Resolved against any post, not just a `Theme`.** `relatedThemeTitles` matches Themes because its
+  question is "is this theme reachable"; this one asks whether the address denotes *anything*. A
+  layout may legitimately relate a Region or an ordinary post, and reporting those would be the
+  false-positive shape SH421 had just finished removing from a neighbouring rule.
+- **A path expression is not checked.** `{{#getRelation sections}}` names a *field*: what it points
+  at is data, decided per page, and no static reading can say what it resolves to. Asserted, because
+  a rule that guessed here would fire on every conversion the product writes.
+- **Keyed by post id, and one row per id before reporting.** A literal can sit in a layout, a region
+  or a theme, which share a namespace — so an id is the only key that cannot name the wrong post.
+  And a post has a DRAFT row and a PUBLISHED row sharing that id, so walking `scan.posts()` directly
+  reported a published template's defect **twice**: one defect, two findings, and order-dependent,
+  because whether a published row exists depends on what ran first.
+
+The template's HTML is read through `ShPageRenderService.htmlOf`, added for this, for the reason
+`themeTitleOf` already exists (SH281): the graph and the page must not come to disagree about what a
+template *says*, and the whole value of a static rule over template source is that it is the source
+the renderer will use.

@@ -36,6 +36,7 @@
 - 📋 **SH615** (deps: SH109 ✅, SH207 ✅) **The review queue's per-run pending count never reaches zero, because publishing keeps the draft** — A run stays 'N to review' forever and its Approve button never settles, since the count asks whether a DRAFT row exists and the editable draft always does. → §IX.65
 - 📋 **SH619** (deps: SH522 ✅, SH545 ✅) **A draft cannot be compared with what is live, because the read surface cannot return the published row** — Every agent read is DRAFT-preferred with no state parameter, so 'what will change when I publish this' has no answer outside the console's own diff dialog. → §IX.66
 - 📋 **SH630** (deps: —) **Naming a task id in a comment marks it asserted, so a debt is paid by mentioning it** — The SH527 walk greps suite files for ids and cannot tell an assertion from prose, so three ids left the debt list in one task because a new file explained why they were relevant. → §IX.67
+- 📋 **SH635** (deps: —) **The blueprint apply suite reported two verify errors once and none on four later runs** — Seen while SH572 landed a rule: applyKeepsThePackagesPromise wanted zero errors and got two, then the same code was green four times, so an order-dependent finding leaks into a UUID-named site. → §IX.68
 
 ## Block I — Content as files (local-first authoring)
 
@@ -85,7 +86,6 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-- 📋 **SH572** (deps: SH558 ✅) **A template relating an address the site has not got renders nothing and reports nothing** — SH297 proves a missing THEME field but no rule reads a getRelation literal, so a typo is a silent else branch on every page. → §XV.35
 - 📋 **SH573** (deps: SH559 ✅) **A generated layout's title claims a mode that one layout has not determined since SH464** — convert.mjs still mints <site> (fidelity) for the layout every mode renders through, and SH559 could only quote it because the title is a postTypeLayout key. → §XV.36
 - 📋 **SH631** (deps: —) **A form submission has no scope to arrive on, so the endpoint cannot be written safely** — A FORM token has to name one site, and its eligible post-types have to exclude every system type, because a submission that creates a PageLayout is server-side template execution. → §XV.40
 - 📋 **SH632** (deps: —) **Nothing on a site says which folder a submission lands in or which types may be submitted** — The destination has to be site configuration and never template content, so it needs a home beside the site rather than a setting a page can choose. → §XV.38

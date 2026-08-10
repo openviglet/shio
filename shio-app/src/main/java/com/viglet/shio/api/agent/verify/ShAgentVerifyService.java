@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
@@ -672,6 +673,9 @@ public class ShAgentVerifyService {
         duplicateTemplateTitles(check, scan, findings);
         untitledTemplates(check, scan, findings);
         missingThemes(check, scan, findings);
+        // SH572 — the relation-literal twin of the rule above, run beside it because the two
+        // answer one question about two spellings of the same reference.
+        danglingRelations(check, scan, findings);
         unpublishedTemplates(check, scan, findings);
         redirectTargets(check, scan, findings);
         headConventions(check, scan, findings);
@@ -1221,6 +1225,63 @@ public class ShAgentVerifyService {
                                 + "POST /api/v2/agent/batch), correct the THEME field to a theme "
                                 + "that exists, or clear it if this layout brings its own styles. "
                                 + "A theme is addressed by title, and matched exactly."));
+            }
+        }
+    }
+
+    /**
+     * SH572 — a template relating an address this site has not got.
+     *
+     * <p>An <b>error</b>, the same severity as {@link #missingThemes} and for the same reason: the
+     * template makes a claim about a specific address and the claim is false. The two are twins that
+     * had different treatment — SH297 checks a {@code THEME} <em>field</em> and nothing checked a
+     * {@code getRelation} <em>literal</em>, so {@code /theme/capturd} rendered 200, carried no
+     * captured CSS, and reported clean. {@code getRelation} renders its else branch when nothing
+     * resolves and deliberately does not mark the absence (SH247), which is right and is exactly why
+     * the page cannot be the thing that tells you.</p>
+     *
+     * <p>Reported against the template that carries the literal, because that is the post to edit —
+     * the target does not exist, so it has no address of its own.</p>
+     */
+    private void danglingRelations(String check, Scan scan, List<Finding> findings) {
+        for (ShSite site : scan.siteById().values()) {
+            Map<String, SortedSet<String>> broken = templateGraph.danglingRelations(site);
+            if (broken.isEmpty()) {
+                continue;
+            }
+            // One row per id before anything is reported. A post has a DRAFT row and a PUBLISHED row
+            // that share an id, so iterating `scan.posts()` directly reports a published template's
+            // broken relation TWICE — one defect, two findings, and a count that disagrees with the
+            // number of things to fix. It is also order-dependent, because whether the site has a
+            // published row at all depends on what the test or the operator did first, which is how
+            // it shows up as a suite that is red once and green next time.
+            Map<String, ShPostUnified> byId = new LinkedHashMap<>();
+            for (ShPostUnified post : scan.posts()) {
+                // ShFolderSite-exempt: a post carries its own site column (SH128 is about folders).
+                ShSite owner = post.getShSite();
+                if (owner != null && site.getId().equals(owner.getId())) {
+                    byId.putIfAbsent(post.getId(), post);
+                }
+            }
+            for (ShPostUnified post : byId.values()) {
+                SortedSet<String> addresses = broken.get(post.getId());
+                if (addresses == null) {
+                    continue;
+                }
+                for (String address : addresses) {
+                    findings.add(Finding.error(check, "dangling-relation", address(post),
+                            ShSystemPostTypeAttr.HTML,
+                            "This template relates '" + address + "' and '" + site.getName()
+                                    + "' has no post at that URL, in either state — so the block "
+                                    + "renders its else branch on every page that assembles from "
+                                    + "it, silently. A theme related this way carries no CSS and "
+                                    + "the page still answers 200.",
+                            "Correct the address to a post that exists, or create it (post.upsert "
+                                    + "on POST /api/v2/agent/batch). A relation literal is a "
+                                    + "friendly URL within this site, matched exactly apart from "
+                                    + "the leading slash — GET /api/v2/agent/find lists what is "
+                                    + "there."));
+                }
             }
         }
     }

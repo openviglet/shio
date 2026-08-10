@@ -782,6 +782,19 @@ public class ShPageRenderService {
         return fieldOf(layout, ShSystemPostTypeAttr.THEME);
     }
 
+    /**
+     * A template's source, read the way the page reads it (SH572).
+     *
+     * <p>Exposed for {@code ShTemplateGraph}, and for the same reason {@code themeTitleOf} above is:
+     * SH281's rule that the graph and the page must not come to disagree about what a template
+     * <em>says</em>. A lint that read the {@code HTML} field through its own accessor would be a
+     * second answer to that question, and the whole value of a static rule over template source is
+     * that it is the source the renderer will use.</p>
+     */
+    public String htmlOf(ShPostUnified template) {
+        return fieldOf(template, ShSystemPostTypeAttr.HTML);
+    }
+
     /** SH311's population: one site's templates of one system type, per read-only transaction. */
     private static final ShReadOnlyTransactionCache SWEEP_CACHE = new ShReadOnlyTransactionCache();
 
