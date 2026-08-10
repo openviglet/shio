@@ -191,9 +191,47 @@ public class ShAgentContextService {
         // SH346 — the write vocabulary, on the same terms and for the same reason: it is not
         // content, so it must not move the digest, and it is not something a reading session
         // should be charged for. `ShAgentOps.terse()` verbatim, byte-identical to shio://ops.
-        return sections.contains(ShAgentContextSection.OPS)
+        ShAgentContext withOps = sections.contains(ShAgentContextSection.OPS)
                 ? digested.withOps(ShAgentOps.terse())
                 : digested;
+        // SH608 — attached last, and after the digest, for the reason `budget` is: this describes
+        // the REQUEST, not the content, so a caller narrowing the pack must not get a different
+        // entity tag for the same instance state.
+        return withOps.withOmitted(omitted(sections));
+    }
+
+    /**
+     * Which sections {@code include=} removed (SH608).
+     *
+     * <p>SH600 closed this on the manifest and the pack had the same hole one endpoint over:
+     * {@code ?include=instance} returned four scalars, dropped the model, the sitemap and the
+     * conventions — including the remembered notes an entire SH597 intent is measured against —
+     * and answered 200. A caller narrowing a <b>discovery</b> surface is by construction one who
+     * does not yet know what is there, which is why a silent projection misleads worse here than
+     * a 404 would.</p>
+     *
+     * <p>Built from the <b>parsed section set</b> and not from the assembled pack, which is the one
+     * thing that could not be ported from SH600. The pack's sections are content-shaped, so after
+     * the fact a projection and an empty instance are indistinguishable: {@code sites} is an empty
+     * list on a fresh instance and an empty list when nobody asked. The manifest could derive its
+     * report because {@code features: null} and {@code features: {}} are different; here only the
+     * request knows.</p>
+     */
+    private static List<String> omitted(Set<ShAgentContextSection> sections) {
+        List<String> dropped = new ArrayList<>();
+        for (ShAgentContextSection section : ShAgentContextSection.values()) {
+            // MANIFEST and OPS are opt-IN — absent by default and not part of the pack a caller
+            // asked for. Reporting them as omitted would tell every default request that two
+            // sections were withheld, which is the opposite of what this field is for.
+            if (section == ShAgentContextSection.MANIFEST
+                    || section == ShAgentContextSection.OPS) {
+                continue;
+            }
+            if (!sections.contains(section)) {
+                dropped.add(section.wireName());
+            }
+        }
+        return dropped.isEmpty() ? null : List.copyOf(dropped);
     }
 
     private int resolveBudget(Integer budget) {

@@ -75,7 +75,39 @@ public record ShAgentContext(
         ShAgentManifest capabilities,
         String ops,
         String digest,
-        Budget budget) {
+        Budget budget,
+        List<String> omitted) {
+
+    /**
+     * The sections {@code include=} removed (SH608), or {@code null} when the pack is whole.
+     *
+     * <h3>Names, where the manifest reports counts</h3>
+     *
+     * <p>SH600 gave the manifest {@code omitted} as section → entry count, because a manifest is
+     * assembled and <em>then</em> projected, so the counts were already in hand. The pack is the
+     * other way round: a section {@code include=} drops is never built, so counting it would cost
+     * exactly what the caller's projection saved — the fix would be an argument against itself
+     * (P3). A name is what tells a caller its question was not answered, which is the whole job.</p>
+     *
+     * <h3>Separate from {@code budget.truncated}, and that is the decision</h3>
+     *
+     * <p>Both say "you did not get all of it" and they are not the same statement.
+     * {@code omitted} is <b>the caller's own doing</b> — a section they asked not to have — and the
+     * remedy is to ask for it. {@code truncated} is <b>the instance's</b> — the sitemap walk hit
+     * the budget — and the remedy is a bigger budget or a cursor. One field would tell a caller
+     * that the pack is incomplete without telling them which lever is theirs, and a reader who
+     * raises the budget to recover a section they excluded gets the same answer twice.</p>
+     */
+    public ShAgentContext {
+    }
+
+    /** Every caller from before SH608, which is every one that cannot be projected. */
+    public ShAgentContext(int protocol, String manifest, Instance instance, List<Site> sites,
+                          List<Type> model, List<Node> sitemap, List<String> conventions,
+                          ShAgentManifest capabilities, String ops, String digest, Budget budget) {
+        this(protocol, manifest, instance, sites, model, sitemap, conventions, capabilities, ops,
+                digest, budget, null);
+    }
 
     /** Every caller from before SH157, which is every one that does not ask for capabilities. */
     public ShAgentContext(int protocol, String manifest, Instance instance, List<Site> sites,
@@ -88,13 +120,19 @@ public record ShAgentContext(
     /** The same pack carrying capabilities — the one thing SH157 adds to this shape. */
     public ShAgentContext withCapabilities(ShAgentManifest value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, value, ops, digest, budget);
+                conventions, value, ops, digest, budget, omitted);
+    }
+
+    /** The same pack, saying which sections `include=` removed (SH608). */
+    public ShAgentContext withOmitted(List<String> value) {
+        return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
+                conventions, capabilities, ops, digest, budget, value);
     }
 
     /** The same pack carrying the write vocabulary (SH346). */
     public ShAgentContext withOps(String value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, capabilities, value, digest, budget);
+                conventions, capabilities, value, digest, budget, omitted);
     }
 
     /**

@@ -175,30 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.36 The other narrowed discovery response (SH608)
-
-SH600 closed this on the manifest: a projected document carries `omitted`, a section
-name and an entry count for everything `include=` removed, so `?include=identity` can no
-longer answer 200 while dropping all fifty-seven capability flags in silence.
-
-`/agent/context` takes the same parameter and has the same hole. `?include=instance`
-returns four scalars and drops the model, the sitemap and the conventions — including
-the remembered notes, the section SH597 measures a whole intent against. SH600's
-argument applies unchanged: a caller narrowing a *discovery* surface does not yet know
-what is there.
-
-It was left out deliberately, for one reason worth stating. The pack's sections are
-**content**-shaped, so a projection and an empty instance are indistinguishable after
-the fact the way `features: null` and `features: {}` are not: `sites` is an empty list
-on a fresh instance and an empty list when nobody asked. The report has to be built
-where the sections are chosen, from the parsed section set, rather than derived from the
-assembled pack.
-
-The second half needs a decision rather than a port. The pack already reports
-`budget.truncated` when the sitemap walk stopped early, so two mechanisms would be
-saying "you did not get all of it" for two reasons. Whether that is one field or two is
-the work.
-
 ### VIII.37 The 404 that says nothing, on the surface a typo is likeliest (SH621)
 
 SH499's execution instrument issued the requests `docs-shio` publishes and this was its

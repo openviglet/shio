@@ -252,6 +252,50 @@ class ShAgentContextTest {
     }
 
     @Test
+    @DisplayName("SH608: a narrowed pack says which sections it dropped")
+    void aNarrowedPackNamesWhatItDropped() {
+        // Scoped to this class's own site: a site-less read answers for the whole instance, so on
+        // the shared context an assertion about it would be a statement about suite order — which
+        // ShBenchmarkIsolationLintTest refuses by name.
+        ShAgentContext narrowed = shAgentContextService.context(siteName, null, null, "instance", null);
+
+        // The defect: four scalars, a 200, and no word about the model, the sitemap or the
+        // conventions — including the remembered notes an entire SH597 intent is measured against.
+        assertThat(narrowed.omitted())
+                .as("""
+                        a caller narrowing a DISCOVERY surface is by construction one who does not                         yet know what is there, which is why a silent projection misleads worse                         here than a 404 would (SH608)""")
+                .containsExactlyInAnyOrder("sites", "model", "sitemap", "conventions");
+    }
+
+    @Test
+    @DisplayName("SH608: a whole pack pays nothing for the report, and opt-in sections are not omissions")
+    void awholePackReportsNothing() {
+        ShAgentContext whole = shAgentContextService.context(siteName, null, null, null, null);
+
+        assertThat(whole.omitted())
+                .as("""
+                        absent entirely rather than an empty list: the full document pays nothing                         for a report it has no content for. `manifest` and `ops` are opt-IN, so                         naming them here would tell every default request that two sections were                         withheld — the opposite of what the field is for (SH608)""")
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("SH608: attaching the report does not move the digest")
+    void attachingOmittedDoesNotMoveTheDigest() {
+        // The property that keeps SH116's conditional read working. `omitted` describes the CALL,
+        // like `budget` — so attaching it must not change the entity tag, or a narrowed pack would
+        // be uncacheable for exactly the readers who narrowed to save tokens.
+        //
+        // Asserted on `withOmitted` rather than by comparing a whole pack with a narrowed one: those
+        // two legitimately differ, because narrowing changes the pack's *content*. Comparing them
+        // would have passed while proving nothing about this field.
+        ShAgentContext whole = shAgentContextService.context(siteName, null, null, null, null);
+
+        assertThat(whole.withOmitted(java.util.List.of("sitemap", "model")).digest())
+                .as("the digest covers the pack's content, and what a caller asked for is not it")
+                .isEqualTo(whole.digest());
+    }
+
+    @Test
     void sitemapCarriesPathsNotJustIds() {
         List<ShAgentContext.Node> sitemap = context().sitemap();
 

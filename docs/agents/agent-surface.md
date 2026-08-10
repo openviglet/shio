@@ -1395,3 +1395,40 @@ are the whole point of it.
 plan and a short one an instruction. The premise was half right, and this is the correction — five
 ordered lines were still a plan. The bound moved rather than being dropped: the **preamble** is
 asserted at two lines, because that is what every reader pays for whatever they came to do.
+
+## The pack says what it dropped (SH608)
+
+SH600 closed this on the manifest; `/agent/context` took the same `include=` and had the same hole.
+`?include=instance` returned four scalars, dropped the model, the sitemap and the conventions —
+**including the remembered notes an entire SH597 intent is measured against** — and answered 200. A
+caller narrowing a *discovery* surface is by construction one who does not yet know what is there,
+which is why a silent projection misleads worse here than a 404 would: a 404 would have been read.
+
+**Names, where the manifest reports counts.** A manifest is assembled and *then* projected, so
+SH600's counts were already in hand. The pack is the other way round — a section `include=` drops is
+never built — so counting it would cost exactly what the caller's projection saved, and the fix
+would become an argument against itself (P3). A name is what tells a caller its question went
+unanswered, which is the whole job.
+
+**Built from the parsed section set, not from the assembled pack**, and that is the one thing that
+could not be ported. The pack's sections are content-shaped, so after the fact a projection and an
+empty instance are indistinguishable: `sites` is an empty list on a fresh instance *and* an empty
+list when nobody asked. The manifest could derive its report because `features: null` and
+`features: {}` differ; here only the request knows.
+
+**Two fields, not one — that was the decision the task left open.** `budget.truncated` already says
+"you did not get all of it". So does `omitted`, and they are not the same statement: `omitted` is
+**the caller's own doing** and the remedy is to ask for the section; `truncated` is **the
+instance's** and the remedy is a bigger budget or a cursor. One field would tell a reader the pack
+is incomplete without telling them which lever is theirs — and someone who raised the budget to
+recover a section they had excluded would get the same answer twice.
+
+`manifest` and `ops` are opt-**in**, so they are never reported as omissions: naming them would tell
+every default request that two sections were withheld, which is the opposite of the point. A whole
+pack carries no `omitted` key at all.
+
+**It rides after the digest**, like `budget`: it describes the *call*, not the content, so attaching
+it must not change the entity tag or a narrowed pack becomes uncacheable for exactly the readers who
+narrowed to save tokens. That is asserted on `withOmitted` rather than by comparing a whole pack
+with a narrowed one — those two legitimately differ, because narrowing changes content, so that
+comparison would have passed while proving nothing.
