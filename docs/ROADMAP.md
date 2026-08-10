@@ -86,7 +86,6 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-- 📋 **SH636** (deps: SH633 ✅) **A template author must hand-write the form's action URL and know a magic honeypot field name** — The helper yields fields only, so the endpoint that knows shio_hp and the helper that knows the type are joined by the author remembering both. → §XV.43
 - 📋 **SH637** (deps: SH633 ✅) **A form on the customer's own domain cannot reach the submission endpoint at all** — No CorsConfigurationSource bean exists, so http.cors(withDefaults()) configures nothing and a cross-origin POST fails preflight - and security.md documents an addCorsMappings the code lacks. → §XV.44
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)

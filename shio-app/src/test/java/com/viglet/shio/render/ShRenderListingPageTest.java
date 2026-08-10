@@ -91,7 +91,9 @@ class ShRenderListingPageTest {
             // is what is under test, and a layout is the only place a call can live.
             String[] shapes = { "one", "two", "four", "oldest", "title", "finance", "counts", "plain",
                     // SH420 — a listing inside a listing.
-                    "nested" };
+                    "nested",
+                    // SH636 — a form, whose endpoint and honeypot the template must not hard-code.
+                    "formshape" };
             StringBuilder bindings = new StringBuilder("{");
             for (int index = 0; index < shapes.length; index++) {
                 bindings.append(index == 0 ? "" : ",")
@@ -137,6 +139,14 @@ class ShRenderListingPageTest {
             // SH420 — a listing inside a listing, which is the shape the pager idiom breaks on: an
             // archive whose cards list their own children, or a hub whose sections carry a listing.
             post(site, root, layoutType, "L_nested", "/l-nested", nested(), when);
+            // SH636 — `{{#form}}` renders a type's DECLARED fields, so the type needs some.
+            formPostType("Sh636Form" + tag, when);
+            post(site, root, layoutType, "L_formshape", "/l-formshape",
+                    "{\"HTML\":\"<html><body>"
+                            + "<form action=\\\"{{site.formAction}}\\\">"
+                            + "{{#form type=\\\"Sh636Form" + tag + "\\\"}}<i>{{name}}</i>{{/form}}"
+                            + "<input type=\\\"hidden\\\" name=\\\"{{site.formHoneypot}}\\\">"
+                            + "</form></body></html>\"}", when);
 
             for (String shape : shapes) {
                 post(site, root, postType("Sh384" + shape + tag, (byte) 0, when),
@@ -266,6 +276,27 @@ class ShRenderListingPageTest {
                 .doesNotContain("class=\"leak\"");
     }
 
+    @Test
+    @DisplayName("SH636: a form's endpoint and honeypot come from the site, not from the author")
+    void aFormKnowsWhereItPostsAndWhatToHide() {
+        String html = render("/formshape");
+
+        assertThat(html)
+                .as("""
+                        `site.formAction` is the endpoint for THIS site, so a template writes                         `<form action="{{site.formAction}}">` and no URL literal appears in                         content. On the SITE rather than on the block, because the `<form>` element                         WRAPS `{{#form}}` and a block's data variables do not exist outside it —                         which is also where SH632 already said the destination belongs (SH636)""")
+                .contains("<form action=\"/api/v2/cda/form/" + siteName + "\">");
+
+        assertThat(html)
+                .as("""
+                        `site.formHoneypot` names the field the endpoint checks, read from the                         controller rather than spelled a second time: a honeypot whose rendered                         name and checked name drift passes every submission and reports nothing                         (SH636)""")
+                .contains("name=\"shio_hp\"");
+
+        assertThat(html)
+                .as("and the declared fields still render inside the block (SH636)")
+                .contains("<i>TITLE</i>")
+                .contains("<i>MESSAGE</i>");
+    }
+
     private String render(String url) {
         return shPageRenderService.render(siteName, url, ShPostState.DRAFT).html();
     }
@@ -305,6 +336,35 @@ class ShRenderListingPageTest {
                 // Outside every listing: nothing set `@last` here, so nothing may render.
                 + "{{#if @last}}<span class=\\\"leak\\\">after</span>{{/if}}"
                 + "</body></html>\"}";
+    }
+
+    /** A post-type with declared fields — a type with none takes `{{#form}}`'s else branch. */
+    private void formPostType(String name, Instant when) {
+        ShPostType type = postType(name, (byte) 0, when);
+        var widget = entityManager
+                .createQuery("select w from ShWidget w where w.name = :name",
+                        com.viglet.shio.persistence.model.widget.ShWidget.class)
+                .setParameter("name", "Text")
+                .getResultStream().findFirst().orElseGet(() -> {
+                    var created = new com.viglet.shio.persistence.model.widget.ShWidget();
+                    created.setName("Text");
+                    created.setDescription("Text");
+                    entityManager.persist(created);
+                    return created;
+                });
+        int ordinal = 1;
+        for (String field : new String[] { "TITLE", "MESSAGE" }) {
+            var attr = new com.viglet.shio.persistence.model.post.type.ShPostTypeAttr();
+            attr.setName(field);
+            attr.setLabel(field);
+            attr.setOrdinal(ordinal);
+            attr.setIsTitle(ordinal == 1 ? (byte) 1 : (byte) 0);
+            attr.setRequired((byte) 0);
+            attr.setShWidget(widget);
+            attr.setShPostType(type);
+            entityManager.persist(attr);
+            ordinal++;
+        }
     }
 
     private ShPostType postType(String name, byte system, Instant when) {

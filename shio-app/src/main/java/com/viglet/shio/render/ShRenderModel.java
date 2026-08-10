@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.render;
 
+import com.viglet.shio.api.form.ShFormSubmissionAPI;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 
@@ -271,6 +272,24 @@ public class ShRenderModel {
         // one, `/preview/<site>` when there is not. Both are here because they answer different
         // questions — "has this site been deployed?" is `url`, and it must stay answerable.
         frame.put("baseUrl", ShSiteFrontEnd.of(site).baseUrl());
+        // SH636 — the two facts a form template cannot know, and the site is where they belong.
+        //
+        // They were first published as `@action`/`@honeypot` data variables from `{{#form}}`, and a
+        // test found that unusable within the hour: `action` has to sit on the `<form>` element,
+        // which necessarily WRAPS the block, and a block's data variables do not exist outside it.
+        // So the shape was wrong rather than the scope — and the right one was already implied by
+        // SH632, which says the destination is the SITE's, never the page's.
+        //
+        // `formAction` is the endpoint and nothing else: no folder, no post-type, no choice a
+        // template makes. It is the same URL for every site but for its name, so a page cannot
+        // point a submission anywhere the operator did not configure — the property that kept the
+        // folder out of template content in the first place.
+        //
+        // `formHoneypot` is read from the controller that checks it rather than spelled again here:
+        // a honeypot whose rendered name and checked name drift is a spam control that silently
+        // stops working, with every submission passing and nothing anywhere reporting it.
+        frame.put("formAction", "/api/v2/cda/form/" + site.getName());
+        frame.put("formHoneypot", ShFormSubmissionAPI.HONEYPOT_FIELD);
         // SH389 — three positioned lists, always present even when empty. A layout writes
         // `{{#each site.scripts.head}}`, and Shio never injects one: the delivery layer reads the same
         // post through the CDA, so there is no path by which a consent banner behaves one way in the

@@ -1488,31 +1488,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.43 The two things a form template cannot know, and the helper already knows one (SH636)
-
-`{{#form type="Contact"}}` yields the post-type's fields, in order, each with its widget
-and whether it is required. SH632 was right that it must not know an address — the
-destination is the site's, not the page's. But it emits **no `action`** and **no
-honeypot input**, so an author writes both by hand and the second only works if they
-know the literal string `shio_hp`.
-
-That is a P8 failure rather than a missing convenience. The endpoint knows the field
-name, the helper knows the type, and the only thing joining them is a person
-remembering. A honeypot nobody renders is a spam control present in the code and absent
-from every page; a wrong action URL is a form that silently posts nowhere, the failure
-class SH572 was about one surface over.
-
-The shape that keeps SH632 intact: the helper learns no *folder*, it learns the
-**endpoint form**, derivable from the site being rendered and identical for every site —
-`/api/v2/cda/form/<site>`. Publishing `@action` and `@honeypot` beside the fields lets a
-template write `<form action="{{@action}}">` with neither literal in content.
-
-The token is the open question and should be decided rather than defaulted. Rendering it
-is what SH631 assumes — it is public by construction — but the helper has none to
-render, and a lookup here would make the renderer depend on the token store. A `token=`
-hash the layout passes keeps the renderer honest and makes the credential something an
-operator placed deliberately.
-
 ### XV.44 The endpoint nothing can reach from the page it was built for (SH637)
 
 SH633's endpoint is meant to be posted to by a form on the customer's own site. That

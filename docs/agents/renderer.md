@@ -1462,3 +1462,32 @@ second occurrence of SH635. The number survived SH572's double-reporting fix, so
 disproved: the 2 is two real findings, not one counted twice. The assertion now **prints the
 findings when it fails**, so the third occurrence names the rule and the address instead of a
 number. That is SH354's lesson applied to a red nobody was present for.
+
+## A form's endpoint and honeypot come from the site (SH636)
+
+`{{#form type="Contact"}}` renders a post-type's declared fields, and SH632 was right that it must
+not know an address — the destination is the site's, never the page's. But it published **no
+endpoint** and **no honeypot name**, so an author hand-wrote the action URL and the literal
+`shio_hp`, joined to the controller that checks it by nothing but memory. A honeypot nobody renders
+is a spam control that is present in the code and absent from every page; a wrong action is a form
+that silently posts nowhere.
+
+**`site.formAction` and `site.formHoneypot`**, on the site frame. A template writes
+`<form action="{{site.formAction}}">` and `<input type="hidden" name="{{site.formHoneypot}}">`, and
+neither literal appears in content.
+
+**The first implementation was `@action`/`@honeypot` as data variables from the helper, and a test
+disproved it within the hour.** `action` has to sit on the `<form>` element, which necessarily
+**wraps** the block — and a block's data variables do not exist outside it. So the fixture rendered
+`action=""`, which is exactly what the design promised and exactly what nobody can use. The shape
+was wrong, not the scope, and the right one was already implied by SH632: the endpoint is a property
+of the **site**. Worth recording because the wrong version was defensible, carried a save/restore
+honouring SH420, and would have shipped if the test had asserted the variable instead of the
+rendered `<form>` tag.
+
+`formAction` is the endpoint and nothing else — no folder, no post-type, no choice a template makes.
+It is the same URL for every site but for its name, so a page still cannot point a submission
+anywhere the operator did not configure, which is the property that kept the folder out of template
+content in the first place. `formHoneypot` reads `ShFormSubmissionAPI.HONEYPOT_FIELD` rather than
+spelling it again: a honeypot whose rendered name and checked name drift passes every submission and
+reports nothing anywhere.
