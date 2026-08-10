@@ -190,29 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.60 One reader, one instance, one shape (SH603)
-
-The strongest evidence this project has about its own protocol is twelve replication
-rounds. They are also its narrowest: one agent, one instance, one family of sources, and
-a corpus that the same reader helped design. The verification loop closes entirely
-inside the project — the laws are enforced by lints written by the people who wrote the
-laws, and scored by a reader who knows where everything is.
-
-That is enough to find defects. It cannot distinguish a protocol that is genuinely
-discoverable from one a familiar reader has memorised, and it says nothing at all about
-the shapes replication never exercises: building a content model from nothing, migrating
-from another CMS, a locale added after the fact, a run that is mostly curation rather
-than authoring. Whatever P2 costs in those, the number today is unknown, and no amount
-of further analysis produces it.
-
-So the deliverable is a second task shape driven end to end and scored with SH597's
-metric — build a small site from an empty instance, no capture, no corpus, following
-only what the instance and the plugin say. The value is not the site. It is the delta
-between the two numbers: if discovery costs the same in a shape nothing was tuned for,
-P2 is real; if it does not, the tuning is what was being measured all along.
-
-Run it before believing any P2 improvement generalises.
-
 ### IX.61 The gate whose fallback is null in the shape it demands (SH609)
 
 SH460 asks two questions in one: is this instance running the code under test, and can a

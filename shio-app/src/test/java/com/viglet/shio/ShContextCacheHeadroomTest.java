@@ -125,7 +125,19 @@ class ShContextCacheHeadroomTest {
      *
      * <p>The headroom is printed on every run, so approach is visible rather than only arrival.</p>
      */
-    private static final int DECLARED_CONTEXTS = 62;
+    private static final int DECLARED_CONTEXTS = 63;
+
+    // SH603 raised this from 62, and the gauge is what asked. The slot went to
+    // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY
+    // INSTANCE — the archetypal case SH315's rule says may not share a context, because another
+    // suite's content makes "from nothing" a statement about test order rather than about the
+    // protocol. It cannot be folded into an existing context for the same reason.
+    //
+    // Headroom is now ZERO against the ceiling in application.properties, which is raised to 68 in
+    // the same commit. That raise is the reviewable act this gauge exists to force, and the reason
+    // is worth stating: the alternative was to not measure the second task shape at all, and
+    // SH603's whole finding is that a protocol scored only on the shape it was tuned for cannot
+    // tell discoverability from familiarity.
 
     /**
      * Seconds one isolated Spring context costs, measured 2026-08-02 (SH317).

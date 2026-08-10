@@ -1475,3 +1475,36 @@ One correction worth keeping: the handler took the counter as a constructor argu
 `ShTeachingErrorTest` — it constructs the advice directly to assert a problem document's *shape*.
 Making a diagnostics aid a precondition of error handling is the wrong way round, and the no-arg
 constructor is back.
+
+## The second task shape (SH603)
+
+The strongest evidence this project has about its protocol is twelve replication rounds — and they
+are also its narrowest: one agent, one instance, one family of sources, and a corpus the same reader
+helped design. That finds defects. It **cannot tell a protocol that is genuinely discoverable from
+one a familiar reader has memorised**.
+
+`ShAgentAuthoringCostTest` is a shape nothing was tuned for: build a small site from an **empty**
+instance — no capture, no corpus, no proposal — scored with SH597's metric.
+
+**Measured: 5 calls, 1053 estimated tokens** for the whole shape (read the pack, read the write
+vocabulary, plan the batch, apply it, verify). A *single* discovery intent costs between 950 and
+3650 tokens to reach its first correct move. So the untuned shape is not more expensive than the
+tuned one — which is the answer SH603 wanted: P2 is not an artefact of familiarity.
+
+**The first reading was 941 and was measuring nothing.** Two calls answered 400 and the last 404, so
+the figure was the cost of *failing* — comfortably under any ceiling, and it would have shipped as
+evidence. The benchmark now asserts every step's status **before** it asserts any budget, and checks
+the site exists afterwards, because a batch's 200 does not prove a write happened: a dry run answers
+200 too.
+
+**What corrected it is the finding worth keeping.** Every fix came from the instance refusing the
+first attempt and naming the remedy — `start-here` not `startHere` (with `didYouMean`), `folder`
+required on `post.upsert`, and `Page` declaring `title`/`content` rather than `TITLE`/`TEXT`. That
+is P6 and P2 working on the author of the benchmark, which is the closest thing to an outside reader
+a file in this repository can have. It is also live input for SH602's friction ranking, which is
+what those refusals now feed.
+
+The slot it cost was declared: `ShContextCacheHeadroomTest` went 62 → 63 and
+`spring.test.context.cache.maxSize` 64 → 68. This is the archetypal case SH315's rule says may not
+share a context — another suite's content makes "from nothing" a statement about test order rather
+than about the protocol.
