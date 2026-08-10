@@ -198,7 +198,8 @@ public class ShSecurityConfig {
             ShOAuth2UserService shOAuth2UserService,
             ShOidcUserService shOidcUserService,
             ShTenantFilter shTenantFilter,
-            ShCsrfAccessDeniedHandler shCsrfAccessDeniedHandler) {
+            ShCsrfAccessDeniedHandler shCsrfAccessDeniedHandler,
+            ShAccessDeniedHandler shAccessDeniedHandler) {
 
         http.headers(header -> header.frameOptions(
                 HeadersConfigurer.FrameOptionsConfig::disable)
@@ -211,6 +212,12 @@ public class ShSecurityConfig {
 
         CookieCsrfTokenRepository csrfTokenRepository = new CookieCsrfTokenRepository();
 
+        // SH622 — the chain's own 403 gets a body. Wired here rather than on a filter because an
+        // authorization denial can come from any of them; the CSRF handler stays on CsrfFilter
+        // alone (SH339) because the two refusals have different remedies.
+        http.exceptionHandling(handling -> handling
+                .authenticationEntryPoint(shAuthenticationEntryPoint)
+                .accessDeniedHandler(shAccessDeniedHandler));
         http.csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository)
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())

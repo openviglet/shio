@@ -143,19 +143,11 @@ public class ShCsrfAccessDeniedHandler implements AccessDeniedHandler {
      * observable in the bytes, so it is ours to fix rather than a Jackson introspection detail
      * (P5, and SH136's rule that an order which reaches the wire is a decision).</p>
      */
+    /**
+     * Delegated since SH622, which gave the chain two more refusals that write their own bytes.
+     * Three copies of "which fields, in which order" is three answers to one question.
+     */
     private static Map<String, Object> body(ProblemDetail problem) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        if (problem.getType() != null) {
-            body.put("type", problem.getType().toString());
-        }
-        body.put("title", problem.getTitle());
-        body.put("status", problem.getStatus());
-        if (problem.getDetail() != null) {
-            body.put("detail", problem.getDetail());
-        }
-        if (problem.getProperties() != null) {
-            body.putAll(problem.getProperties());
-        }
-        return body;
+        return ShProblemJson.body(problem);
     }
 }

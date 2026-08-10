@@ -175,31 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.38 P6 is a controller-advice property, and the first error is not thrown by a controller (SH622)
-
-The other two findings of SH499's first execution run were `GET /api/v2/cda/site` and
-`GET /api/v2/cda/post/{id}/editable`, both answering **403** to console HTTP Basic with
-Spring's own body: `{timestamp, status, error, path}`. Anonymous gets the same shape
-with 401.
-
-The cause is structural rather than an omission on those two endpoints. P6 is
-implemented in `@ControllerAdvice`, and a rejected credential never reaches a controller
-— the filter chain answers first, so *every* endpoint on this product has one 4xx that
-carries no `fix`, and it is the one a caller hits before any other. A page publishing a
-CDA read is correct about the route and silent about the credential, and the 403 that
-would have said so says nothing.
-
-This is worse for an agent than for a person. A human reads the page again; an agent has
-three indistinguishable readings of 403 — wrong scope, right scope with the wrong key,
-or an endpoint that is not for this credential at all — and no field to tell them apart.
-The manifest knows which scope each endpoint wants, so the answer exists and is simply
-not where the error is.
-
-The fix is an entry point and an access-denied handler emitting the same problem
-document the advice does, with `fix` naming the scope and the call that mints one. The
-reason this was never noticed is the reason it is worth writing down: no test asks an
-unauthenticated question and reads the *body*.
-
 ### VIII.39 Rendered, stored, and inert on the page (SH638)
 
 SH503 found `SectionHero.ctaHref` rendered into an `href` and annotated by nothing, so a

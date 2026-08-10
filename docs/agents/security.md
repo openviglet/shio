@@ -402,3 +402,45 @@ wrong one. The layering is not a preference; it is what the filter order permits
 The stale `### CORS` section above is the other half of this task and the more uncomfortable one: it
 documented an `addCorsMappings` the code never had, and would have satisfied anybody auditing the
 posture.
+
+## The first 4xx a caller meets (SH622)
+
+SH499's execution run found `GET /api/v2/cda/site` and `/api/v2/cda/post/{id}/editable` answering
+**403 to console HTTP Basic with Spring's own `{timestamp, status, error, path}`**, and anonymous
+getting the same shape with 401.
+
+**The cause is structural, not an omission on those two endpoints.** P6 is implemented in
+`@ControllerAdvice`, and a rejected credential never reaches a controller — the filter chain answers
+first. So *every* endpoint on this product had one 4xx carrying no `fix`, and it is the one a caller
+hits before any other.
+
+Two handlers now write the same problem document the advice does: the 401 entry point (which was
+emitting `{"error":"Unauthorized"}` — the status restated as a word) and a **chain-wide**
+`ShAccessDeniedHandler` for 403. `ShCsrfAccessDeniedHandler` stays wired to `CsrfFilter` alone for
+SH339's stated reason: a CSRF rejection and an authorization denial have different remedies, and one
+handler for both would have to guess which it is sending.
+
+**The missing field was never prose, it was *which credential*.** A caller reading 403 could not
+tell "your credential is real but too narrow" from "this endpoint is not for this kind of credential
+at all", and those need opposite moves — widen a scope, or stop sending a token and sign in.
+`ShCredentialProblems` answers per surface: a FORM token for `/cda/form`, an AGENT token for the
+agent surface and MCP, a CDA token for the CDA and GraphQL, a console session everywhere else, each
+with the call that mints one.
+
+Derived from the **path** and deliberately not from the manifest: the manifest also knows, but
+reaching it from the security chain means the entry point depending on a service the chain runs
+before. The prefixes *are* the chain's own rules, restated where the refusal is written — a mismatch
+between them is a mismatch between two lines of one config, which is much smaller than a cycle
+between two of them.
+
+`ShProblemJson` is shared by all three refusals, because three copies of "which fields, in which
+order" is three answers to one question, and the one that drifts is the field a caller reads to tell
+two refusals apart.
+
+**Why nobody had noticed, and it is worth writing down: no test asked an unauthenticated question
+and read the body.** `ShAnonymousRouteAccessTest` asserts every route's *status*, which is what it
+is for, and a 401 whose body is one word passes it exactly as a teaching one does. Four assertions
+now read bytes. One existing test had to change with it: `ShPreviewChallengeTest` pinned
+`{"error":"Unauthorized"}` literally, and SH450's actual claim — a browser-challenged refusal and a
+programmatic one differ in the *header* and nothing else — is now asserted as that comparison
+instead of as a copy of the old bytes.

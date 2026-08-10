@@ -120,11 +120,36 @@ class ShPreviewChallengeTest {
     }
 
     @Test
-    @DisplayName("SH450: the body is the same JSON either way, so a program reads one shape")
+    @DisplayName("SH450: the body is the same shape either way, so a program reads one contract")
     void theBodyIsUnchanged() throws Exception {
-        // A browser never renders this body — it acts on the header — so making the two responses
-        // differ in more than the header would be a second contract for no reader.
-        mockMvc.perform(MockMvcRequestBuilders.get("/preview/any-site/"))
-                .andExpect(MockMvcResultMatchers.content().json("{\"error\":\"Unauthorized\"}"));
+        // SH450's property, unchanged; SH622 changed the literal it used to be asserted against.
+        // This pinned `{"error":"Unauthorized"}`, which was the whole defect SH622 fixed — a status
+        // restated as a word. What SH450 actually claims is that a browser-challenged refusal and a
+        // programmatic one differ in the HEADER and in nothing else, because a browser never renders
+        // this body. So the assertion is now that comparison rather than a copy of the bytes.
+        String challenged = mockMvc.perform(MockMvcRequestBuilders.get("/preview/any-site/"))
+                .andReturn().getResponse().getContentAsString();
+        String plain = mockMvc.perform(MockMvcRequestBuilders.get("/api/v2/agent/manifest"))
+                .andReturn().getResponse().getContentAsString();
+
+        org.assertj.core.api.Assertions.assertThat(challenged)
+                .as("both are problem documents, and both say what to do (SH622)")
+                .contains("\"title\"").contains("\"fix\"");
+        org.assertj.core.api.Assertions.assertThat(plain).contains("\"title\"").contains("\"fix\"");
+        org.assertj.core.api.Assertions.assertThat(fieldsOf(challenged))
+                .as("""
+                        the same field set: making the two differ in more than the header would be                         a second contract for no reader (SH450)""")
+                .isEqualTo(fieldsOf(plain));
+    }
+
+    /** The JSON keys, which is the shape SH450 is about — the values legitimately differ per path. */
+    private static java.util.Set<String> fieldsOf(String json) {
+        java.util.Set<String> keys = new java.util.TreeSet<>();
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile("\"([a-zA-Z]+)\"\s*:").matcher(json);
+        while (matcher.find()) {
+            keys.add(matcher.group(1));
+        }
+        return keys;
     }
 }

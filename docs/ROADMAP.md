@@ -11,7 +11,6 @@
 
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
-- 📋 **SH622** (deps: —) **A rejected credential is a bare Spring error, so the first 4xx an agent meets carries no instructions** — The security chain answers before any controller advice runs, so 401 and 403 arrive as timestamp/status/error/path and never name the scope the endpoint wanted. → §VIII.38
 - 📋 **SH638** (deps: SH524 ✅) **Every section field renders and none of them can be edited on the page** — SH524's instrument counted it: 25 of 25 section fields carry no data-shio-field, so a page composed from the React sections is content the Universal Editor cannot reach. → §VIII.39
 
 ## Block K — Perception & verification loop

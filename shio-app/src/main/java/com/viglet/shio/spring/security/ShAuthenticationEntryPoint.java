@@ -101,9 +101,14 @@ public class ShAuthenticationEntryPoint implements AuthenticationEntryPoint {
             // what a browser acts on, and it never renders the body it is attached to.
             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, CHALLENGE);
         }
+        // SH622 — the same problem document the controller advice writes, because this refusal is
+        // the FIRST 4xx a caller meets and it carried `{"error":"Unauthorized"}`: a status restated
+        // as a word, with nothing about which credential this path wants or how to get one.
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write("{\"error\":\"Unauthorized\"}");
+        response.setContentType("application/problem+json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(ShProblemJson.of(
+                ShCredentialProblems.unauthenticated(request).toProblemDetail()));
     }
 
     /**
