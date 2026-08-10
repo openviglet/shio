@@ -472,27 +472,6 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
-### XIII.13 One surface is measured and the other is assumed cheap (SH394)
-
-`token-budgets.properties` declares `mcp.tools.list.total=2375` and `max-per-tool=460`,
-and SH132's test fails the build on a regression, because that payload is re-sent every
-turn of every session. The CLI has no equivalent: `shio --help` is **14,363 bytes —
-roughly 3,600 tokens** — and no test, ceiling or benchmark touches it.
-
-The two costs are shaped differently and that is the whole point. MCP's is **per turn
-and bounded**; the CLI's is **per session, on demand, and unbounded** — paid when an
-agent reads the help, the area file or the skill. Neither number is knowable from the
-other, so the recurring argument that one surface is cheaper than the other has been
-made from intuition on both sides, which P3 calls a defect regardless of which way it
-points.
-
-So: a budget for the help text and for each command's own help, in the same file and the
-same shape, and the per-session comparison printed rather than asserted (`shio --help`
-plus the smallest set of reads that gets an agent from nothing to a correct first call,
-against `tools/list` × a session's turns). It is a benchmark before it is a ceiling.
-SH208 is a dependency rather than a coincidence: the same template literal is what this
-measures and what breaks the binary on a backtick.
-
 ### XIII.14 The number guards the job that stops short of the promise (SH396)
 
 `build-marketing-site` is the canonical benchmark for the product's own headline task,

@@ -2502,3 +2502,42 @@ of the five, naming the file and line. The tree was restored immediately.
 
 What this does **not** assert is that the teaching in the box is sufficient — only that it is
 self-contained and has an entry point. That is SH603's job, and this is its enforcement half.
+
+## The help surface is measured, so the two discovery paths can be compared (SH394)
+
+`cli/test/cli-help-budget.test.mjs` asserts three ceilings that live in
+`shio-app/src/test/resources/token-budgets.properties`, six lines below the MCP ones and
+on the same 4-chars-per-token ratio:
+
+| Key | Ceiling | Measured 2026.3 |
+|---|---|---|
+| `cli.help.global` | 1300 | 1215 (`shio --help`) |
+| `cli.help.max-per-command` | 1200 | 1146 (`clone`) |
+| `cli.help.all` | 9800 | 9535 (all 31 texts) |
+
+**Re-measuring corrected the task that asked for it.** SH394 was filed quoting
+`shio --help` at 14,363 bytes / ~3,600 tokens. It is 4,858 / ~1,215 — the old figure
+predates SH208, which moved every command's text out of `help.mjs` into its own `.txt`, so
+it measured the *source file* rather than the output. The task's conclusion survives (the
+surface really was unmeasured, and that was the defect); its arithmetic against MCP did
+not, and was wrong by 3× in the CLI's disfavour. Measure before you fix applies to the
+number a task hands you, not only to the ones you produce.
+
+**The two costs are shaped differently, which is why only three lines are asserted.**
+
+- MCP's is **per turn and bounded** — every session pays `mcp.tools.list.total` on every
+  turn, written or not.
+- The CLI's is **per session, on demand, and unbounded** — an agent pays for the help it
+  reads, once, and nothing stops that text growing.
+
+A ceiling alone is the wrong instrument for the second shape, so the per-session
+comparison is **printed on every run and asserted nowhere**: it depends on how many turns
+a session runs, which is not a build's to declare, and the ranking is a product decision
+rather than an invariant. Reading it as a winner is the mistake — `tools/list` also buys
+schema validation that prose cannot.
+
+**A missing key is a failure, not a skip.** `need()` asserts the key exists, because a
+budget test that silently checks nothing is worse than none: it reports green. That is the
+same reason the ceilings live in the properties file rather than in the test — one place
+for a number, which is the reasoning that file already carries, and the same coupling
+`shio-site/scripts/token-budgets.mjs` makes on purpose.
