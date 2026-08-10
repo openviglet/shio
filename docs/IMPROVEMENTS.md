@@ -190,31 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.48 A source that answers a request badly, which no fixture has ever been (SH569)
-
-The shared fixture says why it is not this, and it is right about itself: *nothing 404s
-— an unreadable page is its own finding, and one in the fixture would blur the rule
-being asserted.* Correct for a seam test, and exactly the hole. Every source this work
-was driven against answered some request badly, and the two that cost most were both
-fetch-layer:
-
-- **SH431** — a 200 of `application/json`, linked on purpose, filed as an error. Twenty-four of
-  `openviglet.github.io`'s data files landed in `problems`, where the coverage gate reads them as
-  pages that could not be read at all and downgrades **every count in the report** to a lower
-  bound. A wrong classification, not a wrong fetch.
-- **SH544** — a 265-character title ended a 201-page conversion **after 403 assets had been
-  uploaded**, blocking every retest until it was fixed.
-
-So the subject is not that a request fails. It is that **the run does not die and the
-report is honest about what it got**: a dead internal link, a 500, a redirect loop, a
-linked JSON document, HTML served as `text/plain`, an asset past `--max-asset-bytes`.
-Each has a right answer that is neither a crash nor a silent omission, and `routes`
-spells all six.
-
-The assertion to write first is the one SH431 is about: a `problems` row and a `notHtml`
-row stay different claims, because collapsing them turns a bounded sample into a report
-reading as complete.
-
 ### IX.49 Markup a browser repairs, and a scanner does not (SH570)
 
 SH569's archetype fails at the fetch layer; this one is a 200 whose body is wrong, and

@@ -11,8 +11,7 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH569** (deps: SH560 ✅) **No archetype answers a request badly, so a capture's partial success is a state nothing asserts** — SH431 filed 24 data files as errors and downgraded every count in a report, and SH544 ended a 201-page run after 403 uploads — fetch states no fixture serves. → §IX.48
-- 📋 **SH570** (deps: SH560 ✅, SH569) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
+- 📋 **SH570** (deps: SH560 ✅, SH569 ✅) **No archetype serves markup a browser has to repair, so the scanner's behaviour on it is unasserted** — Every fixture is well-formed by hand, so tokenize and scanPage have never met an unclosed tag, an absent title or a charset the bytes contradict. → §IX.49
 - 📋 **SH602** (deps: SH594 ✅) **Friction is found only when somebody reads a transcript back by hand** — Every finding in twelve rounds came from a session being narrated afterwards, so a refusal, a 404 and a question asked under the wrong name are lost the moment it ends. → §IX.59
 - 📋 **SH603** (deps: SH597 ✅, SH602) **The corpus has one task shape, so every friction it measures is replication-flavoured** — One reader drove one instance through one family of sources, which cannot tell a defect in the protocol from a gap in a corpus the same hands designed. → §IX.60
 - 📋 **SH609** (deps: SH560 ✅) **The conformance gate's staleness check has no answer on a dirty tree, so its escape hatch is the normal way to run it** — SH500 falls back to builtAt on a dirty tree, and a fat-jar CodeSource is a nested URL Paths.get refuses - so it is null on the only shape the gate accepts. → §IX.61

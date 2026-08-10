@@ -774,7 +774,16 @@ const FROZE_NAMES = {
  * <p>Only `text/html` is scanned. A link to a PDF is already recorded as an asset by whichever page
  * referenced it, and running an HTML scanner over a binary would invent findings.
  */
-async function visit(url, { page, flags, keepMarkup, isSeed, conditional }, ctx) {
+/**
+ * How many redirects one URL may be followed through (SH569).
+ *
+ * <p>Five, because a real source chains two or three legitimately — `/a` → `/a/` → the canonical
+ * host — and a budget tight enough to refuse those would report a working page as broken. What it
+ * has to stop is the cycle, and a cycle exceeds any budget.</p>
+ */
+const MAX_REDIRECT_HOPS = 5;
+
+async function visit(url, { page, flags, keepMarkup, isSeed, conditional, hops = 0 }, ctx) {
   if (page) {
     return renderOne(url, page, flags, keepMarkup);
   }
@@ -813,10 +822,19 @@ async function visit(url, { page, flags, keepMarkup, isSeed, conditional }, ctx)
     if (!target || !sameOrigin(target, url)) {
       return { status, error: `redirects off-origin to ${location ?? "nowhere"}` };
     }
-    // One hop, followed by hand so the redirect is visible in the inventory rather than erased by
-    // the fetch layer.
+    // SH569 — the hop budget the comment below always claimed and the code never had. This
+    // recursed with no counter, so a source answering `/loop` with `302 → /loop` spun until the
+    // process died: the corpus's `hostile` archetype hit it on its first run, which is the whole
+    // argument for an archetype that answers requests badly. A chain is legitimate (`/a` → `/a/` →
+    // canonical), so the answer is a small budget rather than a single hop, and exceeding it is a
+    // reported row — never a crash and never a silent omission.
+    if (hops >= MAX_REDIRECT_HOPS) {
+      return { status, error: `redirect loop: more than ${MAX_REDIRECT_HOPS} hops from ${pathOf(url)}` };
+    }
+    // Followed by hand so the redirect is visible in the inventory rather than erased by the
+    // fetch layer.
     return {
-      ...(await visit(target, { page: null, flags, keepMarkup, isSeed: false }, ctx)),
+      ...(await visit(target, { page: null, flags, keepMarkup, isSeed: false, hops: hops + 1 }, ctx)),
       redirectedTo: pathOf(target),
     };
   }

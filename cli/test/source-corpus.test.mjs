@@ -340,6 +340,28 @@ describe("SH560 group B: the capture of each archetype is what it declares", () 
             + "from inside a stylesheet is the one that goes missing while every test passes (SH452)",
         );
 
+        // SH569 — the assertion this archetype exists to make first. A non-HTML 200 and a page the
+        // crawl could not read are DIFFERENT claims: `data` is what was never a page, `problems` is
+        // what failed. SH431 collapsed them, and twenty-four of `openviglet.github.io`'s data files
+        // landed in `problems` — where the coverage gate reads them as unreadable pages and
+        // downgrades EVERY count in the report to a lower bound. A bounded sample then reads as a
+        // complete one, which is the worst direction for a report to be wrong in.
+        if (declaration.expect.data) {
+          holding(entry.id, "data-is-not-a-problem", () => {
+            assert.deepEqual(
+              (inventory.data ?? []).map((row) => row.path).sort(),
+              [...declaration.expect.data].sort(),
+              `${entry.id} / SH431: a 200 of application/json or text/plain is the site's data `
+                + "surface, linked on purpose and served correctly — not a page, and not a failure",
+            );
+            const problems = new Set((inventory.problems ?? []).map((row) => row.path));
+            for (const path of declaration.expect.data) {
+              assert.ok(!problems.has(path),
+                `${entry.id} / SH431: ${path} is in BOTH lists, so the distinction has collapsed`);
+            }
+          });
+        }
+
         for (const note of declaration.expect.notes ?? []) {
           holding(entry.id, `capture-notes-${slug(note.match)}`, () => {
             assert.ok(

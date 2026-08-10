@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A source that answers badly</title>
+</head>
+<body>
+  <main>
+    <h1>Requests that do not answer 200 text/html</h1>
+    <p>Every link below is a fetch state a real source produced, and each one cost a task.</p>
+    <ul>
+      <li><a href="/gone">A dead internal link — the page is linked and answers 404</a></li>
+      <li><a href="/broken">A 500 from the source's own application</a></li>
+      <li><a href="/loop">A redirect that returns to itself</a></li>
+      <li><a href="/data/menu.json">A JSON document, linked on purpose (SH431)</a></li>
+      <li><a href="/plain">HTML served as text/plain</a></li>
+    </ul>
+    <img src="/img/huge.png" alt="An asset past any sane ceiling">
+  </main>
+</body>
+</html>

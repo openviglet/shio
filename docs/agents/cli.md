@@ -2356,3 +2356,29 @@ exactly that, and the fix must not smuggle a second one in.
 `cli/test/fixture-traits.test.mjs` pinned this trait **as the defect**, on purpose — "so the fix has
 something offline to turn green". It now pins the cure, and the fixture's source bytes are
 unchanged: a trait catalogue's job is to keep the awkward input, not the wrong output.
+
+**A source that answers a request badly, which no fixture had ever been (SH569).** The shared
+fixture says why it is not this and is right about itself — *nothing 404s; an unreadable page is its
+own finding, and one in the fixture would blur the rule being asserted*. Correct for a seam test,
+and exactly the hole: every source this work was driven against answered some request badly, and the
+two that cost most were both fetch-layer. SH431 filed twenty-four linked JSON documents as
+`problems`. SH544 ended a 201-page conversion **after 403 assets had been uploaded**.
+
+The `hostile` archetype serves six: a dead internal link, a 500, a redirect that returns to itself,
+a linked JSON document, HTML served as `text/plain`, and an oversized asset. The subject is not that
+a request fails — it is that **the run does not die and the report is honest about what it got**.
+
+**The assertion SH569 said to write first is the SH431 one**, and the corpus now holds it: `data`
+and `problems` are different claims. `data` is what was never a page; `problems` is what could not
+be read. Collapsing them is not cosmetic — the coverage gate reads a `problems` row as a page it
+could not read and downgrades **every count in the report** to a lower bound, so a bounded sample
+starts reading as a complete one. The archetype asserts both the membership and the disjointness,
+because either alone would pass while the other collapsed.
+
+**It found a real defect on its first run, which is the argument for it.** `visit` followed
+redirects with a comment saying *"one hop, followed by hand"* and **no counter** — it recursed. The
+`/loop` route spun until the process died, and the suite went from a fast run to a 100-second
+timeout. There is now a budget of five: a real source chains two or three legitimately (`/a` →
+`/a/` → the canonical host), so a budget tight enough to refuse those would report a working page as
+broken; what has to be stopped is the cycle, and a cycle exceeds any budget. Exceeding it is a
+reported row — never a crash, never a silent omission.
