@@ -190,30 +190,6 @@ AI the product contains.
 > The subsections below are the **open follow-ups closing the block produced**. They are here
 > and not in the changelog because none of them has shipped.
 
-### IX.65 The count that cannot go down (SH615)
-
-`ShReviewSession.pending` asks, for each of a run's audit entries, whether its post has
-a `DRAFT` row. Its javadoc says what it means to answer — "a change whose post is gone,
-or that is already published, is history rather than a decision" — and it cannot,
-because `publish` writes a `PUBLISHED` row and **keeps** the draft as the editable copy.
-Every post that has ever existed has one, forever.
-
-So the number only grows. A curator who approves a run sees the page reload with the
-same "3 to review", and Approve stays enabled on work already published. No error,
-nothing logged: the page asserts something untrue about the thing it exists to resolve.
-
-SH207 found it by needing the opposite property. A navigation badge must be safely
-ignorable at zero, so it could not reuse this. `ShReviewService.pending()` asks whether
-a draft has **no published twin**, or was **modified after** its twin was published, and
-`ShReviewPendingTest` pins both numbers side by side so the disagreement is stated
-rather than latent.
-
-Two decisions, and the second is the real one. The definition is written and tested one
-method away, so adopting it is small. But `pending` also counts **entries** rather than
-posts — one page edited four times reports four — so fixing only the staleness leaves a
-number that is fresh and still not a count of decisions. Both or neither: a half-fix
-here reads as correct.
-
 ### IX.66 The moment the read surface cannot reach (SH619)
 
 SH522 named four declarations to judge an artefact against. Three are settled: the

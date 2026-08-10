@@ -11,7 +11,6 @@
 
 ## Block K — Perception & verification loop
 
-- 📋 **SH615** (deps: SH109 ✅, SH207 ✅) **The review queue's per-run pending count never reaches zero, because publishing keeps the draft** — A run stays 'N to review' forever and its Approve button never settles, since the count asks whether a DRAFT row exists and the editable draft always does. → §IX.65
 - 📋 **SH619** (deps: SH522 ✅, SH545 ✅) **A draft cannot be compared with what is live, because the read surface cannot return the published row** — Every agent read is DRAFT-preferred with no state parameter, so 'what will change when I publish this' has no answer outside the console's own diff dialog. → §IX.66
 - 📋 **SH630** (deps: —) **Naming a task id in a comment marks it asserted, so a debt is paid by mentioning it** — The SH527 walk greps suite files for ids and cannot tell an assertion from prose, so three ids left the debt list in one task because a new file explained why they were relevant. → §IX.67
 - 📋 **SH639** (deps: SH22 ✅) **A scheduled publish never fires for any tenant but the default, because the sweep runs with no tenant bound** — ShPostUnified is @TenantId, so the finder's implicit predicate is the default discriminator and a due post of another tenant is never returned. → §IX.69

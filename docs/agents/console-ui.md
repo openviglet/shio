@@ -417,3 +417,43 @@ the reader cannot run). "Still loading" and "this will never load" were the same
   an error page, or a front end that ignores `?editor=true` — which SH185 calls the wanted
   behaviour, degrading to a plain iframe. The banner keeps the frame visible and says editing is
   unavailable; it never claims the site is broken.
+
+## The review count that could not go down (SH615)
+
+`ShReviewSession.pending` asked, per audit entry, whether the post has a `DRAFT` row. Its own javadoc
+said what it meant to answer — *"a change whose post is gone, or that is already published, is
+history rather than a decision"* — and it could not, because **`publish` writes a `PUBLISHED` row and
+keeps the draft** as the editable copy. Every post that has ever existed has one, forever.
+
+So the number only grew. A curator who approved a run saw the page reload with the same *"3 to
+review"*, and Approve stayed enabled on work already published. No error and nothing logged: the page
+asserting something untrue about the one thing it exists to resolve.
+
+**The console needed no change.** `review.list.page.tsx` already gates both the badge and the Approve
+button on `session.pending` — the stuck number is precisely why the gate never closed. Fixing the
+source made both settle, which is P1 working in the ordinary direction.
+
+### Two defects, fixed together on purpose
+
+SH207 had already written the correct definition one method away, because a navigation badge has to
+be **safely ignorable at zero** and so could not reuse this one. `unreleased(...)`: a draft with no
+published twin, or one modified *after* its twin was published. Approving is exactly what makes both
+false.
+
+The second defect is the one that decided the shape. `pending` counted **entries**, not posts, so one
+page edited four times reported four. Fixing only the staleness would have left a number that is
+fresh and still not a count of decisions — **and that reads as correct**, which is worse than one
+that is visibly stuck. Both or neither.
+
+The set is now resolved **once per page** in `sessions(...)` rather than per session, which is the
+two-query shape `pending()` already used. The old code ran `state(id, DRAFT)` inside the per-entry
+loop: one query per audit row, answering a question that was wrong anyway.
+
+### What the pin was worth
+
+SH207 did not fix this; it **pinned** it, with an assertion asserting `3` and a message saying
+"pinned rather than fixed: making the two agree is a decision about which question the page is
+asking". That is the right way to leave a disagreement — stated, not hidden — and it is why SH615 was
+a small change rather than a rediscovery. `ShReviewPendingTest` now asserts the two counts agree, and
+that a run's own count **reaches zero** once its work is released, which is the assertion that would
+have caught the original (SH527).

@@ -11,7 +11,6 @@ package com.viglet.shio.api.review;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -54,13 +53,20 @@ import jakarta.persistence.PersistenceContext;
  * — it is that approving a run takes it to zero, because a badge that stays lit after the work is
  * done is one a curator stops looking at, and then it is worse than nothing.</p>
  *
- * <h2>The one disagreement, asserted on purpose</h2>
+ * <h2>The disagreement this used to pin, and what closing it cost (SH615)</h2>
  *
- * <p>{@code ShReviewSession.pending} counts <em>audit entries</em>, so a run that edited one page
- * four times reports four. The badge counts runs, and {@code changes} counts distinct posts. Those
- * are different numbers on the same data and both are right for their question — which is exactly
- * why one of them is pinned here: the next person to make them agree should have to decide which
- * of the two questions they are answering.</p>
+ * <p>{@code ShReviewSession.pending} counted <em>audit entries</em>, so a run that edited one
+ * page four times reported four, and SH207 pinned that here rather than fixing it — it only had
+ * to make the badge's own number defensible. The pin said so in its assertion message, which is
+ * the right way to leave a disagreement: stated, not hidden.</p>
+ *
+ * <p>SH615 made the decision the pin deferred, and it turned out to be two. The unit is now the
+ * <b>decision</b> — a post, not an entry — and the definition is {@code unreleased}, the one
+ * SH207 had already written one method away because a badge has to be ignorable at zero. The old
+ * definition asked whether a {@code DRAFT} row exists, and {@code publish} keeps the draft as the
+ * editable copy, so <b>the count could only go up</b>. Both were fixed together: a number that is
+ * fresh and still not a count of decisions reads as correct, which is worse than one visibly
+ * stuck.</p>
  *
  * <p>Its own database: these assertions count agent runs across the whole instance, so any other
  * test that wrote an agent-attributed audit row would break them in whatever order the suite ran.</p>
@@ -157,31 +163,60 @@ class ShReviewPendingTest {
         assertThat(pending.changes())
                 .as("""
                         and `changes` counts distinct POSTS: one page edited three times is one \
-                        decision. This is deliberately not the sum of each session's `pending`, \
-                        which counts audit entries — see the assertion below.""")
+                        decision. Since SH615 each session's own `pending` counts the same unit, \
+                        so the two screens reconcile — see the assertion below.""")
                 .isEqualTo(1);
     }
 
     @Test
-    @DisplayName("the badge and the session listing disagree, and that is the documented shape")
-    void theTwoCountsAnswerDifferentQuestions() {
-        List<ShReviewSession> sessions = shReviewService.sessions(50);
-
-        ShReviewSession run = sessions.stream()
-                .filter(session -> SESSION.equals(session.session()))
-                .findFirst()
-                .orElseThrow();
+    @DisplayName("SH615: the two counts now answer the same question about the same unit")
+    void theTwoCountsAgree() {
+        // SH207 pinned this at 3 and said so: `ShReviewSession.pending` counted audit ENTRIES, so
+        // three edits to one page reported three, and the comment here read "pinned rather than
+        // fixed". SH615 is the decision that comment deferred. A pinned disagreement is the right
+        // way to leave one — it states the shape instead of hiding it — and this is what paying
+        // it off looks like from the other end.
+        ShReviewSession run = runOf(SESSION);
 
         assertThat(run.pending())
                 .as("""
-                        ShReviewSession.pending counts audit ENTRIES, so three edits to one page \
-                        report three. Pinned rather than fixed: making the two agree is a decision \
-                        about which question the page is asking, and SH207 only had to make the \
-                        badge's own number defensible.""")
-                .isEqualTo(3);
-        assertThat(shReviewService.pending().changes())
-                .as("while the badge's read counts the one page a human has to decide about")
+                        the unit is the DECISION, and one page edited three times is one decision. \
+                        A run's own number and the badge's now count the same thing, so a reviewer \
+                        can reconcile the two screens instead of learning which to distrust \
+                        (SH615).""")
                 .isEqualTo(1);
+        assertThat(shReviewService.pending().changes())
+                .as("the badge's read, counting the same one page")
+                .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("SH615: a run's own count reaches zero once its work is released")
+    void aRunsCountReachesZero() {
+        // The assertion that would have caught it (SH527). `pending` asked whether the post has a
+        // DRAFT row — and `publish` writes a PUBLISHED row and KEEPS the draft as the editable
+        // copy, so every post that has ever existed has one, forever. The number could only go up:
+        // a curator approved a run, the page reloaded with the same "1 to review", and Approve
+        // stayed enabled on work already published. Nothing threw and nothing was logged.
+        assertThat(runOf(SESSION).pending())
+                .as("red by construction: a zero here would make the assertion below vacuous")
+                .isEqualTo(1);
+
+        shReviewService.approve(SESSION, "curator");
+
+        assertThat(runOf(SESSION).pending())
+                .as("""
+                        A queue whose count cannot go down is a queue that asserts something untrue \
+                        about the one thing it exists to resolve, and the curator has no way to \
+                        tell it from work they have genuinely not done (SH615).""")
+                .isZero();
+    }
+
+    private ShReviewSession runOf(String session) {
+        return shReviewService.sessions(50).stream()
+                .filter(each -> session.equals(each.session()))
+                .findFirst()
+                .orElseThrow();
     }
 
     @Test

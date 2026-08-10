@@ -28,8 +28,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param firstSeen  when the run's first change landed
  * @param lastSeen   when its last one did
  * @param sites      the site ids it touched
- * @param pending    entries that can still be acted on: a change whose post is gone, or that
- *                   is already published, is history rather than a decision
+ * @param pending    SH615 — <b>posts</b> in this run that still hold work nobody has released:
+ *                   a draft with no published twin, or one modified after its twin was published.
+ *                   Not "entries with a draft row", which was the same number forever, because
+ *                   publishing keeps the draft as the editable copy. And posts rather than
+ *                   entries, because one page edited four times is one decision
  */
 @JsonInclude(Include.NON_NULL)
 public record ShReviewSession(

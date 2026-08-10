@@ -108,11 +108,20 @@ public class ShReviewService {
     public List<ShReviewSession> sessions(int limit) {
         List<ShHistory> entries = shHistoryRepository.findAgentEntries(PageRequest.of(0, SCAN_LIMIT));
         Map<String, List<ShHistory>> bySession = new LinkedHashMap<>();
+        Set<String> objects = new LinkedHashSet<>();
         for (ShHistory entry : entries) {
             bySession.computeIfAbsent(entry.getAgentSessionId(), key -> new ArrayList<>()).add(entry);
+            if (entry.getShObject() != null) {
+                objects.add(entry.getShObject());
+            }
         }
+        // SH615 — resolved once for the whole page rather than per session, which is the same
+        // two-query shape `pending()` uses and the reason it was not `sessions()` in the first
+        // place. The old count asked `state(id, DRAFT).isPresent()` inside the per-entry loop:
+        // one query per audit row, answering a question that was wrong anyway.
+        Set<String> unreleased = objects.isEmpty() ? Set.of() : unreleased(objects);
         return bySession.entrySet().stream()
-                .map(group -> summarize(group.getKey(), group.getValue()))
+                .map(group -> summarize(group.getKey(), group.getValue(), unreleased))
                 .limit(Math.max(1, limit))
                 .toList();
     }
@@ -318,12 +327,38 @@ public class ShReviewService {
         return Optional.empty();
     }
 
-    private ShReviewSession summarize(String session, List<ShHistory> entries) {
+    /**
+     * One run, as a row in the queue.
+     *
+     * <h2>SH615 — what {@code pending} counts, and it was wrong in two ways at once</h2>
+     *
+     * <p>It asked, per audit entry, whether the post has a {@code DRAFT} row. But {@code publish}
+     * writes a {@code PUBLISHED} row and <b>keeps</b> the draft as the editable copy, so every post
+     * that has ever existed has one, forever: <b>the number could only go up</b>. A curator who
+     * approved a run saw the page reload with the same "3 to review" and Approve still enabled on
+     * work already published — no error, nothing logged, the page simply asserting something untrue
+     * about the thing it exists to resolve.</p>
+     *
+     * <p>SH207 had already written the right definition one method away, because a navigation badge
+     * has to be safely ignorable at zero and so could not reuse this one. {@link #unreleased} is
+     * that definition: a draft with <b>no</b> published twin, or one modified <b>after</b> its twin
+     * was published. Approving is exactly what makes both false.</p>
+     *
+     * <p><b>And it counted entries rather than posts</b>, so one page edited four times reported
+     * four. Both are fixed together deliberately: a number that is fresh and still not a count of
+     * decisions reads as correct, which is worse than one that is visibly stuck.</p>
+     *
+     * @param unreleased posts across the whole page that still hold work nobody has released,
+     *                   resolved once by {@link #sessions} — per-session would be a query per run
+     */
+    private ShReviewSession summarize(String session, List<ShHistory> entries,
+                                      Set<String> unreleased) {
         Map<String, Integer> byAction = new LinkedHashMap<>();
         Set<String> sites = new LinkedHashSet<>();
         Instant first = null;
         Instant last = null;
-        int pending = 0;
+        // A Set, because the unit is the decision and a page edited four times is one decision.
+        Set<String> waiting = new LinkedHashSet<>();
         for (ShHistory entry : entries) {
             byAction.merge(entry.getAction() == null ? "?" : entry.getAction(), 1, Integer::sum);
             if (entry.getShSite() != null) {
@@ -334,11 +369,11 @@ public class ShReviewService {
                 first = first == null || date.isBefore(first) ? date : first;
                 last = last == null || date.isAfter(last) ? date : last;
             }
-            if (entry.getShObject() != null
-                    && state(entry.getShObject(), ShPostState.DRAFT).isPresent()) {
-                pending++;
+            if (entry.getShObject() != null && unreleased.contains(entry.getShObject())) {
+                waiting.add(entry.getShObject());
             }
         }
+        int pending = waiting.size();
         return new ShReviewSession(session, entries.get(0).getOwner(), entries.size(),
                 // SH136: byAction is a LinkedHashMap on purpose; Map.copyOf discarded
                 // that insertion order on the way out.
