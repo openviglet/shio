@@ -30,7 +30,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH666** (deps: —) **Two live writers store a furl with and without a leading slash, and one address projection emits both** — setFurl guarantees the slash and create/copy store it bare, so the export builds `post:site//page` for every agent-declared address and nothing reads the two forms as one. → §XIV.22
 - 📋 **SH668** (deps: —) **Thirteen rationale citations point at sections that no longer exist, and the gate calls the file clean** — Every ship drops a section, and each §X.Y naming it becomes a dead end that section.stale cannot see because it only checks the other direction. → §XIV.23
 
 ## Block O — The human half (the console the curator uses)

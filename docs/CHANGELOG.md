@@ -482,6 +482,7 @@
 - **SH667** — console-check gained --strict, which CI passes and which turns any editor-drive skip into a failure; ci-gates asserts both halves, and the debt SH238/SH659 carried is paid.
 - **SH662** — SH169 has its own ledger entry, so show answers and every per-id reader can see it; RK1051 had shipped and the blocker recorded here was stale.
 - **SH665** — The config registers react-hooks itself, so the lint loads; it gates in CI against a 33-finding suppressions baseline, and the one real defect it hid is fixed.
+- **SH666** — The export composes through ShAddress.post instead of adding strings, so both stored spellings name one address, and a lint fails the next bypass.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

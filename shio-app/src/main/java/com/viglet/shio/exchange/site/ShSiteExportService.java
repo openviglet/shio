@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.FileSystemUtils;
 
+import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.agent.memory.dto.ShAgentNote;
 import com.viglet.shio.api.post.type.ShPostTypeAdminMapper;
@@ -253,12 +254,19 @@ public class ShSiteExportService {
      */
     private static String addressOf(ShPostUnified row) {
         if (!hasText(row.getFurl()) || row.getShFolder() == null) {
-            return "id:" + row.getId();
+            return ShAddress.id(row.getId()).toString();
         }
         ShSite site = ShFolderSite.of(row.getShFolder());
+        // SH666 — composed, never concatenated. A stored furl has two spellings: `setFurl` and
+        // `move` guarantee a leading slash, `create`, `copyPost` and the folder/site writes store
+        // it bare, and SH467 keeps that on purpose so a page answers at the form its source
+        // declared. `"post:" + name + "/" + furl` assumed the bare one, so every post whose address
+        // the agent path declared exported as `post:site//page` — not an SH79 address, and which
+        // one you got depended on which surface wrote the row. `ShAddress.post` normalises through
+        // `ShFurlSpellings.canonical`, which is the same reader every resolver already uses.
         return site == null || !hasText(site.getName())
-                ? "id:" + row.getId()
-                : "post:" + site.getName() + "/" + row.getFurl();
+                ? ShAddress.id(row.getId()).toString()
+                : ShAddress.post(site.getName(), row.getFurl()).toString();
     }
 
     private byte[] zip(ShExchangePackage pkg) {

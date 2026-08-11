@@ -427,36 +427,9 @@ leaving to whoever next notices the poll is not free.
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
 > building it opened (SH163–SH167, SH233, SH234). What is left here is what *finishing* it
-> turned up rather than what building it opened: one friendly URL written two ways by two
-> live writers, and thirteen rationale pointers that resolve to nothing under a clean gate.
-> The other five (SH235–SH237, SH239, SH240) have shipped.
+> turned up rather than what building it opened: thirteen rationale pointers that resolve
+> to nothing under a clean gate. The other five (SH235–SH237, SH239, SH240) have shipped.
 > Concept spec §10 has the original table.
-
-### XIV.22 One furl, two stored spellings, and a projection that concatenates (SH666)
-
-Observed as a red run while shipping SH651. An interim version of `create` stored the
-leading-slash form, and `ShSiteExportServiceTest` came back with
-`post:ut-export-broken-.../broken-post` carrying a **double slash** — because
-[`ShSiteExportService:261`](../../shio-app/src/main/java/com/viglet/shio/exchange/site/ShSiteExportService.java)
-builds the address as `"post:" + site.getName() + "/" + row.getFurl()`, a bare
-concatenation that assumes the stored value has no slash of its own.
-
-SH651 settled its own half by storing the bare form, matching `copyPost`,
-`ShFolderWriteService` and `ShSiteWriteService`. It did not settle the other half:
-`ShPostUnifiedWriteService.normalizeUrl` still **guarantees** a leading slash, and it is
-what `setFurl` and `move` write. `ShFurlSpellings` is explicit that this is real — it
-calls the bare form legacy and exists so *reading* tolerates both — but the projection
-above is not a read through that vocabulary, it is string addition.
-
-So an address declared through the agent path (`post.upsert` with a `furl`, which
-reaches `setFurl`) exports as `post:site//page`, and the same post created through the
-console exports as `post:site/page`. One of them is not a valid SH79 address, and which
-one you get depends on which surface wrote it.
-
-Two exits, and the choice is the task: make the projections spelling-aware by routing
-them through `ShFurlSpellings`, or pick one stored form and migrate. The second is a
-data change and needs a count first. Either way the instrument comes before the fix —
-nothing today fails when a projection concatenates a value it did not normalise.
 
 ### XIV.23 Thirteen pointers to nothing, under a clean gate (SH668)
 

@@ -322,5 +322,36 @@ class ShSiteExportServiceTest {
                         .contains("export-post-data-invalid")
                         .contains(address)
                         .contains("post.upsert"));
+
+        // SH666 — the same row, stored the other way, has to export as the same address.
+        //
+        // A furl has two spellings in this database and both are deliberate: `setFurl` and `move`
+        // guarantee the leading slash, `create`, `copyPost` and the folder/site writes store it
+        // bare, and SH467 keeps whichever the source declared so a page answers where it says it
+        // does. This projection used to be string addition, so the slash-stored form — every
+        // address the agent path declared — came out as `post:site//broken-post`. That is not an
+        // SH79 address, and nothing failed: the export succeeded and named a post nobody can
+        // resolve. The bare form above passed throughout, which is why one spelling was enough to
+        // look correct.
+        tx.executeWithoutResult(status -> entityManager
+                .createQuery("update ShPostUnified p set p.furl = :furl where p.id = :id")
+                .setParameter("furl", "/broken-post")
+                .setParameter("id", created[3])
+                .executeUpdate());
+
+        mockMvc.perform(get("/api/v2/site/" + created[0] + "/export").principal(mockPrincipal))
+                .andExpect(status().isConflict())
+                .andExpect(result -> {
+                    String body = result.getResponse().getContentAsString();
+                    assertThat(body)
+                            .as("SH666: the stored spelling is a property of the write, never of "
+                                    + "the address — `ShAddress.post` normalises through "
+                                    + "`ShFurlSpellings.canonical`, so both rows name one post")
+                            .contains(address);
+                    assertThat(body)
+                            .as("and the shape that proves it was concatenated: a scheme, a site, "
+                                    + "and a path that brought its own slash")
+                            .doesNotContain("post:" + created[1] + "//");
+                });
     }
 }

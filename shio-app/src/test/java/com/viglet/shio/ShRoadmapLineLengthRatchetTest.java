@@ -159,12 +159,16 @@ class ShRoadmapLineLengthRatchetTest {
     void theScanFindsTaskLines() {
         List<String> tasks = taskLines();
 
+        // The floor answers "did the regex match anything at all", and nothing else. It was 20 and
+        // fired at 19 — not because the scan broke but because the backlog shrank, which is the
+        // roadmap doing its job. A floor that tracks a corpus meant to empty is a second, silent
+        // deadline; the two shape assertions below are what actually prove the regex is right.
         assertThat(tasks)
                 .as("""
                         a scan matching nothing would pass forever while the file grew — and this \
                         one is a regex over a marker glyph, so a change to the marker set in \
                         roadkeep.toml silently empties it""")
-                .hasSizeGreaterThan(20);
+                .isNotEmpty();
         assertThat(TASK.matcher("- 💭 **SH999** (deps: SH1) **Something** — because. → §I.1").matches())
                 .as("the shape roadkeep writes")
                 .isTrue();

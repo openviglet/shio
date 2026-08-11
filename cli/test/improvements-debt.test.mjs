@@ -295,19 +295,27 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
         + `${pointed.size} pointer(s) from the roadmap — 0 stale\n`,
     );
     // SH356 counted 45 over-long, 42 stale, 9 orphaned and 3 duplicated anchors in this file. A
-    // reader that parsed none of it would agree with all of that and with anything else.
+    // reader that parsed none of it would agree with all of that and with anything else — so these
+    // floors exist to say the reader read something, and nothing more.
+    //
+    // **None of them may be a number the corpus can fall below by being correct.** Three of the
+    // four here were, and all three fired in one session for the same non-reason: shipping five
+    // tasks took the open backlog from 24 to 19 while every floor still said 20. The ledger only
+    // grows, so `shipped` may keep an absolute one; the roadmap and this file are *meant* to empty,
+    // and a floor over them is a second deadline nobody declared. Two suites away,
+    // `ShRoadmapLineLengthRatchetTest` had the same line and the same morning.
     assert.ok(all.length > 50, `only ${all.length} section(s) parsed — the heading shape changed`);
-    // The floor moves down as blocks close, and it is here to catch a reader that parsed nothing
-    // — not to track how much is open. It first fired for that second reason: closing Block U and
-    // dropping a stale section took the count from 21 to 19 against a floor of 20, which is the
-    // file being correct rather than the reader being broken. Tied to the roadmap instead, where
-    // one pointer per open line is the invariant the section above already asserts.
+    assert.ok(shipped.size > 100, `only ${shipped.size} shipped id(s) read from the ledger`);
+
+    // Relative where it can be: one pointer per open line is the invariant, and it holds at any
+    // size — including the day the backlog is empty, which is the point of having one.
     assert.ok(
       withIds.length >= pointed.size,
       `only ${withIds.length} section(s) name a task while the roadmap points at ${pointed.size}`,
     );
-    assert.ok(withIds.length > 5, `only ${withIds.length} section(s) name a task`);
-    assert.ok(shipped.size > 100, `only ${shipped.size} shipped id(s) read from the ledger`);
-    assert.ok(open.size > 20, `only ${open.size} open id(s) read from the roadmap`);
+    assert.ok(open.size >= pointed.size,
+      `the roadmap points at ${pointed.size} section(s) with only ${open.size} open id(s), so the `
+        + "id scan and the pointer scan disagree about the same file");
+    assert.ok(open.size > 0, "no open id read from the roadmap — the line shape changed");
   });
 });

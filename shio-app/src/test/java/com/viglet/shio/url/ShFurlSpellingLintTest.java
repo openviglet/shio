@@ -98,6 +98,24 @@ class ShFurlSpellingLintTest {
     private static final Pattern CANDIDATE_GENERATOR = Pattern.compile(
             "List<String>\\s+\\w*[Cc]andidates\\s*\\(");
 
+    /**
+     * An address scheme opened as a literal, added to, with a stored URL on the same line (SH666).
+     *
+     * <p>Both halves are load-bearing, and the first draft had only the first. A scheme literal
+     * alone matched eight lines and one of them was a comment: {@code "site:" + site.getName()} is
+     * <b>fine</b> — a site address carries no path, so there is no spelling to get wrong — and the
+     * teaching errors spell {@code "post:" + site + "/blog/new-url"} as an <em>example</em> of the
+     * grammar rather than an address to a row. Measured with the URL accessor required: exactly
+     * one line matches, and it is the defect. A gate that trips on the other seven is bypassed.</p>
+     */
+    private static final Pattern ADDRESS_SCHEME = Pattern.compile("\"(post|folder):\"\\s*\\+");
+
+    /** …and a stored URL going into it, which is the half that has two spellings. */
+    private static final Pattern STORED_URL = Pattern.compile("[Ff]url\\s*\\(");
+
+    /** A line that only talks about the shape — this file's subject appears in prose a lot. */
+    private static final Pattern COMMENT = Pattern.compile("^\\s*(//|\\*|/\\*)");
+
     @Test
     @DisplayName("only ShFurlSpellings decides which spellings of a path mean the same post")
     void noSecondCandidateGenerator() {
@@ -200,6 +218,91 @@ class ShFurlSpellingLintTest {
                             + "from its own rule")
                     .doesNotStartWith(POST_FURL_FINDER);
         });
+    }
+
+    /**
+     * SH666 — the other direction: composing an address, not resolving one.
+     *
+     * <p>The rule above keeps every <b>reader</b> tolerant of both spellings. Nothing kept a
+     * <b>writer</b> honest, and the two stored forms are real: {@code setFurl} and {@code move}
+     * guarantee a leading slash through {@code normalizeUrl}, while {@code create} (SH651),
+     * {@code copyPost} and the folder and site writes store it bare. That coexistence is
+     * deliberate — SH467 stores whichever spelling the source declared, and this class exists so
+     * reading tolerates it.</p>
+     *
+     * <p>What is not deliberate is string addition. {@code ShSiteExportService} built
+     * {@code "post:" + site.getName() + "/" + row.getFurl()}, which assumes the stored value has
+     * no slash of its own — so a post whose address the agent path declared exported as
+     * {@code post:site//page}, and the same post created through the console exported as
+     * {@code post:site/page}. One of those is not an SH79 address, and which one you got depended
+     * on which surface wrote the row. It was found by a red run in another task's suite, not here.
+     *
+     * <p>{@code ShAddress.post} is the composer and already normalises through this class, so the
+     * rule is simply that nobody hand-rolls the concatenation instead.</p>
+     */
+    @Test
+    @DisplayName("SH666: nobody concatenates a furl into an address instead of asking ShAddress")
+    void noAddressIsBuiltByStringAddition() {
+        List<String> offenders = new ArrayList<>();
+        sources().forEach((file, body) -> {
+            if (NOT_CALLERS.contains(file)) {
+                return;
+            }
+            for (String line : body.split("\n")) {
+                if (composesByAddition(line)) {
+                    offenders.add(file + ": " + line.strip());
+                }
+            }
+        });
+
+        assertThat(offenders)
+                .as("""
+                        an address built by concatenation assumes a stored spelling, and there \
+                        are two. `ShAddress.post(site, furl)` normalises through \
+                        ShFurlSpellings.canonical and is the composer; `ShAddress.id(...)` is the \
+                        fallback for a row with no furl. A `+` here produces `post:site//page` \
+                        for every row a slash-guaranteeing writer created.""")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH666: the composition rule fires on the form it replaced")
+    void theCompositionRuleDetectsTheFormItReplaced() {
+        // The literal that was in ShSiteExportService, and two shapes that must NOT fire: the
+        // composer itself, and a message that merely prints a furl. A rule that matched those
+        // would be reverted the first week, which is how a lint stops guarding anything.
+        assertThat(composesByAddition(
+                "                : \"post:\" + site.getName() + \"/\" + row.getFurl();"))
+                .as("the exact line SH666 was filed for has to match, or this guards nothing")
+                .isTrue();
+        assertThat(composesByAddition(
+                "        return ShAddress.post(site.getName(), row.getFurl()).toString();"))
+                .as("the composer is the fix, so it must not be reported as the defect")
+                .isFalse();
+        assertThat(composesByAddition(
+                "                    \"Published URL '\" + post.getFurl() + \"' is claimed by \""))
+                .as("a furl quoted inside a sentence is prose, not an address being composed")
+                .isFalse();
+        assertThat(composesByAddition("                    \"site:\" + site.getName(), null,"))
+                .as("a site address carries no path, so there is no spelling for it to get wrong")
+                .isFalse();
+        assertThat(composesByAddition(
+                "                            : \"post:\" + from.site() + \"/blog/new-url\"));"))
+                .as("a teaching error spelling the grammar is an example, not a row's address")
+                .isFalse();
+        assertThat(composesByAddition(
+                "        // projections concatenate — `ShSiteExportService` builds `\"post:\" + site "
+                        + "+ \"/\" + furl`,"))
+                .as("and a comment describing the defect is not the defect — this file's own "
+                        + "subject is written about in prose more often than it is committed")
+                .isFalse();
+    }
+
+    /** A scheme literal being added to, a stored URL on the same line, and not a comment. */
+    private static boolean composesByAddition(String line) {
+        return !COMMENT.matcher(line).find()
+                && ADDRESS_SCHEME.matcher(line).find()
+                && STORED_URL.matcher(line).find();
     }
 
     private static boolean matches(String code) {

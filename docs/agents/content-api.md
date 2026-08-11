@@ -251,11 +251,30 @@ value that was not there. Four decisions came out of the fix:
   the next binary post-type will not have a test already watching.
 
 **The stored spelling is bare — `same-title`, not `/same-title`.** That is what `copyPost`,
-`ShFolderWriteService` and `ShSiteWriteService` already store via `ShURLFormatter.format`, and what
-the address projections concatenate: `ShSiteExportService` builds `"post:" + site + "/" + furl`, so
-a stored leading slash comes out as `post:site//page`. `setFurl`/`move` still guarantee the leading
-slash through `normalizeUrl` — the two forms coexist and `ShFurlSpellings` is why reading tolerates
-both — but one write must not emit both, which is what the first version of SH651 did.
+`ShFolderWriteService` and `ShSiteWriteService` already store via `ShURLFormatter.format`.
+`setFurl`/`move` still guarantee the leading slash through `normalizeUrl` — the two forms coexist,
+SH467 keeps whichever the source declared, and `ShFurlSpellings` is why reading tolerates both — but
+one write must not emit both, which is what the first version of SH651 did.
+
+**And an address is composed, never concatenated (SH666).** Because both spellings are stored and
+both are legitimate, the place they go wrong is the projection. `ShSiteExportService` built
+`"post:" + site.getName() + "/" + row.getFurl()`, which assumes the bare form: every post whose
+address the *agent* path declared exported as `post:site//page`, and the same post created through
+the console exported as `post:site/page`. One of those is not an SH79 address and nothing failed —
+the export succeeded, naming a post nobody can resolve. **`ShAddress.post(site, furl)` is the
+composer**; it normalises through `ShFurlSpellings.canonical`, which is the same reader every
+resolver already uses, and `ShAddress.id(...)` is the fallback for a row with no furl.
+
+Measured before it was fixed: **one** line in the whole backend composed an address by addition —
+`ShAddressResolver.addressOf` and `ShAgentBatchService.addressOf` already went through `ShAddress`.
+So this was a single bypass rather than a pattern, and the instrument is what keeps it that way:
+`ShFurlSpellingLintTest.noAddressIsBuiltByStringAddition` fails on a scheme literal being added to
+with a stored URL on the same line. **Both halves of that rule are load-bearing** — the first draft
+required only the scheme literal and matched eight lines, one of them a comment: `"site:" + name` is
+fine (a site address carries no path, so there is no spelling to get wrong) and the teaching errors
+spell `"post:" + site + "/blog/new-url"` as an *example* of the grammar. A gate that trips on those
+seven is one people bypass. `ShSiteExportServiceTest` carries the behavioural half: the same row
+stored `/broken-post` and `broken-post` must export as one address.
 
 **A friendly URL is not unique by construction, and the two readers differ (SH321).** Nothing in the
 schema prevents two posts in one site claiming one — `duplicate-url` is an SH99 *error* for exactly

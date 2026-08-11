@@ -772,6 +772,21 @@ count and never uses `-q`, and **no workflow names a branch this repository does
 the original defect was a *stale* branch name, which reads exactly like a configured one. Proved
 non-vacuous by restoring `push: branches: [main]`, which fires two of the five.
 
+### A non-vacuity floor must not be a number the corpus can fall below by being right
+
+Three suites went red in one session for the same non-reason: shipping five tasks took the open
+backlog from 24 to 19 while `improvements-debt.test.mjs` (twice, in two different assertions) and
+`ShRoadmapLineLengthRatchetTest` all still floored at 20. Nothing was broken — the roadmap had done
+its job — and each red cost a diagnosis before it could be dismissed.
+
+A floor over a corpus that is **meant to empty** is a second deadline nobody declared. The ledger
+only grows, so `shipped.size > 100` is fine; the roadmap and `IMPROVEMENTS.md` are not. Prefer a
+**relative** invariant that holds at any size, including zero — `open.size >= pointed.size`,
+`withIds.length >= pointed.size` — and keep an absolute only as `isNotEmpty`, which is the question
+a non-vacuity check is actually asking: *did the reader read anything?* The shape assertions beside
+it (this regex matches what roadkeep writes, and rejects what it must not) are what prove the reader
+is correct; the count only proves it ran.
+
 ### The console lint is a CI check, not a fourth gate (SH665)
 
 `pnpm lint` runs in the `pnpm test` job and is **not** one of the three SH579 gates: it has no
