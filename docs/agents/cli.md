@@ -2282,7 +2282,11 @@ in two halves that answer different questions at very different prices:
 - **`docs-vocabulary.conformance.mjs` — the names.** Every documented `shio` verb, `@RequestMapping`
   path, `shio_*` tool and `shio.*` key is held against what the *product* declares, read by
   `support/product-vocabulary.mjs` from `COMMANDS` in `index.mjs`, the Spring annotations, the MCP
-  tools' `name()` and the `@ConfigurationProperties` classes. **No instance, milliseconds.** This is
+  tools' `name()` and the `@ConfigurationProperties` classes — and **the vocabulary it checks
+  against has to be true, which is a separate job with its own lint (SH656)**: a bound properties
+  class nothing injects declares keys to this check, so a page documenting one passes while the
+  setting does nothing. `ShBoundPropertiesReachabilityLintTest` is that lint. **No instance,
+  milliseconds.** This is
   what catches a renamed verb. Nothing is listed here — a checked-in list of "the verbs as of today"
   would rot by the same mechanism as the docs, one directory closer.
 - **`docs-examples.conformance.mjs` — the requests.** The 15 read-only documented requests are

@@ -942,6 +942,26 @@ happens to its id) and `/api/v2/post-unified PATCH` (SH335's partial merge has n
 `post.upsert` declares *whole* state, and the merge exists for the editor's several-curators
 problem, which an agent does not have).
 
+**The same shape, one surface over: a bound property nothing reads
+(`ShBoundPropertiesReachabilityLintTest`, SH656).** `ShGitProperties` bound `shio.git`,
+`application.properties` shipped `url=GIT_URL_HERE` and `token=DEFINE_TOKEN_HERE`, and no bean
+injected it. The dead class is two lines; what it did to the *check* is the finding.
+`docs-vocabulary` derives the legitimate `shio.*` vocabulary from these very classes, so the
+published configuration reference documented `shio.git.url` and **passed the gate** — an operator
+sets it, gets no error, and cannot learn it was never read. A documentation check cannot see a
+defect in the vocabulary it checks against.
+
+**Written for one key, it found three.** `ShMgmtProperties` (`shio.mgmt.enabled`, documented as
+*"Enable the management interface"*) was the second, on the same rule and named by nobody. The third
+needed the rule sharpened: prefix coverage alone is too weak for the catch-all `shio` prefix, so the
+first segment under a prefix must be a **field the binding class declares**, relaxed the way Spring
+binds (`multi-tenant` → `multiTenant`). That found `shio.plugin.blogger`, which names a class this
+repository does not contain. Three published rows removed, and the exemption map is **empty** — a
+bound prefix nothing injects has no honest reason to exist, so an entry would have to survive the
+question *"then why is it bound?"*. Source-level and deliberately not reflective: Spring injects by
+type, so a consumed class names itself at the injection site, and `ShSourceText.code` strips prose
+first so a javadoc mention cannot make a dead class read as live (SH206).
+
 **P1 has an instrument now, and its exception list is the inventory (SH338).**
 `ShAgentP1ConformanceTest` classifies **every** key in the manifest's `features` map — a key
 reported `true` must be delivered by a registered `ShMcpTool` or by a path in the manifest's own

@@ -194,28 +194,6 @@ fallback was null in the deployment it demands, and a "flake" that was a scoping
 perception loop that cannot perceive itself is the failure this block should expect
 next.
 
-### IX.76 A bound key nothing reads is indistinguishable from a real one (SH656)
-
-`ShGitProperties` binds `shio.git.*`, and `application.properties` ships
-`shio.git.url=GIT_URL_HERE` and `shio.git.token=DEFINE_TOKEN_HERE`. Nothing injects the
-class. No code path reads either value. The administration guide described Git version
-control as a feature until SH623 removed the section, which is how it was found.
-
-The defect is not the dead class; it is what the dead class does to the one check that
-would have caught the page. `docs-vocabulary` derives the legitimate `shio.*` keys from
-`@ConfigurationProperties` classes and from `application.properties` — both of which
-declare these — so a page documenting `shio.git.url` passes the gate while the setting
-does nothing. SH628 found the same instrument was wrong about nested groups; this is the
-other direction, and it is the one the check was built to catch. An operator sets a key,
-gets no error, and has no way to learn it was never read.
-
-Two decisions, and the second is the point of filing this rather than deleting two
-lines. Whether Git integration is *intended* — a token and a URL suggest somebody meant
-to ship it — and then whether the vocabulary should assert **reachability** as well as
-declaration: a bound properties class that no bean injects is a lint, and it is the same
-shape as `ShStatelessReachabilityLintTest`. That lint is the deliverable; the deletion
-is the easy half (SH322).
-
 ### IX.77 A list that names its own rule and does not follow it (SH657)
 
 `ShRenderHelpers.RAW_TEXT_FIELDS` states its own selection rule: *the fields the product
@@ -265,6 +243,32 @@ The path needs no new verb. `record add` writes an entry for work that shipped a
 SH154's keeps its half. What must be decided by hand is where the split falls: the entry
 argues both defects were *one* pattern, blind to what SH95 introduced, and that belongs
 in both halves.
+
+### IX.79 The page the property check exists for is the page it does not read (SH663)
+
+`docs-examples.mjs` classifies a fenced block as `properties` when its language tag says
+so, and `docs-vocabulary` then holds each key it names against what the product binds.
+Measured today: **14 property blocks** across the documentation set, checked against 77
+known keys.
+
+`configuration-reference.md` contributes none of them. Its content is a Markdown
+**table** — one row per key, three columns — which carries no language tag and is not a
+fenced block, so the page whose entire subject is the property vocabulary is invisible
+to the check built for it.
+
+That is how three keys binding nothing shipped as published rows and stayed. SH656
+removed them and closed the other half — a bound class nothing injects no longer
+inflates the vocabulary — but the two failures are independent: with the vocabulary
+correct, a page naming a key that was never bound would still pass, because the row is
+not read.
+
+The fix is a second extractor over table cells, with one decision attached. A cell is
+prose, so a backticked token in a Description column must not read as a documented key.
+The narrow rule that fits: only the **first** cell of a row, in a table whose header
+names a property column — the shape every configuration table here already has. Where a
+page's table lacks it, say so in the count rather than guess: the count is what makes
+this gate readable, and one that silently covered some tables would be worse than one
+covering none.
 
 ## X. Content as files (Block I)
 
