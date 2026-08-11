@@ -1114,27 +1114,6 @@ stale prose goes first.
 Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
 page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
 
-### XX.5 The locale segment a reader meets before anything explains it (SH627)
-
-SH53 shipped content i18n: the locale axis, linked translations, `?locale` on the CDA,
-and the checked locale segment in the delivery grammar. No page mentions any of it.
-
-The delivery grammar is why this is not merely a missing feature page.
-`/sites/{site}/{format}/ {locale}/{path}` puts the locale in every published URL, so it
-is the **first** thing a reader meets — before they have decided whether they want
-translations at all. An unexplained segment in the one URL shape everybody copies is a
-question asked on every single page of the site.
-
-Then the modelling half, which is the part that is genuinely not guessable: whether a
-translation is a separate post linked to its original or a field on one post, what
-happens to a link that points at a page translated in one locale and not another, and
-what the CDA returns when a requested locale has no translation. Getting that wrong is
-discovered after the content is written, which is the most expensive time to discover
-it.
-
-`website-development` already documents the grammar and would be the natural home for
-the URL half; the modelling half belongs beside post types.
-
 ### XX.6 The page a contributor reads first names a stack this product left (SH628)
 
 `developer-guide` still lists Elasticsearch 9.3.3 in the stack and names neither the
