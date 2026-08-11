@@ -853,6 +853,32 @@ whether a link's `text` — the same field, used for every link — moves with i
 asserts substrings rather than one expected label, so this repair can change the string
 without that case failing for something that is not its subject.
 
+### XVII.93 A gate that is red, and cannot say so (SH671)
+
+Measured on 2026-08-11, and at the commit before it, so it is not this session's: `node
+--test cli/conformance/source-corpus.conformance.mjs` fails on **`malformed`** — `asked
+for 1 path(s) this archetype does not serve`, `actual: ['/deep/page']`. Every other
+archetype passes, `theme-heavy` included.
+
+**The instrument is wrong, not the product.** `malformed` declares `expect.problems:
+["/deep/page"]`: SH544's `<base href>` is resolved against the page rather than the
+base, and the request that resolution produces is what this archetype exists to model.
+The live tier's second claim — *nothing outside the archetype at all* — builds its
+`unknown` list from the route table and `/robots.txt`, and a path the declaration
+already names as an expected problem is neither. So the case fails **for doing what it
+was written to do**.
+
+**The second half is what makes it a task rather than a one-line exemption.** `pnpm
+conformance` is one of this project's three gates. `red-suites.json` holds `exceptions:
+[]` and the corpus's `open-findings.json` holds `findings: []`, and this tier uses
+neither — it has no `holding()` call, so a red case here cannot be declared at all.
+SH579 says a red gate either blocks the next commit or is a dated entry naming the task
+that removes it, and there is no third state. This is the third state, and it survived
+because the gate that would have reported it is the one that is red.
+
+Two deliverables, in this order: the exemption, and then whatever lets this tier declare
+a red the way the fast tier can.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
