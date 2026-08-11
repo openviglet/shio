@@ -1,6 +1,6 @@
 ---
 name: shio-roadmap-docs
-description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule, the per-task end-user documentation decision (vigletdocs docs-shio), and the block-completion sweep — when a block's last task ships, docs-shio + shio-site + README.md are brought up to date in one pass. Use whenever adding a new task, marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, picking the next SH-number, or finishing a block. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, COVERAGE.md, sidebars-shio.ts, site-content.ts, and batching under /loop.
+description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule, the per-task end-user documentation decision (vigletdocs docs-shio), and the block-completion sweep — when a block's last task ships, docs-shio + shio-site + README.md are brought up to date in one pass. Use whenever adding a new task, choosing which block a task goes under (reuse an existing block; open a new one only when nothing can hold it, and title it generically), marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, picking the next SH-number, or finishing a block. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, COVERAGE.md, sidebars-shio.ts, site-content.ts, and batching under /loop.
 ---
 
 # Roadmap & docs maintenance
@@ -85,12 +85,44 @@ real maximum block letter** — grep it to confirm before creating a block.
    in `(deps: SH22)`, which `roadkeep deps` resolves. **Then run the end-user-docs decision**
    (below), and **then ask whether that was the block's last task** — `stats` answers it,
    see "When a block completes".
-2. **When you add a new task, two commands and the anchor is yours.** This project numbers
+2. **Adding a task starts with its block — and the block is nearly always one that
+   already exists.** `add --block` refuses a label no heading declares, so "which
+   block?" is the first decision, and the way it goes wrong is by inventing a letter
+   instead of reading the headings. **Reuse is the default; a new block is the
+   exception you have to justify.**
+   - **Read the candidates first.** `stats` lists the blocks that still hold open
+     lines. `grep -nE '^## Block' docs/CHANGELOG.md` lists **every** block ever
+     opened — including the ones the roadmap was pruned of, which are still
+     legitimate homes: a block emptied by a completed sweep is reopened simply by
+     adding a line to it. `list --block <x>` prints what an ambiguously-titled block
+     actually holds.
+   - **Match on the *job*, not the surface.** A block groups work by what it
+     accomplishes, not by which directory it edits. A task touching `shio-react/`
+     belongs to whichever block owns the human-curation job, not to a new block
+     opened because the files felt unfamiliar. If a reader would accept an existing
+     title as covering the task, that is the block — even if the fit is loose.
+   - **A new block requires a job no existing heading can honestly hold**, not merely
+     work that feels new. Two tasks of a kind is not a block; it is two lines under
+     an existing one.
+   - **When you genuinely must open one, name it for the capability, not for the
+     task in hand.** `block add <label> --title "…"` (`--after` places it; the
+     **CHANGELOG** is authoritative for the highest letter, and retired labels are
+     never reused). The title has to be generic enough to hold *the next few
+     plausible tasks of the same kind* — the block is a container for future work,
+     not a label for this one. A block named after a single deliverable empties on
+     its first `ship` and drags the whole four-surface sweep behind it for one task.
+     This project already paid that: Blocks **R**, **T** and **U** are three separate
+     documentation blocks where one generically-titled documentation block would have
+     held all three — three completion sweeps instead of one.
+
+   **Then two commands, and the anchor is yours.** This project numbers
    its rationale by hand (`ref_scheme = "outline"`), so the pointer is **not** derived and
    `add` refuses without it:
    `add --block <x> --symptom "…" --why "…" --ref <x.y>`, then
-   `section add <x.y> --title "…"` with the prose on stdin. Pick the next free number in the
-   family the task belongs to (`§VIII.20` under `## VIII.`), and expect `lint` to report
+   `section add <x.y> --title "…"` with the prose on stdin. The same reuse rule applies
+   one level down: pick the next free number **in an existing family** the task belongs
+   to (`§VIII.20` under `## VIII.`), and open a new `##` family only when no existing one
+   can hold it. Expect `lint` to report
    `ref.unresolved` between the two commands — that is the honest state, not a mistake.
    The `deps:` group and the status marker are `add`'s own flags (`--dep`, `--status`);
    markers live **only** in `ROADMAP.md`.
