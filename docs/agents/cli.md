@@ -2297,6 +2297,25 @@ checkout is a failed run naming the clone command, exactly as an unreachable ins
 `SHIO_DOCS_DIR` overrides the path, because the one certainty about a sibling checkout is that it is
 somewhere else on the next machine.
 
+**And on a CI runner it was nowhere, which meant these had never run outside one laptop (SH655).**
+The default is a drive letter, `suites.yml` cloned only this repository, and absent is a hard
+failure by design — so the docs half of `pnpm conformance` could not pass and could not fail
+anywhere it would be read. The instrument SH628 landed was in that state from the day it shipped:
+not a check that passed, a check nobody was running. Both jobs now check out
+`vigletdocs/vigletdocs.github.io` (public, so no token) and set `SHIO_DOCS_DIR` at it, and
+`ci-gates.test.mjs` holds both halves — a clone nothing points at is the same absent directory with
+an extra step.
+
+**They are split by cost, and that split was the decision rather than the wiring.** Two of the three
+touch no instance: `docs-vocabulary` reads source and `docs-stack` reads build files, so
+`pnpm conformance:docs` runs them in its own job beside `pnpm test`, on every push, in about a
+second — 12 assertions over 36 executable blocks. Only `docs-examples` calls `requireInstance`, so
+it stays in the conformance job behind the boot. Putting the pair behind a JVM would make the
+cheapest question anyone asks about the published pages — *do they still name this product's verbs*
+— wait on the most expensive gate, and `ci-gates.test.mjs` asserts the script excludes
+`docs-examples` for the same reason: a job without an instance running it would fail on
+`requireInstance` and read as the documentation being wrong.
+
 **The 404 problem is why the execution assertion is shaped the way it is.** "A documented request
 must not 404" is wrong and quietly so: half these examples carry a placeholder site (`mysite`) no
 instance has, so a *correct* server 404s for a reason that has nothing to do with the docs. P6

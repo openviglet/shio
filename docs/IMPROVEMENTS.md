@@ -194,32 +194,6 @@ fallback was null in the deployment it demands, and a "flake" that was a scoping
 perception loop that cannot perceive itself is the failure this block should expect
 next.
 
-### IX.75 The docs gate runs on one laptop (SH655)
-
-`docs-vocabulary`, `docs-examples` and now `docs-stack` read `SHIO_DOCS_DIR`, defaulting
-to `D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio`.
-`.github/workflows/suites.yml` runs `pnpm conformance` and checks out this repository
-only. On a runner the directory is absent, and absent is a failure by design here —
-never a skip — so the docs half of the gate either reddens the job or is being tolerated
-as noise. Both readings are worse than the third possibility, which is that nobody has
-looked.
-
-The design is right and the wiring is missing. SH499 chose to fail rather than skip
-precisely so an unread checkout could not pass quietly, and the price of that choice is
-that the workflow has to supply the checkout. `actions/checkout` with `repository:` and
-a `path:`, then `SHIO_DOCS_DIR` pointing at it, is the whole change.
-
-One decision comes first, because it is what makes this more than a wiring task: the
-docs suites split cleanly by cost. `docs-vocabulary` and `docs-stack` need **no running
-instance** — they read source and build files — where `docs-examples` needs the booted
-app the conformance job already provides. So the cheap pair could gate every push next
-to `pnpm test`, and only the third stays behind the boot. Deciding that is the
-deliverable; the checkout follows from it.
-
-That the instrument SH628 landed cannot fail anywhere but one machine is the sharpest
-case for fixing this, and it is why the task exists rather than being a line in the
-workflow.
-
 ### IX.76 A bound key nothing reads is indistinguishable from a real one (SH656)
 
 `ShGitProperties` binds `shio.git.*`, and `application.properties` ships

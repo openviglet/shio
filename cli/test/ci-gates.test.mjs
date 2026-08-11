@@ -64,6 +64,49 @@ test("SH241: all three gates agents.md names have a workflow that runs unasked",
   assert.match(on, /pull_request:/, "and on a pull request, which is where a reviewer looks");
 });
 
+/**
+ * SH655 — a suite whose input is another repository needs that repository checked out.
+ *
+ * <p>Three instruments read `SHIO_DOCS_DIR`, whose default is one contributor's drive letter, and
+ * nothing in CI supplied it — so on a runner the directory was absent, and SH499 chose absent to be
+ * a hard <b>failure</b> rather than a skip precisely so an unread checkout could not pass quietly.
+ * The consequence is the one worth naming: the instrument SH628 landed could not fail anywhere but
+ * that one machine, which makes it a check nobody was running rather than a check that passed.</p>
+ *
+ * <p>Asserted as two facts because they can break apart. The checkout must exist, and the variable
+ * must point at it — a job with the repository cloned and no `SHIO_DOCS_DIR` reads the drive letter
+ * again and fails identically, which would read as the docs being wrong.</p>
+ */
+test("SH655: the docs suites have a checkout of the repository they read, and are pointed at it", () => {
+  const suites = read("suites.yml");
+
+  assert.match(suites, /repository: vigletdocs\/vigletdocs\.github\.io/,
+    "SH655: the published pages are a different repository, and a runner has only this one — "
+      + "without `actions/checkout` naming it, every docs instrument fails on an absent path");
+  assert.match(suites, /SHIO_DOCS_DIR:/,
+    "and the suites have to be told where it landed: a clone nothing points at is the same "
+      + "absent directory with an extra step");
+
+  // The split is the decision SH655 asked for, so it is held rather than left to a reader of YAML:
+  // two of the three need no instance, and putting them behind the boot would mean the cheapest
+  // question about the published documentation waits on a JVM.
+  assert.match(suites, /pnpm conformance:docs/,
+    "SH655: `docs-vocabulary` and `docs-stack` read source and build files only, so they gate "
+      + "every push beside `pnpm test`; only `docs-examples` drives the booted app");
+
+  // A workflow naming a script that does not exist fails on the runner and nowhere else, which is
+  // the same shape as the defect above one level down.
+  const cli = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  const script = cli.scripts["conformance:docs"] ?? "";
+  assert.ok(script, "the job runs `pnpm conformance:docs`, so the script has to be there");
+  assert.doesNotMatch(
+    script,
+    /docs-examples/,
+    "SH655: and it must NOT include `docs-examples`, which needs the booted instance — a job "
+      + "without one would fail on `requireInstance` and read as the documentation being wrong",
+  );
+});
+
 test("SH241: the console walk runs on a pull request", () => {
   // Deliberately not on every push: it boots a jar, provisions a site and drives Chromium, and a
   // gate that expensive on every push to a branch somebody is iterating on becomes the one people

@@ -55,6 +55,58 @@ jobs:
 
       - run: pnpm test
 
+  # SH655 — the published documentation, checked on every push, because two of its three
+  # instruments need no instance at all.
+  #
+  # `docs-vocabulary` (SH499) and `docs-stack` (SH628) read the pages, this repository's source and
+  # its build files; only `docs-examples` drives the booted app, and it stays in the conformance job
+  # below. Splitting them by that cost is the decision this job is: the pair answers "do the
+  # published pages still name this product's verbs and its real stack" in the time `pnpm test`
+  # takes, and there is no reason for that question to wait behind a JVM.
+  #
+  # **Their input is another repository**, which is why they had never run in CI: `SHIO_DOCS_DIR`
+  # defaults to one contributor's drive letter, so on a runner the directory was simply absent —
+  # and absent is a hard failure by design (SH499 chose to fail rather than skip, so an unread
+  # checkout could not pass quietly). The price of that choice is that the workflow has to supply
+  # the checkout, and nothing did.
+  #
+  # No token: `vigletdocs.github.io` is public, and the default `GITHUB_TOKEN` is scoped to this
+  # repository. Pinned to nothing — the docs are the *current* published pages, and testing this
+  # commit against a frozen copy of them would assert a pair that agreed once.
+  docs:
+    name: pnpm conformance:docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check out the published documentation
+        uses: actions/checkout@v7
+        with:
+          repository: vigletdocs/vigletdocs.github.io
+          path: vigletdocs
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.8.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install the workspace
+        run: pnpm install --frozen-lockfile
+
+      # The docs suites import the CLI's own modules, which resolve through the workspace; the SDK
+      # build is what `shio-client` consumers need and is cheap enough to keep this job one step.
+      - name: Build what the suites import
+        run: pnpm run build:sdk
+
+      - run: pnpm conformance:docs
+        env:
+          SHIO_DOCS_DIR: ${{ github.workspace }}/vigletdocs/docs-shio
+
   # SH241 — the third gate, and the one only CI can give honestly.
   #
   # `clean test` is the command agents.md names, and the reason it must run here as well as
@@ -137,6 +189,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # SH655 — `docs-examples` is the third docs instrument and the only one that needs the booted
+      # app, so it belongs to this job rather than to `docs` above. Without this checkout it read a
+      # path that does not exist on a runner and failed by design, which is how the whole docs half
+      # of `pnpm conformance` had never run anywhere but one machine.
+      - name: Check out the published documentation
+        uses: actions/checkout@v7
+        with:
+          repository: vigletdocs/vigletdocs.github.io
+          path: vigletdocs
+
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -189,6 +251,8 @@ jobs:
           case "$code" in 200|201|204|403) echo "setup → $code";; *) echo "setup → $code"; exit 1;; esac
 
       - run: pnpm conformance
+        env:
+          SHIO_DOCS_DIR: ${{ github.workspace }}/vigletdocs/docs-shio
 
       # The suite seeds `ShioConf…` sites and removes them in `after`; what is worth keeping is the
       # server's side of a failure, because half of this suite's findings are 500s with no body.
