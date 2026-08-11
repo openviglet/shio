@@ -24,7 +24,9 @@ import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.object.ShFolderSite;
+import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.render.ShTemplateTitles;
+import com.viglet.shio.url.ShFurlNaming;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -99,6 +101,8 @@ public class ShPostUnifiedWriteService {
     private final ObjectProvider<ShPostUnifiedWriteService> self;
     /** SH277 — a template's title is its identity, refused here so every surface refuses. */
     private final ShTemplateTitles shTemplateTitles;
+    /** SH651 — the one writer of "which URL is free in this site", shared with the copy path. */
+    private final ShFurlNaming shFurlNaming;
 
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
@@ -108,7 +112,8 @@ public class ShPostUnifiedWriteService {
                                      ApplicationEventPublisher eventPublisher,
                                      ShContentAuditService shContentAuditService,
                                      ObjectProvider<ShPostUnifiedWriteService> self,
-                                     ShTemplateTitles shTemplateTitles) {
+                                     ShTemplateTitles shTemplateTitles,
+                                     ShFurlNaming shFurlNaming) {
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -118,6 +123,7 @@ public class ShPostUnifiedWriteService {
         this.shContentAuditService = shContentAuditService;
         this.self = self;
         this.shTemplateTitles = shTemplateTitles;
+        this.shFurlNaming = shFurlNaming;
     }
 
     /** Site id of a row, or {@code null} when unresolved (shared by the audit calls). */
@@ -172,6 +178,27 @@ public class ShPostUnifiedWriteService {
         row.setData(dataJson);
 
         applyTitleAndSummary(row, req.data(), postType);
+
+        // SH651 — and only after the title, because the URL is derived from it. Every other
+        // write assigns a furl (folder, site, copy, import); this one did not, so five posts
+        // created through the console all reported at their folder's own address and none of
+        // them could be opened, verified or delivered. The write answered 201 throughout.
+        //
+        // A declared furl is identity (SH81) and is taken as given, the way `setFurl` takes
+        // it; a derived one is corrected to the first free spelling, which is what a curator
+        // typing the same title twice means. A post with no title keeps a blank furl — an
+        // uploaded file post never gets one (SH38) and inventing an address is worse than
+        // having none.
+        // One spelling out of both branches. The first version normalized only the declared
+        // one and stored `/taken-address` beside a derived `naive-page-one`; the bare form is
+        // the one every other write stores (copy, folder, site) and the one the address
+        // projections concatenate — `ShSiteExportService` builds `"post:" + site + "/" + furl`,
+        // so a stored leading slash comes out as `post:site//page`. Reading is spelling-blind
+        // either way (SH583); this is only about what is written.
+        row.setFurl(bareFurl(req.furl() != null && !req.furl().isBlank()
+                ? req.furl()
+                : derivedFurl(row, postType)));
+
         // After the title is derived, never before: a template's title is a *field* (SH183's model
         // is content), so there is nothing to check until the write has decided what it will be.
         shTemplateTitles.checkFree(row);
@@ -667,6 +694,40 @@ public class ShPostUnifiedWriteService {
     }
 
     /** Friendly URL normalised to a leading slash; {@code null}/blank stays null. */
+    /**
+     * The address a created post derives from its title, or blank where it should have none
+     * (SH651).
+     *
+     * <p><b>An uploaded file is not a page.</b> SH38 says an asset post has no friendly URL —
+     * {@code id:} is the only address it has, which is the whole reason SH172 added that
+     * fallback — and {@code ShStaticFileService.upload} reaches this write like any other
+     * caller, with a title (the file name) that would otherwise slug into {@code logopng}.
+     * The rule lives here rather than in the uploader because a caller that has to remember
+     * to opt out is the caller that will forget; the suite caught this one, and the next
+     * binary post-type will not have a test already watching.</p>
+     */
+    private String derivedFurl(ShPostUnified row, ShPostType postType) {
+        if (postType != null && ShSystemPostType.FILE.equals(postType.getName())) {
+            return "";
+        }
+        return shFurlNaming.freeFurl(siteIdOf(row), row.getTitle());
+    }
+
+    /**
+     * A furl as it is <b>stored</b> by every write except {@code setFurl}/{@code move}: no
+     * leading slash (SH651). Null for blank, which is an absent address rather than the root.
+     */
+    private static String bareFurl(String furl) {
+        if (furl == null || furl.isBlank()) {
+            return null;
+        }
+        String trimmed = furl.strip();
+        while (trimmed.startsWith("/")) {
+            trimmed = trimmed.substring(1);
+        }
+        return trimmed.isBlank() ? null : trimmed;
+    }
+
     private static String normalizeUrl(String furl) {
         if (furl == null || furl.isBlank()) {
             return null;
@@ -759,9 +820,21 @@ public class ShPostUnifiedWriteService {
         return new ShPostUnifiedId(postId, state);
     }
 
+    /**
+     * @param furl the address to answer at, optional (SH651). Null or blank derives one from
+     *             the title, corrected to the first free spelling in the site; a declared one
+     *             is identity (SH81) and is normalized but never renumbered.
+     */
     public record CreateRequest(String folderId, String postTypeId, JsonNode data,
                                 ShPostState state, String owner, String locale,
-                                String translationGroupId) {
+                                String translationGroupId, String furl) {
+
+        /** Without an address — what every caller wanted before SH651 gave them a choice. */
+        public CreateRequest(String folderId, String postTypeId, JsonNode data,
+                             ShPostState state, String owner, String locale,
+                             String translationGroupId) {
+            this(folderId, postTypeId, data, state, owner, locale, translationGroupId, null);
+        }
     }
 
     public record UpdateRequest(JsonNode data, ShPostState state, String modifier) {

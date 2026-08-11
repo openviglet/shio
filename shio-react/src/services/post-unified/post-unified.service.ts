@@ -15,6 +15,13 @@ export interface CreateUnifiedPostRequest {
   state?: ShPostState
   locale?: string
   translationGroupId?: string
+  /**
+   * The address to answer at (SH651). Omitted — which is what the console does — the server
+   * derives one from the post's title field and corrects it to the first free slug in the
+   * site. Sent, it is taken as identity (SH81) and never renumbered. Before SH651 nothing
+   * derived one and a console-created post answered at its folder's address, i.e. nowhere.
+   */
+  furl?: string
 }
 
 export interface UpdateUnifiedPostRequest {

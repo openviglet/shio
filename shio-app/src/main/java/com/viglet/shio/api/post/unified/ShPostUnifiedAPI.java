@@ -87,7 +87,8 @@ public class ShPostUnifiedAPI {
                 payload.state() != null ? payload.state() : ShPostState.DRAFT,
                 principal != null ? principal.getName() : null,
                 payload.locale(),
-                payload.translationGroupId())));
+                payload.translationGroupId(),
+                payload.furl())));
     }
 
     @PutMapping("/{id}")
@@ -164,8 +165,14 @@ public class ShPostUnifiedAPI {
      * {@code postTypeId} still wins when both are present, so every existing caller
      * is untouched.
      */
+    /**
+     * @param furl the address to answer at, optional (SH651). Omitted, one is derived from
+     *             the post's title field and corrected to the first free spelling in the
+     *             site — before SH651 nothing derived one and the post was unreachable.
+     */
     public record CreatePayload(String folderId, String postTypeId, String postType, JsonNode data,
-                                ShPostState state, String locale, String translationGroupId) {
+                                ShPostState state, String locale, String translationGroupId,
+                                String furl) {
     }
 
     /**

@@ -284,8 +284,11 @@ class ShSiteExportServiceTest {
         // failure has to be reachable to be worth a message, so it is produced at the column.
         // By id and not by find(): the key is the composite (id, state) of ShPostUnifiedId, and a
         // bulk update also means the export below reads the column rather than a managed instance.
+        // The furl is blanked here on purpose since SH651. It used to be absent because
+        // `create` assigned none — the defect SH651 fixed — so this half of the test passed
+        // by accident and would have gone on passing if the address had come back wrong.
         tx.executeWithoutResult(status -> entityManager
-                .createQuery("update ShPostUnified p set p.data = :data where p.id = :id")
+                .createQuery("update ShPostUnified p set p.data = :data, p.furl = null where p.id = :id")
                 .setParameter("data", "{\"TITLE\": not json")
                 .setParameter("id", created[3])
                 .executeUpdate());

@@ -223,6 +223,40 @@ disk, **keyed by the file post's id** (not the folder tree), under
   `ShPostLifecycleEvent`). Owner: `com.viglet.shio.api.staticfile` +
   `ShFileSourceProperties`. Per-tenant isolation (SH47) will prefix `tenantId`.
 
+**Every write assigns a friendly URL, and `create` was the one that did not (SH651).** SH396 found
+five posts created through `POST /api/v2/post-unified` all reported at their folder's own address —
+five distinct posts, one address, every delivery URL a 404 — and the write answered `201` throughout.
+The probe (`ShPostFurlOnCreateTest`) settled which of three things it was: the title derived
+correctly from the `isTitle` field and `furl` came back **null**, and `CreateRequest` had no `furl`
+component at all, so no caller could have sent one and no projection could have been wrong about a
+value that was not there. Four decisions came out of the fix:
+
+- **Derived from the title, corrected to the first free slug**: `contato`, `contato-2`, `contato-3`.
+  The rule is the copy path's (SH202) and now lives in **`ShFurlNaming`** — `create` and `copyPost`
+  are the two callers, because a second copy of the loop is the smell SH245 exists to lint.
+  Free is checked across every spelling (SH583) and both state rows.
+- **The title is never renumbered.** `furl` and title are separate namespaces (SH79) and SH139's
+  point is that renaming does not re-derive the URL, so three posts called "Same Title" keep that
+  title and get three addresses.
+- **`furl` is an optional field on `CreateRequest`/`CreatePayload`.** Sent, it is identity (SH81) and
+  is taken as given — a declared address that gets renumbered makes the next upsert of the same
+  document create a second post. Omitted, it is derived. `ShAgentBatchService` still creates and
+  then calls `setFurl`, which this field would collapse into one call — **not** done here, because
+  `setFurl` stores the leading-slash form and folding the two would silently re-spell every
+  agent-written address.
+- **An uploaded file gets none.** `ShStaticFileService.upload` reaches this same write with the file
+  name as its title, which would slug into `logopng`; SH38 says an asset has no friendly URL and
+  `id:` is its only address, which is why SH172 added that fallback. `create` skips derivation for
+  the `FILE` post-type rather than asking the uploader to opt out — the suite caught this one, and
+  the next binary post-type will not have a test already watching.
+
+**The stored spelling is bare — `same-title`, not `/same-title`.** That is what `copyPost`,
+`ShFolderWriteService` and `ShSiteWriteService` already store via `ShURLFormatter.format`, and what
+the address projections concatenate: `ShSiteExportService` builds `"post:" + site + "/" + furl`, so
+a stored leading slash comes out as `post:site//page`. `setFurl`/`move` still guarantee the leading
+slash through `normalizeUrl` — the two forms coexist and `ShFurlSpellings` is why reading tolerates
+both — but one write must not emit both, which is what the first version of SH651 did.
+
 **A friendly URL is not unique by construction, and the two readers differ (SH321).** Nothing in the
 schema prevents two posts in one site claiming one — `duplicate-url` is an SH99 *error* for exactly
 that — so the finder returns an **ordered `List`**. A reader that must serve something takes the

@@ -29,6 +29,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.url.ShFurlNaming;
 import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.url.ShURLFormatter;
 
@@ -55,16 +56,19 @@ public class ShObjectWriteService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShFolderWriteService shFolderWriteService;
+    private final ShFurlNaming shFurlNaming;
 
     public ShObjectWriteService(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShPostUnifiedWriteService shPostUnifiedWriteService,
-                                ShFolderWriteService shFolderWriteService) {
+                                ShFolderWriteService shFolderWriteService,
+                                ShFurlNaming shFurlNaming) {
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shFolderWriteService = shFolderWriteService;
+        this.shFurlNaming = shFurlNaming;
     }
 
     /**
@@ -331,15 +335,9 @@ public class ShObjectWriteService {
 
         // The slug is derived from the source's title, not from the numbered one: the two
         // counters are independent, and deriving it from `freeTitle` would silently couple
-        // them again through the formatter.
-        String destSiteId = ShFolderSite.idOf(destFolder);
-        String base = ShURLFormatter.format(title);
-        for (int n = 1; ; n++) {
-            String furl = n == 1 ? base : base + "-" + n;
-            if (urlFree(destSiteId, furl)) {
-                return new Naming(freeTitle, furl);
-            }
-        }
+        // them again through the formatter. The URL half is `ShFurlNaming`'s since SH651 —
+        // post create needed the same loop, and a second copy of it was the wrong answer.
+        return new Naming(freeTitle, shFurlNaming.freeFurl(ShFolderSite.idOf(destFolder), title));
     }
 
     /** The folder half: a name free among the destination's own children. */
@@ -364,29 +362,10 @@ public class ShObjectWriteService {
         return n == 1 ? base : base + " (" + n + ")";
     }
 
-    /**
-     * Whether no live post in {@code destSiteId} already answers at {@code furl}.
-     *
-     * <p>A blank URL is treated as free: an uploaded file post never gets one (SH38, which
-     * is why SH172 needed the {@code id:} address fallback), so blank is a legitimate shared
-     * value rather than a collision.</p>
+    /*
+     * `urlFree` lived here until SH651 and is now `ShFurlNaming.isFree` — post create needed
+     * the same question answered and this was the only place that could answer it.
      */
-    private boolean urlFree(String destSiteId, String furl) {
-        if (destSiteId == null || furl == null || furl.isBlank()) {
-            return true;
-        }
-        // SH583 — every spelling: a copy that only checked the exact one would derive an
-        // "unused" URL that a tolerant reader already resolves to something else.
-        for (String candidate : ShFurlSpellings.candidates(furl)) {
-            for (ShPostState state : ALL_STATES) {
-                if (shPostUnifiedRepository
-                        .findByShSite_IdAndFurlAndState(destSiteId, candidate, state).isPresent()) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
     private Set<String> postTitlesIn(ShFolder destFolder) {
         Set<String> titles = new HashSet<>();

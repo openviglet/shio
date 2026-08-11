@@ -447,32 +447,6 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
-### XIII.22 A post created through the console gets no friendly URL (SH651)
-
-SH396 extended the build-a-site benchmark's baseline to hand-build a render model, and
-it stopped one call short of opening the page. The reason is not the layout. Five posts
-created through `POST /api/v2/post-unified` with `postTypeId` and `data.headline` —
-where `headline` is the post-type's title field — come back with **no `furl`**, so the
-context pack reports all five at their folder's own address:
-
-    node post /pages-4cd715 type=BenchArticle state=DRAFT title=naive-page-1
-    node post /pages-4cd715 type=BenchArticle state=DRAFT title=naive-page-2
-
-Five distinct posts, one address. `/sites/<site>/default/en-us/<folder>/naive-page-1` is
-a 404, and it is a 404 for a reason that has nothing to do with SH280's published-layout
-rule.
-
-What is not known is which of three things this is: the console UI always sends `furl`
-explicitly and the API is right to require it; the write should derive one from the
-title field the way the agent surface does; or the address projection is wrong and a
-furl exists. Each has a different fix and the first is not a defect at all — so the
-first deliverable is the probe that tells them apart, not a change.
-
-Two reasons to answer it rather than work around it. A post that cannot be addressed
-cannot be verified, linted or delivered, and nothing on the write path says so — it
-answers 201. And SH396's ratio is a floor by one call and one page fetch until this is
-settled, in the direction that flatters the baseline.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
