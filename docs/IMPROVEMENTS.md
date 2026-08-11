@@ -174,7 +174,7 @@ The agent cannot see. Two of the three human round trips in a typical build exis
 for that reason, which made this the cheapest large win after Block H — a human cycle is
 the most expensive unit in the system by orders of magnitude.
 
-✅ **Shipped whole**: SH99–SH104, SH141–SH144, SH154, SH169, and the follow-ups closing
+✅ **Shipped whole**: SH99–SH104, SH141–SH144, SH154 (§IX.78), and the follow-ups closing
 the block produced (SH609–SH642). The implementation reports live in
 [CHANGELOG.md](CHANGELOG.md) Block K; the design subsections are gone rather than left
 behind as history `git log` already holds.
