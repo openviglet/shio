@@ -973,30 +973,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.54 The array is why the other three waited (SH478)
-
-SH474 declared the four keys an upload stamps and stopped there, leaving `ALT`,
-`CAPTION` and `TAGS` — SH62's Media Library metadata, written by `updateMetadata` rather
-than by an upload. They are the same defect: SH168's `unknown-field` is an error, so the
-first caption a curator writes turns a green `verify` red on a post nobody did anything
-wrong to.
-
-They waited for one of them. `ALT` is a string and `CAPTION` is a string, and either
-would have been a line beside `SHA256`. `TAGS` is an **array**, and the catalogue's
-`Multi Select` is the only widget shaped like one — it reads `widgetSettings` naming the
-options a curator may pick, and a tag vocabulary is exactly what a media library does
-not have in advance. Declaring it with an empty option list models a field that renders
-as a select nobody can select from; declaring it as `Text` says the value is a string
-when the writer stores a JSON array, which is the same lie the other way round.
-
-So the decision is what a free-form list of strings is in this catalogue, and the two
-honest answers are a `widgetSettings` mode on `Multi Select` meaning "any value", or a
-new widget. Whichever lands, the declaration and the console component have to agree,
-because the File form is one a curator actually opens.
-
-The measurement is already written: `ShFilePostTypeSourceTest.STILL_UNDECLARED` holds
-the three with their reasons and fails if one is declared without being removed.
-
 ### XVII.55 Two templates, and neither serves an authorable replica (SH502)
 
 SH446 made a scaffold installable by writing the version the registry has: the built-in

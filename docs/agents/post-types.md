@@ -58,9 +58,28 @@ same reason, and `render.provision` repairs only `ShRenderPostTypes.NAMES` — w
 out of, since that list is also every "is this a template type" test in the renderer. So the
 existing-type branch became additive, SH289's rule at the only door: a table this class owns, of
 fields this class writes unconditionally, added and nothing else. The limit is real and stated — the
-next upload is the trigger, so an instance nobody uploads to stays as it was. `ALT`, `CAPTION` and
-`TAGS` are still undeclared, held as an asserted list in `ShFilePostTypeSourceTest` with the reason
-(`TAGS` is an array and needs a widget decision, not a transcription) — SH478.
+next upload is the trigger, so an instance nobody uploads to stays as it was.
+
+**It declares eight now, and the three that waited were waiting on a premise that was false
+(SH478).** `ALT`, `CAPTION` and `TAGS` are SH62's Media Library metadata, written by `updateMeta`
+rather than by an upload, and SH474 held them for a modelling question: `TAGS` is an array, and
+declaring it as `Multi Select` was thought to require `widgetSettings` naming the options a curator
+may pick — which a tag vocabulary does not have in advance. **`multi-select.widget.tsx` reads no
+`widgetSettings` at all.** It is a chip input: type a value, press Enter. The two option-driven
+widgets are `Combo Box` and `Check Box`, and the belief was about them, carried across by
+assumption. So the decision the three were queued behind never existed, and each cost one line:
+`ALT` → `Text`, `CAPTION` → `Text Area`, `TAGS` → `Multi Select`, which are the controls the Media
+Library dialog *already* renders for the same three values — a declaration disagreeing with that
+dialog would put one value behind two controls.
+
+**The lesson is about the shape of the record, not about the widget.** A hand-kept
+`STILL_UNDECLARED` map recorded a belief and could not check one, so the belief was wrong for a
+block while `unknown-field` — an error — fired on every File post a curator had captioned. It is
+gone: `ShFilePostTypeSourceTest` now **reflects** `ShStaticFileService`'s `DATA_*` constants and
+requires the type to declare all of them, so the next key added fails on the commit that adds it
+rather than on somebody's replica (SH322). The half that lives on the console side —
+that `Multi Select` is open and exactly two widgets are closed — is
+`shio-react/test/widget-option-source.test.mjs`, which fails first if a widget ever changes contract.
 **And the error that reported all 66 named a door that answers 409.** `unknown-field`'s fix said
 `PUT /api/v2/post-type/<name>`, which is right for a user's type and refused for a system one, so
 the instruction was wrong for exactly the case that produced the findings (P6). It now branches on

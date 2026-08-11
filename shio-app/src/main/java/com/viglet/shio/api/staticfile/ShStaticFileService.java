@@ -795,13 +795,21 @@ public class ShStaticFileService {
      * bytes and a curator editing one would be editing a claim about a file rather than the file.
      * The catalogue has had the row since before this service existed.</p>
      *
-     * <p><b>What is still undeclared, on purpose:</b> {@code ALT}, {@code CAPTION} and {@code TAGS}
-     * — SH62's Media Library metadata, written by {@link #updateMetadata} rather than by an upload.
-     * They are the same defect and not the same decision: {@code TAGS} is an array, the catalogue's
-     * {@code Multi Select} needs {@code widgetSettings} naming its options, and guessing that here
-     * would model a field wrong instead of not at all. SH478. {@code ShFilePostTypeSourceTest} holds
-     * the three as an asserted list, so the gap is a fact the build states rather than one a reader
-     * has to notice.</p>
+     * <h2>And the three SH474 left out, on a premise that turned out to be false (SH478)</h2>
+     *
+     * <p>{@code ALT}, {@code CAPTION} and {@code TAGS} are SH62's Media Library metadata, written by
+     * {@link #updateMeta} rather than by an upload, and they were held back for a modelling question:
+     * {@code TAGS} is an array, and the catalogue's {@code Multi Select} was believed to read
+     * {@code widgetSettings} naming the options a curator may pick — which a tag vocabulary does not
+     * have in advance. <b>It does not.</b> {@code multi-select.widget.tsx} is a free-form chip input:
+     * type a value, press Enter. The widgets that need an option list are {@code Combo Box} and
+     * {@code Check Box}, and the premise was those two, carried across by assumption. So there was
+     * never a decision to make, and the three fields waited on it for a block.</p>
+     *
+     * <p>The widgets are therefore the ones the curator is <em>already</em> using: the Media Library
+     * dialog renders alt with an {@code Input}, caption with a two-row {@code Textarea} and tags with
+     * the same chip control the {@code Multi Select} widget is. A declaration that disagreed with
+     * that dialog would be the same defect one surface over.</p>
      */
     private static List<FileField> fileFields() {
         return List.of(
@@ -809,7 +817,10 @@ public class ShStaticFileService {
                 new FileField(DATA_SHA256, "SHA-256", ShSystemWidget.HIDDEN, 2, false, false),
                 new FileField(DATA_SIZE, "Size (bytes)", ShSystemWidget.HIDDEN, 3, false, false),
                 new FileField(DATA_WIDTH, "Width (px)", ShSystemWidget.HIDDEN, 4, false, false),
-                new FileField(DATA_HEIGHT, "Height (px)", ShSystemWidget.HIDDEN, 5, false, false));
+                new FileField(DATA_HEIGHT, "Height (px)", ShSystemWidget.HIDDEN, 5, false, false),
+                new FileField(DATA_ALT, "Alternative text", ShSystemWidget.TEXT, 6, false, false),
+                new FileField(DATA_CAPTION, "Caption", ShSystemWidget.TEXT_AREA, 7, false, false),
+                new FileField(DATA_TAGS, "Tags", ShSystemWidget.MULTI_SELECT, 8, false, false));
     }
 
     /**

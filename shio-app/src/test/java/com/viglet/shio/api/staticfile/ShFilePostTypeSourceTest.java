@@ -152,50 +152,108 @@ class ShFilePostTypeSourceTest {
             ShStaticFileService.DATA_HEIGHT, "as WIDTH."));
 
     /**
-     * Every {@code data} key an upload writes that the type still does not declare (SH474).
+     * Every {@code data} key {@code ShStaticFileService} can write, read off the service (SH478).
      *
-     * <p>The instrument, and the reason it is a list rather than a comment: SH168's
-     * {@code unknown-field} is an error, so each of these is a red finding on any instance whose
-     * curator uses the Media Library. They are held here — declared, with the decision — because
-     * {@code TAGS} is an array and the catalogue's {@code Multi Select} needs {@code widgetSettings}
-     * naming its options, which is a modelling decision and not a transcription. SH478.</p>
+     * <h2>Why this is derived and the list it replaces was not</h2>
+     *
+     * <p>SH474 declared four keys and held the other three — {@code ALT}, {@code CAPTION},
+     * {@code TAGS} — in a hand-kept {@code STILL_UNDECLARED} map with the reason each waited. The
+     * reason was wrong: {@code TAGS} waited on a modelling decision about {@code Multi Select}'s
+     * {@code widgetSettings} that the console component does not have, so the field waited a block on
+     * a question nobody had to answer. A declared list records a belief; it cannot check one.</p>
+     *
+     * <p>So the instrument is the constants themselves. SH168's {@code unknown-field} is an
+     * <b>error</b>, which makes "a key this writer writes and this type omits" a finding on the
+     * <em>content</em> of any instance whose curator opened the Media Library — 66 of them on the
+     * replication that found it. Reflecting the {@code DATA_*} fields means the <b>next</b> key
+     * somebody adds fails this test on the commit that adds it, rather than on somebody's replica
+     * (SH322: the grep is the deliverable).</p>
      */
-    private static final Map<String, String> STILL_UNDECLARED = new TreeMap<>(Map.of(
-            "ALT", "SH62 — curator metadata, written by updateMetadata rather than by an upload.",
-            "CAPTION", "as ALT.",
-            "TAGS", "as ALT, and the one that needs a decision: an array, so Multi Select and its "
-                    + "widgetSettings, or a different widget."));
+    private static Set<String> dataKeysTheServiceWrites() {
+        Set<String> keys = new TreeSet<>();
+        for (java.lang.reflect.Field field : ShStaticFileService.class.getDeclaredFields()) {
+            if (field.getName().startsWith("DATA_") && field.getType() == String.class) {
+                field.setAccessible(true);
+                try {
+                    keys.add((String) field.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException("cannot read " + field.getName(), e);
+                }
+            }
+        }
+        return keys;
+    }
 
     @Test
-    @DisplayName("SH474: the type declares every key an upload stamps, and names the ones it does not")
+    @DisplayName("SH478: the type declares every data key the service can write, derived not listed")
     void theTypeDeclaresWhatTheUploaderWrites() {
         ShPostType created = shStaticFileService.resolveOrCreateFilePostType();
         Set<String> declared = created.getShPostTypeAttrs().stream()
                 .map(ShPostTypeAttr::getName)
                 .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> written = dataKeysTheServiceWrites();
+
+        assertThat(written)
+                .as("a reader of this test must be able to tell an empty reflection from a passing one")
+                .hasSizeGreaterThanOrEqualTo(7);
 
         assertThat(declared)
                 .as("""
                         every one of these is written into a File post's `data` by \
                         ShStaticFileService, and SH168's unknown-field is an ERROR — a key the \
                         writer writes and the type omits is a finding on the content, not on the \
-                        model, which is how 66 of them read as broken assets""")
-                .contains(ShSystemPostTypeAttr.FILE, ShStaticFileService.DATA_SHA256,
-                        ShStaticFileService.DATA_SIZE, ShStaticFileService.DATA_WIDTH,
-                        ShStaticFileService.DATA_HEIGHT);
-
-        assertThat(declared)
-                .as("""
-                        and the gap is stated rather than left to be noticed: a key removed from \
-                        STILL_UNDECLARED without being declared fails here, and one declared \
-                        without being removed from the list fails too (SH142's rule)""")
-                .doesNotContainAnyElementsOf(STILL_UNDECLARED.keySet());
+                        model, which is how 66 of them read as broken assets. Derived from the \
+                        DATA_* constants (SH478), so a key added tomorrow fails on its own commit""")
+                .contains(ShSystemPostTypeAttr.FILE)
+                .containsAll(written);
 
         assertThat(INVENTED.keySet())
                 .as("a declared divergence that no longer diverges is a suppression that rotted")
                 .allSatisfy(name -> assertThat(referenceType().get("fields").get(name))
                         .as("%s is in the 2018 model now, so this entry is stale", name)
                         .isNull());
+    }
+
+    /**
+     * The widget each Media Library key is declared with, and the surface it has to agree with
+     * (SH478).
+     *
+     * <p>Not a transcription of {@code fileFields}: it is the claim that the File form a curator
+     * opens renders the same control the Media Library dialog already gives them for the same value.
+     * {@code static-file.list.page.tsx} uses an {@code Input} for alt, a two-row {@code Textarea} for
+     * caption, and a chip list for tags — which is what {@code multi-select.widget.tsx} is. A
+     * declaration that disagreed would put one value behind two different controls, and the free-form
+     * half of that claim is held on the console side by {@code widget-option-source.test.mjs}.</p>
+     */
+    @Test
+    @DisplayName("SH478: the three curator keys carry the widget the Media Library already renders")
+    void theCuratorKeysCarryTheConsoleWidget() {
+        ShPostType created = shStaticFileService.resolveOrCreateFilePostType();
+        Map<String, String> widgets = created.getShPostTypeAttrs().stream()
+                .collect(Collectors.toMap(ShPostTypeAttr::getName,
+                        attr -> attr.getShWidget().getName(), (a, b) -> a, TreeMap::new));
+
+        assertThat(widgets)
+                .containsEntry(ShStaticFileService.DATA_ALT, ShSystemWidget.TEXT)
+                .containsEntry(ShStaticFileService.DATA_CAPTION, ShSystemWidget.TEXT_AREA)
+                .as("""
+                        Multi Select, because it is a free-form chip input and not an option list — \
+                        the belief that it needed widgetSettings naming a vocabulary is what held \
+                        these three back for a block (SH478)""")
+                .containsEntry(ShStaticFileService.DATA_TAGS, ShSystemWidget.MULTI_SELECT);
+
+        assertThat(created.getShPostTypeAttrs())
+                .as("""
+                        all three are optional and none is the title: a File that predates the Media \
+                        Library is a file nobody captioned, not a broken one""")
+                .filteredOn(attr -> ShStaticFileService.DATA_ALT.equals(attr.getName())
+                        || ShStaticFileService.DATA_CAPTION.equals(attr.getName())
+                        || ShStaticFileService.DATA_TAGS.equals(attr.getName()))
+                .hasSize(3)
+                .allSatisfy(attr -> {
+                    assertThat(attr.getRequired()).isZero();
+                    assertThat(attr.getIsTitle()).isZero();
+                });
     }
 
     @Test
