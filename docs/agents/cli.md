@@ -2206,6 +2206,26 @@ statement about the boundary rather than about the fixture. `cli/test/source-cor
 iterates the corpus and runs the offline chain (`clone` → `propose --accept all` → `convert --out`)
 once per archetype, reading a declaration where the other two suites read a constant.
 
+**An archetype models what an author would not think to write, and `theme-heavy` is where that is
+now literal (SH658).** SH477's rule — a mark whose `aria-label` repeats its own visible text is
+decorative and is not part of a link's label — was read off one real site and then exercised by
+literals in `clone.test.mjs` alone: measured across every `.html` the repository holds, **19 files,
+30 anchors, zero** carried an `aria-label` inside a link. So `theme-heavy` gained a masthead whose
+brand link encloses `<span class="mark" aria-label="Nw"><span>N</span><span>w</span></span>`, which
+is how a site spells a drawn two-letter logo, and the declaration holds **both** ends of the rule:
+`expect.notes` that the count fired, and `expect.navigation` — `keeps` existential, `drops`
+universal — that the label still says the source's words and never the graphic's letters. The
+asymmetry is not style: one `href` legitimately carries several labels (`/` is both the brand and
+the about page's "Home"), so a universal `keeps` would fail on the link that is simply not the
+brand. Removing the attribute makes the label read `Nw Northwind &amp; Co`, which is the injection
+that proves the fixture exercises the rule rather than merely coexisting with it.
+
+**And it found a defect on arrival, which is the corpus working as designed.** The captured label is
+`Northwind &amp; Co` while the same document's `title` is `Northwind & Co` — extraction decodes an
+entity once for a title and not at all for a link label. `keeps`/`drops` are substrings rather than
+one expected string precisely so this case does not fail for a reason that is not its subject; the
+entity is its own task, and `awkward`'s `doubleEscaped` is where that question already lives.
+
 **Both drivers now have a caller, and that was the half that was missing.** `serve` shipped with the
 loader and was called by nothing, so the sentence above — *a divergence between the tiers is a
 statement about the boundary* — was unfalsifiable: one driver ran, and every claim the corpus made

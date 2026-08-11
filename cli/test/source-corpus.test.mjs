@@ -418,6 +418,52 @@ describe("SH560 group B: the capture of each archetype is what it declares", () 
             );
           });
         }
+
+        // SH658 — a menu entry's label, held from both ends: the words the source put there, and
+        // the characters a rule was supposed to take out.
+        //
+        // The note above is the *count* — how often the self-labelling rule fired — and a count is
+        // compatible with the rule having produced the wrong string. That is the same mistake the
+        // checklist calls "count, do not eyeball", one level up, so a declaration that stopped at
+        // the note would be an archetype claiming a trait it half-checks. `keeps` and `drops` are
+        // deliberately substrings rather than one expected label: the entity a label carries is a
+        // separate question with its own archetype (`awkward`'s `doubleEscaped`), and folding it in
+        // here would make this case fail for a reason that is not its subject.
+        for (const item of declaration.expect.navigation ?? []) {
+          holding(entry.id, `nav-label-${slug(item.href)}`, () => {
+            const entries = (inventory.navigation ?? []).filter((each) => each.href === item.href);
+            assert.ok(
+              entries.length,
+              `${entry.id} / ${item.catches}: no navigation entry for ${item.href}. ${item.means}.\n`
+                + `  navigation: ${JSON.stringify(inventory.navigation ?? [], null, 2)}`,
+            );
+            // Asymmetric on purpose, because one href legitimately carries several labels: this
+            // fixture's `/` is both the brand link and the about page's "Home" call to action.
+            // `keeps` is therefore existential — *some* entry still says what the source said — and
+            // `drops` is universal, because a graphic's letters leaking into any one of them is the
+            // defect. Read the other way round, "Home" would fail for not being the brand.
+            const labels = entries.map((each) => each.label);
+            const kept = labels.find((label) => (item.keeps ?? []).every((w) => label.includes(w)));
+            assert.ok(
+              kept !== undefined,
+              `${entry.id} / ${item.catches}: no label for ${item.href} carries all of `
+                + `${JSON.stringify(item.keeps ?? [])}, so a rule that removes a decorative mark is `
+                + `eating the source's own words. ${item.means}.\n`
+                + `  labels: ${JSON.stringify(labels)}`,
+            );
+            for (const word of item.drops ?? []) {
+              const leaked = labels.filter((label) => label.includes(word));
+              assert.deepEqual(
+                leaked,
+                [],
+                `${entry.id} / ${item.catches}: a label for ${item.href} still carries "${word}", `
+                  + "which is a graphic's letters and not a word of this page — so the menu a "
+                  + `conversion writes reads as a logo. ${item.means}.\n`
+                  + `  leaked: ${JSON.stringify(leaked)}`,
+              );
+            }
+          });
+        }
       } finally {
         await run.dispose();
       }

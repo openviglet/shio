@@ -2,7 +2,7 @@
   "id": "theme-heavy",
   "title": "A source whose whole appearance is one external stylesheet",
   "trait": "site",
-  "catches": ["SH555", "SH556", "SH558", "SH452"],
+  "catches": ["SH555", "SH556", "SH558", "SH452", "SH477", "SH472"],
   "why": "Every defect the eighth run found in an authorable replica is on this path and none of them is about the capture: the stylesheet reaches a verbatim page HTML-escaped so the browser cannot parse it (SH555), the generated theme and the section templates were written against different class names (SH556), and the theme a layout pulls in through `getRelation` is reported as unused (SH558). All three are readable in the conversion document, which is why this archetype is worth more than a live run — it makes them fast-tier findings.",
   "clone": { "depth": 2, "assets": true, "markup": true },
   "expect": {
@@ -18,7 +18,22 @@
       "/img/hero.png",
       "/img/sprite.svg"
     ],
-    "notes": []
+    "notes": [
+      {
+        "match": "decorative mark",
+        "catches": "SH477",
+        "means": "the capture states how often the self-labelling rule fired on this source, so every run says whether the rule was right about the page in front of it instead of the rule being argued once from one site"
+      }
+    ],
+    "navigation": [
+      {
+        "href": "/",
+        "keeps": ["Northwind", "Co"],
+        "drops": ["Nw"],
+        "catches": "SH477 SH472",
+        "means": "the brand link encloses a mark whose aria-label repeats its own drawn letters, spelled one span per letter the way a site spells one - so the letters are not part of the link's label and the source's words are"
+      }
+    ]
   },
   "addressable": ["/", "/about"],
   "unaddressable": [],

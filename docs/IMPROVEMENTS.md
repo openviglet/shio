@@ -828,30 +828,30 @@ gate naming itself. Resuming is therefore two steps — dispatch the workflow, t
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
 
-### XVII.91 The corpus models markup, and a page is also its accessibility tree (SH658)
+### XVII.92 A link label is decoded zero times, and a title once (SH670)
 
-SH477's first deliverable was a count, on the rule that a capture rule read off one
-site's markup is a rule that fires on nobody else's page. Run over every `.html` the
-repository holds — the seven archetypes, the CLI fixtures, the conformance site, the
-bundled import data — it found **19 files, 30 anchors, and zero** elements carrying
-`aria-label` inside a link.
+Found by SH658's fixture on its first run, which is the argument for the corpus rather
+than a point about entities: nothing was looking for this, and the archetype that models
+a real masthead produced it immediately.
 
-So the pattern the rule exists for is modelled nowhere, and the same holds for SH472's
-brand tile: both are asserted by literals in `clone.test.mjs` and by nothing a chain
-runs end to end. `fixtures/source-sites/` exists because **a trait can be a property of
-a real page that no author would think to write**, and an accessibility attribute is
-that shape exactly — every real navigation has them, and the fixture authors, writing
-minimal valid markup, had no reason to.
+One document, two answers. `theme-heavy`'s home page carries `<title>Northwind &amp;
+Co</title>` and a brand link whose text is the same bytes. The capture records the title
+as **`Northwind & Co`** and the navigation label as **`Northwind &amp; Co`** — decoded
+once, and not at all.
 
-What it would take is small: a decorative mark on `theme-heavy`'s nav, spelled the way a
-site spells one — a `<div aria-label="Th">` holding one `<span>` per letter, beside a
-real label — plus the declaration saying what a capture of it should contain. The
-archetype already has a nav.
+The project has already decided which is right. `awkward` declares `doubleEscaped` for
+this question, and the assertion behind it states the rule: *an entity survives
+extraction as characters and is escaped again on render, so a title decoded the wrong
+number of times is wrong in the page and in the editor field*. A label decoded zero
+times is that defect, in the field SH432 called the whole argument for curating
+navigation as content — a human is shown the menu and asked which entries to keep, and
+the one they keep says `&amp;`.
 
-Filed as an idea rather than designed work because the interesting question is the
-boundary: whether `aria-*` is one trait or the first of a family (`role`,
-`aria-labelledby`, `aria-hidden`, a decorative image's `alt`), and whether the corpus
-should assert what a capture *drops* as carefully as what it keeps.
+Narrow on purpose. The label is what `scanPage` collapses out of an anchor's text runs,
+so the question is whether decoding belongs there or where `title` already does it, and
+whether a link's `text` — the same field, used for every link — moves with it. SH658
+asserts substrings rather than one expected label, so this repair can change the string
+without that case failing for something that is not its subject.
 
 ## XIX The public site (Block S)
 

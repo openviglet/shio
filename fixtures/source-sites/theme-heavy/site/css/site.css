@@ -22,6 +22,16 @@
 
 body { margin: 0; color: var(--ink); font-family: var(--font-body) }
 
+.masthead { background: var(--wash); border-bottom: 1px solid var(--brand) }
+.mainnav { display: flex; gap: 24px; align-items: center; padding: 12px 32px }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); text-decoration: none }
+/* The two letters are drawn, never written: the accessible name is on the box, the glyphs are
+   spans so each can carry its own animation delay. This is what makes it decorative. */
+.mark { display: inline-grid; grid-auto-flow: column; width: 32px; height: 32px;
+        place-content: center; background: var(--brand); color: #fff; border-radius: 6px }
+.mark span { font-size: 13px; line-height: 1 }
+.navlink { color: var(--brand); text-decoration: none }
+
 .hero {
   background: var(--wash) url("/img/hero.png") no-repeat right center;
   padding: 4rem 2rem;
