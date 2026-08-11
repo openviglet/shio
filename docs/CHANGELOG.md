@@ -1273,3 +1273,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block T — End-user documentation, round two (the curator's half)
 
+- **SH625** — The console now has an end-user page: the browser and its 50-post paging against a folder count that is not it, the post form generated from the post type, copy and move with free names and both ends authorized and a picker that greys out what the server would refuse, what each Select choice actually selects and the 1000-item cap, and the trash as a reversible delete whose restore is scoped to one deletion and whose purge is the only permanent act. COVERAGE Block O goes from red to green.

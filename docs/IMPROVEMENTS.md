@@ -1114,29 +1114,6 @@ stale prose goes first.
 Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
 page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
 
-### XX.1 The console is the least documented part of the product, and it is where the human is (SH625)
-
-The content console: the browser and its paged listing, the post form built from the
-post-type, copy/move with both ends authorized and free names, "select everything", and
-the trash. All shipped, all reachable from the first screen a curator sees, and none of
-it written down anywhere a reader can reach.
-
-`COVERAGE.md` scores it 🔴 with the note that SH485 covers *the rails* — the safety
-model, the review queue, the publish gate — and not the console. That is an accurate
-split and it is the problem: the rails are the part an agent drives and the console is
-the part a person drives, so the documented half is the half that needs documentation
-least.
-
-"Select everything" is the sharpest instance. It is a real capability with a real blast
-radius, its semantics are not guessable from the checkbox, and a curator's only way to
-find out what it selects is to use it. That is P7 inverted by omission rather than by
-design.
-
-Scope note: this is a page, not a tour. What earns space is what is not guessable — what
-copy/move does about name collisions and about permissions at both ends, what the trash
-retains and for how long, and which listing operations are scoped to the page versus the
-whole result set.
-
 ### XX.2 A page describing a shape the product left is worse than no page (SH623)
 
 `administration-guide` describes the AngularJS screens the React console replaced.
