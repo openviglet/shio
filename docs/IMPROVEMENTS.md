@@ -1046,23 +1046,3 @@ altitudes, which is why they are one block rather than a footnote on the last on
 
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
-
-### XXI.2 A count nobody derives is a count that hides work (SH653)
-
-`COVERAGE.md` ends with a summary — *"of 42 clusters, N are still not documented
-correctly"* — and every figure in it is typed. The file itself records that they do not
-reconcile: a count of every status-bearing row comes to 48 against the 40 the summary
-was authored against, and it says so in a note rather than resolving it, because
-reconciling the two is a decision about what a *cluster* is.
-
-The consequence is not cosmetic. The `shio audit` row (SH652) has been 🔴 in the tables
-since the file shipped and absent from the summary for just as long, so the one number
-anybody scans was wrong in the direction that hides an orphan. Block T flipped seven
-verdicts and every one of them was a hand edit to both the row and the total — seven
-more chances for the two to part company.
-
-Derive it. The tables are the data; the summary is a projection of them, and a script
-that recomputes it is a smaller thing than the note explaining why it cannot be trusted.
-The open question the task has to answer first is the one the note names: what counts as
-a cluster, since the row count and the authored count disagree by eight. Fix that, then
-the number follows, and SH652's page lands under a summary that can see it.

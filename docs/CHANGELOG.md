@@ -1301,3 +1301,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block U — Documentation the matrix still names
 
 - **SH652** — The cli page gained a row per audit rule plus the two always-printed lines, and docs-vocabulary now fails on a rule AUDIT_RULES emits that the page does not name.
+- **SH653** — A cluster is one table row, so the summary reads 48 (43 ✅, 5 🧩, 0 wrong), and docs-coverage recomputes it from the tables and prints the sentence to write when the two disagree.

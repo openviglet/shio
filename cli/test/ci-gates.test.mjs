@@ -105,6 +105,17 @@ test("SH655: the docs suites have a checkout of the repository they read, and ar
     "SH655: and it must NOT include `docs-examples`, which needs the booted instance — a job "
       + "without one would fail on `requireInstance` and read as the documentation being wrong",
   );
+
+  // SH653 — the third instance-free instrument. Written into the script explicitly, because the
+  // job names files rather than a glob: a conformance file this line does not list runs on one
+  // laptop and nowhere else, which is the state SH655 found `docs-stack` in.
+  assert.match(
+    script,
+    /docs-coverage\.conformance\.mjs/,
+    "SH653: the coverage summary's check reads the same other repository and needs no instance, "
+      + "so it belongs in the every-push job beside the other two — a derived number nothing "
+      + "recomputes in CI is the typed number again",
+  );
 });
 
 test("SH667: the console walk refuses to let the editor drive skip (SH238, SH659)", () => {

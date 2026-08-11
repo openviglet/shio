@@ -2314,6 +2314,24 @@ in two halves that answer different questions at very different prices:
   (`shape:`, `scripts:`), which are not rules and so cannot come from that map. Proved in both
   directions by unspelling one rule's name on the page and then the `shape:` line, and watching
   each fail alone.
+- **`docs-coverage.conformance.mjs` — the matrix's own arithmetic (SH653).** `COVERAGE.md` ends with
+  the one sentence anybody scanning it reads — *"Of N clusters, M are still not documented
+  correctly"* — and every figure in it was typed. It drifted the way a typed number does, **in the
+  direction that hides work**: the `shio audit` row was 🔴 in the tables from the day the file
+  shipped and absent from that count for just as long. The file recorded the disagreement in a note
+  rather than resolving it, because resolving it needed a decision first. **A cluster is one table
+  row.** Measured before choosing: 48 rows, 33 distinct block labels, and the 42 the summary
+  claimed — *neither* reading reproduced the typed figure, so the note's "48 against 40" was not the
+  only gap. The row wins because it already carries its own verdict; grouping by label would need an
+  aggregation rule nobody has written, since `Block H` spans five rows and `Block K` two that
+  disagree. It **asserts and prints the sentence to write** rather than rewriting: a generated
+  summary is a section nobody writes and no reviewer reads, and the point is to take the arithmetic
+  out of a person's hands without taking the sentence out of the diff. The table reader is
+  header-anchored, which is the whole of its correctness — the file also holds a two-column *"why no
+  page"* table whose prose says things like *"folded into the ⚠️ rows above"*, and a glyph-anywhere
+  match counted those and came to 50. Proved by widening the matcher and watching both the tally and
+  the guard fail; the guard's first draft named one of that table's rows and **passed while a
+  different one leaked**, which is this file's own defect one level down.
 - **`docs-examples.conformance.mjs` — the requests.** The 15 read-only documented requests are
   issued against a live instance. It catches the three things a name check structurally cannot: an
   endpoint that is mapped and 500s, one whose response lost the key the page shows, and one a page
