@@ -117,6 +117,13 @@ instance (SH540) is all that is left, and it is what turns the scripted session
 in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
 
+Block T closed on 2026-08-11 and changed no claim here, and the check that says so is worth
+naming rather than assuming: the site's one documentation claim is the Resources card,
+*"Install, model, author, deliver — the end-user documentation set"*, which is a statement
+about the set's **shape**. Block T added five curator pages and rewrote two, so the set got
+larger and more correct without that sentence becoming any less true. A block that only
+*adds* pages cannot move a claim phrased about coverage; one that removed a hub could.
+
 Block K closed on 2026-08-10 and changed no claim here, which is the verdict rather than
 an omission: its user-facing half is `state=` on the agent read and `shio diff --against
 published`, and the page's P9 line names the *kind* of proof ("a lint, the routes, a render
