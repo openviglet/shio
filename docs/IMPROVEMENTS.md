@@ -292,6 +292,31 @@ declaration: a bound properties class that no bean injects is a lint, and it is 
 shape as `ShStatelessReachabilityLintTest`. That lint is the deliverable; the deletion
 is the easy half (SH322).
 
+### IX.77 A list that names its own rule and does not follow it (SH657)
+
+`ShRenderHelpers.RAW_TEXT_FIELDS` states its own selection rule: *the fields the product
+declares as `Ace Editor - CSS/JavaScript`*, because a template can only put those inside
+`<style>` or `<script>`, which are raw-text elements where entity escaping is not the
+encoding. `ShRenderPostTypes` declares six such fields. The map holds four.
+
+Missing are **`Theme.TOKENS`** and **`SiteScripts.SCRIPTS`**, both JSON in the
+JavaScript editor — SH195's and SH389's decision, each documented where it was made. A
+row read through `{{#getRelation}}`, `{{#query}}` or any other listing helper hands them
+to Handlebars as plain strings, so `<script type="application/json">{{TOKENS}}</script>`
+emits `&quot;` for every key and the JSON does not parse. It is SH461's defect and
+SH555's defect, a third and fourth time, in the one place that already knows the answer.
+
+No layout the CLI generates emits either today, so this is latent rather than live —
+which is the argument for fixing it now. SH555 was found by a megabyte of stylesheet
+reaching a browser as text.
+
+**The fix is the derivation, not the two entries.** A hand-kept list that states a rule
+can diverge from it silently, which is what happened; adding two names leaves the next
+code-editor field to the same accident. `ShRenderPostTypes` holds the widget per field,
+so the map can be computed from it — and where it cannot, the lint comparing the two is
+the deliverable (SH322). SH478 is the same shape one subsystem over, and it cost a
+block.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -995,6 +1020,31 @@ day the release lands the same line requires a clean install. So a stale table f
 gate naming itself. Resuming is therefore two steps — dispatch the workflow, then flip
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
+
+### XVII.91 The corpus models markup, and a page is also its accessibility tree (SH658)
+
+SH477's first deliverable was a count, on the rule that a capture rule read off one
+site's markup is a rule that fires on nobody else's page. Run over every `.html` the
+repository holds — the seven archetypes, the CLI fixtures, the conformance site, the
+bundled import data — it found **19 files, 30 anchors, and zero** elements carrying
+`aria-label` inside a link.
+
+So the pattern the rule exists for is modelled nowhere, and the same holds for SH472's
+brand tile: both are asserted by literals in `clone.test.mjs` and by nothing a chain
+runs end to end. `fixtures/source-sites/` exists because **a trait can be a property of
+a real page that no author would think to write**, and an accessibility attribute is
+that shape exactly — every real navigation has them, and the fixture authors, writing
+minimal valid markup, had no reason to.
+
+What it would take is small: a decorative mark on `theme-heavy`'s nav, spelled the way a
+site spells one — a `<div aria-label="Th">` holding one `<span>` per letter, beside a
+real label — plus the declaration saying what a capture of it should contain. The
+archetype already has a nav.
+
+Filed as an idea rather than designed work because the interesting question is the
+boundary: whether `aria-*` is one trait or the first of a family (`role`,
+`aria-labelledby`, `aria-hidden`, a decorative image's `alt`), and whether the corpus
+should assert what a capture *drops* as carefully as what it keeps.
 
 ## XIX The public site (Block S)
 

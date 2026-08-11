@@ -36,6 +36,7 @@
 - 📋 **SH649** (deps: —) **Twelve improvements sections name task ids that no line carries, so the next add derives past them** — The positioning sections cite epic ids in prose; roadkeep reads an unspent id in its own prefix as claimed, which is a numbering hazard rather than a wording one. → §IX.74
 - 📋 **SH655** (deps: SH499 ✅, SH628 ✅) **The three docs instruments cannot run in CI, because nothing checks out the repository they read** — Their default path is one machine's drive letter and the conformance job clones only this repo, so the gate proving the published pages never runs there. → §IX.75
 - 📋 **SH656** (deps: —) **shio.git.* is bound, shipped with placeholder values, and read by nothing** — A configuration class no code consumes still declares real keys to the property vocabulary, so a page could document a setting that does nothing and pass the gate. → §IX.76
+- 📋 **SH657** (deps: —) **Two code-editor fields are off the renderer's raw-text list, so their JSON is entity-escaped** — RAW_TEXT_FIELDS says it holds the Ace Editor CSS/JavaScript fields and holds four of six - Theme.TOKENS and SiteScripts.SCRIPTS are hand-omitted. → §IX.77
 
 ## Block O — The human half (the console the curator uses)
 
@@ -47,6 +48,7 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
+- 💭 **SH658** (deps: SH477 ✅) **No archetype carries an accessibility attribute, so two capture rules are exercised by literals alone** — SH477's measurement found the decorative-mark pattern zero times across every HTML the repo holds, corpus included, so a real page's shape is asserted nowhere. → §XVII.91
 
 ## Block F — Market positioning
 
