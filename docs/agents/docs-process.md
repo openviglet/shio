@@ -383,3 +383,34 @@ by hand: the whole reason that generator exists, doing its job unattended.
 count against the command registry and the MCP tool list against the server; Block K added neither, so
 the counts stayed right without anybody checking them. That is SH338's rule paying off — the surface
 most likely to rot is the one with an instrument on it.
+
+## A version in prose is a claim nothing derives (SH628)
+
+`developer-guide` carried **Elasticsearch 9.3.3** for two blocks — a version that was
+never this product's, of a dependency it does not have — while every name on the page
+resolved and `docs-vocabulary` reported green. That is the shape a vocabulary check
+structurally cannot see: it asks *does this name still exist*, and a stack row is a
+**number about somebody else's artefact**.
+
+**`cli/conformance/docs-stack.conformance.mjs`** is the third instrument beside SH499's
+two. It reads Java, Spring Boot, Node and pnpm out of `pom.xml`, `shio-app/pom.xml` and
+`package.json`, and fails on any page stating a different one — across `docs-shio/` **and
+the root `README.md`**, because the README is the widest-reach copy of the same claim.
+A page may omit a version; it may not state a wrong one.
+
+Two decisions worth keeping:
+
+- **A retired dependency is refused as a *claim*, not as a word.** `architecture-overview`
+  says "Elasticsearch **is not** a dependency", which is the sentence the check exists to
+  make true. So a match counts only in a table cell or carrying a version, and each entry
+  in `RETIRED` names what is true instead — "remove the row" is not actionable.
+- **`COVERAGE.md` is excluded**, because it is the ledger that records stale pages and has
+  to be able to write the name of the defect it is tracking.
+
+**It also found a defect in SH499's own reader.** `shioProperties` flattened every
+`private` field onto the outer prefix, so a nested `@ConfigurationProperties` group was
+wrong in both directions at once: `ShCdaProperties` produced `shio.cda.ttl-seconds`, which
+binds nothing, and never produced `shio.cda.preview.ttl-seconds`, which is real — so a page
+documenting the correct key was reported as documenting one that does not exist. The two
+errors hid each other, which is why it survived. `boundKeys` cuts each nested class body out
+before reading the outer fields, and both directions are asserted in the SH499 self-check.

@@ -203,14 +203,77 @@ export function mcpTools(dir = join(JAVA_MAIN, "com", "viglet", "shio", "api", "
  * a page documents came back missing.</p>
  */
 function declaredFields(source) {
+  return fieldsWithTypes(source).map(({ name }) => name);
+}
+
+/** The same cut-then-split, keeping the declared type — a nested group is identified by it. */
+function fieldsWithTypes(source) {
   const out = [];
   for (const line of source.split("\n")) {
     if (!/^[ \t]*private[ \t]/.test(line)) continue;
     const declaration = line.split(/[=;]/)[0].trim().split(/[ \t]+/);
     const name = declaration.at(-1);
-    if (declaration.length >= 3 && /^\w+$/.test(name)) out.push(name);
+    if (declaration.length >= 3 && /^\w+$/.test(name)) out.push({ name, type: declaration.at(-2) });
   }
   return out;
+}
+
+/**
+ * The nested `public static class` groups a properties class declares, by name.
+ *
+ * <p>SH628 — the reader used to flatten every `private` field in the file onto the outer prefix,
+ * which is wrong in <b>both</b> directions and was invisible because the two errors hide each
+ * other. `ShCdaProperties` binds `shio.cda` and holds `Cache`, `RateLimit` and `Preview`: the flat
+ * read invented `shio.cda.ttl-seconds`, a key nothing binds, and never derived
+ * `shio.cda.preview.ttl-seconds`, a key that exists — so a page documenting the real key was
+ * reported as documenting a key that does not exist, and a page documenting the invented one would
+ * have passed. Found when SH624's preview-token page wrote the three keys correctly and the gate
+ * called all three missing.</p>
+ *
+ * <p>Brace counting rather than a regex over the body: a nested class contains its own braces, and
+ * "up to the next `}`" stops at the first field with an initializer block.</p>
+ */
+function nestedGroups(source) {
+  const out = new Map();
+  const opener = /(?:public|protected|private)?\s*static\s+class\s+(\w+)[^{]*\{/g;
+  for (const match of source.matchAll(opener)) {
+    const from = match.index + match[0].length;
+    let depth = 1;
+    let at = from;
+    while (at < source.length && depth > 0) {
+      if (source[at] === "{") depth += 1;
+      else if (source[at] === "}") depth -= 1;
+      at += 1;
+    }
+    out.set(match[1], source.slice(from, at - 1));
+  }
+  return out;
+}
+
+/**
+ * Every key one `@ConfigurationProperties` class binds, nested groups included.
+ *
+ * <p>A field whose declared type is one of the file's nested classes is a <i>group</i>, not a
+ * value: its own name becomes a path segment and the nested class's fields hang off it. The outer
+ * field itself is deliberately not emitted — `shio.cda.preview` alone binds nothing a reader can
+ * set.</p>
+ */
+function boundKeys(source, prefix) {
+  const groups = nestedGroups(source);
+  // Cut each group's body out first, so what remains is exactly the outer class's own fields.
+  let outer = source;
+  for (const body of groups.values()) outer = outer.replace(body, "");
+  const keys = [];
+  for (const field of fieldsWithTypes(outer)) {
+    if (groups.has(field.type)) {
+      for (const inner of declaredFields(groups.get(field.type))) {
+        keys.push(`${prefix}.${kebab(field.name)}.${kebab(inner)}`);
+      }
+      continue;
+    }
+    keys.push(`${prefix}.${kebab(field.name)}`);
+  }
+  return keys;
 }
 
 /**
@@ -226,7 +289,7 @@ export function shioProperties(dir = JAVA_MAIN, properties = APP_PROPERTIES) {
     const source = readFileSync(file, "utf8");
     const bound = source.match(/@ConfigurationProperties\(\s*(?:prefix\s*=\s*)?"([^"]+)"/);
     if (bound) {
-      for (const field of declaredFields(source)) keys.add(`${bound[1]}.${kebab(field)}`);
+      for (const key of boundKeys(source, bound[1])) keys.add(key);
     }
     for (const [, key] of source.matchAll(/\$\{(shio\.[a-zA-Z0-9.<>-]+)/g)) keys.add(key);
   }

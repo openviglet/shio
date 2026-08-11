@@ -1114,24 +1114,6 @@ stale prose goes first.
 Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
 page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
 
-### XX.6 The page a contributor reads first names a stack this product left (SH628)
-
-`developer-guide` still lists Elasticsearch 9.3.3 in the stack and names neither the
-agent surface nor the CLI. It is the ⚠️ of the six: not thin, wrong.
-
-Its audience is what makes it the sharpest of them. A reader here is deciding whether to
-build against Shio or contribute to it, and the page tells them the product is a 2018
-headless CMS with a search dependency it no longer has. Every one of the ten design laws
-is invisible from it, and the two surfaces this project treats as primary — MCP and the
-CLI — are not mentioned. Someone who reads it and leaves never sees the product that
-exists.
-
-The stack claim is also the kind that should be derivable rather than typed. SH499 found
-the same class of defect in `README.md` (13 MCP tools claimed, 11 registered, two of the
-names invented) and the answer there was an instrument, not a correction. A version
-number in a prose page is the same shape of claim, and the same question applies: what
-would fail when it goes stale.
-
 ### XX.7 The image epic's operator half, folded into a page for authors (SH629)
 
 The SH25 epic's transform parameters are documented — `?w=`, `?h=`, `?format=`, `?crop=`

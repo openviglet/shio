@@ -63,7 +63,6 @@
 
 ## Block T — End-user documentation, round two (the curator's half)
 
-- 📋 **SH628** (deps: —) **The developer guide names a stack this product left, and neither the agent surface nor the CLI** — It still lists Elasticsearch 9.3.3, so the page a contributor reads first is actively misleading rather than merely thin. → §XX.6
 - 📋 **SH629** (deps: —) **The image epic's operational half is undocumented** — The transform parameters are on the render page and the result cache, the dimension and format limits and signed-URL configuration are the operator's questions, answered nowhere. → §XX.7
 
 ## Non-goals (do NOT add as tasks)

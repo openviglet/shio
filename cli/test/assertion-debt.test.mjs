@@ -119,9 +119,16 @@ const ELSEWHERE = {
   // shared by every page. Each id below shipped a page whose prose, structure and worked example
   // are its own deliverable, and nothing here names one. They stay ELSEWHERE for the reason they
   // arrived — the boundary is in another repository — rather than for want of a harness.
+  //
+  // Block T is the same boundary and arrives for the same reason: it writes the curator's half of
+  // those pages (SH623 rewrote `administration-guide` against the React console, SH624–SH627 added
+  // the lifecycle, console, webhook and i18n pages). SH628 is deliberately **not** here — its
+  // deliverable was an instrument rather than prose, so it is asserted like any other change, by
+  // `cli/conformance/docs-stack.conformance.mjs`. That split is the useful thing this list records:
+  // a docs task whose claim is checkable lands a check, and only the prose stays elsewhere.
   docs: ["SH479", "SH480", "SH481", "SH482", "SH483", "SH484", "SH485", "SH486", "SH487", "SH488",
     "SH489", "SH490", "SH491", "SH492", "SH493", "SH494", "SH495", "SH496", "SH497", "SH498",
-    "SH504"],
+    "SH504", "SH623", "SH624", "SH625", "SH626", "SH627"],
 };
 
 /**

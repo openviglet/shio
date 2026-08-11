@@ -193,6 +193,19 @@ describe("SH499 conformance: the published vocabulary is this product's vocabula
     assert.ok(!vocabulary.cliVerbs.has("deleteed"), "a verb registry that has everything has nothing");
     assert.ok(!vocabulary.mcpTools.has("shio_delete"), "shio_delete is not a tool");
     assert.ok(!vocabulary.properties.has("shio.turing.api_key"), "the binding is kebab, not snake");
+    // SH628 — the two halves of one defect, and each is why the other went unseen. The reader
+    // flattened every `private` field onto the outer prefix, so a nested group produced a key
+    // nothing binds *and* hid the key that is real. Both directions are asserted: fixing only the
+    // miss would leave the invented spelling passing, which is how a page gets a key that does
+    // nothing and no way to find out.
+    assert.ok(
+      vocabulary.properties.has("shio.cda.preview.ttl-seconds"),
+      "SH628: a nested @ConfigurationProperties group is a path segment, not a flattened field",
+    );
+    assert.ok(
+      !vocabulary.properties.has("shio.cda.ttl-seconds"),
+      "SH628: the flattened spelling binds nothing and must not read as declared",
+    );
     assert.equal(
       routeExists("GET", "/api/v2/agent/manifesto", vocabulary.routes),
       null,
