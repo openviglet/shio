@@ -1114,25 +1114,6 @@ stale prose goes first.
 Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
 page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
 
-### XX.2 A page describing a shape the product left is worse than no page (SH623)
-
-`administration-guide` describes the AngularJS screens the React console replaced.
-`COVERAGE.md` gives that verdict its own symbol — ⚠️, which `docs-turing` does not need
-— because "has a page" and "has a correct page" are different questions for every Shio
-page written before 2026.3.
-
-The distinction decides how it is fixed. A 🔴 is an addition; a ⚠️ is a **rewrite**, and
-a new section under stale prose makes the page contradict itself. So the stale text goes
-first. Read through this one page today: the dashboard, the Media Library, the
-static-file manager, the webhooks UI and the `config/` pages (auth providers, exchange
-providers, email/SMTP, search) — a reader following it is hunting for screens that no
-longer exist, and concluding the product is broken rather than the page.
-
-One question to settle before writing, because it changes the shape rather than the
-wording: whether this stays one page covering all of them, or whether the Media Library
-and the static-file manager move under the human's hub. They are the two a **curator**
-uses rather than an operator, and the matrix is grouped by who does the job.
-
 ### XX.3 Five lifecycle surfaces a curator cannot discover (SH624)
 
 SH13 short-lived preview tokens and console preview, SH14 draft-versus-published diff
