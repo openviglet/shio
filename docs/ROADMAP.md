@@ -34,12 +34,15 @@
 - ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P ✅) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
 - 📋 **SH645** (deps: —) **The cli suite reports one failure under pnpm test about once in ten runs, naming no test** — The workspace runner's per-package summary is all that survives a filtered run, so two sightings captured a count and no name. → §IX.73
 - 📋 **SH649** (deps: —) **Twelve improvements sections name task ids that no line carries, so the next add derives past them** — The positioning sections cite epic ids in prose; roadkeep reads an unspent id in its own prefix as claimed, which is a numbering hazard rather than a wording one. → §IX.74
+- 📋 **SH655** (deps: SH499 ✅, SH628 ✅) **The three docs instruments cannot run in CI, because nothing checks out the repository they read** — Their default path is one machine's drive letter and the conformance job clones only this repo, so the gate proving the published pages never runs there. → §IX.75
+- 📋 **SH656** (deps: —) **shio.git.* is bound, shipped with placeholder values, and read by nothing** — A configuration class no code consumes still declares real keys to the property vocabulary, so a page could document a setting that does nothing and pass the gate. → §IX.76
 
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH243** (deps: SH55 ✅, SH202 ✅) **A trashed post still holds its friendly URL, and nothing knows it** — Every free-URL check reads through @SQLRestriction, so the trash is invisible to it and an untrashed post can collide with the name its own copy took. → §XVI.3
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
+- 📋 **SH654** (deps: SH14 ✅, SH107 ✅) **A curator cannot publish from the post edit screen, because it has no publish button** — The only console publish paths are the Universal Editor and approving an agent run, and the label for the missing button is a translated key nothing renders. → §XVI.72
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
@@ -60,6 +63,11 @@
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH540** (deps: SH530 ✅) **Nothing on the site is answered by a running Shio** — The transcripts, the preview links and the manifest read are all recordings, so the single claim a visitor cannot check is the one the whole page rests on. → §XIX.11
+
+## Block U — Documentation the matrix still names
+
+- 📋 **SH652** (deps: —) **The eleven `shio audit` rules are named nowhere, so a finding cannot be acted on without reading the source** — COVERAGE has listed them as an orphan since it shipped and its own summary never counted them, which is why no block ever picked them up. → §XXI.1
+- 📋 **SH653** (deps: —) **COVERAGE's summary counts are typed, and the file records that they do not reconcile with its own tables** — A status count nobody derives disagrees with the rows it summarises in the direction that hides work, which is how one orphan went uncounted for two blocks. → §XXI.2
 
 ## Non-goals (do NOT add as tasks)
 

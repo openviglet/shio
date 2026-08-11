@@ -244,6 +244,54 @@ reads it as a claim.
 Small, mechanical, and worth doing before the next `add`: every one of these is a number
 the deriver has already skipped.
 
+### IX.75 The docs gate runs on one laptop (SH655)
+
+`docs-vocabulary`, `docs-examples` and now `docs-stack` read `SHIO_DOCS_DIR`, defaulting
+to `D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio`.
+`.github/workflows/suites.yml` runs `pnpm conformance` and checks out this repository
+only. On a runner the directory is absent, and absent is a failure by design here —
+never a skip — so the docs half of the gate either reddens the job or is being tolerated
+as noise. Both readings are worse than the third possibility, which is that nobody has
+looked.
+
+The design is right and the wiring is missing. SH499 chose to fail rather than skip
+precisely so an unread checkout could not pass quietly, and the price of that choice is
+that the workflow has to supply the checkout. `actions/checkout` with `repository:` and
+a `path:`, then `SHIO_DOCS_DIR` pointing at it, is the whole change.
+
+One decision comes first, because it is what makes this more than a wiring task: the
+docs suites split cleanly by cost. `docs-vocabulary` and `docs-stack` need **no running
+instance** — they read source and build files — where `docs-examples` needs the booted
+app the conformance job already provides. So the cheap pair could gate every push next
+to `pnpm test`, and only the third stays behind the boot. Deciding that is the
+deliverable; the checkout follows from it.
+
+That the instrument SH628 landed cannot fail anywhere but one machine is the sharpest
+case for fixing this, and it is why the task exists rather than being a line in the
+workflow.
+
+### IX.76 A bound key nothing reads is indistinguishable from a real one (SH656)
+
+`ShGitProperties` binds `shio.git.*`, and `application.properties` ships
+`shio.git.url=GIT_URL_HERE` and `shio.git.token=DEFINE_TOKEN_HERE`. Nothing injects the
+class. No code path reads either value. The administration guide described Git version
+control as a feature until SH623 removed the section, which is how it was found.
+
+The defect is not the dead class; it is what the dead class does to the one check that
+would have caught the page. `docs-vocabulary` derives the legitimate `shio.*` keys from
+`@ConfigurationProperties` classes and from `application.properties` — both of which
+declare these — so a page documenting `shio.git.url` passes the gate while the setting
+does nothing. SH628 found the same instrument was wrong about nested groups; this is the
+other direction, and it is the one the check was built to catch. An operator sets a key,
+gets no error, and has no way to learn it was never read.
+
+Two decisions, and the second is the point of filing this rather than deleting two
+lines. Whether Git integration is *intended* — a token and a URL suggest somebody meant
+to ship it — and then whether the vocabulary should assert **reachability** as well as
+declaration: a bound properties class that no bean injects is a lint, and it is the same
+shape as `ShStatelessReachabilityLintTest`. That lint is the deliverable; the deletion
+is the easy half (SH322).
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -801,6 +849,28 @@ the cheap version is likely right: a write mapping on an API class whose body to
 `*Repository.save`/`delete` directly. Precision matters less than the build going red the day
 somebody adds the fifth one.
 
+### XVI.72 The console's publish button does not exist (SH654)
+
+`post.edit.page.tsx` carries Preview Draft, Translations, History, Schedule, Save, Save
+& Close and Cancel. There is no Publish. `POST /v2/post-unified/{id}/publish` is called
+from exactly one place in the console — the Universal Editor — and the only other way a
+draft goes live from a browser is approving an agent run in Agent Review.
+
+The tell that this is an omission rather than a decision: `content.publish` is a
+translated key, in both locales, that no component renders. Somebody wrote the label.
+
+It matters because of what the rest of the model promises. Draft-default (P7) rests on
+publishing being a separate, deliberate act by a person, and the screen where that
+person works cannot perform it. A curator who edits a page has to leave for the visual
+editor or wait for an agent run to approve. The publish-permission badge is already in
+that sticky bar, stating an authority the bar gives no way to exercise.
+
+The scope is small and the questions are not: whether Publish sits beside Save or
+replaces Save & Close, what it does with unsaved edits in the form, and whether
+Unpublish belongs next to it. `ShPostUnifiedAPI` answers all three verbs already and the
+SH107 gate already covers them, so nothing is needed on the server — which is also why
+writing a page found it and why shipping it should be short.
+
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
@@ -1111,3 +1181,55 @@ under stale prose makes the page contradict itself. SH628 landed the instrument 
 reads Java, Spring Boot, Node and pnpm out of this repository's build files and fails
 any page — `README.md` included — that states another. It found three defects on its
 first run, and a fourth in SH499's own reader.
+
+## XXI Documentation the matrix still names (Block U)
+
+Block T closed every row its own tasks named and left this file's audit still holding
+two entries — one because the summary that scans it could not see the row, and one
+because that summary is typed rather than derived. They are the same defect at two
+altitudes, which is why they are one block rather than a footnote on the last one.
+
+The block's rule is SH338's: the count is fixed before the page is written. A page added
+under a summary that cannot count it is a page the next scan will not know exists.
+
+### XXI.1 A finding a reader cannot act on (SH652)
+
+`shio audit` reports eleven kinds of finding — `overflow`, `contrast`, `zero-size`,
+`collapsed`, `font-fallback`, `request-failed`, `console-error`, `no-landmark`,
+`no-heading`, the shape line and `region-script`. The published `cli` page lists the
+verb in its table and describes none of them, so the only way to learn what `collapsed`
+means is to read `cli/src/audit.mjs`.
+
+That inverts what the verb is for. An audit exists to close the perception loop (P9)
+without a human round trip, and a finding whose meaning is not written down needs
+exactly the round trip it was meant to remove — worse, from a person who has the source
+open.
+
+It survived Block R and Block T for a measurable reason rather than by oversight, and
+that reason is SH653: the tables have carried this row as 🔴 since `COVERAGE.md` shipped
+and the summary at the bottom never counted it, so every scan reported one fewer orphan
+than the tables held.
+
+Scope is one section on the `cli` page: an entry per rule saying what triggers it and
+what a reader does about it. The two that are not thresholds — the shape line and
+`region-script` — want a sentence each rather than a table row.
+
+### XXI.2 A count nobody derives is a count that hides work (SH653)
+
+`COVERAGE.md` ends with a summary — *"of 42 clusters, N are still not documented
+correctly"* — and every figure in it is typed. The file itself records that they do not
+reconcile: a count of every status-bearing row comes to 48 against the 40 the summary
+was authored against, and it says so in a note rather than resolving it, because
+reconciling the two is a decision about what a *cluster* is.
+
+The consequence is not cosmetic. The `shio audit` row (SH652) has been 🔴 in the tables
+since the file shipped and absent from the summary for just as long, so the one number
+anybody scans was wrong in the direction that hides an orphan. Block T flipped seven
+verdicts and every one of them was a hand edit to both the row and the total — seven
+more chances for the two to part company.
+
+Derive it. The tables are the data; the summary is a projection of them, and a script
+that recomputes it is a smaller thing than the note explaining why it cannot be trusted.
+The open question the task has to answer first is the one the note names: what counts as
+a cluster, since the row count and the authored count disagree by eight. Fix that, then
+the number follows, and SH652's page lands under a summary that can see it.
