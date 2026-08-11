@@ -481,6 +481,7 @@
 - **SH664** — The console-check fixture no longer declares the instance as its own front end, so the editor drive can select it; a test holds the fixture and the drive's exclusion together.
 - **SH667** — console-check gained --strict, which CI passes and which turns any editor-drive skip into a failure; ci-gates asserts both halves, and the debt SH238/SH659 carried is paid.
 - **SH662** — SH169 has its own ledger entry, so show answers and every per-id reader can see it; RK1051 had shipped and the blocker recorded here was stale.
+- **SH665** — The config registers react-hooks itself, so the lint loads; it gates in CI against a 33-finding suppressions baseline, and the one real defect it hid is fixed.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

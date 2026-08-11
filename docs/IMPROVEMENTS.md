@@ -427,37 +427,10 @@ leaving to whoever next notices the poll is not free.
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
 > building it opened (SH163–SH167, SH233, SH234). What is left here is what *finishing* it
-> turned up rather than what building it opened: the console's own lint, which has not run
-> since ESLint 10, and one friendly URL written two ways by two live writers. The other
-> five (SH235–SH237, SH239, SH240) have shipped.
+> turned up rather than what building it opened: one friendly URL written two ways by two
+> live writers, and thirteen rationale pointers that resolve to nothing under a clean gate.
+> The other five (SH235–SH237, SH239, SH240) have shipped.
 > Concept spec §10 has the original table.
-
-### XIV.21 The console's lint has not run since ESLint 10 (SH665)
-
-Measured while shipping SH654: `npx eslint` on an **untouched** file —
-`src/services/preview-token/preview-token.service.ts`, not in the diff — exits **2**
-without reporting a single rule. So does `pnpm lint` at the workspace root, which fails
-with `[ELIFECYCLE] Command failed with exit code 2` the moment it reaches `shio-react`.
-
-The cause is not the project's config. `shio-react/eslint.config.js` is ordinary flat
-config; the array-of-strings `plugins` key ESLint names belongs to
-`eslint-plugin-react-hooks@7.1.1`, whose `configs['recommended-latest']` still spells
-`plugins: ["react-hooks"]`. `package.json` pins `eslint@^10.8.0` beside it, and ESLint
-10 rejects that shape before reading a rule. Every file is refused for the same reason,
-which is why it reads as a config error rather than a finding, and why it is easy to
-walk past.
-
-What makes it a line rather than a fix in passing is the second half. `pnpm lint` is
-**not** one of the three gates SH579 names, and
-[`.github/workflows/suites.yml`](../../.github/workflows/suites.yml) does not run it —
-so nothing was ever going to report this, and there is no way to date when it broke. The
-React-hooks rules are the ones that catch a missing dependency array, exactly the class
-a source-reading test cannot see.
-
-Two honest exits, and picking between them is the task: pin the plugin to a release
-whose flat config ESLint 10 accepts, or drop `recommended-latest` for an explicit
-`plugins` object. Either way the gate question is the same one, and it is why this is
-filed: a lint that is not run is not a lint.
 
 ### XIV.22 One furl, two stored spellings, and a projection that concatenates (SH666)
 

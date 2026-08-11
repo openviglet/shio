@@ -771,3 +771,33 @@ job that runs unasked, the console walk runs on a pull request, the Java job pub
 count and never uses `-q`, and **no workflow names a branch this repository does not develop on** —
 the original defect was a *stale* branch name, which reads exactly like a configured one. Proved
 non-vacuous by restoring `push: branches: [main]`, which fires two of the five.
+
+### The console lint is a CI check, not a fourth gate (SH665)
+
+`pnpm lint` runs in the `pnpm test` job and is **not** one of the three SH579 gates: it has no
+`red-suites.json` ledger and a red lint is not a red suite. It gates in that job rather than beside
+it so a broken lint cannot hide a broken suite behind one red tick.
+
+It had not run since ESLint 10. `shio-react/eslint.config.js` extended
+`eslint-plugin-react-hooks@7.1.1`'s preset, whose flat config still spells
+`plugins: ["react-hooks"]`; ESLint 10 rejects an array there **before reading a rule**, so `eslint`
+exited 2 on **every** file — including ones nobody had touched — which reads as a config error
+rather than a finding and is easy to walk past. Nothing in CI ran it, so there is no way to date
+when it broke.
+
+**Registered, not pinned.** 7.1.1 is the newest stable and every release past it is a canary, so
+there is no version to move to; the config declares `plugins: { 'react-hooks': reactHooks }` and
+takes the *rules* from the preset, which keeps tracking the plugin's recommendation. When a release
+ships the object form this collapses back to `extends`.
+
+**Green today, red on anything new.** Repairing the config surfaced **36 findings in 29 files** —
+15 `set-state-in-effect`, 14 `only-export-components`, 1 `exhaustive-deps` — of which one was a real
+defect and is fixed (`use-discovery.ts` had a `let alive = true` with no cleanup returning it to
+false, so a response arriving after unmount still called `setState`; `prefer-const` was the tell,
+and `--fix` would have silenced it by making the flag `const`). The remaining **33** are in
+`shio-react/eslint-suppressions.json`, ESLint 10's own baseline: a named list rather than a ceiling,
+and `--prune-suppressions` removes an entry once its finding is fixed, so it only shrinks. Proved in
+both directions — a new `prefer-const` violation in `src/lib/utils.ts` takes the run to exit 1, and
+removing it returns it to exit 0 with the 33 still suppressed. The two remaining **warnings** are
+visible and do not fail: `--max-warnings` is left off deliberately, since any number there is the
+ceiling this baseline exists to avoid.

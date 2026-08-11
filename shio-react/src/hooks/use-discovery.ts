@@ -37,6 +37,10 @@ export function useDiscovery(): ShDiscoveryAPI | undefined {
       if (data !== cached) setData(cached);
       return;
     }
+    // SH665 — the flag needs the cleanup that clears it, and never had one. `prefer-const` was
+    // the tell: a guard that is only ever `true` guards nothing, so a response arriving after the
+    // component unmounted still called `setData`. The lint has reported this since the day it was
+    // written and nothing ran the lint.
     let alive = true;
     fetchDiscovery()
       .then((d) => {
@@ -45,6 +49,9 @@ export function useDiscovery(): ShDiscoveryAPI | undefined {
       .catch(() => {
         // discovery failed — keep undefined, components fall back to defaults
       });
+    return () => {
+      alive = false;
+    };
   }, [data]);
 
   return data;

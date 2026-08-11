@@ -55,6 +55,18 @@ jobs:
 
       - run: pnpm test
 
+      # SH665 — the console's own lint, which had not run since ESLint 10. Its config extended a
+      # preset whose `plugins` key ESLint 10 rejects, so `eslint` exited 2 on every file including
+      # untouched ones, and nothing in CI ran it to say so. It gates here rather than in `pnpm test`
+      # because it is a different question — the suites ask whether the code works, this asks
+      # whether it is the shape React needs — and because a red lint must not hide a red suite.
+      #
+      # The 33 findings that existed when it was repaired are in `shio-react/eslint-suppressions.json`,
+      # so this is green today and red on anything NEW. `--prune-suppressions` removes an entry once
+      # its finding is fixed, which is what makes the list only shrink.
+      - name: The console lint (new findings only — the rest are in the suppressions file)
+        run: pnpm lint
+
   # SH655 — the published documentation, checked on every push, because two of its three
   # instruments need no instance at all.
   #

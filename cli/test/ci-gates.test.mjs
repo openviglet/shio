@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -116,6 +116,45 @@ test("SH655: the docs suites have a checkout of the repository they read, and ar
       + "so it belongs in the every-push job beside the other two — a derived number nothing "
       + "recomputes in CI is the typed number again",
   );
+});
+
+/**
+ * SH665 — the console's lint runs, and it runs against a baseline rather than against nothing.
+ *
+ * <p>`shio-react/eslint.config.js` extended `eslint-plugin-react-hooks@7.1.1`'s preset, whose
+ * flat config still spells `plugins: ["react-hooks"]`. ESLint 10 rejects an array there **before
+ * reading a rule**, so `eslint` exited 2 on every file — including ones nobody had touched — and
+ * no workflow ran it, so there was no way to date when it broke. The rules it silenced are the
+ * ones that catch a missing dependency array, which no source-reading test can see.</p>
+ *
+ * <p>Three facts, because they break apart: the workflow runs it, the suppressions baseline is
+ * checked in, and the config registers the plugin itself instead of extending the preset that
+ * cannot load. A job that runs a lint whose config throws is the same silence with a green tick,
+ * and a gate with no baseline is one somebody deletes the first morning it is right.</p>
+ */
+test("SH665: the console lint gates, against a checked-in baseline", () => {
+  const suites = read("suites.yml");
+  assert.match(suites, /run: pnpm lint/,
+    "SH665: nothing ran the console's lint, which is why a config that threw on every file "
+      + "survived — the break is invisible until somebody types the command by hand");
+
+  const baseline = join(ROOT, "shio-react", "eslint-suppressions.json");
+  assert.ok(existsSync(baseline),
+    "SH665: gating without the baseline makes the job red on 33 findings that predate it, and a "
+      + "gate that is red on arrival is one people delete rather than pay down");
+
+  const suppressed = Object.values(JSON.parse(readFileSync(baseline, "utf8")))
+    .flatMap((rules) => Object.values(rules))
+    .reduce((total, each) => total + each.count, 0);
+  assert.ok(suppressed > 0,
+    "an empty baseline is the same file as no baseline, and would pass this either way");
+
+  // The config half. `extends: [reactHooks.configs[...]]` is exactly what threw, so the fix is
+  // gone the moment somebody puts it back — and the symptom is a lint that reports nothing.
+  const config = readFileSync(join(ROOT, "shio-react", "eslint.config.js"), "utf8");
+  assert.match(config, /plugins:\s*\{\s*'react-hooks':\s*reactHooks\s*\}/,
+    "SH665: the plugin has to be registered here, because 7.1.1 is the newest stable and every "
+      + "release past it is a canary — there is no version to pin to");
 });
 
 test("SH667: the console walk refuses to let the editor drive skip (SH238, SH659)", () => {
