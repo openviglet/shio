@@ -194,30 +194,6 @@ fallback was null in the deployment it demands, and a "flake" that was a scoping
 perception loop that cannot perceive itself is the failure this block should expect
 next.
 
-### IX.74 Twelve promises nothing carries (SH649)
-
-`roadkeep lint` reports twelve `body.promise` problems, all in `IMPROVEMENTS.md` §0.x —
-the positioning and non-goals sections — where prose names task ids to point at the
-epics they belong to. (They are not repeated here: naming them is the defect, and this
-section would be the thirteenth.)
-
-The rule's concern is not wording. An id in this project's own prefix is read as
-**claimed**, so `next-id` derives past it and a number nobody will ever use is burned;
-worse, a later reader follows the pointer and finds nothing carrying it.
-
-They are **pre-existing**, and not introduced by whichever task first surfaced them: the
-count is twelve with and without that change, so the rule arrived with a roadkeep
-upgrade rather than the prose changing. Worth saying, because the obvious reading of a
-newly-red lint is that the last commit did it.
-
-Two ways to close each, and they are different decisions. Where the prose means "the
-epic this belongs to", the fix is to name the id that actually carries a line. Where it
-means "for example", the fix is to spell the example outside the id prefix so nothing
-reads it as a claim.
-
-Small, mechanical, and worth doing before the next `add`: every one of these is a number
-the deriver has already skipped.
-
 ### IX.75 The docs gate runs on one laptop (SH655)
 
 `docs-vocabulary`, `docs-examples` and now `docs-stack` read `SHIO_DOCS_DIR`, defaulting
@@ -290,6 +266,31 @@ code-editor field to the same accident. `ShRenderPostTypes` holds the widget per
 so the map can be computed from it — and where it cannot, the lint comparing the two is
 the deliverable (SH322). SH478 is the same shape one subsystem over, and it cost a
 block.
+
+### IX.78 One entry, two ids, and the second is not in the file as far as anything can tell (SH662)
+
+`docs/CHANGELOG.md:150` opens `- **SH154** — **The lint sees a section reference** … and
+**<the second id>** — **the render digest composes the way the page does**`. Two tasks
+shipped together into one entry, which reads well and is invisible to every reader that
+keys on an id.
+
+**This section cannot spell that id, and that is the finding rather than a wording
+choice.** Writing it here is refused by the rule the defect trips: the gate reads it as
+a promise nothing carries, because as far as any reader can tell it is in neither file.
+`roadkeep show` says *"never written or was retired"* about a task three lines from the
+id it does recognise, and neither direction of the ledger's accounting sees it — not
+shipped, so neither asserted nor in debt.
+
+Measured: **one** entry has this shape. Ten others name a second id and all ten are
+prose references, which the rule leaves alone. A single repair, not a class — and the
+reason to make it rather than declare the id reserved is that reserved would be a lie:
+it shipped.
+
+The path needs no new verb. `record add` writes an entry for work that shipped and
+`record amend` rewrites a sentence in place, so the second task gets its own entry and
+SH154's keeps its half. What must be decided by hand is where the split falls: the entry
+argues both defects were *one* pattern, blind to what SH95 introduced, and that belongs
+in both halves.
 
 ## X. Content as files (Block I)
 

@@ -32,12 +32,12 @@
 ## Block N — Realignment of what already shipped
 
 - ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P ✅) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
-- 📋 **SH649** (deps: —) **Twelve improvements sections name task ids that no line carries, so the next add derives past them** — The positioning sections cite epic ids in prose; roadkeep reads an unspent id in its own prefix as claimed, which is a numbering hazard rather than a wording one. → §IX.74
 - 📋 **SH655** (deps: SH499 ✅, SH628 ✅) **The three docs instruments cannot run in CI, because nothing checks out the repository they read** — Their default path is one machine's drive letter and the conformance job clones only this repo, so the gate proving the published pages never runs there. → §IX.75
 - 📋 **SH656** (deps: —) **shio.git.* is bound, shipped with placeholder values, and read by nothing** — A configuration class no code consumes still declares real keys to the property vocabulary, so a page could document a setting that does nothing and pass the gate. → §IX.76
 - 📋 **SH657** (deps: —) **Two code-editor fields are off the renderer's raw-text list, so their JSON is entity-escaped** — RAW_TEXT_FIELDS says it holds the Ace Editor CSS/JavaScript fields and holds four of six - Theme.TOKENS and SiteScripts.SCRIPTS are hand-omitted. → §IX.77
 - ⏳ **SH659** (deps: SH238 ✅) **Nothing drives the Universal Editor's handshake, panel or field round trip** — SH238's ledger entry closed the save-back and recorded the drive as waiting on Block P, which shipped - so the open line is a duplicate id and the drive is unexercised. → §XIV.18
 - 📋 **SH660** (deps: —) **Opening an uploaded File post issues two 404s the console swallows, so the widget resolves no path** — file.widget.tsx passes the FILE field to /v2/post/xp/{id} and /v2/folder/{id}, but SH38 stores a path there, so both lookups miss and .catch hides it. → §XIV.19
+- 📋 **SH662** (deps: —) **A ledger entry carrying two shipped ids hides the second from every reader that keys on one** — SH169 shipped inside SH154's entry, so show answers never written, lint calls a prose mention a broken promise, and no ledger reader counts it either way. → §IX.78
 
 ## Block O — The human half (the console the curator uses)
 

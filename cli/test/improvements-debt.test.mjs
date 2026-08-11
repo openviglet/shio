@@ -186,6 +186,58 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
     );
   });
 
+  /**
+   * SH649 — an id named in the rationale is carried by a line, recorded in the ledger, or declared
+   * spoken for. Nothing else.
+   *
+   * <p>The fourth possibility is the defect: a number this project cites and never writes, which
+   * `next-id` derives past and burns, and which a reader follows to nothing. Twelve of them had
+   * accumulated in the positioning sections, all pointing at epics — `SH74`'s spec, `SH62`'s Media
+   * Library, the retired GraalJS range in the non-goals — and every one was a live hazard rather
+   * than a wording nit.</p>
+   *
+   * <p><b>Held here as well as in `roadkeep lint` on purpose.</b> That gate is not one of this
+   * project's three: it runs when somebody types it. `pnpm test` runs on every push, so the check
+   * that a reservation is *declared* rather than merely intended belongs where the build can see
+   * it — and this file already reads all three documents, so it costs one more pass over text it
+   * has in memory.</p>
+   *
+   * <p>The one exemption is deliberate and narrow: an id the ledger records inside <b>another
+   * entry's</b> sentence is neither carried nor reserved, and declaring it reserved would be a lie
+   * about work that shipped. That is its own finding, and while it is open this reader must not
+   * force the lie — so a ledger mention counts, and the roadmap line for it is what keeps the case
+   * visible.</p>
+   */
+  test("SH649: every id the rationale names is carried, recorded, or declared reserved", () => {
+    const toml = readFileSync(join(ROOT, "roadkeep.toml"), "utf8");
+    const reservedBlock = /reserved_ids\s*=\s*\[([^\]]*)\]/.exec(toml)?.[1] ?? "";
+    const reserved = new Set([...reservedBlock.matchAll(/SH\d+/g)].map(([id]) => id));
+    // Anywhere in the ledger, not only as an entry's leading id: a co-shipped task is recorded,
+    // however badly, and this reader's job is not to re-litigate that.
+    const mentioned = new Set([...changelog.matchAll(/SH\d+/g)].map(([id]) => id));
+
+    const unaccounted = [...new Set([...improvements.matchAll(/\bSH\d+\b/g)].map(([id]) => id))]
+      .filter((id) => !open.has(id) && !shipped.has(id) && !mentioned.has(id) && !reserved.has(id))
+      .sort();
+
+    assert.deepEqual(
+      unaccounted,
+      [],
+      "SH649: the rationale names an id that no line carries, no ledger entry mentions and "
+        + "`roadkeep.toml`'s `reserved_ids` does not declare. `next-id` derives past it, so the "
+        + "number is burned and a reader following the pointer finds nothing. Add the id to "
+        + "`reserved_ids` if the project spoke for it and will never write it as a line, or name "
+        + "the id that actually carries the work.\n"
+        + `  unaccounted: ${unaccounted.join(" ")}`,
+    );
+
+    assert.ok(
+      reserved.size >= 9,
+      `only ${reserved.size} reservation(s) read from roadkeep.toml — the declaration moved, and `
+        + "this check passes vacuously the moment it cannot find it",
+    );
+  });
+
   test("SH356: the counts are printed, and the reader is not vacuous", () => {
     const all = sections();
     const withIds = all.filter((each) => each.ids.length);

@@ -123,7 +123,8 @@ route around with an `Edit` the hook denies anyway. Where each removed kind actu
 | `> ✅ **SHxxx** shipped → CHANGELOG` | the ledger entry `ship` already wrote | `roadkeep show <id>` |
 | Block descriptions, lineage, the design behind a block | IMPROVEMENTS.md at the `→ §` pointer | `roadkeep brief <id>` |
 | Priority queue, "current focus", suggested block order | `priority` in [`roadkeep.toml`](../../roadkeep.toml) | `roadkeep pick` / `brief`, which name the tier that fired |
-| Numbering history, reserved slots, what happened to a retired id | `git log` | `roadkeep gaps` — 36 gaps, 27 resolved against the commit that removed them |
+| Numbering history, what happened to a retired id | `git log` | `roadkeep gaps` — 36 gaps, 27 resolved against the commit that removed them |
+| Which ids are spoken for and will never be a line | `reserved_ids` in `roadkeep.toml` (SH649) | the deriver skips them; `lint` stops calling every mention a hazard |
 | Marker legend, per-block counts | `[markers]` in `roadkeep.toml` | `roadkeep stats` |
 
 **The lesson is the one SH341 measured, one level up.** SH341 found the *lines* were 142 words
@@ -132,6 +133,18 @@ because `lint` reads task lines and prose-file sections and a blockquote is neit
 discipline cannot come from the linter here — it comes from never writing a sentence into the
 file that a verb would not have written, and from **asking instead of reading**: every count in
 this section came from `stats`, `gaps` and `show`, and not one of them needed the file open.
+
+**An epic's id is a reservation, and it has to be declared to be one (SH649).** This project spells
+whole programmes of work in one token — `SH74`'s spec, `SH62`'s Media Library, `SH19`'s console
+migration — and ships every slice under another number, so the epic id is cited constantly and
+written as a line never. Left undeclared that is a real hazard rather than a wording nit: the
+deriver reads an id in this prefix as *claimed*, steps past it, and burns it, while a reader
+following the pointer finds nothing. `reserved_ids` in `roadkeep.toml` says which nine those are,
+with the reason each family exists — the retired GraalJS range and the absorbed marketplace epic
+are there too, because a non-goal that stops naming what it refuses loses its argument's address.
+**Declaring is not silencing:** a genuine typo still fails, because it is not on the list, and
+`improvements-debt.test.mjs` holds the same rule inside `pnpm test`, which runs on every push where
+`roadkeep lint` runs when somebody types it.
 
 **Counting the backlog is `roadkeep stats` (or `--json`), and `roadkeep audit` names every
 marker-bearing line it could not read.** Both read the format from `roadkeep.toml`, so neither

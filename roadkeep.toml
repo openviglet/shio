@@ -15,6 +15,30 @@
 
 prefix = "SH"
 
+# Ids this project spoke for and deliberately never wrote as a line (SH649, closing a gap
+# roadkeep itself filed as RK1031). Two families, and neither is a wording problem:
+#
+#   **Epics that own a sub-range.** SH62 (Media Library), SH67, SH74 (the agent-native CMS,
+#   whose spec is docs/specs/SH74-agent-native-cms.md) and SH19 (the AngularJS → React console
+#   migration, decomposed into SH56-SH61 and others). The number exists so a reader can name
+#   the whole in one token; the work ships under the sub-ids. SH19 is the clearest case — the
+#   ledger's own entry says "tracked as SH19 in ROADMAP" and every slice of it landed as
+#   something else.
+#
+#   **Ranges retired with their block.** SH17/SH18 are the dropped GraalJS server-side template
+#   engine (the former Block D), and SH23 with SH27-SH31 the absorbed marketplace epic. Both are
+#   cited in the non-goals, which is where a decision NOT to build something has to keep its id
+#   or the argument loses its address.
+#
+# Declared rather than reworded, because the alternative the lint suggests — spell the example
+# outside the prefix — would make the non-goals stop naming what they refuse. What the
+# declaration buys is the thing the lint was right about: `next-id` skips them because they ARE
+# taken, the gate stops calling every mention a hazard, and a genuine typo still fails, because
+# it is not on this list.
+reserved_ids = [
+  "SH17", "SH18", "SH19", "SH23", "SH27", "SH31", "SH62", "SH67", "SH74",
+]
+
 # Shio numbers its rationale by a hand-kept outline (§XVI.47), not by task id. Migrating a
 # live outline is a separate decision from adopting the tool, so the scheme follows the
 # file rather than the file following the scheme.
