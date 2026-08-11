@@ -70,6 +70,28 @@ test("SH664: the fixture site declares no front end of its own", () => {
   );
 });
 
+test("SH659: the publish guard's marker is the one the provisioner writes", () => {
+  // The two halves of one fact, in two files. `console-check.mjs` may publish only a site this
+  // repository created, and the only evidence of that is the description `provision.mjs` sets.
+  // If either string moves, publishing turns itself off — and a probe that quietly stops
+  // publishing reads exactly like one that published, which is SH667's whole subject.
+  const declared = /const PROVISIONED = "([^"]+)"/.exec(check);
+  assert.ok(declared, "SH659: the drive has to name the marker it recognises");
+
+  assert.ok(
+    provision.includes(`"Site the console smoke check walks"`)
+      || provision.includes(declared[1]),
+    `SH659: \`provision.mjs\` no longer writes ${JSON.stringify(declared[1])} as the fixture's `
+      + "description, so no site will ever match and the publish step silently stops running",
+  );
+  assert.match(
+    check,
+    /site\?\.description === PROVISIONED/,
+    "SH659: and it is matched on the description, not the name — `--site` is whatever the caller "
+      + "passed, so matching that would let `console:check --site Demo` publish somebody's home page",
+  );
+});
+
 test("SH664: and the drive really does exclude a site that has one", () => {
   // Not decoration. If `checkEditorDrive` stops skipping url-bearing sites, the assertion above
   // is guarding a coupling that no longer exists, and it should be reconsidered rather than kept

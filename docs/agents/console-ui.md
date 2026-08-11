@@ -493,9 +493,25 @@ site whose home is absent frames the teaching 404, which answers **200** and car
 page. The probe requires both the props and the bridge tag, and skips when no site on the instance
 has them — a fixture gap is not a defect.
 
-The round trip deliberately stops at the pending change: `universal-editor-save-back` already proves
-the PATCH it becomes, and a smoke check must not edit anybody's content. Publish is the remainder,
-for the same reason — it mutates a post.
+The round trip stops at the pending change: `universal-editor-save-back` already proves the PATCH it
+becomes, and a smoke check must not edit anybody's content.
+
+**Publish is driven too, and only on a site this repository made (SH659).** The reason it was left
+out was right and still is — the fix is not to relax it but to give it a boundary. SH664 made the
+site `provision.mjs` creates the drive's own target, so there is now a page we own end to end, and
+publishing *that* is not editing anybody's content. The guard reads the **description**
+`provision.mjs` writes, never the `--site` the caller passed: `console:check --site Demo` must not
+publish somebody's home page because they named it. Candidates are also **ordered** so ours is tried
+first — before this the winner was whichever site the API listed earliest, which on a developer's
+instance is a real one. Ordering and not filtering: an instance with no fixture still gets the
+drive, it just does not get publish.
+
+Why it is worth a step of its own: `persist(true)` is a different path from the one already covered
+— it PATCHes with `publish: true`, and publishes the selected post outright when nothing was edited.
+It is asserted on the **toast**, not on the change count, because `persist` clears the pending map
+on success and on failure alike. Under `--strict` a skipped publish is a failure for SH667's reason,
+and `test/e2e-fixture-site.test.mjs` holds the marker against the file that writes it — a marker
+that drifts turns publishing off silently, which reads exactly like a run that published.
 
 **The fixture had to stop declaring a front end before any of that could run on CI's own site
 (SH664).** `provision.mjs` created the console-check site with `url: API` — the instance's own

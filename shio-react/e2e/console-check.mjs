@@ -278,8 +278,13 @@ async function checkEditorDrive(context, sites) {
 
   // A site the renderer will actually draw, with fields the editor can select. Asked of the
   // renderer because nothing else can answer it: `url` being empty is necessary and not sufficient.
+  //
+  // Ours first (SH659). Every site here is a candidate, and until this the winner was whichever
+  // the API listed earliest — on a developer's instance that is somebody's real site, and the
+  // publish step below may only touch content this repository created. Ordering rather than
+  // filtering: an instance that has no fixture still gets the drive, it just does not get publish.
   let target = null
-  for (const site of sites) {
+  for (const site of [...sites].sort((a, b) => Number(isOurs(b)) - Number(isOurs(a)))) {
     if (site.url && site.url.trim()) continue
     try {
       const res = await fetch(`${API}/preview/${encodeURIComponent(site.name)}/?editor=true`,
@@ -371,6 +376,40 @@ async function checkEditorDrive(context, sites) {
       probe.warnings.push("the first editable prop is declared read-only, so the round trip was "
         + "not driven on this instance")
     }
+
+    // 4. Publish — the half SH659 left, and the reason it left it has a boundary now (SH659).
+    //
+    // The reason was right and still is: *a smoke check must not edit anybody's content*. What
+    // changed is that SH664 made the site `provision.mjs` creates the drive's own target, so there
+    // is now a page this repository owns end to end. Publishing that one is not editing anybody's
+    // content; publishing whatever the API listed first is, which is why the guard reads the
+    // provisioner's description and not the `--site` the caller passed.
+    //
+    // It is also the only step that proves the button: `checkEditorSaveBack` runs the PATCH a
+    // *pending change* becomes, and `persist(true)` is a different path — it patches with
+    // `publish:true`, and publishes the selected post outright when nothing was edited.
+    if (!isOurs(target)) {
+      probe.publishSkipped = `'${target.name}' was not created by e2e/provision.mjs, and nothing `
+        + "here may publish a site somebody else is using — run `console:provision` first"
+    } else if (!probe.pendingChange) {
+      probe.publishSkipped = "no pending change reached the console, so there is nothing to publish "
+        + "and a green publish here would be green over an empty batch"
+    } else {
+      const publish = page.getByRole("button", { name: /^(Publicar|Publish)$/ })
+      await publish.click({ timeout: 10_000 })
+      // The toast, not the button's own state: `persist` clears the pending map in the same tick
+      // it succeeds *and* in the tick it fails, so an empty change count says nothing about which.
+      const published = await page.getByText(/^(Publicado|Published)$/).waitFor(
+        { state: "visible", timeout: 15_000 }).then(() => true).catch(() => false)
+      if (!published) {
+        probe.ok = false
+        probe.errors.push("SH659: the editor's Publish reported nothing — `persist(true)` is the "
+          + "one path `universal-editor-save-back` does not cover, since it patches with "
+          + "`publish:true` rather than saving a draft")
+      } else {
+        probe.published = true
+      }
+    }
   } catch (e) {
     probe.ok = false
     probe.errors.push(`could not drive the editor: ${String(e).split("\n")[0]}`)
@@ -382,6 +421,21 @@ async function checkEditorDrive(context, sites) {
 
 /** The bridge's own script path — the tag `ShEditorBridge.inject` appends (SH185). */
 const ShEditorBridgeScript = "/preview/_shio/editor.js"
+
+/**
+ * What `e2e/provision.mjs` writes as the fixture site's description, and the only way this file
+ * can tell a site **this repository created** from one somebody is using (SH659).
+ *
+ * <p>The description and not the name: `--site` is whatever the caller passed, so matching on it
+ * would let `console:check --site Demo` publish somebody's home page. The description is written
+ * by our own provisioner and by nothing else.</p>
+ *
+ * <p>`test/e2e-fixture-site.test.mjs` holds the two strings together — a marker that drifts from
+ * the file that writes it silently turns publishing off, which reads exactly like a clean run.</p>
+ */
+const PROVISIONED = "Site the console smoke check walks"
+
+const isOurs = (site) => site?.description === PROVISIONED
 
 async function main() {
   const { site, routes } = await discoverRoutes(flag("site", process.env.SHIO_SITE))
@@ -485,11 +539,19 @@ async function main() {
     driveProbe.errors.push(
       `--strict: the drive must run, and it skipped — ${driveProbe.skipped}`)
   }
+  // The publish half is skippable for a good reason on a laptop and for none in CI, where the
+  // fixture is provisioned one step earlier and the ordering above makes it the target (SH659).
+  if (STRICT && !driveProbe.skipped && driveProbe.publishSkipped) {
+    driveProbe.ok = false
+    driveProbe.errors.push(
+      `--strict: the drive reached the editor and did not publish — ${driveProbe.publishSkipped}`)
+  }
   report.probes.push(driveProbe)
   console.log(`${driveProbe.ok ? "ok  " : "FAIL"} ${driveProbe.name.padEnd(30)} `
     + (driveProbe.skipped
       ? `skipped: ${driveProbe.skipped}`
-      : `${driveProbe.site} — ${driveProbe.props} editable prop(s)`))
+      : `${driveProbe.site} — ${driveProbe.props} editable prop(s), `
+        + (driveProbe.published ? "published" : `publish skipped: ${driveProbe.publishSkipped}`)))
   for (const e of driveProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   await browser.close()

@@ -19,7 +19,7 @@
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
 - 💭 **SH226** (deps: SH200 ✅) **A trashed folder is excluded by convention, not by invariant** — The trashed-folder exclusion lives in one repository's finders, and ids also resolve polymorphically through another that knows nothing about it. → §XII.10
-- 💭 **SH648** (deps: SH223 ✅, SH200 ✅) **A deleted site cannot be restored, because only its content passes through the trash** — Trashing the site row needs a deleted_date of its own plus an answer for the name it still occupies, which is a schema change and a teaching error rather than a service fix. → §XII.13
+- 💭 **SH648** (deps: SH200 ✅, SH223 ✅) **A deleted site cannot be restored, because only its content passes through the trash** — Trashing the site row needs a deleted_date of its own plus an answer for the name it still occupies, which is a schema change and a teaching error rather than a service fix. → §XII.13
 - 💭 **SH650** (deps: SH225 ✅) **Nothing stops a fetch-type change from breaking authorization** — SH225 made the ACL walk independent of ShFolder.parentFolder being EAGER, but that independence is a code shape nothing checks. → §XII.16
 
 ## Block M — Token economy (measured)
@@ -30,8 +30,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P ✅) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
-- ⏳ **SH659** (deps: SH238 ✅) **Nothing drives the Universal Editor's handshake, panel or field round trip** — SH238's ledger entry closed the save-back and recorded the drive as waiting on Block P, which shipped - so the open line is a duplicate id and the drive is unexercised. → §XIV.18
 - 📋 **SH662** (deps: —) **A ledger entry carrying two shipped ids hides the second from every reader that keys on one** — The second id shipped inside SH154's entry, so show answers never written, lint calls a prose mention a broken promise, and no ledger reader counts it either way. → §IX.78
 - 📋 **SH665** (deps: —) **`pnpm lint` exits 2 on every file, so the console has been linted against nothing** — eslint-plugin-react-hooks 7.1.1 declares `plugins` as an array of strings, which ESLint 10 flat config refuses before any rule runs, and no workflow runs the script that would say so. → §XIV.21
 - 📋 **SH666** (deps: —) **Two live writers store a furl with and without a leading slash, and one address projection emits both** — setFurl guarantees the slash and create/copy store it bare, so the export builds `post:site//page` for every agent-declared address and nothing reads the two forms as one. → §XIV.22

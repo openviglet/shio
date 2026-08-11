@@ -248,7 +248,16 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
     // SH356 counted 45 over-long, 42 stale, 9 orphaned and 3 duplicated anchors in this file. A
     // reader that parsed none of it would agree with all of that and with anything else.
     assert.ok(all.length > 50, `only ${all.length} section(s) parsed — the heading shape changed`);
-    assert.ok(withIds.length > 20, `only ${withIds.length} section(s) name a task`);
+    // The floor moves down as blocks close, and it is here to catch a reader that parsed nothing
+    // — not to track how much is open. It first fired for that second reason: closing Block U and
+    // dropping a stale section took the count from 21 to 19 against a floor of 20, which is the
+    // file being correct rather than the reader being broken. Tied to the roadmap instead, where
+    // one pointer per open line is the invariant the section above already asserts.
+    assert.ok(
+      withIds.length >= pointed.size,
+      `only ${withIds.length} section(s) name a task while the roadmap points at ${pointed.size}`,
+    );
+    assert.ok(withIds.length > 5, `only ${withIds.length} section(s) name a task`);
     assert.ok(shipped.size > 100, `only ${shipped.size} shipped id(s) read from the ledger`);
     assert.ok(open.size > 20, `only ${open.size} open id(s) read from the roadmap`);
   });

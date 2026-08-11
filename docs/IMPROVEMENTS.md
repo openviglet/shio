@@ -451,54 +451,11 @@ leaving to whoever next notices the poll is not free.
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
-> building it opened (SH163–SH167, SH233, SH234). What is left here is the one lesson worth
-> carrying forward (§XIV.4) and the one task that **finishing** it opened and is still open
-> (§XIV.15: the editor nothing drives, which needs a front end to embed before it can be driven
-> end to end). The other five (SH235–SH237, SH239, SH240) have shipped.
+> building it opened (SH163–SH167, SH233, SH234). What is left here is what *finishing* it
+> turned up rather than what building it opened: the console's own lint, which has not run
+> since ESLint 10, and one friendly URL written two ways by two live writers. The other
+> five (SH235–SH237, SH239, SH240) have shipped.
 > Concept spec §10 has the original table.
-
-### XIV.15 The Universal Editor is driven by nothing (SH238)
-
-SH233's defect — a save-back that could not authenticate — lived behind a comment that described
-the mechanism *incorrectly*, and it survived because there is no test anywhere in this repository
-that drives the Universal Editor. Every test either builds the request in Java or mocks the axios
-client, and both of those agree with the comment: they cannot see that a browser attaches a
-same-origin cookie regardless of `withCredentials`.
-
-This is Block O's lesson recurring in the one place the block did not reach. **The one fact the
-feature rests on has since been checked** (shipped — see CHANGELOG Block N): SH182's harness runs
-the editor's PATCH from a page the console served and fails on the 403 symptom, and a full-chain
-MockMvc test pins the same precedence through the real filter order, verified by restoring the
-defect and watching it fail.
-
-What is still open is the editor *itself*, and it is genuinely blocked: it is an
-`<iframe src={site.url}>`, so exercising the properties panel, a field's round trip and the publish
-action needs a front end to embed — which is Block P. The thing to carry forward is why the cheap
-half was worth doing first: the alternative was discovering the next plumbing defect the way this
-one was discovered, by reading the code and noticing that a comment is wrong.
-
-### XIV.18 The editor is embeddable now, and the blocker outlived the block (SH659)
-
-SH238 shipped the one fact the save-back rests on — a PATCH from the console origin
-carrying a `Key` header authenticates as the token — and recorded the rest as blocked:
-the editor is an `<iframe src={site.url}>`, so driving the panel, a field and the
-publish needs a front end to embed, "which is Block P". Block P shipped. The blocker was
-stale when it was written: SH183/SH184 made a site with no configured `url` fall back to
-**Shio's own renderer**, and `?editor=true` asks that renderer for the SH185 bridge. The
-thing to embed ships with the product.
-
-What is unexercised is the protocol. `sh:ready`, `sh:element-selected` and
-`sh:content-changed` are three messages nothing observes, so a bridge that never loaded
-and one that works look identical to every gate — SH233's shape exactly, where a comment
-described the mechanism wrongly and no test could disagree.
-
-Two conditions a driver must discover rather than assume. **A page worth framing**: an
-empty `url` is necessary and not sufficient, since a site whose home is absent frames
-nothing, so the site is chosen by asking the renderer for a page carrying editable
-props. **One origin**: `ShRenderAPI.originOf` falls back to the server's own origin when
-a request carries no `Origin` header, and an iframe navigation carries none — right in
-production, where console and renderer are one origin, and fatal across a dev proxy,
-where the bridge posts to a window that is not its parent.
 
 ### XIV.21 The console's lint has not run since ESLint 10 (SH665)
 
