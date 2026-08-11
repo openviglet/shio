@@ -549,6 +549,33 @@ Worth checking in the same pass: whether `GET /` serves the console, since that 
 the editor currently frames for this site, and a console rendered inside its own iframe
 is a symptom somebody would report as something else entirely.
 
+### XIV.21 The console's lint has not run since ESLint 10 (SH665)
+
+Measured while shipping SH654: `npx eslint` on an **untouched** file —
+`src/services/preview-token/preview-token.service.ts`, not in the diff — exits **2**
+without reporting a single rule. So does `pnpm lint` at the workspace root, which fails
+with `[ELIFECYCLE] Command failed with exit code 2` the moment it reaches `shio-react`.
+
+The cause is not the project's config. `shio-react/eslint.config.js` is ordinary flat
+config; the array-of-strings `plugins` key ESLint names belongs to
+`eslint-plugin-react-hooks@7.1.1`, whose `configs['recommended-latest']` still spells
+`plugins: ["react-hooks"]`. `package.json` pins `eslint@^10.8.0` beside it, and ESLint
+10 rejects that shape before reading a rule. Every file is refused for the same reason,
+which is why it reads as a config error rather than a finding, and why it is easy to
+walk past.
+
+What makes it a line rather than a fix in passing is the second half. `pnpm lint` is
+**not** one of the three gates SH579 names, and
+[`.github/workflows/suites.yml`](../../.github/workflows/suites.yml) does not run it —
+so nothing was ever going to report this, and there is no way to date when it broke. The
+React-hooks rules are the ones that catch a missing dependency array, exactly the class
+a source-reading test cannot see.
+
+Two honest exits, and picking between them is the task: pin the plugin to a release
+whose flat config ESLint 10 accepts, or drop `recommended-latest` for an explicit
+`plugins` object. Either way the gate question is the same one, and it is why this is
+filed: a lint that is not run is not a lint.
+
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody

@@ -35,6 +35,7 @@
 - ⏳ **SH659** (deps: SH238 ✅) **Nothing drives the Universal Editor's handshake, panel or field round trip** — SH238's ledger entry closed the save-back and recorded the drive as waiting on Block P, which shipped - so the open line is a duplicate id and the drive is unexercised. → §XIV.18
 - 📋 **SH662** (deps: —) **A ledger entry carrying two shipped ids hides the second from every reader that keys on one** — The second id shipped inside SH154's entry, so show answers never written, lint calls a prose mention a broken promise, and no ledger reader counts it either way. → §IX.78
 - 📋 **SH664** (deps: —) **The provisioned fixture site declares the instance as its own front end, so the editor probe never runs** — provision.mjs sets url to the API origin, which siteDestination treats as an external front end - the drive skips in CI and the console's open-site link points at Shio. → §XIV.20
+- 📋 **SH665** (deps: —) **`pnpm lint` exits 2 on every file, so the console has been linted against nothing** — eslint-plugin-react-hooks 7.1.1 declares `plugins` as an array of strings, which ESLint 10 flat config refuses before any rule runs, and no workflow runs the script that would say so. → §XIV.21
 
 ## Block O — The human half (the console the curator uses)
 
