@@ -63,7 +63,6 @@
 
 ## Block T — End-user documentation, round two (the curator's half)
 
-- 📋 **SH626** (deps: —) **Outbound webhooks are documented only from the consumer side** — SH12 shipped per-site subscriptions and a signed payload, and no page describes the subscription, the payload shape or how to verify the signature. → §XX.4
 - 📋 **SH627** (deps: —) **Content i18n has no page, so the locale axis is undiscoverable** — SH53 shipped linked translations, CDA locale and the checked locale segment, and a reader meets the segment first in a URL nobody explained. → §XX.5
 - 📋 **SH628** (deps: —) **The developer guide names a stack this product left, and neither the agent surface nor the CLI** — It still lists Elasticsearch 9.3.3, so the page a contributor reads first is actively misleading rather than merely thin. → §XX.6
 - 📋 **SH629** (deps: —) **The image epic's operational half is undocumented** — The transform parameters are on the render page and the result cache, the dimension and format limits and signed-URL configuration are the operator's questions, answered nowhere. → §XX.7

@@ -1114,24 +1114,6 @@ stale prose goes first.
 Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
 page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
 
-### XX.4 The webhook is documented from the side that receives it (SH626)
-
-SH12 shipped outbound webhooks on publish, unpublish and delete, with per-site
-subscriptions and a signed payload. What is published is the *consumer* half, in
-`nextjs-starter § Environment` — a variable to set in somebody else's app. Nothing
-describes how to subscribe, what the payload contains, or how to verify the signature.
-
-The signature is the part that makes this more than a thin page. An integrator who
-cannot verify it either skips verification — turning a webhook into an unauthenticated
-write trigger reachable by anyone who guesses the URL — or abandons the feature. Both
-outcomes are worse than the feature not existing, and both follow directly from the
-absence.
-
-The page also has to say what it does **not** guarantee: delivery ordering, retry
-behaviour, and whether a consumer must be idempotent. Those are the questions an
-integrator hits in production, and an answer of "unspecified" is a legitimate one that
-still has to be written.
-
 ### XX.5 The locale segment a reader meets before anything explains it (SH627)
 
 SH53 shipped content i18n: the locale axis, linked translations, `?locale` on the CDA,
