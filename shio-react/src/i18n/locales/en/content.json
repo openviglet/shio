@@ -14,6 +14,8 @@
   "content.newPostType": "New Post Type",
   "content.publish": "Publish",
   "content.unpublish": "Unpublish",
+  "content.publishSuccess": "Published — the page is live",
+  "content.unpublishSuccess": "Unpublished — the page is no longer live",
   "content.saveDraft": "Save Draft",
   "content.preview": "Preview",
   "content.export": "Export",

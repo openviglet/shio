@@ -553,6 +553,7 @@
 - **SH542** — All nine use import.meta.dirname and a repo walk keeps them there, so Vite's native config loader becoming the default cannot fail the console build.
 - **SH574** — The four replaced packages are gone from every Java source, and ShJacksonVersionLintTest holds the rule: imports, pom declarations, and the annotations exemption's own vacuity.
 - **SH241** — Half of the defect had been fixed by SH579's suites.yml, which runs the JS workspace and conformance on push; what was still dispatch-only is the Java suite and the console walk, so two of the three gates agents.md names never ran unasked. The Java job is clean test from a clone, which is the only place SH282's stale-but-valid class can be caught - the local lint protects the person committing and cannot protect the branch. It publishes surefire's own Results line as the run's headline and tees the log, because every alternative is a number somebody derived by hand. The console walk goes on pull request rather than push: it boots a jar and drives Chromium, and a gate that expensive on every push is the one people cancel.
+- **SH654** — Publish and Unpublish sit beside Save on the post edit screen; publish saves the form first, and Unpublish reads whether a live row exists rather than the edited row's state.
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 

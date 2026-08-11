@@ -56,6 +56,26 @@ export class ShPostUnifiedService {
     await axios.delete(`/v2/post-unified/${id}`)
   }
 
+  /**
+   * Promote the draft to the live snapshot (SH654).
+   *
+   * The server reads the stored `DRAFT` row, so a caller with unsaved form state must
+   * {@link update} first — publishing what the curator did not see is the failure this
+   * split exists to make impossible to write by accident.
+   *
+   * Throws where no draft row exists (`Draft not found`), which is why the edit screen
+   * only offers the button while it is editing one.
+   */
+  async publish(id: string): Promise<ShPostUnified> {
+    const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/publish`)
+    return response.data
+  }
+
+  /** Delete the live snapshot, leaving the draft to go on being edited (SH654). */
+  async unpublish(id: string): Promise<void> {
+    await axios.post(`/v2/post-unified/${id}/unpublish`)
+  }
+
   /** Revert the draft to the last published snapshot (SH14). */
   async restore(id: string): Promise<ShPostUnified> {
     const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/restore`)

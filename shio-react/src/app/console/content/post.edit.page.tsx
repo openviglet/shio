@@ -6,7 +6,7 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Clock, Eye, History, Loader2, Save, Sparkles } from "lucide-react"
+import { Clock, Eye, EyeOff, History, Loader2, Save, Sparkles, Upload } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -33,23 +33,36 @@ export default function PostUnifiedEditPage() {
   const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [isPreviewing, setIsPreviewing] = useState(false)
+  /**
+   * A PUBLISHED row exists — i.e. the page is live (SH654). Distinct from `state`, which
+   * says which row this form is editing: a post published and then edited has both rows,
+   * so `state` is DRAFT while the site is serving it. Deciding Unpublish off `state` would
+   * hide the button in exactly the case a curator needs it.
+   */
+  const [isLive, setIsLive] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
-      let unified: ShPostUnified
-      let resolvedState: ShPostState = "DRAFT"
-      try {
-        unified = await unifiedService.get(postId, "DRAFT")
-      } catch {
-        unified = await unifiedService.get(postId, "PUBLISHED")
-        resolvedState = "PUBLISHED"
-      }
+      // Both rows in one round trip. Which one is editable decides `state`, as before;
+      // whether the PUBLISHED row exists is the separate fact Unpublish needs (SH654),
+      // and the old sequential try/catch could not report it when a draft was found.
+      const [draft, published] = await Promise.allSettled([
+        unifiedService.get(postId, "DRAFT"),
+        unifiedService.get(postId, "PUBLISHED"),
+      ])
+      const editable = draft.status === "fulfilled" ? draft.value : null
+      const live = published.status === "fulfilled" ? published.value : null
+      const unified: ShPostUnified | null = editable ?? live
+      if (!unified) return
+      const resolvedState: ShPostState = editable ? "DRAFT" : "PUBLISHED"
 
       setPost(unified)
       setState(resolvedState)
+      setIsLive(live !== null)
       setData(unified.data || {})
 
       const items: { label: string; href?: string }[] = [
@@ -120,6 +133,42 @@ export default function PostUnifiedEditPage() {
     }
   }
 
+  /**
+   * Save first, then publish (SH654). The server publishes the *stored* draft, so
+   * publishing without the save would put a version on the site that the curator
+   * never saw — draft-default (P7) is only meaningful if the deliberate act promotes
+   * what is on screen.
+   */
+  async function handlePublish() {
+    setIsPublishing(true)
+    try {
+      const saved = await unifiedService.update(postId, { data, state })
+      await unifiedService.publish(postId)
+      setPost(saved)
+      setData(saved.data || {})
+      setIsLive(true)
+      toast.success(t("content.publishSuccess"))
+    } catch {
+      toast.error(t("common.error"))
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
+  /** Take the page off the site, leaving this draft to go on being edited (SH654). */
+  async function handleUnpublish() {
+    setIsPublishing(true)
+    try {
+      await unifiedService.unpublish(postId)
+      setIsLive(false)
+      toast.success(t("content.unpublishSuccess"))
+    } catch {
+      toast.error(t("common.error"))
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
   if (!post) {
     return (
       <>
@@ -146,6 +195,16 @@ export default function PostUnifiedEditPage() {
                 className="text-xs"
                 prefix={<Sparkles className="h-3 w-3" />}
               />
+              {/*
+                `state` says which row is being edited, not whether the site is serving
+                one. Without this, Unpublish appears beside a badge reading DRAFT and the
+                button's own precondition is invisible (SH654).
+              */}
+              {isLive && state === "DRAFT" && (
+                <Badge variant="secondary" className="text-xs">
+                  {t("content.publishedLive")}
+                </Badge>
+              )}
               <Badge variant="secondary" className="text-xs">
                 {visibleFieldCount} {t("content.fields").toLowerCase()}
               </Badge>
@@ -188,6 +247,36 @@ export default function PostUnifiedEditPage() {
                 <Save className="size-4" />
                 {t("common.save")}
               </GradientButton>
+              {/*
+                Publish needs a DRAFT row to promote — `POST /{id}/publish` answers
+                "Draft not found" without one — so a post that only ever existed as
+                PUBLISHED is not offered a button that cannot work. Saving it already
+                writes the live row, so nothing is out of reach (SH654).
+              */}
+              {state === "DRAFT" && (
+                <GradientButton
+                  type="button"
+                  size="sm"
+                  loading={isPublishing}
+                  disabled={isLoading}
+                  onClick={handlePublish}
+                >
+                  <Upload className="size-4" />
+                  {t("content.publish")}
+                </GradientButton>
+              )}
+              {isLive && (
+                <GradientButton
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isLoading || isPublishing}
+                  onClick={handleUnpublish}
+                >
+                  <EyeOff className="size-4" />
+                  {t("content.unpublish")}
+                </GradientButton>
+              )}
               <GradientButton type="button" size="sm" variant="outline" disabled={isLoading} onClick={() => handleSave(true)}>
                 {t("content.saveAndClose")}
               </GradientButton>

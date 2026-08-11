@@ -822,28 +822,6 @@ the cheap version is likely right: a write mapping on an API class whose body to
 `*Repository.save`/`delete` directly. Precision matters less than the build going red the day
 somebody adds the fifth one.
 
-### XVI.72 The console's publish button does not exist (SH654)
-
-`post.edit.page.tsx` carries Preview Draft, Translations, History, Schedule, Save, Save
-& Close and Cancel. There is no Publish. `POST /v2/post-unified/{id}/publish` is called
-from exactly one place in the console — the Universal Editor — and the only other way a
-draft goes live from a browser is approving an agent run in Agent Review.
-
-The tell that this is an omission rather than a decision: `content.publish` is a
-translated key, in both locales, that no component renders. Somebody wrote the label.
-
-It matters because of what the rest of the model promises. Draft-default (P7) rests on
-publishing being a separate, deliberate act by a person, and the screen where that
-person works cannot perform it. A curator who edits a page has to leave for the visual
-editor or wait for an agent run to approve. The publish-permission badge is already in
-that sticky bar, stating an authority the bar gives no way to exercise.
-
-The scope is small and the questions are not: whether Publish sits beside Save or
-replaces Save & Close, what it does with unsaved edits in the form, and whether
-Unpublish belongs next to it. `ShPostUnifiedAPI` answers all three verbs already and the
-SH107 gate already covers them, so nothing is needed on the server — which is also why
-writing a page found it and why shipping it should be short.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

@@ -294,11 +294,38 @@ Full page with grid of post types:
 - Alternative actions: "Or create a new Folder", "Or model a new Post Type"
 
 ### Post Edit Page (`post.edit.page.tsx`)
-- Sticky save bar with post title, post type badge, field count badge, publish permission badge
-- Save, Save & Close, Cancel buttons
+- Sticky save bar with post title, post type badge, **state** badge (`DRAFT`/`PUBLISHED` —
+  which row the form is editing, *not* a permission), field count badge
+- Preview Draft, Translations, History, Schedule, Save, **Publish**, **Unpublish**,
+  Save & Close, Cancel buttons
 - Card with `PostFormFields` rendering color-coded field cards
 - Loading state with animated spinner
 - Navigation: back to parent folder on save/cancel
+
+#### Publishing from the edit screen (SH654)
+
+Until SH654 the console had exactly **one** publish call site — the Universal Editor — so a
+curator editing a page had to leave for the visual editor or wait for an agent run to be
+approved. Nothing on the server was missing: `ShPostUnifiedAPI` already answered
+`POST /{id}/publish` and `POST /{id}/unpublish`, under the SH107 gate. Three decisions:
+
+- **Publish sits beside Save**, both primary; `Save & Close` is untouched. Publishing is a
+  *distinct* act, not a variant of saving, and P7 (draft-default) means Save keeps being the
+  action a curator reaches for by reflex.
+- **Publish saves first, then promotes.** The server publishes the **stored** `DRAFT` row, so
+  a bare publish would put a version on the site that the curator never saw. `handlePublish`
+  is `update()` then `publish()`, in that order, and `publish-action.test.mjs` asserts the
+  order — reversing it is silent, and the symptom is somebody else's live page.
+- **Unpublish is gated on `isLive`, never on `state`.** A post that was published and then
+  edited has **both** rows, so its `state` is `DRAFT` while the site is serving it. `state`
+  says which row the form edits; `isLive` says whether a `PUBLISHED` row exists. The load
+  therefore fetches both rows with `Promise.allSettled` — one round trip — instead of the old
+  sequential try/catch, which could not report the published row once it had found a draft.
+
+`Publish` is hidden when no `DRAFT` row exists (`POST /{id}/publish` answers
+`Draft not found`); saving such a post writes the live row directly, so nothing is out of
+reach. The **live** badge appears when `isLive && state === "DRAFT"`, because otherwise
+Unpublish sits next to a badge reading `DRAFT` and its own precondition is invisible.
 
 ### Post New Page (`post.new.page.tsx`)
 - Same sticky save bar pattern as edit page
