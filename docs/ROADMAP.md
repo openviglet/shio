@@ -47,7 +47,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
-- 📋 **SH611** (deps: SH592 ✅) **An asset is re-read only when its page moved, so a byte that changed under a still page is the old one** — The 403 assets hold the 52.7 MB, and --refresh either skips them all or re-downloads them all - the cheap question answered well and the expensive one not at all. → §XVII.90
 
 ## Block F — Market positioning
 

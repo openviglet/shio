@@ -432,6 +432,11 @@ function absolute(path, origin) {
  *       present asset. The one failure this pass can detect and the server cannot.</li>
  * </ul>
  *
+ * <p>A fifth, <b>unchanged</b>, is the one action this function never returns: it is decided by the
+ * download pass on a 304, before there are any bytes to place (SH611). It is named here because the
+ * vocabulary is read in three places — `OUTCOME_OF_ACTION`, `withDownloads` and the report — and a
+ * value documented in none of them is one the next branch is added without.</p>
+ *
  * @param state `{ byDigest: Map<string,string>, byPath: Map<string,string> }`, mutated
  */
 export function placeAsset(state, { source, file, bytes, contentType, kind }) {
@@ -473,7 +478,7 @@ function asBuffer(value) {
  * has one home. Two files would be two things to keep in step, and SH379's markup rewrite reads the
  * map — a stale copy of it would rewrite an `<img src>` to a path holding somebody else's bytes.
  */
-export function withDownloads(inventory, { site, results = [], skipped = [], external = [] }) {
+export function withDownloads(inventory, { site, results = [], skipped = [], external = [], notes: extra = [] }) {
   const bySource = new Map();
   for (const result of results) bySource.set(result.source, result);
   for (const entry of skipped) bySource.set(entry.source, { action: "skipped", ...entry });
@@ -481,19 +486,28 @@ export function withDownloads(inventory, { site, results = [], skipped = [], ext
   const assets = (inventory.assets ?? []).map((asset) => {
     const outcome = bySource.get(asset.path);
     if (!outcome) return asset;
-    if (outcome.action === "wrote" || outcome.action === "deduped") {
+    // SH611 — `unchanged` folds exactly like the two that moved bytes, and that is the point: a 304
+    // asset is a *placed* asset, and a row that dropped its `file` because no download happened this
+    // run would read as an asset the capture never got. The digest and the dedupe pointer are the
+    // prior run's, carried rather than recomputed, since this run never held the bytes to hash.
+    if (outcome.action === "wrote" || outcome.action === "deduped" || outcome.action === "unchanged") {
       return {
         ...asset,
         file: outcome.file,
-        sha256: outcome.digest,
-        ...(outcome.action === "deduped" ? { dedupedWith: outcome.sameAs } : {}),
+        ...(outcome.digest ? { sha256: outcome.digest } : {}),
+        ...(outcome.sameAs ? { dedupedWith: outcome.sameAs } : {}),
+        // What this asset said about being asked for again (SH611). Optional and NOT an inventory
+        // version bump, on SH592's reading one row along: nothing consumes them, so a capture
+        // written without them is readable by every reader and merely re-fetches once.
+        ...(outcome.etag ? { etag: outcome.etag } : {}),
+        ...(outcome.lastModified ? { lastModified: outcome.lastModified } : {}),
       };
     }
     return { ...asset, unavailable: outcome.reason ?? outcome.detail ?? outcome.action };
   });
 
   const counted = tally(results);
-  const notes = [...(inventory.notes ?? [])];
+  const notes = [...(inventory.notes ?? []), ...extra];
   // SH469 — the phase that discards behaviour names it, and names it as behaviour. The counting was
   // already here: the crawler saw the `<script>` tags in order to skip them, and the only thing
   // missing was a sentence a reader could act on. Every other instrument agrees the replica is
@@ -553,6 +567,10 @@ export function withDownloads(inventory, { site, results = [], skipped = [], ext
       site,
       wrote: counted.wrote ?? 0,
       deduped: counted.deduped ?? 0,
+      // SH611 — its own count and not folded into any of the four. `wrote` would claim bytes that
+      // never moved, `skipped` means the plan declined to fetch it at all, and zero would make the
+      // whole saving invisible: on the capture that motivated this, "371 unchanged" IS the report.
+      unchanged: counted.unchanged ?? 0,
       skipped: skipped.length,
       failed: (counted.failed ?? 0) + (counted.collision ?? 0) + (counted["soft-404"] ?? 0),
       bytes: results.reduce((sum, each) => sum + (each.bytes ?? 0), 0),
@@ -573,8 +591,13 @@ export function describeDownloads(inventory, options = {}) {
   if (!download) return "";
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 0) : 10;
   const lines = [
-    `assets: wrote ${download.wrote}, deduped ${download.deduped}, skipped ${download.skipped}, ` +
-      `unavailable ${download.failed} (${kb(download.bytes)} into shio/assets/${download.site}/)`,
+    `assets: wrote ${download.wrote}, deduped ${download.deduped}, `
+      // SH611 — printed only when there are any, so an ordinary capture's line is the line it always
+      // was. A `unchanged 0` on every fresh crawl would be a column that means "this run was not a
+      // refresh", spelled as a measurement.
+      + (download.unchanged ? `unchanged ${download.unchanged}, ` : "")
+      + `skipped ${download.skipped}, `
+      + `unavailable ${download.failed} (${kb(download.bytes)} into shio/assets/${download.site}/)`,
   ];
   const written = (inventory.assets ?? []).filter((asset) => asset.file && !asset.dedupedWith);
   for (const asset of written.slice(0, limit)) {

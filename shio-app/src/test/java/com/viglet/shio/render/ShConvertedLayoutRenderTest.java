@@ -1124,7 +1124,12 @@ class ShConvertedLayoutRenderTest {
         assertThat(html)
                 .as("`<style>` is a raw-text element: entity escaping is not the encoding for that "
                         + "context, so what it removed was correctness. A path beginning `&quot;` is "
-                        + "the ten `page-reference-broken` errors that failed the gate")
+                        + "the ten `page-reference-broken` errors that failed the gate. SH606 made "
+                        + "this the SOLE reader of that question: the corpus held a second one, a "
+                        + "brace count over the generated layout, and the two disagreed about "
+                        + "whether `{{CSS}}` is a defect at all — the same two braces are right or "
+                        + "wrong depending on `ShRenderHelpers.RAW_TEXT_FIELDS`, which no template "
+                        + "check can see. If this assertion is weakened, that decision is void")
                 .contains(CAPTURED_FONT)
                 .doesNotContain("&quot;/assets/inter.woff2&quot;");
         assertThat(html)

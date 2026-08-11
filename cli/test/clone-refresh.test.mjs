@@ -277,3 +277,172 @@ test("SH592: a link that appeared on a changed page is named, never followed", a
     await space.dispose();
   }
 });
+
+// -------------------------------------------------------------------------------------------------
+// SH611 — the other half, and the larger one by volume
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * The bytes, re-checked by byte.
+ *
+ * <p>SH592 made a *page* cheap to re-check and left the assets alone: one was re-downloaded only
+ * when the page referencing it had changed, so a stylesheet, a font or a hero image that moved under
+ * a still page was silently the old one and the report's only answer was `run shio clone`. That is
+ * the larger half — `vilt-group.com` was 198 pages and <b>403 assets</b>, and the assets are where
+ * the 52.7 MB is.</p>
+ *
+ * <p>Same subject as the cases above and therefore the same instrument: the claim is about
+ * <b>cost</b>, so it is read at the request boundary. An implementation that re-downloaded every
+ * asset and then discarded the bytes would write a byte-identical inventory and pass anything
+ * asserted about the artefact.</p>
+ */
+const ASSET_FLAGS = { markup: true, depth: 2, assets: true, site: "Fixture" };
+
+/** Asset requests only — the pages and robots.txt are a different claim. */
+const assetRequests = (source) => source.requested.filter(
+  (row) => row.key !== "/robots.txt" && !row.key.endsWith(".html")
+    && row.key !== "/" && row.key !== "/about/",
+);
+
+test("SH611: a capture records an asset's validators, or the next refresh cannot be cheap", async () => {
+  const space = await workspace();
+  try {
+    const source = conditionalFetch(archetype.table);
+    await clone.run(ASSET_FLAGS, [ORIGIN], context(space.cwd, source));
+    const inventory = JSON.parse(await readFile(join(space.cwd, INVENTORY_FILE), "utf8"));
+
+    const placed = inventory.assets.filter((asset) => asset.file);
+    assert.ok(placed.length >= 2, `the archetype placed assets: ${JSON.stringify(inventory.assets)}`);
+    for (const asset of placed) {
+      assert.ok(
+        asset.etag,
+        `${asset.path} was served with an ETag and its row does not carry one. The run that makes `
+          + "the next one cheap is the ORDINARY capture, so a validator nobody stored is a request "
+          + "nobody can avoid",
+      );
+    }
+    assert.equal(inventory.version, 5, "an additive optional field is not a version bump");
+  } finally {
+    await space.dispose();
+  }
+});
+
+test("SH611: no asset moved, so no asset is downloaded twice — asked conditionally, answered 304", async () => {
+  const space = await workspace();
+  try {
+    const first = conditionalFetch(archetype.table);
+    await clone.run(ASSET_FLAGS, [ORIGIN], context(space.cwd, first));
+    const before = JSON.parse(await readFile(join(space.cwd, INVENTORY_FILE), "utf8"));
+
+    const second = conditionalFetch(archetype.table);
+    await clone.run({ ...ASSET_FLAGS, refresh: true }, [], context(space.cwd, second));
+    const after = JSON.parse(await readFile(join(space.cwd, INVENTORY_FILE), "utf8"));
+
+    const asked = assetRequests(second);
+    assert.ok(asked.length > 0, "the refresh re-checked the assets at all");
+    assert.deepEqual(
+      asked.filter((row) => !row.ifNoneMatch).map((row) => row.key),
+      [],
+      "every asset request carried If-None-Match. An unconditional one is a file the server had to "
+        + "send, and on the capture that motivated this that is where the 52.7 MB is",
+    );
+    assert.ok(
+      after.download.unchanged > 0,
+      `the run counts what it did not download. download: ${JSON.stringify(after.download)}`,
+    );
+    assert.equal(
+      after.download.wrote,
+      0,
+      "and nothing was written: `wrote` counts bytes that moved, so an unchanged asset counted "
+        + "there would report work that did not happen",
+    );
+
+    // The row survives the cheap path intact. A 304 asset is a PLACED asset, and a row that dropped
+    // its `file` because no download happened this run would read as one the capture never got.
+    const fileOf = (inv) => new Map(inv.assets.map((a) => [a.path, a.file ?? null]));
+    assert.deepEqual(fileOf(after), fileOf(before), "every placement is carried, none recomputed");
+    const digestOf = (inv) => new Map(inv.assets.map((a) => [a.path, a.sha256 ?? null]));
+    assert.deepEqual(
+      digestOf(after),
+      digestOf(before),
+      "and so is every digest — this run never held the bytes, so it cannot have hashed them",
+    );
+    assert.ok(
+      after.notes.some((note) => /--refresh re-checked \d+ asset\(s\) by byte/.test(note)),
+      `the run says what it did. Notes: ${JSON.stringify(after.notes, null, 2)}`,
+    );
+  } finally {
+    await space.dispose();
+  }
+});
+
+test("SH611: one asset moved under a page that did not, and it is the one that is re-read", async () => {
+  const space = await workspace();
+  try {
+    const first = conditionalFetch(archetype.table);
+    await clone.run(ASSET_FLAGS, [ORIGIN], context(space.cwd, first));
+    const before = JSON.parse(await readFile(join(space.cwd, INVENTORY_FILE), "utf8"));
+
+    // The defect exactly: the stylesheet changed and no page did. Under SH592 alone every page
+    // answers 304, nothing marks the asset stale, and the replica keeps serving last week's CSS.
+    const stylesheet = before.assets.find((asset) => asset.kind === "stylesheet" && asset.file);
+    assert.ok(stylesheet, `the archetype captured a stylesheet: ${JSON.stringify(before.assets)}`);
+
+    const second = conditionalFetch(archetype.table, new Set([stylesheet.path]));
+    await clone.run({ ...ASSET_FLAGS, refresh: true }, [], context(space.cwd, second));
+    const after = JSON.parse(await readFile(join(space.cwd, INVENTORY_FILE), "utf8"));
+
+    assert.equal(
+      after.download.wrote,
+      1,
+      "exactly one asset was downloaded, and it is the one whose bytes changed — not the page's "
+        + "worth of them, and not none",
+    );
+    assert.ok(
+      after.download.unchanged > 0,
+      "and the rest answered 304 in the same run, which is what makes this a saving rather than a "
+        + "second full download triggered differently",
+    );
+    assert.notEqual(
+      after.assets.find((asset) => asset.path === stylesheet.path)?.etag,
+      stylesheet.etag,
+      "the changed asset's row carries the new validator, so the NEXT refresh is conditional on it "
+        + "rather than on the stale one",
+    );
+  } finally {
+    await space.dispose();
+  }
+});
+
+test("SH611: a 304 for a file no longer in the tree is not honoured", async () => {
+  const space = await workspace();
+  try {
+    const first = conditionalFetch(archetype.table);
+    await clone.run(ASSET_FLAGS, [ORIGIN], context(space.cwd, first));
+    const before = JSON.parse(await readFile(join(space.cwd, INVENTORY_FILE), "utf8"));
+
+    // A 304 says the SERVER's copy is unchanged. It says nothing about ours, and the difference is
+    // the only thing that can make a carried row a lie: an inventory naming a file that is not there
+    // is worse than one that re-downloaded it, because everything downstream reads the row.
+    const placed = before.assets.find((asset) => asset.file && !asset.dedupedWith);
+    assert.ok(placed, "the archetype placed an asset to delete");
+    await rm(join(space.cwd, "shio", "assets", placed.file), { force: true });
+
+    const second = conditionalFetch(archetype.table);
+    await clone.run({ ...ASSET_FLAGS, refresh: true }, [], context(space.cwd, second));
+    const after = JSON.parse(await readFile(join(space.cwd, INVENTORY_FILE), "utf8"));
+
+    assert.equal(
+      after.assets.find((asset) => asset.path === placed.path)?.file,
+      placed.file,
+      "the row still names the file, because the file is there again",
+    );
+    await readFile(join(space.cwd, "shio", "assets", placed.file));
+    assert.ok(
+      after.notes.some((note) => /answered 304 and were downloaded anyway/.test(note)),
+      `and the run says why it paid. Notes: ${JSON.stringify(after.notes, null, 2)}`,
+    );
+  } finally {
+    await space.dispose();
+  }
+});

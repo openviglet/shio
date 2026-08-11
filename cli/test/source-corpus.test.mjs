@@ -124,6 +124,31 @@ const reported = [];
  * red and unheld is a **failure** (a new finding), and green and held is a **failure** too, because
  * the fix landed and the ledger has not been told.
  */
+/**
+ * Held findings whose own prose names a task that has shipped, and which do not admit it (SH568).
+ *
+ * <p>Exported as a function rather than inlined so the check can be run against a synthetic entry:
+ * `open-findings.json` is empty on a good day, and a rule that only ever runs over an empty list is
+ * a rule nobody can tell from a typo. `refiledFrom` is the acknowledgement — an entry carrying it
+ * has been looked at since the fix it outlived, which is the whole of what this asks for.</p>
+ *
+ * @param roadmap the ROADMAP text; an id that appears there is OPEN and is not what this looks for
+ */
+async function refiledDebt(findings, roadmap) {
+  const changelog = await readFile(new URL("../../docs/CHANGELOG.md", import.meta.url), "utf8");
+  const flagged = [];
+  for (const finding of findings) {
+    if (finding.refiledFrom) continue;
+    for (const id of new Set(String(finding.what ?? "").match(/SH\d+/g) ?? [])) {
+      if (id === finding.id) continue;
+      const open = new RegExp(`\\*\\*${id}\\*\\*`).test(roadmap);
+      const shipped = new RegExp(`\\*\\*${id}\\b`).test(changelog);
+      if (!open && shipped) flagged.push(`${finding.id}/${finding.assertion} names ${id}`);
+    }
+  }
+  return flagged.sort();
+}
+
 function holding(archetype, assertion, check) {
   const key = `${archetype}/${assertion}`;
   exercised.add(key);
@@ -998,6 +1023,29 @@ describe("SH560 group G: the debt this corpus is currently carrying", () => {
         + `  closed owners: ${closed.join(" ")}`,
     );
 
+    // SH568 — and the third direction, which is the one the two above let through. `holding` catches
+    // a fix that turns the case green; the check above catches an entry whose owner shipped. Neither
+    // sees a **repointed** entry: SH555 shipped, the case stayed red because the fix landed on the
+    // value and this assertion measured the template, and the entry was handed to a new open id. To
+    // both checks that is indistinguishable from a fresh finding — a live entry under a live owner —
+    // and it is how a mechanism-phrased assertion held a CLOSED defect open for a block.
+    //
+    // The tell is decidable and it is in the entry's own prose: an entry that names a SHIPPED id is
+    // one that outlived a fix. It may still be a real defect, and then it says so in `refiledFrom`,
+    // which is a field somebody has to write — the point is that "this outlived a fix and here is
+    // why that is not the end of it" stops being a sentence nobody was asked for.
+    const shippedIds = await refiledDebt(OPEN.findings, roadmap);
+    assert.deepEqual(
+      shippedIds,
+      [],
+      "SH568: a held finding's prose names a task that has already shipped, and the entry does not "
+        + "declare itself re-filed. Either the fix closed this case — delete the entry — or it did "
+        + "not, and `refiledFrom` is where you say what the shipped fix did NOT cover. An assertion "
+        + "phrased as *the code does not do X* can only go green the one way its author imagined, "
+        + "which is what made this worth a check rather than a habit.\n"
+        + `  entries: ${shippedIds.join(" ")}`,
+    );
+
     // Not a ceiling. The point of printing both is that a reader can see the debt move without
     // this file having an opinion about what the number should be (SH527's reasoning, applied to
     // a second ledger). A task closes by deleting its entry, and `holding` fails if it does not.
@@ -1016,6 +1064,42 @@ describe("SH560 group G: the debt this corpus is currently carrying", () => {
       `${held.size} finding(s) are held and ${reported.length} came back red. A held finding that `
         + "is neither red nor reported means `holding` never saw it — the case threw before "
         + "reaching its assertion, which makes the whole group's result a lower bound",
+    );
+  });
+
+  /**
+   * The re-filing check, run against entries invented here (SH568).
+   *
+   * <p>`open-findings.json` is empty on a good day, so the rule above passes over nothing and a
+   * reader cannot tell it from a rule that is broken. The ids below are the real ones from the case
+   * that produced it — SH555 shipped, SH606 was live — because a synthetic id would also test
+   * nothing: what the check reads is the ROADMAP and the CHANGELOG, and an invented id is in
+   * neither, which is the one answer it must not give.</p>
+   */
+  test("SH568: the re-filing rule fires on a re-filed entry and not on a fresh one", async () => {
+    const roadmap = await readFile(new URL("../../docs/ROADMAP.md", import.meta.url), "utf8");
+    const refiled = {
+      id: "SH606", archetype: "theme-heavy", assertion: "layout-raw-field-CSS",
+      what: "Re-filed from SH555: that task shipped on the RENDER side, so this assertion and that "
+        + "fix now disagree about whether two braces are a defect.",
+    };
+
+    assert.deepEqual(
+      await refiledDebt([refiled], roadmap),
+      ["SH606/layout-raw-field-CSS names SH555"],
+      "the entry that cost a block is exactly the one this has to catch: live owner, live key, and "
+        + "prose admitting it outlived a shipped fix",
+    );
+    assert.deepEqual(
+      await refiledDebt([{ ...refiled, refiledFrom: "SH555" }], roadmap),
+      [],
+      "and declaring it is the way through — the check asks for an acknowledgement, not for the "
+        + "entry to be deleted, because sometimes the shipped fix really did leave a remainder",
+    );
+    assert.deepEqual(
+      await refiledDebt([{ ...refiled, what: "A stylesheet reaches the page entity-escaped." }], roadmap),
+      [],
+      "a finding whose prose names no shipped task is an ordinary one and is left alone",
     );
   });
 });

@@ -996,31 +996,6 @@ gate naming itself. Resuming is therefore two steps — dispatch the workflow, t
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
 
-### XVII.90 The half of a refresh that is still measured in megabytes (SH611)
-
-SH592 made a page cheap to re-check and left the bytes alone. An **asset** is
-re-downloaded only when the page referencing it changed, so a stylesheet, a font or a
-hero image that moved under a page that did not is silently the old one — and the only
-answer the report can give is *run `shio clone`*, the ten minutes the flag exists to
-avoid.
-
-This is the larger half by volume: `vilt-group.com` was 198 pages and **403 assets**,
-and the assets are where the 52.7 MB is. Re-checking 198 pages for 198 requests and then
-either skipping 403 files or re-downloading all of them answers the cheap question well
-and the expensive one not at all.
-
-The mechanism is the one already built, one row along. `download` fetches through
-`fetchBytes`; giving an asset row the same optional `etag` and `lastModified` a page row
-now carries, and sending them, makes a 304 mean *the file on disk is still right*. The
-bytes are already at `shio/assets/<file>`, so nothing has to be rebuilt — strictly
-simpler than the page case, which needed the markup.
-
-Two things it must not break. `placeAsset` dedupes by digest, and an asset skipped on a
-304 has no digest this run, so the prior row's placement is carried rather than
-recomputed. And the action vocabulary — `wrote`, `deduped`, `failed`, `collision`,
-`skipped` — gains `unchanged`, which `OUTCOME_OF_ACTION` and the download report both
-read; an unchanged asset counted as `wrote` would report work that did not happen.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

@@ -365,7 +365,11 @@ test("the outcome folds back into the one inventory, so the URL→path map has o
   assert.equal(byPath.get("/img/hero-copy.png").dedupedWith, "Blog/img/hero.png");
   assert.match(byPath.get("/css/site.css").unavailable, /served text\/html/);
   assert.equal(byPath.get("https://cdn.other.test/img/shared.png").unavailable, "off-origin");
-  assert.deepEqual(updated.download, { site: "Blog", wrote: 1, deduped: 1, skipped: 1, failed: 1, bytes: 12 });
+  // SH611 — `unchanged` joins the shape and is zero here, because no result carried that action.
+  // Asserted as the whole object rather than field by field on purpose: a counter added without a
+  // decision about what it means beside the other four is how a report starts double-counting.
+  assert.deepEqual(updated.download,
+    { site: "Blog", wrote: 1, deduped: 1, unchanged: 0, skipped: 1, failed: 1, bytes: 12 });
   // A licensing decision somebody has to make is a note, not a silence.
   assert.ok(updated.notes.some((note) => /licensing decision/.test(note)));
   assert.ok(updated.notes.some((note) => /soft 404/.test(note)));

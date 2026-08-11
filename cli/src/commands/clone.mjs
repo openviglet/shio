@@ -74,6 +74,11 @@ const OUTCOME_OF_ACTION = {
   collision: "failed",
   deduped: "skipped",
   skipped: "skipped",
+  // SH611 — a 304'd asset is the one row that did the *right* amount of work: one request, no body,
+  // no write. `skipped` because no bytes moved; counting it `ok` would report a download that did
+  // not happen, which on a 403-asset capture is the difference between "52.7 MB re-fetched" and
+  // "52.7 MB confirmed still current".
+  unchanged: "skipped",
 };
 
 /**
@@ -189,7 +194,10 @@ export async function run(flags, positionals, ctx) {
       notes,
     });
     if (site) {
-      inventory = await download(inventory, { site, flags, progress }, ctx);
+      // SH611 — the prior capture reaches the byte pass too, and only under `--refresh`. It is what
+      // carries each asset's validators and the placement a 304 confirms; a fresh capture has none
+      // and asks unconditionally, which is what a fresh capture is.
+      inventory = await download(inventory, { site, flags, progress, prior: refreshing ? prior : null }, ctx);
     }
 
     const target = join(ctx.cwd, out);
@@ -265,7 +273,7 @@ async function writeMarkup(markup, ctx) {
  * deterministic — with concurrency, *which* of two identical assets becomes the file on disk depends
  * on which response arrived first (P5).
  */
-async function download(inventory, { site, flags, progress }, ctx) {
+async function download(inventory, { site, flags, progress, prior = null }, ctx) {
   const maxAssets = whole(flags.maxAssets, DEFAULT_MAX_ASSETS, "--max-assets", 1);
   const maxBytes = whole(flags.maxAssetBytes, DEFAULT_MAX_ASSET_BYTES, "--max-asset-bytes", 1);
   const origin = inventory?.source?.origin ?? "";
@@ -284,6 +292,12 @@ async function download(inventory, { site, flags, progress }, ctx) {
   // that appeared halfway through the loop would have no outcome for half of it.
   const discovered = [];
   const known = new Set((inventory?.assets ?? []).map((asset) => asset.path));
+  // SH611 — the last capture's rows, keyed the way `withDownloads` keys its outcomes, so `item.source`
+  // is the one identifier both passes agree on. Empty without `--refresh`, which makes every branch
+  // below fall through to the unconditional fetch a fresh capture is.
+  const priorAssets = new Map((prior?.inventory?.assets ?? []).map((asset) => [asset.path, asset]));
+  const redownloaded = [];
+  const notes = [];
   // SH543 — a second phase, and it needs its own ceiling: `plan.length` is not `maxPages` and a
   // status that carried the crawl's total into the download would read as a run going backwards.
   // The total grows as stylesheets append to the plan, which is honest — the phase really did get
@@ -317,7 +331,47 @@ async function download(inventory, { site, flags, progress }, ctx) {
       });
       continue;
     }
-    const fetched = await fetchBytes(item, maxBytes, ctx);
+    // SH611 — what the last capture recorded about these bytes, and whether it is enough to ask
+    // conditionally. `file` is the load-bearing half: a row with validators but no placement was
+    // never written, so a 304 would confirm a file that is not there.
+    const before = placed304Candidate(priorAssets.get(item.source));
+    let fetched = await fetchBytes(item, maxBytes, ctx, before);
+    if (fetched.unchanged) {
+      // A 304 says the *server's* copy is unchanged. Whether ours is still on disk is a different
+      // question and the only one that can make this row a lie, so it is asked before the row is
+      // carried — the same move the page path makes when its markup cache is missing.
+      const onDisk = await assetIsOnDisk(before.file, ctx);
+      if (onDisk) {
+        record({
+          action: "unchanged",
+          source: item.source,
+          file: before.file,
+          digest: before.sha256,
+          ...(before.dedupedWith ? { sameAs: before.dedupedWith } : {}),
+          ...validatorsOnRow(fetched),
+        });
+        // The dedupe state has to know about bytes this run never held, or the next asset carrying
+        // them writes a second copy under its own name and SH210's "a path names one thing" is
+        // broken by the cheap path. Carried, exactly as the task framed it, rather than recomputed.
+        if (before.sha256) {
+          if (!state.byDigest.has(before.sha256)) state.byDigest.set(before.sha256, before.file);
+          state.byPath.set(before.file, before.sha256);
+        }
+        // SH452's walk, from the copy already in the tree. A stylesheet that answered 304 is one
+        // whose `url()` calls were never re-read, and those rows are rebuilt from the pages on every
+        // refresh — so without this the fonts a 304'd stylesheet references quietly leave the
+        // inventory, which is a capture that shrank because nothing changed.
+        if (item.kind === "stylesheet") {
+          const cached = await readAssetFromDisk(before.file, ctx);
+          if (cached !== null) queueReferences(decode(cached), item, { origin, site, maxAssets, scripts },
+            { plan, skipped, external, known, discovered });
+        }
+        continue;
+      }
+      // Gone from the tree: ask again with no validators, because the bytes are what is missing.
+      fetched = await fetchBytes(item, maxBytes, ctx);
+      redownloaded.push(item.source);
+    }
     if (fetched.error) {
       record({ action: "failed", source: item.source, file: item.file, detail: fetched.error });
       continue;
@@ -329,7 +383,10 @@ async function download(inventory, { site, flags, progress }, ctx) {
       contentType: fetched.contentType,
       kind: item.kind,
     });
-    record(placed);
+    // SH611 — recorded on the row whether or not it was asked for conditionally, because this is
+    // what makes the NEXT refresh cheap. A capture that downloads 403 assets and stores no
+    // validator has to download them all again, which is the state this task found.
+    record({ ...placed, ...validatorsOnRow(fetched) });
     if (placed.action !== "wrote") continue;
     const target = join(ctx.cwd, ASSETS_DIR, item.file);
     await ctx.fs.mkdir(dirname(target), { recursive: true });
@@ -339,24 +396,94 @@ async function download(inventory, { site, flags, progress }, ctx) {
     // written: a deduped one is the same bytes under another path and its references are already
     // queued, and a failed one has nothing to read.
     if (item.kind !== "stylesheet") continue;
-    const rows = assetsReferencedBy(decode(fetched.bytes), item.url, origin);
-    for (const row of rows) {
-      if (known.has(row.path)) continue;
-      known.add(row.path);
-      discovered.push(row);
-      const queued = planAssets({ assets: [row], source: { origin } },
-        { site, maxAssets: maxAssets - plan.length, scripts });
-      plan.push(...queued.plan);
-      skipped.push(...queued.skipped);
-      for (const host of queued.external) {
-        const seen = external.find((each) => each.host === host.host);
-        if (seen) seen.refs += host.refs;
-        else external.push(host);
-      }
-    }
+    queueReferences(decode(fetched.bytes), item, { origin, site, maxAssets, scripts },
+      { plan, skipped, external, known, discovered });
+  }
+  if (redownloaded.length) {
+    notes.push(
+      `${redownloaded.length} asset(s) answered 304 and were downloaded anyway: the file the last `
+        + `capture placed is no longer under ${ASSETS_DIR}, so the server's "unchanged" was about a `
+        + `copy this tree does not have (first: ${redownloaded.slice(0, 3).join(" ")})`,
+    );
+  }
+  const unchanged = results.filter((row) => row.action === "unchanged").length;
+  if (prior) {
+    const asked = results.filter((row) => row.action !== "collision").length;
+    notes.push(
+      `--refresh re-checked ${asked} asset(s) by byte: ${unchanged} unchanged (304), `
+        + `${asked - unchanged} re-read. An asset is now asked about on its own validators rather `
+        + `than on whether its page moved, so a file that changed under a still page is caught`,
+    );
   }
   return withDownloads({ ...inventory, assets: [...(inventory.assets ?? []), ...discovered] },
-    { site, results, skipped, external });
+    { site, results, skipped, external, notes });
+}
+
+/**
+ * The prior row a 304 could be honoured against, or `null` (SH611).
+ *
+ * <p>Three things have to be true at once and each rules out a different lie. A **placement**, or
+ * the confirmation is about a file no capture ever wrote. A **validator**, or there is nothing to
+ * send and the request is an ordinary GET wearing a conditional's name. And not **unavailable**: a
+ * row the last run recorded as failed or soft-404 has no bytes to confirm, and asking about it
+ * conditionally would turn a known gap into a silent one.</p>
+ */
+function placed304Candidate(row) {
+  if (!row || !row.file || row.unavailable) return null;
+  if (!row.etag && !row.lastModified) return null;
+  return row;
+}
+
+/** The validators to carry onto an asset row, in the shape `withDownloads` folds (SH611). */
+function validatorsOnRow(fetched) {
+  return {
+    ...(fetched.etag ? { etag: fetched.etag } : {}),
+    ...(fetched.lastModified ? { lastModified: fetched.lastModified } : {}),
+  };
+}
+
+/** Whether the file a prior capture placed is still in the tree — what a 304 cannot tell us. */
+async function assetIsOnDisk(file, ctx) {
+  try {
+    await ctx.fs.readFile(join(ctx.cwd, ASSETS_DIR, file));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A placed asset's bytes, read back out of the tree, or `null` when they cannot be. */
+async function readAssetFromDisk(file, ctx) {
+  try {
+    return await ctx.fs.readFile(join(ctx.cwd, ASSETS_DIR, file));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Queues what a stylesheet references (SH452), from whichever copy of it this run has.
+ *
+ * <p>Extracted for SH611: the bytes now come from the response on a 200 and from the tree on a 304,
+ * and a second copy of this walk is a second answer to "what does this stylesheet pull in". The
+ * inventory's asset rows are rebuilt from the pages on every refresh, so a stylesheet that is not
+ * re-read is one whose fonts leave the capture — a capture that shrank because nothing changed.</p>
+ */
+function queueReferences(css, item, { origin, site, maxAssets, scripts }, sink) {
+  for (const row of assetsReferencedBy(css, item.url, origin)) {
+    if (sink.known.has(row.path)) continue;
+    sink.known.add(row.path);
+    sink.discovered.push(row);
+    const queued = planAssets({ assets: [row], source: { origin } },
+      { site, maxAssets: maxAssets - sink.plan.length, scripts });
+    sink.plan.push(...queued.plan);
+    sink.skipped.push(...queued.skipped);
+    for (const host of queued.external) {
+      const seen = sink.external.find((each) => each.host === host.host);
+      if (seen) seen.refs += host.refs;
+      else sink.external.push(host);
+    }
+  }
 }
 
 /** A downloaded stylesheet's bytes as text. UTF-8 is what a stylesheet is, in practice and in spec. */
@@ -371,15 +498,21 @@ function decode(bytes) {
  * that under-declares or omits the header would otherwise walk straight past the limit, and the
  * limit exists to stop a crawl filling a disk.
  */
-async function fetchBytes(item, maxBytes, ctx) {
+async function fetchBytes(item, maxBytes, ctx, conditional = null) {
   let response;
   try {
     response = await ctx.fetch(item.url, {
-      headers: { "User-Agent": USER_AGENT },
+      headers: { "User-Agent": USER_AGENT, ...conditionalHeaders(conditional) },
       redirect: "follow",
     });
   } catch (error) {
     return { error: `fetch failed: ${error?.message ?? error}` };
+  }
+  // SH611 — before `ok`, because a 304 is not one. `fetch`'s `ok` is 200-299, so a conditional
+  // request answered correctly would otherwise be reported as `HTTP 304` and counted a failure —
+  // the cheap path recorded as a broken asset.
+  if (response.status === 304) {
+    return { unchanged: true, ...validatorsOf(response, conditional) };
   }
   if (!response.ok) {
     return { error: `HTTP ${response.status ?? 0}` };
@@ -397,7 +530,13 @@ async function fetchBytes(item, maxBytes, ctx) {
   if (bytes.length > maxBytes) {
     return { error: `${bytes.length} bytes, past --max-asset-bytes (${maxBytes})` };
   }
-  return { bytes, contentType: response.headers?.get?.("content-type") ?? "" };
+  return {
+    bytes,
+    contentType: response.headers?.get?.("content-type") ?? "",
+    // SH611 — recorded on every 200, not only under `--refresh`: the run that makes the next one
+    // cheap is the ordinary capture, and a validator nobody stored is a request nobody can avoid.
+    ...validatorsOf(response, conditional),
+  };
 }
 
 function whole(value, fallback, flag, min) {
@@ -565,9 +704,15 @@ async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup 
  * a refreshed inventory that silently omitted new pages would read as a complete capture, which is
  * the SH431 failure exactly.</p>
  *
- * <p><b>It re-downloads assets by page, not by byte.</b> An asset is re-fetched when the page that
- * references it changed. An asset that moved under an unchanged page is therefore missed, and the
- * report says so and names `shio clone` as the answer — an honest gap beats a silent one.</p>
+ * <p><b>Assets are re-checked by byte, and that is the larger half (SH611).</b> This paragraph used
+ * to say the opposite — an asset was re-fetched only when the page referencing it changed, so a
+ * stylesheet, a font or a hero image that moved under a still page was silently the old one, and the
+ * only answer the report could give was *run `shio clone`*, the ten minutes the flag exists to
+ * avoid. It is the larger half by volume: `vilt-group.com` was 198 pages and **403 assets**, and the
+ * assets are where the 52.7 MB is. Each row now carries the same optional `etag`/`lastModified` a
+ * page row does and is asked about on its own validators, so a 304 means the file already in the
+ * tree is still right — strictly simpler than the page case, which had to rebuild a row from the
+ * markup cache.</p>
  */
 async function refresh({ origin, robots, page, flags, keepMarkup, progress, prior }, ctx) {
   const now = typeof ctx.clock === "function" ? ctx.clock : Date.now;

@@ -2005,12 +2005,45 @@ so a mistyped origin cannot refresh against a different host. The two halves com
 version behind is migrated from the markup `--refresh` has just read, so refreshing is also the
 cheapest way to pay off a bump.
 
-**Two things it does not do, both reported rather than hidden.** It does **not walk for new pages**:
-a link that appeared on a changed page is counted and named in the notes and never followed, because
+**One thing it does not do, reported rather than hidden.** It does **not walk for new pages**: a link
+that appeared on a changed page is counted and named in the notes and never followed, because
 following it is a crawl and a crawl is what is being avoided — and a refreshed inventory that
-silently omitted new pages would read as a complete capture, which is SH431's failure exactly. And
-it re-downloads **assets by page, not by byte**: an asset that moved under a page that did not is
-missed, the report says so, and `shio clone` is named as the answer.
+silently omitted new pages would read as a complete capture, which is SH431's failure exactly.
+
+**And the assets are re-checked by byte, which is the larger half (SH611).** This paragraph used to
+name a second gap: an asset was re-fetched only when the page referencing it changed, so a
+stylesheet, a font or a hero image that moved under a still page was silently the old one, and the
+report's only answer was *run `shio clone`* — the ten minutes the flag exists to avoid. By volume it
+was the bigger of the two: 198 pages and **403 assets**, and the assets are where the 52.7 MB is.
+An asset row now carries the same optional `etag`/`lastModified` a page row does and is asked about
+on **its own** validators, so a 304 means the file already in the tree is still right. Strictly
+simpler than the page case, which had to rebuild a row from the markup cache — here nothing is
+rebuilt, because the bytes never left.
+
+Four decisions, each one a way it could have lied.
+
+- **`unchanged` is its own action and its own count.** The vocabulary was `wrote`, `deduped`,
+  `failed`, `collision`, `skipped`, and it is read in three places — `OUTCOME_OF_ACTION`,
+  `withDownloads`, the report. Folding a 304 into `wrote` would report bytes that never moved; into
+  `skipped`, which means the plan declined to fetch it at all. On the capture that motivated this,
+  *"371 unchanged"* **is** the report.
+- **The placement is carried, never recomputed.** A 304 asset has no digest this run, so
+  `placeAsset`'s dedupe state is seeded from the prior row — otherwise the next asset carrying those
+  bytes writes a second copy under its own name and SH210's *a path names one thing* is broken by the
+  cheap path.
+- **A 304'd stylesheet is re-read from the tree.** The inventory's asset rows are rebuilt from the
+  pages on every refresh, so SH452's `url()` walk has to happen or the fonts a still stylesheet
+  references quietly leave the capture — a capture that shrank because nothing changed.
+- **A 304 is about the server's copy, not ours.** It is honoured only if the file the last capture
+  placed is still under `shio/assets/`; otherwise the asset is downloaded unconditionally and the run
+  says why it paid. That is the one thing that can make a carried row a lie, and an inventory naming
+  a file that is not there is worse than one that re-downloaded it.
+
+A prior row is asked about conditionally only when it has a **placement**, a **validator**, and no
+`unavailable` — three conditions ruling out three different lies, the third being that asking about
+a row the last run recorded as failed would turn a known gap into a silent one. Validators are
+recorded on every 200 whether or not the run is a refresh: the run that makes the next one cheap is
+the *ordinary* capture, so a validator nobody stored is a request nobody can avoid.
 
 **`shio judge --site X` — one verdict, and the disagreements that produced it (SH589).** Judging a
 replica meant running `verify`, `diff`, `audit` and `snapshot`, reading four reports in four
