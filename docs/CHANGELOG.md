@@ -483,6 +483,7 @@
 - **SH662** — SH169 has its own ledger entry, so show answers and every per-id reader can see it; RK1051 had shipped and the blocker recorded here was stale.
 - **SH665** — The config registers react-hooks itself, so the lint loads; it gates in CI against a 33-finding suppressions baseline, and the one real defect it hid is fixed.
 - **SH666** — The export composes through ShAddress.post instead of adding strings, so both stored spellings name one address, and a lint fails the next bypass.
+- **SH668** — **Every §X.Y in the rationale resolves, and a reader in `pnpm test` says so** ([improvements-debt.test.mjs](../cli/test/improvements-debt.test.mjs)). Sixteen citations pointed at headings that were not there while `roadkeep lint` called the file clean — the thirteen this was filed on, plus `§VIII`, which was cited in the preamble *and* offered in the table of contents because Block H's family heading went when the block shipped. The mechanism is `ship` doing its job: it drops the section of the task that shipped and cannot know who was pointing at it, so `section.stale` had the question one way round and nothing had it the other.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

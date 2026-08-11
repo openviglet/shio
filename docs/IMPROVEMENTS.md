@@ -19,8 +19,8 @@
 **Status legend** (status itself lives in ROADMAP.md): ⏳ partial · 📋 designed · 💭 idea.
 
 **Section order** below follows the **suggested work order** in ROADMAP.md
-(H → K → I → J → L → M → N), not the block letters — §VIII is Block H, §IX is
-Block K, §X is Block I, and so on. Each section header names its block.
+(H → K → I → J → L → M → N), not the block letters — §IX is Block K, §X is
+Block I, and so on. Each section header names its block.
 
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
@@ -29,7 +29,6 @@ verify against `git ls-files` before acting.
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
 - **Part 1 — the reorientation (active)**
-  - [VIII. The Agent Gateway (Block H)](#viii-the-agent-gateway-block-h)
   - [IX. Perception & verification loop (Block K) — ✅ shipped whole](#ix-perception--verification-loop-block-k--✅-shipped-whole)
   - [X. Content as files (Block I)](#x-content-as-files-block-i)
   - [XI. Blueprints + Claude Code plugin (Block J)](#xi-blueprints--claude-code-plugin-block-j)
@@ -184,15 +183,14 @@ only for an *error*, because a gate that fails on what the CMS cannot prove is a
 people bypass — and every mechanism added afterwards (SH141's delivery proof, SH142's
 accepted findings, SH114-declared routes) turns a warning into a fact or an explicit
 decision rather than tightening the gate. Everything the agent reads is cheap and
-textual; SH102's PNG is scoped for a human. **§XV.4 (SH187)** revisits that for the
-other reader.
+textual; SH102's PNG is scoped for a human. **SH187** revisits that for the other reader
+→ [CHANGELOG.md](CHANGELOG.md) Block P.
 
 **The follow-ups taught a second lesson, about the block's own instruments.** Four of
-the eleven were defects *in* a guard rather than in the product: a lint that read prose
-as code, a debt reader that could not tell a mention from an assertion, a gate whose
-fallback was null in the deployment it demands, and a "flake" that was a scoping bug. A
-perception loop that cannot perceive itself is the failure this block should expect
-next.
+eleven were defects *in* a guard, not in the product: a lint that read prose as code, a
+debt reader that could not tell a mention from an assertion, a gate whose fallback was
+null in the deployment it demands, and a "flake" that was a scoping bug. A perception
+loop that cannot perceive itself is the failure this block should expect next.
 
 ## X. Content as files (Block I)
 
@@ -211,10 +209,10 @@ next.
 > reimplement saves nothing — it just moves the work. **Absorbs the old SH23
 > marketplace epic** (SH27–SH31).
 >
-> The format, the verb, the first-party set, the section vocabulary and the Claude Code
-> plugin are shipped — see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the
-> distribution question (§XI.5) and the five mismatches that shipping the two halves
-> exposed (§XI.7–§XI.11).
+> The format, the verb, the first-party set, the section vocabulary, the Claude Code
+> plugin and the five mismatches that shipping the two halves exposed are all shipped —
+> see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the distribution question
+> (§XI.21).
 
 ### XI.21 Where the list lives, and who vouches (SH646)
 
@@ -426,36 +424,9 @@ leaving to whoever next notices the poll is not free.
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
-> building it opened (SH163–SH167, SH233, SH234). What is left here is what *finishing* it
-> turned up rather than what building it opened: thirteen rationale pointers that resolve
-> to nothing under a clean gate. The other five (SH235–SH237, SH239, SH240) have shipped.
+> building it opened (SH163–SH167, SH233, SH234) and the ones that finishing it turned
+> up (SH235–SH237, SH239, SH240, SH668). Nothing is left open here.
 > Concept spec §10 has the original table.
-
-### XIV.23 Thirteen pointers to nothing, under a clean gate (SH668)
-
-Measured on 2026-08-11 with a nine-line reader over `docs/IMPROVEMENTS.md`: **38
-anchors, 17 distinct `§X.Y` citations, 13 of them pointing at no heading** — `II.1`,
-`II.7`, `III.1`, `III.10`, `X.3`, `XI.1`, `XI.5`, `XI.7`, `XI.11`, `XII.1`, `XII.4`,
-`XV.3`, `XV.4`. `roadkeep lint` reports the file clean.
-
-The mechanism is `ship` doing its job: it deletes the rationale of the task that
-shipped, which is right. What it cannot know is who was *pointing* at that section, and
-prose citations are how these files carry an argument across blocks — a reader following
-§XI.5 finds nothing and cannot tell whether the pointer is wrong or the argument was
-never written.
-
-Two of the thirteen were made in this session and repaired in it, which is what makes
-the rate worth stating rather than the count: §XIV cited §XIV.4 and §XIV.18, and both
-went dead inside a day — one when a hand edit dropped a section, one when SH659 shipped.
-Nothing failed either time.
-
-`section.stale` is the same question asked the other way, so the gate already owns the
-pair and holds one half. The reader is nine lines, which argues for a check rather than
-a sweep: fixing thirteen by hand leaves the fourteenth to the next ship.
-
-What a repair *is* differs per pointer — a section that shipped should point at the
-ledger, one renumbered should follow it, one always wrong should go — which is why this
-is filed.
 
 ## XV. The visible site (Block P)
 
@@ -560,14 +531,13 @@ has to be replaced is the host that ran it.
 
 ### XV.0.5 What a real template looked like: regions are slotted by an HTML attribute
 
-`openviglet/bootstrap-site` is not a project — it is an
-`export.json`, an SH68 exchange package, and its ten posts are `PT-FOLDER-INDEX` ×1,
-`PT-ARTICLE` ×3, `PT-PAGE-LAYOUT` ×2, `PT-REGION` ×2, `PT-THEME` ×1, `PT-FILE` ×1. The
-presentation *is* content, and it travels the same way content does. Four things in it settle
-the design:
+`openviglet/bootstrap-site` is not a project — it is an `export.json`, an SH68 exchange
+package, and its ten posts are `PT-FOLDER-INDEX` ×1, `PT-ARTICLE` ×3, `PT-PAGE-LAYOUT`
+×2, `PT-REGION` ×2, `PT-THEME` ×1, `PT-FILE` ×1. The presentation *is* content, and it
+travels the same way content does. Four things in it settle the design:
 
-**1. Regions are slotted by an HTML attribute.** A layout's `HTML` field is a whole document
-with named holes:
+**1. Regions are slotted by an HTML attribute.** A layout's `HTML` field is a whole
+document with named holes:
 
 ```html
 <body>
@@ -575,8 +545,9 @@ with named holes:
   <div sh-region="BOOTSTRAP_CONTENT_LIST_REGION" style="margin:20px"></div>
 ```
 
-`sh-region` is the composition mechanism, and it is also — already, in 2018 — exactly the
-annotation contract the Universal Editor needs (§XV.3). A rendered page that keeps these
+`sh-region` is the composition mechanism, and it is also — already, in 2018 — exactly
+the annotation contract the Universal Editor needs, which SH185 later wrote down as a
+protocol → [CHANGELOG.md](CHANGELOG.md) Block P. A rendered page that keeps these
 attributes tells the editor what each part of the DOM is and which post to save it to.
 
 ### XV.0.6 The layout's JavaScript is ceremony, not capability
@@ -749,16 +720,18 @@ somebody adds the fifth one.
 > template the whole agent-native protocol follows — declarative source → canonical
 > serialization → plan → apply → drift guard → explicit GUI/code boundary. Blocks H
 > and I are that same pattern applied to content and to the protocol itself.
-> (Historic subsection anchors §II.1–§II.7 map to SH6, SH7, SH8, SH9, SH10, SH11, SH62.)
+> (Historic subsection anchors `§II.1`–`§II.7`, cited by `docs/specs/*` and no longer
+> headings here, map to SH6, SH7, SH8, SH9, SH10, SH11, SH62.)
 
 ## III. Composable platform primitives
 
 > ✅ **Fully shipped (SH12–SH16, SH26, SH51–SH55)** → [CHANGELOG.md](CHANGELOG.md)
 > Block C. The agent surface leans directly on four of them: the **audit trail**
-> (SH51 → §X.3 change feed, §XII.1 attribution), **soft-delete** (SH55 → §XII.4
-> revert), the **draft/published diff** (SH14 → §XII.4 review), and **search**
+> (SH51 → the change feed and attribution), **soft-delete** (SH55 → revert), the
+> **draft/published diff** (SH14 → review), and **search**
 > (SH52 → `shio_find`). Open follow-up: folder soft-delete (subtree-hide semantics).
-> (Anchors §III.1–§III.10 map to SH12–SH16, SH51–SH55.)
+> (Historic anchors `§III.1`–`§III.10`, cited by `docs/specs/*` and no longer headings
+> here, map to SH12–SH16, SH51–SH55.)
 
 ## IV. Server-side JS rendering — dropped
 
@@ -803,13 +776,13 @@ existing `workspace_id`-claim/username resolution (`ShTenantFilter`). Open:
 > ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.
 > The original "new sites are blank" regression is closed. **Why it still matters:**
 > the SH68 exchange package format is the substrate Block J's blueprints are built
-> on (§XI.1), and `ShSiteImportService.provisionInto` is the engine `shio apply`
+> on, and `ShSiteImportService.provisionInto` is the engine `shio apply`
 > reuses — one engine now serving site clone, tenant provisioning, bootstrap and
 > blueprints.
 >
 > **Non-goal (do not re-add):** the legacy `ShSitesNodeJS` "export site as a
 > runnable Node app" is superseded by `create-shio-app` (SH8) and, going forward, by
-> blueprints (§XI.1).
+> blueprints → [CHANGELOG.md](CHANGELOG.md) Block J.
 
 ## XVII Replication (Block Q) — a site that already exists becomes one an agent can author
 

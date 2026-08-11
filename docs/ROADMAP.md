@@ -30,8 +30,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH668** (deps: —) **Thirteen rationale citations point at sections that no longer exist, and the gate calls the file clean** — Every ship drops a section, and each §X.Y naming it becomes a dead end that section.stale cannot see because it only checks the other direction. → §XIV.23
-
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH243** (deps: SH55 ✅, SH202 ✅) **A trashed post still holds its friendly URL, and nothing knows it** — Every free-URL check reads through @SQLRestriction, so the trash is invisible to it and an untrashed post can collide with the name its own copy took. → §XVI.3

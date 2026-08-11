@@ -83,6 +83,27 @@ function sections() {
 }
 
 /**
+ * Every `§X.Y` the prose cites, in order, duplicates kept.
+ *
+ * <p>A citation is the section sign and a local anchor: `§XI.5`, `§0.4`, `§XV.0.5`, and `§XIV` for
+ * a block family — which is a heading in this file like any other, so it is checked rather than
+ * excused. Trailing punctuation is not part of an anchor (`§0.4.` ends a sentence), and a `§` with
+ * nothing addressable after it is not a citation.</p>
+ *
+ * <p><b>Two things that look like citations and are not</b>, both found by running the first draft
+ * of this reader over the real file rather than by reasoning about it. Code spans are stripped,
+ * because `§X.Y` written between backticks is the *notation* — this file and `agents.md` both
+ * discuss the form, and a reader that cannot tell a mention from a use reports the sentence
+ * describing the defect as an instance of it. And the anchor shape is exact — a roman family or
+ * the arabic `0` one, each optionally numbered — because *"Concept spec §10"* addresses a section
+ * of `specs/SH74-agent-native-cms.md`, a document this reader has not read and must not judge.</p>
+ */
+function citations(text) {
+  const prose = text.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+  return [...prose.matchAll(/§((?:[IVXLC]+|0)(?:\.\d+)*)\b/g)].map(([, ref]) => ref);
+}
+
+/**
  * The sections that outlived their tasks.
  *
  * <p>Pure, and taking its three sets as arguments, so the test below can hand it a file it knows
@@ -284,6 +305,112 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
       reserved.size >= 9,
       `only ${reserved.size} reservation(s) read from roadkeep.toml — the declaration moved, and `
         + "this check passes vacuously the moment it cannot find it",
+    );
+  });
+
+  /**
+   * SH668 — a `§X.Y` written in the prose resolves to a heading, or it is a dead end.
+   *
+   * <p>The sibling test above asks the same question from the roadmap: does every `→ §X.Y` on a
+   * task line find its section. This asks it from *inside* the rationale, which is where the
+   * citations actually are — prose is how these files carry an argument across blocks, and
+   * thirteen of seventeen distinct citations pointed at nothing when this was filed while
+   * `roadkeep lint` called the file clean.</p>
+   *
+   * <p><b>The mechanism is `ship` doing its job.</b> Its first edit drops the section of the task
+   * that shipped, which is right — `IMPROVEMENTS.md` is rationale for *unshipped* work. What it
+   * cannot know is who was pointing at that section, so every ship is a chance to make a dead end,
+   * and two of the thirteen were made and repaired inside one day with nothing failing either
+   * time. `section.stale` is this question asked the other way and roadkeep already holds it; this
+   * is the half nobody held.</p>
+   *
+   * <p><b>Three readers of these pointers now, and none of them overlaps.</b> `roadkeep lint` owns
+   * `ref.unresolved` — does a task line's `→ §` resolve. `ShDesignRationalePointerLintTest` owns
+   * the harder version of that same direction — does it resolve to the section that *names the
+   * task*. Neither reads the prose, which is where the citations are. Adding a fourth would be two
+   * readers of one format waiting to disagree, which is that lint's own stated rule.</p>
+   *
+   * <p><b>Only this file, and deliberately.</b> `CHANGELOG.md` is append-only history: an entry
+   * written in May citing a section that shipped in August is a true statement about that day, and
+   * a gate demanding it resolve would ask the ledger to be rewritten every time a section is
+   * correctly dropped. The roadmap's side is the test above.</p>
+   */
+  test("SH668: every section the rationale cites exists, in either direction", () => {
+    const anchors = new Set(sections().map((each) => each.anchor.replace(/\.$/, "")));
+    const cited = citations(improvements);
+    const dangling = [...new Set(cited)].filter((ref) => !anchors.has(ref)).sort();
+
+    assert.deepEqual(
+      dangling,
+      [],
+      "SH668: the rationale cites a section that is not in the file, so a reader following the "
+        + "pointer cannot tell whether the pointer is wrong or the argument was never written. "
+        + "A repair differs per pointer: a section that shipped points at the ledger instead, one "
+        + "renumbered follows its new anchor (`roadkeep section move`), one that was always wrong "
+        + "goes. Amend the prose with `roadkeep section amend <anchor>` — the hook denies the hand "
+        + "edit.\n"
+        + `  dangling: ${dangling.map((ref) => `§${ref}`).join(" ")}`,
+    );
+
+    process.stdout.write(
+      `\nSH668 IMPROVEMENTS.md: ${cited.length} citation(s), `
+        + `${new Set(cited).size} distinct, over ${anchors.size} anchor(s) — 0 dangling\n`,
+    );
+    // A reader whose regex stopped matching would report zero dangling out of zero citations and
+    // be green for the one reason that proves nothing.
+    assert.ok(cited.length > 5, `only ${cited.length} citation(s) parsed — the § form changed`);
+    assert.ok(anchors.size > 20, `only ${anchors.size} anchor(s) parsed — the heading shape changed`);
+  });
+
+  /**
+   * SH668 — and the table of contents is the same pointer with a different syntax.
+   *
+   * <p>Found by the reader above rather than looked for: `§VIII` was cited in the preamble
+   * *and* listed in the contents, because Block H's family heading went when the block shipped.
+   * A markdown link is checked by its **anchor token** — every row here opens with one — rather
+   * than by rebuilding GitHub's slug, which involves emoji and en-dashes and would be a second
+   * thing that can be wrong about a heading.</p>
+   */
+  test("SH668: the table of contents lists no section that is gone", () => {
+    const anchors = new Set(sections().map((each) => each.anchor.replace(/\.$/, "")));
+    const start = improvements.indexOf("## Table of contents");
+    const toc = improvements.slice(start, improvements.indexOf("\n## ", start + 5));
+    const listed = [...toc.matchAll(/^\s*-\s+\[((?:[IVXLC]+|0)(?:\.\d+)*)\.?[^\]]*\]\(#/gm)]
+      .map(([, ref]) => ref);
+
+    assert.ok(listed.length > 10, `only ${listed.length} contents row(s) parsed — the shape changed`);
+    assert.deepEqual(
+      listed.filter((ref) => !anchors.has(ref)),
+      [],
+      "SH668: the contents offers a section the file no longer has, which is the citation defect "
+        + "in link form — a reader clicks it and lands nowhere. `ship` drops the section; the row "
+        + "above it is nobody's job.",
+    );
+  });
+
+  test("SH668: the reader flags a dead citation and spares the six kinds that are not one", () => {
+    const fixture = [
+      "A block family is an anchor too: §XI is the heading over §XI.21.",
+      "A live subsection: §XI.21 is in the file.",
+      "A deep anchor: §XV.0.5 has three parts and still resolves.",
+      "An arabic family: §0.6 is a heading under Part 0.",
+      "The notation itself, quoted: `§X.Y` is the form, not a pointer.",
+      "Another document's section: Concept spec §10 has the original table.",
+      "A bare section sign § with no anchor after it.",
+      "And one that shipped: §XI.5 is gone.",
+    ].join("\n");
+    const anchors = new Set(["XI", "XI.21", "XV.0.5", "0.6"]);
+    const dangling = [...new Set(citations(fixture))].filter((ref) => !anchors.has(ref)).sort();
+
+    assert.deepEqual(
+      dangling,
+      ["XI.5"],
+      "SH668: only §XI.5 is dead. The other six are the ways this reader could become a nuisance "
+        + "somebody deletes — a family heading read as if it needed a number, a three-part anchor "
+        + "truncated, an arabic family missed because the roman ones were assumed, the notation "
+        + "read as a use of itself, a cross-document reference judged against the wrong file, and "
+        + "a lone § read as an empty citation. Five of the six were live findings on the real "
+        + "file, not hypotheticals.",
     );
   });
 
