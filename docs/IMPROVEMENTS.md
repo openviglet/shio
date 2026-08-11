@@ -975,27 +975,26 @@ listing, or six languages. They surface here because a real site has all three.
 
 ### XVII.55 Two templates, and neither serves an authorable replica (SH502)
 
-SH446 made a scaffold installable by writing the version the registry has: the built-in
-template asks for `@viglet/shio-client@^2026.2.1` and `npm install --dry-run` resolves.
-The half it did not reach is the one an authorable replica needs.
+SH446 made the built-in scaffold installable; SH502 measured both templates and shipped
+the refusal. What remains is one act: **publishing `@viglet/shio-sections` and
+`@viglet/shio-model`**, which have never been on the registry and answer E404. Until
+they are, an authorable replica has no installable front end — its content is sections,
+and the only scaffold that draws them cannot be installed. A fidelity replica is
+unaffected: it has Shio's own renderer.
 
-Two templates, and neither combination delivers one. The **built-in** template installs and carries no
-sections renderer — `shio-client` only, nothing under `app/` or `lib/` that reads a Page's `sections`. The
-**`marketing-site`** blueprint does render them, and asks for `@viglet/shio-sections@^2026.3.1`, which
-answers **E404**: it has never been published, and neither has `@viglet/shio-model`.
+**Blocked on an operator action, not on code, and verified so on 2026-08-11.** Both
+packages build; both pass `pnpm publish --dry-run`; `publish-js-sdk.yml` orders model
+before sections, so pnpm rewrites the `workspace:*` to a version that exists by then.
+The trigger needs `NPM_TOKEN` and is irreversible on a public registry, which is why it
+is an operator's call rather than a task's.
 
-So a fidelity replica has two working paths — Shio's own renderer, or a front end it
-does not need — and an authorable replica has none. Its content is sections, and the
-only scaffold that draws sections cannot be installed.
-
-The measurement is one command per template and it was not in SH446's scope, which asked
-for the scaffold to install and got that. It is the same split the skill names: the
-version write is the report, the publish is the behaviour, and only the first shipped.
-
-Publishing `shio-sections` is the whole fix, and until it lands the built-in template
-should not be offered for a site whose pages hold sections — `init --site` knows the
-site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
-than silently useless.
+**The post-release half is already instrumented, so nothing has to be remembered.** The
+replication conformance keys its assertion on `published.mjs` rather than on a fixed
+expectation: while the table says `null` npm must refuse the section template, and the
+day the release lands the same line requires a clean install. So a stale table fails the
+gate naming itself. Resuming is therefore two steps — dispatch the workflow, then flip
+the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
+commit.
 
 ### XVII.79 An assertion that names the fix instead of the defect (SH568)
 
