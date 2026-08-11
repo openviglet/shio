@@ -210,7 +210,13 @@ const DEBT = [
   // instance. Writing a second assertion here would duplicate a passing one; the honest fix is to
   // teach the reader that tree, and until then this stays listed rather than exempted, because an
   // exemption would say "cannot be asserted" when it is asserted and merely unread.
-  "SH238",
+  //
+  // SH659 joins it for the same reason and sharpens the entry: it is the *drive* — `sh:ready`,
+  // `sh:element-selected`, `sh:content-changed` — asserted by `universal-editor-drive` in that same
+  // tree. It cannot move: the assertion is a browser framing a rendered page, so there is no
+  // instance-free form of it to write here. Two entries now turn on one reader, which is the
+  // argument for teaching it rather than for a third.
+  "SH238", "SH659",
 ].sort(byId);
 
 /**

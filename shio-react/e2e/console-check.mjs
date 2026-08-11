@@ -215,6 +215,153 @@ async function checkEditorSaveBack(context, postId) {
   return probe
 }
 
+/**
+ * SH238 — the Universal Editor, driven end to end at last.
+ *
+ * ## What was open, and why it stayed open
+ *
+ * SH233's defect was a save-back that could not authenticate, and it survived because nothing in
+ * this repository drove the editor: every test built the request in Java or mocked the client, and
+ * both agreed with a comment that described the mechanism wrongly. `checkEditorSaveBack` above
+ * closed the *one fact* that needed no iframe. The rest — the handshake, the properties panel, a
+ * field's round trip, the publish action — was blocked on having a front end to embed.
+ *
+ * It is not blocked any more, and it has not been since SH183/SH184: a site with no configured
+ * `url` falls back to **Shio's own renderer**, and `?editor=true` asks that renderer for the SH185
+ * bridge. So the thing to embed shipped with the product.
+ *
+ * ## The two conditions, both discovered rather than assumed
+ *
+ * **Same origin.** The bridge posts to `data-shio-editor-origin`, which `ShRenderAPI.originOf`
+ * computes from the request — and an iframe navigation carries no `Origin` header, so it falls back
+ * to the *server's* own origin. Production serves the console and the renderer from one origin and
+ * this is exactly right. A Vite dev console on `:5173` framing a renderer proxied from `:2710` is
+ * not: the bridge targets `:2710`, the parent is `:5173`, and the handshake cannot complete. That is
+ * a real gap and it is reported here as a skip with the reason rather than as a failure, because it
+ * is a property of the topology under test and not of the build.
+ *
+ * **A page that renders with annotations.** A site whose `url` names a front end this instance does
+ * not serve, or whose home is a 404, gives an iframe with nothing in it. The site is therefore
+ * chosen by asking the renderer, not by taking the first one.
+ */
+async function checkEditorDrive(context, sites) {
+  const probe = { name: "universal-editor-drive", path: "/console/universal-editor/{site}", ok: true,
+    errors: [], warnings: [], failedRequests: [] }
+
+  if (new URL(BASE).origin !== new URL(API).origin) {
+    probe.skipped = `console is ${new URL(BASE).origin} and the renderer answers as `
+      + `${new URL(API).origin}, so the bridge posts to an origin this window is not — the editor `
+      + "cannot hand-shake across a dev proxy. Run this against the instance's own console"
+    return probe
+  }
+
+  // A site the renderer will actually draw, with fields the editor can select. Asked of the
+  // renderer because nothing else can answer it: `url` being empty is necessary and not sufficient.
+  let target = null
+  for (const site of sites) {
+    if (site.url && site.url.trim()) continue
+    try {
+      const res = await fetch(`${API}/preview/${encodeURIComponent(site.name)}/?editor=true`,
+        { headers: { Authorization: AUTH } })
+      if (!res.ok) continue
+      const html = await res.text()
+      if (html.includes("data-shio-prop") && html.includes(ShEditorBridgeScript)) { target = site; break }
+    } catch { /* the next site is the answer */ }
+  }
+  if (!target) {
+    probe.skipped = "no site on this instance renders a page carrying editable props — the editor "
+      + "would frame a 404, which is a fixture gap and not a defect"
+    return probe
+  }
+  probe.site = target.name
+
+  const page = await context.newPage()
+  page.on("pageerror", (e) => probe.errors.push(String(e)))
+  try {
+    await page.goto(`${BASE}/console/universal-editor/${target.id}`,
+      { waitUntil: "domcontentloaded", timeout: 30_000 })
+
+    // 1. The handshake. `sh:ready` is what the whole protocol rests on, and until now nothing
+    //    anywhere observed it — a bridge that never loaded looked identical to one that did.
+    let frame = null
+    for (let waited = 0; waited < 20_000 && !frame; waited += 500) {
+      frame = page.frames().find((f) => f.url().includes("editor=true")) ?? null
+      if (!frame) await page.waitForTimeout(500)
+    }
+    if (!frame) {
+      probe.ok = false
+      probe.errors.push("the editor never framed a page with ?editor=true")
+      return probe
+    }
+    const fields = frame.locator("[data-shio-prop]")
+    await fields.first().waitFor({ state: "attached", timeout: 20_000 })
+    probe.props = await fields.count()
+
+    // The bridge sets this on the framed document when it turns edit mode on, which is the last
+    // thing `attach()` does before `sh:ready`. Reading the frame is sound *here* — this probe has
+    // already established the renderer is Shio's own, which is the case the parent deliberately
+    // does not inspect (SH333: it must work against a front end whose DOM it cannot touch).
+    const editing = await frame.locator("[data-shio-editing='true']").count()
+      .catch(() => 0)
+    if (!editing) {
+      probe.ok = false
+      probe.errors.push("SH185: the bridge script loaded and never turned edit mode on, so "
+        + "`sh:ready` was not sent and the console shows 'no connection' over a page that is fine")
+    }
+
+    // 2. Selection → the properties panel. The panel is the half a curator uses and the half
+    //    `checkEditorSaveBack` cannot see: it is driven entirely by `sh:element-selected`.
+    const EMPTY = /Nenhum elemento selecionado|No element selected/i
+    probe.panelStartedEmpty = (await page.getByText(EMPTY).count()) > 0
+    await fields.first().click({ timeout: 10_000 })
+    // Waited for, not sampled: the click crosses a `postMessage` and a React state update, so
+    // reading the panel in the same tick tests the scheduler rather than the protocol.
+    const selected = await page.getByText(EMPTY).waitFor({ state: "detached", timeout: 10_000 })
+      .then(() => true).catch(() => false)
+    if (!selected) {
+      probe.ok = false
+      probe.errors.push("clicking an annotated element left the properties panel empty, so "
+        + "`sh:element-selected` did not reach the console — the panel is decorative")
+    }
+
+    // 3. A field's round trip, as far as a smoke check may honestly take it. Typing into the framed
+    //    page must reach the console as `sh:content-changed` and become a PENDING change — which is
+    //    the half nothing observed. It stops there deliberately: `checkEditorSaveBack` already
+    //    proves the PATCH those changes turn into, and this file must not edit anybody's content to
+    //    find out (the same rule that probe states about its empty `attrs`). Nothing is saved, so
+    //    nothing is written: the page is reloaded away and the draft is untouched.
+    const typing = fields.first()
+    if (await typing.getAttribute("data-shio-editable") !== "false") {
+      await typing.click()
+      await typing.press("End")
+      await typing.type(" ", { delay: 40 })
+      const pending = await page.getByText(/\d+\s+(altera|change)/i)
+        .waitFor({ state: "visible", timeout: 10_000 })
+        .then(() => true).catch(() => false)
+      if (!pending) {
+        probe.ok = false
+        probe.errors.push("typing in the framed page produced no pending change in the console, so "
+          + "`sh:content-changed` did not arrive — the save button can never enable and a curator's "
+          + "edit is lost the moment they navigate")
+      } else {
+        probe.pendingChange = true
+      }
+    } else {
+      probe.warnings.push("the first editable prop is declared read-only, so the round trip was "
+        + "not driven on this instance")
+    }
+  } catch (e) {
+    probe.ok = false
+    probe.errors.push(`could not drive the editor: ${String(e).split("\n")[0]}`)
+  } finally {
+    await page.close()
+  }
+  return probe
+}
+
+/** The bridge's own script path — the tag `ShEditorBridge.inject` appends (SH185). */
+const ShEditorBridgeScript = "/preview/_shio/editor.js"
+
 async function main() {
   const { site, routes } = await discoverRoutes(flag("site", process.env.SHIO_SITE))
   await mkdir(OUT, { recursive: true })
@@ -306,6 +453,15 @@ async function main() {
   console.log(`${editorProbe.ok ? "ok  " : "FAIL"} ${editorProbe.name.padEnd(30)} `
     + (editorProbe.skipped ? `skipped: ${editorProbe.skipped}` : `${editorProbe.status}`))
   for (const e of editorProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
+  // SH238's other half: the editor itself, not only the fact its save-back rests on.
+  const driveProbe = await checkEditorDrive(context, await api("/site"))
+  report.probes.push(driveProbe)
+  console.log(`${driveProbe.ok ? "ok  " : "FAIL"} ${driveProbe.name.padEnd(30)} `
+    + (driveProbe.skipped
+      ? `skipped: ${driveProbe.skipped}`
+      : `${driveProbe.site} — ${driveProbe.props} editable prop(s)`))
+  for (const e of driveProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   await browser.close()
   await writeFile(join(OUT, "console-check.json"), JSON.stringify(report, null, 2))

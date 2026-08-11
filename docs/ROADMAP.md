@@ -37,6 +37,8 @@
 - 📋 **SH655** (deps: SH499 ✅, SH628 ✅) **The three docs instruments cannot run in CI, because nothing checks out the repository they read** — Their default path is one machine's drive letter and the conformance job clones only this repo, so the gate proving the published pages never runs there. → §IX.75
 - 📋 **SH656** (deps: —) **shio.git.* is bound, shipped with placeholder values, and read by nothing** — A configuration class no code consumes still declares real keys to the property vocabulary, so a page could document a setting that does nothing and pass the gate. → §IX.76
 - 📋 **SH657** (deps: —) **Two code-editor fields are off the renderer's raw-text list, so their JSON is entity-escaped** — RAW_TEXT_FIELDS says it holds the Ace Editor CSS/JavaScript fields and holds four of six - Theme.TOKENS and SiteScripts.SCRIPTS are hand-omitted. → §IX.77
+- ⏳ **SH659** (deps: SH238 ✅) **Nothing drives the Universal Editor's handshake, panel or field round trip** — SH238's ledger entry closed the save-back and recorded the drive as waiting on Block P, which shipped - so the open line is a duplicate id and the drive is unexercised. → §XIV.18
+- 📋 **SH660** (deps: —) **Opening an uploaded File post issues two 404s the console swallows, so the widget resolves no path** — file.widget.tsx passes the FILE field to /v2/post/xp/{id} and /v2/folder/{id}, but SH38 stores a path there, so both lookups miss and .catch hides it. → §XIV.19
 
 ## Block O — The human half (the console the curator uses)
 

@@ -418,6 +418,36 @@ the reader cannot run). "Still loading" and "this will never load" were the same
   behaviour, degrading to a plain iframe. The banner keeps the frame visible and says editing is
   unavailable; it never claims the site is broken.
 
+## Universal Editor — it is driven now, and two conditions had to be discovered (SH659)
+
+SH238 closed the one fact the save-back rests on and recorded the drive as blocked on "a front end
+to embed — which is Block P". **The blocker was already stale**: SH183/SH184 make a site with no
+configured `url` fall back to Shio's own renderer, and `?editor=true` asks it for the SH185 bridge,
+so the thing to embed ships with the product. `console-check.mjs`' `universal-editor-drive` now
+asserts the three messages nothing observed — `sh:ready` (the bridge turned edit mode on),
+`sh:element-selected` (a click fills the properties panel) and `sh:content-changed` (typing becomes
+a pending change). Until it existed, a bridge that never loaded and one that works were the same
+observation to every gate.
+
+**Same origin, or there is no handshake — and this is the one to know when the editor "does not
+work" on your machine.** The bridge posts to `data-shio-editor-origin`, which `ShRenderAPI.originOf`
+derives from the request; an iframe navigation carries no `Origin` header, so it falls back to the
+*server's* own origin. Production serves the console and the renderer from one origin and this is
+exactly right. A Vite console on `:5173` framing a renderer proxied from `:2710` gets a bridge
+aimed at a window that is not its parent, so the panel stays empty and the badge reads *"Sem
+conexão"* over a page that is fine. **Run `console:check --base http://localhost:2710`** — the
+instance's own console — or the probe skips, naming the topology rather than failing.
+
+**And the site is chosen by asking the renderer.** An empty `url` is necessary and not sufficient: a
+site whose home is absent frames the teaching 404, which answers **200** and carries
+`data-shio-prop` of its own, so neither the status nor the annotations alone can tell it from a real
+page. The probe requires both the props and the bridge tag, and skips when no site on the instance
+has them — a fixture gap is not a defect.
+
+The round trip deliberately stops at the pending change: `universal-editor-save-back` already proves
+the PATCH it becomes, and a smoke check must not edit anybody's content. Publish is the remainder,
+for the same reason — it mutates a post.
+
 ## The review count that could not go down (SH615)
 
 `ShReviewSession.pending` asked, per audit entry, whether the post has a `DRAFT` row. Its own javadoc
