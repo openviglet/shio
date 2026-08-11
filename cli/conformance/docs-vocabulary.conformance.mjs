@@ -71,6 +71,21 @@ const NOT_OURS = [
 
 const foreign = (key) => NOT_OURS.find((each) => key.startsWith(each.prefix));
 
+/**
+ * A documented key with a variable segment, which is a notation rather than a name (SH663).
+ *
+ * <p>`shio.turing.sites.<ShioSite>` is how the pages spell *"one entry per site"*, and the binding
+ * behind it is a map. It surfaced the moment SH663 taught the extractor to read property tables —
+ * the fenced blocks happened to contain no placeholder, so the convention had never met this check.
+ *
+ * <p>Skipped rather than resolved, and the distinction matters: this reader cannot say whether
+ * `<ShioSite>` is a *legitimate* variable segment or a page inventing one, and pretending otherwise
+ * would be a wildcard that matches anything after a dot. What it can say honestly is that a key
+ * carrying the documentation's own placeholder syntax is not a literal key, so demanding a literal
+ * binding for it would make the page less readable to satisfy a check.</p>
+ */
+const isTemplateKey = (key) => /<[^>]+>/.test(key);
+
 /** The host in a `curl` example is illustrative by design; only its path is a claim about us. */
 const pathOfUrl = (subject) => {
   if (subject.startsWith("/")) return subject.split("?")[0];
@@ -168,7 +183,7 @@ describe("SH499 conformance: the published vocabulary is this product's vocabula
   test("every documented `shio.*` property is bound by something", () => {
     const misses = [];
     for (const [key, where] of subjects("properties")) {
-      if (foreign(key) || vocabulary.properties.has(key)) continue;
+      if (foreign(key) || vocabulary.properties.has(key) || isTemplateKey(key)) continue;
       misses.push({ subject: key, where });
     }
     assert.deepEqual(

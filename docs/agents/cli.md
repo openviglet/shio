@@ -2289,6 +2289,20 @@ in two halves that answer different questions at very different prices:
   milliseconds.** This is
   what catches a renamed verb. Nothing is listed here — a checked-in list of "the verbs as of today"
   would rot by the same mechanism as the docs, one directory closer.
+  **And it reads tables, because the page it exists for is one (SH663).** The extractor took fenced
+  blocks tagged `properties`, and `configuration-reference.md` has none — its whole content is a
+  table, one row per key. So the page whose entire subject is the property vocabulary contributed
+  **nothing** to the count that checks it, which is how three keys binding nothing shipped as
+  published rows and stayed. Independent of SH656: with the vocabulary correct, a page naming a key
+  that was never bound would still have passed, because the row was not read. The rule is narrow
+  because a cell is prose — only the **first** cell of a row, in a table whose header names a
+  property column, and only a **dotted** key. A citation in a Description column is the page
+  explaining itself; a bare `max-width` is a field named relative to a prefix the page spells in a
+  fence three lines above, which this reader cannot join. Both are **declined and counted** —
+  `tables past` and `rows relative` in the printout — because a check that silently covered some
+  tables would be worse than one covering none. Measured: 14 property blocks became **22**, 77 keys
+  became **121 subjects**, 7 tables past, 4 rows relative. Proved by injecting `shio.invented.key`
+  as a table row and watching the gate name it.
 - **`docs-examples.conformance.mjs` — the requests.** The 15 read-only documented requests are
   issued against a live instance. It catches the three things a name check structurally cannot: an
   endpoint that is mapped and 500s, one whose response lost the key the page shows, and one a page

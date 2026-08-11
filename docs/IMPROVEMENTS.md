@@ -219,32 +219,6 @@ before the replacement can exist, and that attempt was reverted rather than
 half-applied. `record amend` also cannot write the five-line shape it parses (RK1049).
 **Do not retry until one of those ships.**
 
-### IX.79 The page the property check exists for is the page it does not read (SH663)
-
-`docs-examples.mjs` classifies a fenced block as `properties` when its language tag says
-so, and `docs-vocabulary` then holds each key it names against what the product binds.
-Measured today: **14 property blocks** across the documentation set, checked against 77
-known keys.
-
-`configuration-reference.md` contributes none of them. Its content is a Markdown
-**table** — one row per key, three columns — which carries no language tag and is not a
-fenced block, so the page whose entire subject is the property vocabulary is invisible
-to the check built for it.
-
-That is how three keys binding nothing shipped as published rows and stayed. SH656
-removed them and closed the other half — a bound class nothing injects no longer
-inflates the vocabulary — but the two failures are independent: with the vocabulary
-correct, a page naming a key that was never bound would still pass, because the row is
-not read.
-
-The fix is a second extractor over table cells, with one decision attached. A cell is
-prose, so a backticked token in a Description column must not read as a documented key.
-The narrow rule that fits: only the **first** cell of a row, in a table whose header
-names a property column — the shape every configuration table here already has. Where a
-page's table lacks it, say so in the count rather than guess: the count is what makes
-this gate readable, and one that silently covered some tables would be worse than one
-covering none.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
