@@ -1094,43 +1094,20 @@ which one it is showing.
 ## XX End-user documentation, round two (Block T)
 
 Block R measured this and could not fix it. It took the coverage matrix from **33 wrong
-of 40** to **6**, and every one of the six is a cluster **no Block R task ever named** —
-they were not leftovers that ran out of time, they were never in scope. That is the
-finding the matrix existed to produce, and it is why these are a block rather than a
-snagging list.
+of 40** to **6**, and every one of the six was a cluster **no Block R task ever named**
+— not leftovers that ran out of time, never in scope. That is the finding the matrix
+existed to produce, and it is why these were a block rather than a snagging list.
 
-Four of the six are curator-facing. The agent's surface is now the best-documented part
-of Shio and the console is the worst, which inverts who actually needs a page: an agent
+Four of the six were curator-facing, which inverts who actually needs a page: an agent
 reads a manifest, a person reads a page or gives up. P7 — *never surprise the human* —
-is the law the gap sits on.
+is the law the gap sat on. The seventh entry was the one a scan could not see: the image
+epic's operator half scored 🧩 rather than 🔴, and a partially-covered row does not read
+as an orphan.
 
-Two things make this round different from Block R's. **The examples are executed now**
-(SH499): two instruments compare every published verb, route, tool name, configuration
-key and read-only request against a running product on each conformance run, so a page
-written here is checked rather than trusted. And **⚠️ rows are rewrites, not additions**
-— a page describing a shape the product left makes any new section contradict it, so the
-stale prose goes first.
-
-Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
-page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
-
-### XX.7 The image epic's operator half, folded into a page for authors (SH629)
-
-The SH25 epic's transform parameters are documented — `?w=`, `?h=`, `?format=`, `?crop=`
-in `website-development § Static files and images`, correctly, for the person writing a
-template. What is missing is everything the person **running** the instance needs: the
-result cache and its invalidation, the dimension and format limits, and how to turn
-signed URLs on.
-
-`COVERAGE.md` scores the cluster 🧩 rather than 🔴, which is the honest verdict and also
-why it survived the block — a partially-covered row does not read as an orphan in a
-scan.
-
-The limits are the operationally urgent half. An image transform endpoint with no
-documented ceiling is a request for an arbitrarily large allocation, and signed URLs are
-the mechanism that stops a stranger driving the resize pipeline from a public page. Both
-exist; neither is discoverable, so the default deployment is the unconfigured one.
-
-This is a section under an operations page rather than a page of its own, and the
-question it should answer first is what the defaults already protect against — an
-operator who reads it and needs to change nothing has still been served.
+**Two tasks are worth keeping for their shape.** SH623 and SH628 were ⚠️ — a page
+describing a shape the product left — and that is a *rewrite*, because a new section
+under stale prose makes the page contradict itself. SH628 landed the instrument first
+(SH322): a version in prose is a claim nothing derives, so `docs-stack.conformance.mjs`
+reads Java, Spring Boot, Node and pnpm out of this repository's build files and fails
+any page — `README.md` included — that states another. It found three defects on its
+first run, and a fourth in SH499's own reader.
