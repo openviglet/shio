@@ -202,22 +202,22 @@ shipped together into one entry, which reads well and is invisible to every read
 keys on an id.
 
 **This section cannot spell that id, and that is the finding rather than a wording
-choice.** Writing it here is refused by the rule the defect trips: the gate reads it as
-a promise nothing carries, because as far as any reader can tell it is in neither file.
-`roadkeep show` says *"never written or was retired"* about a task three lines from the
-id it does recognise, and neither direction of the ledger's accounting sees it — not
-shipped, so neither asserted nor in debt.
+choice.** The gate reads it as a promise nothing carries, because as far as any reader
+can tell it is in neither file. `roadkeep show` says *"never written or was retired"*
+about a task three lines from the id it does recognise, and neither direction of the
+ledger's accounting sees it — not shipped, so neither asserted nor in debt.
 
-Measured: **one** entry has this shape. Ten others name a second id and all ten are
-prose references, which the rule leaves alone. A single repair, not a class — and the
-reason to make it rather than declare the id reserved is that reserved would be a lie:
-it shipped.
+Measured: **one** entry has this shape. Ten others name a second id and are prose
+references, which the rule leaves alone.
 
-The path needs no new verb. `record add` writes an entry for work that shipped and
-`record amend` rewrites a sentence in place, so the second task gets its own entry and
-SH154's keeps its half. What must be decided by hand is where the split falls: the entry
-argues both defects were *one* pattern, blind to what SH95 introduced, and that belongs
-in both halves.
+**Attempted on 2026-08-11 and blocked by the tool — roadkeep's RK1051.** `record add
+--id` is the right door and refuses: the occupancy check reads any occurrence as an
+allocation, and this id appears **eight times**, its own half plus seven entries citing
+its rule. The better documented the decision, the less repairable its record. Amending
+the citation out of the sibling first is worse and was tried: it deletes half an entry
+before the replacement can exist, and that attempt was reverted rather than
+half-applied. `record amend` also cannot write the five-line shape it parses (RK1049).
+**Do not retry until one of those ships.**
 
 ### IX.79 The page the property check exists for is the page it does not read (SH663)
 
