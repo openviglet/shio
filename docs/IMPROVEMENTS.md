@@ -472,27 +472,6 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
-### XIII.14 The number guards the job that stops short of the promise (SH396)
-
-`build-marketing-site` is the canonical benchmark for the product's own headline task,
-budgeted at 4 calls and 2700 tokens, and its calls are: context, blueprints, apply,
-verify. It ends at a **lint**. Nothing in it provisions the render model, binds a
-layout, publishes a template or fetches a page, so the number that P3 defends describes
-*content that passes checks* — not a site anybody can look at.
-
-That matters twice. The agent path is understated, because the steps it is missing are
-precisely the ones SH395 collapses into the blueprint. And the naive path is understated
-far more, because a hand-built site meets SH277's empty title and SH280's
-unpublished-layout 409 on the way, which is where a real session actually loses its
-turns — so the honest ratio is larger than the one being reported, and the reported one
-is the product's own claim about itself.
-
-The fix is to extend the task to its real end: apply, provision, bind, publish, then
-`GET /agent/render` and assert a digest that is not the hash of nothing. Two
-consequences to accept — the budget rises (a truthful number is the point, not a small
-one), and the benchmark starts covering the flow SH277 named as the one nothing tested
-end to end, which is how that defect survived four blocks.
-
 ### XIII.21 The vocabulary has spent its room (SH647)
 
 SH346 chose the ops vocabulary over the manifest as the place a writer learns the keys,
@@ -515,6 +494,32 @@ writer asks for, now that it is 43% larger than when that was decided?
 Two things to measure before deciding: what the manifest option costs today, and whether
 the growth is ops or prose — the per-op descriptions have grown independently of the op
 count, and if that is most of it the answer is trimming rather than re-choosing.
+
+### XIII.22 A post created through the console gets no friendly URL (SH651)
+
+SH396 extended the build-a-site benchmark's baseline to hand-build a render model, and
+it stopped one call short of opening the page. The reason is not the layout. Five posts
+created through `POST /api/v2/post-unified` with `postTypeId` and `data.headline` —
+where `headline` is the post-type's title field — come back with **no `furl`**, so the
+context pack reports all five at their folder's own address:
+
+    node post /pages-4cd715 type=BenchArticle state=DRAFT title=naive-page-1
+    node post /pages-4cd715 type=BenchArticle state=DRAFT title=naive-page-2
+
+Five distinct posts, one address. `/sites/<site>/default/en-us/<folder>/naive-page-1` is
+a 404, and it is a 404 for a reason that has nothing to do with SH280's published-layout
+rule.
+
+What is not known is which of three things this is: the console UI always sends `furl`
+explicitly and the API is right to require it; the write should derive one from the
+title field the way the agent surface does; or the address projection is wrong and a
+furl exists. Each has a different fix and the first is not a defect at all — so the
+first deliverable is the probe that tells them apart, not a change.
+
+Two reasons to answer it rather than work around it. A post that cannot be addressed
+cannot be verified, linted or delivered, and nothing on the write path says so — it
+answers 201. And SH396's ratio is a floor by one call and one page fetch until this is
+settled, in the direction that flatters the baseline.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 

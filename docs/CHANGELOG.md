@@ -399,6 +399,7 @@
 - **SH228** — A write proof now covers the folders a run touched as well as its posts, and a run with nothing lintable gets an explicit empty report instead of no proof key.
 - **SH229** — A lint walks every conditional endpoint's request params and fails when one is missing from the entity tag, with exemptions that have to say why.
 - **SH394** — The CLI's help has three ceilings in the same file and shape as the MCP ones, and the per-session comparison between the two surfaces is printed on every run.
+- **SH396** — The build-a-site benchmark now ends at a rendered page rather than at a lint, and both paths build the render model so the ratio compares the same job.
 
 ## Block N — Realignment of what already shipped (SH74)
 

@@ -132,6 +132,9 @@ class ShAgentTaskBenchmarkTest {
     private String articleType;
     private String articleTypeId;
     private String blankSiteName;
+    private String naiveSiteName;
+    private String naiveSiteId;
+    private String naiveRootFolderId;
     /** Post ids by 1-based index — the id column is 36 chars, so they cannot be spelled. */
     private final List<String> postIds = new ArrayList<>();
 
@@ -233,6 +236,28 @@ class ShAgentTaskBenchmarkTest {
             blankRoot.setDate(when);
             blankRoot.setOwner("admin");
             entityManager.persist(blankRoot);
+
+            // SH396 — and a third, for the baseline, so the two paths start level. The naive path
+            // used to build into the fixture site's root, which was fine while it only created
+            // content; it now BINDS a layout to its site, and doing that to a shared fixture would
+            // change what every other task in this class measures. A blank site each is also the
+            // more honest comparison: neither path is handed a head start the other lacks.
+            ShSite naive = new ShSite();
+            naiveSiteName = "bench-naive-" + suffix;
+            naive.setName(naiveSiteName);
+            naive.setDate(when);
+            naive.setOwner("admin");
+            entityManager.persist(naive);
+            naiveSiteId = naive.getId();
+
+            ShFolder naiveRoot = new ShFolder();
+            naiveRoot.setName("root");
+            naiveRoot.setRootFolder((byte) 1);
+            naiveRoot.setShSite(naive);
+            naiveRoot.setDate(when);
+            naiveRoot.setOwner("admin");
+            entityManager.persist(naiveRoot);
+            naiveRootFolderId = naiveRoot.getId();
         });
     }
 
@@ -331,18 +356,97 @@ class ShAgentTaskBenchmarkTest {
         agent.call("apply blueprint",
                 authed(post("/api/v2/agent/blueprints/marketing-site/apply"))
                         .contentType(MediaType.APPLICATION_JSON).content(applyBody), applyBody);
+        // SH396 — the job does not end at a lint. Everything above produces content that passes
+        // checks; nothing above produces a page a person can open, and the benchmark was reporting
+        // the first as if it were the second. The two calls below are the rest of the promise.
+        //
+        // Publishing is one call because the ops commit together, and it has to include the
+        // TEMPLATES rather than only the pages: since SH280 a published render needs a published
+        // layout, and a site built through the agent flow has draft templates until somebody says
+        // otherwise (P7 — publishing is never a default). Getting that wrong is a 409, and it is
+        // the specific 409 this benchmark existed alongside without ever provoking.
+        String publishBody = publishAll(blankSiteName,
+                "/theme/site", "/theme/layout", "/", "/pricing", "/about");
+        agent.call("publish", authed(post("/api/v2/agent/batch").param("format", "terse"))
+                .contentType(MediaType.APPLICATION_JSON).content(publishBody), publishBody);
         agent.call("verify", authed(get("/api/v2/agent/verify")
                 .param("site", blankSiteName).param("format", "terse")));
+        String rendered = agent.call("render home", authed(get("/api/v2/agent/render")
+                .param("address", "post:" + blankSiteName + "/").param("format", "terse")))
+                .getResponse().getContentAsString();
         record(agent);
 
+        // The assertion that makes the added calls worth their tokens. A digest is a hash of
+        // whatever came back, so a blank page has one too — "it returned 200" is exactly the
+        // evidence this task says the old number was standing on.
+        assertThat(rendered)
+                .as("""
+                        SH396 — the benchmark's headline task now ends at a page rather than at a                         lint, so its cost includes provisioning, binding and publishing the render                         model. `source=rendered` is the part that cannot be faked by content                         passing checks: it means a layout was found, published, and filled.""")
+                .contains("source=rendered")
+                .containsPattern("(?m)^h [0-9] ")
+                .contains("landmarks");
+        // Words, parsed rather than pattern-matched, because a digest is a hash of whatever came
+        // back — a blank page has one too, and "it returned 200" is exactly the evidence the old
+        // four-call number was standing on. Not an exact count: that would be an assertion about
+        // the blueprint's copy, which is free to change without this task's claim changing.
+        assertThat(words(rendered))
+                .as("a page a person can open has words on it (SH396)")
+                .isGreaterThan(50);
+
+        // SH396 — the baseline builds the same thing, because a ratio between two paths doing
+        // different jobs is not a ratio. Extending only the agent path would have LOWERED the
+        // reported advantage while the agent did strictly more work, which is the same defect this
+        // task is fixing, pointed the other way.
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);
         naive.call("list post-types", authed(get("/api/v2/post-type")));
         naive.call("list sites", authed(get("/api/v2/site")));
-        naive.call("list root", authed(get("/api/v2/object/" + rootFolderId + "/list")));
-        String folderBody = "{\"name\":\"pages-" + UUID.randomUUID().toString().substring(0, 6) + "\"}";
+        naive.call("list root", authed(get("/api/v2/object/" + naiveRootFolderId + "/list")));
+        String folderName = "pages-" + UUID.randomUUID().toString().substring(0, 6);
+        String folderBody = "{\"name\":\"" + folderName + "\"}";
         String folderId = id(naive.call("create folder",
-                authed(post("/api/v2/folder/" + rootFolderId))
+                authed(post("/api/v2/folder/" + naiveRootFolderId))
                         .contentType(MediaType.APPLICATION_JSON).content(folderBody), folderBody));
+
+        // The render model, by hand. This is what the blueprint apply does in one call, and what
+        // the four-call number was leaving out of both columns: two post-types, two template
+        // posts, a binding, and publishing every one of them in the right order. The templates
+        // below are deliberately SIMPLER than the blueprint's — no relations, no query helper —
+        // because a generous baseline is the only kind worth comparing against.
+        // Not the post-types, though: `Theme` and `PageLayout` are instance-wide and the blueprint
+        // above already provisioned them, so the baseline reuses them for free. That is the
+        // understatement this class has always declared and it stays declared — a real hand-built
+        // instance pays for the render model too, and there is no second instance here to charge
+        // it on. The measured ratio is a floor, and it is a floor in the agent's disfavour.
+
+        String themeBody = renderPost(folderId, "Theme", "Naive theme",
+                "CSS", "body{font-family:system-ui;margin:0}main{max-width:44rem;margin:2rem auto}");
+        String themeId = id(naive.call("create theme", authed(post("/api/v2/post-unified"))
+                .contentType(MediaType.APPLICATION_JSON).content(themeBody), themeBody));
+        naive.call("publish theme", authed(post("/api/v2/post-unified/" + themeId + "/publish")));
+
+        String layoutBody = renderPost(folderId, "PageLayout", "Naive layout", "HTML",
+                "<!doctype html><html lang=\\\"en\\\"><head><meta charset=\\\"utf-8\\\">"
+                        + "<title>{{post.title}}</title></head><body><main>"
+                        + "<h1 sh-field=\\\"headline\\\">{{post.headline}}</h1>"
+                        + "<div sh-field=\\\"body\\\">{{post.body}}</div>"
+                        + "</main></body></html>");
+        String layoutId = id(naive.call("create layout", authed(post("/api/v2/post-unified"))
+                .contentType(MediaType.APPLICATION_JSON).content(layoutBody), layoutBody));
+        // Before the pages, and that ordering is the point rather than a tidiness: since SH280 a
+        // published render needs a published layout, and a session that publishes its pages first
+        // meets a 409 it has to diagnose. This benchmark cannot record that turn — a failing call
+        // makes a cost meaningless (ShAgentBenchmark.requireAllSucceeded) — so the baseline here
+        // is a session that already knew the order, which understates it by at least one round.
+        naive.call("publish layout", authed(post("/api/v2/post-unified/" + layoutId + "/publish")));
+
+        // Keyed by the type the pages actually are. Getting this wrong is silent: the binding is
+        // stored as opaque JSON, the site accepts it, and every page renders with no layout — a
+        // 200 that looks like a working site until somebody opens it.
+        String bind = "{\"name\":\"" + naiveSiteName + "\",\"postTypeLayout\":"
+                + "\"{\\\"" + articleType + "\\\":\\\"Naive layout\\\"}\"}";
+        naive.call("bind layout", authed(put("/api/v2/site/" + naiveSiteId))
+                .contentType(MediaType.APPLICATION_JSON).content(bind), bind);
+
         for (int i = 1; i <= 5; i++) {
             String body = createPost(folderId, "naive-page-" + i);
             String postId = id(naive.call("create page " + i,
@@ -351,7 +455,21 @@ class ShAgentTaskBenchmarkTest {
             naive.call("publish page " + i,
                     authed(post("/api/v2/post-unified/" + postId + "/publish")));
         }
+        // The baseline's version of the render check, over the route a visitor uses rather than
+        // over /agent/render — the point of a baseline is that it does not have the agent surface.
         record(naive);
+
+        // The baseline stops one call short of opening the page, and the reason is a finding
+        // rather than a shortcut: a post created through the console's unified write with only
+        // `data.headline` comes back with NO friendly URL — every one of the five lands at the
+        // folder's own address — so there is no delivery URL to fetch. `/sites/<site>/default/
+        // en-us/<folder>/naive-page-1` is a 404, and it is a 404 for a reason that has nothing to
+        // do with layouts. That is SH651, and until it is answered the baseline's cost is a floor
+        // by one call and one page fetch, which is the direction that flatters the baseline.
+        //
+        // What the baseline DOES now include is everything up to that point: the templates, the
+        // binding and the publishes — the render model built by hand, which is the work the
+        // four-call number left out of both columns.
 
         assertTask(task);
     }
@@ -627,5 +745,39 @@ class ShAgentTaskBenchmarkTest {
         }
         int from = at + 6;
         return body.substring(from, body.indexOf('"', from));
+    }
+
+    /**
+     * One batch that publishes every address given, templates included (SH396).
+     *
+     * <p>Ordering inside the batch does not matter — the ops commit together — but membership
+     * does: a published render of a Page needs the PageLayout published too (SH280), and the
+     * blueprint writes both as drafts because publishing is a decision rather than a default.</p>
+     */
+    private static String publishAll(String site, String... urls) {
+        StringBuilder out = new StringBuilder("{\"ops\":[");
+        for (int i = 0; i < urls.length; i++) {
+            if (i > 0) {
+                out.append(',');
+            }
+            out.append("{\"op\":\"post.publish\",\"address\":\"post:")
+                    .append(site).append(urls[i]).append("\"}");
+        }
+        return out.append("]}").toString();
+    }
+
+    /** The {@code words=} attribute of a terse digest — the cheapest proof a page is not blank. */
+    private static int words(String digest) {
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile("words=([0-9]+)").matcher(digest);
+        return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
+    }
+
+    /** A template post — a Theme or a PageLayout — through the console's unified write. */
+    private static String renderPost(String folderId, String type, String title,
+                                     String field, String value) {
+        return "{\"folderId\":\"" + folderId + "\",\"postType\":\"" + type + "\","
+                + "\"state\":\"DRAFT\",\"data\":{\"TITLE\":\"" + title + "\",\""
+                + field + "\":\"" + value + "\"}}";
     }
 }

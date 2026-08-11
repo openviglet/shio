@@ -1758,3 +1758,49 @@ content stays the same representation.
 - `ShSourceScanLintTest` (SH613) refused it until it declared `@ShSourceScan(CODE)` — a
   javadoc paragraph explaining why a parameter is *not* in a tag is precisely the sentence
   a raw-text scan would mistake for the tag containing it.
+
+## The headline benchmark ends at a page, not at a lint (SH396)
+
+`ShAgentTaskBenchmarkTest.buildMarketingSite` was context → blueprints → apply → verify,
+budgeted at 4 calls and 2700 tokens. Nothing in it published a template or fetched a page,
+so the number P3 was defending described **content that passes checks**, not a site anybody
+can open.
+
+It now publishes the render model and ends at `GET /agent/render`, asserting
+`source=rendered`, at least one heading, `landmarks`, and more than 50 words. A digest
+alone proves nothing — a blank page has one too, and "it returned 200" is exactly the
+evidence the old number stood on.
+
+| | calls | tokens |
+|---|---|---|
+| agent | 6 (was 4) | 3674 (budget 3800, was 3400) |
+| naive | 19 | 10289 |
+| ratio | 3.17× | 2.80× |
+
+**Both paths were extended, and that is the load-bearing decision.** The baseline now
+hand-builds two template posts, binds `postTypeLayout` through the console site API, and
+publishes each in order. Extending only the agent path would have *lowered* the reported
+advantage while the agent did strictly more work — this task's own defect pointed the
+other way. A ratio between two paths doing different jobs is not a ratio. Neither ratio
+floor had to move.
+
+**Publishing the templates is the step, not publishing the pages.** Since SH280 a
+published render needs a published layout, and everything the blueprint writes is a draft
+because publishing is never a default (P7). The agent path publishes theme, layout and
+pages in one batch — they commit together, so order inside it does not matter. The
+baseline has to get the order right across separate calls, and a session that publishes
+pages first meets a 409 it must diagnose. That turn cannot be recorded here:
+`ShAgentBenchmark.requireAllSucceeded` refuses any call ≥400, correctly, since a cheap run
+that was really a 500 is not a measurement.
+
+**Two understatements are declared rather than fixed**, both flattering the baseline:
+
+- The baseline reuses `Theme` and `PageLayout` — post-types are instance-wide and the
+  blueprint already provisioned them. There is no second instance to charge it on.
+- It stops one call short of opening the page, because a console-created post comes back
+  with **no friendly URL** (SH651) — every one lands at its folder's address. That is not
+  a layout problem and it answers 201.
+
+The naive path also got **its own blank site** in the fixture. It used to build into the
+shared one, which was fine while it only created content; it now binds a layout, and doing
+that to a shared fixture would change what every other task in this class measures.
