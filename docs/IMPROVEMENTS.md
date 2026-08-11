@@ -510,6 +510,32 @@ them through `ShFurlSpellings`, or pick one stored form and migrate. The second 
 data change and needs a count first. Either way the instrument comes before the fix —
 nothing today fails when a projection concatenates a value it did not normalise.
 
+### XIV.23 Thirteen pointers to nothing, under a clean gate (SH668)
+
+Measured on 2026-08-11 with a nine-line reader over `docs/IMPROVEMENTS.md`: **38
+anchors, 17 distinct `§X.Y` citations, 13 of them pointing at no heading** — `II.1`,
+`II.7`, `III.1`, `III.10`, `X.3`, `XI.1`, `XI.5`, `XI.7`, `XI.11`, `XII.1`, `XII.4`,
+`XV.3`, `XV.4`. `roadkeep lint` reports the file clean.
+
+The mechanism is `ship` doing its job: it deletes the rationale of the task that
+shipped, which is right. What it cannot know is who was *pointing* at that section, and
+prose citations are how these files carry an argument across blocks — a reader following
+§XI.5 finds nothing and cannot tell whether the pointer is wrong or the argument was
+never written.
+
+Two of the thirteen were made in this session and repaired in it, which is what makes
+the rate worth stating rather than the count: §XIV cited §XIV.4 and §XIV.18, and both
+went dead inside a day — one when a hand edit dropped a section, one when SH659 shipped.
+Nothing failed either time.
+
+`section.stale` is the same question asked the other way, so the gate already owns the
+pair and holds one half. The reader is nine lines, which argues for a check rather than
+a sweep: fixing thirteen by hand leaves the fourteenth to the next ship.
+
+What a repair *is* differs per pointer — a section that shipped should point at the
+ledger, one renumbered should follow it, one always wrong should go — which is why this
+is filed.
+
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody
