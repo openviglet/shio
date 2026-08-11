@@ -205,18 +205,13 @@ const DEBT = [
   // the roadmap or two entries in the ledger, which is the duplicate `SH347` SH356 counted and
   // SH361 renumbered away. The six steps stay: each is a behaviour asserted under no id.
   "SH366", "SH367", "SH368", "SH369", "SH370", "SH371",
-  // DOES NOT EARN a new assertion — it earns a READER. The Universal Editor's load-bearing fact is
-  // checked, in `shio-react/e2e`, which this reader does not walk because it needs a running
-  // instance. Writing a second assertion here would duplicate a passing one; the honest fix is to
-  // teach the reader that tree, and until then this stays listed rather than exempted, because an
-  // exemption would say "cannot be asserted" when it is asserted and merely unread.
-  //
-  // SH659 joins it for the same reason and sharpens the entry: it is the *drive* — `sh:ready`,
-  // `sh:element-selected`, `sh:content-changed` — asserted by `universal-editor-drive` in that same
-  // tree. It cannot move: the assertion is a browser framing a rendered page, so there is no
-  // instance-free form of it to write here. Two entries now turn on one reader, which is the
-  // argument for teaching it rather than for a third.
-  "SH238", "SH659",
+  // SH238 and SH659 were listed here, and the entry said the honest fix was to teach this reader
+  // `shio-react/e2e` — where their assertion lives and needs a running instance. SH667 paid them
+  // off from the other end instead, and the difference is worth keeping: the e2e assertion was
+  // there the whole time and *skipping*, which kept `ok: true` and counted toward "N/N probes ok".
+  // `ci-gates.test.mjs` asserts what makes it count — that CI passes `--strict` and that the script
+  // acts on it — which is instance-free, in a tree this reader already walks, and is the boundary
+  // the defect actually crossed. An unread assertion and an unrun one are not the same gap.
 ].sort(byId);
 
 /**

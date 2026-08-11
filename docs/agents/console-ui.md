@@ -514,6 +514,22 @@ pair together, reading the exclusion out of `console-check.mjs` and the declarat
 `provision.mjs`: neither half is wrong alone, and a test that read only one would be asserting a
 preference instead of a coupling.
 
+**And in CI the drive is not allowed to skip — `--strict` (SH238/SH659).** A skipped probe keeps
+`ok: true`, counts toward the `N/N probes ok` line and leaves the exit code at 0, which is why
+SH664 survived from the commit that introduced `provision.mjs` and was found by reading the code
+rather than by a red run. On a laptop the skip is right: the topology and the fixtures are whatever
+they happen to be, and a gate that trips on that is a gate people bypass. In CI both are
+provisioned by this repository one step earlier, so a skip there is this instrument not running.
+`console-check.yml` passes `--strict`, and under it **any** drive skip is a failure — applied once
+where the probe is reported rather than at each `probe.skipped =`, so a skip path added later
+cannot be the one that forgot. The `skipped` reason still reaches the report; `--strict` only
+decides whether it is allowed.
+
+An explicit flag rather than `process.env.CI`, because `cli/test/ci-gates.test.mjs` can then assert
+**both** halves — the workflow sends it *and* the script acts on it. That is SH655's own shape one
+instrument over: a signal nothing asserts is the same absent gate with an extra step, and a flag
+passed to a script that ignores it is the same again.
+
 ## The review count that could not go down (SH615)
 
 `ShReviewSession.pending` asked, per audit entry, whether the post has a `DRAFT` row. Its own javadoc

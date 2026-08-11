@@ -86,6 +86,7 @@ jobs:
           --base http://localhost:2710
           --api http://localhost:2710
           --site "$SHIO_SITE"
+          --strict
 
       - name: Upload the report
         if: always()

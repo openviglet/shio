@@ -20,6 +20,7 @@
  *   --site   site to walk             (default: the first site the API reports)
  *   --out    report directory         (default e2e/report)
  *   --headed watch it run
+ *   --strict a skipped editor drive is a failure — what CI passes (SH238/SH659)
  *
  * Credentials: SHIO_USER / SHIO_PASSWORD (default admin/admin).
  *
@@ -41,6 +42,26 @@ const has = (name) => args.includes(`--${name}`)
 const BASE = flag("base", process.env.SHIO_CONSOLE_URL || "http://localhost:5173")
 const API = flag("api", process.env.SHIO_URL || "http://localhost:2710")
 const OUT = flag("out", join("e2e", "report"))
+
+/**
+ * A skipped `universal-editor-drive` is a **failure** (SH238/SH659).
+ *
+ * <p>A skip is the right answer on a laptop, where the topology and the fixtures are whatever
+ * they happen to be. It is the wrong answer in CI, where both are provisioned by this
+ * repository one step earlier: there, "no site renders editable props" is not a fixture gap
+ * somebody will notice, it is this instrument silently not running — and a probe that skips
+ * keeps `ok: true`, so it counts toward "N/N probes ok" and leaves the exit code at 0.
+ *
+ * <p>That is not hypothetical. SH664 — the fixture declaring the instance as its own front
+ * end, which excluded it from the drive's own candidate loop — survived from the commit that
+ * introduced `provision.mjs`, and the drive reported ok the whole time. SH655 reached the same
+ * conclusion one instrument over and is the precedent: a check nobody is running is worse than
+ * a check that fails, because it reads as coverage.
+ *
+ * <p>Explicit flag rather than `process.env.CI`, so `cli/test/ci-gates.test.mjs` can assert the
+ * workflow passes it. A signal nothing asserts is the same absent gate with an extra step.
+ */
+const STRICT = has("strict")
 const USER = process.env.SHIO_USER || "admin"
 const PASS = process.env.SHIO_PASSWORD || "admin"
 const AUTH = "Basic " + Buffer.from(`${USER}:${PASS}`).toString("base64")
@@ -456,6 +477,14 @@ async function main() {
 
   // SH238's other half: the editor itself, not only the fact its save-back rests on.
   const driveProbe = await checkEditorDrive(context, await api("/site"))
+  // Applied here rather than at each `probe.skipped =` inside the function, so a skip path
+  // added later cannot be the one that forgot (SH238/SH659). The reason survives into the
+  // report either way — `skipped` still says what happened, `ok` says whether it is allowed.
+  if (STRICT && driveProbe.skipped) {
+    driveProbe.ok = false
+    driveProbe.errors.push(
+      `--strict: the drive must run, and it skipped — ${driveProbe.skipped}`)
+  }
   report.probes.push(driveProbe)
   console.log(`${driveProbe.ok ? "ok  " : "FAIL"} ${driveProbe.name.padEnd(30)} `
     + (driveProbe.skipped

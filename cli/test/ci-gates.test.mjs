@@ -107,6 +107,28 @@ test("SH655: the docs suites have a checkout of the repository they read, and ar
   );
 });
 
+test("SH667: the console walk refuses to let the editor drive skip (SH238, SH659)", () => {
+  const workflow = read("console-check.yml");
+
+  assert.match(workflow, /--strict/,
+    "SH667: a skipped probe keeps `ok: true`, counts toward \"N/N probes ok\" and leaves "
+      + "the exit code at 0. On a laptop that is right — the topology and the fixtures are "
+      + "whatever they happen to be. In CI both are provisioned by this repository one step "
+      + "earlier, so a skip there is this instrument not running, and it reads as coverage");
+
+  // The other half, and they break apart: a flag the workflow passes to a script that ignores it
+  // is the same absent gate with an extra step — SH655's own lesson, one instrument over.
+  const script = readFileSync(
+    new URL("../../shio-react/e2e/console-check.mjs", import.meta.url), "utf8");
+
+  assert.match(script, /const STRICT = has\("strict"\)/,
+    "SH667: and the script has to read the flag the workflow sends");
+  assert.match(script, /STRICT && driveProbe\.skipped/,
+    "SH667: and act on it for the drive. SH664 — a fixture that excluded itself from the drive's "
+      + "own candidate loop — survived from the commit that introduced `provision.mjs`, reported "
+      + "ok the whole time, and was found by reading the code rather than by a red run");
+});
+
 test("SH241: the console walk runs on a pull request", () => {
   // Deliberately not on every push: it boots a jar, provisions a site and drives Chromium, and a
   // gate that expensive on every push to a branch somebody is iterating on becomes the one people
