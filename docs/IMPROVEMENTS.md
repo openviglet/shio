@@ -1114,26 +1114,6 @@ stale prose goes first.
 Each task lands two commits, as Block R's did: the Shio-repo ship and the `vigletdocs`
 page edit, with the `COVERAGE.md` verdict flipped in the same commit as the page.
 
-### XX.3 Five lifecycle surfaces a curator cannot discover (SH624)
-
-SH13 short-lived preview tokens and console preview, SH14 draft-versus-published diff
-and restore, SH15 scheduled publish and unpublish, SH51 audit history and the Activity
-viewer, SH55 trash and restore. Five shipped surfaces, one 🔴 row, and `content-modeling
-§ Publishing` covers none of them.
-
-They belong together because they answer one question — *what happened to this page, and
-can I undo it* — and because a curator who does not know they exist does the work the
-hard way: sends a screenshot instead of a preview link, re-types instead of restoring,
-sits at a keyboard at the hour a post should go live.
-
-The undocumented half of a safety feature is the expensive one. Draft-default and the
-publish gate exist so a mistake is recoverable, and a person who does not know restore
-exists experiences a mistake as unrecoverable anyway. The feature was paid for and the
-reassurance was not delivered.
-
-Preview tokens have a second reason to be written down: they are short-lived by design,
-and a curator who does not know that reads an expired link as a broken product.
-
 ### XX.4 The webhook is documented from the side that receives it (SH626)
 
 SH12 shipped outbound webhooks on publish, unpublish and delete, with per-site
