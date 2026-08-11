@@ -550,6 +550,32 @@ whose flat config ESLint 10 accepts, or drop `recommended-latest` for an explici
 `plugins` object. Either way the gate question is the same one, and it is why this is
 filed: a lint that is not run is not a lint.
 
+### XIV.22 One furl, two stored spellings, and a projection that concatenates (SH666)
+
+Observed as a red run while shipping SH651. An interim version of `create` stored the
+leading-slash form, and `ShSiteExportServiceTest` came back with
+`post:ut-export-broken-.../broken-post` carrying a **double slash** — because
+[`ShSiteExportService:261`](../../shio-app/src/main/java/com/viglet/shio/exchange/site/ShSiteExportService.java)
+builds the address as `"post:" + site.getName() + "/" + row.getFurl()`, a bare
+concatenation that assumes the stored value has no slash of its own.
+
+SH651 settled its own half by storing the bare form, matching `copyPost`,
+`ShFolderWriteService` and `ShSiteWriteService`. It did not settle the other half:
+`ShPostUnifiedWriteService.normalizeUrl` still **guarantees** a leading slash, and it is
+what `setFurl` and `move` write. `ShFurlSpellings` is explicit that this is real — it
+calls the bare form legacy and exists so *reading* tolerates both — but the projection
+above is not a read through that vocabulary, it is string addition.
+
+So an address declared through the agent path (`post.upsert` with a `furl`, which
+reaches `setFurl`) exports as `post:site//page`, and the same post created through the
+console exports as `post:site/page`. One of them is not a valid SH79 address, and which
+one you get depends on which surface wrote it.
+
+Two exits, and the choice is the task: make the projections spelling-aware by routing
+them through `ShFurlSpellings`, or pick one stored form and migrate. The second is a
+data change and needs a count first. Either way the instrument comes before the fix —
+nothing today fails when a projection concatenates a value it did not normalise.
+
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody
