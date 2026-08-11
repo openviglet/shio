@@ -34,6 +34,7 @@
 - ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P ✅) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
 - ⏳ **SH659** (deps: SH238 ✅) **Nothing drives the Universal Editor's handshake, panel or field round trip** — SH238's ledger entry closed the save-back and recorded the drive as waiting on Block P, which shipped - so the open line is a duplicate id and the drive is unexercised. → §XIV.18
 - 📋 **SH662** (deps: —) **A ledger entry carrying two shipped ids hides the second from every reader that keys on one** — The second id shipped inside SH154's entry, so show answers never written, lint calls a prose mention a broken promise, and no ledger reader counts it either way. → §IX.78
+- 📋 **SH664** (deps: —) **The provisioned fixture site declares the instance as its own front end, so the editor probe never runs** — provision.mjs sets url to the API origin, which siteDestination treats as an external front end - the drive skips in CI and the console's open-site link points at Shio. → §XIV.20
 
 ## Block O — The human half (the console the curator uses)
 
