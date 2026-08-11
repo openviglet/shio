@@ -174,7 +174,7 @@ The agent cannot see. Two of the three human round trips in a typical build exis
 for that reason, which made this the cheapest large win after Block H — a human cycle is
 the most expensive unit in the system by orders of magnitude.
 
-✅ **Shipped whole**: SH99–SH104, SH141–SH144, SH154 (§IX.78), and the follow-ups closing
+✅ **Shipped whole**: SH99–SH104, SH141–SH144, SH154, SH169, and the follow-ups closing
 the block produced (SH609–SH642). The implementation reports live in
 [CHANGELOG.md](CHANGELOG.md) Block K; the design subsections are gone rather than left
 behind as history `git log` already holds.
@@ -193,31 +193,6 @@ as code, a debt reader that could not tell a mention from an assertion, a gate w
 fallback was null in the deployment it demands, and a "flake" that was a scoping bug. A
 perception loop that cannot perceive itself is the failure this block should expect
 next.
-
-### IX.78 One entry, two ids, and the second is not in the file as far as anything can tell (SH662)
-
-`docs/CHANGELOG.md:150` opens `- **SH154** — **The lint sees a section reference** … and
-**<the second id>** — **the render digest composes the way the page does**`. Two tasks
-shipped together into one entry, which reads well and is invisible to every reader that
-keys on an id.
-
-**This section cannot spell that id, and that is the finding rather than a wording
-choice.** The gate reads it as a promise nothing carries, because as far as any reader
-can tell it is in neither file. `roadkeep show` says *"never written or was retired"*
-about a task three lines from the id it does recognise, and neither direction of the
-ledger's accounting sees it — not shipped, so neither asserted nor in debt.
-
-Measured: **one** entry has this shape. Ten others name a second id and are prose
-references, which the rule leaves alone.
-
-**Attempted on 2026-08-11 and blocked by the tool — roadkeep's RK1051.** `record add
---id` is the right door and refuses: the occupancy check reads any occurrence as an
-allocation, and this id appears **eight times**, its own half plus seven entries citing
-its rule. The better documented the decision, the less repairable its record. Amending
-the citation out of the sibling first is worse and was tried: it deletes half an entry
-before the replacement can exist, and that attempt was reverted rather than
-half-applied. `record amend` also cannot write the five-line shape it parses (RK1049).
-**Do not retry until one of those ships.**
 
 ## X. Content as files (Block I)
 

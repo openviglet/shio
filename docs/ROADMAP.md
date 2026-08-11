@@ -30,7 +30,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH662** (deps: —) **A ledger entry carrying two shipped ids hides the second from every reader that keys on one** — The second id shipped inside SH154's entry, so show answers never written, lint calls a prose mention a broken promise, and no ledger reader counts it either way. → §IX.78
 - 📋 **SH665** (deps: —) **`pnpm lint` exits 2 on every file, so the console has been linted against nothing** — eslint-plugin-react-hooks 7.1.1 declares `plugins` as an array of strings, which ESLint 10 flat config refuses before any rule runs, and no workflow runs the script that would say so. → §XIV.21
 - 📋 **SH666** (deps: —) **Two live writers store a furl with and without a leading slash, and one address projection emits both** — setFurl guarantees the slash and create/copy store it bare, so the export builds `post:site//page` for every agent-declared address and nothing reads the two forms as one. → §XIV.22
 - 📋 **SH668** (deps: —) **Thirteen rationale citations point at sections that no longer exist, and the gate calls the file clean** — Every ship drops a section, and each §X.Y naming it becomes a dead end that section.stale cannot see because it only checks the other direction. → §XIV.23

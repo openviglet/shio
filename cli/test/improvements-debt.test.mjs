@@ -162,6 +162,55 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
     );
   });
 
+  /**
+   * SH662 — an id shipped inside somebody else's entry is in the file and in nothing that reads it.
+   *
+   * <p>`docs/CHANGELOG.md` opened one entry `- **SH154** — … and **SH169** — …`: two tasks that
+   * shipped together, written as one, which reads well and is invisible to every reader that keys
+   * on an id. `roadkeep show SH169` answered *"never written or was retired"* about a task three
+   * lines from the id it did recognise, the gate read the prose mention as a promise nothing
+   * carries, and the assertion ledger counted it neither as shipped nor as debt.</p>
+   *
+   * <p><b>Bold is the signal, and the measurement is why.</b> Thirteen entries bold an id that is
+   * not their own. Ten of those lead an entry of their own; the other three — SH230, SH231, SH232 —
+   * are open roadmap lines, which is a forward reference (*"this opened SH232"*) and not a
+   * co-headline. Nothing else in the ledger has the shape, so the rule is exact rather than a
+   * heuristic with an exemption list. A plain `SH154` in running prose is a citation and is left
+   * alone, which is the distinction the bold carries.</p>
+   */
+  test("SH662: an id bolded inside another entry leads one of its own, or is still open", () => {
+    // One pass, two answers. An earlier version counted the co-ids with a second regex, and an
+    // injection that widened only the first left the count untouched and the test green — a
+    // non-vacuity check that does not read the code under test is decoration.
+    const leads = new Set([...changelog.matchAll(/^- \*\*(SH\d+)/gm)].map(([, id]) => id));
+    const coIds = [];
+    for (const line of changelog.split(/\r?\n/)) {
+      const own = /^- \*\*(SH\d+)/.exec(line)?.[1];
+      if (!own) continue;
+      for (const [, other] of line.matchAll(/\*\*(SH\d+)\*\*/g)) {
+        if (other !== own) coIds.push({ own, other });
+      }
+    }
+
+    assert.ok(
+      coIds.length > 5,
+      `only ${coIds.length} entr(y|ies) bold a second id — the reader found almost none, which `
+        + "would agree with a ledger that had hidden every one of them",
+    );
+
+    const hidden = coIds
+      .filter(({ other }) => !leads.has(other) && !open.has(other))
+      .map(({ own, other }) => `${other} (inside ${own}'s entry)`);
+
+    assert.deepEqual(
+      hidden,
+      [],
+      "SH662: this id shipped inside another entry and leads none of its own, so `show` says it "
+        + "was never written, the gate reads a prose mention as a broken promise, and neither "
+        + "direction of the assertion ledger counts it. `record add --id <id>` writes the entry.",
+    );
+  });
+
   test("SH356: the classifier fires on a stale section, and spares the three that are not", () => {
     const fixture = [
       { anchor: "Z.1", title: "An argument for work that is done (SH1)", ids: ["SH1"] },
