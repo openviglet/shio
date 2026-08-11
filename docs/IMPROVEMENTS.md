@@ -552,31 +552,6 @@ a request carries no `Origin` header, and an iframe navigation carries none — 
 production, where console and renderer are one origin, and fatal across a dev proxy,
 where the bridge posts to a window that is not its parent.
 
-### XIV.19 A lookup keyed on the wrong thing, kept quiet by its own catch (SH660)
-
-`console:check` fails `post-edit:File` on this instance, and the requests it records are
-the finding: `404 GET /api/v2/post/xp/inter-cyrillic-wght-normal-DqGufNeO.woff2` and
-`404 GET /api/v2/folder/inter-cyrillic-wght-normal-DqGufNeO.woff2`. A **file name** is
-being handed to two endpoints that take an **id**.
-
-`file.widget.tsx`'s `resolveFullPath(fileId)` assumes its argument is a post id. What it
-is given is the `FILE` field, and SH38 is explicit that the static-file subsystem writes
-the **stored path** there — which is what `/file_source/**` serves from. So for every
-post the uploader created, both lookups miss. `content-select.widget.tsx` calls the same
-endpoint the same way and should be read with it.
-
-Nothing reports this, and the reason is one line: both calls end `.catch(() => null)`.
-The widget then renders whatever its null branch renders, the page returns 200, and the
-only witness is the network tab. It survived because the console had no probe that reads
-failed requests — which is what `console-check.mjs` is for, and it caught this the first
-time it was pointed at a site with an uploaded file.
-
-What is not yet established is which side is wrong: whether the widget should resolve a
-path rather than an id, or whether some File posts legitimately hold an id and the
-widget needs to tell the two apart. That is the question the fix answers, and it is a
-question about `FILE`'s contract rather than about the widget — so read
-`ShStaticFileService` before editing the console.
-
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody

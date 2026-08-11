@@ -192,6 +192,28 @@ const p = JSON.parse(raw);
 return p && typeof p === "object" ? p : {};
 ```
 
+### A field value is not always a reference (SH660)
+
+`file.widget.tsx` renders **two different things** with one component, and that is the whole
+finding. On another post's field the value is a *reference* — the content browser writes
+`selection.id` — and expanding it into a readable path is the widget's job. On the `File`
+post-type's **own `FILE` field** it is the *stored file name*, because `ShStaticFileService` puts
+`fileName` there and keeps the bytes under the post's id.
+
+The resolver assumed the first, so opening any uploaded file issued
+`GET /v2/post/xp/<name>` and `GET /v2/folder/<name>` — both 404. Nothing reported it: each call ends
+`.catch(() => null)`, the widget rendered its null branch, and the page returned **200**. The only
+witness was the network tab, which is why it took `console-check.mjs` — a probe that reads *failed
+requests* — to see it at all, on the first instance it met with an uploaded file.
+
+**Ask `isObjectReference` before resolving** (`src/lib/object-reference.ts`). The rule is the value's
+**shape**, not the field's identity: a reference in this console is an object id and an object id is
+a UUID, so anything else is a value the field holds and looking it up is a request that cannot
+succeed. The narrow alternative — *"if this is the `File` type's `FILE` field, skip"* — couples a
+generic widget to one system post-type and would be wrong for the next field that stores a name.
+`content-select.widget.tsx` carries the guard too, as a precaution rather than a fix: its values are
+always ids today, and the failure mode is identical and equally silent.
+
 ### The Ace Editor widgets need CodeMirror to be a singleton
 
 `ace-editor.widget.tsx` (the HTML / Javascript / CSS widgets) pairs `@uiw/react-codemirror`

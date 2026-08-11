@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import axios from "axios"
 import type { WidgetProps } from "./index"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "./content-browser-dialog"
+import { isObjectReference } from "@/lib/object-reference"
 
 interface PathSegment {
   id: string
@@ -30,6 +31,11 @@ function parseSettings(raw?: string): { folderId?: string } {
 
 async function resolveFullPath(contentId: string): Promise<ResolvedContent | null> {
   if (!contentId) return null
+  // SH660 — the same guard as the File widget, and here it is a precaution rather than a fix: a
+  // Content Select value is written by the browser and is always an id today. It is applied anyway
+  // because the failure mode is identical and invisible — two `.catch(() => null)` lookups, a 200,
+  // and nothing that says the field could not be resolved.
+  if (!isObjectReference(contentId)) return null
 
   // Try as post
   const postRes = await axios.get(`/v2/post/xp/${contentId}`).catch(() => null)

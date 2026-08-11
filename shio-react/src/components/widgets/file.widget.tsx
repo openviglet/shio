@@ -6,6 +6,7 @@ import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
 import type { WidgetProps } from "./index"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "./content-browser-dialog"
+import { isObjectReference } from "@/lib/object-reference"
 
 interface PathSegment {
   id: string
@@ -31,6 +32,11 @@ function parseSettings(raw?: string): { folderId?: string } {
 
 async function resolveFullPath(fileId: string): Promise<ResolvedFile | null> {
   if (!fileId) return null
+  // SH660 — this widget renders two different things. On another post's field the value is a
+  // reference the browser wrote (`selection.id`); on the `File` type's own `FILE` field it is the
+  // stored file NAME the uploader wrote. Resolving the second issued two 404s per opened file,
+  // both swallowed by the `.catch` below, so the page returned 200 and only the network tab knew.
+  if (!isObjectReference(fileId)) return null
 
   const postRes = await axios.get(`/v2/post/xp/${fileId}`).catch(() => null)
   if (postRes?.data?.shPost) {
