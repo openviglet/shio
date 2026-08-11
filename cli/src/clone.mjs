@@ -378,6 +378,20 @@ const FIELD_TAGS = new Set(["input", "select", "textarea", "button"]);
 const INLINE_TAGS = new Set(["span", "em", "strong", "b", "i", "a", "code", "sup", "sub", "small"]);
 
 /**
+ * Elements that never have children, so nothing counting depth may wait for their close tag.
+ *
+ * <p>Exported for the same reason `tokenize` is: `propose.mjs` builds a tree over this module's
+ * token stream and needs the identical answer to "does this tag open anything". Two copies of the
+ * set are two answers, and the divergence would land as a tree that nests the rest of a page inside
+ * an `<img>` on one reader and not the other (SH477 needed the second copy and imported the first
+ * instead).</p>
+ */
+export const VOID_TAGS = new Set([
+  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+  "track", "wbr",
+]);
+
+/**
  * Removes what would make a tag scanner lie: comments, and the bodies of elements whose content is
  * not markup. The **open tags survive** — `<script src>` and a `<textarea name>` are both facts the
  * inventory needs, and only the text between them is noise.
@@ -641,10 +655,21 @@ export function scanPage(html, pageUrl) {
     forms: [],
     nav: [],
     textChars: 0,
+    // SH477 — how many decorative marks this page's link labels turned out to contain. The count is
+    // the deliverable, not a diagnostic: the rule below reads one signal off one site's markup, and
+    // a rule that fires on a single fixture is a rule that fires on nobody else's page. Carried up
+    // into the inventory so **every** crawl says how often it was right, on the operator's own
+    // source rather than on ours.
+    selfLabelled: 0,
   };
   let navDepth = 0;
   let form = null;
   let anchor = null;
+  // SH477 — element depth *inside* the current anchor, which is what tells a labelled element's
+  // close tag from any other. Reset by `<a>` and never read outside one, so an unbalanced tag
+  // before the anchor cannot move it: the worst a broken page can do here is leave a frame unclosed,
+  // and a frame that never closes never drops anything.
+  let anchorDepth = 0;
   let inTitle = false;
   // SH581 — which half of the document the loop is in. A replica stores a page's **body** and gets
   // its head from the layout, so a reference in the source's head is not a fact about the page.
@@ -738,6 +763,14 @@ export function scanPage(html, pageUrl) {
     // the switch below is what creates it.
     if (anchor && !INLINE_TAGS.has(name)) anchor.gap = true;
     if (token.type === "close") {
+      // SH477 — before the `</a>` branch below hands the anchor off, and before `inTitle` and the
+      // rest, because a labelled element's own close tag is the only place its text is known to be
+      // complete. `name !== "a"` keeps the anchor's own closer out of the depth count; the `</a>`
+      // case is handled where the anchor is pushed.
+      if (anchor && name !== "a") {
+        anchorDepth = Math.max(anchorDepth - 1, 0);
+        closeSelfLabels(anchor, anchorDepth);
+      }
       if (name === "title") inTitle = false;
       if (name === "head") inHead = false;
       if (name === "nav") navDepth = Math.max(navDepth - 1, 0);
@@ -845,7 +878,11 @@ export function scanPage(html, pageUrl) {
             // make the flag mean two things.
             gap: false,
             nav: navDepth > 0 || String(attrs.role ?? "") === "navigation",
+            // SH477 — the open `aria-label` frames, and the spans of `text` they turned out to own.
+            labels: [],
+            drops: [],
           };
+          anchorDepth = 0;
         }
         break;
       case "form":
@@ -857,6 +894,15 @@ export function scanPage(html, pageUrl) {
         break;
       default:
         break;
+    }
+    // SH477 — an element that encloses text *inside* an anchor, and whether it names itself. The
+    // anchor's own `aria-label` is excluded deliberately: on an `<a>` that attribute is the link's
+    // accessible name, which an author is entitled to spell as the visible text, and dropping on it
+    // would mean a link that labels itself has no label at all.
+    if (anchor && name !== "a" && !token.self && !VOID_TAGS.has(name)) {
+      anchorDepth += 1;
+      const label = collapse(attrs["aria-label"] ?? "");
+      if (label) anchor.labels.push({ label, depth: anchorDepth, mark: anchor.text.length });
     }
     if (String(attrs.role ?? "").toLowerCase() === "navigation" && name !== "a") navDepth += 1;
     if (FIELD_TAGS.has(name) && form) {
@@ -881,8 +927,64 @@ export function scanPage(html, pageUrl) {
 }
 
 function pushLink(doc, anchor) {
-  doc.links.push({ href: anchor.href, text: collapse(anchor.text), nav: anchor.nav });
-  if (anchor.nav) doc.nav.push({ label: collapse(anchor.text), href: anchor.href });
+  const text = collapse(labelOf(anchor, doc));
+  doc.links.push({ href: anchor.href, text, nav: anchor.nav });
+  if (anchor.nav) doc.nav.push({ label: text, href: anchor.href });
+}
+
+/**
+ * Closes every `aria-label` frame the tag just left, and records the ones that named themselves
+ * (SH477).
+ *
+ * <p>The signal is in the markup and needs no heuristic. A product tile on `www.viglet.org` is a
+ * 48×48 graphic whose two letters are *drawn*, and it carries `aria-label="Du"` over visible text
+ * that is also `Du`. An accessible name repeating what is already on screen is the author saying the
+ * element is decorative — that is what `aria-label` is for on a graphic — so the run adds nothing to
+ * the link's label, and `Du Dumont DEP` becomes a menu entry a curator deletes by hand.</p>
+ *
+ * <p>The comparison is against the frame's **whole** text and not against one run, because the mark
+ * the site actually serves is `<span>D</span><span>u</span>` — two runs, one per glow-animation
+ * delay, and neither of them equals `Du` (SH472 measured exactly this). Nesting is why the drop is
+ * recorded rather than applied: an outer frame that matches covers the inner ones, which are dropped
+ * from the list here so the same characters are never removed twice.</p>
+ *
+ * <p>It is narrow on purpose. Not "drop short runs" and not "drop uppercase runs" — both eat real
+ * content, and `DEP`, sitting in the same string, is the counter-example.</p>
+ */
+function closeSelfLabels(anchor, depth) {
+  while (anchor.labels.length && anchor.labels[anchor.labels.length - 1].depth > depth) {
+    const frame = anchor.labels.pop();
+    if (collapse(anchor.text.slice(frame.mark)) !== frame.label) continue;
+    while (anchor.drops.length && anchor.drops[anchor.drops.length - 1].start >= frame.mark) {
+      anchor.drops.pop();
+    }
+    anchor.drops.push({ start: frame.mark, end: anchor.text.length });
+  }
+}
+
+/**
+ * The anchor's text with its decorative marks removed — unless they were all of it (SH477).
+ *
+ * <p>The bound is the point. The rule exists to strip a mark sitting *beside* the words, and an
+ * anchor whose only text is a self-labelling element is the opposite case: there the visible text
+ * **is** the label, the author merely spelled the accessible name the same way, and dropping it
+ * would replace a readable menu entry with an empty one. A capture that loses a link's label is a
+ * worse record than one that carries a spare word, because nothing downstream can tell an empty
+ * label from a link that never had one.</p>
+ */
+function labelOf(anchor, doc) {
+  if (!anchor.drops.length) return anchor.text;
+  const drops = [...anchor.drops].sort((a, b) => a.start - b.start);
+  let kept = "";
+  let at = 0;
+  for (const drop of drops) {
+    kept += anchor.text.slice(at, drop.start);
+    at = Math.max(at, drop.end);
+  }
+  kept += anchor.text.slice(at);
+  if (!collapse(kept)) return anchor.text;
+  doc.selfLabelled += drops.length;
+  return kept;
 }
 
 function collapse(text) {
@@ -1315,6 +1417,10 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       forms: doc.forms.length,
       textChars: doc.textChars,
       ...(doc.baseHref ? { baseHref: doc.baseHref } : {}),
+      // SH477 — how many of this page's link labels held a decorative mark that named itself. Only
+      // when non-zero and NOT an `INVENTORY_VERSION` bump, on SH592's reading: nothing consumes it,
+      // so a capture written without it is readable by every reader and merely reports no marks.
+      ...(doc.selfLabelled ? { selfLabelled: doc.selfLabelled } : {}),
       // SH563 — the hop this page was reached through. `visit` follows one redirect by hand and
       // returns `redirectedTo` precisely so the 301 is VISIBLE in the inventory rather than erased
       // by the fetch layer; its own JSDoc listed the field and this row dropped it, so it was
@@ -1375,6 +1481,21 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
         `will serve nothing there. Decide now whether this source can be replicated: converting ` +
         `them writes posts no route reaches (first: ` +
         `${unaddressable.slice(0, 3).map((page) => page.path).join(" ")})`,
+    );
+  }
+  // SH477 — the measurement, reported on every crawl rather than argued once from one site. The
+  // rule reads a signal off `www.viglet.org`'s markup, and the honest thing to do with a rule that
+  // narrow is to make each capture say how often it fired on the source in front of it: a total of
+  // zero is as much a finding as a total of forty.
+  const marked = pages.filter((page) => page.selfLabelled);
+  if (marked.length) {
+    const total = marked.reduce((sum, page) => sum + page.selfLabelled, 0);
+    collected.push(
+      `${total} link label(s) on ${marked.length} of ${pages.length} page(s) enclosed a decorative ` +
+        `mark — an element whose aria-label repeats its own visible text, which is how a site spells ` +
+        `"this graphic is not content" — and the mark was left out of the label, so the menu a ` +
+        `conversion writes carries the source's words and not a logo's letters ` +
+        `(first: ${marked.slice(0, 3).map((page) => page.path).join(" ")})`,
     );
   }
   const withBase = pages.filter((page) => page.baseHref);

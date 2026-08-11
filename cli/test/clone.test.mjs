@@ -122,6 +122,7 @@ const BRANDED_NAV = `<!doctype html>
 <nav>
   <a href="/dumont"><div class="tile" aria-label="Du"><span><span>D</span><span>u</span></span></div>Dumont DEP</a>
   <a href="/shio"><div class="tile" aria-label="Sh"><span><span>S</span><span>h</span></span></div>Shio CMS</a>
+  <a href="/turing"><div class="tile"><span><span>T</span><span>u</span></span></div>Turing ES</a>
   <a href="/oss"><em>Open</em>Source</a>
   <a href="/plain">  Plain  label  </a>
   <a href="/card"><p>Line</p><p>Two</p></a>
@@ -134,12 +135,13 @@ test("SH472: the separator lands at an element boundary the eye sees, and nowher
   const labels = new Map(doc.nav.map((item) => [item.href, item.label]));
 
   assert.equal(
-    labels.get("/dumont"),
-    "Du Dumont DEP",
+    labels.get("/turing"),
+    "Tu Turing ES",
     "the mark's two letters are two sibling `<span>`s inside one element, so they are one word; "
-      + "the `</div>` before the label is the only boundary in this anchor that separates",
+      + "the `</div>` before the label is the only boundary in this anchor that separates. This "
+      + "tile carries no `aria-label`, which is what keeps SH472's own case observable after SH477 "
+      + "stopped the labelled ones from reaching a label at all",
   );
-  assert.equal(labels.get("/shio"), "Sh Shio CMS");
   assert.equal(
     labels.get("/oss"),
     "OpenSource",
@@ -157,6 +159,70 @@ test("SH472: the separator lands at an element boundary the eye sees, and nowher
     "Line Two",
     "`<p>` is not inline, so a two-paragraph link is still two words — the SH468 case survives",
   );
+});
+
+/**
+ * SH477 — the mark that names itself, and the three things that bound the rule.
+ *
+ * <p>SH472 spaced the tile correctly and left it in the label, so `Du Dumont DEP` is what a
+ * conversion writes and `Du` is a menu entry a curator deletes by hand. The signal needs no
+ * heuristic: the tile carries `aria-label="Du"` over visible text that is also `Du`, which is the
+ * author saying the graphic is decorative.
+ *
+ * <p>What this test is really for is the two cases the rule must **not** eat. `DEP` sits in the same
+ * string as `Du` — same length, same shape, and real content — so "drop short runs" and "drop
+ * uppercase runs" are both refuted by the fixture rather than by an argument. And an anchor whose
+ * only text is its self-labelling element keeps that text: there the visible words *are* the label.
+ */
+const SELF_LABELLED = `<!doctype html>
+<html><head><title>Marks</title></head><body>
+<nav>
+  <a href="/beside"><span aria-label="Go">Go</span>Search the docs</a>
+  <a href="/alone"><span aria-label="Contact">Contact</span></a>
+  <a href="/nested"><div aria-label="Ab"><span aria-label="Ab"><span>A</span><span>b</span></span></div>About us</a>
+  <a href="/different"><span aria-label="Open the menu">Menu</span>Products</a>
+</nav>
+<p>Body copy long enough that this reads like a page a person wrote rather than a shell of one.</p>
+</body></html>`;
+
+test("SH477: a mark whose aria-label repeats its own text is not part of the link's label", () => {
+  const branded = scanPage(BRANDED_NAV, "https://x.test/");
+  const labels = new Map(branded.nav.map((item) => [item.href, item.label]));
+
+  assert.equal(
+    labels.get("/dumont"),
+    "Dumont DEP",
+    "`Du` is drawn, not written — the tile says so with an aria-label equal to its own text — and "
+      + "`DEP`, which is the same shape and is content, is untouched in the same string",
+  );
+  assert.equal(labels.get("/shio"), "Shio CMS");
+  assert.equal(branded.selfLabelled, 2, "and the page counts what it dropped, which is the measurement");
+});
+
+test("SH477: the rule stops at the two cases that would cost content", () => {
+  const doc = scanPage(SELF_LABELLED, "https://x.test/");
+  const labels = new Map(doc.nav.map((item) => [item.href, item.label]));
+
+  assert.equal(labels.get("/beside"), "Search the docs");
+  assert.equal(
+    labels.get("/alone"),
+    "Contact",
+    "an anchor whose only text names itself keeps it: the author spelled the accessible name the "
+      + "way the link reads, and an empty label is indistinguishable from a link that never had one",
+  );
+  assert.equal(
+    labels.get("/nested"),
+    "About us",
+    "an outer frame that matches covers the inner ones, so the same characters are dropped once",
+  );
+  assert.equal(
+    labels.get("/different"),
+    "MenuProducts",
+    "an aria-label that says something the text does not is a real accessible name, not a mark, so "
+      + "`Menu` survives — run together with `Products` because `<span>` is inline, which is SH472's "
+      + "concession and not this rule's business",
+  );
+  assert.equal(doc.selfLabelled, 2, "two labels dropped a mark; `/alone` and `/different` did not");
 });
 
 /**

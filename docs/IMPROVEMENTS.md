@@ -973,28 +973,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.53 A mark that labels itself is not a label (SH477)
-
-SH472 spaced the mark correctly and left it in place. A product card on `www.viglet.org`
-is labelled `Du Dumont DEP`, and `Du` is a logo — a 48×48 tile whose two letters are
-drawn, not written. However it is spaced, it is not part of the label, and a nav label
-becomes a menu entry in the replica that a curator reads and has to delete by hand.
-
-The signal is in the markup and needs no heuristic: the tile carries `aria-label="Du"`
-and its own visible text is `Du`. An accessible name that merely repeats what is already
-on screen is the author saying the element is decorative — that is what `aria-label` is
-for on a graphic, and a text run duplicating it adds nothing a reader would want twice.
-
-So the rule is narrow: inside an anchor, a text run whose collapsed value equals the
-`aria-label` of an element enclosing it contributes nothing to the label. It is not
-"drop short runs" and not "drop uppercase runs" — both would eat real content, and `DEP`
-is the counter-example sitting in the same string.
-
-What has to be measured first is how often the pattern is real. One site is one site,
-and a rule that fires on a single fixture is a rule that fires on nobody else's markup.
-The capture already holds the anchors, so counting the runs that match across a crawl's
-pages is the first deliverable and the drop is the second.
-
 ### XVII.54 The array is why the other three waited (SH478)
 
 SH474 declared the four keys an upload stamps and stopped there, leaving `ALT`,

@@ -1799,6 +1799,24 @@ run between two boundaries a reader sees, so it deletes inline tags rather than 
 Left open on purpose, as the task framed it: whether a mark whose `aria-label` equals its own visible
 text should be in a label at all is a decorative-content question, not a boundary one — SH477.
 
+**And the answer is that it is not a label, on a signal in the markup rather than a heuristic
+(SH477).** `Du` is a 48×48 tile whose letters are *drawn*; it carries `aria-label="Du"` over visible
+text that is also `Du`, and an accessible name repeating what is on screen is the author saying the
+element is decorative. So inside an anchor, an element whose collapsed text equals its own
+`aria-label` contributes nothing to the link's label, and `Du Dumont DEP` is `Dumont DEP`. Three
+things fix the width of that rule. The comparison is against the element's **whole** text, not one
+run, because the mark is two spans and neither of them spells `Du`. `DEP` sits in the same string —
+same length, same case — so "drop short runs" and "drop uppercase runs" are refuted by the fixture,
+and neither is the rule. And an anchor whose *only* text names itself keeps it: there the visible
+words **are** the label, and an empty label is indistinguishable from a link that never had one.
+**The count is the other half of the deliverable.** A rule read off one site's markup is a rule that
+fires on nobody else's, so `scanPage` reports `selfLabelled` per page and `buildInventory` turns it
+into a note — every capture says how often the rule was right about *its own* source, and a total of
+zero is as much a finding as a total of forty. The field is optional and not an
+`INVENTORY_VERSION` bump, on SH592's reading: nothing consumes it. `VOID_TAGS` moved to `clone.mjs`
+and `propose.mjs` imports it, for the reason `tokenize` is injected — a tree builder and a depth
+counter reading one stream must agree on which tags open anything.
+
 **One test drives the whole pipeline, and it is the only one that can (SH422).** Block Q shipped as
 eleven tasks, each thoroughly tested in isolation — and every phase hands an artefact to the next, so
 each handoff is a shape agreed in two places with a unit test pinning one side and *constructing the

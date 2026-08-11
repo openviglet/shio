@@ -50,7 +50,9 @@
 // the markup: the tree is already built when it runs. Injection exists so there is one answer to
 // "what is a tag on this page"; a decoder has no such twin, and a copy of the entity table would be
 // exactly the drift that argument is about.
-import { decodeEntities } from "./clone.mjs";
+// SH477 — `VOID` moved next to `tokenize` for the same reason it is injected: a tree builder and a
+// depth counter reading the same stream must agree on which tags open anything.
+import { decodeEntities, VOID_TAGS as VOID } from "./clone.mjs";
 import { describeTheme } from "./theme.mjs";
 
 /**
@@ -180,12 +182,6 @@ export const SECTION_FILE_FIELDS = {
   SectionLogoWall: { fields: [], rows: { logos: ["image"] } },
   SectionTestimonial: { fields: [], rows: { quotes: ["avatar"] } },
 };
-
-/** Elements that never have children, so a tree builder must not wait for their close tag. */
-const VOID = new Set([
-  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
-  "track", "wbr",
-]);
 
 /**
  * Elements an unclosed `<p>` or `<li>` is implicitly closed by.
