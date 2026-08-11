@@ -194,32 +194,6 @@ fallback was null in the deployment it demands, and a "flake" that was a scoping
 perception loop that cannot perceive itself is the failure this block should expect
 next.
 
-### IX.73 One failure a run in ten, with no name (SH645)
-
-`pnpm test` has twice reported `cli test: ℹ fail 1` on a tree whose backend and JS
-suites were otherwise green, and neither time was the failing test's name captured — the
-runs were greped for the summary line, which is the one thing that survives when the
-output is filtered.
-
-It does not reproduce. Nine consecutive `pnpm test` runs after the sightings were clean,
-and `node --test --test-force-exit "test/*.test.mjs"` run directly in `cli/` has never
-failed: 1348 pass, 0 fail, every time.
-
-That combination is the shape SH354 is about, and the reason this is a task rather than
-a note: a red that is green on the next attempt teaches people that red means nothing,
-and it does that whether or not the red is true. Two sightings is already where the
-habit forms.
-
-What would close it is **capture rather than diagnosis**. `pnpm test` runs eight
-packages and prints each one's summary, so the failing assertion's text is somewhere in
-the output that was thrown away — the fix is a runner invocation that keeps the whole
-log, or a per-package reporter that writes one, so the next sighting names a test
-instead of a count.
-
-Two cheap things to rule out first, both consistent with the evidence: a temp-directory
-or port collision between packages running concurrently, and a test whose fixture writes
-under a shared path. The second is one this repository has hit before.
-
 ### IX.74 Twelve promises nothing carries (SH649)
 
 `roadkeep lint` reports twelve `body.promise` problems, all in `IMPROVEMENTS.md` §0.x —

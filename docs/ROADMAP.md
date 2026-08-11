@@ -32,7 +32,6 @@
 ## Block N — Realignment of what already shipped
 
 - ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P ✅) **The Universal Editor is still not driven end to end** — The one fact the save-back rests on is checked from a browser now; the editor itself embeds site.url in an iframe, so nothing drives the panel, the fields or the save. → §XIV.15
-- 📋 **SH645** (deps: —) **The cli suite reports one failure under pnpm test about once in ten runs, naming no test** — The workspace runner's per-package summary is all that survives a filtered run, so two sightings captured a count and no name. → §IX.73
 - 📋 **SH649** (deps: —) **Twelve improvements sections name task ids that no line carries, so the next add derives past them** — The positioning sections cite epic ids in prose; roadkeep reads an unspent id in its own prefix as claimed, which is a numbering hazard rather than a wording one. → §IX.74
 - 📋 **SH655** (deps: SH499 ✅, SH628 ✅) **The three docs instruments cannot run in CI, because nothing checks out the repository they read** — Their default path is one machine's drive letter and the conformance job clones only this repo, so the gate proving the published pages never runs there. → §IX.75
 - 📋 **SH656** (deps: —) **shio.git.* is bound, shipped with placeholder values, and read by nothing** — A configuration class no code consumes still declares real keys to the property vocabulary, so a page could document a setting that does nothing and pass the gate. → §IX.76

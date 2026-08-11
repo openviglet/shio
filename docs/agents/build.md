@@ -285,6 +285,27 @@ lives outside `target/` for exactly that reason. `ShTestCommandDocLintTest` fail
 documented command filters a run without keeping it — it caught the second copy of this very command
 the moment it was written.
 
+**And `pnpm test` keeps its run too, without anybody remembering to (SH645).** The same lesson had to
+be learned twice: `pnpm test` reported `cli test: ℹ fail 1` on an otherwise green tree, twice, and
+**neither time was the failing test's name captured** — both runs were read through a `grep` for the
+summary line, which is the one thing a filter leaves behind. It has never reproduced, and that is
+what makes it a task rather than a note: a red that is green next time teaches people red means
+nothing, whether or not it was true.
+
+`pnpm test` is now `scripts/test-with-log.mjs` — the same eight-package filter, spawned, with every
+byte streamed to stdout **and** to `shio-js-test.log`, exiting with the child's code. A script rather
+than a pipeline because `tee` and `Tee-Object` differ in buffering, encoding and what they do to the
+exit code, and a runner that swallowed a non-zero exit would trade the one reliable gate for the
+flake it is chasing. Verified in both directions: green, and with a deliberate failing test, where
+the exit is 1 and the test's name is in the log. `pnpm test:raw` is the unlogged form. The log is
+`.gitignore`d by the existing `/*.log`.
+
+**Both cheap causes the task named are ruled out**, so the next sighting starts from the log rather
+than from these: no cli test uses a fixed temp path (every one is `mkdtemp`), `create-shio-app`'s
+`emit.test.mjs` only reads and compares rather than running `emit` into the tree, and every test
+server binds `listen(0)`. What is left is contention under `pnpm`'s concurrent workspace run — the
+suite has never failed when `cli/` is run on its own — and that is a hypothesis, not a finding.
+
 Two traps, and the first causes the second. **`-q` suppresses surefire's `Results:` summary entirely**
 — it is a Maven INFO line, so quiet mode removes the only authoritative total. Without it the obvious
 fallback is to sum `target/surefire-reports/*.txt`, and **that directory accumulates**: reports from a
