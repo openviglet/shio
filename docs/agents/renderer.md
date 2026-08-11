@@ -696,13 +696,28 @@ renderer over one body of content at a second address. See the section on it bel
   that locates it — same theme, emitted through `theme.css`, sixty clean `url()` and no entity at
   all — so the defect was in neither the capture, the store nor the escaping rule: **one of the two
   emissions was written as a field read**. `ShRenderHelpers.rawTextFields` gives it SH461's answer,
-  keyed by **(post-type, field)** rather than by field name: `Theme.CSS`, `Theme.JAVASCRIPT`,
-  `Region.JAVASCRIPT`, `PageLayout.JAVASCRIPT` — the four the product declares as
+  keyed by **(post-type, field)** rather than by field name — the fields the product declares as
   `Ace Editor - CSS/JavaScript` and a template can only emit into a raw-text element. An `Article`
   whose author happens to add a field called `CSS` keeps escaping, which is the case escaping is
   for. The fixture is half the lesson: SH549's sentinel was `.sh549-captured-marker{color:#123456}`
   — no `"`, no `&` — so it survived escaping unchanged and passed on a page whose every `url()` had
   been destroyed. It carries an `@font-face` now.
+- **The list is derived, because it stated a rule and held four of six (SH657)** — SH555 spelled the
+  pairs by hand while its own sentence said *the fields declared as `Ace Editor - CSS/JavaScript`*,
+  and `ShRenderPostTypes` declares **six**. `Theme.TOKENS` (SH195) and `SiteScripts.SCRIPTS` (SH389)
+  were each added to that table on their own task, correctly, and neither reached the list — nothing
+  joined them, so the rule lived in prose and the list in code and they drifted twice. Both are JSON
+  in a JavaScript editor, so the failure they were one template away from is
+  `<script type="application/json">{{TOKENS}}</script>` emitting `&quot;` for every key: a document
+  that does not parse, which is SH461's defect and SH555's a third and fourth time. `RAW_TEXT_FIELDS`
+  is now `ShRenderPostTypes.rawTextFields()` — computed from the widget, which is what the sentence
+  always meant — so a code-editor field added tomorrow reaches the renderer on the same commit.
+  `Ace Editor - HTML` stays out deliberately: a `PageLayout`'s or `Region`'s `HTML` is a *template*,
+  rendered rather than interpolated, so it reaches no stash and calling it raw would say something
+  true about a path that does not exist. `ShRawTextFieldParityTest` names all six pair by pair —
+  because once two things cannot drift, nothing is left to tell a live rule from a vacuous one — and
+  `ShByteStabilityLintTest` caught the first draft returning `Map.copyOf`, whose iteration order
+  comes from a per-JVM salt (P5).
 - **Both render-model verbs are ops, not just routes (SH186, SH326)** — `render.provision` is
   addressless and idempotent; **`data.reconcile:true`** on it reaches SH289's repair, which had
   stayed HTTP-only, so an MCP client could *diagnose* an old instance (`untitled-template`) and

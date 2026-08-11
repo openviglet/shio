@@ -11,9 +11,13 @@ package com.viglet.shio.render;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,7 @@ import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
+import com.viglet.shio.utils.ShStableMap;
 import com.viglet.shio.widget.ShSystemWidget;
 
 /**
@@ -261,7 +266,7 @@ public class ShRenderPostTypes {
      * and not to the repair list would be created on new instances and never offered to old ones,
      * which is precisely the drift this exists to close.</p>
      */
-    private List<FieldSpec> specsFor(String name) {
+    private static List<FieldSpec> specsFor(String name) {
         return switch (name) {
             case ShSystemPostType.PAGE_LAYOUT -> List.of(
                     titleField(),
@@ -437,8 +442,51 @@ public class ShRenderPostTypes {
         }
     }
 
-    private FieldSpec field(String name, String label, String widget, int ordinal, boolean required) {
+    private static FieldSpec field(String name, String label, String widget, int ordinal, boolean required) {
         return new FieldSpec(name, label, widget, ordinal, required);
+    }
+
+    /**
+     * The (post-type, field) pairs a template can only emit into a raw-text element (SH657).
+     *
+     * <h2>Derived here because the rule is a property of this table</h2>
+     *
+     * <p>{@code ShRenderHelpers.RAW_TEXT_FIELDS} used to spell these by hand while stating its
+     * selection rule in prose — *the fields the product declares as {@code Ace Editor -
+     * CSS/JavaScript}* — and it held four of the six. {@code Theme.TOKENS} (SH195) and
+     * {@code SiteScripts.SCRIPTS} (SH389) were each added here, correctly, and neither reached the
+     * list. A hand-kept list that states a rule can diverge from it in silence, and the divergence
+     * is invisible until a template emits one: JSON with {@code &quot;} for every key does not
+     * parse. That is SH461's defect and SH555's, in the one place that already knows the answer.</p>
+     *
+     * <p><b>The widget is the whole rule.</b> A field declared with a code editor for CSS or
+     * JavaScript is one a template can only put inside {@code <style>} or {@code <script>}, which
+     * are raw-text elements where entity escaping is not the encoding — it removes correctness and
+     * defends nothing, because the post is written by whoever writes the template that emits it
+     * (SH461's finding, which is why the cure belongs on the value). {@code Ace Editor - HTML} is
+     * deliberately not included: a {@code PageLayout}'s or {@code Region}'s {@code HTML} is a
+     * <em>template</em>, rendered rather than interpolated, so it never reaches a stash at all.</p>
+     *
+     * <p>Every other field of every other type keeps escaping. An author is free to add a field
+     * called {@code CSS} to an {@code Article}, and that one is a string in a document body with no
+     * declared context — the case escaping exists for — which is why this is keyed by pair.</p>
+     */
+    public static Map<String, Set<String>> rawTextFields() {
+        Map<String, Set<String>> byType = new LinkedHashMap<>();
+        for (String name : NAMES) {
+            Set<String> fields = specsFor(name).stream()
+                    .filter(spec -> ShSystemWidget.ACE_CSS.equals(spec.widget())
+                            || ShSystemWidget.ACE_JS.equals(spec.widget()))
+                    .map(FieldSpec::name)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            if (!fields.isEmpty()) {
+                byType.put(name, fields);
+            }
+        }
+        // `ShStableMap`, not `Map.copyOf`: the immutable factories iterate in an order derived from
+        // a per-JVM salt, which `ShByteStabilityLintTest` refuses on any observable path (P5). It
+        // caught this on the first run, which is the argument for that lint in one line.
+        return ShStableMap.copyOf(byType);
     }
 
     /**
@@ -449,7 +497,7 @@ public class ShRenderPostTypes {
      * {@code THEME} field address a template. Required, because a template with no title is
      * content nothing can reach — the strongest form of SH193's {@code unused-region}.</p>
      */
-    private FieldSpec titleField() {
+    private static FieldSpec titleField() {
         return new FieldSpec(ShSystemPostTypeAttr.TITLE, "Title", ShSystemWidget.TEXT, 1,
                 true, true);
     }

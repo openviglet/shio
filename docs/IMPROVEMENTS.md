@@ -194,31 +194,6 @@ fallback was null in the deployment it demands, and a "flake" that was a scoping
 perception loop that cannot perceive itself is the failure this block should expect
 next.
 
-### IX.77 A list that names its own rule and does not follow it (SH657)
-
-`ShRenderHelpers.RAW_TEXT_FIELDS` states its own selection rule: *the fields the product
-declares as `Ace Editor - CSS/JavaScript`*, because a template can only put those inside
-`<style>` or `<script>`, which are raw-text elements where entity escaping is not the
-encoding. `ShRenderPostTypes` declares six such fields. The map holds four.
-
-Missing are **`Theme.TOKENS`** and **`SiteScripts.SCRIPTS`**, both JSON in the
-JavaScript editor — SH195's and SH389's decision, each documented where it was made. A
-row read through `{{#getRelation}}`, `{{#query}}` or any other listing helper hands them
-to Handlebars as plain strings, so `<script type="application/json">{{TOKENS}}</script>`
-emits `&quot;` for every key and the JSON does not parse. It is SH461's defect and
-SH555's defect, a third and fourth time, in the one place that already knows the answer.
-
-No layout the CLI generates emits either today, so this is latent rather than live —
-which is the argument for fixing it now. SH555 was found by a megabyte of stylesheet
-reaching a browser as text.
-
-**The fix is the derivation, not the two entries.** A hand-kept list that states a rule
-can diverge from it silently, which is what happened; adding two names leaves the next
-code-editor field to the same accident. `ShRenderPostTypes` holds the widget per field,
-so the map can be computed from it — and where it cannot, the lint comparing the two is
-the deliverable (SH322). SH478 is the same shape one subsystem over, and it cost a
-block.
-
 ### IX.78 One entry, two ids, and the second is not in the file as far as anything can tell (SH662)
 
 `docs/CHANGELOG.md:150` opens `- **SH154** — **The lint sees a section reference** … and

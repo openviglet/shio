@@ -42,8 +42,6 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository.ShListingKey;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
-import com.viglet.shio.post.type.ShSystemPostType;
-import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.render.ShTemplateEngine.ShHelperShape;
 import com.viglet.shio.utils.ShStableMap;
 
@@ -1641,17 +1639,23 @@ public class ShRenderHelpers {
     }
 
     /**
-     * The (post-type, field) pairs a template can only emit into a raw-text element (SH555).
+     * The (post-type, field) pairs a template can only emit into a raw-text element (SH555),
+     * <b>derived</b> from the table that declares them (SH657).
      *
-     * <p>Spelled as a pair rather than as a field name alone: an author is free to add a field
-     * called {@code CSS} to an {@code Article}, and that one is a string in a document body with no
-     * declared context — the case escaping exists for.</p>
+     * <p>This was a hand-kept list that stated its own selection rule — *the fields the product
+     * declares as {@code Ace Editor - CSS/JavaScript}* — and held <b>four of the six</b>.
+     * {@code Theme.TOKENS} and {@code SiteScripts.SCRIPTS} were each added to
+     * {@link ShRenderPostTypes} on their own task, correctly, and neither reached here; nothing
+     * could notice, because the rule lived in prose and the list in code. A template emitting one
+     * would have produced JSON with {@code &quot;} for every key, which does not parse — SH461's
+     * defect and SH555's, a third and fourth time.</p>
+     *
+     * <p>So the list is now computed from the widget each field is declared with, which is what the
+     * sentence always meant. Adding a code-editor field to a render type now reaches this map on the
+     * same commit, and the pairing is kept: an author's {@code CSS} field on an {@code Article} is a
+     * string in a document body with no declared context, and still escapes.</p>
      */
-    private static final Map<String, Set<String>> RAW_TEXT_FIELDS = Map.of(
-            ShSystemPostType.THEME,
-            Set.of(ShSystemPostTypeAttr.CSS, ShSystemPostTypeAttr.JAVASCRIPT),
-            ShSystemPostType.REGION, Set.of(ShSystemPostTypeAttr.JAVASCRIPT),
-            ShSystemPostType.PAGE_LAYOUT, Set.of(ShSystemPostTypeAttr.JAVASCRIPT));
+    private static final Map<String, Set<String>> RAW_TEXT_FIELDS = ShRenderPostTypes.rawTextFields();
 
     // --- option reading ---------------------------------------------------------
 
