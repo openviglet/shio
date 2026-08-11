@@ -500,29 +500,6 @@ a request carries no `Origin` header, and an iframe navigation carries none — 
 production, where console and renderer are one origin, and fatal across a dev proxy,
 where the bridge posts to a window that is not its parent.
 
-### XIV.20 A fixture that declares the wrong thing, so the instrument declines (SH664)
-
-`shio-react/e2e/provision.mjs` creates the console-check fixture site with `url: API` —
-the instance's own origin. `siteDestination` reads a non-empty `url` as an **external
-front end**, so for that site the Universal Editor frames `http://localhost:2710/` and
-the console's *open site* link points at Shio rather than at a site.
-
-The consequence measured here is that SH659's drive **never runs anywhere automated**.
-Its probe picks a site by asking the renderer for a page carrying editable props, and
-the only site CI has is excluded by that `url`. It skips honestly, naming the fixture
-gap — the right behaviour, and it still leaves the handshake, the panel and the field
-round trip asserted on one laptop. That is SH655's shape one instrument over, and SH655
-is the argument for fixing it.
-
-The likely repair is one line — leave `url` empty, which is the *normal* state of a site
-an agent just built and the case SH183/SH184 exist for: the renderer serves it,
-`?editor=true` supplies the bridge, and the editor works. Confirm first why it was set,
-because another probe may rely on the site having an external destination.
-
-Worth checking in the same pass: whether `GET /` serves the console, since that is what
-the editor currently frames for this site, and a console rendered inside its own iframe
-is a symptom somebody would report as something else entirely.
-
 ### XIV.21 The console's lint has not run since ESLint 10 (SH665)
 
 Measured while shipping SH654: `npx eslint` on an **untouched** file —

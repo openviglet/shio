@@ -497,6 +497,23 @@ The round trip deliberately stops at the pending change: `universal-editor-save-
 the PATCH it becomes, and a smoke check must not edit anybody's content. Publish is the remainder,
 for the same reason — it mutates a post.
 
+**The fixture had to stop declaring a front end before any of that could run on CI's own site
+(SH664).** `provision.mjs` created the console-check site with `url: API` — the instance's own
+origin — from the commit that introduced the file, written before SH183/SH184 existed. A non-empty
+`url` means *external front end*, so two things followed and neither failed anything: `siteDestination`
+aimed the console's open-site link and the editor's iframe at the instance, where `GET /` answers
+**302 to `/login`** — the console rendering its own login page inside its own iframe — and the drive,
+which excludes every url-bearing site *before* it asks the renderer anything, never had the one site
+CI provisions on purpose as a candidate. Empty is what a site an agent just built looks like, which
+is the case SH183/SH184 exist for.
+
+Measured against a live instance rather than argued: with `url` dropped the site stores `url: null`
+and its `/preview/<name>/?editor=true` carries **14** `data-shio-prop` elements and the bridge
+script — every conjunct of the probe's own predicate. `test/e2e-fixture-site.test.mjs` holds the
+pair together, reading the exclusion out of `console-check.mjs` and the declaration out of
+`provision.mjs`: neither half is wrong alone, and a test that read only one would be asserting a
+preference instead of a coupling.
+
 ## The review count that could not go down (SH615)
 
 `ShReviewSession.pending` asked, per audit entry, whether the post has a `DRAFT` row. Its own javadoc

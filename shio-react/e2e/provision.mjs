@@ -77,7 +77,19 @@ async function createSite() {
     body: JSON.stringify({
       name: SITE,
       description: "Site the console smoke check walks",
-      url: API,
+      // No `url` — and that is the fixture's whole point since SH664. A non-empty `url`
+      // declares an **external front end**: `siteDestination` sends the console's open-site
+      // link there, and the Universal Editor frames it. This said `url: API`, so the editor
+      // framed the instance itself — `GET /` answers 302 to `/login`, i.e. the console
+      // rendered the console's login page inside its own iframe — and `checkEditorDrive`
+      // skipped the one site CI provisions on purpose, because it excludes every site with
+      // a `url` before it asks the renderer anything.
+      //
+      // Empty is also the *normal* state of a site an agent just built, which is the case
+      // SH183/SH184 exist for: Shio's own renderer serves it and `?editor=true` supplies the
+      // SH185 bridge. Measured on a live instance — this site's `/preview/<name>/?editor=true`
+      // carries 14 `data-shio-prop` elements and the bridge script, so it is a target the
+      // drive will take.
       furl: SITE.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-"),
     }),
   })
