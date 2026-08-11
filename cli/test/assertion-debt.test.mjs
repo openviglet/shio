@@ -187,12 +187,19 @@ const DEBT = [
   // entry two tasks ago, whose id an assertion message mentioned without asserting it — and naming
   // THAT id here would pay it off a third time, which is why this sentence does not.
   "SH530", "SH531", "SH534", "SH535", "SH536", "SH538", "SH539",
-  // EARNS, all six, and they are the same shape as the removals: a lint over the repository rather
+  // EARNS, all five, and they are the same shape as the removals: a lint over the repository rather
   // than a test of a behaviour, and nothing human-facing to notice a reversal. A mutating test
   // forcing its precondition (SH296), `noRollbackFor` on the class (SH352), the plugin's version
-  // floor (SH355), the surefire fork count (SH414), `skipITs` defaulting true (SH415), the license
-  // headers agreeing with LICENSE (SH541). Third by return-risk, and each is a few lines.
-  "SH296", "SH352", "SH355", "SH414", "SH415", "SH541",
+  // floor (SH355), the surefire fork count (SH414), `skipITs` defaulting true (SH415).
+  // Third by return-risk, and each is a few lines.
+  //
+  // The sixth was paid, and by the sweep rather than by a task aimed at it. SH669's licence check
+  // in `docs-stack.conformance.mjs` asserts the SPDX id in `package.json` against the text of
+  // `LICENSE` — which is SH541's defect exactly, one file carrying a claim the other 194 had left
+  // — so the id is now named in an assertion message at the boundary it crossed, and this reader
+  // finds it there. Removed rather than left: an entry that says "unasserted" about something a
+  // suite holds is the stale half this list's own second test fails on.
+  "SH296", "SH352", "SH355", "SH414", "SH415",
   // EARNS, and it is the cheapest closure on the list rather than new coverage. The locale run
   // (SH361 is its own decision entry, SH366-SH371 the six steps): four of the six are already
   // asserted elsewhere BY BEHAVIOUR and not by id, so the work is naming the id in a test that

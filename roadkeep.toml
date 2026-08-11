@@ -293,11 +293,22 @@ priority = [
   # could not tell an assertion from a mention (SH630/SH642), the review count that could not go
   # down (SH615), the read's `state` and the diff it unblocked (SH619/SH640), the fat-jar build
   # identity (SH609), and the flake that turned out to be a scoping defect (SH635).
+  #
+  # Block N came off when SH668 emptied it (2026-08-11) — the realignment's own instruments: the
+  # licence one file carried and 194 did not (SH541), the readers that could not see what they
+  # were counting (SH649's reserved ids, SH662's co-shipped entry, SH668's rationale citations),
+  # four lints landed before their fixes (SH656, SH657, SH660, SH666) and the editor drive made
+  # strict (SH664, SH667). Its completion sweep found the thing no task had: the published docs
+  # advertised GPL v3 for as long as SH541 had been shipped, recorded as SH669.
+  #
+  # `priority drop Block N` is the command `lint` names and it refuses here, because this queue
+  # is still `priority` in this file and that verb reaches the one `priority migrate` would move
+  # into ROADMAP.md. Migrating is a larger change than an empty tier justifies, so the tier is
+  # removed by hand and the disagreement is filed with roadkeep.
   "Block J",
   "Block O",
   "Block L",
   "Block M",
-  "Block N",
 ]
 
 [files]

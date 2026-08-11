@@ -117,6 +117,14 @@ instance (SH540) is all that is left, and it is what turns the scripted session
 in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
 
+Block N closed on 2026-08-11 and changed no claim here, and the reason is a property of this
+copy rather than luck: the licence is a **link** to `LICENSE` (`site-content.ts`'s `license`
+key), not the string `GPL v3`, so SH541 moving 195 files to Apache 2.0 could not leave it
+wrong. The published documentation spelled it out and was wrong for the whole time after —
+which is the argument for linking a fact instead of quoting it, and SH669 now derives that
+one from `package.json` + `LICENSE` on every conformance run. The block's other half is
+instruments, which the site does not claim.
+
 Block T closed on 2026-08-11 and changed no claim here, and the check that says so is worth
 naming rather than assuming: the site's one documentation claim is the Resources card,
 *"Install, model, author, deliver — the end-user documentation set"*, which is a statement

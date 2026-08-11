@@ -124,6 +124,27 @@ const RETIRED = [
   },
 ];
 
+/**
+ * The licence families this check can tell apart — the one this repository carries, and the ones
+ * a page must therefore not attribute to it.
+ *
+ * <p>`inFile` is the phrase the corresponding `LICENSE` text carries, which is what makes the SPDX
+ * id in `package.json` checkable rather than merely present. `named` is how a *page* writes it,
+ * which is prose rather than SPDX: nobody puts `Apache-2.0` in a pill.</p>
+ *
+ * <p>`Apache` requires the `2` — `architecture-overview` names **Apache Tika** as a dependency, and
+ * a reader that could not tell a licence from a vendor would report the page that is right.</p>
+ */
+const LICENCES = [
+  {
+    spdx: "Apache-2.0",
+    inFile: "Apache License",
+    named: /Apache(?:\s+License)?[\s-]v?2(?:\.0)?/g,
+  },
+  { spdx: "GPL-3.0", inFile: "GNU GENERAL PUBLIC LICENSE", named: /\b[AL]?GPL[\s-]?v?3(?:\.0)?/gi },
+  { spdx: "MIT", inFile: "MIT License", named: /\bMIT[\s-]Licen[cs]e\b/gi },
+];
+
 /** Every published page, so a claim cannot escape by moving to a neighbouring file. */
 function pages() {
   if (!existsSync(DOCS)) {
@@ -178,9 +199,17 @@ function isClaim(page, match) {
   return page.text[lineStart] === "|";
 }
 
-/** `file:line` of an offset, so a failure names the line a person has to open. */
-const at = (page, index) =>
-  `${page.file.slice(DOCS.length + 1)}:${page.text.slice(0, index).split("\n").length}`;
+/**
+ * `file:line` of an offset, so a failure names the line a person has to open.
+ *
+ * <p>This read `page.file` until SH669, and `pages()` has only ever produced `label` — so every
+ * message here died on `Cannot read properties of undefined` instead of naming the line it
+ * promises. It survived because it is only reached on a **failure**, and the suite has been green:
+ * an instrument's error path is the half nothing exercises, which is why the test below asks this
+ * one to fail rather than trusting four green claims. `label` is already relative to `DOCS`, so
+ * the second `slice` was wrong in the same expression.</p>
+ */
+const at = (page, index) => `${page.label}:${page.text.slice(0, index).split("\n").length}`;
 
 describe("SH628 conformance: a version the docs state is a version this repo declares", () => {
   for (const claim of CLAIMS) {
@@ -223,6 +252,64 @@ describe("SH628 conformance: a version the docs state is a version this repo dec
       "SH628: a page names a technology this product does not depend on. This is the worse half of "
         + "a stale stack table — a wrong version misconfigures an environment, a wrong dependency "
         + `sends a contributor away believing this is a different product.\n${found.join("\n")}`,
+    );
+  });
+
+  /**
+   * SH669 — the licence is a claim about this repository, and it is the one that was wrong.
+   *
+   * <p>Found by Block N's completion sweep: SH541 moved 195 files from GPL-3.0 to Apache-2.0 —
+   * `LICENSE`, the POM, ten `package.json`s, the plugin manifest, 182 source headers — and the
+   * published landing page kept a `GPL v3` pill for the whole time after. A version claim
+   * misconfigures an environment; **a licence claim is the one a reader may not act on wrongly at
+   * all**, and it is the single most-read fact on that page.</p>
+   *
+   * <p>Read the same way the version claims are: from a build file, cross-checked against
+   * `LICENSE` so no one file can move alone — which is exactly the drift SH541 closed, where the
+   * only file carrying the right answer was the one nobody fetches.</p>
+   */
+  test("no page attributes a licence to this product that this repository does not carry", () => {
+    const declared = rootPackage.license;
+    const family = LICENCES.find((each) => each.spdx === declared);
+    assert.ok(
+      family,
+      `SH669: package.json declares "${declared}", which this check has no family for. Add it to `
+        + "LICENCES with the phrase its LICENSE file carries, or the reader below silently stops "
+        + "knowing what is true.",
+    );
+    assert.ok(
+      read(join(REPO, "LICENSE")).includes(family.inFile),
+      `SH669: package.json says ${declared} and LICENSE does not contain "${family.inFile}", so `
+        + "the two files this check reads disagree and neither can be believed. This is SH541's "
+        + "defect exactly, in the pair that is supposed to catch it.",
+    );
+
+    const found = [];
+    for (const other of LICENCES.filter((each) => each !== family)) {
+      for (const page of CLAIMABLE) {
+        for (const match of page.text.matchAll(other.named)) {
+          found.push(`  ${match[0]} at ${at(page, match.index)}`);
+        }
+      }
+    }
+    assert.deepEqual(
+      found,
+      [],
+      `SH669: a page names a licence this product does not carry. package.json and LICENSE both `
+        + `say ${declared}, so a reader is being told the terms wrongly on the one subject where `
+        + "that decides whether they may use it at all. If the mention is about a *dependency* "
+        + `rather than about Shio, say whose it is — this reader is deliberately blunt because `
+        + `there were no such mentions when it landed.\n${found.join("\n")}`,
+    );
+
+    // Non-vacuity, and the direction that matters: a reader matching nothing would report the
+    // same empty list on a page that says GPL in every paragraph.
+    const states = CLAIMABLE.filter((page) => family.named.test(page.text)).map((p) => p.label);
+    family.named.lastIndex = 0;
+    assert.ok(
+      states.length > 0,
+      `SH669: no page states ${declared} at all, so this check just proved nothing about `
+        + `${CLAIMABLE.length} page(s). The README's License section is the usual carrier.`,
     );
   });
 
