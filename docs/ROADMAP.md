@@ -27,7 +27,6 @@
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
 - 💭 **SH231** (deps: SH161 ✅) **An instance's own notes travel nowhere** — A site's notes ride its export and the instance's own travel nowhere, which is right for an import and wrong for a move. → §XIII.11
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
-- 📋 **SH647** (deps: SH346 ✅, SH222 ✅) **The op vocabulary has spent the room SH346 left, so the next op moves a ceiling instead of a decision** — SH346 measured 447 against a manifest alternative and left space for two or three ops; SH222 took it to 640 and the next raise should re-run the trade. → §XIII.21
 - 📋 **SH651** (deps: SH396 ✅) **A post created through the console gets no friendly URL, so nothing can open it** — SH396 found five console-created posts all landing at their folder's address, which makes them unreachable by any delivery URL. → §XIII.22
 
 ## Block N — Realignment of what already shipped

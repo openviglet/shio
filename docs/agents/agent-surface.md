@@ -1804,3 +1804,40 @@ that was really a 500 is not a measurement.
 The naive path also got **its own blank site** in the fixture. It used to build into the
 shared one, which was fine while it only created content; it now binds a layout, and doing
 that to a shared fixture would change what every other task in this class measures.
+
+## The op vocabulary's cost, decomposed (SH647)
+
+`ShAgentOpsReachTest` prints the breakdown on every run and asserts two things instead of
+one total:
+
+```
+  total 640 in 13 ops = 49.2 per op
+    header/grammar prose    54
+    op + keys (the shape)   88  (6.8 per op)
+    purpose prose          498  (38.3 per op)
+  the manifest alternative: +640 on a 2650 manifest = 24% for every session
+```
+
+**Why one total was not enough.** SH346 set the ceiling at 600 with "room for two or three
+more ops"; SH222 spent it and raised to 680. Both measured the *sum*, so "the vocabulary
+grew" and "the vocabulary gained ops" could not be told apart — and those argue for
+opposite things. More ops is the surface doing its job. Fatter prose per op is drift.
+
+**The answer: it is prose.** 498 of 640 tokens are the per-op sentences, 88 are the keys.
+
+**And the trade still holds.** SH346 chose this vocabulary over folding it into the
+manifest because the manifest is paid by every session, writer or not; 447 was a 19%
+regression then, and 640 on today's 2650-token manifest is **24%**. Still a regression, so
+the surface choice stands.
+
+**No trim was made, deliberately.** The obvious move from "78% is prose" is to cut prose,
+and it is wrong here: those sentences carry facts nothing else on the surface carries —
+which ops need `confirm` from their own dry run, that unknown `data` keys are refused,
+where an `id:` address comes from. Cutting them to defend a number is P3 taking from P6.
+The guard is on the **average** (< 42) so one op may need two sentences and every op may
+not.
+
+**What the two assertions replace** is an obligation on a future task — that whoever added
+the next op would remember to re-run a hand comparison. They would not have. Both sides of
+the trade are now measured every build, so adding an op is an ordinary act again and the
+surface choice re-opens itself when it stops being true. The 680 total stays, unmoved.

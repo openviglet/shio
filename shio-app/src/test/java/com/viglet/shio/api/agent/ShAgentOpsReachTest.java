@@ -8,6 +8,8 @@
  */
 package com.viglet.shio.api.agent;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
@@ -184,16 +186,102 @@ class ShAgentOpsReachTest {
         // equally, because a manifest carrying the vocabulary would carry these too. The trade
         // stands; what has changed is only the vocabulary's size.
         //
-        // What the number is now: the room SH346 left — "two or three more ops" — is spent. The
-        // NEXT op is the one that should re-run the trade properly rather than move this line
-        // again, and that is filed rather than left as a sentence here.
+        // What the number is now: the room SH346 left — "two or three more ops" — is spent. That
+        // was filed as SH647 and answered by the test below, which is why this one keeps a plain
+        // total and stops carrying the argument. The measurement it produced: 498 of these 640
+        // tokens are per-op PROSE and 88 are the keys, so the growth was never op count; and
+        // folding the vocabulary into the manifest would cost 24% of it for every session, writer
+        // or not, against the 19% that made SH346 reject that option. Still a regression, so the
+        // surface choice stands and the next op is an ordinary act rather than a ceiling move.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
                 .isLessThan(680);
     }
 
+    @Test
+    @DisplayName("SH647: the vocabulary's growth is decomposed, so the next raise is not a guess")
+    void theGrowthIsProseOrOpsAndTheNumberSaysWhich() throws java.io.IOException {
+        String terse = ShAgentOps.terse();
+        int total = ShTokenBudget.estimate(terse);
+        List<ShAgentOps.OpSpec> ops = ShAgentOps.all();
+
+        // The three parts a single total conflates. SH346's 600 ceiling and SH222's 680 both
+        // measured the sum, so "the vocabulary grew" could not be told apart from "the vocabulary
+        // gained ops" — and those argue for opposite things. More ops is the surface doing its
+        // job; fatter prose per op is drift, and only one of them is a reason to re-open SH346's
+        // choice of where a writer learns the keys.
+        int header = ShTokenBudget.estimate(terse.lines()
+                .filter(line -> line.startsWith("#") || line.startsWith("shio-ops"))
+                .collect(Collectors.joining(System.lineSeparator())));
+        int purpose = ops.stream()
+                .mapToInt(spec -> ShTokenBudget.estimate(spec.purpose()))
+                .sum();
+        int shape = total - header - purpose;
+
+        // What the manifest alternative costs today — the other half of what SH647 asks for.
+        // SH346 rejected it because folding the vocabulary into the manifest makes every session
+        // pay for it, writer or not, and 447 against the manifest of the day was a 19% regression.
+        // The comparison has to be re-run against today's manifest, not against that ratio.
+        int manifest = budget("response.manifest");
+        double regression = (100.0 * total) / manifest;
+
+        System.out.printf("%nSH647 — the ops vocabulary decomposed (est. tokens)%n"
+                        + "  total %d in %d ops = %.1f per op%n"
+                        + "    header/grammar prose  %4d%n"
+                        + "    op + keys (the shape) %4d  (%.1f per op)%n"
+                        + "    purpose prose         %4d  (%.1f per op)%n"
+                        + "  the manifest alternative: +%d on a %d manifest = %.0f%% for every "
+                        + "session, writer or not%n"
+                        + "  SH346 measured 447 and called %s a 19%% regression%n%n",
+                total, ops.size(), (double) total / ops.size(),
+                header, shape, (double) shape / ops.size(),
+                purpose, (double) purpose / ops.size(),
+                total, manifest, regression, "that");
+
+        // Measured 38.3 against a shape of 6.8, which is the answer SH647 asked for: the growth
+        // is PROSE, not ops. 498 of 640 tokens are the per-op sentences and 88 are the keys, so
+        // "the vocabulary got bigger" and "the vocabulary gained ops" were never the same claim,
+        // and the two ceilings that measured only the sum could not tell them apart.
+        //
+        // 42 rather than 40: an op is a line of keys plus one sentence, and the sentences carry
+        // the facts nothing else on this surface carries — which ops need `confirm` from their own
+        // dry run, that unknown `data` keys are refused, where an `id:` address comes from. Those
+        // are P6, not padding, so this guards the AVERAGE and leaves room for one op that needs
+        // two sentences. What it refuses is every op needing two.
+        assertThat((double) purpose / ops.size())
+                .as("""
+                        SH647 — the per-op PROSE, which is the half a total ceiling hides. An op                         is a line of keys plus one sentence saying what it is for; the keys are                         the vocabulary doing its job and the sentence is where drift lives.                         Guarding the average rather than the sum means adding an op costs what an                         op costs, and only writing a paragraph where a clause belongs fails.""")
+                .isLessThan(42.0);
+
+        assertThat(regression)
+                .as("""
+                        SH647 — and the trade itself, re-run rather than inherited. SH346 chose                         the ops vocabulary over the manifest because folding it in makes every                         session pay for it; %d on a %d manifest is what that would cost today.                         Past this, "a section only a writer asks for" stops being a detail and                         the surface choice wants re-opening rather than the ceiling raising."""
+                        .formatted(total, manifest))
+                .isLessThan(30.0);
+
+        // What this pair replaces: the obligation SH647 left on "the next op", which was that
+        // somebody would remember to re-run a comparison by hand. They would not have. The trade
+        // is now measured on every build from both sides — how big the vocabulary is per op, and
+        // what folding it into the manifest would cost every session — so adding an op is an
+        // ordinary act again, and the surface choice re-opens itself when it stops being true.
+    }
+
     private ShAgentContext pack(String include) {
         return shAgentContextService.context(null, null, null, include, null, false);
+    }
+
+    private static final String BUDGETS = "/token-budgets.properties";
+
+    /** A declared ceiling, read rather than copied — one place for a number (SH647). */
+    private static int budget(String key) throws java.io.IOException {
+        java.util.Properties properties = new java.util.Properties();
+        try (java.io.InputStream in = ShAgentOpsReachTest.class.getResourceAsStream(BUDGETS)) {
+            assertThat(in).as("missing %s", BUDGETS).isNotNull();
+            properties.load(in);
+        }
+        String value = properties.getProperty(key);
+        assertThat(value).as("no budget declared for '%s' in %s", key, BUDGETS).isNotNull();
+        return Integer.parseInt(value.trim());
     }
 }

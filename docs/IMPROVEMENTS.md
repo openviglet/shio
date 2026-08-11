@@ -472,29 +472,6 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
-### XIII.21 The vocabulary has spent its room (SH647)
-
-SH346 chose the ops vocabulary over the manifest as the place a writer learns the keys,
-and the number that made that a decision rather than an opinion was **447 estimated
-tokens** — enough to call the manifest option a 19% regression. The ceiling was set at
-600, described in its own comment as "room for two or three more ops".
-
-SH222 added two and the measurement is **640**. The room is spent.
-
-What has *not* changed is the trade itself: restore ops add to both sides equally,
-because a manifest carrying the vocabulary would carry these too. So SH222 raised the
-ceiling to 680 with that re-examination written beside it rather than moving the line
-quietly, which is what the assertion's own message forbids.
-
-The **next** op is different. A ceiling raised twice is a ceiling nobody believes, and
-the question SH346 answered deserves re-running against today's numbers rather than 447:
-is a vocabulary every writer pays for still cheaper than a manifest section only a
-writer asks for, now that it is 43% larger than when that was decided?
-
-Two things to measure before deciding: what the manifest option costs today, and whether
-the growth is ops or prose — the per-op descriptions have grown independently of the op
-count, and if that is most of it the answer is trimming rather than re-choosing.
-
 ### XIII.22 A post created through the console gets no friendly URL (SH651)
 
 SH396 extended the build-a-site benchmark's baseline to hand-build a render model, and
