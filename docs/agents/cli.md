@@ -2217,6 +2217,27 @@ the next task spend it. Its first run held six red cases owned by five open task
 (SH563, SH564, SH565) it found: a redirect `buildInventory` drops, an absolute href stored in a
 section field, and a `<title>` nobody decodes.
 
+**And an entry must name a behaviour, never a mechanism — the both-directions check is what makes
+that binding (SH568/SH606).** `layout-raw-field-CSS` read *the generated layout does not emit
+`{{CSS}}` with two braces*: a statement about the template, presuming the cure was a third brace.
+SH461 had already decided otherwise and written down why — the fix belongs where the value is built,
+"or every hand-written layout in the product keeps the defect and only the generated one is cured" —
+so SH555 marked the row's raw-text fields `Handlebars.SafeString`. The defect closed and the entry
+could never go green, because *an assertion phrased as "the code does not do X" can only go green the
+one way its author imagined*, and a list that fails on a green entry then converts a **correct
+repair** into a permanent red. That is the general finding, and it is now the `rule` field in
+`open-findings.json` so the next author reads it while writing the entry.
+
+**The particular one was answered by deleting a reader, not by fixing it (SH606).** The behaviour —
+a captured stylesheet reaching the page with its `url()` quotes intact — is asserted where the
+renderer is, by `ShConvertedLayoutRenderTest`, and no brace count can stand in for it: the same two
+braces are right or wrong depending on `RAW_TEXT_FIELDS`. Two readers of one fact that agree only by
+accident is SH583's shape and this was its third sighting, so the fast-tier proxy went and the
+archetype's now-unread `rawFields` key went with it. **A wrong id in a label is the same defect one
+level down**, and one was sitting in the same file: group J's navigation case named SH568 and belongs
+to SH575. SH527's reader counts an id named in an assertion message as *asserted*, so a mislabel pays
+off the wrong task's debt — the false-payment shape `assertion-debt.test.mjs` has recorded twice.
+
 **The published pages are executed, by two instruments and not one (SH499).** Block R wrote a
 documentation set full of copyable invocations and nothing ran one, which is exactly how the 2018
 pages became wrong: written once, product moved, never compared. The task's first deliverable was

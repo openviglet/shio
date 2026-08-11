@@ -485,27 +485,29 @@ describe("SH560 group D: the conversion document, judged before an instance sees
           });
         }
 
-        // SH555, read one phase earlier than the run that found it. The generated layout pulls the
-        // captured theme through a relation and emits its CSS; a plain `{{CSS}}` inside that block
-        // is escaped, so a megabyte of stylesheet arrives with every `url()` entity-escaped and the
-        // browser cannot parse it. The layout is in this document, so the brace count is checkable
-        // with no instance, no publish and no page fetch.
-        for (const field of declaration.conversion?.rawFields ?? []) {
-          const layout = conversion.posts.find((post) => post.type === "PageLayout");
-          assert.ok(layout, `${entry.id}: a Page with no layout is one the renderer answers 400 for`);
-          holding(entry.id, `layout-raw-field-${field}`, () => {
-            const escaped = new RegExp(`(^|[^{])\\{\\{${field}\\}\\}`);
-            const raw = new RegExp(`\\{\\{\\{${field}\\}\\}\\}`);
-            assert.ok(
-              !escaped.test(layout.data.HTML) || raw.test(layout.data.HTML),
-              `SH555 / ${entry.id}: the layout emits {{${field}}} with two braces, so Handlebars `
-                + "escapes it. A captured stylesheet then reaches the browser with every url() as "
-                + "&quot;…&quot; and verify reports page-reference-broken for each one. The stored "
-                + "Theme post is clean, which is why nothing upstream of the render sees this.\n"
-                + `  layout HTML: ${layout.data.HTML}`,
-            );
-          });
-        }
+        // SH568/SH606 — the raw-field check that used to be here is gone, and the deletion is the
+        // deliverable rather than a tidy-up.
+        //
+        // It read: *the generated layout does not emit `{{CSS}}` with two braces inside the
+        // relation block*. That is a statement about the TEMPLATE, and it presumed the cure was a
+        // third brace. SH461 had already decided otherwise and written down why — the fix belongs
+        // where the value is built, "or every hand-written layout in the product keeps the defect
+        // and only the generated one is cured" — so SH555 marked the row's raw-text fields
+        // `Handlebars.SafeString` instead. Under that fix two braces are not a defect, and this
+        // assertion could never go green however correctly the defect was closed.
+        //
+        // That is the general finding (SH568): an assertion phrased as *the code does not do X*
+        // pins one implementation of a fix, and a list checked in both directions then converts a
+        // CORRECT repair into a permanent red. The behaviour is what the entry should have named,
+        // and the behaviour has an assertion — `ShConvertedLayoutRenderTest`'s
+        // `aCapturedStylesheetIsNotEntityEscapedOnTheWayToThePage`, which renders a page from a
+        // layout this generator produced and requires the captured `url()` quotes to arrive intact.
+        // It is one tier deeper because that is where the renderer is, and no brace count can stand
+        // in for it: the same two braces are right or wrong depending on `RAW_TEXT_FIELDS`.
+        //
+        // So SH606's question — which of the two readers is wrong — is answered by removing one
+        // (SH583's shape, third sighting). What the fast tier keeps is the check it can actually
+        // make: `no-entities-in-<url>` below, at the served document.
 
         // The entity round trip (SH476/SH550). A title escaped twice at the source decodes to
         // `&amp;` and must not decode further; a title escaped once must arrive as the character.
@@ -858,7 +860,12 @@ describe("SH560 group J: the replica as a site somebody can move around in", () 
   for (const entry of corpus.filter((each) => each.declaration.scenarios?.authorable
     && each.declaration.propose?.accept === "all"
     && (each.declaration.addressable ?? []).length > 1)) {
-    test(`${entry.id}: an authorable replica can be navigated (SH568)`, async () => {
+    // SH575's id, not SH568's — corrected while shipping SH568, which is about this exact hazard.
+    // The label read SH568 and the assertion is about navigation; SH568 is the held-finding-phrasing
+    // task and SH575 is what put a `<nav>` in the generated layout. It is not cosmetic: SH527's
+    // reader counts an id named in an assertion message as ASSERTED, so a wrong id pays off the
+    // wrong task's debt — the false-payment shape `assertion-debt.test.mjs` records twice already.
+    test(`${entry.id}: an authorable replica can be navigated (SH575)`, async () => {
       const run = await capture(entry, { accept: true });
       try {
         const layout = postsOfType(run.conversion, "PageLayout")[0];
@@ -871,7 +878,7 @@ describe("SH560 group J: the replica as a site somebody can move around in", () 
           // and `verify` exited 0 — a site of unreachable pages that every gate passes.
           assert.ok(
             /\{\{#?navigation\b/.test(html) || /<nav\b/.test(html),
-            `SH568 / ${entry.id}: the generated layout emits neither the \`navigation\` helper nor `
+            `SH575 / ${entry.id}: the generated layout emits neither the \`navigation\` helper nor `
               + "a <nav>, so a replica of a source with "
               + `${entry.declaration.addressable.length} addressable pages serves them with no link `
               + "between them. The source's own nav lived in chrome the vocabulary drops, and "

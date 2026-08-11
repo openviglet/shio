@@ -996,59 +996,6 @@ gate naming itself. Resuming is therefore two steps — dispatch the workflow, t
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
 
-### XVII.79 An assertion that names the fix instead of the defect (SH568)
-
-SH560's corpus holds its red assertions as a named list, and every entry is checked in
-both directions — an entry gone green fails the run, which is what stops the list
-becoming where findings go to be forgotten. That design is right and one entry defeats
-it.
-
-`theme-heavy/layout-raw-field-CSS` reads: *the generated layout emits the CSS field with
-two braces inside the getRelation block*. That is a statement about the **template**,
-and it presumes the fix is a third brace. SH555 did not add one, because SH461 had
-already decided this exact question and written the reason down: the cure belongs where
-the value is built, *or every hand-written layout in the product keeps the defect and
-only the generated one is cured*. So SH555 marked the row's raw-text fields
-`Handlebars.SafeString`, and the served page now carries its `url()` quotes intact — the
-defect is closed, the corpus's own group D goes green on the rendered document, and this
-assertion stays red forever.
-
-The finding is not that the entry is stale. It is that an assertion phrased as *the code
-does not do X* pins one implementation of a fix, and the both-directions check then
-converts a **correct** repair into a permanent red — the same failure SH554 named one
-block over, an instrument in a gate reporting a loss on something that lost nothing. The
-entry should assert the behaviour: no entity-escaped `url()` reaches a rendered verbatim
-page, whichever brace count produces that.
-
-### XVII.89 Two readers of one brace count (SH606)
-
-`source-corpus.test.mjs` fails the CLI's generated layout for emitting `{{CSS}}` inside
-the `{{#getRelation "/theme/captured"}}` block: two braces, so Handlebars escapes it, so
-a megabyte of stylesheet reaches the browser with every `url()` as `&quot;…&quot;`. That
-reading was right when it was written.
-
-SH555 then shipped, on the **render** side: a `getRelation` row's raw-text fields —
-`Theme.CSS` and `JAVASCRIPT`, `Region.JAVASCRIPT`, `PageLayout.JAVASCRIPT` — are
-`Handlebars.SafeString`, keyed by field. Under that fix `{{CSS}}` is not escaped, and
-the assertion is checking a brace count whose meaning the render changed underneath it.
-
-So the two disagree and **neither run says which is wrong**. The corpus reports a held
-finding, the render suite is green, and nothing joins them. SH594's reader is what
-surfaced it: the entry was owned by SH555 *after SH555 had shipped*, the one state a
-debt ledger cannot see on its own.
-
-Only one of two things is true:
-
-- the render fix is the whole answer and the assertion measures a proxy that stopped meaning
-  anything, so it is retired;
-- or `SafeString` is narrower than the assertion assumes — a field off SH555's list, a layout
-  written by hand, a path where the row does not come through `getRelation` — and the generator
-  should write `{{{CSS}}}` anyway.
-
-**The deliverable is the answer, not the edit.** Whichever way it goes, one of the two
-artefacts is removed rather than both left standing: two readers of one fact that agree
-only by accident is SH583's shape, and this is its third sighting.
-
 ### XVII.90 The half of a refresh that is still measured in megabytes (SH611)
 
 SH592 made a page cheap to re-check and left the bytes alone. An **asset** is

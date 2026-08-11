@@ -1,11 +1,5 @@
 {
   "note": "The corpus's assertions that are red at HEAD, each owned by an open task. This is a NAMED LIST and deliberately not a ceiling: a ceiling lets one task pay the debt and the next task spend it, which is the reasoning cli/test/assertion-debt.test.mjs was built on. Every entry here is a case source-corpus.test.mjs reports rather than fails on — so the suite can live in the gate without crying wolf (docs/agents/cli.md) while still holding the assertion the SH338 order says must land before the fix. The list is checked in BOTH directions: an entry whose assertion has gone green FAILS the run, naming the id to delete. That is what stops the list becoming the place findings go to be forgotten.",
-  "findings": [
-    {
-      "id": "SH606",
-      "archetype": "theme-heavy",
-      "assertion": "layout-raw-field-CSS",
-      "what": "The generated layout emits {{CSS}} with two braces inside the getRelation block. Re-filed from SH555 by SH594's reader: SH555 shipped on the RENDER side (those fields are Handlebars.SafeString), so this assertion and that fix now disagree about whether two braces are a defect, and SH606 is the round that picks."
-    }
-  ]
+  "rule": "SH568 — an entry must name a BEHAVIOUR, never a mechanism. `layout-raw-field-CSS` read 'the generated layout does not emit {{CSS}} with two braces', which pinned one implementation of a fix; the cure landed on the value instead (Handlebars.SafeString), the defect closed, and the both-directions check then held a CORRECT repair as a permanent red. An entry phrased as 'the code does not do X' can only go green the one way its author imagined. Phrase it as what a reader, a page or a gate would observe, and the assertion survives whichever repair lands.",
+  "findings": []
 }

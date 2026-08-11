@@ -24,7 +24,6 @@
   "unaddressable": [],
   "propose": { "accept": "all" },
   "conversion": {
-    "rawFields": ["CSS"],
     "noEntitiesIn": ["/theme/captured"],
     "themeCoversDrawnClasses": true,
     "noSourceBaseInHrefs": true
