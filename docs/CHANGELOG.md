@@ -1300,3 +1300,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block U — Documentation the matrix still names
 
+- **SH652** — The cli page gained a row per audit rule plus the two always-printed lines, and docs-vocabulary now fails on a rule AUDIT_RULES emits that the page does not name.

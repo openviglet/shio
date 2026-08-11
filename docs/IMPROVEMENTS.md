@@ -1047,28 +1047,6 @@ altitudes, which is why they are one block rather than a footnote on the last on
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
 
-### XXI.1 A finding a reader cannot act on (SH652)
-
-`shio audit` reports eleven kinds of finding — `overflow`, `contrast`, `zero-size`,
-`collapsed`, `font-fallback`, `request-failed`, `console-error`, `no-landmark`,
-`no-heading`, the shape line and `region-script`. The published `cli` page lists the
-verb in its table and describes none of them, so the only way to learn what `collapsed`
-means is to read `cli/src/audit.mjs`.
-
-That inverts what the verb is for. An audit exists to close the perception loop (P9)
-without a human round trip, and a finding whose meaning is not written down needs
-exactly the round trip it was meant to remove — worse, from a person who has the source
-open.
-
-It survived Block R and Block T for a measurable reason rather than by oversight, and
-that reason is SH653: the tables have carried this row as 🔴 since `COVERAGE.md` shipped
-and the summary at the bottom never counted it, so every scan reported one fewer orphan
-than the tables held.
-
-Scope is one section on the `cli` page: an entry per rule saying what triggers it and
-what a reader does about it. The two that are not thresholds — the shape line and
-`region-script` — want a sentence each rather than a table row.
-
 ### XXI.2 A count nobody derives is a count that hides work (SH653)
 
 `COVERAGE.md` ends with a summary — *"of 42 clusters, N are still not documented

@@ -2303,6 +2303,17 @@ in two halves that answer different questions at very different prices:
   tables would be worse than one covering none. Measured: 14 property blocks became **22**, 77 keys
   became **121 subjects**, 7 tables past, 4 rows relative. Proved by injecting `shio.invented.key`
   as a table row and watching the gate name it.
+  **And since SH652 it also asks the opposite question, which nothing here was asking.** Every
+  check above walks the *documentation* and holds the product to it, so it catches a page naming
+  something renamed or invented — and structurally cannot catch a name the **product** emits that
+  no page describes. `shio audit` reported ten rules for two blocks while the published `cli` page
+  listed the verb and defined none, so learning what `collapsed` meant needed `cli/src/audit.mjs`
+  open, which is the human round trip an audit exists to remove (P9). The check reads
+  `AUDIT_RULES` rather than a list kept beside it, so an eleventh rule fails the day it is added
+  rather than the day a reader hits it; it also holds the two lines the report always prints
+  (`shape:`, `scripts:`), which are not rules and so cannot come from that map. Proved in both
+  directions by unspelling one rule's name on the page and then the `shape:` line, and watching
+  each fail alone.
 - **`docs-examples.conformance.mjs` — the requests.** The 15 read-only documented requests are
   issued against a live instance. It catches the three things a name check structurally cannot: an
   endpoint that is mapped and 500s, one whose response lost the key the page shows, and one a page

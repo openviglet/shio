@@ -60,7 +60,6 @@
 
 ## Block U — Documentation the matrix still names
 
-- 📋 **SH652** (deps: —) **The eleven `shio audit` rules are named nowhere, so a finding cannot be acted on without reading the source** — COVERAGE has listed them as an orphan since it shipped and its own summary never counted them, which is why no block ever picked them up. → §XXI.1
 - 📋 **SH653** (deps: —) **COVERAGE's summary counts are typed, and the file records that they do not reconcile with its own tables** — A status count nobody derives disagrees with the rows it summarises in the direction that hides work, which is how one orphan went uncounted for two blocks. → §XXI.2
 
 ## Non-goals (do NOT add as tasks)

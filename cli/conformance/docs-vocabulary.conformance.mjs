@@ -37,8 +37,11 @@
  * These two files are what changes that.
  */
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, test } from "node:test";
+
+import { AUDIT_RULES } from "../src/audit.mjs";
 
 import { extract } from "./docs-examples.mjs";
 import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs";
@@ -234,6 +237,55 @@ describe("SH499 conformance: the published vocabulary is this product's vocabula
       routeExists("GET", "/api/v2/post-type/Article", vocabulary.routes),
       "a concrete value has to match the mapping's {name}, which is how every page writes it",
     );
+  });
+
+  /**
+   * SH652 — and the other direction, which is the one nothing here was asking.
+   *
+   * <p>Every test above walks the *documentation* and checks the product has what a page tells a
+   * reader to type. That catches a page describing something that was renamed or invented, and it
+   * cannot catch the opposite: a rule the product emits that no page describes. `shio audit`
+   * reported ten of them for two blocks while the published page listed the verb and defined none,
+   * so the only way to learn what `collapsed` meant was to read `cli/src/audit.mjs`.
+   *
+   * <p>That inverts what the verb is for. An audit closes the perception loop (P9) without a human
+   * round trip, and a finding whose meaning is written nowhere needs exactly the round trip it was
+   * meant to remove — from somebody who has the source open.
+   *
+   * <p>Read off `AUDIT_RULES` rather than a list kept here, so the eleventh rule fails this the day
+   * it is added rather than the day a reader hits it.
+   */
+  test("SH652: every rule `shio audit` can report is defined on the published cli page", () => {
+    const page = readFileSync(join(DOCS, "cli.md"), "utf8");
+    const rules = Object.keys(AUDIT_RULES);
+
+    // Printed and floored, because `deepEqual([], [])` is how a reader of an empty map passes.
+    process.stdout.write(`\nSH652 audit rules: ${rules.length} checked against cli.md\n`);
+    assert.ok(rules.length >= 10, `expected the audit's rules, found ${rules.length}`);
+
+    const misses = rules
+      .filter((rule) => !page.includes(`\`${rule}\``))
+      .sort((a, b) => a.localeCompare(b));
+
+    assert.deepEqual(
+      misses,
+      [],
+      "SH652: `shio audit` reports a rule the published page never names, so a reader who gets "
+        + "the finding has to open cli/src/audit.mjs to learn what it means — which is the human "
+        + "round trip the audit exists to remove. Add a row to `What shio audit reports`:\n"
+        + misses.map((rule) => `  ${rule} (${AUDIT_RULES[rule]})`).join("\n"),
+    );
+
+    // The two lines the report prints whether or not anything is wrong. They are not rules, so
+    // `AUDIT_RULES` cannot carry them, and they are the answer to "did this page keep its regions"
+    // — a reader who does not know that reads `no landmark · 2 headings` as decoration.
+    for (const line of ["shape:", "scripts:"]) {
+      assert.ok(
+        page.includes(`\`${line}\``),
+        `SH652: the report always prints \`${line}\`, and a line nobody explained is a line `
+          + "nobody joins to anything",
+      );
+    }
   });
 
   test("SH499: the counts are printed, because a gate that checks nothing passes quietly", () => {
