@@ -162,6 +162,12 @@ class ShFurlSpellingLintTest {
         // A rule that has stopped finding its own subject passes for the wrong reason. Six classes
         // called a post-furl finder at 077b115; the count is asserted as a floor rather than a
         // number so adding a reader is not a docs edit, but losing all of them is a failure.
+        //
+        // ShObjectWriteService was an anchor here and is deliberately no longer one: SH243 moved its
+        // occupied-URL walk into ShFurlNaming, which the restore refusal needed too, so it reaches
+        // the generator one call further away. An anchor leaving because its lookup was *shared*
+        // rather than dropped is the healthy direction, and ShFurlNaming takes its place — losing
+        // the anchor entirely is what would let the next such move go unnoticed.
         assertThat(callers)
                 .as("nothing matched '%s' — either the finders were renamed and this rule now "
                         + "guards nothing, or NOT_CALLERS has grown to cover the whole surface",
@@ -169,7 +175,7 @@ class ShFurlSpellingLintTest {
                 .hasSizeGreaterThanOrEqualTo(6)
                 .contains("ShAddressResolver.java", "ShAgentBatchService.java", "ShCdaService.java",
                         "ShAgentVerifyService.java", "ShAgentRenderService.java",
-                        "ShObjectWriteService.java");
+                        "ShFurlNaming.java");
 
         assertThat(offenders)
                 .as("""

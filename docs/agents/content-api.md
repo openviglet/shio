@@ -469,3 +469,63 @@ to collapse the pair. Collapsing is what shipped, and two callers learned one ar
 *(Unrelated, and found while shipping this: `roadkeep lint` reports twelve pre-existing
 `body.promise` problems in `IMPROVEMENTS.md` §0.x — twelve with and without this change, so a
 roadkeep upgrade surfaced them rather than any commit causing them. Filed as SH649.)*
+
+## A trashed post still holds its friendly URL (SH243)
+
+`ShPostUnified` carries `@SQLRestriction("deleted_date is null")`, which makes the SH55 trash
+invisible to every normal read. The cost was that every *"is this URL free"* question was answered
+**only about live posts**, and the failure is three ordinary gestures long: clone a page
+(`home` → `home-2`), delete the copy, clone again — the second copy takes `home-2`, because nothing
+the query can see is holding it — then untrash the first. The instance now has the `duplicate-url`
+error SH202 was filed to remove, produced by two individually correct operations.
+
+**Free and occupied are not each other's negation.** `ShFurlNaming` answers both, and they
+deliberately disagree about a trashed post:
+
+| Question | Method | Sees the trash? |
+|---|---|---|
+| "what may I name this?" — copy, create | `isFree` | **yes** (`countTrashedByFurl`, native) |
+| "must I refuse this?" — move, restore | `liveOccupant` | **no** |
+
+Deriving a name has to skip a URL that is only sleeping. A refusal must not name one, because a
+refusal points the curator at an occupant, and pointing them at a row no listing shows is a dead end
+rather than an instruction (P6). So the trash makes a URL *unusable for a new name* without making it
+*occupied* — and the gap that leaves, a URL a trashed post will want back, is closed on the other
+side: **`restoreFromTrash` refuses** with `ShRestoreUrlConflictException` (409 `restore-url-conflict`).
+
+Refuse rather than renumber, because a restore asks for *the thing that was there*. A copy has no
+claim on any particular address and takes `-2` happily; a restore's caller is holding the link, the
+sitemap entry and the search result that name the URL, so handing it back elsewhere is the surprise
+P7 exists to prevent. The 409 names the occupant and the address in both branches — including when
+the occupant has no title, which is ordinary (an uploaded file never gets one, SH38) and is the case
+where the address is the only handle there is.
+
+### One occupied URL refuses the whole section
+
+`ShFolderWriteService.restore` cascades that call, so a collision refuses the entire subtree — and it
+is checked **before the first row is written** rather than left to the rollback. Restoring 49 of 50
+posts and reporting the 50th is a partial success the caller has to read carefully to notice, and a
+curator who asked for their section and got most of it is the reader P7 is written for.
+
+### The refusal has to be *askable*, not only throwable
+
+`ShReviewService.revert` collects a reason per entry it could not undo, and it cannot get that reason
+by catching this one: a throw out of an inner `@Transactional` call leaves the shared transaction
+**rollback-only**, so the graceful "skipped" row would surface as an `UnexpectedRollbackException` at
+commit — a 500 in place of the single line the queue exists to show. Hence the pair,
+`requireRestorableUrl` (throws) beside `restoreUrlConflict` (reports), on both write services. The
+agent path's `dryRun` asks the throwing one, the way `folderMove` refuses an occupied target before
+it consults `session.dryRun`: a plan that promises a restore the write will refuse is the same defect
+as a plan that promises one for a post nobody trashed.
+
+### Two instruments were wrong about this, and both were fixed here
+
+- **`ShFixtureShapeGuard`** counted trashed rows, so it reported "two ids on one URL" for a state
+  SH243 makes legal and *defends*. Narrowed to `deleted_date is null` — its subject is two posts the
+  resolver cannot tell apart, and only one of these two is reachable. Verified by injection: with the
+  refusal removed it still reports `/careers`, `/contact` and `/pricing` held by two **live** ids.
+- **`ShFolderWriteAuditLintTest`** scanned every occurrence of the string `@Transactional`, including
+  prose. The first javadoc here to write it in a sentence about propagation — the subject a method in
+  that service has most reason to explain — was read as an annotation, and the lint failed naming a
+  method called `"@Transactional"`. It now skips comment lines, which
+  `ShAgentTransactionalOverloadLintTest` had already paid for the lesson on.

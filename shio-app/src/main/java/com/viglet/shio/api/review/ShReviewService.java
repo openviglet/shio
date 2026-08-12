@@ -316,6 +316,15 @@ public class ShReviewService {
                 shPostUnifiedWriteService.publish(postId, actor);
             }
             case DELETE -> {
+                // SH243 — asked, not caught. A restore onto an occupied URL is refused, and this
+                // loop's catch cannot report that refusal: the throw would come out of an inner
+                // @Transactional call, which leaves the shared transaction rollback-only, so the
+                // skipped row this method exists to produce would be lost to an
+                // UnexpectedRollbackException at commit. The reason is the refusal's own wording.
+                Optional<String> occupied = shPostUnifiedWriteService.restoreUrlConflict(postId);
+                if (occupied.isPresent()) {
+                    return occupied;
+                }
                 if (!shPostUnifiedWriteService.restoreFromTrash(postId, actor)) {
                     return Optional.of("not in the trash — it was purged, not deleted");
                 }
@@ -411,6 +420,13 @@ public class ShReviewService {
                         : Optional.of("could not be trashed");
             }
             case DELETE -> {
+                // SH243, the folder half of the same rule: one post whose URL was taken refuses the
+                // whole subtree, and asking first is what keeps that refusal a reported row rather
+                // than an UnexpectedRollbackException.
+                Optional<String> occupied = shFolderWriteService.restoreUrlConflict(folder.getId());
+                if (occupied.isPresent()) {
+                    yield occupied;
+                }
                 if (shFolderWriteService.restore(folder.getId(), actor)) {
                     yield Optional.empty();
                 }

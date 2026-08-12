@@ -31,7 +31,6 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.url.ShFurlNaming;
-import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.url.ShURLFormatter;
 
 /**
@@ -154,25 +153,21 @@ public class ShObjectWriteService {
     /**
      * Refuses a move whose destination site already has a different post at {@code furl}.
      *
-     * <p>SH583 — every spelling, through the shared generator, and blank stays free for
-     * {@link #urlFree}'s reason. A collision check that asked only the exact spelling would let a
-     * move land {@code /x} beside SH467's stored {@code /x/}: two posts one character apart, both
-     * reachable, which is the {@code duplicate-url} defect created by the guard meant to prevent
-     * it.</p>
+     * <p>SH583 — every spelling, and blank stays free. A collision check that asked only the exact
+     * spelling would let a move land {@code /x} beside SH467's stored {@code /x/}: two posts one
+     * character apart, both reachable, which is the {@code duplicate-url} defect created by the
+     * guard meant to prevent it.</p>
+     *
+     * <p>The walk itself is {@code ShFurlNaming.liveOccupant}'s since SH243, which needed the same
+     * question for a restore. Live occupants only, deliberately: a URL held by a <em>trashed</em>
+     * post does not refuse a move, because a refusal names an occupant and no listing shows that
+     * one. The case it leaves — moving onto a URL a sleeping post will want back — is refused
+     * where it becomes real, at the restore.</p>
      */
     private void requireUrlFree(String postId, String destSiteId, String furl) {
-        if (destSiteId == null || furl == null || furl.isBlank()) {
-            return;
-        }
-        for (String candidate : ShFurlSpellings.candidates(furl)) {
-            for (ShPostState state : ALL_STATES) {
-                shPostUnifiedRepository.findByShSite_IdAndFurlAndState(destSiteId, candidate, state)
-                        .filter(other -> !postId.equals(other.getId()))
-                        .ifPresent(other -> {
-                            throw new ShMoveUrlConflictException(furl, other.getTitle());
-                        });
-            }
-        }
+        shFurlNaming.liveOccupant(destSiteId, furl, postId).ifPresent(other -> {
+            throw new ShMoveUrlConflictException(furl, other.getTitle());
+        });
     }
 
     /**

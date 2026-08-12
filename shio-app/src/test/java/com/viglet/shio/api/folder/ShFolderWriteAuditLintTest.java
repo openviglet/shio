@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -93,14 +94,49 @@ class ShFolderWriteAuditLintTest {
                 .isEmpty();
     }
 
-    /** Method names carrying {@code @Transactional} without {@code readOnly = true}. */
+    @Test
+    @DisplayName("SH243: an annotation named in prose is not a method that forgot to record")
+    void javadocMentioningTheAnnotationIsNotAMutatingMethod() {
+        // Guards the guard, in the direction that actually broke it. The real service's five
+        // methods are asserted above; what nothing asked was whether a *sentence* could invent a
+        // sixth, and one did — the lint failed naming "@Transactional", which is not a method.
+        String prose = """
+                public class Example {
+
+                    /**
+                     * A throw out of an inner {@code @Transactional} call leaves the transaction
+                     * rollback-only, so catching it loses the row.
+                     */
+                    @Transactional
+                    public boolean restore(String id) {
+                        return recordFolder(id);
+                    }
+                }
+                """;
+
+        assertThat(mutatingMethods(prose))
+                .as("the annotation on line 6 is the only one; the one on line 4 is prose about it")
+                .containsExactly("restore");
+    }
+
+    /**
+     * Method names carrying {@code @Transactional} without {@code readOnly = true}.
+     *
+     * <p><b>Prose is skipped, since SH243.</b> This scanned every occurrence of the string, so the
+     * first javadoc in this service to write <code>{@literal {@code @Transactional}}</code> — in a
+     * sentence about transaction propagation, which is exactly the subject a method here has reason
+     * to explain — was read as an annotation, and the token before the next {@code (} was reported
+     * as a mutating method that records nothing. The lint failed naming {@code "@Transactional"},
+     * about a method that does not exist. {@code ShAgentTransactionalOverloadLintTest} skips comment
+     * lines for the same reason and had already paid for the lesson; this is that fix, here.</p>
+     */
     private static List<String> mutatingMethods(String source) {
         List<String> names = new ArrayList<>();
         int at = source.indexOf("@Transactional");
         while (at >= 0) {
             int lineEnd = source.indexOf('\n', at);
             String annotation = source.substring(at, lineEnd < 0 ? source.length() : lineEnd);
-            if (!annotation.contains("readOnly")) {
+            if (!annotation.contains("readOnly") && !inComment(source, at)) {
                 String name = methodNameAfter(source, lineEnd);
                 if (name != null) {
                     names.add(name);
@@ -109,6 +145,13 @@ class ShFolderWriteAuditLintTest {
             at = source.indexOf("@Transactional", at + 1);
         }
         return names;
+    }
+
+    /** Whether the occurrence at {@code at} sits on a comment or javadoc line. */
+    private static boolean inComment(String source, int at) {
+        int lineStart = source.lastIndexOf('\n', at) + 1;
+        String before = source.substring(lineStart, at).stripLeading();
+        return before.startsWith("*") || before.startsWith("//") || before.startsWith("/*");
     }
 
     /** The name in the first method signature after {@code from}. */

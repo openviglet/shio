@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -25,6 +26,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.folder.ShFolderCopyException;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -63,6 +65,9 @@ class ShObjectCopyNamingTest {
 
     @Autowired
     private ShObjectWriteService shObjectWriteService;
+    /** SH243 — the trash half of the same question: what a copy must skip, and what a restore claims. */
+    @Autowired
+    private ShPostUnifiedWriteService shPostUnifiedWriteService;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
     @Autowired
@@ -181,6 +186,51 @@ class ShObjectCopyNamingTest {
                     assertThat(row.getTitle()).isEqualTo("Launch (2)");
                     assertThat(row.getFurl()).isEqualTo("launch-2");
                 });
+    }
+
+    /**
+     * SH243 — the URL a trashed post is still holding is not free.
+     *
+     * <p>The whole failure in one method, and it is built out of operations that are each
+     * correct: clone ({@code home} → {@code home-2}), delete the copy, clone again. Every
+     * free-URL finder reads through {@code @SQLRestriction("deleted_date is null")}, so the
+     * second clone saw nothing holding {@code home-2} and took it — and the moment anybody
+     * untrashed the first copy the site had two posts at one address, which is the
+     * {@code duplicate-url} error this whole class exists to prevent.</p>
+     *
+     * <p>Asserted on the URLs only. A <b>title</b> is a per-folder display concern (see
+     * {@link #aCopyIntoAnotherFolderOfTheSameSiteStillNeedsAFreeUrl}) and the live folder holds
+     * no other "Home (2)" while the first copy sleeps, so the second copy is allowed to take
+     * that title back. Two rows a curator cannot tell apart is a smaller problem than two rows
+     * the resolver cannot tell apart, and correcting it would mean numbering a name against
+     * content no listing shows.</p>
+     */
+    @Test
+    @DisplayName("SH243: a copy skips a friendly URL a trashed post is only sleeping on")
+    void aCopySkipsAUrlHeldByATrashedPost() {
+        // Its own slug, not "home": a friendly URL is unique per *site*, so borrowing another
+        // test's would make both depend on which ran first — the confound the class note names.
+        String folderId = folder("sleeping-url");
+        String sourceId = post(folderId, siteId, "Sleeper", "sleeper", ShPostState.DRAFT);
+
+        shObjectWriteService.copyTo(folderId, List.of(sourceId));
+        String sleepingId = onlyCopyIn(folderId, sourceId).getId();
+        shPostUnifiedWriteService.delete(sleepingId, "curator");
+
+        shObjectWriteService.copyTo(folderId, List.of(sourceId));
+
+        assertThat(furlsIn(folderId))
+                .as("""
+                        `sleeper-2` is taken by a post in the trash, which is invisible to every \
+                        derived finder and is exactly why this went unnoticed: the second clone \
+                        must skip to `sleeper-3` (SH243).""")
+                .containsExactlyInAnyOrder("sleeper", "sleeper-3");
+
+        // And the sleeping post comes back to the address it always held, rather than to a
+        // numbered one — which is the half SH243 refuses instead of renaming.
+        assertThat(shPostUnifiedWriteService.restoreFromTrash(sleepingId, "curator")).isTrue();
+        assertThat(furlsIn(folderId))
+                .containsExactlyInAnyOrder("sleeper", "sleeper-2", "sleeper-3");
     }
 
     /**

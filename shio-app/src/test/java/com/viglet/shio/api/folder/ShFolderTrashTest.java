@@ -9,6 +9,7 @@
 package com.viglet.shio.api.folder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -29,6 +31,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.history.ShContentAction;
+import com.viglet.shio.api.post.unified.ShRestoreUrlConflictException;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -223,6 +226,87 @@ class ShFolderTrashTest {
     }
 
     /**
+     * SH243 — one post whose URL was taken refuses the <b>whole</b> section, and restores nothing.
+     *
+     * <p>A post's restore is refused when a live post holds the friendly URL it would come back to,
+     * and this cascade inherits that. The alternative — bring back 49 of 50 and report the 50th — is
+     * a partial success the caller has to read carefully to notice, and a curator who asked for
+     * their section and got most of it is the reader P7 is written for.</p>
+     *
+     * <p>The bystander is the point of the test: it has no conflict of its own, and it must still be
+     * in the trash afterwards. That is what makes this an all-or-nothing refusal rather than a
+     * cascade that stopped where it happened to fail.</p>
+     */
+    @Test
+    @DisplayName("SH243: one occupied URL refuses the whole section, leaving the trash untouched")
+    void restoreRefusesTheSubtreeWhenOnePostsUrlWasTaken() {
+        String section = createFolder(rootFolderId, "Occupied");
+        String nested = createFolder(section, "Deep");
+        String collider = createPost(nested, "Careers");
+        String bystander = createPost(section, "Team");
+        // Explicitly: this class's post-type declares no title field, so the writer has no title
+        // to derive an address from and every fixture post would otherwise hold a blank furl —
+        // which is legitimately free (an uploaded file never gets one, SH38) and would make the
+        // collision this test is about impossible to build.
+        shPostUnifiedWriteService.setFurl(collider, "careers");
+        String colliderFurl = furlOf(collider);
+
+        shFolderWriteService.delete(section, "curator");
+
+        // Taken while the section slept — by an explicit furl, which is the path that stays
+        // reachable now that the naming loop itself sees the trash.
+        String occupantId = createPost(rootFolderId, "Jobs");
+        titleAs(occupantId, "Jobs");
+        shPostUnifiedWriteService.setFurl(occupantId, colliderFurl);
+
+        assertThatThrownBy(() -> shFolderWriteService.restore(section, "curator"))
+                .isInstanceOf(ShRestoreUrlConflictException.class)
+                .hasMessageContaining("Jobs");
+
+        assertThat(shFolderRepository.findById(section)).isEmpty();
+        assertThat(shFolderRepository.findById(nested)).isEmpty();
+        assertThat(trashed(collider)).isTrue();
+        assertThat(trashed(bystander))
+                .as("""
+                        the post with no conflict of its own is still in the trash: the refusal is \
+                        all-or-nothing, checked before the first row is written rather than left to \
+                        the rollback (SH243).""")
+                .isTrue();
+    }
+
+    /**
+     * And the same question asked without throwing — what {@code ShReviewService} needs.
+     *
+     * <p>It collects a reason per entry it could not undo, and it must not <em>catch</em> this
+     * refusal: a throw out of an inner {@code @Transactional} call leaves the shared transaction
+     * rollback-only, so the skipped row the queue exists to show would be lost to an
+     * {@code UnexpectedRollbackException} at commit — a 500 in place of one honest line.</p>
+     */
+    @Test
+    @DisplayName("SH243: the folder refusal can be asked for as a reason, not only thrown")
+    void restoreUrlConflictReportsTheOccupantWithoutThrowing() {
+        String section = createFolder(rootFolderId, "Askable");
+        String collider = createPost(section, "Support");
+        shPostUnifiedWriteService.setFurl(collider, "support");
+        String colliderFurl = furlOf(collider);
+
+        shFolderWriteService.delete(section, "curator");
+        assertThat(shFolderWriteService.restoreUrlConflict(section))
+                .as("nothing holds the URL yet, so there is nothing to report")
+                .isEmpty();
+
+        String occupantId = createPost(rootFolderId, "Help Desk");
+        titleAs(occupantId, "Help Desk");
+        shPostUnifiedWriteService.setFurl(occupantId, colliderFurl);
+
+        assertThat(shFolderWriteService.restoreUrlConflict(section))
+                .hasValueSatisfying(reason -> assertThat(reason).contains("Help Desk"));
+        assertThat(trashed(collider))
+                .as("asking does not restore")
+                .isTrue();
+    }
+
+    /**
      * Restoring a sub-folder whose parent is still trashed is refused: it would attach live
      * content to a deleted section, which no listing shows — a restore that reads as a no-op.
      */
@@ -270,6 +354,24 @@ class ShFolderTrashTest {
 
     private boolean trashed(String postId) {
         return !shPostUnifiedRepository.findTrashedById(postId, tenantId()).isEmpty();
+    }
+
+    /** The stored friendly URL of a live post — what SH243's refusal is about. */
+    private String furlOf(String postId) {
+        return shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .orElseThrow().getFurl();
+    }
+
+    /**
+     * Titles a post directly: this class's post-type declares no title field, so {@code create}
+     * derives none, and SH243's refusal has to name the occupant — which cannot be asserted against
+     * a fixture whose posts are all called "".
+     */
+    private void titleAs(String postId, String title) {
+        inTx(() -> shPostUnifiedRepository.findById(postId).forEach(row -> {
+            row.setTitle(title);
+            shPostUnifiedRepository.save(row);
+        }));
     }
 
     private List<String> auditActions(String objectId) {

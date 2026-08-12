@@ -437,6 +437,27 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<ShPostUnified> findTrashedByFolderIds(@Param("folderIds") Collection<String> folderIds,
                                               @Param("tenant") String tenant);
 
+    /**
+     * How many <b>trashed</b> rows in a site hold this friendly URL (SH243).
+     *
+     * <p>Native for the {@code @SQLRestriction} reason above, and it exists because a trashed post
+     * still holds its {@code furl} — exactly SH236's shape one column along, where a trashed post
+     * still held its {@code post_type_id} and a refusal counting only live rows said "0 posts" and
+     * then failed on a constraint. Here the symptom is worse than a bad message: {@code freeFurl}
+     * derived a URL a sleeping post already owned, so restoring that post produced the
+     * {@code duplicate-url} defect SH202 was filed to remove, out of two individually correct
+     * operations.</p>
+     *
+     * <p>A count rather than the rows: the naming loop only asks <em>whether</em> the candidate is
+     * taken, and the refusal path needs a <em>live</em> occupant to name (a trashed one is not
+     * something the curator can be pointed at). Native SQL bypasses {@code @TenantId}, hence the
+     * explicit tenant.</p>
+     */
+    @Query(value = "select count(*) from sh_post_unified where site_id = :siteId and furl = :furl "
+            + "and deleted_date is not null and tenant_id = :tenant", nativeQuery = true)
+    long countTrashedByFurl(@Param("siteId") String siteId, @Param("furl") String furl,
+                            @Param("tenant") String tenant);
+
     @Modifying
     @Query(value = "update sh_post_unified set deleted_date = null where id = :id and tenant_id = :tenant",
             nativeQuery = true)

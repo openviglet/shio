@@ -80,11 +80,24 @@ public class ShFixtureShapeGuard implements BeforeAllCallback, AfterAllCallback 
      *
      * <p>Grouped by site as well as furl: two sites legitimately have a {@code /home}, and a check
      * that missed that would fire on almost every fixture here.</p>
+     *
+     * <h3>Live rows only, since SH243</h3>
+     *
+     * <p>The trash was counted, and that made the guard's own claim false: a <b>trashed</b> post
+     * keeps its {@code furl}, and SH243's whole subject is that this is a legitimate state the
+     * product not only produces but now <em>defends</em> — the naming loop skips such a URL, and a
+     * restore onto an occupied one is refused rather than duplicated. Only one of the two rows is
+     * reachable, so it is not the shape this guard is about: two posts the resolver cannot tell
+     * apart. Counting the sleeping one reported the defect's <em>fix</em> as the defect.</p>
+     *
+     * <p>Left as raw SQL rather than moved behind a repository for the reason the class note gives:
+     * the fact only exists after the insert, and the guard has to be able to see rows every
+     * Hibernate read is deliberately blind to.</p>
      */
     private static final String DUPLICATES = """
             select site_id, furl, count(distinct id) as ids
               from sh_post_unified
-             where furl is not null and site_id is not null
+             where furl is not null and site_id is not null and deleted_date is null
              group by site_id, furl
             having count(distinct id) > 1""";
 

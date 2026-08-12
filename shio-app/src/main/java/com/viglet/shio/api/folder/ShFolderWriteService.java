@@ -356,7 +356,19 @@ public class ShFolderWriteService {
      * curator as a restore that did nothing. Restore the parent — it brings this one with
      * it.</p>
      *
+     * <h2>One occupied URL refuses the whole subtree (SH243)</h2>
+     *
+     * <p>A post's restore is refused when a live post took its friendly URL while it slept, and this
+     * cascades that call. The refusal therefore stops the <em>section</em> from coming back, and it
+     * is checked <b>before the first row is written</b> rather than left to the rollback: a partial
+     * restore that reports the one post it dropped is a success the caller has to read carefully to
+     * notice, and a curator who asked for their section and got most of it is the reader P7 is
+     * written for. {@link #restoreUrlConflict} asks the same question without throwing, for
+     * {@code ShReviewService}, which reports refusals rather than raising them.</p>
+     *
      * @return {@code false} when the id is not a trashed folder, or its parent is trashed
+     * @throws com.viglet.shio.api.post.unified.ShRestoreUrlConflictException when one of the posts
+     *         this restore would bring back has had its URL taken
      */
     @Transactional
     public boolean restore(String id, String actor) {
@@ -369,21 +381,71 @@ public class ShFolderWriteService {
             return false;
         }
         Instant trashedAt = folder.getDeletedDate();
-        List<ShFolder> restored = new ArrayList<>();
-        for (ShFolder node : subtree(folder, true)) {
-            if (node.isTrashed() && !node.getDeletedDate().isBefore(trashedAt)) {
-                node.setDeletedDate(null);
-                shFolderRepository.save(node);
-                restored.add(node);
-            }
+        List<ShFolder> restorable = restorableNodes(folder, trashedAt);
+        List<ShPostUnified> posts = restorablePosts(restorable, trashedAt);
+        // SH243 — the pre-flight. Nothing below has run yet, so a refusal here leaves the trash
+        // exactly as the curator left it instead of relying on the rollback to put it back.
+        for (ShPostUnified post : posts) {
+            shPostUnifiedWriteService.requireRestorableUrl(post.getId());
         }
-        for (ShPostUnified post : trashedPostsIn(restored)) {
-            if (!post.getDeletedDate().isBefore(trashedAt)) {
-                shPostUnifiedWriteService.restoreFromTrash(post.getId(), actor);
-            }
+        for (ShFolder node : restorable) {
+            node.setDeletedDate(null);
+            shFolderRepository.save(node);
+        }
+        for (ShPostUnified post : posts) {
+            shPostUnifiedWriteService.restoreFromTrash(post.getId(), actor);
         }
         recordFolder(ShContentAction.RESTORE, folder, actor, null);
         return true;
+    }
+
+    /**
+     * Why {@link #restore} would refuse, without attempting it (SH243).
+     *
+     * <p>For {@code ShReviewService.revert}, which collects a reason per entry it could not undo and
+     * must not <em>catch</em> this one: a throw out of an inner {@code @Transactional} call leaves
+     * the shared transaction rollback-only, so the skipped row the queue exists to show would be
+     * lost to an {@code UnexpectedRollbackException} at commit.</p>
+     *
+     * @return the refusal's own wording, or empty when the restore would go through — including
+     *         when the id is not a restorable folder at all, which {@link #restore} reports as
+     *         {@code false} rather than as a conflict
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> restoreUrlConflict(String id) {
+        Optional<ShFolder> found = shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        ShFolder folder = found.get();
+        Instant trashedAt = folder.getDeletedDate();
+        for (ShPostUnified post : restorablePosts(restorableNodes(folder, trashedAt), trashedAt)) {
+            Optional<String> conflict = shPostUnifiedWriteService.restoreUrlConflict(post.getId());
+            if (conflict.isPresent()) {
+                return conflict;
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The subtree nodes this deletion trashed — see the class of comparison {@link #restore}
+     * describes: on the loaded instants, never in SQL.
+     */
+    private List<ShFolder> restorableNodes(ShFolder folder, Instant trashedAt) {
+        return subtree(folder, true).stream()
+                .filter(node -> node.isTrashed() && !node.getDeletedDate().isBefore(trashedAt))
+                .toList();
+    }
+
+    /**
+     * The posts that would come back with those nodes. Read before anything is un-trashed, which is
+     * safe because un-trashing a folder does not change the {@code folder_id} this is keyed on.
+     */
+    private List<ShPostUnified> restorablePosts(List<ShFolder> nodes, Instant trashedAt) {
+        return trashedPostsIn(nodes).stream()
+                .filter(post -> !post.getDeletedDate().isBefore(trashedAt))
+                .toList();
     }
 
     /**

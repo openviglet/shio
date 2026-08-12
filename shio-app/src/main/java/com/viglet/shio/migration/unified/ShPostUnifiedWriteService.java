@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
+import com.viglet.shio.api.post.unified.ShRestoreUrlConflictException;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.object.ShFolderSite;
@@ -615,9 +616,40 @@ public class ShPostUnifiedWriteService {
         return List.copyOf(byId.values());
     }
 
-    /** Restore a trashed post (SH55): clear its {@code deleted_date} so it becomes live again. */
+    /**
+     * Restore a trashed post (SH55): clear its {@code deleted_date} so it becomes live again.
+     *
+     * <h2>The restore that could duplicate a URL (SH243)</h2>
+     *
+     * <p>This cleared {@code deleted_date} with <b>no check at all</b>, and a trashed post keeps
+     * its {@code furl}, so the sequence was: clone a page ({@code home} → {@code home-2}), delete
+     * the copy, clone again — the second copy took {@code home-2}, because every free-URL finder
+     * reads through the {@code @SQLRestriction} and saw nothing holding it — then untrash the
+     * first. Two individually correct operations, and the instance now has the
+     * {@code duplicate-url} error SH202 was filed to remove.</p>
+     *
+     * <p>{@code ShFurlNaming} closes the first half by seeing the trash when it derives a name.
+     * This closes the second: the URL can be taken by other means — a rename, an explicit
+     * {@code furl} on create, a cross-site move — and a restore is the one write that resurrects
+     * a claim on an address nobody was holding it against.</p>
+     *
+     * @return {@code false} when the id is not in the trash
+     * @throws ShRestoreUrlConflictException when a live post already answers at this post's URL;
+     *         see that class for why refusing beats returning it at {@code -2}, and for what the
+     *         refusal costs a folder restore
+     */
     @Transactional
     public boolean restoreFromTrash(String postId, String actor) {
+        List<ShPostUnified> trashed = shPostUnifiedRepository.findTrashedById(postId, tenantId());
+        if (trashed.isEmpty()) {
+            return false;
+        }
+        // SH243 — before the update, not after: this method is called inside a folder restore's
+        // transaction (SH200), and a refusal that had already cleared the marker would depend on
+        // the rollback to undo a write it knew was wrong.
+        restoreConflict(trashed).ifPresent(refusal -> {
+            throw refusal;
+        });
         if (shPostUnifiedRepository.restoreFromTrash(postId, tenantId()) == 0) {
             return false;
         }
@@ -625,6 +657,69 @@ public class ShPostUnifiedWriteService {
                 shContentAuditService.record(ShContentAction.RESTORE, postId,
                         siteIdOf(p), p.getTitle(), actor));
         return true;
+    }
+
+    /**
+     * The SH243 refusal, asked <b>without restoring</b> — what a plan has to know.
+     *
+     * <p>{@code POST /agent/batch} with {@code dryRun} answers "would restore" by reading the
+     * trash, on the stated grounds that a plan saying yes about a post nobody trashed is the plan
+     * an agent acts on. A plan saying yes about a restore that will be refused is the same defect,
+     * and P9's point is that the cheap textual proof has to agree with the write. So the plan asks
+     * this rather than re-deriving the rule — the version of this check that lives in two places
+     * is the one that disagrees with itself the first time either moves.</p>
+     *
+     * @throws ShRestoreUrlConflictException when restoring {@code postId} now would collide
+     */
+    @Transactional(readOnly = true)
+    public void requireRestorableUrl(String postId) {
+        restoreConflict(shPostUnifiedRepository.findTrashedById(postId, tenantId()))
+                .ifPresent(refusal -> {
+                    throw refusal;
+                });
+    }
+
+    /**
+     * The same question with no throw, for a caller that <b>reports</b> refusals (SH243).
+     *
+     * <p>{@code ShReviewService.revert} walks a run's entries and collects a reason per entry it
+     * could not undo. It catches {@code RuntimeException} to do that — and catching one thrown by an
+     * inner {@code @Transactional} call does not undo the rollback-only mark it left on the shared
+     * transaction, so the graceful "skipped" would surface as an {@code UnexpectedRollbackException}
+     * at commit: a 500 in place of the one row the queue exists to show. Asking instead of catching
+     * is the difference, and it is why this pair exists rather than only the throwing form.</p>
+     *
+     * @return the refusal's own wording, or empty when the restore would go through
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> restoreUrlConflict(String postId) {
+        return restoreConflict(shPostUnifiedRepository.findTrashedById(postId, tenantId()))
+                .map(Throwable::getMessage);
+    }
+
+    /**
+     * The live post standing on a trashed post's URL, as the refusal it would be raised as (SH243).
+     *
+     * <p>Built and returned rather than thrown so the two callers above can each do the right thing
+     * with it, and so both spell the refusal the same way — a second wording for the review queue
+     * is a second thing to keep in step with the 409.</p>
+     *
+     * <p>Every trashed row is asked, not just the first: {@code DRAFT} and {@code PUBLISHED} are
+     * two rows of one post and a {@code setFurl} between the two writes could have left them
+     * disagreeing, so checking one would restore a published URL nobody checked. The occupancy
+     * question is {@code ShFurlNaming}'s — it walks the SH583 spellings, which a check written
+     * here would have had to copy for the third time.</p>
+     */
+    private Optional<ShRestoreUrlConflictException> restoreConflict(List<ShPostUnified> trashed) {
+        for (ShPostUnified row : trashed) {
+            Optional<ShPostUnified> occupant =
+                    shFurlNaming.liveOccupant(siteIdOf(row), row.getFurl(), row.getId());
+            if (occupant.isPresent()) {
+                return Optional.of(new ShRestoreUrlConflictException(
+                        row.getFurl(), occupant.get().getTitle()));
+            }
+        }
+        return Optional.empty();
     }
 
     /**

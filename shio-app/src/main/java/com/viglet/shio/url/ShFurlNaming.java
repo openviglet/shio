@@ -9,11 +9,14 @@
 package com.viglet.shio.url;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.tenant.ShTenantContext;
 
 /**
  * The one writer of "which friendly URL is free in this site" (SH651).
@@ -30,9 +33,23 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
  *
  * <h2>What "free" means, and what it deliberately does not</h2>
  *
- * <p>Free is checked across <b>every spelling</b> a tolerant reader resolves (SH583) and
- * across <b>both state rows</b>: a URL held only by a {@code PUBLISHED} row is taken, even
- * though no draft mentions it.
+ * <p>Free is checked across <b>every spelling</b> a tolerant reader resolves (SH583), across
+ * <b>both state rows</b> — a URL held only by a {@code PUBLISHED} row is taken, even though no
+ * draft mentions it — and, since SH243, across the <b>trash</b>.
+ *
+ * <h2>Free and occupied are not each other's negation (SH243)</h2>
+ *
+ * <p>{@link #isFree} answers a <em>naming</em> question and {@link #liveOccupant} answers a
+ * <em>refusal</em> question, and they deliberately disagree about a trashed post. Deriving a
+ * name has to skip a URL that is only sleeping: a copy that took {@code home-2} while a trashed
+ * {@code home-2} still held it produced the {@code duplicate-url} defect SH202 removed, the
+ * moment somebody untrashed the original. Refusing an operation must not name one, because a
+ * refusal points the curator at an occupant, and pointing them at a row no listing shows is a
+ * dead end rather than an instruction (P6).
+ *
+ * <p>So the trash makes a URL <b>unusable for a new name</b> without making it <b>occupied</b>.
+ * The gap that leaves — a URL a trashed post will want back — is closed on the other side, by
+ * the restore refusing rather than by the naming loop guessing.
  *
  * <p>A <b>blank</b> URL is free. An uploaded file post never gets one (SH38, which is why
  * SH172 needed the {@code id:} address fallback), so blank is a legitimate shared value
@@ -79,21 +96,63 @@ public class ShFurlNaming {
         }
     }
 
-    /** Whether no live post in {@code siteId} already answers at {@code furl}. */
+    /**
+     * Whether nothing in {@code siteId} holds {@code furl} — <b>trash included</b> (SH243).
+     *
+     * <p>Ask this to <em>derive</em> a name. To refuse an operation, ask {@link #liveOccupant}
+     * instead: the class comment says why the two answer differently about a trashed post.</p>
+     */
     public boolean isFree(String siteId, String furl) {
         if (siteId == null || furl == null || furl.isBlank()) {
             return true;
+        }
+        if (liveOccupant(siteId, furl, null).isPresent()) {
+            return false;
+        }
+        // SH243 — the trash, which every finder above is blind to by construction: the entity
+        // carries @SQLRestriction("deleted_date is null"). Only the exact spelling is asked of
+        // it, and on purpose: a trashed post is not reachable, so the SH583 hazard it guards
+        // against — a stored `/x/` a tolerant reader also answers for `x` — cannot arise while
+        // the row sleeps. What matters is the URL it will claim back on restore, which is the
+        // one it stores.
+        return shPostUnifiedRepository.countTrashedByFurl(siteId, furl, tenantId()) == 0;
+    }
+
+    /**
+     * The post in {@code siteId} that <b>reachably</b> holds {@code furl}, other than
+     * {@code exceptPostId} — the occupant a refusal can name (SH139, SH243).
+     *
+     * <p>Live only, and that is the point: this is what {@code ShObjectWriteService}'s move
+     * refusal and {@link com.viglet.shio.migration.unified.ShPostUnifiedWriteService}'s restore
+     * refusal both need, and neither can usefully tell a curator "a post you cannot see holds
+     * this". SH245's subject is what happens when a shared verb is copied per call site; this
+     * is the third caller of the SH583 spelling walk, so it stops being copied here.</p>
+     *
+     * @param exceptPostId the post being moved or restored, which does not collide with itself;
+     *                     {@code null} when the question is about a URL nobody holds yet
+     */
+    public Optional<ShPostUnified> liveOccupant(String siteId, String furl, String exceptPostId) {
+        if (siteId == null || furl == null || furl.isBlank()) {
+            return Optional.empty();
         }
         // SH583 — every spelling: checking only the exact one would derive an "unused" URL
         // that a tolerant reader already resolves to something else.
         for (String candidate : ShFurlSpellings.candidates(furl)) {
             for (ShPostState state : ALL_STATES) {
-                if (shPostUnifiedRepository
-                        .findByShSite_IdAndFurlAndState(siteId, candidate, state).isPresent()) {
-                    return false;
+                Optional<ShPostUnified> held = shPostUnifiedRepository
+                        .findByShSite_IdAndFurlAndState(siteId, candidate, state)
+                        .filter(other -> exceptPostId == null || !exceptPostId.equals(other.getId()));
+                if (held.isPresent()) {
+                    return held;
                 }
             }
         }
-        return true;
+        return Optional.empty();
+    }
+
+    /** Native queries bypass {@code @TenantId}, so the trash question carries its own tenant. */
+    private static String tenantId() {
+        String tenant = ShTenantContext.getTenantId();
+        return tenant != null ? tenant : ShTenantContext.DEFAULT_TENANT;
     }
 }

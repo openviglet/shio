@@ -712,31 +712,6 @@ asserted at the level the agent surface is.
 > SH164/SH239 precedent, that a test asserting something about the whole instance has to boot
 > its own database.
 
-### XVI.3 A trashed post still holds its friendly URL, and nothing knows it (SH243)
-
-`ShPostUnified` carries `@SQLRestriction("deleted_date is null")`, which makes the SH55 trash
-invisible to every normal read. The cost is that every "is this URL free" question is answered
-*only about live posts*: SH202's check, SH139's move refusal and the `duplicate-url` lint all
-inherit the restriction from their finders.
-
-The failure is short: clone a page (`home` → `home-2`), delete the copy, clone again —
-the second copy takes `home-2`, because the query sees nothing holding it. Then untrash
-the first: `restoreFromTrash` clears `deleted_date` with **no check at all**, and the
-instance has the duplicate SH202 was filed to remove, produced by two individually
-correct operations.
-
-SH236 met this blind spot from the post-type side — a trashed post still holds its
-`post_type_id`, so a refusal counting only live rows said "0 posts" and failed on a
-constraint — and its answer is the one to copy: **count the trashed rows too and name
-them separately**. Two changes here: the free-URL search should see the trash so a copy
-skips a URL that is only sleeping, and `restoreFromTrash` should refuse a restore onto
-an occupied URL rather than duplicate silently.
-
-The second is the important one, and not obviously a refusal — the alternative is a
-numbered URL, the way a copy does. That would be wrong: a restore asks for *the thing
-that was there*, and quietly returning it at a different address is the surprise P7
-exists to prevent. Refuse, name the occupant, let the human choose.
-
 ### XVI.4 Duplicating content is console-only (SH244)
 
 Copy lives at `PUT /api/v2/object/copyto/{dest}` and nowhere else: no `batch` op, no MCP verb,
@@ -788,6 +763,61 @@ case is *stated* rather than silently permitted. What the lint keys on needs dec
 the cheap version is likely right: a write mapping on an API class whose body touches a
 `*Repository.save`/`delete` directly. Precision matters less than the build going red the day
 somebody adds the fifth one.
+
+### XVI.73 `folder.restore`'s plan says yes without reading the trash (SH690)
+
+`postRestore` reads the trash in its `dryRun` branch and says why: *"a plan that said
+yes about a post nobody trashed is the plan an agent acts on."* `folderRestore`, two
+methods below it in the same file, answers `UPDATE "from trash, with its subtree"`
+unconditionally — it never asks whether the id is a trashed folder at all, and after
+SH243 it does not ask the new refusal either.
+
+So a `dryRun` promises a section restore in three cases where the real run will not
+deliver one: the id is not in the trash (`NOOP`), its parent is still trashed (`NOOP`,
+the SH200 rule), or a post beneath it has had its friendly URL taken (a 409, which SH243
+made refuse the whole subtree). An agent that trusts the plan spends the confirm token
+and gets a different answer.
+
+Measured, not argued: the branch is one line and reads no state, at
+`ShAgentBatchService.java:1925`.
+
+The fix is the shape SH243 already put in place for the post half — ask
+`shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed)` and
+`ShFolderWriteService.restoreUrlConflict`, both of which exist and neither of which
+throws. The parent-trashed case is worth naming separately rather than folding into "not
+in the trash", because SH200's refusal already distinguishes them and the review queue
+prints that distinction.
+
+What makes this a task rather than a comment: P9's claim is that cheap textual proof
+stands in for a human round trip, and a plan that can be wrong in three ways is not that
+proof.
+
+### XVI.74 The copy's title counter is still trash-blind (SH691)
+
+SH243 taught `ShFurlNaming` about the trash, so a copy no longer takes a friendly URL a
+deleted post is sleeping on. `freeNaming`'s **other** counter was left alone:
+`postTitlesIn` at `ShObjectWriteService.java:364` reads `findByShFolderAndStateIn`,
+blind to the trash by construction, so cloning a page whose previous clone is deleted
+produces a second "Home (2)". Restore the first and the folder holds two rows with one
+title.
+
+A deliberate limit, not an oversight —
+`ShObjectCopyNamingTest.aCopySkipsAUrlHeldByATrashedPost` asserts the URLs and says so —
+on the grounds that a title is a per-folder *display* concern while a URL is the
+address. The grounds are incomplete: SH202's design says the identical title is **the
+symptom the curator actually sees**, which is why a clone moves both names and not only
+the one the resolver cares about.
+
+The counter-argument, and why this is undesigned rather than a filed defect: numbering a
+title against content no listing shows is what SH243's `liveOccupant` split refuses to
+do for refusals. "Home (3)" in a folder holding one visible "Home (2)" is a rename the
+curator cannot account for — the confound `freeNaming`'s two-counter note already
+describes.
+
+Two honest exits: count the trash for titles too and accept an unexplainable number, or
+leave the counter and let the *restore* refuse a title collision the way it now refuses
+a URL one. The second matches SH243's shape and costs a refusal on a name nobody
+addresses by.
 
 # Part 2 — pre-existing sections
 

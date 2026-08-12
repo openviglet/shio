@@ -36,9 +36,10 @@
 
 ## Block O — The human half (the console the curator uses)
 
-- 💭 **SH243** (deps: SH55 ✅, SH202 ✅) **A trashed post still holds its friendly URL, and nothing knows it** — Every free-URL check reads through @SQLRestriction, so the trash is invisible to it and an untrashed post can collide with the name its own copy took. → §XVI.3
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
+- 📋 **SH690** (deps: SH243 ✅) **`folder.restore`'s plan says yes without reading the trash, and without asking SH243's refusal** — ShAgentBatchService.java:1925 answers UPDATE unconditionally, while postRestore two methods above reads the trash — because a plan that says yes wrongly is what an agent acts on. → §XVI.73
+- 💭 **SH691** (deps: SH243 ✅) **The copy's title counter is still trash-blind, so a restore leaves two rows a curator cannot tell apart** — ShObjectWriteService.java:364 reads live rows only, so a clone retakes "Home (2)" while a trashed one holds it — the symptom SH202 says is the one they see. → §XVI.74
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

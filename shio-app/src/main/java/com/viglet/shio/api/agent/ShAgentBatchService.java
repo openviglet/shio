@@ -1902,9 +1902,14 @@ public class ShAgentBatchService {
         if (session.dryRun) {
             // The dry run reads the trash rather than answering "would restore": a plan that said
             // yes about a post nobody trashed is the plan an agent acts on.
-            return shPostUnifiedRepository.findTrashedById(id, ShTenantContext.getTenantId()).isEmpty()
-                    ? session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id)
-                    : session.change(op, ShAddress.id(id), Change.UPDATE, "from trash", id);
+            if (shPostUnifiedRepository.findTrashedById(id, ShTenantContext.getTenantId()).isEmpty()) {
+                return session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id);
+            }
+            // SH243 — and a plan that says yes about a restore the write will refuse is the same
+            // defect. Refused in the plan, the way folderMove refuses an occupied target before it
+            // consults session.dryRun: the point of a plan is that applying it holds no surprises.
+            shPostUnifiedWriteService.requireRestorableUrl(id);
+            return session.change(op, ShAddress.id(id), Change.UPDATE, "from trash", id);
         }
         shContentAclService.requireWrite(id);
         return shPostUnifiedWriteService.restoreFromTrash(id, session.actor)

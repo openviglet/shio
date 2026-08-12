@@ -9,6 +9,7 @@
 package com.viglet.shio.api.post.unified;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -107,6 +110,25 @@ class ShPostTrashTest {
         return writeService.listTrash().stream().anyMatch(p -> p.getId().equals(postId));
     }
 
+    /** The stored friendly URL of a live post — SH243 asserts a restore returns it to this one. */
+    private String furlOf(String postId) {
+        return shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .orElseThrow().getFurl();
+    }
+
+    /**
+     * Titles a post directly, because this class's post-type declares no title field and
+     * {@code create} therefore derives none — and SH243's refusal has to name the occupant, which
+     * cannot be asserted against a fixture whose posts are all called "".
+     */
+    private void titleAs(String postId, String title) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                shPostUnifiedRepository.findById(postId).forEach(row -> {
+                    row.setTitle(title);
+                    shPostUnifiedRepository.save(row);
+                }));
+    }
+
     @Test
     void softDeleteHidesFromReadsButKeepsInTrash() {
         String postId = createPost("Doomed");
@@ -146,6 +168,82 @@ class ShPostTrashTest {
         assertThat(shPostUnifiedRepository.findById(postId)).isEmpty();
         // A second purge is a no-op (already gone).
         assertThat(writeService.purge(postId, "admin")).isFalse();
+    }
+
+    /**
+     * SH243 — a restore asks for <em>the thing that was there</em>, so an occupied URL is refused.
+     *
+     * <p>{@code ShFurlNaming} now sees the trash, so a <em>copy</em> can no longer wander onto a
+     * sleeping URL. This is the other way in, and it stays reachable however good the naming loop
+     * gets: the URL can be taken by an explicit {@code furl}, a rename or a cross-site move while
+     * the post sleeps. Restoring anyway is what produced the {@code duplicate-url} error out of two
+     * individually correct operations.</p>
+     *
+     * <p>The alternative — hand it back at {@code contact-2}, the way a copy is numbered — is what
+     * P7 calls a surprise: the curator's link, the sitemap entry and the search result all name the
+     * URL they are asking to get back. So the refusal names the occupant and leaves the choice to
+     * the human, and the post stays in the trash where they left it.</p>
+     */
+    @Test
+    @DisplayName("SH243: a restore onto an occupied URL is refused, naming the occupant")
+    void restoreIsRefusedWhenALivePostTookItsUrl() {
+        // `setFurl` rather than a derived slug, twice over: this class's post-type declares no
+        // title field, so the writer has no title to derive an address from — and an explicit furl
+        // is also the path that stays reachable now that the naming loop itself sees the trash.
+        String sleepingId = createPost("Contact");
+        writeService.setFurl(sleepingId, "contact");
+        writeService.delete(sleepingId, "curator");
+
+        String occupantId = createPost("Front Desk");
+        titleAs(occupantId, "Front Desk");
+        writeService.setFurl(occupantId, "contact");
+
+        assertThatThrownBy(() -> writeService.restoreFromTrash(sleepingId, "curator"))
+                .as("""
+                        refused rather than renamed, and the refusal teaches: P6 wants the \
+                        occupant named, because "some post holds this" is not something a curator \
+                        can act on (SH243).""")
+                .isInstanceOf(ShRestoreUrlConflictException.class)
+                .satisfies(refusal -> {
+                    ProblemDetail problem =
+                            ((ShRestoreUrlConflictException) refusal).toProblemDetail();
+                    assertThat(problem.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+                    assertThat(problem.getDetail()).contains("Front Desk").contains("/contact");
+                    assertThat(problem.getProperties()).containsKey("fix");
+                });
+
+        assertThat(inTrash(sleepingId))
+                .as("a refused restore changes nothing — the post is still where the curator left it")
+                .isTrue();
+    }
+
+    /**
+     * SH243's other half of the same rule: with the URL free again, the same restore goes through
+     * and returns the post to <b>its own</b> address.
+     *
+     * <p>Here because a refusal nobody can clear is a dead end rather than an instruction, and the
+     * {@code fix} the 409 carries says to clear it. This asserts the fix works.</p>
+     */
+    @Test
+    @DisplayName("SH243: clearing the occupant makes the same restore succeed at the same URL")
+    void restoreSucceedsOnceTheUrlIsFreedAgain() {
+        String sleepingId = createPost("Pricing");
+        writeService.setFurl(sleepingId, "pricing");
+        String storedFurl = furlOf(sleepingId);
+        writeService.delete(sleepingId, "curator");
+
+        String occupantId = createPost("Rates");
+        writeService.setFurl(occupantId, storedFurl);
+        assertThatThrownBy(() -> writeService.restoreFromTrash(sleepingId, "curator"))
+                .isInstanceOf(ShRestoreUrlConflictException.class);
+
+        // The fix the 409 names: move the occupant off the address.
+        writeService.setFurl(occupantId, "rates");
+
+        assertThat(writeService.restoreFromTrash(sleepingId, "curator")).isTrue();
+        assertThat(furlOf(sleepingId))
+                .as("its own URL, not a numbered one — that is the whole reason it refused")
+                .isEqualTo(storedFurl);
     }
 
     @Test
