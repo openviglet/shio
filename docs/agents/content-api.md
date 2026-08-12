@@ -344,8 +344,16 @@ suite with the 500 that started this.
   There is deliberately **no `@SQLRestriction` on `ShFolder`**: it would also fire when a
   `@ManyToOne` to a folder is initialized, and a trashed post's `getShFolder()` is precisely what
   the trash listing reads. Ids still resolve polymorphically through `ShObjectRepository`, which
-  knows nothing about this — the three paths that matter guard it by hand, and **SH226** is the
-  open task to make that an invariant rather than a convention.
+  knows nothing about this, so **every production read of an id goes through `ShLiveObject.of`
+  (SH226)** — one predicate, enforced textually by `ShLiveObjectInvariantTest` over
+  `src/main/java`, waived by a `ShLiveObject-exempt: <reason>` comment. SH200 hand-guarded the two
+  paths it knew about with a private `live` helper each; **the lint's first run found two more,
+  and one was a live defect** — `ShFolderWriteService#create` resolved its parent unguarded, so a
+  section could be created *inside* a trashed one and then appear in no listing, because what is
+  excluded is the ancestor and nothing asks whether a child's ancestor is gone. It answered `200`.
+  The one exemption is `ShContentAclService`'s ancestor walk, which decides *whose grants apply*
+  rather than what a curator may see: a trashed folder still has an ACL, and the restore that
+  brings it back is authorized by it.
 - **A restore returns what *that* deletion trashed** — the delete stamps one instant down the
   subtree and anything marked earlier stays in the trash. Compared on loaded `Instant`s, never in
   SQL: timestamp equality is a fractional-second promise H2, MariaDB and PostgreSQL do not make

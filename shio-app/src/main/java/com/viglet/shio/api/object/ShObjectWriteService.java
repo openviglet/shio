@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.object.ShFolderSite;
+import com.viglet.shio.object.ShLiveObject;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -147,9 +148,7 @@ public class ShObjectWriteService {
      * trash and resurrect it sideways.</p>
      */
     private ShObject live(String id) {
-        return shObjectRepository.findById(id)
-                .filter(object -> !(object instanceof ShFolder folder) || !folder.isTrashed())
-                .orElse(null);
+        return ShLiveObject.of(shObjectRepository, id).orElse(null);
     }
 
     /**

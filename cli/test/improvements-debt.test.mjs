@@ -83,6 +83,20 @@ function sections() {
 }
 
 /**
+ * Every anchor token the table of contents links to, in order.
+ *
+ * <p>Hoisted rather than parsed twice: this file's own rule is that two readers of one format are
+ * two readers waiting to disagree. A row is identified by its **anchor token** — every row opens
+ * with one — rather than by rebuilding GitHub's slug, which involves emoji and en-dashes.</p>
+ */
+function contents() {
+  const start = improvements.indexOf("## Table of contents");
+  const toc = improvements.slice(start, improvements.indexOf("\n## ", start + 5));
+  return [...toc.matchAll(/^\s*-\s+\[((?:[IVXLC]+|0)(?:\.\d+)*)\.?[^\]]*\]\(#/gm)]
+    .map(([, ref]) => ref);
+}
+
+/**
  * Every `§X.Y` the prose cites, in order, duplicates kept.
  *
  * <p>A citation is the section sign and a local anchor: `§XI.5`, `§0.4`, `§XV.0.5`, and `§XIV` for
@@ -373,10 +387,7 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
    */
   test("SH668: the table of contents lists no section that is gone", () => {
     const anchors = new Set(sections().map((each) => each.anchor.replace(/\.$/, "")));
-    const start = improvements.indexOf("## Table of contents");
-    const toc = improvements.slice(start, improvements.indexOf("\n## ", start + 5));
-    const listed = [...toc.matchAll(/^\s*-\s+\[((?:[IVXLC]+|0)(?:\.\d+)*)\.?[^\]]*\]\(#/gm)]
-      .map(([, ref]) => ref);
+    const listed = contents();
 
     assert.ok(listed.length > 10, `only ${listed.length} contents row(s) parsed — the shape changed`);
     assert.deepEqual(
@@ -431,7 +442,19 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
     // grows, so `shipped` may keep an absolute one; the roadmap and this file are *meant* to empty,
     // and a floor over them is a second deadline nobody declared. Two suites away,
     // `ShRoadmapLineLengthRatchetTest` had the same line and the same morning.
-    assert.ok(all.length > 50, `only ${all.length} section(s) parsed — the heading shape changed`);
+    // The fourth one was this line, and it fired the morning §XII.10 shipped with SH226 and took
+    // the file from 51 sections to 50 while `> 50` still stood. So it is a **coupling** now rather
+    // than a number: the contents block and the headings are two independent structures over the
+    // same file, SH668 keeps them in step, and a reader whose heading regex stopped matching
+    // disagrees with the contents in the same breath — which is the thing the floor was for. It
+    // holds at any size, including the day the last rationale ships, because §0's non-goals family
+    // is permanent (agents.md puts the product's positioning there).
+    const listed = contents();
+    assert.ok(listed.length > 0,
+      "no contents row parsed — §0 is permanent, so an empty contents is the reader, not the file");
+    assert.ok(all.length >= listed.length,
+      `only ${all.length} section(s) parsed while the contents lists ${listed.length} — the `
+        + "heading shape changed");
     assert.ok(shipped.size > 100, `only ${shipped.size} shipped id(s) read from the ledger`);
 
     // Relative where it can be: one pointer per open line is the invariant, and it holds at any

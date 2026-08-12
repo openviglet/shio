@@ -207,6 +207,10 @@ public class ShContentAclService {
      * dependency back one line below where it was removed.</p>
      */
     private String startFolderId(String objectId) {
+        // ShLiveObject-exempt: this decides whose grants apply, not what a curator may see. A
+        // trashed folder still has an ACL — the restore that brings it back is authorized by it —
+        // and dropping it here would not deny the read, it would fall through to the post branch
+        // below and walk the wrong chain (SH226).
         ShObject object = shObjectRepository.findById(objectId).orElse(null);
         if (object instanceof ShFolder folder) {
             return folder.getId();

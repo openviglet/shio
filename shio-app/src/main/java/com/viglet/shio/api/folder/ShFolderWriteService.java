@@ -26,6 +26,7 @@ import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.object.ShFolderSite;
+import com.viglet.shio.object.ShLiveObject;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -87,10 +88,17 @@ public class ShFolderWriteService {
      * site's contents and never its shape: a resuming session was told a post now lives at
      * {@code folder:Blog/archive/2025} and never that the section had just appeared, so it could
      * not tell "filed into an existing section" from "the site was restructured".</p>
+     *
+     * <p><b>A trashed parent is absent (SH226)</b>, the same answer {@code moveTo} and
+     * {@code copyTo} have given since SH200. This resolved the parent through the polymorphic
+     * repository, which knows nothing about the folder trash, so a section could be created
+     * <em>inside</em> a deleted one — where no listing would ever show it, because the ancestor
+     * is excluded rather than the child. It is the fourth call site of one predicate and the one
+     * nobody guarded by hand, which is why {@link ShLiveObject} is now the only spelling.</p>
      */
     @Transactional
     public Optional<ShFolder> create(String parentObjectId, ShFolder payload, String owner) {
-        return shObjectRepository.findById(parentObjectId).map(parent -> {
+        return ShLiveObject.of(shObjectRepository, parentObjectId).map(parent -> {
             ShFolder folder = new ShFolder();
             folder.setName(payload.getName());
             folder.setFurl(ShURLFormatter.format(payload.getName()));

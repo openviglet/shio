@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.api.object.dto.ShConsoleListing;
 import com.viglet.shio.object.ShFolderSite;
+import com.viglet.shio.object.ShLiveObject;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -130,8 +131,7 @@ public class ShObjectNavigationService {
      * is how a curator ends up browsing content that is supposed to be deleted.</p>
      */
     private Optional<ShObject> live(String objectId) {
-        return shObjectRepository.findById(objectId)
-                .filter(object -> !(object instanceof ShFolder folder) || !folder.isTrashed());
+        return ShLiveObject.of(shObjectRepository, objectId);
     }
 
     /**

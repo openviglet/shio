@@ -259,29 +259,6 @@ that will not load is refused on its own without taking the catalogue with it.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.10 A trashed folder is excluded by convention, not by invariant (SH226)
-
-SH200 made every read in `ShFolderRepository` exclude a trashed folder, which covers navigation,
-the CDA, the sitemap, the content lint and the exchange export in one place. But ids also
-resolve **polymorphically** through `ShObjectRepository`, which knows nothing about
-`deleted_date`, and three call sites had to be guarded by hand
-(`ShObjectNavigationService.list`/`path`, `ShObjectWriteService.moveTo`/`copyTo`) so a curator
-could not browse into a deleted section by its own id or move live content into one.
-
-Hand-guarded is not enforced. The next read that resolves a folder id through the polymorphic
-repository will show deleted content, answer `200`, and be invisible to every test — which is
-character-for-character the SH128 `ShFolderSite` shape, and that one earned
-`ShFolderSiteInvariantTest` for exactly this reason.
-
-Two candidate answers, not exclusive:
-
-- **A lint**, in the SH128 mould: fail the build on a `ShObjectRepository.findById` result used
-  as a `ShFolder` without a trash check, with a named escape hatch for the trash's own reads.
-  Cheap, and it catches the case at the moment somebody writes it.
-- **A resolver**, in the `ShFolderSite.of` mould: one method that resolves an object id and drops
-  a trashed folder, so the correct form is also the shortest one. The lint then has something to
-  point at, which is what made SH128's guard teachable rather than annoying.
-
 ### XII.13 A site the trash cannot hold (SH648)
 
 SH223 found its symptom mostly fixed: `ShSiteWriteService.delete` already trashes each
@@ -420,6 +397,28 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
+### XIII.23 Two instruments hold `tools/list` to two different budgets (SH673)
+
+`tools/list` is the priciest fixed cost on the agent surface — re-sent every turn — so
+P3 holds it to a number, and two things read that number. `ShMcpToolBudgetTest` reads
+`mcp.tools.list.total` from `token-budgets.properties`, which says **2400**.
+`mcp-transport.conformance.mjs:48` states **2375** as a constant. The live payload
+measures **2397**: inside the Java gate, outside the conformance one. `pnpm conformance`
+has therefore been red on a payload the declared budget allows.
+
+The constant is deliberate and its reasoning is sound — the suite runs against an
+instance it did not build, so reading the working tree would compare a live payload
+against a budget that instance may predate, and *"a constant that disagrees with the
+properties file is a visible edit; a read that silently compares two versions is not."*
+What the design did not carry is the other half: a visible edit is only visible if
+something looks. Nothing does, so a raise landed on one side and the two drifted 25
+tokens apart until a payload found the gap.
+
+The properties file is **authoritative** and the constant follows it. Restating it stays
+right; what is missing is a check that the two agree — a comparison between a constant
+and a file both present in this tree, needing no instance. It belongs in `pnpm test`, so
+a drift fails in seconds rather than in the gate that needs a packaged jar and a boot.
+
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
@@ -427,6 +426,30 @@ leaving to whoever next notices the poll is not free.
 > building it opened (SH163–SH167, SH233, SH234) and the ones that finishing it turned
 > up (SH235–SH237, SH239, SH240, SH668). Nothing is left open here.
 > Concept spec §10 has the original table.
+
+### XIV.24 A floor in a docs reader fires when the corpus is correct (SH672)
+
+Every reader here carries a non-vacuity floor: a number it must clear, so a regex that
+stopped matching cannot report zero problems out of zero subjects and be green for the
+one reason that proves nothing. The floors are right. Three in
+`improvements-debt.test.mjs` are the wrong *kind* of number.
+
+`cited.length > 5` stands at 10, `anchors.size > 20` at 50, `listed.length > 10` at 15.
+All three count a corpus **meant to empty** — `ship` drops a section and takes its
+citation and contents row with it — so each is a second deadline nobody declared,
+enforced by a test whose stated purpose is something else.
+
+Not a prediction: the file's own comment records three earlier floors firing this way in
+one session, when shipping five tasks took the backlog from 24 to 19 while every floor
+still said 20. The fourth fired when SH226 took the file from 51 sections to 50 against
+`> 50`. That one is a coupling now — the contents and the headings are two independent
+structures over one file, so a reader that stops parsing headings disagrees with the
+contents in the same breath.
+
+**The deliverable is the instrument, not the three edits** (SH338). A reader over the
+suites can classify a floor by what it counts: a registry and a ledger only grow, so an
+absolute floor over them is honest; the roadmap and the rationale do not. Hold the rest
+as a named list, the shape `assertion-debt` already uses.
 
 ## XV. The visible site (Block P)
 
@@ -898,3 +921,26 @@ altitudes, which is why they are one block rather than a footnote on the last on
 
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
+
+### XXI.10 No page publishes the four discovery calls as a runnable request (SH674)
+
+`docs-examples.conformance.mjs` does what no vocabulary check can: it issues the
+requests the end-user pages print, against a running instance. Four are named rather
+than inferred — `GET /api/v2/agent/manifest`, `/agent/context`, `/agent/blueprints` and
+`GET /api/v2/post-type` — because they are the discovery surface, P2's *one call
+replaces a session*, and a page showing them promises a reader they answer immediately.
+
+Run today against `docs-shio` at `d7735f3`, all four report *"no longer published — this
+list has outlived its page"*, and the suite falls to 5 executable requests out of 10,
+tripping its own no-op floor. Nothing 500s and nothing 404s: the calls are **absent from
+every page**. The gate is red for a documentation regression, which is the gate working.
+
+Two things this is not. Not a stale list — `docs-vocabulary` still resolves those names
+against this source tree, so the endpoints exist and answer. And not one page's edit:
+four requests spread across the hubs went at once, which points at a restructure that
+moved prose and left the request blocks behind.
+
+The repair is a page decision and belongs with the COVERAGE row claiming the discovery
+surface is documented. Worth carrying into it: a row can be ✅ while the request it
+promises is gone, because the matrix records that a page exists and this suite records
+that it still works — the same two-altitudes split Block U was opened for.
