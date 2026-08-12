@@ -43,6 +43,8 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
+- 📋 **SH684** (deps: —) **propose declines a candidate whose required field it cannot fill, and convert then empties one by dropping chrome** — A www.viglet.org replication declined 4 blocks for a missing heading and then convert dropped 7 headings as chrome, so verify refused the same 7 ids. → §XVII.94
+- 📋 **SH685** (deps: SH588 ✅) **annotations cannot resolve the post types it just rendered, so it checks one post of nine and reports the rest** — It answered 67 annotated over 4 declared with 8 types unresolved, while /agent/read names SectionFeatureGrid and SectionFaq for the very same ids. → §XVII.95
 
 ## Block F — Market positioning
 
