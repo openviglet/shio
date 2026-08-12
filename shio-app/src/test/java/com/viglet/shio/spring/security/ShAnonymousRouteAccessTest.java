@@ -125,6 +125,11 @@ class ShAnonymousRouteAccessTest {
 			new Route("/api/v2/history/**", "/api/v2/history/object/x", Access.AUTHENTICATED),
 			new Route("/api/v2/import", "/api/v2/import", Access.AUTHENTICATED),
 			new Route("/api/v2/locale/**", "/api/v2/locale", Access.AUTHENTICATED),
+			// SH646. Authenticated even though a catalogue is public information, because the
+			// listing is not only the catalogue: it stamps `installed` on every row, so an
+			// anonymous read would report which packages this instance carries — and the README
+			// proxy would let a stranger spend the server's outbound requests.
+			new Route("/api/v2/marketplace/**", "/api/v2/marketplace", Access.AUTHENTICATED),
 			new Route("/api/v2/object/**", "/api/v2/object/x/path", Access.AUTHENTICATED),
 			new Route("/api/v2/post-type/**", "/api/v2/post-type", Access.AUTHENTICATED),
 			new Route("/api/v2/post-unified/**", "/api/v2/post-unified/x", Access.AUTHENTICATED),

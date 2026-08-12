@@ -508,9 +508,49 @@ That is the argument for writing the statement down rather than leaving it in co
 contradiction was three commits old and nothing would have found it, because the two halves are in
 different repositories.
 
-### What is deferred, and what should trigger it
+### What was deferred, and what settled it
 
-The **index** and a **provenance signal** are SH646. They are not code — they are a place for the
-list to live and somebody to say what enters it — and there is **no third-party package**, so an
-index would be infrastructure ahead of its problem. The trigger is the first package somebody
-outside the project asks to publish: the decision is cheap then because it has a subject.
+The **index** and a **provenance signal** were SH646, deferred because they are not code — they are
+a place for the list to live and somebody to say what enters it — and the trigger was named as the
+first package somebody outside the project asks to publish.
+
+## The catalogue is a marketplace, on the shape Turing already runs (SH646)
+
+`GET /api/v2/marketplace` answers what this instance could install. Two properties:
+`shio.marketplace.enabled` (**false**) and `shio.marketplace.url`, plus a timeout. The item shape is
+Turing's — a format with a working console behind it is worth more than a marginally better one —
+with two fields a recipe does not need. **`params`** rides in the *listing*, so a console draws the
+install form without downloading the package (P2 at catalogue level), and **`requires`** names the
+SH151/SH152 opt-ins, so "this will alter a post-type you already have" is a consent asked *before*
+the install rather than a surprise after it (P7).
+
+**This does not overturn SH96, and the reason is where the operator stands.** `ShBlueprintProperties`
+refused URL fetching because it *"moves the decision from an operator to a network"*. It still does:
+the catalogue is off until somebody turns it on and names the URL, which is the same act as naming
+a directory. Nothing changes about what an installed package may do (SH643's bounds) or how it is
+validated (the registry, identically for first-party and stranger). The marketplace distributes what
+the trust model already accepts.
+
+### Three decisions the tests are about
+
+- **The built-in entries are derived from `ShBlueprintRegistry`, never restated.** The six packages
+  already carry a title, a version and a `params` schema; a hand-written JSON beside them is a
+  duplicate that goes stale with nothing failing when it does. They carry no `downloadUrl` because
+  there is nothing to fetch — they are here.
+- **An unreachable catalogue does not empty the listing.** SH217 held that a stranger's package
+  cannot disable the catalogue; a URL that is slow, moved, or serving an object instead of an array
+  is the same hazard one level up. The failure becomes `source.state=unreachable` with the reason,
+  *beside* the built-in six. A duplicate id is dropped and named, for the registry's collision
+  reason: neither winner is defensible.
+- **The README proxy's allow-list is the catalogue itself.** An endpoint that fetches whatever URL
+  it is handed is an SSRF, and a scheme or host check is a guess about which addresses are safe.
+  The catalogue already declares every README it has, so a URL it does not name is refused — the
+  reachable set is exactly what the operator's own catalogue offered.
+
+Off is a *state the listing reports*, not a 404: an instance always has packages, so the endpoint
+always has a true answer, and a console showing an error where there is content is the failure that
+avoids. The README proxy is the one that does refuse when disabled, naming the property (P6).
+
+Install is **SH675** and deliberately a separate door — putting a stranger's package where the
+registry will load it is a different act from reading a list. The CLI is SH677, the console SH679,
+and MCP is SH678, last because `tools/list` has three tokens of headroom.

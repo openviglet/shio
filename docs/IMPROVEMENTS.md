@@ -204,43 +204,15 @@ loop that cannot perceive itself is the failure this block should expect next.
 
 ## XI. Blueprints + Claude Code plugin (Block J)
 
-> *"Skip steps with things that are already done"* only works if the ready-made
-> thing is **appliable**, not readable. A prose recipe an agent must read and
-> reimplement saves nothing — it just moves the work. **Absorbs the old SH23
-> marketplace epic** (SH27–SH31).
->
-> The format, the verb, the first-party set, the section vocabulary, the Claude Code
-> plugin and the five mismatches that shipping the two halves exposed are all shipped —
-> see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the distribution question
-> (§XI.21).
+*"Skip steps with things that are already done"* only works if the ready-made thing is
+**appliable**, not readable. A prose recipe an agent must read and reimplement saves
+nothing — it just moves the work. **Absorbs the old SH23 marketplace epic** (SH27–SH31).
 
-### XI.21 Where the list lives, and who vouches (SH646)
-
-SH643 stated what an applied package may do and reserved the `shio-blueprint-` prefix.
-What was missing was the **index** and a **provenance signal stronger than "it was in a
-directory"** — a place for the list to live and somebody to say what enters it.
-
-**The answer is a marketplace, on the shape Turing already runs.** A catalog JSON an
-operator points at (`shio.marketplace.url`), **off by default**, with a classpath copy
-as the fallback. An item is a zip of a blueprint package — `blueprint.json`,
-`post-types/`, `content/`, `files/` — and installing one expands it into
-`shio.blueprint.path`.
-
-That is why this does not overturn SH96. `ShBlueprintProperties` refused URL fetching
-because it *"moves the decision from an operator to a network"*, and it still does: the
-operator turns the catalog on and names its URL, as they name a directory. The registry
-already validates a package as it does a first-party one, isolates one that will not
-load (SH217), refuses a collision and reports the origin. **The marketplace distributes
-what the trust model already accepts.**
-
-The catalogue seeds with the six first-party packages, which is what makes the
-third-party half meaningful rather than speculative: the format is proven by items the
-project ships, and the install path is exercised before anyone outside is asked to meet
-it.
-
-The human half is greenfield — nothing in `shio-react` mentions a blueprint — and the
-agent half is budget-bound: `tools/list` sits at 2397 of 2400, so MCP follows CLI and
-REST rather than leads.
+The format, the verb, the first-party set, the section vocabulary, the Claude Code
+plugin, the five mismatches that shipping the two halves exposed and the catalogue
+itself are all shipped — see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the
+rest of the marketplace: the install, the published seed, the CLI, the console and the
+agent path (§XI.22, §XI.23, §XI.24, §XI.25, §XI.26).
 
 ### XI.22 Installing a catalog item is mostly work that already exists (SH675)
 

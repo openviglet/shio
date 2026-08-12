@@ -127,6 +127,17 @@ class ShSilentCatchInventoryTest {
             // operator to find it, which is the whole job.
             "blueprint", 4,
             "exchange", 2,
+            // 1 since SH646, and it is the third shape this list has met: the catch is neither a
+            // swallow nor control flow, it is a *conversion into the answer*. `ShMarketplaceCatalog`
+            // catches an unreachable or malformed catalogue and returns it as
+            // `source.state=unreachable` with the reason, so nothing is lost — the caller is told,
+            // in the same payload, in a field that exists for it. An incident on top would report
+            // to the operator what the console is already showing them.
+            //
+            // It is counted rather than exempted for the reason the `render` entries above are:
+            // the lint keys on "neither records nor rethrows" and cannot see that the return value
+            // IS the record, which is the right way round for a population guard to be wrong.
+            "marketplace", 1,
             // 3 since SH384: a bad `page=` falls back to page one, beside the bad `limit=` that
             // falls back to the default. Deliberately not recorded — that value comes off a URL a
             // *reader* types, so a diagnostics entry per `?page=abc` would fill the window with
