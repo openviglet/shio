@@ -712,6 +712,30 @@ leave the counter and let the *restore* refuse a title collision the way it now 
 a URL one. The second matches SH243's shape and costs a refusal on a name nobody
 addresses by.
 
+### XVI.75 `folder.restore` is the one batch op that writes without an ACL check (SH696)
+
+Every mutating op in `ShAgentBatchService` calls `shContentAclService.requireWrite`
+before it writes — fourteen call sites, and the two on either side of this one are the
+tell: `folderDelete` guards at line 1328, `postRestore` at line 1914. `folderRestore`
+has none. `ShReviewService.revertFolder` guards the same gesture from the console side,
+so the batch path is the only way in that does not ask.
+
+Measured, not argued: `grep -n requireWrite ShAgentBatchService.java` returns fourteen
+lines and none of them is in `folderRestore`; the method is otherwise complete since
+SH690, which read the trash there and left this untouched because it was not what that
+task was about.
+
+What it costs: a credential scoped to part of a tree can restore a section it could not
+have deleted, and the restore brings the whole subtree's posts back with it (SH200).
+That is not privilege escalation into another tenant — `@TenantId` still binds the read
+— but it is the narrower ACL the content service exists to enforce, and non-goal "the
+agent path is not a privilege escalation" is written for exactly this shape.
+
+The fix is one line in the non-`dryRun` branch, matching `postRestore`. The assertion is
+the part worth designing: a batch-wide test that every op in `OPS` which can write
+refuses an actor without write access, so the fifteenth op does not have to be caught by
+reading.
+
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
