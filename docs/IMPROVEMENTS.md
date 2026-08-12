@@ -1144,6 +1144,37 @@ What this deliberately does not decide is whether the design is *good*. That is 
 curator's, and the point of drawing the line is that everything which is not taste stops
 arriving on their desk.
 
+### XVII.101 Concatenation is not composition (SH693)
+
+The generated `PageLayout` is 3,245 characters and two of its lines decide the whole
+shape of a mixed page:
+
+    {{#if content}}{{{content}}}{{/if}}
+    {{#getRelation sections}} … {{/getRelation}}
+
+The verbatim block is emitted whole, and every section is appended after it. There is no
+position at which a section can land *inside* the kept markup, so on a mixed page the
+source's header, nav **and footer** all precede every section — by construction, on
+every such page, in every replication.
+
+Measured by offset in the served home page (1,113,507 chars):
+
+    1,067,442  95%  header
+    1,093,581  98%  footer
+    1,100,692  98%  section #1 … #8 to 99%
+
+The same two lines settle the other half. `<style>{{theme.css}}</style>` is
+unconditional and the captured theme is pulled in only `{{#if content}}` — so a mixed
+page carries **two** stylesheets and a pure authorable page one, which is SH510 working
+as designed and also exactly the two visual languages a curator sees.
+
+So this is not a data defect and no content edit fixes it. `convert` writes a layout
+that concatenates two things it has no vocabulary for composing: it knows *what* was
+kept and *what* was accepted, and not *where* either belongs.
+
+SH692 names what a right page is; this is the first thing measured against that
+definition, and the seam rule it fails is the simplest one — order.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
