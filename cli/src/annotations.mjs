@@ -216,7 +216,13 @@ export function describeAnnotations(report, { target } = {}) {
   for (const row of posts) {
     const label = `${row.post}${row.type ? `  (${row.type})` : ""}${row.page ? "  [page]" : ""}`;
     if (!row.resolved) {
-      lines.push(`  ${label}  ${row.annotated.length} annotated — type not resolved, NOT checked`);
+      // SH685 — the same sentence, now backed by an exit code. It used to be the whole guard: prose
+      // saying "NOT checked" while nothing failed as the count grew, which is how eight unchecked
+      // posts of nine sat under a headline that read like a measurement of the page.
+      lines.push(
+        `  ${label}  ${row.annotated.length} annotated — type not resolved, NOT checked: the page `
+          + "renders sh-post for a post this instance cannot read",
+      );
       continue;
     }
     lines.push(

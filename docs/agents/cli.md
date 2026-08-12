@@ -2780,3 +2780,51 @@ does not name reaches no reader at all.
 The closing assertion is the one the task asked for, stated as the invariant rather than as the
 number seven: **no section a conversion writes is missing a field its type requires**
 (`convert.test.mjs`, `missingRequired` over every written section).
+
+## The instrument that could not read the type it drew (SH685)
+
+`shio annotations` answers *is this page actually editable* — the props a page emits against the
+fields its types declare. On the home page of the `www.viglet.org` replica it answered:
+
+    9 post(s) — 67 of 4 declared field(s) annotated, 4 NOT editable, 8 whose type this could not resolve
+
+The eight are the sections, and their types resolve one call away: `GET /agent/read?address=id:<uuid>`
+answers `SectionFaq`, `SectionFeatureGrid`. So the comparison the command exists to make was made for
+**one post of nine**, and `67 of 4` counted annotations against the declared fields of the only type
+it managed to look up.
+
+### The read never failed
+
+The `catch` in `resolveTypes` was never the path taken, and the comment on it described a case that
+was not happening. `/agent/read` answers with the **canonical** address — `post:VigletOrg/sections/…`
+— whatever address was asked for, and carries no `id` unless `ids=true` is passed. So
+`doc.id ?? doc.address` fell through to a `post:` address, `.replace(/^id:/, "")` left it untouched,
+and the map was keyed by something the lookup — a raw uuid scraped off the rendered markup — could
+never match. **Every entry was written and none was ever found.**
+
+`ids: true` is the whole fix. The `?? doc.address` fallback is gone with it: it was the wrong key by
+construction, and having it there is what made a broken join look like a working one — every miss
+read as *"this post has no type"* rather than as *"I asked wrongly"*.
+
+Asked of the read rather than joined by position, and the alternative is worth recording because it
+does work: an address that resolves to nothing comes back **in place**, echoing the request and
+carrying an `error`, so the array is one entry per address in request order. That is an unasserted
+property of the endpoint, and this defect is what betting on one of those looks like.
+
+### `NOT checked` was prose doing an assertion's job
+
+Nothing failed as the unresolved count grew. The run exited 1 on the Page's own `0/4` while eight of
+nine posts went unchecked, so the red read as a finding *about the page* and hid the blind spot —
+worse than either answer alone. An unresolved type now **gates**, which reverses the earlier rule
+that *"we could not check this"* is not the same claim as *"this is wrong"*. That is true, and what
+it left out is that it is not the same claim as *"this is right"* either — and only one of the two
+was being acted on. It is honest as a gate only because the read now resolves what it is asked: an
+unresolved type means the page renders `sh-post` for a post this instance cannot read, which is a
+dangling annotation and a finding in its own right.
+
+### What the page actually says now
+
+    9 post(s) — 67 of 32 declared field(s) annotated, 17 NOT editable
+
+Not `4 NOT editable`. The section that filed this said *"the Page's own 0/4 may well be real — it is
+not knowable from this output"*; it is real, and there are thirteen more findings behind it.

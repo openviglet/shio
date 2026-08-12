@@ -946,34 +946,6 @@ gate naming itself. Resuming is therefore two steps — dispatch the workflow, t
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
 
-### XVII.95 The instrument that cannot read the type it drew (SH685)
-
-`shio annotations` is the answer to *is this page actually editable* — the props a page
-emits against the fields its types declare, both declaration forms, collection rows
-expanded (SH588, SH465, SH475).
-
-Run on the home page of the `www.viglet.org` replica it reported:
-
-    9 post(s) — 67 of 4 declared field(s) annotated, 4 NOT editable,
-    8 whose type this could not resolve
-      b577f35b…  (Page)  0/4  missing: content, description, sections, title
-      d85d8f5d…  16 annotated — type not resolved, NOT checked
-
-The eight it could not resolve are the sections, and their types resolve fine one call
-away: `GET /agent/read?address=id:d85d8f5d…` answers `type=SectionFaq`, and
-`post:VigletOrg/sections/b1083a9ab` answers `type=SectionFeatureGrid`. So the comparison
-the command exists to make was made for **one** post of nine, and the headline `67 of 4`
-is a count of annotations against the declared fields of the only type it managed to
-look up.
-
-Two consequences, and the second is the reason this is filed rather than noted. It exits
-1 on the Page's `0/4`, so the run reads as a finding about the page while 89% of the
-page went unchecked — a red that hides a blind spot is worse than either. And "NOT
-checked" is honest prose doing the work an assertion should: nothing fails when the
-unresolved count grows.
-
-The Page's own `0/4` may well be real. It is not knowable from this output.
-
 ### XVII.96 The selector the reader cannot spell (SH686)
 
 `appearance.definedClasses` parses a theme's CSS for class selectors and

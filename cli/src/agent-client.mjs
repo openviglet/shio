@@ -292,6 +292,12 @@ export class ShioAgentClient {
     const params = new URLSearchParams();
     for (const address of addresses) params.append("address", address);
     if (options.include) params.set("include", options.include);
+    // SH685 — the raw post id beside the address. The read answers with the *canonical* address
+    // (`post:<site>/<furl>`) whatever address was asked for, so a caller holding ids — which is
+    // every caller that got them out of rendered markup — cannot join the answer back to its
+    // question without this. `shio annotations` could not, and reported eight of nine sections as
+    // "type not resolved" while the read had returned all eight types.
+    if (options.ids) params.set("ids", "true");
     // SH619/SH640 - `published` reads the live row instead of the draft, which is the only way to
     // ask what a publish would change. Absent means the draft-preferred default every other caller
     // wants, so nothing that omits it behaves differently.

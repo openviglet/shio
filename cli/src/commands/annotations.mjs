@@ -72,9 +72,20 @@ export async function run(flags, positionals, ctx) {
   }
 
   // A declared field that renders without an annotation is the defect this exists to find, and it
-  // is one a machine observed rather than a judgement — so it gates. An unresolved type does not:
-  // "we could not check this" is said on the report and is not the same claim.
-  return { target, url, ...report, exitCode: report.missing > 0 ? 1 : 0 };
+  // is one a machine observed rather than a judgement — so it gates.
+  //
+  // SH685 — and an unresolved type gates too, which is a reversal. The old rule was that "we could
+  // not check this" is not the same claim as "this is wrong", and that is true; what it left out is
+  // that it is not the same claim as "this is right" either, and only one of those two was being
+  // acted on. The run exited 1 on the Page's `0/4` while eight of nine posts went unchecked, so the
+  // red read as a finding about the page and hid the blind spot — worse than either answer alone.
+  //
+  // It is honest as a gate now in a way it would not have been before: with `ids: true` the read
+  // resolves what it is asked, so an unresolved type means the page renders `sh-post` for a post
+  // this instance cannot read — a dangling annotation, and a finding in its own right. Reported
+  // separately from `missing` so the exit code never says which one it was; the report does.
+  const unchecked = report.unresolved > 0;
+  return { target, url, ...report, exitCode: report.missing > 0 || unchecked ? 1 : 0 };
 }
 
 /** `?editor=true`, added without disturbing a query the caller already wrote. */
@@ -113,22 +124,47 @@ async function declaredFields({ baseUrl, user, password }, ctx) {
   return fields;
 }
 
-/** Post id → post-type name, for the owners the page did not name a type for. */
+/**
+ * Post id → post-type name, for the owners the page did not name a type for.
+ *
+ * <h3>The instrument could not read the type it had just drawn (SH685)</h3>
+ *
+ * <p>On the home page of the `www.viglet.org` replica this resolved **one** post of nine and said
+ * `type not resolved, NOT checked` about the other eight — while `GET /agent/read?address=id:<uuid>`
+ * answered `SectionFaq` and `SectionFeatureGrid` for those very ids, one call away. So the
+ * comparison the command exists to make was made for a ninth of the page, and its headline
+ * `67 of 4 declared` counted annotations against the declared fields of the only type it looked up.
+ *
+ * <p>The read never failed and the `catch` below was never the path taken. `/agent/read` answers
+ * with the **canonical** address — `post:VigletOrg/sections/bf666ccc4` — whatever address was asked
+ * for, and carries no `id` unless `ids=true` is passed. So `doc.id ?? doc.address` fell through to a
+ * `post:` address, `.replace(/^id:/, "")` left it alone, and the map was keyed by something the
+ * lookup — a raw uuid off the rendered markup — could never match. Every entry was written and none
+ * was ever found.
+ *
+ * <p>`ids: true` is the whole fix, and it is asked of the read rather than joined by position.
+ * Position would work — an address that resolves to nothing comes back *in place*, echoing the
+ * request and carrying an `error`, so the array is one entry per address in order — but that is a
+ * property of the endpoint nothing here asserts, and this defect is what betting on an unasserted
+ * property of that response looks like.
+ */
 async function resolveTypes(client, scan) {
   const unknown = scan.posts.filter((row) => !row.type).map((row) => `id:${row.post}`);
   const types = new Map();
   if (!unknown.length) return types;
   let docs = [];
   try {
-    docs = await client.read(unknown);
+    docs = await client.read(unknown, { ids: true });
   } catch {
     // Silent, and the report says `NOT checked` for every row it could not resolve. A read that
     // failed is not evidence that a page is annotated, and it is not evidence that it is not.
     return types;
   }
   for (const doc of Array.isArray(docs) ? docs : []) {
-    const id = String(doc?.id ?? doc?.address ?? "").replace(/^id:/, "");
-    if (id && doc?.type) types.set(id, doc.type);
+    // `doc.id` and nothing else. The address fallback is gone: it is the wrong key by construction
+    // (canonical, not the one asked for) and having it there is what made a broken join look like a
+    // working one — every miss read as "this post has no type" rather than as "I asked wrongly".
+    if (doc?.id && doc?.type) types.set(String(doc.id), doc.type);
   }
   return types;
 }
