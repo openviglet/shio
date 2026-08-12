@@ -372,8 +372,8 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
     );
     // A reader whose regex stopped matching would report zero dangling out of zero citations and
     // be green for the one reason that proves nothing.
-    assert.ok(cited.length > 5, `only ${cited.length} citation(s) parsed — the § form changed`);
-    assert.ok(anchors.size > 20, `only ${anchors.size} anchor(s) parsed — the heading shape changed`);
+    assert.ok(cited.length > 0, `only ${cited.length} citation(s) parsed — the § form changed`);
+    assert.ok(anchors.size > 0, `only ${anchors.size} anchor(s) parsed — the heading shape changed`);
   });
 
   /**
@@ -389,7 +389,7 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
     const anchors = new Set(sections().map((each) => each.anchor.replace(/\.$/, "")));
     const listed = contents();
 
-    assert.ok(listed.length > 10, `only ${listed.length} contents row(s) parsed — the shape changed`);
+    assert.ok(listed.length > 0, `only ${listed.length} contents row(s) parsed — the shape changed`);
     assert.deepEqual(
       listed.filter((ref) => !anchors.has(ref)),
       [],

@@ -427,3 +427,43 @@ binds nothing, and never produced `shio.cda.preview.ttl-seconds`, which is real 
 documenting the correct key was reported as documenting one that does not exist. The two
 errors hid each other, which is why it survived. `boundKeys` cuts each nested class body out
 before reading the outer fields, and both directions are asserted in the SH499 self-check.
+
+## A floor may only fire when the reader breaks (SH672)
+
+Every reader over the governed docs carries a **non-vacuity floor**: a number it must clear, so a
+regex that stopped matching cannot report *"zero problems out of zero subjects"* and be green for the
+one reason that proves nothing. The floors are right. Three of them were the wrong *kind* of number.
+
+`cited.length > 5`, `anchors.size > 20` and `listed.length > 10` all counted a corpus **meant to
+empty** — `roadkeep ship` drops a rationale section and takes its citation and its contents row with
+it — so each was a second deadline nobody declared, enforced by a test whose stated purpose is
+something else.
+
+Not a prediction: `improvements-debt.test.mjs` records three earlier floors firing this way in one
+session, when shipping five tasks took the backlog from 24 to 19 while every floor still said 20, and
+a fourth when SH226 took the file from 51 sections to 50 against `> 50`. **Measured at the moment
+this shipped, `§` citations stood at 6 against a floor of 5** — one ship from firing, on a corpus
+that was correct.
+
+### Classify by what the floor counts
+
+| the subject counts | example | an absolute floor is |
+|---|---|---|
+| a ledger, a registry, a source tree — **grows** | `shipped.size > 100` | evidence: it can only fall if the reader broke |
+| the roadmap, the rationale — **meant to reach zero** | `anchors.size > 20` | a deadline nobody declared |
+
+Over a shrinking corpus the only honest floor is *"the reader read something"*, which is `> 0`. That
+is the claim a non-vacuity floor was always making; the larger number was a guess about how much work
+would remain.
+
+### The instrument, not the three edits
+
+`floor-kind.test.mjs` walks the suites, finds every numeric floor, and fails on one over a shrinking
+corpus that demands more than `> 0`. What is tolerated is held as a **named list with a reason each**
+— the `assertion-debt` shape, for its reason: a ceiling lets one task pay it and the next spend it.
+
+Three entries are on it today and none is debt: `shipped`, `coIds` and `box.files` count growing
+corpora and sit in files that *also* read the shrinking ones, which is what the walk keys on.
+Declaring them rather than auto-classifying is deliberate — deciding which corpus a subject counts is
+a judgement about the test, and a heuristic over variable names is the kind of guess this file exists
+to stop.

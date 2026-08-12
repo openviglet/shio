@@ -437,30 +437,6 @@ improvement at all, or whether a floor is what a *finding* needs.
 > up (SH235–SH237, SH239, SH240, SH668). Nothing is left open here.
 > Concept spec §10 has the original table.
 
-### XIV.24 A floor in a docs reader fires when the corpus is correct (SH672)
-
-Every reader here carries a non-vacuity floor: a number it must clear, so a regex that
-stopped matching cannot report zero problems out of zero subjects and be green for the
-one reason that proves nothing. The floors are right. Three in
-`improvements-debt.test.mjs` are the wrong *kind* of number.
-
-`cited.length > 5` stands at 10, `anchors.size > 20` at 50, `listed.length > 10` at 15.
-All three count a corpus **meant to empty** — `ship` drops a section and takes its
-citation and contents row with it — so each is a second deadline nobody declared,
-enforced by a test whose stated purpose is something else.
-
-Not a prediction: the file's own comment records three earlier floors firing this way in
-one session, when shipping five tasks took the backlog from 24 to 19 while every floor
-still said 20. The fourth fired when SH226 took the file from 51 sections to 50 against
-`> 50`. That one is a coupling now — the contents and the headings are two independent
-structures over one file, so a reader that stops parsing headings disagrees with the
-contents in the same breath.
-
-**The deliverable is the instrument, not the three edits** (SH338). A reader over the
-suites can classify a floor by what it counts: a registry and a ledger only grow, so an
-absolute floor over them is honest; the roadmap and the rationale do not. Hold the rest
-as a named list, the shape `assertion-debt` already uses.
-
 ### XIV.25 Command-line properties are dropped without a word (SH680)
 
 `Shio.main` builds a `SpringApplication` and then calls **`application.run()`** — no
