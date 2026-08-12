@@ -11,7 +11,6 @@
 
 ## Priority
 
-- Block N
 - Block J
 - Block O
 - Block L
@@ -21,7 +20,7 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH682** (deps: SH677 ✅, SH681) **The marketplace writes are open to any authenticated caller** — Installing a package is the admin-gated blueprint reload plus a download, so it wants the same role - which is unreachable until SH681. → §XI.27
+- 📋 **SH682** (deps: SH677 ✅, SH681 ✅) **The marketplace writes are open to any authenticated caller** — Installing a package is the admin-gated blueprint reload plus a download, so it wants the same role - which is unreachable until SH681. → §XI.27
 
 ## Block L — Agent safety & human-in-the-loop
 
@@ -37,8 +36,6 @@
 - 📋 **SH683** (deps: SH597 ✅, SH601 ✅) **A discovery ceiling stayed where the fix left it, so a 40% win is invisible and the prose beside it is false** — SH601 took diagnose-5xx from 3 calls and 3307 tokens to 2 and 1037, and the ceiling is still 3650 under a paragraph asserting startHere does not name it. → §XIII.24
 
 ## Block N — Realignment of what already shipped
-
-- 📋 **SH681** (deps: —) **No locally authenticated user can reach an admin-gated path** — The resolver granting ROLE_ADMIN from the Administrator group is wired only into the OAuth2 and OIDC services, and the role table a password login reads is empty. → §XIV.26
 
 ## Block O — The human half (the console the curator uses)
 

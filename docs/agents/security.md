@@ -482,3 +482,47 @@ context cost, and it fails on the code SH225 replaced.
 stopped before its first hop and every folder silently stopped inheriting its parent's ACL.
 Deduplication and termination are two questions; `visited.add` answers only the second.
 `ShContentAclServiceTest.aclInheritsDownTheFolderTreeToSubfolderAndPost` is what failed.
+
+## Only an OAuth login could be an administrator (SH681)
+
+`ShAuthorityResolver` reads user → groups → roles and adds **`ROLE_ADMIN`** for anyone in the
+`Administrator` group. Exactly two classes referenced it: `ShOAuth2UserService` and
+`ShOidcUserService`. A password login goes through `ShCustomUserDetailsService`, which walked the
+**same tables** and built authorities from `ShRole` names alone — no group rule, no `ROLE_ADMIN`.
+
+On a fresh instance `GET /api/v2/role` answers `[]`. So a password-authenticated user carried **no
+role authorities at all**, and every `hasRole("ADMIN")` gate was unreachable from a local login.
+
+Measured rather than reasoned: `POST /api/v2/agent/blueprints/reload` answered **403** to the seeded
+`admin` — over a console session *and* over Basic auth — while `/api/v2/user/current` reported
+`"admin": true`. That endpoint exists to be called by an administrator and had not been callable by
+one since SH219.
+
+**Two things this was not.** The OAuth path is not wrong — it works, which is why nobody noticed. And
+`admin: true` is not wrong: the flag is group membership, which is correct. What was missing is the
+step that turns membership into an authority.
+
+### One rule, three logins
+
+The repair was a choice, and the alternative was seeding the `ShRole` rows the group is meant to
+carry. Wiring the resolver into the local `UserDetailsService` was chosen because seeding leaves
+**two sources of truth** about who is an administrator — the group and the table — free to disagree,
+and leaves every existing instance broken until it migrates. Delegating means the rule cannot drift
+between authentication paths, which is exactly how it came to hold on two of three.
+
+### The assertion is at the gate, not at the resolver
+
+SH527's rule applied honestly. A unit test of `ShAuthorityResolver` would have passed throughout —
+**the resolver was never wrong**. What nothing asked is whether the authority it grants *arrives at a
+request*, which is one composition away and is where the 403 lived. So `ShLocalAdminAuthorityTest`
+asserts both halves: that the local login carries `ROLE_ADMIN`, and that a locally authenticated
+administrator does not get 403 from the admin-gated path.
+
+Anything but 403 is the claim. Whether the reload then succeeds is SH219's business, and asserting
+its body here would couple this test to that one.
+
+### What this unblocks
+
+`ShSecurityConfig` carries a note at the marketplace writes saying they *should* be `hasRole("ADMIN")`
+and are `authenticated()` instead — because ADMIN was unreachable. That is SH682, and it is now
+actionable.

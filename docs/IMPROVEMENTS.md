@@ -437,34 +437,6 @@ improvement at all, or whether a floor is what a *finding* needs.
 > up (SH235–SH237, SH239, SH240, SH668). Nothing is left open here.
 > Concept spec §10 has the original table.
 
-### XIV.26 Only an OAuth login can be an administrator (SH681)
-
-`ShAuthorityResolver` reads user → groups → roles and adds **`ROLE_ADMIN`** for anyone
-in the `Administrator` group. Exactly two classes reference it: `ShOAuth2UserService`
-and `ShOidcUserService`. A password login goes through `ShCustomUserDetailsService`,
-which walks the same tables and builds authorities **from `ShRole` names alone** — no
-group rule, no `ROLE_ADMIN`.
-
-On a fresh instance `GET /api/v2/role` answers `[]`. So a password-authenticated user
-carries no role authorities at all, and every `hasRole("ADMIN")` gate is unreachable:
-the SH219 blueprint reload, the SH22 tenant writes, and whatever is added next.
-
-Measured rather than reasoned: `POST /api/v2/agent/blueprints/reload` answers **403** to
-the seeded `admin` — over a console session *and* over Basic auth — while
-`/api/v2/user/current` reports `"admin": true`. That endpoint exists to be called by an
-administrator and has not been callable by one since SH219. Found while wiring SH677,
-which wanted the same gate.
-
-Two things this is not. Not the OAuth path being wrong — that one works, which is why
-nobody noticed. And not `admin: true` being wrong: the flag is group membership, which
-is correct; what is missing is the step turning membership into an authority.
-
-The repair is one of two, and choosing is the task: wire `ShAuthorityResolver` into the
-local `UserDetailsService`, or seed the `ShRole` rows the group is meant to carry. The
-first makes one rule serve every login. Whichever lands, the assertion is the same and
-absent today: an admin-gated path, called by a locally authenticated administrator, must
-not answer 403.
-
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody
