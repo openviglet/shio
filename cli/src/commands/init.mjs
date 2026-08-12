@@ -198,14 +198,18 @@ async function requireSite(client, blueprint, site) {
  * SH446 made the built-in scaffold *installable*: it declares `@viglet/shio-client@^2026.2.1` and
  * `npm install --dry-run` resolves. What it does not do is draw a Page's `sections` — there is
  * nothing under `app/` or `lib/` that reads them — so for a converted site in **authorable** mode it
- * builds, installs, serves, and renders empty pages. The `marketing-site` blueprint does render them
- * and asks for `@viglet/shio-sections`, which has never been published and answers **E404**.
+ * builds, installs, serves, and renders empty pages. The `marketing-site` blueprint does render them.
  *
- * So the honest state until that release is that an authorable replica has *no* installable front
- * end, and the wrong one being handed over silently is the part this can fix. A refusal that names
- * the reason costs the caller one command; a scaffold that installs and shows nothing costs them the
- * afternoon it takes to work out which of six things is wrong (P9 — the perception loop closes here,
- * with text, rather than after `npm run dev`).
+ * The wrong one being handed over silently is what this fixes. A refusal that names the reason costs
+ * the caller one command; a scaffold that installs and shows nothing costs them the afternoon it
+ * takes to work out which of six things is wrong (P9 — the perception loop closes here, with text,
+ * rather than after `npm run dev`).
+ *
+ * For two blocks the refusal could not recommend the blueprint either, because
+ * `@viglet/shio-sections` had never been published and answered E404 — so an authorable replica had
+ * two templates and no working combination. That release landed on 2026-08-12 (SH502) and the
+ * recommendation is now a command the caller can run. {@link sectionsRenderer} reads the table
+ * rather than the date, so neither half of this was edited when it shipped.
  *
  * ## Why it is a courtesy check that swallows every read failure
  *

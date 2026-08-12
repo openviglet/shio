@@ -2828,3 +2828,47 @@ dangling annotation and a finding in its own right.
 
 Not `4 NOT editable`. The section that filed this said *"the Page's own 0/4 may well be real — it is
 not knowable from this output"*; it is real, and there are thirteen more findings behind it.
+
+## The authorable replica finally has a front end (SH502)
+
+SH446 made the built-in scaffold installable and SH502 measured *both* templates, which is where the
+gap was: the built-in one installs and does not draw a Page's `sections`, while the `marketing-site`
+blueprint draws them and imported `@viglet/shio-sections`, which had never been published and
+answered E404. Two templates, no working combination — an authorable replica had no installable
+front end at all, and a fidelity one was unaffected because it has Shio's own renderer.
+
+The remainder was one operator act, not code. It landed **2026-08-12**: `@viglet/shio-model` and
+`@viglet/shio-sections` at `2026.3.2`.
+
+### Nothing had to be remembered, which is the part worth keeping
+
+The two `null` rows in [`create-shio-app/src/published.mjs`](../../create-shio-app/src/published.mjs)
+were the only edit, and every reader moved with them because each was written against
+`unpublished()` rather than against a fixed list or a date:
+
+| reader | while `null` | after the release |
+|---|---|---|
+| `emit.mjs` | falls back to the workspace version | writes the declared caret range |
+| `init`'s refusal | "the blueprint cannot be installed yet — use `/sites/<site>/…`" | "Scaffold the one that does render them: `shio init … --blueprint marketing-site`" |
+| SH448 conformance | npm **must refuse** the section template | npm **must install** it cleanly |
+
+A pass in the first column would have meant the table was lying, which is what makes it a
+measurement rather than a snapshot of that day's breakage.
+
+`@viglet/shio-client` needed no edit and that is the caret rule paying off exactly as
+`published.mjs` predicted: `^2026.2.1` resolved to `2026.3.2` the moment it existed. Verified by
+handing the three declared ranges to npm directly:
+
+```
+add @viglet/shio-sections 2026.3.2
+add @viglet/shio-model 2026.3.2
+add @viglet/shio-client 2026.3.2
+added 3 packages           # npm install --dry-run, exit 0
+```
+
+### `null` stays in the table
+
+Nothing uses it now, so a reader could take the concept for dead and delete it. It is the shape the
+next package added ahead of its release needs, and both branching readers are already written for
+it — `scaffold-versions.test.mjs` asserts the distinction between *declared-null* and *absent* so the
+branch is exercised without a real unpublished package to point at.

@@ -1,7 +1,7 @@
 {
   "name": "shio-site",
   "private": true,
-  "version": "2026.3.1",
+  "version": "2026.3.2",
   "type": "module",
   "description": "Viglet Shio — public site (shio.viglet.org). The CMS whose primary operator is a coding agent.",
   "homepage": "https://shio.viglet.org/",

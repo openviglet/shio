@@ -67,13 +67,39 @@ test("SH446: a caret range on the published version picks up the next release fo
   assert.ok(!satisfiesCaret("2027.0.0", "^2026.2.1"), "but not across a major");
 });
 
-test("SH446: the packages that are not published at all are named, not blank", () => {
-  // Recorded rather than hidden, because no range is correct for them and a guess would look like
-  // a fix. `marketing-site` and `landing` carry a front end that imports the vocabulary, so they
-  // cannot be made installable by choosing a different version — only by a release.
-  assert.deepEqual(unpublished(), ["@viglet/shio-model", "@viglet/shio-sections"]);
-  assert.equal(rangeFor("@viglet/shio-sections"), null);
+test("SH502: the vocabulary is published, so the section-carrying starters can install", () => {
+  // The reversal, and it is the whole of what SH502 was waiting on. `@viglet/shio-model` and
+  // `@viglet/shio-sections` were `null` for two blocks — no range is correct for a package with no
+  // version at all, and `marketing-site` and `landing` carry a front end that imports the
+  // vocabulary, so they could not be made installable by choosing a different version. Only by a
+  // release, which landed 2026-08-12 at 2026.3.2.
+  assert.deepEqual(
+    unpublished(),
+    [],
+    "nothing in the table is unpublished now — while this was non-empty, every scaffold declaring "
+      + "these ranges was one npm refuses, and the SH448 conformance asserted exactly that refusal",
+  );
+  assert.equal(rangeFor("@viglet/shio-sections"), "^2026.3.2");
+  assert.equal(rangeFor("@viglet/shio-model"), "^2026.3.2");
   assert.equal(rangeFor("next"), undefined, "somebody else's package, on their own release cycle");
+});
+
+test("SH502: `null` still means unpublished — the shape outlives the two rows that needed it", () => {
+  // Guards the guard. `unpublished()` is now empty, so nothing in the tree exercises the branch it
+  // exists for, and a reader could conclude the concept is dead and delete it. The next package
+  // added ahead of its release needs it, and the two consumers — `init`'s warning and the SH448
+  // conformance's if/else — both branch on this function rather than on a fixed list.
+  assert.deepEqual(
+    unpublished(["@viglet/shio-client", "next"]),
+    [],
+    "a declared range and an unknown package are both 'not unpublished'",
+  );
+  assert.equal(
+    rangeFor("@viglet/shio-nonexistent"),
+    undefined,
+    "absent from the table is not the same answer as declared-null, and the difference is what "
+      + "lets `next` fall through while an unpublished @viglet package is reported",
+  );
 });
 
 /** Caret semantics for a major >= 1: >=version <next-major. Enough for the assertion above. */

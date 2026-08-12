@@ -361,10 +361,9 @@ function siteWithPage(data) {
 }
 
 test("SH502: a site whose pages are sections is refused the template that cannot draw them", async () => {
-  // Measured: the built-in template installs (SH446) and carries no sections renderer, while the
-  // `marketing-site` blueprint renders them and asks for `@viglet/shio-sections`, which answers E404.
-  // So an authorable replica had two templates and no working combination — and the one it was handed
-  // builds, installs, serves and shows empty pages, which nothing reports until somebody opens one.
+  // Measured: the built-in template installs (SH446) and carries no sections renderer, so it builds,
+  // installs, serves and shows empty pages — a failure nothing reports until somebody opens one.
+  // The refusal itself is unchanged by the release; what changed is the way OUT of it, below.
   const fetchImpl = siteWithPage({ sections: ["/sections/hero", "/sections/features"] });
   const ctx = ctxWith(fetchImpl);
   const { flags, positionals } = flagsFor(["replica-web", "--site", "Replica", "--yes"]);
@@ -373,15 +372,38 @@ test("SH502: a site whose pages are sections is refused the template that cannot
     assert.match(error.message, /builds its pages from sections/);
     assert.match(error.message, /post:Replica\/about/, "the page it read, so the claim is checkable");
     assert.match(error.message, /marketing-site/, "P6: where a sections renderer comes from");
-    assert.match(error.message, /@viglet\/shio-sections/, "and why that one cannot be installed yet");
-    assert.match(error.message, /\/sites\/Replica\/default\/en-us\//,
-      "the path that serves this replica today, since the honest answer is 'no front end yet'");
     assert.match(error.message, /nothing is on disk to clean up/);
     return true;
   });
 
   assert.deepEqual(ctx.written, [],
     "refused before the write, for SH447's reason: a directory left behind blocks the retry");
+});
+
+test("SH502: with the vocabulary published, the refusal names the blueprint as the way out", async () => {
+  // The reversal, and the reason `sectionsRenderer` reads `published.mjs` instead of writing the
+  // sentence: while `@viglet/shio-sections` answered E404 this message had to say the recommended
+  // blueprint could NOT be installed either, and point at Shio's own renderer as the honest answer.
+  // The release landed 2026-08-12 at 2026.3.2, so it now recommends the blueprint outright — a
+  // refusal recommending a scaffold whose `npm install` fails would be the same defect one command
+  // along, and this is the assertion that the message moved with the table rather than being edited.
+  const ctx = ctxWith(siteWithPage({ sections: ["/sections/hero"] }));
+  const { flags, positionals } = flagsFor(["replica-web", "--site", "Replica", "--yes"]);
+
+  await assert.rejects(() => init.run(flags, positionals, ctx), (error) => {
+    assert.match(
+      error.message,
+      /Scaffold the one that does render them:\s+shio init <name> --blueprint marketing-site --site Replica/,
+      "one command, complete, with the site already substituted (P6)",
+    );
+    assert.doesNotMatch(
+      error.message,
+      /unpublished on the npm registry|cannot be\ninstalled yet/,
+      "and it no longer says the blueprint cannot be installed — that was true for two blocks and "
+        + "is now the stalest thing this command could tell a caller",
+    );
+    return true;
+  });
 });
 
 /**

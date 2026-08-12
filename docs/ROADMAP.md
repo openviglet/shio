@@ -51,7 +51,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH687** (deps: SH686 ✅) **Every appearance instrument reports cardinality, so a defect of order or attribution cannot be stated at all** — landmarks answers footer×1 header×1 nav×1 section×9, which cannot say the footer renders above the content, and it took a screenshot from a human to see it. → §XVII.97
 - 📋 **SH688** (deps: SH589 ✅, SH687) **judge leaves out the only instrument that holds geometry, and the reason is that nobody passed a flag** — It answered from verify and diff and printed audit NOT RUN - not asked for, on the one investigation whose whole question was what the page looks like. → §XVII.98
 - 📋 **SH689** (deps: SH686 ✅) **font-fallback claims the page fell back and shows no evidence, so the finding cannot be checked from its own output** — It named both families on a page carrying 33 font-face rules declaring each twice, every data URI decoding to valid wOF2 and the url form answering 200. → §XVII.99

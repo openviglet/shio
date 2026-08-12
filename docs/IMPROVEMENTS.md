@@ -923,29 +923,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.55 Two templates, and neither serves an authorable replica (SH502)
-
-SH446 made the built-in scaffold installable; SH502 measured both templates and shipped
-the refusal. What remains is one act: **publishing `@viglet/shio-sections` and
-`@viglet/shio-model`**, which have never been on the registry and answer E404. Until
-they are, an authorable replica has no installable front end — its content is sections,
-and the only scaffold that draws them cannot be installed. A fidelity replica is
-unaffected: it has Shio's own renderer.
-
-**Blocked on an operator action, not on code, and verified so on 2026-08-11.** Both
-packages build; both pass `pnpm publish --dry-run`; `publish-js-sdk.yml` orders model
-before sections, so pnpm rewrites the `workspace:*` to a version that exists by then.
-The trigger needs `NPM_TOKEN` and is irreversible on a public registry, which is why it
-is an operator's call rather than a task's.
-
-**The post-release half is already instrumented, so nothing has to be remembered.** The
-replication conformance keys its assertion on `published.mjs` rather than on a fixed
-expectation: while the table says `null` npm must refuse the section template, and the
-day the release lands the same line requires a clean install. So a stale table fails the
-gate naming itself. Resuming is therefore two steps — dispatch the workflow, then flip
-the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
-commit.
-
 ### XVII.97 Counting a page is not describing it (SH687)
 
 Two defects are visible in one glance at the `www.viglet.org` replica's home page: the

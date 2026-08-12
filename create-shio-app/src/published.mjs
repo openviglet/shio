@@ -40,15 +40,24 @@
  * A `null` is not a placeholder to fill in with a guess: it means the package has no version on the
  * registry at all, so **no range is correct** and any scaffold carrying it cannot install. It is
  * recorded rather than hidden so the failure has a name, and `unpublished()` is what reports it.
+ *
+ * The `null` form is kept now that nothing uses it (SH502). It is the shape the next unpublished
+ * package needs, and the two readers that branch on it — `init`'s warning and the SH448 conformance
+ * — are written against `unpublished()` rather than against a fixed list, so they already work in
+ * both worlds. Deleting it would mean rediscovering the answer the next time a package is added
+ * ahead of its release, which is the situation these two rows spent two blocks in.
  */
 export const PUBLISHED = {
   "@viglet/shio-client": "^2026.2.1",
-  // SH156 made these publishable and no release has run, so both answer E404. The section-carrying
-  // starters (`marketing-site`, `landing`) import the vocabulary, so they cannot be made installable
-  // by choosing a different range — only by publishing. Left declared so the gap is a row rather
-  // than an absence.
-  "@viglet/shio-model": null,
-  "@viglet/shio-sections": null,
+  // SH502 — these were `null` for two blocks: SH156 made them publishable and no release had run, so
+  // both answered E404 and the section-carrying starters (`marketing-site`, `landing`), which import
+  // the vocabulary, could not be made installable by choosing a different range. Only by publishing.
+  //
+  // The release landed on 2026-08-12 at `2026.3.2` and both now resolve. Caret on the published
+  // version, the same rule `@viglet/shio-client` follows one line up and for the same reason: it
+  // resolves today and picks up the next release without this file being edited again.
+  "@viglet/shio-model": "^2026.3.2",
+  "@viglet/shio-sections": "^2026.3.2",
 };
 
 /** The packages a scaffold would need and the registry does not have. */
