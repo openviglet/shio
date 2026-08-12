@@ -40,6 +40,7 @@
  */
 
 import { addressablePath } from "./clone.mjs";
+import { VERBATIM } from "./regions.mjs";
 
 /**
  * What a page declared and what it produced, per fact (SH522).
@@ -57,7 +58,7 @@ import { addressablePath } from "./clone.mjs";
 export function comparePage(declared, produced, mode = "fidelity") {
   assertComparable(declared, "declared");
   assertComparable(produced, "produced");
-  const claimsVerbatim = assertMode(mode).claimsVerbatimFacts;
+  const claimsVerbatim = claimsVerbatimFacts(mode, produced);
   const rows = FACTS.map((fact) => {
     const was = fact.of(declared) ?? 0;
     const now = fact.of(produced) ?? 0;
@@ -85,6 +86,46 @@ export function comparePage(declared, produced, mode = "fidelity") {
     byDesign: short.filter((row) => !row.claimed).length,
     gained: rows.filter((row) => row.delta > 0).length,
   };
+}
+
+/**
+ * Whether this page's verbatim facts are a claim — asked of the page, not of the label (SH692).
+ *
+ * <h3>`mixed` was a label with no standard</h3>
+ *
+ * <p>`MODES.mixed` copied `authorable`'s rule verbatim: `claimsVerbatimFacts: false`. So a page that
+ * kept most of the source's markup and authored two blocks was judged by the standard of one that
+ * kept none, and the whole of its answer was **20 shortfalls the mode does not claim** — a number
+ * that is neither damage nor silence, on ten of twelve replicated pages. The label was assigned by
+ * `resolveModes` from how many blocks a reviewer accepted, and then scored by a rule that only knows
+ * two states.</p>
+ *
+ * <p>The fix is the corollary the design section names: <b>the judgeable unit is the region</b>. A
+ * region whose markup the conversion kept is judged against the source — fidelity's rule — and one
+ * an editor owns is not. So a page that still serves verbatim landmarks still claims the source's
+ * nav, its external links, its body assets and its forms, because those live in the chrome it kept.
+ * A page with none does not claim them, which is what it always meant.</p>
+ *
+ * <h3>What this refines and what it deliberately leaves alone</h3>
+ *
+ * <p>Only `mixed`. `fidelity` claims the verbatim facts by definition and `authorable` claims none
+ * by design, and for those two the label IS the answer — re-deriving it from the served markup could
+ * only introduce a disagreement with the conversion's own record. It is `mixed` that had no standard,
+ * and it is `mixed` that the regions decide.</p>
+ *
+ * <p>Page-level and not yet fact-level: a shortfall is still a number about the whole page, so this
+ * says *whether* the verbatim facts are claimed rather than attributing each lost link to the region
+ * that lost it. Attribution needs the declared side to carry regions too, and a capture has none.</p>
+ *
+ * @param produced `scanPage`'s reading, carrying `regions` since SH695 — absent on a caller that
+ *                 predates it, which falls back to the mode's own rule rather than guessing
+ */
+function claimsVerbatimFacts(mode, produced) {
+  const declaredByMode = assertMode(mode).claimsVerbatimFacts;
+  if (mode !== "mixed" || !Array.isArray(produced?.regions)) {
+    return declaredByMode;
+  }
+  return produced.regions.some((region) => region?.markup === VERBATIM);
 }
 
 /**
@@ -147,9 +188,15 @@ export const MODES = {
     says: "the source's own markup, served by Shio — every captured fact is a claim",
   },
   mixed: {
+    // SH692 — a fallback, not the rule. This entry copied `authorable`'s `false` verbatim, and that
+    // is what made `mixed` a label with no standard: a page that kept most of the source's markup
+    // was judged by the standard of one that kept none. `claimsVerbatimFacts` (the function) asks
+    // the served page's regions instead, and only falls back here when the caller has none — which
+    // is the conservative direction, since it is what this did before it could tell.
     claimsVerbatimFacts: false,
-    says: "some blocks accepted and the rest kept verbatim (SH520) — the accepted blocks' chrome "
-      + "is gone by design",
+    perRegion: true,
+    says: "some blocks accepted and the rest kept verbatim (SH520) — the verbatim regions still "
+      + "claim the source's chrome, and the accepted blocks' is gone by design",
   },
   authorable: {
     claimsVerbatimFacts: false,

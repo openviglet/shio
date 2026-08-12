@@ -436,6 +436,105 @@ test("SH577: the mode is per page, because a page is not one mode (SH520)", asyn
   assert.equal(result.exitCode, 1);
 });
 
+/**
+ * SH692 — `mixed` was a label with no standard, and it is where ten of twelve pages land.
+ *
+ * <p>`MODES.mixed` copied `authorable`'s rule verbatim — `claimsVerbatimFacts: false` — so a page
+ * that kept most of the source's markup was judged by the standard of one that kept none, and its
+ * whole answer was **20 shortfalls the mode does not claim**: a number that is neither damage nor
+ * silence.</p>
+ *
+ * <p>The corollary the design section names is that the judgeable unit is the region. A region whose
+ * markup the conversion kept is judged against the source; one an editor owns is not. So a page
+ * still serving verbatim landmarks still claims the source's chrome, because that is where the nav,
+ * the external links and the forms live.</p>
+ */
+
+/** A mixed page as `convert` writes one: chrome kept, one block authored. */
+const MIXED_KEPT_CHROME = `<html lang="en"><head><title>Home</title></head><body>
+  <header><nav><a href="/about">About</a></nav></header>
+  <section class="shio-section" sh-post="b1"><h1>Acme</h1>
+    <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p></section>
+  <footer><a href="https://elsewhere.example">Out</a></footer>
+  </body></html>`;
+
+/** The same acceptance, but the conversion kept nothing — every landmark is authored. */
+const MIXED_NO_CHROME = `<html lang="en"><head><title>Home</title></head><body>
+  <section class="shio-section" sh-post="b1"><h1>Acme</h1>
+    <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p></section>
+  </body></html>`;
+
+test("SH692: a mixed page that kept chrome still claims the source's verbatim facts", async () => {
+  const ctx = ctxWithPlan({
+    served: { "/": MIXED_KEPT_CHROME },
+    accepted: [{ block: "b1", type: "SectionHero" }],
+    // Two blocks declared, one accepted — which is what `resolveModes` calls `mixed`.
+    composition: [{ path: "/", blocks: ["b1", "b2"] }],
+  });
+
+  const result = await diff.run({ site: "Acme" }, [], ctx);
+
+  assert.equal(result.modes.mixed, 1, "the fixture is the case under test");
+  assert.equal(
+    result.byDesign,
+    0,
+    `every shortfall on this page is now damage or nothing — the chrome is still being served, so `
+      + `the source's nav and links are still a claim about it. \`byDesign\` was where the whole `
+      + `answer used to go (SH692). rows: ${JSON.stringify(result.pages[0].rows)}`,
+  );
+});
+
+test("SH692: a mixed page that kept no chrome claims none of them, which is what it always meant",
+  async () => {
+    // The other half, and the one that keeps this from being "mixed is now fidelity". The label is
+    // the same; what differs is what the replica actually serves, which is the point of scoring the
+    // page rather than the word.
+    const ctx = ctxWithPlan({
+      served: { "/": MIXED_NO_CHROME },
+      accepted: [{ block: "b1", type: "SectionHero" }],
+      composition: [{ path: "/", blocks: ["b1", "b2"] }],
+    });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    assert.equal(result.modes.mixed, 1, "same label");
+    assert.ok(
+      result.byDesign > 0,
+      "and a different answer: with no verbatim region left, the source's chrome is gone by design "
+        + "exactly as it is on an authorable page",
+    );
+  });
+
+test("SH692: fidelity and authorable are decided by the label, not re-derived from the markup",
+  async () => {
+    // Deliberately narrow. For those two the label IS the answer — fidelity claims every fact by
+    // definition and authorable claims none by design — and re-deriving it from the served page
+    // could only introduce a disagreement with the conversion's own record. `mixed` is the one that
+    // had no standard, and `mixed` is the only one the regions decide.
+    const ctx = ctxWithPlan({
+      // An authorable page whose layout happens to wrap its sections in a plain <main>: a verbatim
+      // landmark on a page that accepted everything. Under a rule that read the markup for all three
+      // modes, this would start claiming the source's chrome and report it as lost.
+      served: {
+        "/": `<html lang="en"><head><title>Home</title></head><body><main>
+          <section class="shio-section" sh-post="b1"><h1>Acme</h1>
+            <p>${"Body copy that reads like a page a person wrote. ".repeat(6)}</p></section>
+          </main></body></html>`,
+      },
+      accepted: [{ block: "b1", type: "SectionHero" }],
+      composition: [{ path: "/", blocks: ["b1"] }],
+    });
+
+    const result = await diff.run({ site: "Acme" }, [], ctx);
+
+    assert.equal(result.modes.authorable, 1);
+    assert.ok(
+      result.byDesign > 0,
+      "the <main> is a verbatim landmark and changes nothing: this page accepted every block, so "
+        + "the source's chrome is gone by design and the label says so",
+    );
+  });
+
 test("SH577: --mode wins over the plan, for a replica whose plan is not in this directory",
   async () => {
     const ctx = ctxWithPlan({

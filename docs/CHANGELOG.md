@@ -1167,6 +1167,7 @@
 - **SH689** — font-fallback measures whether the family drew the element's own glyphs and reports the widths, so the claim can be checked — and a unicode-range subset is no longer called a fallback.
 - **SH694** — Each region names the stylesheets that style it, and verify warns two-themes when the chrome's sheets and the sections' share none — the per-sheet cost was measured at 1,322 KB against 1,377.
 - **SH695** — The produced side reads regions with a dependency-free tag stack, and shared fixtures hold both readers to one answer — which caught them disagreeing about a trailing slash on the first run.
+- **SH692** — mixed asks the served page's regions instead of copying authorable's rule, so a replica still serving chrome still claims the source's chrome — and one serving none does not.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

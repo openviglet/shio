@@ -923,35 +923,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.100 The reference render is computable, and the unit is the region (SH692)
-
-Fidelity has a baseline: the source, and 0.00% settles it. Authorable is *deliberately*
-unlike the source, so `--against <origin>` has nothing to point at — and `mixed`, which
-`diff` derives as *some blocks taken*, is a third label scored by the second one's rule.
-
-**The definition that is missing: an authorable region's reference is its own
-declaration rendered through its own theme, and nothing else.** It does not need
-capturing or a human's approval — it is *synthesisable*. A section region is `(its type,
-its field values) × (the theme in force)`, rendered in isolation. The page is right when
-what it serves is exactly that composition, and every defect on the viglet.org home page
-is a difference from it: the captured footer above the first section is order; two
-stylesheets in force is attribution; a void between regions is a gap the declaration
-does not account for.
-
-**The corollary is that the judgeable unit is the region, not the page** — which is what
-makes `mixed` tractable rather than exceptional:
-
-    verbatim region   baseline = the source          fidelity's rule
-    section region    baseline = declaration × theme equality
-    the seam          baseline = the declaration     order, one theme per
-                                                     region, no gaps
-
-The seam has no rule today and both defects lived there.
-
-What this deliberately does not decide is whether the design is *good*. That is the
-curator's, and the point of drawing the line is that everything which is not taste stops
-arriving on their desk.
-
 ### XVII.101 Concatenation is not composition (SH693)
 
 The generated `PageLayout` is 3,245 characters and two of its lines decide the whole

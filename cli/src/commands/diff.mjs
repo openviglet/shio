@@ -40,6 +40,7 @@ import {
   assertMode, compareCapture, comparePublished, compareProposal, describeDiff,
   describePublishedDiff, describeProposalDiff,
 } from "../diff.mjs";
+import { readRegions } from "../regions.mjs";
 import { PLAN_FILE, PROPOSAL_FILE } from "../propose.mjs";
 import { SECTIONS_FOLDER } from "../convert.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -146,7 +147,8 @@ export async function run(flags, positionals, ctx) {
     // A non-200 is "the replica serves nothing here", which `compareCapture` reports as a missing
     // page rather than as four lost facts — one absence is one fact.
     if (!response?.ok) continue;
-    const doc = scanPage(await response.text(), url);
+    const html = await response.text();
+    const doc = scanPage(html, url);
     // SH554 — the second half of the reading, and the half that was missing. `scanPage` hands back
     // raw hrefs; an inventory row carries them already split, so the replica's are split too, by
     // the same `classifyLinks` the capture ran. Against the *served* URL: internal on a replica
@@ -155,10 +157,14 @@ export async function run(flags, positionals, ctx) {
     // stylesheet's `url()` (SH455) and its scripts' `fetch()` strings (SH515) and puts all three in
     // one array; on a replica the middle group is the **theme**, inlined into every page. Split by
     // the same function the capture ran, so `assets` means the page's own references at both ends.
+    // SH692/SH695 — the landmarks the replica actually served, so `mixed` can be scored by what the
+    // page IS rather than by the label. Read here rather than inside `scanPage` because it is a
+    // second question about the same bytes and `scanPage`'s shape is load-bearing for four callers.
     produced.set(page.path, {
       ...doc,
       links: countLinks(doc.links, url),
       assets: countAssets(doc.assets),
+      regions: readRegions(html),
     });
   }
 

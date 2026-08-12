@@ -3008,3 +3008,41 @@ open, the footer really is inside it, and a browser agrees with Jsoup. The JS re
 A second test guards *which* pages the file holds — raw text whose body looks like structure, an
 unclosed `<p>`, a close tag matching nothing, a void element, a nested landmark. Two parsers agree
 about well-formed markup by construction, so a set of neat pages would pass while proving nothing.
+
+## `mixed` had no standard, and the region is the unit (SH692)
+
+Fidelity has a baseline: the source, and 0.00% settles it. Authorable is *deliberately* unlike the
+source. `mixed` — which `resolveModes` derives from *some blocks accepted* — was a third label scored
+by the second one's rule: `MODES.mixed` copied `claimsVerbatimFacts: false` from `authorable`
+verbatim. So a page that kept most of the source's markup was judged by the standard of one that kept
+none, and its whole answer was **20 shortfalls the mode does not claim** — neither damage nor
+silence, on ten of twelve replicated pages.
+
+**The corollary the design section names is that the judgeable unit is the region.** A region whose
+markup the conversion kept is judged against the source; one an editor owns is not. So `mixed` now
+asks the page rather than the label: if the replica still serves verbatim landmarks it still claims
+the source's nav, external links, body assets and forms, because that is where they live. If it
+serves none, they are gone by design exactly as on an authorable page.
+
+| page | label | claims the verbatim facts? |
+|---|---|---|
+| kept chrome, authored one block | `mixed` | **yes** — the chrome is still being served |
+| accepted everything, no chrome left | `mixed` | no |
+| every block kept | `fidelity` | yes, by definition |
+| composed from the vocabulary | `authorable` | no, by design |
+
+### Only `mixed`, and that narrowness is the design
+
+For `fidelity` and `authorable` the label **is** the answer, and re-deriving it from the served markup
+could only introduce a disagreement with the conversion's own record. A test pins the case that would
+otherwise bite: an authorable page whose layout wraps its sections in a plain `<main>` has a verbatim
+landmark, and under a rule that read the markup for all three modes it would start claiming the
+source's chrome and reporting it lost.
+
+**Page-level, not yet fact-level.** This says *whether* the verbatim facts are claimed; it does not
+attribute a particular lost link to the region that lost it. That needs the declared side to carry
+regions too, and a capture has none — the source was never divided into verbatim and authored,
+because that division is a thing the conversion invents.
+
+The reader on the produced side is SH695's, and the two readers agree by asserted fixtures rather
+than by construction.
