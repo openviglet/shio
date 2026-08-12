@@ -179,13 +179,18 @@ public class ShSecurityConfig {
      * <p>So the gate moved from "holds a session" to the credential itself: the CLI (SH677) works
      * with the Basic auth it already has, and reads stay open to anything authenticated.</p>
      *
-     * <p><b>The writes should be {@code hasRole("ADMIN")} and are not yet (SH682).</b>
-     * {@link #BLUEPRINT_RELOAD_PATH} is the argument: merely <em>re-reading</em> the operator's
-     * package directory is already admin-gated because it changes what every later apply can do,
-     * and installing is that act plus a download. It was written that way and taken out again,
-     * because that role is currently unreachable for a locally authenticated user (SH681) — the
-     * reload itself answers 403 to the seeded admin — and gating a new capability on a role
-     * nothing grants ships it dead.</p>
+     * <p><b>The writes are {@code hasRole("ADMIN")} (SH682).</b> {@link #BLUEPRINT_RELOAD_PATH} is
+     * the argument: merely <em>re-reading</em> the operator's package directory is already
+     * admin-gated because it changes what every later apply can do, and installing is that act plus
+     * a download — so it cannot honestly be gated more weakly than the thing it contains.</p>
+     *
+     * <p>It was written that way in SH677 and <em>taken out again</em>, because the role was
+     * unreachable for a locally authenticated user: the reload answered 403 to the seeded admin.
+     * Gating a capability on a role nothing grants does not make it safer, it makes it dead, and a
+     * dead gate teaches the next reader that the gate is decorative. SH681 made the role real —
+     * {@code ShCustomUserDetailsService} now resolves authorities through
+     * {@link ShAuthorityResolver} — which is what let this land, and is why the two were separate
+     * lines in the same backlog rather than a note-to-self in this file.</p>
      */
     private static final String MARKETPLACE_PATH = "/api/v2/marketplace/**";
 
@@ -383,22 +388,14 @@ public class ShSecurityConfig {
                 authorizeRequests.requestMatchers(
                         mvc.matcher(HttpMethod.POST, BLUEPRINT_RELOAD_PATH))
                         .hasRole("ADMIN");
-                // SH677 — the marketplace writes are `authenticated()`, which is the blanket rule
-                // below and therefore no line at all. That is NOT the gate they want: installing a
-                // package is BLUEPRINT_RELOAD_PATH's act plus a download, so ADMIN is the right
-                // answer and it was written that way first.
-                //
-                // It is not here because `hasRole("ADMIN")` is currently unreachable for a locally
-                // authenticated user (SH681): ShAuthorityResolver grants ROLE_ADMIN from the
-                // Administrator group and is wired only into the OAuth2/OIDC services, while
-                // ShCustomUserDetailsService builds authorities from ShRole rows alone — and
-                // `GET /api/v2/role` answers `[]` on a fresh instance. Measured, not inferred:
-                // POST /agent/blueprints/reload answers 403 to the seeded admin, over a session
-                // and over Basic auth alike, and has since SH219. Gating a new capability on a
-                // role nothing grants ships it dead.
-                //
-                // SH682 tightens this to ADMIN once SH681 makes the role real. Both are filed, so
-                // this comment is a pointer rather than a promise nobody wrote down.
+                // SH682 — the marketplace writes, now that SH681 made ROLE_ADMIN reachable from a
+                // password login. Installing is BLUEPRINT_RELOAD_PATH's act plus a download, so it
+                // cannot honestly be gated more weakly than the thing it contains; the two sit
+                // together for that reason. Reads stay `authenticated()` via the blanket rule.
+                authorizeRequests.requestMatchers(
+                        mvc.matcher(HttpMethod.POST, MARKETPLACE_PATH),
+                        mvc.matcher(HttpMethod.DELETE, MARKETPLACE_PATH))
+                        .hasRole("ADMIN");
                 // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                 authorizeRequests.requestMatchers(
                         mvc.matcher(HttpMethod.POST, TENANT_PATH),
@@ -479,9 +476,12 @@ public class ShSecurityConfig {
                         authorizeRequests.requestMatchers(
                                 mvc.matcher(HttpMethod.POST, BLUEPRINT_RELOAD_PATH))
                                 .hasRole("ADMIN");
-                        // SH677 — the marketplace writes are authenticated() on this chain too;
-                        // see the note beside the other chain's blueprint reload for why the ADMIN
-                        // gate they want is SH682 rather than this commit.
+                        // SH682 — the marketplace writes, admin-gated on this chain too; see the
+                        // note beside the other chain's copy for the argument.
+                        authorizeRequests.requestMatchers(
+                                mvc.matcher(HttpMethod.POST, MARKETPLACE_PATH),
+                                mvc.matcher(HttpMethod.DELETE, MARKETPLACE_PATH))
+                                .hasRole("ADMIN");
                         // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                         authorizeRequests.requestMatchers(
                                 mvc.matcher(HttpMethod.POST, TENANT_PATH),

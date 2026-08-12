@@ -20,8 +20,6 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH682** (deps: SH677 ✅, SH681 ✅) **The marketplace writes are open to any authenticated caller** — Installing a package is the admin-gated blueprint reload plus a download, so it wants the same role - which is unreachable until SH681. → §XI.27
-
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5

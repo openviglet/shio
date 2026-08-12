@@ -208,38 +208,11 @@ loop that cannot perceive itself is the failure this block should expect next.
 **appliable**, not readable. A prose recipe an agent must read and reimplement saves
 nothing — it just moves the work. **Absorbs the old SH23 marketplace epic** (SH27–SH31).
 
-The format, the verb, the first-party set, the section vocabulary, the Claude Code
-plugin, the five mismatches that shipping the two halves exposed, and the whole
-marketplace — catalogue, install, published seed, CLI, MCP tool and console — are
-shipped; see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the role the two
-writes still want (§XI.27).
-
-### XI.27 The marketplace writes want the role the reload already has (SH682)
-
-`POST /api/v2/marketplace/{id}/install` and `DELETE /api/v2/marketplace/{id}` are
-`authenticated()` — the blanket rule. They should be **`hasRole("ADMIN")`**, and the
-argument is `BLUEPRINT_RELOAD_PATH`: merely re-reading the operator's package directory
-is already admin-gated, because it changes what every later apply can do. Installing is
-that act plus a download, so it cannot honestly be gated more weakly than the thing it
-contains.
-
-It was written that way in SH677 and taken out, because the role is unreachable for a
-locally authenticated user (SH681) — the reload answers 403 to the seeded admin. Gating
-a capability on a role nothing grants does not make it safer, it makes it dead, and a
-dead gate teaches the next reader that the gate is decorative.
-
-So this is a separate line rather than a `TODO` in the security config: the change is
-one expression, its precondition is somebody else's task, and the pair is only honest if
-both are visible in the same backlog.
-
-What lands with it is the assertion SH677 could not write for the same reason: a caller
-authenticated but not an administrator is refused the install, and an administrator is
-not. That test would have caught SH681 four tasks earlier, so it belongs here even
-though the code change is one line.
-
-Check in the same pass that the console's own call still works — it calls this with a
-session, and a role gate tested only against the CLI is a second way to ship something
-dead.
+✅ **Block J is shipped** → [CHANGELOG.md](CHANGELOG.md) Block J. The format, the verb,
+the first-party set, the section vocabulary, the Claude Code plugin, the five mismatches
+that shipping the two halves exposed, and the whole marketplace — catalogue, install,
+published seed, CLI, MCP tool and console — are all there, and SH682 closed the block by
+giving the two writes the role the blueprint reload already had.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

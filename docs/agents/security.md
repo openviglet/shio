@@ -521,8 +521,43 @@ administrator does not get 403 from the admin-gated path.
 Anything but 403 is the claim. Whether the reload then succeeds is SH219's business, and asserting
 its body here would couple this test to that one.
 
-### What this unblocks
+### What this unblocked
 
-`ShSecurityConfig` carries a note at the marketplace writes saying they *should* be `hasRole("ADMIN")`
-and are `authenticated()` instead — because ADMIN was unreachable. That is SH682, and it is now
-actionable.
+`ShSecurityConfig` carried a note at the marketplace writes saying they *should* be `hasRole("ADMIN")`
+and were `authenticated()` instead — because ADMIN was unreachable. That was SH682, below.
+
+## The marketplace writes want the role the reload already has (SH682)
+
+`POST /api/v2/marketplace/{id}/install` and `DELETE /api/v2/marketplace/{id}` were `authenticated()`
+— the blanket rule, and therefore no line in the config at all. They are now `hasRole("ADMIN")` on
+both branches of `filterChain`, and the argument is `BLUEPRINT_RELOAD_PATH`: merely **re-reading**
+the operator's package directory is admin-gated because it changes what every later apply can do,
+and installing is that act **plus a download** — so it cannot honestly be gated more weakly than the
+thing it contains. Reads stay `authenticated()`; the gate is on POST and DELETE, not on the path,
+because browsing the marketplace is not an operator act and hiding it would keep a curator from
+seeing what was installed.
+
+**The interesting part is why it took two tasks.** It was written this way in SH677 and *taken out
+again*, because `ROLE_ADMIN` was unreachable from a password login (SH681, above) — the reload
+answered 403 to the seeded admin. Gating a capability on a role nothing grants does not make it
+safer, it makes it dead, and a dead gate teaches the next reader that the gate is decorative. So the
+pair was filed as two lines in one backlog rather than a note-to-self in the config, on the reasoning
+that a precondition owned by somebody else's task is only honest if both are visible.
+
+### Both halves are asserted, and that is the whole point
+
+`ShMarketplaceAdminGateTest` asserts that a caller authenticated but not an administrator gets 403
+from each write, **and** that the seeded admin — loaded through `ShCustomUserDetailsService`, not a
+fabricated `ROLE_ADMIN` — does not. A test with only the refusal half passes perfectly well against a
+gate nobody can pass, which is precisely the state SH681 found and the reason "it is gated" was
+believed for four tasks.
+
+Both directions were injected before the green was trusted. With the matchers removed a non-admin
+reaches the controller (404 on install, 409 on uninstall) instead of 403; with the role swapped for
+one nothing grants, the admin half fails at 403 and the refusals still pass — the dead-gate
+signature, reproduced on purpose.
+
+**Not covered:** the Keycloak branch of `filterChain` carries the same two matchers and reaching it
+needs an OIDC provider this suite does not stand up. The rule there is a copy, asserted only by
+reading. The console needed no change — the marketplace page already lives in the admin area beside
+users, groups and roles, so the gate matches where the UI is.
