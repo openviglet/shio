@@ -18,8 +18,6 @@
 
 ## Block I — Content as files (local-first authoring)
 
-## Block J — Blueprints (appliable units) + Claude Code plugin
-
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
@@ -58,6 +56,7 @@
 ## Block U — Documentation the matrix still names
 
 - 📋 **SH674** (deps: SH499 ✅) **No end-user page publishes the four discovery calls as a runnable request any more** — The suite that executes the published examples finds none of the four P2 discovery GETs on any page, so the promise the product is sold on is the one a reader cannot copy. → §XXI.10
+- 📋 **SH697** (deps: —) **The docs vocabulary gate reads MCP tool names from examples only, not from the page's tool table** — Injecting `shio_nonexistent` into mcp.md's table leaves the check green, which is how two tools the product rejected stayed published while the one it shipped never arrived. → §XXI.3
 
 ## Non-goals (do NOT add as tasks)
 

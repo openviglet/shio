@@ -117,6 +117,15 @@ instance (SH540) is all that is left, and it is what turns the scripted session
 in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
 
+Block J closed on 2026-08-12 and changed no claim here, but unlike the two below it that was
+not free — it was checked, and the check found the drift somewhere else. The site names
+twelve MCP tools including `shio_marketplace` and thirty-one CLI verbs including
+`marketplace`, so `site-content.ts` was already right; the **published documentation** was
+not, and had been listing `shio_blueprint` and `shio_forget` as tools the product decided
+against and never shipped. The reason the site survived a block the docs did not is the same
+one that saved it from SH541: `site-content.ts` lists the tools as an array the copy iterates,
+so a drifted entry is a visible wrong row rather than a number in a sentence nobody re-derives.
+
 Block N closed on 2026-08-11 and changed no claim here, and the reason is a property of this
 copy rather than luck: the licence is a **link** to `LICENSE` (`site-content.ts`'s `license`
 key), not the string `GPL v3`, so SH541 moving 195 files to Apache 2.0 could not leave it

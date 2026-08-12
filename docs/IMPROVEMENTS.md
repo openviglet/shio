@@ -906,3 +906,28 @@ The repair is a page decision and belongs with the COVERAGE row claiming the dis
 surface is documented. Worth carrying into it: a row can be ✅ while the request it
 promises is gone, because the matrix records that a page exists and this suite records
 that it still works — the same two-altitudes split Block U was opened for.
+
+### XXI.3 The docs vocabulary gate reads MCP tool names from examples only, not from the page's tool table (SH697)
+
+`docs-vocabulary.conformance.mjs` asserts that every documented MCP tool is one the
+server registers. Measured: injecting `shio_nonexistent` into the tool table in `mcp.md`
+leaves that test **green**, while injecting `shio.marketplace.enable` into prose on the
+same page turns the property check red. So the gate reads `shio.*` keys from prose and
+tool names only from executable `tools/call` blocks — and the table, which is the thing
+a reader actually consults, is unguarded.
+
+What it cost, found during Block J's sweep: `mcp.md` published `shio_blueprint` and
+`shio_forget` as tools. Neither exists, and neither is an oversight — `ShApplyTool` line
+43 and `ShRememberTool` line 64 record the decision to make each a parameter rather than
+pay for a schema on every turn. The page presented both rejected designs as shipped
+surface.
+
+The second half is a direction nothing checks at all: `shio_marketplace` shipped in
+SH678 and never reached the page, so the count sentence said thirteen while
+`ShMcpServerTest` caps the list at twelve. A missing tool is invisible to a
+docs-to-product check by construction.
+
+So the fix is two assertions, not one: read tool names from the table as well as from
+examples, and assert the **set** matches `toolNames()` in both directions. The count in
+the prose should then be derived from that set rather than typed, which is the same move
+SH653 made for the coverage summary.

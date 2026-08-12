@@ -5,7 +5,7 @@
       "key": "response.manifest.check",
       "label": "Capability check",
       "note": "manifest?include=features,limits — what a session opens with",
-      "tokens": 380
+      "tokens": 390
     },
     {
       "key": "response.manifest",
@@ -17,7 +17,7 @@
       "key": "mcp.tools.list.total",
       "label": "Every MCP tool schema",
       "note": "tools/list, re-sent on every turn before any work happens",
-      "tokens": 2400
+      "tokens": 2500
     },
     {
       "key": "benchmark.build-marketing-site.tokens",
