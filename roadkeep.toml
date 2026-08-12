@@ -103,7 +103,14 @@ ref_scheme = "outline"
 # script-as-block and SH517's baked canvas, all shipped), and last the two that only
 # cost time (SH513 and SH514). The fifth run is spent: nine tasks, nine commits, and the
 # order held - SH520 and SH516 first made every measurement after them worth reading.
-priority = [
+# MIGRATED (2026-08-12, on instruction): the queue now lives in docs/ROADMAP.md, where every
+# roadkeep verb reaches it — `priority migrate` moved it so that Block Q could be put first, which
+# is the act this file made unavailable (the note at the foot of this block predicted exactly that
+# and chose to wait). The declaration below is commented out rather than deleted, and so is the
+# history above and inside it: `lint` reports a live `priority = [...]` here as `priority.config`
+# because the section wins and the config's order would be read by nothing, but eight runs of
+# ordering rationale are the reason those orders were what they were, and that is not dead.
+# priority = [
   # The sixth run, on instruction (2026-08-06): SH521 through SH529, dependency-ordered rather
   # than by id. SH521 led for SH516's reason one level along and has shipped - every check
   # resolved against the tree, so `ok` on a page that had lost most of itself was a fact the
@@ -305,11 +312,11 @@ priority = [
   # is still `priority` in this file and that verb reaches the one `priority migrate` would move
   # into ROADMAP.md. Migrating is a larger change than an empty tier justifies, so the tier is
   # removed by hand and the disagreement is filed with roadkeep.
-  "Block J",
-  "Block O",
-  "Block L",
-  "Block M",
-]
+  # "Block J",
+  # "Block O",
+  # "Block L",
+  # "Block M",
+# ]
 
 [files]
 roadmap = "docs/ROADMAP.md"
