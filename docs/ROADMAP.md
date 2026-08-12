@@ -37,7 +37,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH680** (deps: —) **Every command-line property passed to the jar is silently discarded** — The bootstrap calls application.run() instead of run(args), so --server.port and every other flag is dropped with no error and no log line. → §XIV.25
 - 📋 **SH681** (deps: —) **No locally authenticated user can reach an admin-gated path** — The resolver granting ROLE_ADMIN from the Administrator group is wired only into the OAuth2 and OIDC services, and the role table a password login reads is empty. → §XIV.26
 
 ## Block O — The human half (the console the curator uses)

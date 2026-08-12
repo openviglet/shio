@@ -825,3 +825,45 @@ both directions — a new `prefer-const` violation in `src/lib/utils.ts` takes t
 removing it returns it to exit 0 with the 33 still suppressed. The two remaining **warnings** are
 visible and do not fail: `--max-warnings` is left off deliberately, since any number there is the
 ceiling this baseline exists to avoid.
+
+## Command-line properties were dropped without a word (SH680)
+
+`Shio.main` built a `SpringApplication` and called **`application.run()`** — no `args`. Every
+`--key=value` on the command line was dropped, and dropped *silently*: no warning, no log line, and
+the instance starts normally on the defaults.
+
+Measured, before and after, with the most universal thing anyone does with a Boot jar:
+
+```
+java -jar target/viglet-shio.jar --server.port=8099
+
+before:   2710=200  8099=000     (and `server.port` appears 0 times in the startup log)
+after:    2710=000  8099=200
+```
+
+It was found sideways, while verifying SH676: an instance pointed at a local catalogue with
+`--shio.marketplace.enabled=true` reported *"shio.marketplace.enabled is false"*. The property was
+right and the value was right, and nothing said the argument had been ignored — **the failure is
+indistinguishable from the feature not working**, which is what cost the session rather than the
+wrong port.
+
+The workaround that did work — environment variables, which bind through relaxed naming — is one
+nobody has cause to look for while the flag they typed appears to be accepted.
+
+### Nothing depended on the broken behaviour
+
+Checked in the same pass, as the task asked. `Dockerfile` and `Dockerfile.local` configure through
+`JAVA_OPTS`, `-D` system properties and environment variables; no deployment artefact in the tree
+passes a `--flag`. So this widens what works rather than changing what already did.
+
+### The guard is a lint, because no unit test naturally covers it
+
+The fix is two characters and the argument-less form **compiles, starts, serves every request and
+passes every suite here**. It is a property of the process boundary, and the only behavioural test
+would be launching a JVM and reading a port — a slow, flaky assertion about Spring rather than about
+this code.
+
+So `ShBootstrapArgsLintTest` reads the source and requires that a `run(` inside a
+`main(String[] args)` carries them. It reads the parameter's declared name rather than assuming
+`args`, and a second test pins the exact pair of lines that shipped so the rule cannot silently match
+nothing.
