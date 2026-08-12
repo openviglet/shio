@@ -828,31 +828,6 @@ gate naming itself. Resuming is therefore two steps — dispatch the workflow, t
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
 
-### XVII.92 A link label is decoded zero times, and a title once (SH670)
-
-Found by SH658's fixture on its first run, which is the argument for the corpus rather
-than a point about entities: nothing was looking for this, and the archetype that models
-a real masthead produced it immediately.
-
-One document, two answers. `theme-heavy`'s home page carries `<title>Northwind &amp;
-Co</title>` and a brand link whose text is the same bytes. The capture records the title
-as **`Northwind & Co`** and the navigation label as **`Northwind &amp; Co`** — decoded
-once, and not at all.
-
-The project has already decided which is right. `awkward` declares `doubleEscaped` for
-this question, and the assertion behind it states the rule: *an entity survives
-extraction as characters and is escaped again on render, so a title decoded the wrong
-number of times is wrong in the page and in the editor field*. A label decoded zero
-times is that defect, in the field SH432 called the whole argument for curating
-navigation as content — a human is shown the menu and asked which entries to keep, and
-the one they keep says `&amp;`.
-
-Narrow on purpose. The label is what `scanPage` collapses out of an anchor's text runs,
-so the question is whether decoding belongs there or where `title` already does it, and
-whether a link's `text` — the same field, used for every link — moves with it. SH658
-asserts substrings rather than one expected label, so this repair can change the string
-without that case failing for something that is not its subject.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

@@ -185,6 +185,61 @@ const SELF_LABELLED = `<!doctype html>
 <p>Body copy long enough that this reads like a page a person wrote rather than a shell of one.</p>
 </body></html>`;
 
+/**
+ * SH670 — a link's label is content, so it is decoded once, like every other field that is.
+ *
+ * <p>Found by SH658's archetype on its first run: one document gave two answers for the same bytes.
+ * `<title>Northwind &amp; Co</title>` reached the inventory as `Northwind & Co` — decoded since
+ * SH565 — and the brand link's identical text reached it as `Northwind &amp; Co`, decoded not at
+ * all. The label is what `shio report` prints and what a curator is asked to keep, which is SH476's
+ * definition of the boundary: decode where markup becomes content.</p>
+ *
+ * <p><b>The second case is the one that could not be seen from the outside.</b> Attribute values
+ * have been decoded at the tokenizer since SH550, so SH477's test — does this frame's text equal
+ * its own `aria-label` — was comparing a decoded attribute against raw text. A mark spelled
+ * `aria-label="A&amp;B"` over the same drawn letters could therefore never match, and the rule
+ * silently did not apply to any mark carrying an entity. Nothing was wrong at either end; the two
+ * sides were simply not the same kind of string.</p>
+ */
+test("SH670: a link's label is decoded, and a mark carrying an entity can name itself", () => {
+  const doc = scanPage(
+    `<!doctype html>
+<html><head><title>Northwind &amp; Co</title></head><body>
+<nav>
+  <a href="/home"><span aria-label="A&amp;B"><span>A</span><span>&amp;</span><span>B</span></span>Northwind &amp; Co</a>
+  <a href="/plain">Tea &#38; Sympathy &mdash; &thetasym;</a>
+</nav>
+<p>Body copy long enough that this reads like a page a person wrote rather than a shell of one.</p>
+</body></html>`,
+    "https://x.test/",
+  );
+  const labels = new Map(doc.nav.map((item) => [item.href, item.label]));
+
+  assert.equal(
+    labels.get("/home"),
+    "Northwind & Co",
+    "SH670: the label is content and is decoded once — the same answer this page's <title> has "
+      + "given since SH565. Without it a curator is shown `Northwind &amp; Co` and the entry they "
+      + "keep carries the five characters rather than the one.",
+  );
+  assert.equal(
+    labels.get("/plain"),
+    "Tea & Sympathy — &thetasym;",
+    "SH670: the label inherits `decodeEntities` whole rather than a second spelling of it — the "
+      + "numeric form and the named ones this decoder carries, and an unknown name left **verbatim** "
+      + "because a reader can report `&thetasym;` and cannot report content that vanished. That "
+      + "boundary is the decoder's, deliberately, and this asserts the label is on the same side of "
+      + "it as every other captured field.",
+  );
+  assert.equal(
+    doc.selfLabelled,
+    1,
+    "SH670: and the mark named itself. Its `aria-label` was decoded at the tokenizer and its text "
+      + "was not, so this frame could never match and SH477's rule quietly skipped every mark "
+      + "carrying an entity — a rule that does not fire looks exactly like a page that has none.",
+  );
+});
+
 test("SH477: a mark whose aria-label repeats its own text is not part of the link's label", () => {
   const branded = scanPage(BRANDED_NAV, "https://x.test/");
   const labels = new Map(branded.nav.map((item) => [item.href, item.label]));

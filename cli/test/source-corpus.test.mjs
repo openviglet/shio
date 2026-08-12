@@ -416,6 +416,23 @@ describe("SH560 group B: the capture of each archetype is what it declares", () 
             // `drops` is universal, because a graphic's letters leaking into any one of them is the
             // defect. Read the other way round, "Home" would fail for not being the brand.
             const labels = entries.map((each) => each.label);
+
+            // SH670 — the exact string, where SH658 deliberately held only substrings. It could not
+            // assert one while the label was decoded zero times and the same page's <title> once,
+            // so the archetype recorded the defect by declining to describe it. Now that both give
+            // one answer, the whole label is the assertion: an entity is the case where "contains
+            // the right words" and "says the right thing" come apart.
+            if (item.label !== undefined) {
+              assert.ok(
+                labels.includes(item.label),
+                `SH670 / ${entry.id} / ${item.catches}: no label for ${item.href} is exactly `
+                  + `${JSON.stringify(item.label)}. A link's label is content — it is what \`shio `
+                  + "report` prints and what a curator is asked to keep — so it is decoded once, "
+                  + `like the <title> of the same page. ${item.means}.\n`
+                  + `  labels: ${JSON.stringify(labels)}`,
+              );
+            }
+
             const kept = labels.find((label) => (item.keeps ?? []).every((w) => label.includes(w)));
             assert.ok(
               kept !== undefined,

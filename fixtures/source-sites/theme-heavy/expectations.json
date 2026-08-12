@@ -28,9 +28,10 @@
     "navigation": [
       {
         "href": "/",
+        "label": "Northwind & Co",
         "keeps": ["Northwind", "Co"],
         "drops": ["Nw"],
-        "catches": "SH477 SH472",
+        "catches": "SH477 SH472 SH670",
         "means": "the brand link encloses a mark whose aria-label repeats its own drawn letters, spelled one span per letter the way a site spells one - so the letters are not part of the link's label and the source's words are"
       }
     ]

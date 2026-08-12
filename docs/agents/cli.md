@@ -1031,6 +1031,22 @@ it. Four decisions worth keeping:
   so a reference that still arrives escaped gets `ENTITY_IN_REFERENCE` plus a top-level note naming
   it a capture defect — what still reaches there is an entity the curated table does not know or a
   double escape, both of which are still ours.
+- **A link's label is a field too, so it is decoded with the runs (SH670).** SH565 decoded
+  `<title>`, SH550 attribute values, SH476 text as it becomes content — and a link's label was
+  reached by none of them, so **one document gave two answers for the same bytes**:
+  `theme-heavy`'s `<title>Northwind &amp; Co</title>` arrived as `Northwind & Co` and the brand
+  link's identical text as `Northwind &amp; Co`. It is a field by SH432's own argument — the label
+  is what `shio report` prints and what a curator is asked to keep — so `decodeEntities` now runs
+  on each text run as it is appended to the anchor, which is before any `drops` offset is recorded
+  and therefore leaves the mark arithmetic intact. Not in `pushLink`: **attribute values have been
+  decoded at the tokenizer since SH550**, so SH477's self-label test was comparing a decoded
+  `aria-label` against raw text, and a mark spelled `aria-label="A&amp;B"` over the same drawn
+  letters could never match — the rule silently skipped every mark carrying an entity, which looks
+  exactly like a page that has none. Decoding the runs puts both sides on the same side of the
+  boundary. The label inherits the decoder's deliberate limits rather than a second spelling of
+  them: numeric forms and the curated names, and **an unknown name left verbatim**, because
+  `&thetasym;` surviving is a rendering imperfection a reader can report and an empty string is
+  content that vanished.
 - **`PAGE_BODY_HTML` is an export with no interpolation, and that is a test seam (SH464).** The
   layout is written here in JavaScript and annotated by `ShRegionComposer` in the JVM, so a Java
   test with its own copy of the template would go green while the shipped one was broken — which is

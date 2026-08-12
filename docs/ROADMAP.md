@@ -37,7 +37,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
-- 📋 **SH670** (deps: SH658 ✅) **A captured link label keeps its HTML entities while the same page's title decodes them** — Extraction decodes an entity once for a title and not at all for a link label, so a menu a curator is asked to keep says Northwind &amp; Co. → §XVII.92
 
 ## Block F — Market positioning
 

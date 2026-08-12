@@ -750,8 +750,21 @@ export function scanPage(html, pageUrl) {
       // set is fixed, so the same bytes still yield the same record (P5). What it does concede is
       // `<em>Open</em>Source` → `OpenSource`, and that concession is the point — it is one word to
       // a reader, one word in `innerText`, and one word here.
+      // SH670 — decoded here, because a link's label is **content**: it is what `shio report` shows
+      // a curator and what SH432 called the whole argument for curating navigation as content. The
+      // same document's `<title>` has been decoded since SH565 and this had not, so one capture gave
+      // two answers for the same bytes and the menu a human was asked to keep read `Northwind &amp;
+      // Co`. SH476's rule decides it: decode where markup becomes content, once.
+      //
+      // At the accumulation and not in `pushLink`, which is the difference that matters. Attribute
+      // values are decoded at the tokenizer (SH550), so SH477's self-label test — does this frame's
+      // text equal its own `aria-label` — was comparing a decoded attribute against raw text, and a
+      // mark spelled `aria-label="A&amp;B"` over `A&amp;B` could never match. Decoding the runs
+      // makes both sides content; every offset in `anchor.drops` is recorded after this point, so
+      // the marks move with the text rather than against it.
       if (anchor) {
-        anchor.text += anchor.gap ? ` ${token.text}` : token.text;
+        const run = decodeEntities(token.text);
+        anchor.text += anchor.gap ? ` ${run}` : run;
         anchor.gap = false;
       }
       doc.textChars += collapse(token.text).length;
