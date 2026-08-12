@@ -105,3 +105,11 @@ src/main/resources/js/client-side/build
 # `run-commit.cmd`'s `git add *` would otherwise sweep into a commit.
 /shio-ui/
 .roadkeep/
+
+# SH676 — the published marketplace is a build artefact, not a source.
+# `shio-site/scripts/marketplace.mjs` derives the catalogue and one zip per package from
+# `shio-app/src/main/resources/blueprints/`, and the site's `build` script runs it before
+# vite, so the GitHub Pages workflow produces them on every publish. Committing the zips
+# would put ~430 KB of binaries in the tree that nobody can review and that only restate
+# bytes already tracked one directory away.
+/shio-site/public/marketplace/

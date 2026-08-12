@@ -13,7 +13,6 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH676** (deps: SH646 ✅) **The six first-party blueprints ship only inside the jar, so the catalog format has nothing to describe** — Publishing them as downloadable packages with a catalog entry each proves the format and the install path before anyone outside is asked to meet them. → §XI.23
 - 📋 **SH677** (deps: SH646 ✅, SH675 ✅) **The marketplace has no CLI path, so its only caller would be the console** — A capability whose sole interface is the console breaks P1 and the non-goal that states it, and the agent half cannot lead here because tools/list has three tokens left. → §XI.24
 - 📋 **SH678** (deps: SH675 ✅) **An agent cannot reach the marketplace over MCP, and the budget for a tool is three tokens** — The list is at 2397 of 2400 and shio_apply at 441 of 460, so this lands only after a trim finds the room, which the budget file requires before any raise. → §XI.26
 - 📋 **SH679** (deps: SH646 ✅, SH675 ✅) **Nothing in the console mentions a blueprint, so a curator cannot see or install one** — The human half is entirely unbuilt - zero files in shio-react name a blueprint - so browsing a catalog, reading a README and filling a package parameter form has no surface. → §XI.25

@@ -210,33 +210,9 @@ nothing — it just moves the work. **Absorbs the old SH23 marketplace epic** (S
 
 The format, the verb, the first-party set, the section vocabulary, the Claude Code
 plugin, the five mismatches that shipping the two halves exposed, and the marketplace's
-catalogue and install are all shipped — see [CHANGELOG.md](CHANGELOG.md) Block J. What
-remains is the rest of the marketplace: the published seed, the CLI, the console and the
-agent path (§XI.23, §XI.24, §XI.25, §XI.26).
-
-### XI.23 The first-party six are what proves the catalog (SH676)
-
-A catalog with nothing in it cannot be judged, and a format nobody has met is a guess.
-The six first-party packages — `blog`, `docs`, `landing`, `marketing-site`,
-`nextjs-starter`, `product-catalog` — are the answer to both: they exist, they are known
-good, and they already carry everything a catalog entry needs to describe.
-
-**What ships is a build step, not a rewrite.** Each package is already a directory under
-`src/main/resources/blueprints/`. Zipping each one, writing a `marketplace.json`
-describing them, and publishing both is the whole of it. The packages stay on the
-classpath as well — this is a second distribution channel for the same bytes, not a
-migration, so an instance with the catalog off behaves exactly as it does today.
-
-**The entry shape follows Turing's**, because that is a format with a working console
-behind it: `id`, `title`, `description`, `version`, `author`, `category`, `tags`,
-`icon`, `downloadUrl`, `readmeUrl`. Blueprints need two more that a Turing recipe does
-not: the **parameters** the package takes, so a form can be drawn without downloading it
-first, and the **opt-ins** it requires (SH151/SH152 — creating a site, editing an
-existing post-type), so a human can see what it is allowed to do before it does it. That
-second one is P7 read at catalogue level.
-
-Publishing is on `shio.viglet.org`, which makes the default `shio.marketplace.url` a
-real surface — the rule that site already holds every claim to.
+catalogue, install and published seed are all shipped — see [CHANGELOG.md](CHANGELOG.md)
+Block J. What remains is the rest of the marketplace: the CLI, the console and the agent
+path (§XI.24, §XI.25, §XI.26).
 
 ### XI.24 The CLI half is what keeps this from being console-only (SH677)
 

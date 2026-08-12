@@ -595,3 +595,45 @@ writes are the operator's. **SH677's CLI therefore has an auth question of its o
 it there is the point.
 
 The console is SH679, and MCP is SH678 — last, because `tools/list` has three tokens of headroom.
+
+## The published catalogue, and why the six are republished under a prefix (SH676)
+
+`shio-site/scripts/marketplace.mjs` derives the catalogue from
+`shio-app/src/main/resources/blueprints/` and writes `public/marketplace/` — `marketplace.json`,
+one zip per package, one generated README each. The site's `build` runs it before Vite, so the
+GitHub Pages workflow publishes it; **the zips are gitignored**, because ~430 KB of binaries that
+only restate bytes tracked one directory away is not something a reviewer can read.
+
+**The six are published as `shio-blueprint-<name>`, and that is load-bearing rather than
+cosmetic.** `ShMarketplaceCatalog` drops a remote entry whose id collides with a package the
+instance already has. The six *are* built into every instance — so published under their own names,
+every entry would be discarded everywhere: a catalogue that proves the format and disproves the
+install path, which is the opposite of the point. Under the prefix SH643 reserved they are
+genuinely installable. The manifest inside each zip is rewritten to that same name, because
+`ShMarketplaceInstaller` refuses a package that disagrees with the catalogue about what it is
+called; forgetting that rewrite would make every published package refuse to install *with a
+correct error*, which is worse, because it reads as the installer being broken.
+
+**Verified end to end, not asserted:** the generated tree served on loopback, a real instance
+pointed at it, `?dryRun=true` reporting `loaded: 6` and writing nothing, the install reporting
+`loaded: 7`, `/agent/blueprints` listing the package with its origin, and the uninstall taking the
+directory back to empty.
+
+### Two decisions worth keeping
+
+- **A hand-rolled, stored, deterministic zip** (`scripts/zip.mjs`, no dependencies). The workspace
+  has no zip library and the site build has no runtime deps at all; a stored archive is the simple
+  part of the format, and these are 50–110 KB of source text where compression buys nothing.
+  Determinism is not about diff noise here — nothing is committed — but so that a package
+  downloaded from the site is reproducible from the commit it was built at. The one trap is
+  arithmetic: `0o100644 << 16` is a *negative* int32 in JavaScript.
+- **The zip is verified by an implementation this repo did not write.** A writer checked by its own
+  reader proves the two agree and nothing else, and these archives exist to be opened by Java's
+  `ZipInputStream`. The test shells out to Python's `zipfile` and calls `testzip()`, which checks
+  every entry's CRC — and it *fails* rather than skips when python is absent.
+
+**`requires` is published empty, and that is a statement.** `createSite` and `mergePostTypes` are
+request options on an apply, not manifest keys, and whether either is needed depends on the target
+instance rather than on the package. A publisher may declare them about their own package; the
+generator will not guess. Worth knowing when reading SH646's consent story: nothing validates a
+publisher's `requires` against what the package actually does.
