@@ -52,6 +52,7 @@ export const ROUTES = {
   ADMIN_ACTIVITY: scoped(`${consolePath}/admin/activity`),
   ADMIN_REVIEW: scoped(`${consolePath}/admin/review`),
   ADMIN_WEBHOOKS: scoped(`${consolePath}/admin/webhooks`),
+  ADMIN_MARKETPLACE: scoped(`${consolePath}/admin/marketplace`),
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
 };
 

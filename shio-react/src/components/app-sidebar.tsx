@@ -14,6 +14,7 @@ import {
   IconRobot,
   IconSearch,
   IconTrash,
+  IconPackages,
   IconWebhook,
   IconPhoto,
 } from "@tabler/icons-react"
@@ -68,6 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         { title: t("exchangeProvider.title"), url: ROUTES.ADMIN_EXCHANGE_PROVIDERS, icon: IconArrowsExchange },
         { title: t("emailConfig.title"), url: ROUTES.ADMIN_EMAIL_CONFIG, icon: IconMail },
         { title: t("siteWebhook.title"), url: ROUTES.ADMIN_WEBHOOKS, icon: IconWebhook },
+        { title: t("marketplace.title"), url: ROUTES.ADMIN_MARKETPLACE, icon: IconPackages },
         { title: t("activity.title"), url: ROUTES.ADMIN_ACTIVITY, icon: IconHistory },
         {
           title: t("review.title"),

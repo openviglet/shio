@@ -1,0 +1,27 @@
+{
+  "marketplace": {
+    "title": "Marketplace",
+    "searchPlaceholder": "Buscar pacotes",
+    "allCategories": "Todos",
+    "empty": "Nenhum pacote corresponde.",
+    "installedBadge": "Instalado",
+    "availableBadge": "Disponível",
+    "builtIn": "Nativo",
+    "builtInNote": "Este pacote veio com a instância, então não pode ser desinstalado.",
+    "params": "Parâmetros",
+    "requiresTitle": "Este pacote pede permissão",
+    "requiresBody": "Aplicá-lo precisa de: {{list}}. Ele pode alterar mais do que o conteúdo que adiciona.",
+    "install": "Instalar",
+    "uninstall": "Desinstalar",
+    "dryRun": "Simular",
+    "wouldInstall": "A versão {{version}} seria instalada em {{origin}} — nada foi escrito.",
+    "installed": "{{id}} instalado — {{count}} pacote(s) agora.",
+    "uninstalled": "{{id}} removido.",
+    "installFailed": "O pacote não pôde ser instalado.",
+    "uninstallFailed": "O pacote não pôde ser removido.",
+    "sourceBuiltIn": "Mostrando os pacotes que vieram com esta instância. Nenhum catálogo está configurado.",
+    "sourceRemote": "Catálogo: {{url}}",
+    "sourceUnreachable": "{{url}} não pôde ser lido",
+    "sourceFallback": "Os pacotes listados são os que vieram com esta instância."
+  }
+}

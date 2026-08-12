@@ -13,7 +13,6 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH679** (deps: SH646 ✅, SH675 ✅) **Nothing in the console mentions a blueprint, so a curator cannot see or install one** — The human half is entirely unbuilt - zero files in shio-react name a blueprint - so browsing a catalog, reading a README and filling a package parameter form has no surface. → §XI.25
 - 📋 **SH682** (deps: SH677 ✅, SH681) **The marketplace writes are open to any authenticated caller** — Installing a package is the admin-gated blueprint reload plus a download, so it wants the same role - which is unreachable until SH681. → §XI.27
 
 ## Block L — Agent safety & human-in-the-loop

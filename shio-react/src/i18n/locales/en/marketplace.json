@@ -1,0 +1,27 @@
+{
+  "marketplace": {
+    "title": "Marketplace",
+    "searchPlaceholder": "Search packages",
+    "allCategories": "All",
+    "empty": "No packages match.",
+    "installedBadge": "Installed",
+    "availableBadge": "Available",
+    "builtIn": "Built-in",
+    "builtInNote": "This package shipped with the instance, so it cannot be uninstalled.",
+    "params": "Parameters",
+    "requiresTitle": "This package asks for permission",
+    "requiresBody": "Applying it needs: {{list}}. It can change more than the content it adds.",
+    "install": "Install",
+    "uninstall": "Uninstall",
+    "dryRun": "Dry run",
+    "wouldInstall": "Version {{version}} would install into {{origin}} — nothing was written.",
+    "installed": "Installed {{id}} — {{count}} package(s) now.",
+    "uninstalled": "Removed {{id}}.",
+    "installFailed": "The package could not be installed.",
+    "uninstallFailed": "The package could not be removed.",
+    "sourceBuiltIn": "Showing the packages that shipped with this instance. No catalogue is configured.",
+    "sourceRemote": "Catalogue: {{url}}",
+    "sourceUnreachable": "{{url}} could not be read",
+    "sourceFallback": "The packages listed are the ones that shipped with this instance."
+  }
+}

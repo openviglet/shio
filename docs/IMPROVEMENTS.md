@@ -209,34 +209,10 @@ loop that cannot perceive itself is the failure this block should expect next.
 nothing — it just moves the work. **Absorbs the old SH23 marketplace epic** (SH27–SH31).
 
 The format, the verb, the first-party set, the section vocabulary, the Claude Code
-plugin, the five mismatches that shipping the two halves exposed, and the marketplace's
-catalogue, install, published seed, CLI and MCP tool are all shipped — see
-[CHANGELOG.md](CHANGELOG.md) Block J. What remains is the console and the role the
-writes still want (§XI.25, §XI.27).
-
-### XI.25 The console has no blueprint surface at all (SH679)
-
-Measured before designed: **`grep -ril blueprint shio-react/src` returns nothing.** The
-console has no blueprint surface at all — not a list, not a detail, not an apply. So a
-curator cannot see what the instance can build from, which is the human half of the
-product's headline capability.
-
-The page is the Turing marketplace page read through Shio's console conventions: a
-filterable grid of catalog cards (category, tag, search), a detail sheet with the README
-rendered and the package's parameters listed, and an install dialog. Turing's
-`marketplace.list.page.tsx` and `recipe-install-dialog.tsx` are the reference for the
-shape, not for the code — the data model differs and the console stacks differ.
-
-**Two things the Turing page does not have to do.** A blueprint takes **parameters**, so
-installing and applying wants a generated form — and the console already builds forms
-from a schema for post-types, which is the machinery to reuse rather than re-invent. And
-a blueprint may require the **opt-ins** (create a site, edit an existing post-type),
-which the dialog has to show as a consent, not a footnote: P7 says the human is never
-surprised, and "this package will alter a post-type you already have" is precisely the
-surprise worth spending a click on.
-
-Install progress is worth streaming the way Turing does, and i18n is `en`/`pt` like
-every other page here.
+plugin, the five mismatches that shipping the two halves exposed, and the whole
+marketplace — catalogue, install, published seed, CLI, MCP tool and console — are
+shipped; see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the role the two
+writes still want (§XI.27).
 
 ### XI.27 The marketplace writes want the role the reload already has (SH682)
 
