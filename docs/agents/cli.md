@@ -2735,3 +2735,48 @@ budget test that silently checks nothing is worse than none: it reports green. T
 same reason the ceilings live in the properties file rather than in the test — one place
 for a number, which is the reasoning that file already carries, and the same coupling
 `shio-site/scripts/token-budgets.mjs` makes on purpose.
+
+## The guard was on one side of the seam (SH684)
+
+`propose --accept all` declines a candidate whose REQUIRED field the derivation cannot fill, and says
+why in its own words: *"the section would be content `shio verify` refuses."* Then `convert` dropped
+chrome — a field value carried by candidates that share no page, which is nobody's content (SH552) —
+and emptied that same kind of field on candidates that had already passed the guard.
+
+Measured on a full authorable run of `www.viglet.org` at `542142e0`: **4** blocks declined for a
+missing `heading`, **9** field values dropped as chrome (7 of them `heading`), then **7**
+`required-field-empty` errors on seven ids — *not* the four propose declined. The two decisions
+cannot see each other by construction: acceptance happens before chrome is known, chrome-dropping
+happens after acceptance is final. Every authorable replication of a site with repeated marketing
+chrome ended red for a reason no phase reported as its own.
+
+### Three outcomes, not two
+
+`withoutChrome` now asks `SECTION_REQUIRED` — the same list `propose` asks — and a chrome hit lands
+in one of three places:
+
+| Case | Outcome | Why |
+|---|---|---|
+| chrome, field not required | **dropped** | SH552 unchanged |
+| chrome, field required, section keeps content of its own | **kept**, and reported | the value is repeated, so it may read generically — a curator edits it in one gesture; the alternative was a replica the gate refuses on ids no message named |
+| chrome, field required, **every** value is chrome | **declined**, block stays verbatim | keeping it writes the cookie banner SH552 removed |
+
+The third row is the bound, and SH552's own end-to-end test is what found it: its fixture accepts a
+candidate whose single field *is* the banner, so an unconditional keep turned that test red on the
+first run. Worth stating plainly — **that test was green while describing the defect**. Its
+assertions were "a section is written" and "the banner is not among its fields", and on that fixture
+both are satisfiable only by a `SectionRichText` with `{}` for fields — an empty REQUIRED `body`,
+which is exactly the `required-field-empty` SH684 is about. It is now asserted as a decline.
+
+### The report gained two lines, and the command that decides is the one that speaks
+
+`kept` and `declined` ride the conversion beside `dropped`, absent when empty (P3), and both print.
+A keep nobody prints reads as a derivation that found the heading on the page; a decline nobody
+prints reads as a block the capture never held — which is the failure class this task is the eighth
+instance of. Note the seam that hid it while it was being built: `commands/convert.mjs` enumerates
+the builder's fields by hand into `describeConversion`, so a field the builder returns and that list
+does not name reaches no reader at all.
+
+The closing assertion is the one the task asked for, stated as the invariant rather than as the
+number seven: **no section a conversion writes is missing a field its type requires**
+(`convert.test.mjs`, `missingRequired` over every written section).

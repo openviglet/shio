@@ -27,7 +27,7 @@ import {
 } from "../src/vocabulary-theme.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import { INVENTORY_FILE, MARKUP_DIR, markupFileFor } from "../src/clone.mjs";
-import { PLAN_FILE } from "../src/propose.mjs";
+import { PLAN_FILE, SECTION_REQUIRED, missingRequired } from "../src/propose.mjs";
 import { norm } from "./support/paths.mjs";
 
 // --- the translation ---
@@ -670,18 +670,36 @@ test("SH552: a value the proposal marked as chrome is not written into the secti
 
   await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
   const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
-  const section = document.posts.find((post) => post.url.startsWith(`${SECTIONS_FOLDER}/`));
-
-  assert.ok(section, "the accepted block is still written as a section");
+  // SH684 amended the two assertions below, and the reason is worth more than the amendment.
+  //
+  // This asserted that the section IS written and that the banner is not among its fields. On THIS
+  // fixture those two are only satisfiable by a `SectionRichText` whose fields are `{}` — the
+  // candidate's one field is the banner — and `body` is a REQUIRED field of that type, so what the
+  // green test described was a section `shio verify` rejects with `required-field-empty`. SH684's
+  // defect, sitting inside the test of the rule that produced it, green for a block and a half.
+  //
+  // So the claim is unchanged and the shape it is asserted on is: the banner reaches no *section*,
+  // and no empty section is written in its place either.
+  //
+  // Sections and not every post, deliberately. The banner is still in the page's verbatim `content`
+  // and has to be: a declined block stays as markup, which is the promise `propose` prints in the
+  // same run. Asserting over every post fails here, and it fails for the behaviour working.
+  const sections = document.posts.filter((post) => post.url.startsWith(`${SECTIONS_FOLDER}/`));
   assert.ok(
-    !JSON.stringify(section.data).includes("respect your privacy"),
-    `the chrome value is not in the section's fields: ${JSON.stringify(section.data)}`,
+    !sections.some((post) => JSON.stringify(post.data).includes("respect your privacy")),
+    `the banner is nobody's authored content: ${JSON.stringify(sections)}`,
+  );
+  assert.deepEqual(
+    sections,
+    [],
+    "and no empty section is written in its place — every value this candidate carries is chrome, so "
+      + "there is no content left to author and the block stays verbatim (SH684)",
   );
   assert.match(
     ctx.stdout.text,
-    /field value\(s\) dropped as chrome/,
-    "and the count is printed by the command that performed the cut, not only by the one that found "
-      + "it — a drop nobody states reads as a capture that never held the thing",
+    /accepted candidate\(s\) declined here/,
+    "and the decision is printed by the command that made it, not only by the one that found the "
+      + "chrome — an outcome nobody states reads as a capture that never held the thing",
   );
 });
 
@@ -727,6 +745,211 @@ test("SH552: a proposal with no adopted rows changes nothing, and prints no line
   assert.ok(
     !describeConversion({ document, sections: [], extras: [], dropped }).includes("dropped as chrome"),
     "the report gains nothing on a conversion that dropped nothing (P5: same bytes as before)",
+  );
+});
+
+/**
+ * SH684 — the guard was on one side of the seam.
+ *
+ * <p>`propose --accept all` declines a candidate whose REQUIRED field the derivation cannot fill, and
+ * says why in its own words: *"the section would be content `shio verify` refuses."* Chrome-dropping
+ * then emptied that same kind of field on candidates that had already passed the guard, and the two
+ * decisions could not see each other — acceptance happens before chrome is known, chrome-dropping
+ * happens after acceptance is final.</p>
+ *
+ * <p>Measured on a full authorable run of `www.viglet.org` at `542142e0`: four blocks declined for a
+ * missing `heading`, nine field values dropped as chrome (seven of them `heading`), and then seven
+ * `required-field-empty` errors on seven ids — <b>not the four propose declined</b>. Every authorable
+ * replication of a site with repeated marketing chrome ended red for a reason no phase reported as
+ * its own.</p>
+ *
+ * <p>The assertion this closes with is the one the task asked for: a conversion where those two
+ * counts cannot disagree, stated as the invariant rather than as the number seven.</p>
+ */
+test("SH684: no section this conversion writes is missing a field its type requires", () => {
+  // Both halves of the real shape in one fixture: `heading` is chrome (carried by candidates sharing
+  // no page) and `SectionHero` declares it REQUIRED, while `intro` is chrome and is not required.
+  const { document, dropped, kept } = buildConversion({
+    proposal: {
+      version: 3,
+      candidates: [
+        {
+          id: "b1a2",
+          type: "SectionHero",
+          pages: ["/"],
+          // Its own content, plus a repeated masthead heading, plus a consent line. The real shape:
+          // a candidate that IS something, whose required field happens to be the chrome one.
+          fields: { heading: "Viglet", body: "Home page copy", intro: "We respect your privacy here" },
+        },
+        {
+          id: "c3d4",
+          type: "SectionHero",
+          pages: ["/about"],
+          fields: { heading: "Viglet", body: "About page copy" },
+        },
+      ],
+      pages: [
+        { path: "/", title: "Home", blocks: ["b1a2"] },
+        { path: "/about", title: "About", blocks: ["c3d4"] },
+      ],
+      adopted: [
+        { field: "heading", value: "Viglet", candidates: ["b1a2", "c3d4"] },
+        { field: "intro", value: "We respect your privacy here", candidates: ["b1a2", "e5f6"] },
+      ],
+    },
+    plan: {
+      accepted: [{ block: "b1a2", type: "SectionHero" }, { block: "c3d4", type: "SectionHero" }],
+    },
+    site: "Acme",
+  });
+
+  const sections = document.posts.filter((post) => SECTION_REQUIRED[post.type]);
+  assert.ok(sections.length, "the fixture writes sections of a type that declares a required field");
+  for (const post of sections) {
+    assert.deepEqual(
+      missingRequired(post.type, post.data),
+      [],
+      `${post.url} would be content \`shio verify\` refuses (required-field-empty) — which is exactly `
+        + "what `propose` declines a candidate for, so the two sides of the seam disagreed",
+    );
+  }
+
+  // Targeted, not a blanket "keep everything": the same run still drops the chrome that no field
+  // requires, or this would be SH552 quietly reverted.
+  assert.deepEqual(
+    dropped,
+    [{ section: "b1a2", field: "intro", value: "We respect your privacy here" }],
+    "the non-required chrome value is still cut — SH552's rule is unchanged where it can be obeyed",
+  );
+  assert.deepEqual(
+    kept.map((row) => `${row.section}.${row.field}`),
+    ["b1a2.heading", "c3d4.heading"],
+    "and the required one is kept on every section that carried it, not just the first",
+  );
+});
+
+test("SH684: the keep is printed, because a keep nobody states reads as content from the page", () => {
+  const { document, kept } = buildConversion({
+    proposal: {
+      version: 3,
+      candidates: [
+        {
+          id: "b1a2",
+          type: "SectionCta",
+          pages: ["/"],
+          fields: { heading: "Get in touch", body: "Talk to sales about the home offer" },
+        },
+        {
+          id: "c3d4",
+          type: "SectionCta",
+          pages: ["/about"],
+          fields: { heading: "Get in touch", body: "Talk to the team behind it" },
+        },
+      ],
+      pages: [
+        { path: "/", title: "Home", blocks: ["b1a2"] },
+        { path: "/about", title: "About", blocks: ["c3d4"] },
+      ],
+      adopted: [{ field: "heading", value: "Get in touch", candidates: ["b1a2", "c3d4"] }],
+    },
+    plan: {
+      accepted: [{ block: "b1a2", type: "SectionCta" }, { block: "c3d4", type: "SectionCta" }],
+    },
+    site: "Acme",
+  });
+
+  const report = describeConversion({ document, sections: [], extras: [], kept });
+  assert.match(
+    report,
+    /chrome value\(s\) kept because their type requires the field/,
+    "the keep is a cost and is reported as one — the value IS chrome, and saying so is what lets a "
+      + "curator go and correct it rather than discover it",
+  );
+  assert.match(
+    report,
+    /b1a2\.heading \(SectionCta\)/,
+    "naming the section, the field and the type, so the curator can open the one post that has it",
+  );
+  assert.match(report, /required-field-empty/, "and why it was not dropped, in the gate's own word");
+});
+
+/**
+ * SH684 — the bound on the keep, and SH552's own test is what found it.
+ *
+ * <p>"Keep a chrome value its type requires" is right for a section that <em>is</em> something and
+ * merely inherits a repeated heading. Applied unconditionally it is wrong, and wrong in a way this
+ * repository has already paid for: a candidate whose only field is the consent text has that text as
+ * its REQUIRED `body`, so keeping it writes the cookie banner SH552 removed from the replica's home
+ * page. The unconditional version turned SH552's end-to-end test red on the first run, which is the
+ * shipped rule defending itself.</p>
+ *
+ * <p>So a section that would be nothing but chrome is declined and its block stays verbatim — the
+ * same answer `propose --accept all` gives one phase earlier, for the same stated reason.</p>
+ */
+test("SH684: a candidate that is nothing but chrome is declined, not kept", () => {
+  const { document, kept, declined } = buildConversion({
+    proposal: {
+      version: 3,
+      candidates: [
+        { id: "b1a2", type: "SectionRichText", pages: ["/"], fields: { body: "We respect your privacy" } },
+        { id: "c3d4", type: "SectionRichText", pages: ["/about"], fields: { body: "We respect your privacy" } },
+      ],
+      pages: [
+        { path: "/", title: "Home", blocks: ["b1a2"] },
+        { path: "/about", title: "About", blocks: ["c3d4"] },
+      ],
+      adopted: [{ field: "body", value: "We respect your privacy", candidates: ["b1a2", "c3d4"] }],
+    },
+    plan: {
+      accepted: [{ block: "b1a2", type: "SectionRichText" }, { block: "c3d4", type: "SectionRichText" }],
+    },
+    site: "Acme",
+  });
+
+  assert.equal(
+    document.posts.filter((post) => post.type === "SectionRichText").length,
+    0,
+    "no section is written: keeping the required value here would put the consent banner on the "
+      + "home page, which is precisely the defect SH552 removed",
+  );
+  assert.equal(kept, undefined, "and it is not reported as a keep — nothing was kept");
+  assert.deepEqual(
+    declined.map((row) => `${row.section}:${row.fields.join(",")}`),
+    ["b1a2:body", "c3d4:body"],
+    "it is the third outcome, named, because an accepted candidate that quietly became verbatim "
+      + "markup reads as a block the capture never held",
+  );
+  assert.match(
+    describeConversion({ document, sections: [], extras: [], declined }),
+    /accepted candidate\(s\) declined here/,
+    "and the command that made the decision is the one that states it",
+  );
+});
+
+test("SH684: a conversion whose chrome touched no required field says nothing about it", () => {
+  // P3, and SH552's own rule one line along: a healthy run pays no bytes for a finding it does not
+  // have. Guards the guard too — a report that always prints the line proves nothing by printing it.
+  const { document, dropped, kept } = buildConversion({
+    proposal: {
+      version: 3,
+      candidates: [{
+        id: "b1a2",
+        type: "SectionHero",
+        pages: ["/"],
+        fields: { heading: "Ship faster than before", intro: "We respect your privacy here" },
+      }],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+      adopted: [{ field: "intro", value: "We respect your privacy here", candidates: ["b1a2", "c3d4"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.equal(kept, undefined, "absent rather than empty on the conversion that kept nothing");
+  assert.deepEqual(dropped, [{ section: "b1a2", field: "intro", value: "We respect your privacy here" }]);
+  assert.ok(
+    !describeConversion({ document, sections: [], extras: [], dropped }).includes("kept because"),
+    "and the report gains nothing (P5: same bytes as before this task)",
   );
 });
 

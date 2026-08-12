@@ -41,7 +41,7 @@
  */
 
 import { normalizeUrl } from "./content-files.mjs";
-import { SECTION_FILE_FIELDS, SECTION_TYPES } from "./propose.mjs";
+import { SECTION_FILE_FIELDS, SECTION_REQUIRED, SECTION_TYPES } from "./propose.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_SLUG, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
 } from "./vocabulary-theme.mjs";
@@ -156,6 +156,12 @@ export function buildConversion({
   // accepted section's intro and the replica's home page introduced itself with a cookie banner.
   const chrome = adoptedIndex(proposal);
   const dropped = [];
+  // SH684 — the chrome values a required field kept, held apart from the dropped ones because they
+  // are the opposite decision and a reader has to be able to tell which one was made about a field.
+  // `declined` is the third outcome, and it is neither of the other two: a candidate that would be
+  // nothing but chrome.
+  const kept = [];
+  const declined = [];
   const sections = accepted
     .map((entry) => byId.get(entry.block))
     // An accepted candidate always has a type — `propose --accept` refuses a typeless one, whose
@@ -165,8 +171,12 @@ export function buildConversion({
       url: `${SECTIONS_FOLDER}/${row.id}`,
       type: row.type,
       folder: SECTIONS_FOLDER,
-      data: withoutChrome(row, chrome, dropped),
+      data: withoutChrome(row, chrome, dropped, kept, declined),
     }))
+    // SH684 — `null` is a decline, and the block behind it stays verbatim: `composePages` is handed
+    // the urls that were written, so a section missing from this list is one its page keeps as
+    // markup. Exactly what `--accept all` would have done, had it known yet what chrome was.
+    .filter((post) => post.data)
     .sort((a, b) => (a.url < b.url ? -1 : 1));
 
   const pages = composePages(proposal, new Set(sections.map((post) => post.url)), markup);
@@ -284,6 +294,19 @@ export function buildConversion({
     // SH552 — what this command cut, so the command that performed the cut is the one that states
     // it. Sorted, so two runs over one capture report the same lines (P5).
     dropped: dropped.sort((a, b) => (`${a.section}${a.field}` < `${b.section}${b.field}` ? -1 : 1)),
+    // SH684 — the other decision, reported the same way and for the same reason. A keep nobody
+    // prints reads as a derivation that found the heading on the page, which is how the seven
+    // `required-field-empty` errors were invisible from either side of it. Absent when empty: a
+    // conversion whose chrome touched no required field has nothing to say here (P3).
+    ...(kept.length
+      ? { kept: kept.sort((a, b) => (`${a.section}${a.field}` < `${b.section}${b.field}` ? -1 : 1)) }
+      : {}),
+    // SH684 — and the third outcome, which is the one that most needs saying: an accepted candidate
+    // that is not in `sections` has silently become verbatim markup, and a reviewer reading a count
+    // of sections would read that as a block the capture never held.
+    ...(declined.length
+      ? { declined: declined.sort((a, b) => (a.section < b.section ? -1 : 1)) }
+      : {}),
     // SH584 — the bound the operator chose, joined to the pages this run is writing. Returned and
     // not only printed, for SH576's reason one line up: the corpus asserts it, and `--json` is a
     // caller too.
@@ -368,16 +391,66 @@ function adoptedIndex(proposal) {
  *
  * <p>Every drop is recorded, because a cut nobody states reads as a capture that did not contain the
  * thing — which is the failure this task is the seventh instance of.</p>
+ *
+ * <h3>The guard was on one side of the seam (SH684)</h3>
+ *
+ * <p>`propose --accept all` already declines a candidate whose REQUIRED field the derivation cannot
+ * fill — *"the section would be content `shio verify` refuses"*. Chrome-dropping then emptied that
+ * same kind of field on candidates which had passed that guard, and the two decisions could not see
+ * each other: acceptance happens before chrome is known, chrome-dropping happens after acceptance is
+ * final. Measured on `www.viglet.org` at `542142e0` — four blocks declined for a missing `heading`,
+ * then **seven** `required-field-empty` errors on seven *different* ids, produced by the phase that
+ * runs after the guard. Every authorable replication of a site with repeated marketing chrome ended
+ * red for a reason no phase reported as its own.</p>
+ *
+ * <p>So a chrome value its type declares required is <b>kept</b>, and the keep is printed the way a
+ * drop is. The cost is stated rather than hidden: a section can end up with a heading that reads
+ * generically, because it is a heading the source repeated. That is a value a curator sees in the
+ * console and edits in one gesture — where the alternative was a replica the gate refuses, on ids no
+ * message named. Declining the candidate here instead was the other honest exit, and it spends seven
+ * authorable blocks to save seven headings: the worse trade for a replica whose point is being
+ * editable.</p>
  */
-function withoutChrome(row, chrome, dropped) {
+function withoutChrome(row, chrome, dropped, kept, declined) {
   if (!chrome.size) return { ...row.fields };
-  const data = {};
+  // Read off the model, never off `row.fields`: `fieldsFor` writes a key only where it found a
+  // value, so the obligation belongs to the type and the type is what is asked (SH582's rule).
+  const required = new Set(SECTION_REQUIRED[row.type] ?? []);
+  const hits = new Map();
   for (const [field, value] of Object.entries(row.fields ?? {})) {
     if (typeof value === "string" && chrome.has(`${field}\u0000${value.trim()}`)) {
-      dropped.push({ section: row.id, field, value });
+      hits.set(field, value);
+    }
+  }
+
+  // The bound, and it is the whole reason this is two passes (SH684). Keeping a required chrome
+  // value is only meaningful where the section keeps something of its own: a candidate whose fields
+  // are *all* chrome, kept, is the cookie banner SH552 removed from the replica's home page — the
+  // fixture that caught it is SH552's own end-to-end test, which went red the moment the keep was
+  // unconditional. So a section that would be nothing but chrome is declined instead, which is what
+  // `propose` does one phase earlier with the same sentence, and its block stays verbatim.
+  const owed = [...hits.keys()].filter((field) => required.has(field)).sort();
+  const ownContent = Object.entries(row.fields ?? {}).some(([field, value]) =>
+    !hits.has(field) && (typeof value === "string" ? value.trim() !== "" : value != null));
+  if (owed.length && !ownContent) {
+    declined.push({ section: row.id, type: row.type, fields: owed });
+    return null;
+  }
+
+  // Second pass in the source's own key order, so two runs over one capture write byte-identical
+  // data (P5) — appending the kept values after the loop would order them by chrome-ness instead.
+  const data = {};
+  for (const [field, value] of Object.entries(row.fields ?? {})) {
+    if (!hits.has(field)) {
+      data[field] = value;
       continue;
     }
-    data[field] = value;
+    if (required.has(field)) {
+      kept.push({ section: row.id, field, value, type: row.type });
+      data[field] = value;
+      continue;
+    }
+    dropped.push({ section: row.id, field, value });
   }
   return data;
 }
@@ -1187,7 +1260,8 @@ function scriptsPost(scripts, site) {
  * can work at all (SH436).
  */
 export function describeConversion({ document, sections, pages = [], verbatim = 0, mixed = 0, extras,
-                                     requires = [], dropped = [], home = null, unfollowed = null },
+                                     requires = [], dropped = [], kept = [], declined = [],
+                                     home = null, unfollowed = null },
                                    options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
@@ -1249,6 +1323,36 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
     );
     for (const row of dropped.slice(0, 3)) {
       lines.push(`    ${row.section}.${row.field} ${preview(row.value)}`);
+    }
+  }
+  // SH684 — the opposite decision, printed with the same weight. Before this, chrome emptied a
+  // REQUIRED field on seven sections of a www.viglet.org run and `verify` reported them as
+  // `required-field-empty` on ids no earlier phase had mentioned — the guard was on the propose side
+  // of the seam and nowhere on this one. The keep is a cost, not a success: the value is chrome, and
+  // saying so here is what lets a curator go and correct the seven rather than discover them.
+  if (kept.length) {
+    const fields = [...new Set(kept.map((row) => row.field))].sort();
+    lines.push(
+      `  ${kept.length} chrome value(s) kept because their type requires the field — `
+        + `${fields.join(", ")}: dropping them would write a section \`shio verify\` refuses `
+        + "(`required-field-empty`), which is what `shio propose` declines a candidate for. "
+        + "Repeated across pages, so it may read generically — edit it in the console",
+    );
+    for (const row of kept.slice(0, 3)) {
+      lines.push(`    ${row.section}.${row.field} (${row.type}) ${preview(row.value)}`);
+    }
+  }
+  // SH684 — the decline, said out loud for SH449's reason: the block is still on the page, and a
+  // reviewer who sees only the section count would read its absence as a block the capture missed.
+  if (declined.length) {
+    lines.push(
+      `  ${declined.length} accepted candidate(s) declined here — every value they carry is chrome, `
+        + "so the section would be a consent banner rather than the page's content (SH552). The "
+        + "block stays verbatim, which is what `shio propose --accept all` does with the same case "
+        + "one phase earlier",
+    );
+    for (const row of declined.slice(0, 3)) {
+      lines.push(`    ${row.section} (${row.type}) required: ${row.fields.join(", ")}`);
     }
   }
   // SH584 — the bound this run inherited, in the run that inherits it. Said here rather than left

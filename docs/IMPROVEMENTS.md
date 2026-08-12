@@ -946,33 +946,6 @@ gate naming itself. Resuming is therefore two steps — dispatch the workflow, t
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
 
-### XVII.94 The guard on one side of the seam (SH684)
-
-Measured on a full authorable run of `www.viglet.org` at `542142e0`: 12 pages, 31
-candidates, 23 accepted, 42 objects, all four sampled routes 200 anonymously.
-
-`propose --accept all` declines a candidate whose REQUIRED field the derivation cannot
-fill, and says why in its own words: *"the section would be content `shio verify`
-refuses."* Four blocks were declined on a missing `heading`.
-
-`convert` then reported **9 field values dropped as chrome** — a value carried by
-candidates that share no page is nobody's content, which is correct and is SH574's rule.
-Seven of those nine were `heading`.
-
-`verify` returned **7 errors, all `required-field-empty` on `heading`, on exactly those
-seven ids** — b425bd805, b6d312963, bafb9442e, bcc346a2f, be82fdd62, bf7b6dd32,
-bf83c82c6. Not the four propose declined. Seven others, produced by the phase that runs
-after the guard.
-
-So the rule is enforced on the propose side of the seam and nowhere on the convert side,
-and the two decisions cannot see each other: acceptance happens before chrome is known,
-chrome-dropping happens after acceptance is final. Every authorable replication of a
-site with repeated marketing chrome ends red for a reason no phase reports as its own.
-
-The fix is a decision, not a patch: chrome-dropping either declines the candidate the
-way propose would, or keeps a value a required field needs. Whichever, the assertion
-that closes this is a conversion where those two counts cannot disagree.
-
 ### XVII.95 The instrument that cannot read the type it drew (SH685)
 
 `shio annotations` is the answer to *is this page actually editable* — the props a page

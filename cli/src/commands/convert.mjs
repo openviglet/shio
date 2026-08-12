@@ -67,7 +67,11 @@ export async function run(flags, positionals, ctx) {
   // an acceptance is only checkable against the candidates the current markup produces.
   const { proposal, plan, markup, inventory } = await proposalFor(flags, ctx, "convert");
   const {
-    document, stale, sections, pages, verbatim, mixed, extras, dropped, home, unfollowed,
+    // SH684 — `kept` and `declined` beside `dropped`, because this list is enumerated by hand and a
+    // field the builder returns that nobody names here reaches no reader at all: the decline was
+    // being made and printed nowhere, which is the same shape as the defect the task is about.
+    document, stale, sections, pages, verbatim, mixed, extras, dropped, kept, declined, home,
+    unfollowed,
   } = buildConversion({
     proposal,
     plan,
@@ -103,7 +107,7 @@ export async function run(flags, positionals, ctx) {
 
   if (typeof flags.out === "string" && flags.out) {
     await write(join(ctx.cwd, flags.out), `${JSON.stringify(document, null, 2)}\n`, ctx);
-    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home, unfollowed },
+    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, kept, declined, home, unfollowed },
       flags));
     ctx.stdout.write(`  document: ${flags.out} (nothing was applied)\n`);
     return { document, applied: false, exitCode: 0 };
@@ -117,7 +121,7 @@ export async function run(flags, positionals, ctx) {
     await requirePostTypeFields(proposal.requires ?? [], { baseUrl, user, password }, ctx);
   }
 
-  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, home, unfollowed },
+  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, kept, declined, home, unfollowed },
     flags));
 
   // SH437/SH471 — the bytes, which are not content and so cannot ride the document. **Before** the
