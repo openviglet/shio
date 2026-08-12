@@ -21,16 +21,17 @@ the plugin would, so the write path is enforced in every environment. The engine
 resolved in this order:
 
   1. ``$ROADKEEP_HOME/scripts/roadkeep.py``          explicit override
-  2. an installed plugin under ``~/.claude/plugins`` the local developer machine
-  3. a sibling checkout ``../roadkeep``              two repos cloned side by side
-  4. a cached shallow clone in the user cache dir    the web, second turn onward
-  5. ``git clone alegauss/roadkeep`` into that cache the web, first turn (needs net)
+  2. a sibling checkout ``../roadkeep``              two repos cloned side by side
+  3. a cached shallow clone in the user cache dir    the web, second turn onward
+  4. ``git clone alegauss/roadkeep`` into that cache the web, first turn (needs net)
 
 Two rules keep it from ever making things worse:
 
-  * **Defer to the plugin.** If a plugin engine is present, the plugin's own hook and
-    server already run, so both modes here become a silent no-op — nothing double-fires
-    and there is never a second ``roadkeep`` server or a doubled deny message.
+  * **Defer to the plugin.** Where the harness has the roadkeep plugin enabled *for this
+    project*, its own hook and server already run, so both modes here become a silent
+    no-op — nothing double-fires and there is never a second ``roadkeep`` server or a
+    doubled deny message. That question is a row in the harness's registry and never a
+    file on disk: see :func:`_plugin_is_wired`.
   * **Never block a turn.** If no engine can be found or cloned, every mode exits 0 and
     emits nothing. A missing roadkeep must degrade to "unenforced", never to a broken
     session or a failed hook.
@@ -42,6 +43,7 @@ refusals are the console script's own; this file only decides *which copy answer
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -63,22 +65,6 @@ def _valid(root: Path | None) -> Path | None:
 def _home_engine() -> Path | None:
     home = os.environ.get("ROADKEEP_HOME")
     return _valid(Path(home)) if home else None
-
-
-def _plugin_engine() -> Path | None:
-    """A roadkeep engine inside an installed Claude Code plugin, if one exists.
-
-    Its presence is the signal to stand down: the plugin's own hooks and server are
-    already wired, so this launcher must not add a second copy of either.
-    """
-    plugins = Path.home() / ".claude" / "plugins"
-    if not plugins.is_dir():
-        return None
-    for engine in plugins.glob("**/" + ENGINE_REL.as_posix()):
-        # Confirm it is roadkeep's, not some other plugin that happens to ship the path.
-        if (engine.parent.parent / ".claude-plugin" / "plugin.json").is_file():
-            return engine
-    return None
 
 
 def _repo_root() -> Path:
@@ -133,13 +119,65 @@ def _resolve() -> Path | None:
     )
 
 
+def _config_home() -> Path:
+    """The harness's config directory — ``$CLAUDE_CONFIG_DIR`` or ``~/.claude``.
+
+    The same pair Claude Code itself resolves, and the reason this is a function: a
+    hardcoded ``~/.claude`` reads a directory the running harness may not be using, so on a
+    machine with two config dirs it answers about the wrong install. Measured: two
+    independent roadkeep installs, 0.1.721 under ``~/.claude`` and 0.1.678 under
+    ``~/.claude-pessoal``, both wired to this project.
+    """
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+
+
+def _plugin_is_wired() -> bool:
+    """Whether the harness has the roadkeep plugin enabled **for this project**.
+
+    The signal to stand down, and it is deliberately not "is there a copy on disk". A
+    marketplace clone and every cached version live under ``plugins/`` whether or not this
+    project uses them, so a glob for ``scripts/roadkeep.py`` finds a file in cases where no
+    hook is loaded — and then this launcher defers to a plugin that never ran and nothing
+    guards the write. What decides it is whether the *hooks this file would duplicate* are
+    live, which is a row in the harness's own registry, matched on the project path.
+
+    Read defensively and never written: the file is the harness's. A registry this cannot
+    parse answers False, which is the safe side of the two — a doubled deny message is a
+    cosmetic fault and an absent guard is the drift roadkeep exists to stop.
+    """
+    registry = _config_home() / "plugins" / "installed_plugins.json"
+    try:
+        payload = json.loads(registry.read_text(encoding="utf-8"))
+        wanted = _repo_root().resolve()
+    except (OSError, ValueError):
+        return False
+    plugins = payload.get("plugins") if isinstance(payload, dict) else None
+    for key, rows in (plugins if isinstance(plugins, dict) else {}).items():
+        # `<name>@<marketplace>`; the marketplace is not ours to care about, the name is.
+        if not isinstance(key, str) or key.partition("@")[0] != "roadkeep":
+            continue
+        for row in rows if isinstance(rows, list) else ():
+            stated = row.get("projectPath") if isinstance(row, dict) else None
+            if not isinstance(stated, str) or not stated:
+                continue
+            try:
+                # Resolved and never compared as text: the harness writes the path the way
+                # its platform spells it, and this repo is reached through a junction, so
+                # `shio\latest` and `shio\2026.3` are one project written twice.
+                if Path(stated).resolve() == wanted:
+                    return True
+            except OSError:
+                continue
+    return False
+
+
 def _guard(argv: list[str]) -> int:
     """Run roadkeep's ``guard`` on the hook payload, or step aside.
 
     The payload on stdin is read here and handed on, because a stream is readable once.
     """
     payload = sys.stdin.buffer.read()
-    if _plugin_engine() is not None:
+    if _plugin_is_wired():
         return 0  # the plugin's hook already runs; do not double-fire.
     engine = _resolve()
     if engine is None:
@@ -157,7 +195,7 @@ def _mcp(argv: list[str]) -> int:
     Defers to the plugin the same way ``guard`` does, so a machine with the plugin runs
     exactly one roadkeep server. Uses ``execv`` so the server owns this process's stdio.
     """
-    if _plugin_engine() is not None:
+    if _plugin_is_wired():
         return 0
     engine = _resolve()
     if engine is None:
