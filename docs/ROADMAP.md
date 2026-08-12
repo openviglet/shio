@@ -51,9 +51,8 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH692** (deps: SH687 ✅, SH695) **mixed is a label with no standard, and it is where ten of twelve replicated pages land** — diff scores it by the authorable rule its MODES entry copies verbatim, so its whole answer is 20 shortfalls the mode does not claim. → §XVII.100
+- 📋 **SH692** (deps: SH687 ✅, SH695 ✅) **mixed is a label with no standard, and it is where ten of twelve replicated pages land** — diff scores it by the authorable rule its MODES entry copies verbatim, so its whole answer is 20 shortfalls the mode does not claim. → §XVII.100
 - 📋 **SH693** (deps: SH692) **The generated layout appends sections after the whole verbatim block, so the source footer precedes every section** — Measured on the replica home page: header at 95%, footer at 98%, then all 8 sections — the template emits content and then getRelation sections, never between. → §XVII.101
-- 📋 **SH695** (deps: SH687 ✅) **The CLI cannot tell a replica's verbatim markup from its authored sections, so nothing can be scored per region** — clone.mjs names regions zero times and scanPage is a streaming tag scanner, so SH692's per-region rule has no reader on the produced side. → §XVII.103
 
 ## Block F — Market positioning
 

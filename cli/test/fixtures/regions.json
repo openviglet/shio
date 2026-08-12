@@ -1,0 +1,56 @@
+{
+  "why": "SH695 — the one place the two regions readers are held to the same answer. `ShHtmlRegions` (Java, Jsoup, over the page the instance renders) and `cli/src/regions.mjs` (JavaScript, a tag stack, over the HTML the replica serves) are two implementations of one judgement, and a shared implementation is not available: the CLI declares no third-party dependency and adding an HTML parser to gain this would be the first. So they agree by assertion instead. Both suites read this file — ShHtmlRegionsAgreementTest and regions.test.mjs — and a case added here is a case both must answer.",
+  "rule": "Each case's `expect` is the landmarks in document order, as `<tag>:<markup>`. Keep the awkward shapes: bad nesting and raw text are where two parsers disagree, and a fixture set of neat pages proves the readers agree about the pages that were never going to be a problem.",
+  "cases": [
+    {
+      "name": "chrome kept, sections authored — the replica's own shape",
+      "html": "<html><body><header class=head><nav>n</nav></header><footer>f</footer><main><section sh-post=a1><h2>x</h2></section><section sh-post=b2><h2>y</h2></section></main></body></html>",
+      "expect": ["header:verbatim", "nav:verbatim", "footer:verbatim", "main:verbatim", "section:sections", "section:sections"]
+    },
+    {
+      "name": "a landmark nested inside an authored section belongs to the section",
+      "html": "<body><section sh-post=a1><table><tr><td>rows</td></tr></table></section><table><tr><td>chrome</td></tr></table></body>",
+      "expect": ["section:sections", "table:sections", "table:verbatim"]
+    },
+    {
+      "name": "data-shio-section marks a section too, and on the element itself",
+      "html": "<body><section data-shio-section=SectionHero><h2>x</h2></section></body>",
+      "expect": ["section:sections"]
+    },
+    {
+      "name": "the marker does not leak past its close tag",
+      "html": "<body><section sh-post=a1>x</section><section>y</section></body>",
+      "expect": ["section:sections", "section:verbatim"]
+    },
+    {
+      "name": "a void element opens no frame",
+      "html": "<body><section sh-post=a1><img src=x><br></section><footer>f</footer></body>",
+      "expect": ["section:sections", "footer:verbatim"]
+    },
+    {
+      "name": "HTML is not XHTML: a trailing slash does not close a section, so the footer is inside it",
+      "html": "<body><section sh-post=a1 /><footer>f</footer></body>",
+      "expect": ["section:sections", "footer:sections"]
+    },
+    {
+      "name": "markup inside a script is text, not structure",
+      "html": "<body><script>var s = '</section><footer>';</script><section sh-post=a1>x</section></body>",
+      "expect": ["section:sections"]
+    },
+    {
+      "name": "an unclosed paragraph does not take its section's frame with it",
+      "html": "<body><section sh-post=a1><p>one<p>two</section><footer>f</footer></body>",
+      "expect": ["section:sections", "footer:verbatim"]
+    },
+    {
+      "name": "a close tag matching nothing closes nothing",
+      "html": "<body></div><section sh-post=a1>x</section><footer>f</footer></body>",
+      "expect": ["section:sections", "footer:verbatim"]
+    },
+    {
+      "name": "a page with no landmarks at all",
+      "html": "<body><div>just a div</div></body>",
+      "expect": []
+    }
+  ]
+}

@@ -983,31 +983,6 @@ kept and *what* was accepted, and not *where* either belongs.
 SH692 names what a right page is; this is the first thing measured against that
 definition, and the seam rule it fails is the simplest one — order.
 
-### XVII.103 The regions reader the produced side does not have (SH695)
-
-SH687 gave the **digest** a region list — landmarks in document order, each saying
-whether an editor owns its markup or the conversion kept the source's. It lives in Java,
-in `ShHtmlRegions`, and reads the page the instance renders.
-
-`shio diff` reads a different artefact: the HTML the replica *serves*, through
-`scanPage` in `clone.mjs`. That file names `regions` **zero** times. So SH692's rule — a
-verbatim region judged against the source, a section region against its declaration —
-has its reader on one side of the comparison and nothing on the other.
-
-Two facts make this a task rather than a line. `scanPage` is a **streaming tag scanner
-with no tree**, and "is this landmark inside an authored section" is a question about
-ancestry: SH687 chose Jsoup for exactly that, having argued that counting tags is how a
-scanner attributes a region to the wrong owner. And `scanPage` is delicate — SH554's
-note there records a wrong shape that read plausibly and stayed green for rounds.
-
-So: a reader on the produced side answering what `ShHtmlRegions` answers, over served
-HTML, with containment decided rather than guessed. Whether it shares the Java one's
-vocabulary by construction or by an asserted pair of fixtures is open, and the second is
-probably right — a shared implementation would be a third HTML dialect to keep in step.
-
-What says it landed is SH692's own measurement: mixed pages scored per region rather
-than by the authorable rule they inherit today.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

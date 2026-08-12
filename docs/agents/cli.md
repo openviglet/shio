@@ -2970,3 +2970,41 @@ cannot match by accident.
 always reported. `widths` already means *the viewport widths this finding appeared at*, and the
 measurement overwrote that with a string, which threw inside `classify`. Hence `at` and `measured`,
 and hence an assertion that the family is still the subject.
+
+## The regions reader the produced side did not have (SH695)
+
+SH687 gave the **digest** a region list — landmarks in document order, each saying whether an editor
+owns its markup or the conversion kept the source's. It lives in Java (`ShHtmlRegions`, Jsoup) and
+reads the page **the instance renders**.
+
+`shio diff` reads a different artefact: the HTML the replica **serves**. `clone.mjs` named `regions`
+zero times, so SH692's rule — a verbatim region judged against the source, a section region against
+its declaration — had its reader on one side of the comparison and nothing on the other.
+
+### A stack, and no dependency
+
+`cli/package.json` declares **no third-party dependency at all**, and adding an HTML parser to share
+one judgement would have been the first. So `cli/src/regions.mjs` answers containment with a **tag
+stack**: push on an open tag, pop to the matching frame on a close, and "am I inside an authored
+section" is the depth.
+
+That is not the thing SH687 warned about. Counting *occurrences* is how a scanner attributes a region
+to the wrong owner; a stack answers ancestry exactly. What it gives up is bad nesting — the same
+trade `ShHtmlOutline` documents — which is why the fixtures are the awkward pages rather than the
+neat ones.
+
+### They agree by assertion, and the assertion earned its keep immediately
+
+Two implementations, two runtimes, one question. [`cli/test/fixtures/regions.json`](../../cli/test/fixtures/regions.json)
+holds the cases and **both suites read that one file** — `regions.test.mjs` and
+`ShHtmlRegionsAgreementTest`. A case added to it is a case both must answer.
+
+**It caught a real divergence on its first run.** Given `<section sh-post=a1 /><footer>f</footer>`,
+the JS reader said the footer was `verbatim` and the Java reader said `sections` — and Java was
+right. **HTML is not XHTML: a trailing slash does not close a non-void element.** The section stays
+open, the footer really is inside it, and a browser agrees with Jsoup. The JS reader was treating
+`/>` as self-closing; that is now gone, and the fixture states the rule in its name.
+
+A second test guards *which* pages the file holds — raw text whose body looks like structure, an
+unclosed `<p>`, a close tag matching nothing, a void element, a nested landmark. Two parsers agree
+about well-formed markup by construction, so a set of neat pages would pass while proving nothing.
