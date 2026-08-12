@@ -16,6 +16,7 @@ import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
 
+import com.viglet.shio.marketplace.ShMarketplaceProperties;
 import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
 import com.viglet.shio.api.agent.dto.ShAgentLimits;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
@@ -63,6 +64,7 @@ public class ShAgentManifestService {
     private final ShAgentProperties shAgentProperties;
     private final ShTuringIndexService shTuringIndexService;
     private final ShAgentBuildIdentity shAgentBuildIdentity;
+    private final ShMarketplaceProperties shMarketplaceProperties;
 
     public ShAgentManifestService(ShAppProperties shAppProperties,
                                  ShCdaProperties shCdaProperties,
@@ -71,7 +73,8 @@ public class ShAgentManifestService {
                                  ShImageTransformProperties shImageTransformProperties,
                                  ShAgentProperties shAgentProperties,
                                  ShTuringIndexService shTuringIndexService,
-                                 ShAgentBuildIdentity shAgentBuildIdentity) {
+                                 ShAgentBuildIdentity shAgentBuildIdentity,
+                                 ShMarketplaceProperties shMarketplaceProperties) {
         this.shAgentBuildIdentity = shAgentBuildIdentity;
         this.shAppProperties = shAppProperties;
         this.shCdaProperties = shCdaProperties;
@@ -80,6 +83,7 @@ public class ShAgentManifestService {
         this.shImageTransformProperties = shImageTransformProperties;
         this.shAgentProperties = shAgentProperties;
         this.shTuringIndexService = shTuringIndexService;
+        this.shMarketplaceProperties = shMarketplaceProperties;
     }
 
     public ShAgentManifest manifest() {
@@ -116,6 +120,14 @@ public class ShAgentManifestService {
         // predicate and says nothing about this one; an agent that read only that flag
         // would take a published-but-unindexed page for a working search.
         features.put("searchIndexing", shTuringIndexService.active());
+        // SH678 — whether this instance reads a package catalogue. Configured, and it is the
+        // honest shape for exactly the reason the section above gives: off is the default, so an
+        // agent that assumed a marketplace would be choosing from a list nobody enabled. `false`
+        // does not mean no packages — `shio_marketplace` still lists what shipped with the
+        // instance — it means nothing new can arrive. The tool is read-only either way, because
+        // installing calls a service in process and an API token reaching /mcp is barred from
+        // /api/v2/marketplace, which the non-goals name as an escalation.
+        features.put("marketplace", shMarketplaceProperties.hasRemote());
 
         // Build capabilities — compiled into this artifact.
         features.put("graphql", true);

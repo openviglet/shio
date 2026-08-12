@@ -200,6 +200,18 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "id" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "name" : "shio_marketplace"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
           "address" : {
             "description" : "#string",
             "items" : {

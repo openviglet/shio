@@ -295,6 +295,17 @@ class ShAgentP1ConformanceTest {
                 + "findable in Turing (SH84); off by default, and failures arrive as INDEX "
                 + "incidents on the change feed rather than as a call an agent makes"));
 
+        // SH678. Reached, and read-only on purpose rather than as a first slice: MCP tools call
+        // services in process, and an API token reaches /mcp while being barred from
+        // /api/v2/marketplace (SH2's four namespaces), so an install verb here would hand a token
+        // what the URL layer denies it — the non-goal names that shape by title. What the tool
+        // delivers is the half a terminal cannot give a client that has no terminal, which is
+        // discovery; installing is `shio marketplace install` or the console, where the credential
+        // is the operator's.
+        byFeature.put("marketplace", mcp("shio_marketplace", "the packages this instance could "
+                + "install, with their parameters and whether each is already here (SH646); "
+                + "read-only, because installing on this surface would be a token escalation"));
+
         byFeature.putAll(p1Exceptions());
         return byFeature;
     }
