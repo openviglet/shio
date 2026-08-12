@@ -1164,6 +1164,7 @@
 - **SH686** — Class selectors are read by a linear scan that unescapes them, so a Tailwind class resolves and page-unstyled stops accusing the half of the page that renders correctly.
 - **SH687** — The digest carries regions in document order with each one's provenance, so the replica's footer rendering above every section is one line instead of a screenshot.
 - **SH688** — judge now runs audit whenever playwright resolves, and a skip states the install rather than a flag — the hardcoded "not asked for" prefix that made a fact read as a preference is gone.
+- **SH689** — font-fallback measures whether the family drew the element's own glyphs and reports the widths, so the claim can be checked — and a unicode-range subset is no longer called a fallback.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

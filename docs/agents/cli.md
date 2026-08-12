@@ -2917,3 +2917,56 @@ Rewriting the help pushed the whole-CLI help surface to ~9937 estimated tokens a
 ceiling, and `cli-help-budget.test.mjs` failed naming the number. The ceiling exists so a per-command
 surface cannot grow past the payload it was cheaper than, one defensible addition at a time — so the
 answer was to compress this command's help rather than to raise it.
+
+## A finding that cannot be falsified (SH689)
+
+`shio audit` returned two warnings on the replica's home page:
+
+```
+warn  font-fallback  Inter Variable — did not load, so the page fell back
+warn  font-fallback  Plus Jakarta Sans Variable — did not load, so the page fell back
+```
+
+The page carries **33** `@font-face` rules declaring both families twice over: once as `url()`
+answering 200 with 85,068 bytes, once as an inline `data:font/woff2;base64` payload decoding to a
+valid wOF2. The fonts were present by two independent routes and the warning asserted the opposite —
+and nothing in the output distinguished *"this is wrong"* from *"I looked before the load finished"*,
+which is the defect. A causal claim about the rendered result, made by the one instrument holding the
+rendered result, reporting neither the element nor the measurement.
+
+`document.fonts.check()` answers *is this family available for use* — a question about the
+FontFaceSet, not about what drew the glyphs. So the subject changed: **lay the element's text out
+with each generic fallback alone, then with the family in front of it.** If the family drew anything
+the width moves; if all three match their bare fallback to within a pixel, nothing of that family was
+used. The widths ride on the finding, so a reader can redo it:
+
+```
+warn  font-fallback  Inter Variable — drew no glyphs at h1.hero, where the CSS asks for
+      "Inter Variable", system-ui, sans-serif — same width as each fallback alone
+      (monospace 940.5=940.5 serif 1002.1=1002.1 sans-serif 1044.8=1044.8)
+```
+
+### Measured in a real Chromium, five cases
+
+| page | old `document.fonts.check` | measured |
+|---|---|---|
+| families the machine has (Georgia, Courier New) | — | clean |
+| a family nothing defines | — | **flagged** |
+| `@font-face` resolving via `local()` | true | clean |
+| `@font-face` whose `src` 404s | false | **flagged** |
+| `@font-face` with `unicode-range: U+0041-005A` | true | clean |
+
+**The last row is the one that changed the design.** The first version measured with a synthetic
+alphabet and flagged that page: the family draws every glyph the page shows and none of the lowercase
+letters the test string used. Inter and Plus Jakarta — the two families this task is about — ship as
+exactly that, one `@font-face` per subset. Measured with the wrong string, the fix reproduces the
+defect it removes. So the measurement uses **the element's own text**, repeated to a length two faces
+cannot match by accident.
+
+### Two name collisions, both caught by the file's own tests
+
+`merge` writes a finding's *subject* into `selector`, and the sampled element was first called
+`selector` too — which silently overwrote the family name, so the finding lost the one thing it had
+always reported. `widths` already means *the viewport widths this finding appeared at*, and the
+measurement overwrote that with a string, which threw inside `classify`. Hence `at` and `measured`,
+and hence an assertion that the family is still the subject.

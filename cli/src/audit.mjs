@@ -287,7 +287,18 @@ export function classify(observed, options = {}) {
     }
     for (const item of probe.fonts ?? []) {
       if (item.loaded) continue;
-      merge("font-fallback", item.family, width, { source: item.source ?? "computed" });
+      // SH689 — the evidence travels with the finding. Without it the reader has a causal claim
+      // about the rendered page and no way to check it, which is how two families the page carries
+      // twice over were reported as absent and believed.
+      // `at`, not `selector`: this rule's *subject* is the family, and `merge` writes the subject
+      // into `selector`. Naming the sampled element `selector` here silently overwrote the family
+      // — the finding lost the one thing it had always reported, and its own test caught it.
+      merge("font-fallback", item.family, width, {
+        source: item.source ?? "measured",
+        at: item.at ?? null,
+        asked: item.asked ?? null,
+        measured: item.measured ?? null,
+      });
     }
   }
 
@@ -387,7 +398,13 @@ function detail(finding) {
     case "collapsed":
       return `height 0 around ${finding.children} laid-out child${finding.children === 1 ? "" : "ren"}`;
     case "font-fallback":
-      return `did not load, so the page fell back${finding.source === "font-face" ? " (@font-face errored)" : ""}`;
+      // SH689 — the measurement, in the sentence. `did not load, so the page fell back` is a causal
+      // claim about the rendered page that reported neither where it looked nor what it read, so a
+      // reader could not tell a real fallback from a load observed too early. It now says what it
+      // measured, and the widths are the reader's way of disagreeing with it.
+      return `drew no glyphs${finding.at ? ` at ${finding.at}` : ""}`
+        + `${finding.asked ? `, where the CSS asks for ${finding.asked}` : ""}`
+        + `${finding.measured ? ` — same width as each fallback alone (${finding.measured})` : ""}`;
     case "request-failed":
       return finding.status ? `HTTP ${finding.status}` : `request failed: ${finding.failure ?? "unknown"}`;
     case "no-landmark":
@@ -720,7 +737,8 @@ export function probe(options) {
   };
 
   const banner = document.querySelector("[data-shio-preview]");
-  const families = new Set();
+  // SH689 — family → where it was seen and what the CSS asked for there, not a bare name.
+  const families = new Map();
 
   for (const element of document.body ? document.body.querySelectorAll("*") : []) {
     if (SKIP.has(element.tagName)) continue;
@@ -768,7 +786,20 @@ export function probe(options) {
 
     if (own) {
       const first = (style.fontFamily || "").split(",")[0].trim().replace(/^["']|["']$/g, "");
-      if (first) families.add(first);
+      // SH689 — the element is kept, not just the name. A finding that says "this family fell back"
+      // and names no element cannot be checked from its own output; one that names where it looked
+      // and what the CSS asked for there can be reproduced by anybody reading it.
+      if (first && !families.has(first)) {
+        families.set(first, {
+          selector: selectorFor(element),
+          asked: style.fontFamily || "",
+          // The element's OWN text, because the measurement below is about this page. A synthetic
+          // alphabet is what makes a `unicode-range` face read as absent: Inter and Plus Jakarta
+          // ship as per-subset @font-face rules, and a family that covers every glyph the page
+          // draws covers none of the letters somebody else's test string happens to use.
+          text: own.trim().slice(0, 60),
+        });
+      }
       const visible =
         typeof element.checkVisibility === "function"
           ? element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
@@ -789,25 +820,73 @@ export function probe(options) {
     }
   }
 
-  for (const family of families) {
-    if (GENERIC.has(family.toLowerCase())) continue;
-    let available = true;
-    try {
-      available = document.fonts.check(`16px "${family}"`);
-    } catch {
-      continue;
-    }
-    if (!available) fonts.push({ family, loaded: false, source: "computed" });
-  }
+  // SH689 — the rendered fact, not the load event.
+  //
+  // This asked `document.fonts.check()`, which answers "is this family available for use" — a claim
+  // about the FontFaceSet, not about what drew the glyphs. On the `www.viglet.org` replica it warned
+  // that `Inter Variable` and `Plus Jakarta Sans Variable` "did not load, so the page fell back", on
+  // a page carrying 33 @font-face rules that declare both families twice over: once as `url()`
+  // answering 200 with 85,068 bytes, once as an inline `data:font/woff2;base64` payload decoding to
+  // a valid wOF2. The fonts were present by two independent routes and the warning asserted the
+  // opposite — and nothing in its output distinguished "this is wrong" from "I looked too early",
+  // which is the actual defect: a causal claim about the rendered result, made by the one instrument
+  // holding the rendered result, reporting neither the element nor the measurement.
+  //
+  // So: measure. A span is laid out with each generic fallback alone and then with the family in
+  // front of it. If the family drew the glyphs the width moves; if every one of the three matches
+  // its bare fallback to within a pixel, nothing of that family was used and the page IS falling
+  // back. The numbers ride on the finding, so a reader can redo it.
+  //
+  // **With the element's own text**, which is not a detail. The first version used a synthetic
+  // alphabet and reported a family declared `unicode-range: U+0041-005A` as fallen back: it draws
+  // every glyph the page shows and none of the lowercase letters the test string used. Inter and
+  // Plus Jakarta — the two families this task is about — ship as exactly that, one @font-face per
+  // subset. Measured with the wrong string, the fix reproduces the defect it removes.
+  const measure = (spec) => {
+    sample.style.fontFamily = spec;
+    return Math.round(sample.getBoundingClientRect().width * 100) / 100;
+  };
+  const sample = document.createElement("span");
+  sample.setAttribute("aria-hidden", "true");
+  sample.style.cssText =
+    "position:absolute;left:-99999px;top:0;font-size:72px;white-space:nowrap;line-height:1";
+  document.body.appendChild(sample);
   try {
-    document.fonts.forEach((face) => {
-      if (face.status !== "error") return;
-      const family = String(face.family || "").replace(/^["']|["']$/g, "");
-      if (fonts.some((each) => each.family === family)) return;
-      fonts.push({ family, loaded: false, source: "font-face" });
-    });
-  } catch {
-    // A browser without a FontFaceSet iterator still reported the computed-family half above.
+    const BASES = ["monospace", "serif", "sans-serif"];
+    for (const [family, seen] of families) {
+      if (GENERIC.has(family.toLowerCase())) continue;
+      // Repeated to a length two fonts cannot agree on by accident: one short word can measure the
+      // same in two faces, and a coincidence at 72px is a finding nobody can reproduce.
+      const glyphs = (seen.text || "").replace(/\s+/g, " ").trim();
+      if (glyphs.length < 2) continue;
+      sample.textContent = glyphs.repeat(Math.max(1, Math.ceil(24 / glyphs.length)));
+      const bare = {};
+      for (const base of BASES) bare[base] = measure(base);
+      const widths = {};
+      let drew = false;
+      for (const base of BASES) {
+        widths[base] = measure(`"${family}", ${base}`);
+        // A pixel of slack: sub-pixel layout differs between platforms and a strict equality here
+        // would report every page on a machine whose rounding differs.
+        if (Math.abs(widths[base] - bare[base]) > 1) {
+          drew = true;
+          break;
+        }
+      }
+      if (drew) continue;
+      fonts.push({
+        family,
+        loaded: false,
+        source: "measured",
+        // The evidence, which is the whole point of the task: where it looked, what the CSS asked
+        // for there, and the widths that say the family drew nothing.
+        at: seen.selector,
+        asked: seen.asked,
+        measured: BASES.map((base) => `${base} ${bare[base]}=${widths[base] ?? bare[base]}`).join(" "),
+      });
+    }
+  } finally {
+    sample.remove();
   }
 
   return { overflow, zeroSize, collapsed, text, fonts, capped, viewport };

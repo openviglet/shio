@@ -180,6 +180,70 @@ test("a loaded font is not a finding, and one that fell back is", () => {
   assert.equal(findings[0].selector, "Inter");
 });
 
+/**
+ * SH689 — a finding that cannot be falsified.
+ *
+ * <p>`shio audit` warned that `Inter Variable` and `Plus Jakarta Sans Variable` *"did not load, so
+ * the page fell back"* on a page carrying **33** `@font-face` rules that declare both families
+ * twice over: once as `url()` answering 200 with 85,068 bytes, once as an inline
+ * `data:font/woff2;base64` payload decoding to a valid wOF2. The fonts were present by two
+ * independent routes and the warning asserted the opposite.</p>
+ *
+ * <p>Either it was wrong or it observed a load that had not finished — a real and different thing —
+ * and <b>nothing in the output distinguished those</b>. That is the defect: a causal claim about the
+ * rendered result, made by the one instrument holding the rendered result, reporting neither the
+ * element it looked at nor what it read there.</p>
+ */
+test("SH689: the finding carries where it looked, what the CSS asked, and the measurement", () => {
+  const { findings } = classify({
+    probes: [{
+      width: 1280,
+      fonts: [{
+        family: "Inter Variable",
+        loaded: false,
+        source: "measured",
+        at: "h1.hero",
+        asked: '"Inter Variable", system-ui, sans-serif',
+        measured: "monospace 940.5=940.5 serif 1002.1=1002.1 sans-serif 1044.8=1044.8",
+      }],
+    }],
+  });
+
+  assert.equal(findings.length, 1);
+  const detail = line(findings[0]);
+  assert.match(detail, /at h1\.hero/, "where it looked, so the claim can be checked at that element");
+  assert.match(detail, /the CSS asks for "Inter Variable", system-ui, sans-serif/);
+  assert.match(
+    detail,
+    /same width as each fallback alone \(monospace 940\.5=940\.5/,
+    "and the numbers, which are the reader's way of disagreeing with it — the old line said only "
+      + "`did not load, so the page fell back`, which nothing could contradict (SH689)",
+  );
+  assert.doesNotMatch(
+    detail,
+    /did not load/,
+    "the load event was the wrong subject: it is what let a font present by two routes be reported "
+      + "absent, with no way to tell that from having looked too early",
+  );
+});
+
+test("SH689: the family is still the finding's subject, and evidence does not displace it", () => {
+  // Both fields were nearly lost to a name collision while this shipped: `merge` writes the subject
+  // into `selector`, and the sampled element was first called `selector` too; `widths` already
+  // means the viewport widths a finding appeared at. Two accidental overwrites, both caught by
+  // this file — hence the two names `at` and `measured`, and hence this assertion.
+  const { findings } = classify({
+    probes: [
+      { width: 1280, fonts: [{ family: "Inter Variable", loaded: false, at: "h1", measured: "x" }] },
+      { width: 375, fonts: [{ family: "Inter Variable", loaded: false, at: "h1", measured: "x" }] },
+    ],
+  });
+
+  assert.equal(findings[0].selector, "Inter Variable", "the subject is the family");
+  assert.deepEqual(findings[0].widths, [1280, 375], "and `widths` is still the viewports");
+  assert.equal(findings[0].at, "h1");
+});
+
 test("errors and warnings are separated, errors first, and the order is stable", () => {
   const { findings, counts } = classify({
     probes: [
