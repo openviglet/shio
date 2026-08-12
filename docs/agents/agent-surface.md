@@ -1920,3 +1920,46 @@ the same rendered page with Jsoup, so this adds no dependency and no second dial
 `styled by` — naming the theme in force per region, and warning when two are — is deliberately not
 here: it needs class-to-stylesheet provenance, which `definedIn` does not keep. That is the second
 defect, and it is filed rather than guessed at.
+
+## The theme in force, per region (SH694)
+
+SH687 made the first of the replica's two positional defects sayable — the captured footer renders
+above every section. This is the other: the accepted sections are presented by the Shio theme while
+the chrome keeps the captured one, two visual languages in one document.
+
+Nothing could state it because `ShHtmlAppearance.definedIn` concatenated every stylesheet into one
+set of names. That answers *is this class defined* and destroys *by which sheet*, which is the only
+form of the question that distinguishes one design from two.
+
+### The fact on the digest, the judgement in `verify`
+
+Each `regions` entry now carries **`styledBy`** — which of the page's own stylesheets styles anything
+it draws, keyed `style[1]`, `style[2]` by document position. Position and not a friendly name: a
+rendered page does not say which block is the captured theme and which the Shio one, and a label the
+reader cannot check is what SH689 spent a task removing.
+
+`verify` reads that field and warns `two-themes`. The split is the one `page-unstyled` already uses —
+a digest describes, the gate judges — and it is what makes the warning able to fail a run.
+
+**The finding is disjointness, not "two sheets exist".** Almost every real page carries a reset and a
+theme; a rule that fired on those would be the next thing nobody reads. It fires when the chrome's
+sheets and the sections' sheets have *nothing* in common, and a test pins the negative case.
+
+A **warning**, not an error: two stylesheets with nothing in common is how a mid-migration site
+legitimately looks, and finishing it is the curator's call. The instrument's job is that they are
+told rather than left to notice.
+
+### The cost that had this filed as undesigned was measured, and it was not there
+
+This sat 💭 because keeping a set per sheet looked like it multiplied memory. On 1.02 MB of CSS
+across two sheets:
+
+```
+single set   12,458 names  3.5 ms  1,377 KB
+per sheet    12,458 names  3.5 ms  1,322 KB
+```
+
+Same walk, same names, slightly *less* heap. The names do not multiply — they **partition**; a class
+costs twice only where two sheets both define it. The concern was written into the task by the person
+who filed it (me, one round earlier) and did not survive being measured, which is the ordinary
+outcome of applying *measure before you fix* to a premise rather than to a defect.

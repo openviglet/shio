@@ -137,6 +137,52 @@ class ShHtmlRegionsTest {
                 .containsExactly(tuple("header", 1), tuple("section", 2));
     }
 
+    /**
+     * SH694 — the second positional defect: which theme is in force, per region.
+     *
+     * <p>One glance at the replica showed two things and SH687 could state only the first. This is
+     * the other: the accepted sections are presented by the Shio theme while the chrome keeps the
+     * captured one, two visual languages in one document. {@code unstyledClasses} says <em>whether</em>
+     * a class is defined; nothing said <b>by which sheet</b>, because {@code definedIn} concatenated
+     * every stylesheet into one set.</p>
+     */
+    @Test
+    @DisplayName("SH694: a region names the stylesheets that style what it draws")
+    void styledByNamesTheSheet() {
+        String html = """
+                <html><head>
+                  <style>.site-head{color:#111}.site-foot{color:#222}</style>
+                  <style>.shio-section{padding:2rem}.shio-heading{font-size:2rem}</style>
+                </head><body>
+                  <header class="site-head">chrome</header>
+                  <section sh-post="a1" class="shio-section"><h2 class="shio-heading">x</h2></section>
+                  <footer class="site-foot">chrome</footer>
+                </body></html>
+                """;
+
+        var regions = ShHtmlRegions.of(html, List.of(), ShHtmlAppearance.definedBySheet(html));
+
+        assertThat(regions)
+                .as("""
+                        the captured chrome draws from one sheet and the authored sections from the \
+                        other, and no earlier field could say so: a set of classes answers whether \
+                        they are defined, never by which sheet (SH694).""")
+                .extracting(ShHtmlRegions.Region::tag, ShHtmlRegions.Region::styledBy)
+                .containsExactly(
+                        tuple("header", List.of("style[1]")),
+                        tuple("section", List.of("style[2]")),
+                        tuple("footer", List.of("style[1]")));
+    }
+
+    @Test
+    @DisplayName("SH694: with no sheet map the list is empty, which is an absence not a claim")
+    void styledByIsEmptyWithoutSheets() {
+        // The one-argument form still exists and still answers order and provenance. An empty
+        // `styledBy` there must not read as "nothing styles this region" — it is "nobody asked".
+        assertThat(ShHtmlRegions.of(REPLICA, Set.of()))
+                .allSatisfy(region -> assertThat(region.styledBy()).isEmpty());
+    }
+
     @Test
     @DisplayName("with nothing undefined, and with no page at all, the answer is not a null")
     void emptyInputsAnswerEmptily() {

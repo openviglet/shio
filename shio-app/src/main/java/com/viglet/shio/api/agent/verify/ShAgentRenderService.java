@@ -407,10 +407,15 @@ public class ShAgentRenderService {
      */
     private static List<ShAgentDigest.Region> regionsOf(String html,
                                                         ShHtmlAppearance.Appearance appearance) {
-        return ShHtmlRegions.of(html, appearance == null ? List.of() : appearance.unstyledClasses())
+        return ShHtmlRegions.of(html,
+                        appearance == null ? List.of() : appearance.unstyledClasses(),
+                        // SH694 — read from the same page, so a region's `styledBy` and the
+                        // document's `definedClasses` cannot be answering about different bytes.
+                        ShHtmlAppearance.definedBySheet(html))
                 .stream()
                 .map(region -> new ShAgentDigest.Region(
-                        region.tag(), region.order(), region.markup(), region.unstyled()))
+                        region.tag(), region.order(), region.markup(), region.unstyled(),
+                        region.styledBy()))
                 .toList();
     }
 

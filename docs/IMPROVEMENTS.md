@@ -983,37 +983,6 @@ kept and *what* was accepted, and not *where* either belongs.
 SH692 names what a right page is; this is the first thing measured against that
 definition, and the seam rule it fails is the simplest one — order.
 
-### XVII.102 The theme in force, per region (SH694)
-
-SH687 answered the first of the two positional defects on the `www.viglet.org` replica —
-the footer renders above every section, now readable as `footer 4` against `section×8
-5-12`. The second is untouched: the accepted sections are presented by the Shio theme
-while the chrome keeps the captured one, two visual languages in one document, and no
-instrument can say so.
-
-The `regions` table has the shape for it. What it lacks is a column, and the column
-needs a fact nothing keeps: `ShHtmlAppearance.definedIn` concatenates every stylesheet
-into one set of names, so a reader can say a class **is** defined and not **by which
-sheet**. Attribution needs a set per origin.
-
-Measured on the replica after SH687: `header 4 unstyled, section 1, footer 4, sections
-0` — the undefined classes are entirely in the captured chrome, which is the shape of
-the answer arrived at from the wrong side. It cannot distinguish a section drawing
-`shio-*` from a Shio theme against a header drawing captured ones: both resolve, and
-neither says where.
-
-The output SH687 stopped one column short of:
-
-    region     order  markup     styled by             unstyled
-    header     1      verbatim   VigletOrg (captured)  4
-    section×8  5-12   sections   VigletOrg (Shio)      0
-    ⚠ two themes in force; the chrome and the sections share none
-
-Undesigned, because a set per sheet has a cost nothing has measured — SH686 put the
-single-set scan at 23–32 ms over 1.1 MB, and this multiplies the memory rather than the
-walk. Whether the warning belongs on the digest or in `verify` is the other open half: a
-digest describes and does not judge.
-
 ### XVII.103 The regions reader the produced side does not have (SH695)
 
 SH687 gave the **digest** a region list — landmarks in document order, each saying

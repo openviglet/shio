@@ -1148,6 +1148,116 @@ class ShPageRenderTest {
      * are computed from the bytes the check has just rendered, so this is a threshold rather than
      * an analysis — and it ends the join I keep rebuilding by hand and have got wrong twice.</p>
      */
+    /**
+     * SH694 — a page serving two visual languages, which nothing could state.
+     *
+     * <p>One glance at the {@code www.viglet.org} replica showed two defects. SH687 made the first
+     * sayable — the captured footer renders above every section. This is the other: the accepted
+     * sections are presented by the Shio theme while the chrome keeps the captured one.
+     * {@code unstyledClasses} answers <em>whether</em> a class is defined and never <b>by which
+     * sheet</b>, because {@code definedIn} concatenated every stylesheet into one set.</p>
+     *
+     * <p>The finding is <b>disjointness</b> and not "two sheets exist" — the second test below is
+     * the one that keeps this from firing on every page with a second stylesheet, which is most of
+     * them.</p>
+     */
+    @Test
+    @DisplayName("SH694: chrome and sections sharing no stylesheet is a finding")
+    void twoThemesInOneDocumentIsAFinding() {
+        String site = "sh694-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh694Page" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH694_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            // The replica's shape: two stylesheets, the captured one styling the chrome and the
+            // Shio one styling what an editor owns, and not one class in common.
+            published(owner, root, layoutType, layoutTitle, "/l", json("HTML",
+                    "<html><head>"
+                            + "<style>.site-head{color:#111}.site-foot{color:#222}</style>"
+                            + "<style>.shio-section{padding:2rem}</style>"
+                            + "</head><body>{{{TEXT}}}</body></html>"), when);
+            published(owner, root, pageType, "Split", "/split", json("TEXT",
+                    "<header class=\"site-head\"><h1>Chrome the conversion kept</h1></header>"
+                            + "<section sh-post=\"a1\" class=\"shio-section\">"
+                            + "<p>Prose enough that this is not the empty page, which is a different "
+                            + "finding and would confuse the one under test.</p></section>"
+                            + "<footer class=\"site-foot\">Kept chrome</footer>"), when);
+        });
+
+        List<com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding> findings =
+                verifyService.verify(site, "page", 100).findings();
+
+        assertThat(findings)
+                .filteredOn(finding -> "two-themes".equals(finding.rule()))
+                .as("""
+                        the chrome and the sections share no stylesheet, so a visitor sees two \
+                        visual languages in one document — the defect a screenshot from a human \
+                        found and no instrument could state (SH694).""")
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.address()).isEqualTo("post:" + site + "/split");
+                    assertThat(finding.message()).contains("style[1]", "style[2]");
+                    assertThat(finding.severity())
+                            .as("a warning: two stylesheets with nothing in common is how a "
+                                    + "mid-migration site legitimately looks, and finishing it is "
+                                    + "the curator's call")
+                            .isEqualTo("warning");
+                });
+    }
+
+    @Test
+    @DisplayName("SH694: two stylesheets the whole page shares are one design in two files")
+    void twoSheetsSharedByEveryRegionIsNotAFinding() {
+        // Guards the guard, and it is the assertion that keeps this rule usable: almost every real
+        // page carries more than one stylesheet. The finding is DISJOINTNESS — the chrome and the
+        // sections drawing from sets with nothing in common — not the existence of a second sheet.
+        String site = "sh694ok-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh694Ok" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH694_OK_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            // Two sheets, and both halves of the page draw from both: a reset plus a theme, which
+            // is the ordinary way a design is split across files.
+            published(owner, root, layoutType, layoutTitle, "/l", json("HTML",
+                    "<html><head>"
+                            + "<style>.box{margin:0}</style>"
+                            + "<style>.brand{color:#111}</style>"
+                            + "</head><body>{{{TEXT}}}</body></html>"), when);
+            published(owner, root, pageType, "Shared", "/shared", json("TEXT",
+                    "<header class=\"box brand\"><h1>Chrome</h1></header>"
+                            + "<section sh-post=\"a1\" class=\"box brand\">"
+                            + "<p>Prose enough that this is not the empty page, which is a different "
+                            + "finding and would confuse the one under test.</p></section>"), when);
+        });
+
+        assertThat(verifyService.verify(site, "page", 100).findings())
+                .as("one design in two files is not two designs — a rule that fired here would "
+                        + "fire on almost every page and be the next thing nobody reads")
+                .noneMatch(finding -> "two-themes".equals(finding.rule()));
+    }
+
     @Test
     @DisplayName("SH521: a page that renders to nothing is a finding, and so is one nothing styles")
     void theGateJudgesTheArtefactRatherThanTheStore() {

@@ -11,6 +11,7 @@ package com.viglet.shio.api.agent.verify;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -96,6 +97,17 @@ public final class ShHtmlRegions {
      *                 empty set yields zeroes rather than nulls: "none" is an answer.
      */
     public static List<Region> of(String html, Collection<String> unstyled) {
+        return of(html, unstyled, Map.of());
+    }
+
+    /**
+     * @param bySheet SH694 — sheet name → the classes it defines ({@link ShHtmlAppearance}). A
+     *                region's {@code styledBy} is which of those sheets styled anything it draws,
+     *                which is what makes "the chrome and the sections share no stylesheet" sayable.
+     *                Empty leaves every {@code styledBy} empty rather than guessing one.
+     */
+    public static List<Region> of(String html, Collection<String> unstyled,
+                                  Map<String, Set<String>> bySheet) {
         if (html == null || html.isBlank()) {
             return List.of();
         }
@@ -117,7 +129,8 @@ public final class ShHtmlRegions {
                     element.tagName(),
                     order,
                     element.closest(AUTHORED) != null ? SECTIONS : VERBATIM,
-                    undefinedIn(element, undefined)));
+                    undefinedIn(element, undefined),
+                    styledBy(element, bySheet)));
         }
         return List.copyOf(regions);
     }
@@ -152,6 +165,40 @@ public final class ShHtmlRegions {
     }
 
     /**
+     * Which of the page's own stylesheets styles anything this region draws (SH694).
+     *
+     * <p>The second positional defect, and the one {@code landmarks} and {@code unstyledClasses}
+     * between them could not state: the replica presents its accepted sections through the Shio
+     * theme and keeps the captured one for its chrome — two visual languages in one document. A set
+     * of classes says <em>whether</em> they are defined; this says <b>by which sheet</b>, and two
+     * regions whose sets are disjoint is the fact the warning is made of.</p>
+     *
+     * <p>Sheet order, so two runs agree (P5), and the region's own descendants included for the
+     * reason {@link #undefinedIn} gives: a reader looking at a region wants it to account for
+     * everything under it.</p>
+     */
+    private static List<String> styledBy(Element region, Map<String, Set<String>> bySheet) {
+        if (bySheet.isEmpty()) {
+            return List.of();
+        }
+        Set<String> drawn = new TreeSet<>();
+        for (Element node : region.select("*")) {
+            drawn.addAll(node.classNames());
+        }
+        drawn.addAll(region.classNames());
+        List<String> sheets = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> sheet : bySheet.entrySet()) {
+            for (String name : drawn) {
+                if (sheet.getValue().contains(name)) {
+                    sheets.add(sheet.getKey());
+                    break;
+                }
+            }
+        }
+        return List.copyOf(sheets);
+    }
+
+    /**
      * One region of the page.
      *
      * @param tag      the landmark element
@@ -159,7 +206,10 @@ public final class ShHtmlRegions {
      *                 histogram could not carry, and the one that says a footer renders second
      * @param markup   {@link #SECTIONS} or {@link #VERBATIM}: who owns what this region draws
      * @param unstyled distinct class names it draws with that no stylesheet defines
+     * @param styledBy the page's own stylesheets that style something it draws, in document order
+     *                 (SH694) — empty when the caller supplied no sheet map, which is an absence
+     *                 rather than a claim that nothing styles it
      */
-    public record Region(String tag, int order, String markup, int unstyled) {
+    public record Region(String tag, int order, String markup, int unstyled, List<String> styledBy) {
     }
 }

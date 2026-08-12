@@ -99,8 +99,14 @@ public record ShAgentDigest(String source, String address, String url, Integer s
      * @param markup   {@code sections} when an editor owns what it draws, {@code verbatim} when the
      *                 conversion kept the source's markup
      * @param unstyled distinct class names it draws with that no stylesheet defines
+     * @param styledBy SH694 — which of the page's own stylesheets styles anything it draws. Two
+     *                 regions whose lists are disjoint is a page serving two visual languages, which
+     *                 is the second positional defect and the one nothing could state. A fact here;
+     *                 `verify` is where it becomes a finding, because a digest describes and the
+     *                 gate judges
      */
-    public record Region(String tag, int order, String markup, int unstyled) {
+    public record Region(String tag, int order, String markup, int unstyled,
+                         List<String> styledBy) {
     }
 
     /**

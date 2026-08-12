@@ -1997,6 +1997,9 @@ public class ShAgentVerifyService {
         // computed from the bytes just rendered, so this is a threshold rather than an analysis.
         emptyPage(check, address, html, findings);
         unstyledPage(check, address, html, findings);
+        // SH694 — the same bytes, one question further: not "is this class defined" but "by which
+        // sheet", which is what makes a page serving two visual languages sayable.
+        twoThemes(check, address, html, findings);
         Set<String> published = scan.publishedByUrl()
                 .getOrDefault(site.getId(), Map.of()).keySet();
         Set<String> seen = new LinkedHashSet<>();
@@ -2100,6 +2103,51 @@ public class ShAgentVerifyService {
      * presentational, and a class used only by a script is a real thing to have. That is the line
      * this service's own doctrine draws, applied honestly rather than in the safe direction.</p>
      */
+    /**
+     * A page presenting its chrome in one visual language and its sections in another (SH694).
+     *
+     * <h3>Why here and not on the digest</h3>
+     *
+     * <p>SH694 put the <em>fact</em> on the digest — each region's {@code styledBy}, which sheets
+     * style what it draws — and the judgement here, because a digest describes and this service is
+     * what gates. The same split {@code page-unstyled} uses one method down, for the same reason.</p>
+     *
+     * <p>The finding is <b>disjointness</b>, not "two sheets exist": a page whose header and
+     * sections both draw from {@code style[1]} and {@code style[2]} is one design in two files,
+     * which is ordinary. What is not is a replica whose captured chrome and authored sections
+     * share <em>none</em> — that is the second of the two defects one glance at the viglet.org
+     * home page showed and nothing Shio returned could state (SH687).</p>
+     *
+     * <p>A warning: two stylesheets with nothing in common is how a mid-migration site legitimately
+     * looks, and the curator is who decides whether it is finished. The instrument's job is that
+     * they are told rather than asked to notice.</p>
+     */
+    private static void twoThemes(String check, String address, String html,
+                                  List<Finding> findings) {
+        Map<String, Set<String>> bySheet = ShHtmlAppearance.definedBySheet(html);
+        if (bySheet.size() < 2) {
+            return;
+        }
+        List<ShHtmlRegions.Region> regions = ShHtmlRegions.of(html, List.of(), bySheet);
+        Set<String> chrome = new java.util.TreeSet<>();
+        Set<String> authored = new java.util.TreeSet<>();
+        for (ShHtmlRegions.Region region : regions) {
+            (ShHtmlRegions.SECTIONS.equals(region.markup()) ? authored : chrome)
+                    .addAll(region.styledBy());
+        }
+        if (chrome.isEmpty() || authored.isEmpty() || !java.util.Collections.disjoint(chrome, authored)) {
+            return;
+        }
+        findings.add(Finding.warning(check, "two-themes", address, null,
+                "This page's kept markup and its authored sections share no stylesheet: the chrome "
+                        + "is styled by " + String.join(", ", chrome) + " and the sections by "
+                        + String.join(", ", authored)
+                        + ", so a visitor sees two visual languages in one document.",
+                "Either give the sections the theme the chrome uses, or convert the remaining blocks "
+                        + "so the whole page is authored. GET /api/v2/agent/render?address=" + address
+                        + " returns each region's styledBy under regions."));
+    }
+
     private static void unstyledPage(String check, String address, String html,
                                      List<Finding> findings) {
         ShHtmlAppearance.Appearance appearance = ShHtmlAppearance.of(html);
