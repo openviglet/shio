@@ -32,6 +32,7 @@
 ## Block N — Realignment of what already shipped
 
 - 📋 **SH672** (deps: —) **A floor in a docs reader fires when the corpus is correct, not when the reader breaks** — Three floors in the rationale reader are absolute counts over a corpus meant to empty, and a fourth already fired for the corpus being right rather than the reader being broken. → §XIV.24
+- 📋 **SH680** (deps: —) **Every command-line property passed to the jar is silently discarded** — The bootstrap calls application.run() instead of run(args), so --server.port and every other flag is dropped with no error and no log line. → §XIV.25
 
 ## Block O — The human half (the console the curator uses)
 

@@ -473,6 +473,33 @@ suites can classify a floor by what it counts: a registry and a ledger only grow
 absolute floor over them is honest; the roadmap and the rationale do not. Hold the rest
 as a named list, the shape `assertion-debt` already uses.
 
+### XIV.25 Command-line properties are dropped without a word (SH680)
+
+`Shio.main` builds a `SpringApplication` and then calls **`application.run()`** — no
+`args`. Every `--key=value` on the command line is dropped, and dropped *silently*: no
+warning, no log line, and the application starts normally with the defaults.
+
+Found while verifying SH676, by pointing an instance at a local catalogue with
+`--shio.marketplace.enabled=true`. It came up reporting `"shio.marketplace.enabled is
+false"`. The property was right and the value was right, and nothing said the argument
+had been ignored — which is the defect: the failure is indistinguishable from the
+feature not working.
+
+**Worse than it looks.** `java -jar app.jar --server.port=8080` is the most universal
+thing anyone does with a Spring Boot jar. An operator who reaches for it gets a running
+instance on the wrong port and no reason. The workaround — environment variables, which
+bind through relaxed naming and *do* work — is one nobody has cause to look for.
+
+The fix is `application.run(args)`. What needs care is the assertion: a two-character
+change no unit test naturally covers, because it is about the process boundary. The
+honest guard is a lint over the bootstrap — `run(` inside `main(String[] args)` must
+pass them — cheap, textual, and it fails when somebody writes the argument-less form
+again.
+
+Check in the same pass whether any deployment artefact relies on the broken behaviour:
+the Docker and compose files configure through environment variables, so this should
+widen what works rather than change what already does.
+
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody
