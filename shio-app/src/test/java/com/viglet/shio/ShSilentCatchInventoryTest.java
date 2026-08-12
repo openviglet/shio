@@ -137,7 +137,14 @@ class ShSilentCatchInventoryTest {
             // It is counted rather than exempted for the reason the `render` entries above are:
             // the lint keys on "neither records nor rethrows" and cannot see that the return value
             // IS the record, which is the right way round for a population guard to be wrong.
-            "marketplace", 1,
+            //
+            // 2 since SH675, and the second is the ordinary kind: `deleteQuietly` swallows an
+            // IOException while removing the staging directory an install unpacked into. It runs in
+            // a `finally`, after the answer is already decided, so reporting it would replace the
+            // real outcome — installed, or refused with the reason — with the OS's opinion about a
+            // temp directory. The bytes are in the system temp dir either way, which is somebody
+            // else's cleanup by construction.
+            "marketplace", 2,
             // 3 since SH384: a bad `page=` falls back to page one, beside the bad `limit=` that
             // falls back to the default. Deliberately not recorded — that value comes off a URL a
             // *reader* types, so a diagnostics entry per `?page=abc` would fill the window with

@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.marketplace;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -176,6 +177,29 @@ public class ShMarketplaceCatalog {
         return new String(download(url), java.nio.charset.StandardCharsets.UTF_8);
     }
 
+    /**
+     * The bytes of one entry's package zip.
+     *
+     * <p>Same allow-list as {@link #readme(String)} and for the same reason: the reachable set is
+     * exactly what the operator's configured catalogue declared, so no caller — however it got the
+     * string — can turn this into a request at an address the catalogue never offered.</p>
+     *
+     * @param url the {@code downloadUrl} of an entry in the current catalogue
+     * @throws ShTeachingException when the catalogue does not declare that URL
+     */
+    public InputStream openDownload(String url) {
+        Set<String> declared = new LinkedHashSet<>();
+        for (ShMarketplaceItem item : catalogue().items()) {
+            if (item.downloadUrl() != null && !item.downloadUrl().isBlank()) {
+                declared.add(item.downloadUrl());
+            }
+        }
+        if (url == null || !declared.contains(url)) {
+            throw new UndeclaredDownloadException(url);
+        }
+        return new java.io.ByteArrayInputStream(download(url));
+    }
+
     /** The packages that shipped with the instance, read from the registry rather than restated. */
     private List<ShMarketplaceItem> builtInItems() {
         List<ShMarketplaceItem> items = new ArrayList<>();
@@ -303,6 +327,19 @@ public class ShMarketplaceCatalog {
                     .withFix("Set shio.marketplace.enabled=true, and shio.marketplace.url if the "
                             + "catalogue is not the default one.")
                     .withExample("shio.marketplace.enabled=true"));
+        }
+    }
+
+    /** A package this catalogue never offered — the same answer as the README's, for downloads. */
+    public static class UndeclaredDownloadException extends ShTeachingException {
+
+        public UndeclaredDownloadException(String sent) {
+            super(ShProblem.of("undeclared-download", HttpStatus.BAD_REQUEST,
+                            "That package is not one this catalogue offers")
+                    .withDetail("Sent: " + (sent == null ? "(nothing)" : sent)
+                            + ". A package is fetched only from a URL the configured catalogue "
+                            + "declares, so an install cannot be pointed at an arbitrary host.")
+                    .withFix("Install by id: POST /api/v2/marketplace/{id}/install."));
         }
     }
 

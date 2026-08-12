@@ -551,6 +551,47 @@ Off is a *state the listing reports*, not a 404: an instance always has packages
 always has a true answer, and a console showing an error where there is content is the failure that
 avoids. The README proxy is the one that does refuse when disabled, naming the property (P6).
 
-Install is **SH675** and deliberately a separate door — putting a stranger's package where the
-registry will load it is a different act from reading a list. The CLI is SH677, the console SH679,
-and MCP is SH678, last because `tools/list` has three tokens of headroom.
+## An install leaves a package the registry loads, or it leaves nothing (SH675)
+
+`POST /api/v2/marketplace/{id}/install` downloads the zip, expands it into `shio.blueprint.path`
+and reloads. `?dryRun=true` does all of that except the move into place. `DELETE
+/api/v2/marketplace/{id}` is the same door in reverse — a catalogue you can only add to is one
+nobody experiments with — and refuses a first-party package, which is on the classpath and would
+come back on the next restart.
+
+**Three of the four steps already existed.** The registry reads that directory, holds a package to
+the same checks as a first-party one, refuses a name collision naming both origins, isolates one
+that will not load (SH217), and records its origin. So what this adds is the transport and the
+refusals only a download can need: a zip entry that escapes its directory, a package whose manifest
+`name` disagrees with the catalogue `id`, an archive with no `blueprint.json`, a name already taken,
+and a package larger than source text plausibly is. Each is a teaching error (P6).
+
+**Only the name is checked before the registry sees it.** Everything else the format requires is the
+registry's, identically for this package and a first-party one — a second validator would be a
+second opinion about one format, and the pair would eventually disagree. The name is the exception
+because it is the only field the *catalogue* also asserts, and nothing downstream can notice them
+disagreeing: you would install one thing and apply another.
+
+### The rollback, and why SH217 was not already enough
+
+SH217 makes a broken local package harmless to the **catalogue**. It does not make it harmless to
+the **operator**, who asked for an install, was told it worked, and now has a directory the registry
+refuses on every read. So the reload happens *inside* the install: if the new package comes back
+rejected, the directory is removed and the refusal is the answer.
+
+This is not theoretical — it fired on the first run of this task's own tests, because the fixture
+manifest declared neither `postTypes` nor `content` and the registry correctly refuses a package
+that would apply nothing. The rollback was proved by an accident before it was proved on purpose.
+
+### Where the two writes sit on the security surface
+
+`ShStatelessReachabilityLintTest` classifies `/api/v2/marketplace` as **CONSOLE_ADMIN** — the same
+shape as `site-form`, one supply chain to the left. An agent can already apply a blueprint, so
+applying is not what a stateless install would add; what it would add is *fetching a stranger's
+package and planting it where the registry loads it*, after which every later apply runs whatever
+arrived. The operator is already the subject, because the catalogue is off until they enable it and
+name its URL. The listing and the README stay readable to anything authenticated; only the two
+writes are the operator's. **SH677's CLI therefore has an auth question of its own**, and answering
+it there is the point.
+
+The console is SH679, and MCP is SH678 — last, because `tools/list` has three tokens of headroom.

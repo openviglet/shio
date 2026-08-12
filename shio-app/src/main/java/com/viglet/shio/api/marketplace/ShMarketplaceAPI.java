@@ -10,25 +10,31 @@ package com.viglet.shio.api.marketplace;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.marketplace.ShMarketplaceCatalog;
+import com.viglet.shio.marketplace.ShMarketplaceInstaller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * The package marketplace (SH646) — browse the catalogue this instance can install from.
+ * The package marketplace (SH646, SH675) — browse the catalogue, and install from it.
  *
- * <h2>Two verbs, and neither one writes</h2>
+ * <h2>Reading and writing are separate doors</h2>
  *
- * <p>Listing and reading a README is the whole of this task. Installing is SH675 and stays a
- * separate door on purpose: an install puts a stranger's package where the registry will load
- * it, which is a different act from looking at a list, and P7 says the moment it happens is the
- * human's to choose.</p>
+ * <p>Listing and reading a README never write. Installing (SH675) puts a stranger's package where
+ * the registry will load it, which is a different act from looking at a list — so it is its own
+ * verb, it is a {@code POST}, and it takes {@code dryRun} because P7 says the moment a thing
+ * happens is the human's to choose. What it still does not do is <b>apply</b>: that stays
+ * {@code POST /api/v2/agent/blueprints/&#123;name&#125;/apply}, so an operator can read what they
+ * installed before anything touches content.</p>
  *
  * <h2>Why the listing answers even with the feature off</h2>
  *
@@ -51,9 +57,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class ShMarketplaceAPI {
 
     private final ShMarketplaceCatalog catalog;
+    private final ShMarketplaceInstaller installer;
 
-    public ShMarketplaceAPI(ShMarketplaceCatalog catalog) {
+    public ShMarketplaceAPI(ShMarketplaceCatalog catalog, ShMarketplaceInstaller installer) {
         this.catalog = catalog;
+        this.installer = installer;
     }
 
     /**
@@ -81,5 +89,38 @@ public class ShMarketplaceAPI {
     @Operation(summary = "The README of a catalogue entry, by its declared readmeUrl")
     public ResponseEntity<String> readme(@RequestParam(name = "url") String url) {
         return ResponseEntity.ok(catalog.readme(url));
+    }
+
+    /**
+     * Download a catalogue entry and put it where the registry will load it (SH675).
+     *
+     * <p>{@code dryRun=true} does everything except the move into place: it fetches, expands,
+     * checks the archive is safe and that the package agrees with the catalogue about its own
+     * name, and answers what would be installed. That is the same courtesy a blueprint apply
+     * already extends, at the step before it.</p>
+     *
+     * <p>An install that succeeds leaves a package the registry loads, and one that fails leaves
+     * nothing — including the case where the download was fine and the <em>package</em> is not,
+     * which is rolled back rather than left for the operator to discover on the next read.</p>
+     */
+    @PostMapping("/{id}/install")
+    @Operation(summary = "Install a catalogue package; dryRun validates it and writes nothing")
+    public ShMarketplaceInstaller.Installed install(
+            @PathVariable String id,
+            @RequestParam(name = "dryRun", required = false, defaultValue = "false")
+            boolean dryRun) {
+        return installer.install(id, dryRun);
+    }
+
+    /**
+     * Remove an installed package.
+     *
+     * <p>Only one that came from a catalogue: a package that shipped with the instance is on the
+     * classpath, so "uninstalled" would be a claim the next restart contradicts.</p>
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Uninstall a package that was installed from a catalogue")
+    public ShMarketplaceInstaller.Installed uninstall(@PathVariable String id) {
+        return installer.uninstall(id);
     }
 }

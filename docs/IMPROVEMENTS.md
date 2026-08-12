@@ -209,34 +209,10 @@ loop that cannot perceive itself is the failure this block should expect next.
 nothing — it just moves the work. **Absorbs the old SH23 marketplace epic** (SH27–SH31).
 
 The format, the verb, the first-party set, the section vocabulary, the Claude Code
-plugin, the five mismatches that shipping the two halves exposed and the catalogue
-itself are all shipped — see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the
-rest of the marketplace: the install, the published seed, the CLI, the console and the
-agent path (§XI.22, §XI.23, §XI.24, §XI.25, §XI.26).
-
-### XI.22 Installing a catalog item is mostly work that already exists (SH675)
-
-Installing a catalog item is four steps and the interesting one is that three already
-exist. **Download** the zip named by `downloadUrl`. **Expand** it into
-`shio.blueprint.path` as one directory. **Validate** — not new work: the registry
-already reads that directory, holds a package to the same format checks as a first-party
-one, refuses a name collision naming both origins, and isolates a package that will not
-load so it cannot take the catalogue down with it (SH217). **Report** what was installed
-and from where, which the registry already records as the origin.
-
-So the task is the fetch and the unpacking, plus the refusals only a download can need:
-a zip that escapes its directory on expansion, a package whose `name` disagrees with its
-catalog `id`, a download that is not a zip, and a name already taken. Each is a P6
-teaching error rather than a stack trace.
-
-**Install is not apply.** Installing puts a package where the registry can see it;
-applying it to a site stays `shio apply --blueprint`, unchanged and already built.
-Keeping them separate is what makes an install auditable and re-appliable: the package
-survives, so `/agent/blueprints` lists it, a second site can use it, and an operator can
-read what they installed before anything writes to content.
-
-Uninstall is the same door in reverse and belongs here rather than as a follow-up,
-because a catalogue you can only add to is one nobody will experiment with.
+plugin, the five mismatches that shipping the two halves exposed, and the marketplace's
+catalogue and install are all shipped — see [CHANGELOG.md](CHANGELOG.md) Block J. What
+remains is the rest of the marketplace: the published seed, the CLI, the console and the
+agent path (§XI.23, §XI.24, §XI.25, §XI.26).
 
 ### XI.23 The first-party six are what proves the catalog (SH676)
 
