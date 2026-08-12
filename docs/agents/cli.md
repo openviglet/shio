@@ -2242,6 +2242,26 @@ caller, and it asserts the three things a fake structurally cannot:
   `browser.mjs`'s two-command install line (SH434). A `skip` would be the corpus reporting its most
   expensive archetype as covered.
 
+**The held-findings ledger is the corpus's, not the fast tier's (SH671).** `open-findings.json` is
+how an assertion stays in the gate while the defect it names is open — red-and-held is *reported*,
+red-and-unheld **fails**, green-and-held fails too — and that machinery lived inside
+`source-corpus.test.mjs`, so the live tier had no `holding()` call at all. Measured consequence: the
+live tier was red at HEAD on `malformed`, `red-suites.json` held `exceptions: []`, and there was no
+third place to declare it, so one of the three gates sat in the state SH579 says does not exist —
+undeclared, and invisible because the instrument that would have reported it was the one that was
+red. `fixtures/source-sites/open-findings.mjs` is now the one implementation both tiers read, and an
+entry carries **`tier`** (`fast` | `live`, absent meaning `fast`) so each tier checks its own entries
+in both directions. Without the scope they would report each other's keys as unexercised, which
+means only "the other driver did not run".
+
+**The red itself was the instrument contradicting itself across two tests.** `malformed` declares
+`expect.problems: ["/deep/page"]` — SH544's `<base href>` resolved against the page rather than the
+base — so one test asserted that path *is* recorded as a problem while the next counted the request
+for it as a path "this archetype does not serve". A declared problem is a request the archetype
+exists to provoke, so it is now exempt; the route table stays the rule, which keeps an invented URL
+a failure. Removing the declaration puts both tests back to red, which is how that exemption is
+known to be load-bearing rather than a blanket pass.
+
 It is the one file here that does **not** call `requireInstance`: its boundary is the socket, and
 demanding a Shio it never speaks to would blame a red run on an instance with no part in it.
 

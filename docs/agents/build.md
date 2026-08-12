@@ -48,6 +48,15 @@ This is the contract `assertion-debt.test.mjs` uses for its DEBT list and
 `ShSilentCatchInventoryTest` for its inventory: a named list with a reason beside each entry,
 never a ceiling. A ceiling lets one task pay the debt and the next spend it.
 
+**Run `pnpm test` *after* `roadkeep ship`, not before it.** `assertion-debt.test.mjs` derives
+"shipped" from `CHANGELOG.md`, which the ship writes — so a suite run before it cannot see the
+task you are about to commit, and a green run is evidence about the previous state. This has
+already produced a red push: SH658's suite ran green, shipped, and committed, and the next
+iteration opened on `+ 'SH658'` in the debt diff. The ship is cheap and the suite is not, so the
+order is ship → run → commit, and a task whose assertion names its own id passes on the first
+run instead of the second. Nothing lints it locally; `.github/workflows/suites.yml` is what
+catches it, one push later.
+
 **And since SH529 each DEBT group carries a verdict, because a list is not a decision.** SH527
 established the count and held it; the question it left open was *which of these earn an
 assertion* — not all do, and saying which is the work rather than a way out of it. Every group now

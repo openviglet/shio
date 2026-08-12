@@ -53,11 +53,27 @@ import { INVENTORY_FILE } from "../src/clone.mjs";
 import { INSTALL } from "../src/browser.mjs";
 import * as clone from "../src/commands/clone.mjs";
 import { injectedFetch, loadAll, serve } from "../../fixtures/source-sites/corpus.mjs";
+import { holdings, ledger } from "../../fixtures/source-sites/open-findings.mjs";
 
 /** The origin the fast tier serves at, so the two captures are compared against the same paths. */
 const INJECTED_ORIGIN = "https://fixture.test";
 
 const corpus = await loadAll();
+
+/**
+ * SH671 — this tier's half of the held-findings ledger.
+ *
+ * <p>It had none, and that was the defect rather than an omission of convenience: the corpus was
+ * red here at HEAD on `malformed`, `red-suites.json` held `exceptions: []`, and there was no third
+ * place to declare it — so one of this project's three gates sat in the state SH579 says does not
+ * exist. A tier that can go red and cannot say so is worse than one nobody runs, because its red is
+ * indistinguishable from neglect.</p>
+ *
+ * <p>Scoped to `live`, so a socket-only finding is held here and an offline one over in the fast
+ * tier, and neither reports the other's entries as unexercised. The rules are the shared module's,
+ * not a second copy of them.</p>
+ */
+const { held, exercised, reported, holding } = holdings((await ledger()).findings, "live");
 
 function sink() {
   const out = { text: "" };
@@ -157,12 +173,14 @@ describe("SH560 live: the corpus over a real socket", () => {
           + "Buffer the fixture already held. SH204's point: a fake answers `arrayBuffer` from a "
           + "string, so binary-safety is the property it structurally cannot assert",
       );
-      assert.deepEqual(
-        paths(run.inventory.problems),
-        [...(declaration.expect.problems ?? [])].sort(),
-        `${entry.id}: a page the crawl could not read is a problem here too — a driver that turns `
-          + "one into a silent absence would make every count above a lower bound",
-      );
+      holding(entry.id, "live-problems", () => {
+        assert.deepEqual(
+          paths(run.inventory.problems),
+          [...(declaration.expect.problems ?? [])].sort(),
+          `${entry.id}: a page the crawl could not read is a problem here too — a driver that turns `
+            + "one into a silent absence would make every count above a lower bound",
+        );
+      });
     });
 
     test(`${entry.id}: the walk is bounded by what it ASKED for, not by what it kept (SH387)`, async () => {
@@ -183,16 +201,28 @@ describe("SH560 live: the corpus over a real socket", () => {
       // And nothing outside the archetype at all. A request for a path the route table does not
       // hold is either a crawler inventing URLs or a resolution bug, and both answer 404 — so the
       // capture looks identical and only the server knows.
+      //
+      // SH671 — except a path the archetype **declares as a problem**, which is a request it exists
+      // to provoke. `malformed` names `/deep/page`: SH544's `<base href>` is resolved against the
+      // page rather than the base, and the 404 that follows is the modelled defect. Without this,
+      // the one archetype written to make a bad resolution observable fails for making it, and the
+      // test above asserts the very same path *is* recorded as a problem — so the file contradicted
+      // itself across two tests. The route table stays the rule; the declaration is the exception,
+      // which keeps an invented URL a failure.
+      const provoked = new Set(declaration.expect.problems ?? []);
       const unknown = run.requested.filter((path) => !entry.table.has(path)
         && !entry.table.has(path.split("?")[0])
+        && !provoked.has(path)
         && path !== "/robots.txt");
-      assert.deepEqual(
-        unknown,
-        [],
-        `${entry.id}: the crawl asked for ${unknown.length} path(s) this archetype does not serve. `
-          + "Every one of them answered 404 and left no trace in the inventory, which is why an "
-          + `injected fetch cannot see this at all.\n  asked: ${run.requested.join(" ")}`,
-      );
+      holding(entry.id, "live-unknown-paths", () => {
+        assert.deepEqual(
+          unknown,
+          [],
+          `${entry.id}: the crawl asked for ${unknown.length} path(s) this archetype does not serve. `
+            + "Every one of them answered 404 and left no trace in the inventory, which is why an "
+            + `injected fetch cannot see this at all.\n  asked: ${run.requested.join(" ")}`,
+        );
+      });
     });
   }
 
@@ -213,15 +243,46 @@ describe("SH560 live: the corpus over a real socket", () => {
           + "the fake asserts and undici normalises. That is the whole reason the corpus was built "
           + "with two drivers instead of one, and it is unfalsifiable while only one of them runs.",
       );
-      assert.deepEqual(
-        paths(live.inventory.assets),
-        paths(fake.inventory.assets),
-        `${entry.id}: and the same assets. A stylesheet's own url() is resolved against the URL the `
-          + "stylesheet was served from (SH452), so a driver that reports a different final URL "
-          + "moves every reference inside it",
-      );
+      holding(entry.id, "live-drivers-agree-assets", () => {
+        assert.deepEqual(
+          paths(live.inventory.assets),
+          paths(fake.inventory.assets),
+          `${entry.id}: and the same assets. A stylesheet's own url() is resolved against the URL `
+            + "the stylesheet was served from (SH452), so a driver that reports a different final "
+            + "URL moves every reference inside it",
+        );
+      });
     });
   }
+
+  /**
+   * SH671 — the ledger, read back, and the reason this tier now has one.
+   *
+   * <p>Both directions, the same as the fast tier's group G: a held key no assertion reached is a
+   * finding that quietly stopped being checked, and a held case that has gone green fails inside
+   * `holding` itself. The counts print on every run because a list that is empty on a good day is
+   * indistinguishable from a list nobody consults.</p>
+   */
+  test("SH671: every held live finding was exercised, and the run prints both counts", () => {
+    const stale = [...held.keys()].filter((key) => !exercised.has(key));
+    console.log(
+      `\nSH671 live: ${exercised.size} finding-bearing assertion(s), ${reported.length} red and `
+        + `held by ${new Set(reported.map((each) => each.id)).size} open task(s): `
+        + `${[...new Set(reported.map((each) => each.id))].join(" ")}`,
+    );
+    assert.ok(
+      exercised.size > 0,
+      "SH671: no assertion here ran under `holding`, so this tier is back to having no way to "
+        + "declare a red — which is the state that let `malformed` sit red and undeclared.",
+    );
+    assert.deepEqual(
+      stale,
+      [],
+      "SH671: open-findings.json holds a live-tier key no assertion runs, so a finding stopped "
+        + "being checked without the list being told. Delete the entry or restore the assertion.\n"
+        + `  stale: ${stale.join(" ")}`,
+    );
+  });
 });
 
 // -------------------------------------------------------------------------------------------------

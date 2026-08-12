@@ -57,6 +57,7 @@ import * as clone from "../src/commands/clone.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import * as propose from "../src/commands/propose.mjs";
 import { injectedFetch, loadAll } from "../../fixtures/source-sites/corpus.mjs";
+import { holdings } from "../../fixtures/source-sites/open-findings.mjs";
 
 /** The origin every archetype is served at. Fixed, because a capture records paths against it. */
 const ORIGIN = "https://fixture.test";
@@ -113,17 +114,13 @@ const INERT_KEYS = [];
  */
 const CLOSED_OWNERS = [];
 
-const held = new Map(OPEN.findings.map((finding) => [`${finding.archetype}/${finding.assertion}`, finding]));
-const exercised = new Set();
-const reported = [];
+// SH671 — this tier's subset, from the shared reader. The machinery moved to
+// `fixtures/source-sites/open-findings.mjs` when the *live* tier turned out to have no way to
+// declare a red at all: it was a property of this file rather than of the corpus, so a socket-only
+// finding had nowhere to go and the gate sat red and undeclared. `held` is scoped to `fast`, which
+// is what keeps the two tiers from failing each other's entries as unexercised.
+const { held, exercised, reported, holding } = holdings(OPEN.findings, "fast");
 
-/**
- * Run one finding-bearing assertion under the held list.
- *
- * <p>Three outcomes, and the third is the one that makes this honest: red and held is **reported**,
- * red and unheld is a **failure** (a new finding), and green and held is a **failure** too, because
- * the fix landed and the ledger has not been told.
- */
 /**
  * Held findings whose own prose names a task that has shipped, and which do not admit it (SH568).
  *
@@ -149,30 +146,6 @@ async function refiledDebt(findings, roadmap) {
   return flagged.sort();
 }
 
-function holding(archetype, assertion, check) {
-  const key = `${archetype}/${assertion}`;
-  exercised.add(key);
-  const entry = held.get(key);
-  let failure = null;
-  try {
-    check();
-  } catch (error) {
-    failure = error;
-  }
-  if (!entry) {
-    if (failure) throw failure;
-    return;
-  }
-  if (!failure) {
-    throw new assert.AssertionError({
-      message: `${entry.id} is GREEN: ${key} passes, and open-findings.json still holds it.\n`
-        + `  what it held: ${entry.what}\n`
-        + "  delete that entry — a fix that lands without the list being told turns this suite back "
-        + "into one that reports a number nobody can act on",
-    });
-  }
-  reported.push({ ...entry, key, message: failure.message });
-}
 
 /**
  * A friendly URL's grammar, as the address forms allow it (SH79).
@@ -446,7 +419,7 @@ describe("SH560 group B: the capture of each archetype is what it declares", () 
             const kept = labels.find((label) => (item.keeps ?? []).every((w) => label.includes(w)));
             assert.ok(
               kept !== undefined,
-              `${entry.id} / ${item.catches}: no label for ${item.href} carries all of `
+              `SH658 / ${entry.id} / ${item.catches}: no label for ${item.href} carries all of `
                 + `${JSON.stringify(item.keeps ?? [])}, so a rule that removes a decorative mark is `
                 + `eating the source's own words. ${item.means}.\n`
                 + `  labels: ${JSON.stringify(labels)}`,
@@ -456,7 +429,8 @@ describe("SH560 group B: the capture of each archetype is what it declares", () 
               assert.deepEqual(
                 leaked,
                 [],
-                `${entry.id} / ${item.catches}: a label for ${item.href} still carries "${word}", `
+                `SH658 / ${entry.id} / ${item.catches}: a label for ${item.href} still carries `
+                  + `"${word}", `
                   + "which is a graphic's letters and not a word of this page — so the menu a "
                   + `conversion writes reads as a logo. ${item.means}.\n`
                   + `  leaked: ${JSON.stringify(leaked)}`,
