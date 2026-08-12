@@ -1574,3 +1574,48 @@ what `shio annotations` counts. The list it produced was right *by accident*, be
 annotated at all, so the instrument passed its own review while asserting the wrong name. That is
 precisely the failure an asserted list is supposed to prevent, and it survived a full review two
 iterations ago.
+
+## The selector the reader could not spell (SH686)
+
+`ShHtmlAppearance` parses a page's own stylesheets for class selectors and reports the classes the
+markup uses that it did not find; `verify` turns that into `page-unstyled`. On the `www.viglet.org`
+replica it said **205 used, 1002 defined, 42 unstyled** — and every one of the 42 is defined in the
+stored `theme/captured` CSS (1,061,479 chars).
+
+CSS requires `/` and `:` to be escaped inside an identifier, so Tailwind emits `.bg-background\/80`
+and `.dark\:text-slate-400`. The collector's identifier stopped at the first character outside
+`[_a-zA-Z0-9-]`, and a **backslash is outside it**, so it collected `bg-background` and `dark`. The
+markup carries the unescaped names. The two halves were comparing different languages and could
+never agree. **All 42 carry a `/` or a `:`** — the trait is the whole population, not a sample.
+
+So `page-unstyled` was a false positive on any site built with a modern utility framework, which is
+most of what a replication will ever capture — and worse than noise, because it accused the
+*verbatim* half of the page, which renders correctly. That is what sent a whole investigation into
+hand-parsing 1.1 MB of HTML.
+
+### The obvious fix adds a crash, and only a measurement says so
+
+Letting the pattern's identifier accept escapes — `(?:[_a-zA-Z0-9-]|\…)*` — resolves every one of
+the 42 and passes every test written for the defect. It also introduces a **`StackOverflowError`
+reachable from captured CSS**, which is content from somebody else's website. Measured over `.a`
+followed by 40,000 backslashes:
+
+| collector | 40k backslashes | 40k plain chars | 1 MB Tailwind CSS |
+|---|---|---|---|
+| old regex | OK, 1.5 ms | OK, 2.8 ms | OK, 31.7 ms |
+| escape-aware regex | **STACK OVERFLOW** | **STACK OVERFLOW** | OK, 58.4 ms |
+| bounded `{0,200}` regex | OK, 2.7 ms | OK, 3.3 ms | OK, 30.9 ms |
+| **linear scan (shipped)** | OK, 3.9 ms | OK, 3.4 ms | OK, 23–32 ms |
+
+`java.util.regex` compiles `[class]*` to a non-recursive loop and `(?:A|B)*` to a recursive one, so
+the repair would have traded a false positive for a crash — and the old pattern never entered a loop
+at all, which is why it was safe. The bounded form fixes it, and a bound truncates a long name back
+into a class the markup cannot match: the same defect one indirection along. The scan needs no bound
+and is the cheapest of the four on the real workload.
+
+It also collects **18,052 distinct names against the old 8,529** on that 1 MB fixture — the escaped
+selectors were collapsing onto their own prefixes, which is the defect stated as a number.
+
+The whole of this — that the regex works, that it overflows, and by how much the scan wins — came out
+of running the benchmark on the fix, not out of reading it. Ordinary application of *measure before
+you fix*: here the thing measured was the repair rather than the defect.

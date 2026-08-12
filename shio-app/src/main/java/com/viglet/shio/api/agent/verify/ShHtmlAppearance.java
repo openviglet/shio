@@ -61,17 +61,6 @@ public final class ShHtmlAppearance {
     private static final Pattern HREF = Pattern.compile("(?is)\\bhref\\s*=\\s*(\"([^\"]*)\"|'([^']*)'|([^\\s>]+))");
 
     /**
-     * Class selectors a stylesheet defines.
-     *
-     * <p>Deliberately crude: every {@code .name} outside a string, which over-collects (a
-     * {@code .5em} in a shorthand is not a selector) and never under-collects. Over-collecting is
-     * the safe direction here — it can only make the undefined-class list <em>shorter</em>, and a
-     * list that claims a class is unstyled when it is not is the reading that wastes an agent's
-     * turn.</p>
-     */
-    private static final Pattern CSS_CLASS = Pattern.compile("\\.(-?[_a-zA-Z][_a-zA-Z0-9-]*)");
-
-    /**
      * A {@code <style>} element and its contents.
      *
      * <p>{@code <style(\s…)?>} rather than {@code <style\b…>} on purpose: in a Java string literal
@@ -157,16 +146,147 @@ public final class ShHtmlAppearance {
         return names;
     }
 
+    /**
+     * Class selectors a stylesheet defines, as the <b>markup</b> spells them (SH686).
+     *
+     * <p>Deliberately crude about what a selector is: every {@code .name}, which over-collects (a
+     * {@code .5em} in a shorthand is not a selector) and never under-collects. Over-collecting is
+     * the safe direction — it can only make the undefined-class list <em>shorter</em>, and a list
+     * that claims a class is unstyled when it is not is the reading that wastes an agent's turn.</p>
+     *
+     * <h3>It under-collected anyway, on most of the web</h3>
+     *
+     * <p>This was a regex whose identifier stopped at the first character outside
+     * {@code [_a-zA-Z0-9-]} — and a <b>backslash</b> is outside it. CSS requires {@code /} and
+     * {@code :} to be escaped in an identifier, so Tailwind writes {@code .bg-background\/80} and
+     * {@code .dark\:text-slate-400}, from which it collected {@code bg-background} and {@code dark}.
+     * The markup carries the unescaped names. The two halves could never match.</p>
+     *
+     * <p>Measured on the {@code www.viglet.org} replica: <b>205 used, 1002 defined, 42 unstyled</b>,
+     * and every one of the 42 is defined in the stored {@code theme/captured} CSS (1,061,479 chars).
+     * All 42 carry a {@code /} or a {@code :} — the trait is the whole population, not a sample. So
+     * {@code page-unstyled} was a false positive on any site built with a modern utility framework,
+     * which is most of what a replication will ever capture, and worse than noise: it accused the
+     * <em>verbatim</em> half of the page, which renders correctly. A warning pointing at the wrong
+     * half is what sent a whole investigation into hand-parsing 1.1 MB of HTML.</p>
+     *
+     * <h3>A scan and not a regex, and that is a measurement rather than a taste</h3>
+     *
+     * <p>The obvious repair is to let the pattern's identifier accept escapes:
+     * {@code (?:[_a-zA-Z0-9-]|\\…)*}. It works, and it introduces a <b>{@code StackOverflowError}
+     * reachable from captured CSS</b> — which is content from somebody else's website. Measured on
+     * this machine, over {@code .a} followed by 40,000 backslashes:</p>
+     *
+     * <pre>
+     *   old regex   OK,  1.5 ms      (never enters a loop — it stops at the backslash)
+     *   escape regex STACK OVERFLOW
+     *   this scan   OK,  3.9 ms
+     * </pre>
+     *
+     * <p>{@code java.util.regex} compiles {@code [class]*} to a non-recursive loop but
+     * {@code (?:A|B)*} to a recursive one, so the fix would have added the crash while removing the
+     * false positive. On the real 1 MB workload the scan is also the cheaper of the three — 23–32 ms
+     * against 31.7 ms for the old regex and 58.4 ms for the escape-aware one — and it needs no
+     * arbitrary length bound, which would truncate a long name back into a class the markup cannot
+     * match. Same defect, one indirection along.</p>
+     *
+     * <p>Both escape forms, per the grammar. A hex escape is up to six digits and consumes one
+     * optional whitespace terminator — that terminator exists so {@code \31 23} means "1" then "23"
+     * rather than a six-digit code point, and keeping it would leave a space inside a class name
+     * that has none. Any other escaped character stands for itself, which is the form Tailwind emits
+     * for {@code /} and {@code :}. A null code point becomes U+FFFD as CSS requires, rather than a
+     * NUL that no {@code class} attribute can hold.</p>
+     */
     private static Set<String> definedIn(String css) {
         Set<String> names = new LinkedHashSet<>();
         if (css == null || css.isBlank()) {
             return names;
         }
-        Matcher matcher = CSS_CLASS.matcher(css);
-        while (matcher.find()) {
-            names.add(matcher.group(1));
+        int at = 0;
+        while (at < css.length()) {
+            if (css.charAt(at) != '.') {
+                at++;
+                continue;
+            }
+            StringBuilder name = new StringBuilder();
+            int end = readIdent(css, at + 1, name);
+            if (end > at + 1 && !name.isEmpty()) {
+                names.add(name.toString());
+                at = end;
+            } else {
+                at++;
+            }
         }
         return names;
+    }
+
+    /**
+     * Reads one CSS identifier into {@code out}, unescaped, and returns where it ended.
+     *
+     * @return the index after the identifier, or {@code from} when there is no identifier here
+     */
+    private static int readIdent(String css, int from, StringBuilder out) {
+        int at = from;
+        if (at < css.length() && css.charAt(at) == '-') {
+            out.append('-');
+            at++;
+        }
+        boolean first = true;
+        while (at < css.length()) {
+            char c = css.charAt(at);
+            if (c == '\\') {
+                int next = readEscape(css, at, out);
+                if (next == at) {
+                    break;
+                }
+                at = next;
+                first = false;
+                continue;
+            }
+            if (first ? isIdentStart(c) : isIdentPart(c)) {
+                out.append(c);
+                at++;
+                first = false;
+                continue;
+            }
+            break;
+        }
+        // `first` still true means nothing but an optional hyphen was read, which names nothing.
+        return first ? from : at;
+    }
+
+    /** One escape at {@code at}, appended to {@code out}; returns {@code at} when it is not one. */
+    private static int readEscape(String css, int at, StringBuilder out) {
+        int hexEnd = at + 1;
+        while (hexEnd < css.length() && hexEnd - at <= 6 && isHex(css.charAt(hexEnd))) {
+            hexEnd++;
+        }
+        if (hexEnd > at + 1) {
+            int codePoint = Integer.parseInt(css.substring(at + 1, hexEnd), 16);
+            out.appendCodePoint(codePoint == 0 ? 0xFFFD : codePoint);
+            return hexEnd < css.length() && isEscapeTerminator(css.charAt(hexEnd)) ? hexEnd + 1 : hexEnd;
+        }
+        if (at + 1 < css.length() && css.charAt(at + 1) != '\n') {
+            out.append(css.charAt(at + 1));
+            return at + 2;
+        }
+        return at;
+    }
+
+    private static boolean isEscapeTerminator(char c) {
+        return c == ' ' || c == '\t' || c == '\n';
+    }
+
+    private static boolean isIdentStart(char c) {
+        return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    }
+
+    private static boolean isIdentPart(char c) {
+        return isIdentStart(c) || (c >= '0' && c <= '9') || c == '-';
+    }
+
+    private static boolean isHex(char c) {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
     /**

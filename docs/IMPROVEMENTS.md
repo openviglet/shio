@@ -946,36 +946,6 @@ gate naming itself. Resuming is therefore two steps — dispatch the workflow, t
 the two `null` entries with `scaffold-versions.test.mjs`'s expectations in the same
 commit.
 
-### XVII.96 The selector the reader cannot spell (SH686)
-
-`appearance.definedClasses` parses a theme's CSS for class selectors and
-`unstyledClasses` is what the markup uses and it did not find. On the `www.viglet.org`
-replica it reported **205 used, 1002 defined, 42 unstyled**, and `verify` turned that
-into `page-unstyled`: *"draws with 42 class name(s) its own stylesheet does not define,
-and it loads no other."*
-
-Every one of the 42 is defined. Tested against the stored `theme/captured` CSS
-(1,061,479 chars):
-
-    class                     .cls    escaped
-    bg-background/80          false   true
-    dark:text-slate-400       false   true
-    disabled:opacity-50       false   true
-
-CSS requires `/` and `:` to be escaped in an identifier, so Tailwind emits
-`.bg-background\/80`. The reader matches the raw form only. **All 42 carry a `/` or a
-`:`** — the trait is the whole population, not a sample.
-
-Two consequences. The warning is a false positive on any site built with a modern
-utility framework, which is most of what a replication will ever capture. And it is
-worse than noise: it accuses the *verbatim* half of the page, which renders correctly,
-while the real appearance defect on that page — the accepted sections are presented by
-the Shio theme and the chrome by the captured one, two visual languages in one document
-— has no finding at all. A warning pointing at the wrong half is what sent a whole
-investigation into hand-parsing 1.1 MB of HTML.
-
-Unescape per the CSS grammar, and assert a Tailwind-shaped class resolves.
-
 ### XVII.97 Counting a page is not describing it (SH687)
 
 Two defects are visible in one glance at the `www.viglet.org` replica's home page: the
