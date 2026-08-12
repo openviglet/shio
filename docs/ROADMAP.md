@@ -45,6 +45,9 @@
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH684** (deps: —) **propose declines a candidate whose required field it cannot fill, and convert then empties one by dropping chrome** — A www.viglet.org replication declined 4 blocks for a missing heading and then convert dropped 7 headings as chrome, so verify refused the same 7 ids. → §XVII.94
 - 📋 **SH685** (deps: SH588 ✅) **annotations cannot resolve the post types it just rendered, so it checks one post of nine and reports the rest** — It answered 67 annotated over 4 declared with 8 types unresolved, while /agent/read names SectionFeatureGrid and SectionFaq for the very same ids. → §XVII.95
+- 📋 **SH686** (deps: —) **page-unstyled fires on classes the stylesheet defines, because the reader never unescapes a CSS selector** — All 42 it named on a viglet.org replica are in the captured CSS as escaped selectors, so the one warning that speaks about styling accuses the half of the page that is fine. → §XVII.96
+- 📋 **SH687** (deps: SH686) **Every appearance instrument reports cardinality, so a defect of order or attribution cannot be stated at all** — landmarks answers footer×1 header×1 nav×1 section×9, which cannot say the footer renders above the content, and it took a screenshot from a human to see it. → §XVII.97
+- 📋 **SH688** (deps: SH589 ✅, SH687) **judge leaves out the only instrument that holds geometry, and the reason is that nobody passed a flag** — It answered from verify and diff and printed audit NOT RUN - not asked for, on the one investigation whose whole question was what the page looks like. → §XVII.98
 
 ## Block F — Market positioning
 

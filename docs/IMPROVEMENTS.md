@@ -971,6 +971,93 @@ unresolved count grows.
 
 The Page's own `0/4` may well be real. It is not knowable from this output.
 
+### XVII.96 The selector the reader cannot spell (SH686)
+
+`appearance.definedClasses` parses a theme's CSS for class selectors and
+`unstyledClasses` is what the markup uses and it did not find. On the `www.viglet.org`
+replica it reported **205 used, 1002 defined, 42 unstyled**, and `verify` turned that
+into `page-unstyled`: *"draws with 42 class name(s) its own stylesheet does not define,
+and it loads no other."*
+
+Every one of the 42 is defined. Tested against the stored `theme/captured` CSS
+(1,061,479 chars):
+
+    class                     .cls    escaped
+    bg-background/80          false   true
+    dark:text-slate-400       false   true
+    disabled:opacity-50       false   true
+
+CSS requires `/` and `:` to be escaped in an identifier, so Tailwind emits
+`.bg-background\/80`. The reader matches the raw form only. **All 42 carry a `/` or a
+`:`** — the trait is the whole population, not a sample.
+
+Two consequences. The warning is a false positive on any site built with a modern
+utility framework, which is most of what a replication will ever capture. And it is
+worse than noise: it accuses the *verbatim* half of the page, which renders correctly,
+while the real appearance defect on that page — the accepted sections are presented by
+the Shio theme and the chrome by the captured one, two visual languages in one document
+— has no finding at all. A warning pointing at the wrong half is what sent a whole
+investigation into hand-parsing 1.1 MB of HTML.
+
+Unescape per the CSS grammar, and assert a Tailwind-shaped class resolves.
+
+### XVII.97 Counting a page is not describing it (SH687)
+
+Two defects are visible in one glance at the `www.viglet.org` replica's home page: the
+captured footer renders **above** the first section, and the accepted sections are
+presented by the Shio theme while the chrome keeps the captured one — two visual
+languages in one document.
+
+Neither is expressible in anything Shio returns. `landmarks` is a histogram: `footer×1
+header×1 nav×1 section×9`. `digest` promises an outline and gives the heading tree,
+which excludes a footer because footers carry no headings. `classes` (205),
+`definedClasses` (1002), `unstyledClasses` (42), `diff`'s link and character counts,
+`annotations`' `67 of 4` — every one is a count or a set. `audit` alone holds geometry,
+and it returned **0 errors** here.
+
+So the appearance surface can *measure* a page and cannot *describe* it, and both
+defects are positional: one is order, one is attribution.
+
+What would have replaced the session: one answer, per region, in document order, naming
+the theme in force.
+
+    region     order  markup     styled by             unstyled
+    header     1      verbatim   VigletOrg (captured)  0
+    footer     2      verbatim   VigletOrg (captured)  0   ← before content
+    section×9  3-11   sections   VigletOrg (Shio)      0
+    ⚠ two themes in force; the chrome and the sections share none
+
+Fifteen lines against 1.1 MB of hand-parsed HTML and a human round trip, which is P9
+stated exactly backwards.
+
+### XVII.98 The instrument that sat out the question it answers (SH688)
+
+`shio judge` is the one-verdict verb: run the instruments, answer once, name where they
+disagreed. On the `www.viglet.org` replica it reported `FINDING from 2 instrument(s), 2
+unproven`, and said so honestly:
+
+    audit  NOT RUN — not asked for — pass --browser
+      it would have answered: is anything wrong with the page a browser renders
+
+The question being asked was *why does this page look wrong*. `audit` is the only
+instrument that renders in a browser and the only one that returns geometry — it reports
+overflow in pixels with a CSS selector each. It sat out, and the investigation went to
+hand-parsing HTML and then to asking a human for a screenshot.
+
+The honesty is not the problem; `judge` naming what it skipped is SH589 working. The
+default is. `--browser` is off because audit needs playwright and loads one page at a
+time, which are real costs — but `judge` can *test* whether playwright is present, and
+when it is, declining the only geometric instrument is a decision it should not make
+silently on a replica whose mode is `mixed`.
+
+Two changes, both small. Run audit when playwright resolves, and say so. When it does
+not resolve, keep the current line but state the install, because *not asked for* reads
+as a preference and *not installed* reads as a fact — and the fact is the actionable
+one.
+
+`snapshot` stays opt-in: choosing a baseline is a judgement, and SH589 is right that
+inventing one is worse than abstaining.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
