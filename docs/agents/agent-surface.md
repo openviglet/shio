@@ -1861,3 +1861,62 @@ not.
 the next op would remember to re-run a hand comparison. They would not have. Both sides of
 the trade are now measured every build, so adding an op is an ordinary act again and the
 surface choice re-opens itself when it stops being true. The 680 total stays, unmoved.
+
+## Counting a page is not describing it (SH687)
+
+Two defects were visible in one glance at the `www.viglet.org` replica's home page: the captured
+footer renders **above** the first section, and the accepted sections are presented by the Shio theme
+while the chrome keeps the captured one. Neither was expressible in anything Shio returned.
+
+`landmarks` is a histogram — `footer×1 header×1 nav×1 section×9` — which is equally true of a page
+whose footer is last. `digest` promises an outline and gives the heading tree, which excludes a
+footer because footers carry no headings. `classes`, `definedClasses`, `unstyledClasses`, `diff`'s
+link and character counts, `annotations`' ratio: every one is a count or a set. `audit` alone holds
+geometry and returned **0 errors** there. Both defects are positional — one is order, one is
+attribution — and the appearance surface could *measure* a page without being able to *describe* it.
+
+### `regions`, beside `landmarks` and in neither hash
+
+`GET /agent/digest` on a **rendered** page now carries `regions`: the same landmarks in document
+order, each saying whether an editor owns its markup (`sections`) or the conversion kept the source's
+(`verbatim`), and how many undefined classes it draws with. Absent for a content digest, for
+`appearance`'s reason — a post's own markup field is not a page.
+
+The histogram stays. It is in the structural hash that lets two runs be compared by string (P5),
+`snapshot` diffs a source against a replica with it, and `audit` reads it as roles: replacing it
+would change what a digest *means* to three readers in order to add a fourth. `regions` is in
+**neither** hash, for a third reason — it is the same structure `landmarks` already hashes, so
+folding it in would move the digest for pages whose shape did not change, which is exactly the
+discrimination the two existing hashes protect.
+
+### What it says about the replica, measured
+
+```
+landmarks: footer×1 header×1 nav×1 section×9
+
+regions (document order):
+  header      1      verbatim  4 unstyled
+  nav         2      verbatim  0 unstyled
+  section     3      verbatim  1 unstyled
+  footer      4      verbatim  4 unstyled
+  section×8   5-12   sections  0 unstyled
+```
+
+The footer is region 4 and the authored content starts at 5 — **the footer renders above every
+section**, which is the finding, and it took a screenshot from a human to see. Two things the filed
+section had not predicted also fall out: `section×9` was one *verbatim* section plus eight authored
+ones, which the histogram merged into a single number; and every undefined class is in the captured
+chrome, none in the authored sections, so the one warning that speaks about styling now points at a
+half of the page rather than at the page.
+
+### Jsoup here, regex in `ShHtmlOutline`
+
+Not an inconsistency. The outline parses by regex because nothing it produces needs tree fidelity.
+This needs precisely what that trade gives up — **containment**: "is this landmark inside an authored
+section" is a question about ancestry, and answering it by counting tags is how a scanner attributes
+a region to whichever marker it happened to follow. `ShAgentRenderService.markersOf` already parses
+the same rendered page with Jsoup, so this adds no dependency and no second dialect.
+
+`styled by` — naming the theme in force per region, and warning when two are — is deliberately not
+here: it needs class-to-stylesheet provenance, which `definedIn` does not keep. That is the second
+defect, and it is filed rather than guessed at.

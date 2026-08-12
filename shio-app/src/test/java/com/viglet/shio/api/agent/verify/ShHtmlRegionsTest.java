@@ -1,0 +1,149 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.agent.verify;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
+import java.util.List;
+import java.util.Set;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/**
+ * SH687 — counting a page is not describing it.
+ *
+ * <h2>The two defects nothing could state</h2>
+ *
+ * <p>One glance at the {@code www.viglet.org} replica's home page showed both: the captured footer
+ * renders <b>above</b> the first section, and the accepted sections are presented by the Shio theme
+ * while the chrome keeps the captured one. Neither was expressible in anything Shio returned —
+ * {@code landmarks} answered {@code footer×1 header×1 nav×1 section×9}, {@code digest}'s outline is
+ * the heading tree and excludes a footer because footers carry no headings, and every other number
+ * on the appearance surface is a count or a set. {@code audit}, which alone holds geometry, returned
+ * <b>0 errors</b>. It took a screenshot from a human.</p>
+ *
+ * <p>This class carries the first defect's answer: order, and who owns each region's markup.</p>
+ *
+ * @author Alexandre Oliveira
+ */
+class ShHtmlRegionsTest {
+
+    /** The replica's shape, reduced: chrome kept verbatim, sections authored, footer misplaced. */
+    private static final String REPLICA = """
+            <html><body>
+              <header class="site-head"><nav><a href="/">Home</a></nav></header>
+              <footer class="site-foot">© Viglet</footer>
+              <main>
+                <section class="shio-section" sh-post="a1" data-shio-section="SectionHero">
+                  <h2>Ship faster</h2>
+                </section>
+                <section class="shio-section" sh-post="b2" data-shio-section="SectionFaq">
+                  <h2>Questions</h2>
+                </section>
+              </main>
+            </body></html>
+            """;
+
+    @Test
+    @DisplayName("SH687: the footer being second is a fact the histogram could not carry")
+    void regionsAreInDocumentOrder() {
+        List<ShHtmlRegions.Region> regions = ShHtmlRegions.of(REPLICA, Set.of());
+
+        assertThat(regions)
+                .as("""
+                        `footer×1 header×1 nav×1 section×2` is true of this page and of one where \
+                        the footer is last, and only one of those two is the defect. Order is the \
+                        whole field (SH687).""")
+                .extracting(ShHtmlRegions.Region::tag, ShHtmlRegions.Region::order)
+                .containsExactly(
+                        tuple("header", 1),
+                        tuple("nav", 2),
+                        tuple("footer", 3),
+                        tuple("main", 4),
+                        tuple("section", 5),
+                        tuple("section", 6));
+
+        assertThat(regions)
+                .filteredOn(region -> "footer".equals(region.tag()))
+                .allSatisfy(footer -> assertThat(footer.order())
+                        .as("the footer renders before the sections, which is the finding")
+                        .isLessThan(regions.stream()
+                                .filter(r -> "section".equals(r.tag()))
+                                .mapToInt(ShHtmlRegions.Region::order).min().orElseThrow()));
+    }
+
+    @Test
+    @DisplayName("SH687: a region says whether an editor owns its markup or it was kept verbatim")
+    void provenanceSeparatesSectionsFromChrome() {
+        List<ShHtmlRegions.Region> regions = ShHtmlRegions.of(REPLICA, Set.of());
+
+        assertThat(regions)
+                .extracting(ShHtmlRegions.Region::tag, ShHtmlRegions.Region::markup)
+                .containsExactly(
+                        tuple("header", ShHtmlRegions.VERBATIM),
+                        tuple("nav", ShHtmlRegions.VERBATIM),
+                        tuple("footer", ShHtmlRegions.VERBATIM),
+                        tuple("main", ShHtmlRegions.VERBATIM),
+                        tuple("section", ShHtmlRegions.SECTIONS),
+                        tuple("section", ShHtmlRegions.SECTIONS));
+    }
+
+    @Test
+    @DisplayName("SH687: containment, not position — a landmark nested in a section is the section's")
+    void aLandmarkInsideASectionIsAuthored() {
+        // The reason this parses rather than scans. "Is this landmark inside an authored section" is
+        // a question about ancestry, and a tag counter answers it by proximity — which attributes a
+        // region to whichever marker it happened to follow.
+        String html = """
+                <body>
+                  <section sh-post="a1"><table><tr><td>rows</td></tr></table></section>
+                  <table><tr><td>chrome</td></tr></table>
+                </body>
+                """;
+
+        assertThat(ShHtmlRegions.of(html, Set.of()))
+                .extracting(ShHtmlRegions.Region::tag, ShHtmlRegions.Region::markup)
+                .containsExactly(
+                        tuple("section", ShHtmlRegions.SECTIONS),
+                        tuple("table", ShHtmlRegions.SECTIONS),
+                        tuple("table", ShHtmlRegions.VERBATIM));
+    }
+
+    @Test
+    @DisplayName("SH687: an undefined class is attributed to the region that draws it")
+    void unstyledIsCountedPerRegion() {
+        // The document-wide list said 42 and could not say WHERE, so the one warning that speaks
+        // about styling pointed at the whole page. Handed the same set the appearance computed, so
+        // a region's count and the document's list cannot disagree about what is undefined.
+        String html = """
+                <body>
+                  <header class="site-head missing-a">x</header>
+                  <section sh-post="a1" class="shio-section missing-b">
+                    <p class="missing-c">y</p>
+                  </section>
+                </body>
+                """;
+
+        assertThat(ShHtmlRegions.of(html, Set.of("missing-a", "missing-b", "missing-c")))
+                .extracting(ShHtmlRegions.Region::tag, ShHtmlRegions.Region::unstyled)
+                .containsExactly(tuple("header", 1), tuple("section", 2));
+    }
+
+    @Test
+    @DisplayName("with nothing undefined, and with no page at all, the answer is not a null")
+    void emptyInputsAnswerEmptily() {
+        assertThat(ShHtmlRegions.of(REPLICA, Set.of()))
+                .as("an empty undefined-set yields zeroes rather than nulls — none is an answer")
+                .allSatisfy(region -> assertThat(region.unstyled()).isZero());
+        assertThat(ShHtmlRegions.of(null, Set.of())).isEmpty();
+        assertThat(ShHtmlRegions.of("   ", Set.of())).isEmpty();
+    }
+}

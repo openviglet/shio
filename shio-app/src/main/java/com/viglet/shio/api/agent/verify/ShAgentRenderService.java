@@ -141,9 +141,14 @@ public class ShAgentRenderService {
             // SH187 — appearance only here, because it describes the *document* a visitor gets. A
             // post's own markup field is not a page and carries no stylesheet, so an appearance
             // block for it would be a section of nulls pretending to be an answer.
+            ShHtmlAppearance.Appearance look = ShHtmlAppearance.of(html.get());
             return render(SOURCE_RENDERED, address, null, null, List.of(),
-                    ShHtmlOutline.of(html.get()), ShHtmlAppearance.of(html.get()),
-                    markersOf(html.get()));
+                    ShHtmlOutline.of(html.get()), look,
+                    markersOf(html.get()),
+                    // SH687 — the undefined classes are handed to the walk rather than recomputed,
+                    // so a region's count and the document's list cannot disagree about what is
+                    // undefined. One judgement, attributed; two would be two things to keep in step.
+                    regionsOf(html.get(), look));
         }
 
         List<String> fields = new ArrayList<>();
@@ -392,6 +397,23 @@ public class ShAgentRenderService {
      * this cannot come to count an attribute the renderer stopped emitting or miss one it added —
      * the drift SH260 removed for helpers, on the rendered side.</p>
      */
+    /**
+     * SH687 — the page's landmarks in document order, projected onto the wire type.
+     *
+     * <p>Two defects on the replica's home page were positional and therefore unsayable: the
+     * captured footer renders <b>above</b> the first section, and the sections are presented by a
+     * different theme than the chrome. {@code landmarks} is a histogram and could carry neither.
+     * This carries the first — order, and who owns each region's markup.</p>
+     */
+    private static List<ShAgentDigest.Region> regionsOf(String html,
+                                                        ShHtmlAppearance.Appearance appearance) {
+        return ShHtmlRegions.of(html, appearance == null ? List.of() : appearance.unstyledClasses())
+                .stream()
+                .map(region -> new ShAgentDigest.Region(
+                        region.tag(), region.order(), region.markup(), region.unstyled()))
+                .toList();
+    }
+
     private static ShAgentDigest.Markers markersOf(String html) {
         Document document = Jsoup.parse(html);
         int missing = document.select("[" + ShRegionComposer.ANNOTATION_MISSING + "]").size();
@@ -405,6 +427,20 @@ public class ShAgentRenderService {
                                  List<String> fields, ShHtmlOutline.Outline outline,
                                  ShHtmlAppearance.Appearance appearance,
                                  ShAgentDigest.Markers markers) {
+        return render(source, address, url, status, fields, outline, appearance, markers, null);
+    }
+
+    /**
+     * @param regions SH687 — the landmarks in document order, or {@code null} where there is no
+     *                rendered page to walk. Passed in rather than derived here for
+     *                {@code appearance}'s reason: only the caller holding the rendered HTML knows
+     *                whether it is looking at a document or at a post's own markup field
+     */
+    private ShAgentDigest render(String source, String address, String url, Integer status,
+                                 List<String> fields, ShHtmlOutline.Outline outline,
+                                 ShHtmlAppearance.Appearance appearance,
+                                 ShAgentDigest.Markers markers,
+                                 List<ShAgentDigest.Region> regions) {
         List<ShAgentDigest.Heading> headings = outline.headings().stream()
                 .map(heading -> new ShAgentDigest.Heading(heading.level(), heading.text()))
                 .toList();
@@ -430,7 +466,12 @@ public class ShAgentRenderService {
                 look == null ? null : appearanceDigestOf(look),
                 // SH299 — beside the two hashes and in neither of them: a marker count says the
                 // page is broken, which is a different question from "did its structure change".
-                markers);
+                markers,
+                // SH687 — and in neither hash either, for a third reason: this is the SAME structure
+                // `landmarks` already hashes, read in document order. Folding it in would make the
+                // digest change for pages whose shape did not, which is the discrimination the two
+                // hashes above exist to protect.
+                regions);
     }
 
     /**

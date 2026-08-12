@@ -263,6 +263,85 @@ test("digest prints the outline, landmarks, links and the images missing alt", a
   );
 });
 
+/**
+ * SH687 — the replica's shape, and the line the histogram could not print.
+ *
+ * <p>`footer×1 header×1 nav×1 section×9` is true of a page whose footer is last and of one whose
+ * footer is second, and only the second is the defect. It took a screenshot from a human to see it,
+ * on a page every textual instrument called fine.</p>
+ */
+const DIGEST_WITH_REGIONS = {
+  ...DIGEST,
+  source: "rendered",
+  landmarks: { footer: 1, header: 1, nav: 1, section: 9 },
+  regions: [
+    { tag: "header", order: 1, markup: "verbatim", unstyled: 0 },
+    { tag: "nav", order: 2, markup: "verbatim", unstyled: 0 },
+    { tag: "footer", order: 3, markup: "verbatim", unstyled: 2 },
+    ...Array.from({ length: 9 }, (_, i) => ({
+      tag: "section", order: 4 + i, markup: "sections", unstyled: 0,
+    })),
+  ],
+};
+
+test("SH687: digest prints the regions in document order, so a misplaced footer is sayable", async () => {
+  const ctx = ctxWith(scriptedFetch(DIGEST_WITH_REGIONS));
+
+  await digest.run({}, ["post:VigletOrg/"], ctx);
+
+  assert.match(ctx.stdout.text, /regions \(document order\):/);
+  assert.match(
+    ctx.stdout.text,
+    /footer\s+3\s+verbatim\s+2 unstyled/,
+    "the footer is region 3 and the sections start at 4 — which IS the finding, and is not "
+      + "derivable from `footer×1 … section×9` (SH687)",
+  );
+  assert.match(
+    ctx.stdout.text,
+    /section×9\s+4-12\s+sections\s+0 unstyled/,
+    "contiguous regions sharing a tag and a provenance collapse to a span, which is the shape the "
+      + "task asked for — fifteen lines against 1.1 MB of hand-parsed HTML",
+  );
+  assert.match(
+    ctx.stdout.text,
+    /landmarks: footer×1 header×1 nav×1 section×9/,
+    "and the histogram is still there: it is in the structural hash and two other readers diff "
+      + "pages with it, so this is beside it rather than instead of it",
+  );
+});
+
+test("SH687: a run is only collapsed while it is contiguous", async () => {
+  // Nine sections split by a footer are three rows. Merging them would hide the very thing this
+  // field exists to show, which is the failure mode of a summary that summarises too well.
+  const ctx = ctxWith(scriptedFetch({
+    ...DIGEST,
+    regions: [
+      { tag: "section", order: 1, markup: "sections", unstyled: 0 },
+      { tag: "footer", order: 2, markup: "verbatim", unstyled: 0 },
+      { tag: "section", order: 3, markup: "sections", unstyled: 0 },
+    ],
+  }));
+
+  await digest.run({}, ["post:VigletOrg/"], ctx);
+
+  const rows = ctx.stdout.text.split("\n").filter((line) => /^\s{2}(section|footer)/.test(line));
+  assert.deepEqual(
+    rows.map((line) => line.trim().split(/\s{2,}/).slice(0, 2)),
+    [["section", "1"], ["footer", "2"], ["section", "3"]],
+    "three rows, not `section×2 1-3` with the footer swallowed",
+  );
+});
+
+test("SH687: a digest with no regions prints no heading for them", async () => {
+  // P3, and the shape every other block here follows: a content digest has no page and therefore no
+  // regions, and a section title over an empty list is bytes that say nothing.
+  const ctx = ctxWith(scriptedFetch(DIGEST));
+
+  await digest.run({}, ["post:Blog/blog/hello"], ctx);
+
+  assert.ok(!ctx.stdout.text.includes("regions (document order)"));
+});
+
 test("an http(s) positional is sent as a url, not an address", async () => {
   const fetchImpl = scriptedFetch({ ...DIGEST, source: "fetch", status: 200 });
   await digest.run({}, ["https://site.example.com/blog/hello"], ctxWith(fetchImpl));

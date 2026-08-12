@@ -43,6 +43,13 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                  empty" is distinguishable from "the post has no body field"
  * @param headings  the heading outline in document order
  * @param landmarks landmark element → count, name-sorted
+ * @param regions   SH687 — the same landmarks in <b>document order</b>, each saying whether its
+ *                  markup is an authored section or was kept verbatim, and how many undefined
+ *                  classes it draws with. Beside {@code landmarks} rather than instead of it: the
+ *                  histogram is in the structural hash and two other readers diff pages with it, so
+ *                  replacing it would change what a digest means to three readers to add a fourth.
+ *                  Absent for a content digest, for {@code appearance}'s reason — a post's own
+ *                  markup field is not a page and has no regions
  * @param links     every link, internal ones marked
  * @param images    every image with its alt text
  * @param words     words of visible text
@@ -56,7 +63,18 @@ public record ShAgentDigest(String source, String address, String url, Integer s
                             List<String> fields, List<Heading> headings,
                             Map<String, Integer> landmarks, List<Link> links,
                             List<Image> images, int words, String digest,
-                            Appearance appearance, String appearanceDigest, Markers markers) {
+                            Appearance appearance, String appearanceDigest, Markers markers,
+                            List<Region> regions) {
+
+    /** The pre-SH687 form, for a digest with no rendered page to describe by region. */
+    public ShAgentDigest(String source, String address, String url, Integer status,
+                         List<String> fields, List<Heading> headings,
+                         Map<String, Integer> landmarks, List<Link> links,
+                         List<Image> images, int words, String digest,
+                         Appearance appearance, String appearanceDigest, Markers markers) {
+        this(source, address, url, status, fields, headings, landmarks, links, images, words,
+                digest, appearance, appearanceDigest, markers, null);
+    }
 
     /** The pre-SH299 form, for a digest with no rendered page to carry markers. */
     public ShAgentDigest(String source, String address, String url, Integer status,
@@ -65,7 +83,24 @@ public record ShAgentDigest(String source, String address, String url, Integer s
                          List<Image> images, int words, String digest,
                          Appearance appearance, String appearanceDigest) {
         this(source, address, url, status, fields, headings, landmarks, links, images, words,
-                digest, appearance, appearanceDigest, null);
+                digest, appearance, appearanceDigest, null, null);
+    }
+
+    /**
+     * One region of the page, in document order (SH687).
+     *
+     * <p>The projection of {@code ShHtmlRegions.Region} onto the wire, which is the same four
+     * fields: this DTO exists so the verify package's own type does not become the REST contract,
+     * the way every other row in this record is projected.</p>
+     *
+     * @param tag      the landmark element
+     * @param order    1-based position among the landmarks — the field the histogram could not
+     *                 carry, and the one that says a footer renders above the content
+     * @param markup   {@code sections} when an editor owns what it draws, {@code verbatim} when the
+     *                 conversion kept the source's markup
+     * @param unstyled distinct class names it draws with that no stylesheet defines
+     */
+    public record Region(String tag, int order, String markup, int unstyled) {
     }
 
     /**

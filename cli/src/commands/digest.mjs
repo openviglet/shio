@@ -65,6 +65,7 @@ function render(digest) {
   if (landmarks.length) {
     lines.push(`landmarks: ${landmarks.map(([name, count]) => `${name}×${count}`).join(" ")}`);
   }
+  lines.push(...regionLines(digest.regions ?? []));
   for (const link of digest.links ?? []) {
     lines.push(`link ${link.internal ? "→" : "↗"} ${link.href}${link.text ? ` (${link.text})` : ""}`);
   }
@@ -79,4 +80,52 @@ function render(digest) {
     lines.push("(nothing to digest — this page has no rich-text content)");
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The regions in document order, which is the half `landmarks` cannot state (SH687).
+ *
+ * <p>`footer×1 header×1 nav×1 section×9` cannot say the footer renders above the content, and on the
+ * `www.viglet.org` replica that is exactly what it did — a defect it took a screenshot from a human
+ * to see, on a page every textual instrument called fine.</p>
+ *
+ * <p>Runs of one tag with the same provenance are collapsed to `section×9  3-11`, which is the shape
+ * the task asked for. Collapsed only where they are **contiguous**: nine sections split by a footer
+ * are three rows, and merging them would hide the very thing this is here to show.</p>
+ */
+function regionLines(regions) {
+  if (!regions.length) return [];
+  const lines = ["regions (document order):"];
+  for (const run of runsOf(regions)) {
+    const span = run.from === run.to ? `${run.from}` : `${run.from}-${run.to}`;
+    const label = run.count === 1 ? run.tag : `${run.tag}×${run.count}`;
+    lines.push(
+      `  ${label.padEnd(12)}${span.padEnd(7)}${run.markup.padEnd(10)}`
+        + `${run.unstyled ? `${run.unstyled} unstyled` : "0 unstyled"}`,
+    );
+  }
+  return lines;
+}
+
+/** Contiguous regions sharing a tag and a provenance, in order. */
+function runsOf(regions) {
+  const runs = [];
+  for (const region of regions) {
+    const last = runs[runs.length - 1];
+    if (last && last.tag === region.tag && last.markup === region.markup) {
+      last.to = region.order;
+      last.count += 1;
+      last.unstyled += region.unstyled ?? 0;
+      continue;
+    }
+    runs.push({
+      tag: region.tag,
+      markup: region.markup,
+      from: region.order,
+      to: region.order,
+      count: 1,
+      unstyled: region.unstyled ?? 0,
+    });
+  }
+  return runs;
 }

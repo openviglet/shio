@@ -923,35 +923,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.97 Counting a page is not describing it (SH687)
-
-Two defects are visible in one glance at the `www.viglet.org` replica's home page: the
-captured footer renders **above** the first section, and the accepted sections are
-presented by the Shio theme while the chrome keeps the captured one — two visual
-languages in one document.
-
-Neither is expressible in anything Shio returns. `landmarks` is a histogram: `footer×1
-header×1 nav×1 section×9`. `digest` promises an outline and gives the heading tree,
-which excludes a footer because footers carry no headings. `classes` (205),
-`definedClasses` (1002), `unstyledClasses` (42), `diff`'s link and character counts,
-`annotations`' `67 of 4` — every one is a count or a set. `audit` alone holds geometry,
-and it returned **0 errors** here.
-
-So the appearance surface can *measure* a page and cannot *describe* it, and both
-defects are positional: one is order, one is attribution.
-
-What would have replaced the session: one answer, per region, in document order, naming
-the theme in force.
-
-    region     order  markup     styled by             unstyled
-    header     1      verbatim   VigletOrg (captured)  0
-    footer     2      verbatim   VigletOrg (captured)  0   ← before content
-    section×9  3-11   sections   VigletOrg (Shio)      0
-    ⚠ two themes in force; the chrome and the sections share none
-
-Fifteen lines against 1.1 MB of hand-parsed HTML and a human round trip, which is P9
-stated exactly backwards.
-
 ### XVII.98 The instrument that sat out the question it answers (SH688)
 
 `shio judge` is the one-verdict verb: run the instruments, answer once, name where they
@@ -1066,6 +1037,37 @@ kept and *what* was accepted, and not *where* either belongs.
 
 SH692 names what a right page is; this is the first thing measured against that
 definition, and the seam rule it fails is the simplest one — order.
+
+### XVII.102 The theme in force, per region (SH694)
+
+SH687 answered the first of the two positional defects on the `www.viglet.org` replica —
+the footer renders above every section, now readable as `footer 4` against `section×8
+5-12`. The second is untouched: the accepted sections are presented by the Shio theme
+while the chrome keeps the captured one, two visual languages in one document, and no
+instrument can say so.
+
+The `regions` table has the shape for it. What it lacks is a column, and the column
+needs a fact nothing keeps: `ShHtmlAppearance.definedIn` concatenates every stylesheet
+into one set of names, so a reader can say a class **is** defined and not **by which
+sheet**. Attribution needs a set per origin.
+
+Measured on the replica after SH687: `header 4 unstyled, section 1, footer 4, sections
+0` — the undefined classes are entirely in the captured chrome, which is the shape of
+the answer arrived at from the wrong side. It cannot distinguish a section drawing
+`shio-*` from a Shio theme against a header drawing captured ones: both resolve, and
+neither says where.
+
+The output SH687 stopped one column short of:
+
+    region     order  markup     styled by             unstyled
+    header     1      verbatim   VigletOrg (captured)  4
+    section×8  5-12   sections   VigletOrg (Shio)      0
+    ⚠ two themes in force; the chrome and the sections share none
+
+Undesigned, because a set per sheet has a cost nothing has measured — SH686 put the
+single-set scan at 23–32 ms over 1.1 MB, and this multiplies the memory rather than the
+walk. Whether the warning belongs on the digest or in `verify` is the other open half: a
+digest describes and does not judge.
 
 ## XIX The public site (Block S)
 
