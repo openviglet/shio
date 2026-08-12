@@ -50,6 +50,7 @@
 - 📋 **SH687** (deps: SH686) **Every appearance instrument reports cardinality, so a defect of order or attribution cannot be stated at all** — landmarks answers footer×1 header×1 nav×1 section×9, which cannot say the footer renders above the content, and it took a screenshot from a human to see it. → §XVII.97
 - 📋 **SH688** (deps: SH589 ✅, SH687) **judge leaves out the only instrument that holds geometry, and the reason is that nobody passed a flag** — It answered from verify and diff and printed audit NOT RUN - not asked for, on the one investigation whose whole question was what the page looks like. → §XVII.98
 - 📋 **SH689** (deps: SH686) **font-fallback claims the page fell back and shows no evidence, so the finding cannot be checked from its own output** — It named both families on a page carrying 33 font-face rules declaring each twice, every data URI decoding to valid wOF2 and the url form answering 200. → §XVII.99
+- 📋 **SH692** (deps: SH687) **mixed is a label with no standard, and it is where ten of twelve replicated pages land** — diff assigns it at line 223 and then scores it by the authorable rule, so its whole answer is 20 shortfalls the mode does not claim. → §XVII.100
 
 ## Block F — Market positioning
 
