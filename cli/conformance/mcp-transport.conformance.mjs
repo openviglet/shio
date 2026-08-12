@@ -44,8 +44,15 @@ import { openMcp } from "./support/mcp-stdio.mjs";
  * so reading the number out of the working tree would compare a live payload with a budget that may
  * not be the one that instance was built from. A constant that disagrees with the properties file
  * is a visible edit; a read that silently compares two versions is not.
+ *
+ * **A visible edit is only visible if something looks, and nothing did (SH673).** This said 2375,
+ * which was right at SH342 and then survived three raises to the properties file alone — SH619 to
+ * 2385, SH222 to 2395, SH227 to 2400 — until a payload measuring 2397 sat between the two: inside
+ * the budget `ShMcpToolBudgetTest` reads, outside the one stated here. So the gate was red over a
+ * cost the project had decided it would pay. `cli/test/budget-restatement.test.mjs` now holds this
+ * constant against that key, in `pnpm test`, where both sides are files and no instance is needed.
  */
-const TOOLS_LIST_BUDGET_TOKENS = 2375;
+const TOOLS_LIST_BUDGET_TOKENS = 2400;
 
 /** The rough-and-honest conversion the budget file itself uses: four characters to a token. */
 const CHARS_PER_TOKEN = 4;

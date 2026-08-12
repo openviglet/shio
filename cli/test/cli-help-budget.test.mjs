@@ -38,54 +38,11 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
+// The properties reader lived here until SH673 needed a second caller. One reader, not two.
+import { budgets, need, tokens } from "./support/token-budgets.mjs";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const HELP = resolve(HERE, "..", "src", "help");
-const BUDGETS = resolve(
-  HERE,
-  "..",
-  "..",
-  "shio-app",
-  "src",
-  "test",
-  "resources",
-  "token-budgets.properties"
-);
-
-/** The conventional ratio — `ShTokenBudget.CHARS_PER_TOKEN`, so these agree with `estTokens`. */
-const CHARS_PER_TOKEN = 4;
-const tokens = (text) => Math.ceil(text.length / CHARS_PER_TOKEN);
-
-/**
- * The budgets file, read rather than copied.
- *
- * A second place to keep a ceiling is a place that goes stale, and the coupling across packages is
- * the same one `shio-site/scripts/token-budgets.mjs` already makes on purpose. A missing key is a
- * failure here, not a skipped assertion: a budget test that silently checks nothing is worse than
- * no budget test, because it reports green.
- */
-function budgets() {
-  const out = {};
-  for (const line of readFileSync(BUDGETS, "utf-8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    out[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
-  }
-  return out;
-}
-
-function need(props, key) {
-  const raw = props[key];
-  assert.ok(
-    raw !== undefined,
-    `token-budgets: no key '${key}'. This test asserts it, so a rename there is a failure here ` +
-      `rather than an assertion that quietly stops running (SH394).`
-  );
-  const value = Number(raw);
-  assert.ok(Number.isFinite(value), `token-budgets: '${key}' is '${raw}', not a number.`);
-  return value;
-}
 
 /** Every help text, keyed by command. `shio` is the global one printed by `shio --help`. */
 function helpTexts() {

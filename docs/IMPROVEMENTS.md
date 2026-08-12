@@ -397,28 +397,6 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
-### XIII.23 Two instruments hold `tools/list` to two different budgets (SH673)
-
-`tools/list` is the priciest fixed cost on the agent surface — re-sent every turn — so
-P3 holds it to a number, and two things read that number. `ShMcpToolBudgetTest` reads
-`mcp.tools.list.total` from `token-budgets.properties`, which says **2400**.
-`mcp-transport.conformance.mjs:48` states **2375** as a constant. The live payload
-measures **2397**: inside the Java gate, outside the conformance one. `pnpm conformance`
-has therefore been red on a payload the declared budget allows.
-
-The constant is deliberate and its reasoning is sound — the suite runs against an
-instance it did not build, so reading the working tree would compare a live payload
-against a budget that instance may predate, and *"a constant that disagrees with the
-properties file is a visible edit; a read that silently compares two versions is not."*
-What the design did not carry is the other half: a visible edit is only visible if
-something looks. Nothing does, so a raise landed on one side and the two drifted 25
-tokens apart until a payload found the gap.
-
-The properties file is **authoritative** and the constant follows it. Restating it stays
-right; what is missing is a check that the two agree — a comparison between a constant
-and a file both present in this tree, needing no instance. It belongs in `pnpm test`, so
-a drift fails in seconds rather than in the gate that needs a packaged jar and a boot.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.

@@ -26,7 +26,6 @@
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
 - 💭 **SH231** (deps: SH161 ✅) **An instance's own notes travel nowhere** — A site's notes ride its export and the instance's own travel nowhere, which is right for an import and wrong for a move. → §XIII.11
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
-- 📋 **SH673** (deps: SH561 ✅) **Two instruments hold `tools/list` to two different budgets, and the payload sits between them** — The conformance suite hard-codes 2375 while the budget file says 2400, so a live payload of 2397 is green on one gate and red on the other. → §XIII.23
 
 ## Block N — Realignment of what already shipped
 

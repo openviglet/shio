@@ -4,14 +4,6 @@
   "exceptions": [
     {
       "suite": "conformance",
-      "test": "SH561: the MCP transport, spoken the way Claude Code speaks it › tools/list: the payload is inside the budget P3 holds it to",
-      "task": "SH673",
-      "declared": "2026-08-12",
-      "expires": "2026-08-26",
-      "why": "The live tools/list payload measures ~2397 tokens against the 2375 this suite hard-codes at mcp-transport.conformance.mjs:48, while token-budgets.properties — where P3's budgets are declared, and where the raise to 2400 was argued — allows it. So the failure is two instruments disagreeing about one budget by 25 tokens, not a payload that grew past what the project decided it may cost: the Java gate ShMcpToolBudgetTest reads the properties file and is green on the same payload. Safe to commit over because nothing here is unmeasured — the number is known, it is inside the authoritative budget, and SH673 aligns the constant and adds the check that the two agree, which needs no instance and belongs in pnpm test."
-    },
-    {
-      "suite": "conformance",
       "test": "SH499 conformance: the published examples, executed › 'the discovery calls a page promises answer immediately actually do' and 'SH499: what was not executed, and what is held, are named rather than dropped' — two assertions, one cause",
       "task": "SH674",
       "declared": "2026-08-12",

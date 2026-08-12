@@ -94,11 +94,19 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   `tools/call`, a refusal, and an unknown tool name. **stdout only** — the bridge's status line goes
   to stderr because one stray line on stdout desynchronises a client, so the channel separation is
   part of the contract and is asserted.
-  Two things it measured on its first run. **`tools/list` has two tokens of headroom**: ~2373 against
-  2375, over the wire, which no module call serialises. And the budget must be measured on
+  Two things it measured on its first run. **`tools/list` had two tokens of headroom**: ~2373
+  against 2375, over the wire, which no module call serialises. And the budget must be measured on
   **`result.tools`**, the subject `ShMcpToolBudgetTest` names — counting the whole `result` read 2376
   and reported a one-token regression that was the envelope. Two instruments for one budget have to
   agree on the subject or the second is noise with a stack trace.
+  **They also have to agree on the number, and for three raises they did not (SH673).** The suite
+  states the budget as a constant rather than reading it, which is right — it runs against an
+  instance it did not build — but "a constant that disagrees with the file is a visible edit" only
+  holds if something looks. Nothing did: 2375 was correct at SH342 and stayed while SH619, SH222 and
+  SH227 raised the properties file to 2400, until a payload at 2397 sat between them and the gate
+  went red over a cost the project had decided to pay. `cli/test/budget-restatement.test.mjs` now
+  holds every restated budget against its key in `pnpm test` — both sides are files, so no instance
+  is involved — and a second restatement is a row in its table rather than another test.
   **The replication chain has no MCP tool**, so "the same chain over `tools/call`" is not a scenario
   that exists: `clone → propose → convert` is a CLI path and the eleven tools are the content
   surface. The module driver stays — faster, and it localises a failure — but it is not evidence
@@ -153,8 +161,8 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   column of its own: SH106 owns the credential model and should migrate the schema once,
   and the human stays visible in every row because an agent acts *as* somebody.
 - A tool-count test fails the build past 12 — tool schemas are context paid every turn.
-  The real ceilings are `mcp.tools.list.total` (**2360**, raised by SH160 for the eleventh
-  tool, measured 2327) and `mcp.tools.list.max-per-tool` (460) in
+  The real ceilings are `mcp.tools.list.total` (**2400** after SH227, measured 2397) and
+  `mcp.tools.list.max-per-tool` (460) in
   `src/test/resources/token-budgets.properties`, both measured; raising one is allowed and
   must be justified in the commit — and the description is trimmed *first*, which is what
   took `shio_remember` from 167 to 128 before the ceiling moved. **`shio_apply` is the tool
