@@ -3046,3 +3046,48 @@ because that division is a thing the conversion invents.
 
 The reader on the produced side is SH695's, and the two readers agree by asserted fixtures rather
 than by construction.
+
+## Concatenation is not composition (SH693)
+
+The generated `PageLayout` emitted the verbatim block whole and then appended every section:
+
+```
+{{#if content}}{{{content}}}{{/if}}
+{{#getRelation sections}} … {{/getRelation}}
+```
+
+There was no position at which a section could land *inside* the kept markup, so on a mixed page the
+source's header, nav **and footer** all preceded every section — by construction, on every such page,
+in every replication. Measured by offset in the served home page (1,113,507 chars): header at 95%,
+footer at 98%, sections #1–#8 to 99%. It is the cause of the ordering SH687 made visible.
+
+**The information was never missing.** `contentFor` already knew where each accepted block stood —
+`cut` is exactly those spans, and it removed them. It then *glued* the remainder into one string, and
+that is where the position was lost. Splitting instead of gluing is the whole change: `content` is
+what stood before the accepted blocks, `contentAfter` is what stood after, and the layout emits
+`content`, the sections, then `contentAfter`.
+
+### The mark goes in before the cut
+
+The spans address the original bytes. `splitAroundSections` inserts the mark first and shifts the
+spans past it; cutting first would leave every offset past the first hole wrong by the size of the
+holes before it — the class of bug that reads as *"the footer moved a bit"*.
+
+### Two properties worth naming
+
+- **The wrapper wraps.** The source's `<main>` opens in the leading half and closes in the trailing
+  one, so the sections render *inside* it. Gluing put them after `</main>` — the same defect as the
+  footer, one level of nesting up, and it had no test.
+- **An empty trailing half writes no key**, because a field holding `""` is a value a curator has to
+  notice and delete, and `{{#if}}` already treats absence as "render nothing" (SH465).
+
+### The approximation, stated rather than hidden
+
+Two parts and not N. Markup that sat *between* two accepted blocks cannot be placed without emitting
+the sections one at a time, which is a different shape of page and of layout; it is grouped into the
+leading part. Chrome is overwhelmingly outside the run of blocks — that is what makes it chrome — so
+this is the cheap two-thirds of the answer.
+
+Two existing tests changed and neither claim did: SH520's *"the block nobody accepted is still on the
+page, byte for byte"* and SH422's chain assertion both now join the two halves. What they assert is
+that the bytes survive; SH693 is about where they sit.

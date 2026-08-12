@@ -20,6 +20,7 @@ import { test } from "node:test";
 
 import {
   CAPTURED_STYLE_HTML, CAPTURED_THEME_URL, LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER,
+  PAGE_BODY_HTML,
   VOCABULARY_CLASSES, WRAPPER_ROLES, buildConversion, describeConversion, withResolvedFileFields,
 } from "../src/convert.mjs";
 import {
@@ -953,6 +954,85 @@ test("SH684: a conversion whose chrome touched no required field says nothing ab
   );
 });
 
+/**
+ * SH693 — concatenation is not composition.
+ *
+ * <p>The generated layout emitted `{{{content}}}` whole and then appended every section, so there
+ * was no position at which a section could land inside the kept markup. On a mixed page the source's
+ * header, nav <b>and footer</b> therefore all preceded every section — by construction, on every
+ * such page, in every replication. Measured by offset in the served home page (1,113,507 chars):
+ * header at 95%, footer at 98%, then sections #1–#8 to 99%.</p>
+ *
+ * <p>The information was never missing. `contentFor` already knew where each accepted block stood —
+ * it cut those spans out — and then glued the remainder into one string. Splitting instead of gluing
+ * is the whole change.</p>
+ */
+test("SH693: the source's footer renders below the sections, not above them", async () => {
+  // The fixture's own shape plus a footer, and the SECOND block is the one accepted: accepting the
+  // first would leave nothing before the sections and the assertion would pass for the wrong reason.
+  const site = {
+    "/": MIXED_PAGE.replace("</main>", "</main><footer class=bottom><p>Acme</p></footer>"),
+  };
+  const [, notes] = await blocksOfPage(ctxWith({ site }));
+  const ctx = ctxWith({ site, plan: { accepted: [{ block: notes, type: "SectionRichText" }] } });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const page = JSON.parse(ctx.written[norm("/repo/conversion.json")])
+    .posts.find((post) => post.type === "Page");
+
+  assert.match(
+    page.data.content ?? "",
+    /class=hero/,
+    "what stood before the accepted block is the leading half",
+  );
+  assert.match(
+    page.data.contentAfter ?? "",
+    /footer class=bottom/,
+    "the footer stood after it, so it belongs below the sections. This is the assertion the "
+      + "replica's home page would have failed: header at 95%, footer at 98%, sections after both "
+      + "(SH693)",
+  );
+  assert.doesNotMatch(
+    page.data.content ?? "",
+    /footer class=bottom/,
+    "and it is not in both halves — a remainder emitted twice is the defect wearing the fix's clothes",
+  );
+});
+
+test("SH693: the wrapper's closing tag travels below, so the sections land inside it", async () => {
+  // A property that falls out of splitting rather than gluing, and is worth pinning: the source's
+  // `<main>` opens in the leading half and closes in the trailing one, so the sections render
+  // INSIDE it. Gluing put them after `</main>`, outside the element the source used to hold its
+  // content — which is the same defect as the footer, one level of nesting up.
+  const site = { "/": MIXED_PAGE };
+  const [, notes] = await blocksOfPage(ctxWith({ site }));
+  const ctx = ctxWith({ site, plan: { accepted: [{ block: notes, type: "SectionRichText" }] } });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const page = JSON.parse(ctx.written[norm("/repo/conversion.json")])
+    .posts.find((post) => post.type === "Page");
+
+  assert.match(page.data.content, /^<main>/, "the wrapper opens in the leading half");
+  assert.equal(
+    page.data.contentAfter,
+    "</main>",
+    "and closes in the trailing one, so every section renders inside the element the source used "
+      + "to hold its content (SH693)",
+  );
+});
+
+test("SH693: the layout emits the trailing half below the sections", () => {
+  // The other end of the same change: a field nothing renders is a field that lost the markup.
+  const sections = PAGE_BODY_HTML.indexOf("{{/getRelation}}");
+  const after = PAGE_BODY_HTML.indexOf("{{#if contentAfter}}");
+
+  assert.ok(after > sections, `contentAfter must come after the sections loop: ${PAGE_BODY_HTML}`);
+  assert.ok(
+    PAGE_BODY_HTML.indexOf("{{{content}}}") < sections,
+    "and the leading half before it, which is the order the whole task is about",
+  );
+});
+
 test("SH520: accepting one block keeps every other block on the page, verbatim", async () => {
   // The promise `propose` prints in the same run — "an unaccepted block stays verbatim markup" — and
   // the whole reason accepting one block is an incremental decision rather than an all-or-nothing
@@ -970,11 +1050,21 @@ test("SH520: accepting one block keeps every other block on the page, verbatim",
   assert.notEqual(hero, notes, "the fixture is two blocks, or this test asserts nothing");
   assert.deepEqual(page.data.sections, [`${SECTIONS_FOLDER}/${hero}`],
     "the accepted block is a section, exactly as before");
+  // SH693 amended this from one field to two, and the claim is unchanged: the block nobody accepted
+  // is still on the page, as the source's own bytes with the source's own class attribute — the
+  // remainder, cut out of the captured file rather than re-serialized. What changed is WHERE it
+  // sits. The hero was accepted and stood first, so everything after it is now `contentAfter` and
+  // renders BELOW the sections instead of above them, which is the whole of SH693.
   assert.equal(
-    page.data.content,
+    `${page.data.content ?? ""}${page.data.contentAfter ?? ""}`,
     "<main><section class=notes><h2>Notes</h2><p>Kept exactly as the source wrote it.</p></section></main>",
-    "and the block nobody accepted is still on the page, as the source's own bytes with the source's "
-      + "own class attribute — the remainder, cut out of the captured file rather than re-serialized",
+    "the two halves are the remainder, and nothing of it was lost in being split",
+  );
+  assert.equal(
+    page.data.contentAfter,
+    "<section class=notes><h2>Notes</h2><p>Kept exactly as the source wrote it.</p></section></main>",
+    "and the half below the sections is the markup that FOLLOWED the accepted block in the source — "
+      + "which is the ordering the generated layout could not express (SH693)",
   );
   assert.ok(
     !page.data.content.includes("Welcome to the site."),

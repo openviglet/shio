@@ -382,13 +382,18 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
       captured0.indexOf('<section class="features">'),
       captured0.indexOf("</section>", captured0.indexOf('<section class="features">')) + 10,
     );
+    // SH693 — the remainder is two fields now, and the claim is the same. It was one string until
+    // the layout could put sections *inside* the kept markup; what changed is that the half which
+    // followed the accepted block travels separately, so it renders below the sections rather than
+    // above them. Joined here because this assertion is about the bytes surviving, not their place.
+    const kept = `${home.data.content ?? ""}${home.data.contentAfter ?? ""}`;
     assert.ok(
-      home.data.content.includes(features),
+      kept.includes(features),
       "the block nobody accepted is on the page, byte for byte — including its class attribute, "
         + "which is what the captured stylesheet selects on",
     );
     assert.ok(
-      !home.data.content.includes('<section class="hero">'),
+      !kept.includes('<section class="hero">'),
       "and the accepted one is not, or the page renders it twice: once as markup and once as the "
         + "section it became, which is the shape that makes an acceptance invisible in the output",
     );

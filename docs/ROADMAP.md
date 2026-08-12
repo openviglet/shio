@@ -11,7 +11,6 @@
 
 ## Priority
 
-- Block Q
 - Block J
 - Block O
 - Block L
@@ -50,8 +49,6 @@
 - 💭 **SH691** (deps: SH243 ✅) **The copy's title counter is still trash-blind, so a restore leaves two rows a curator cannot tell apart** — ShObjectWriteService.java:364 reads live rows only, so a clone retakes "Home (2)" while a trashed one holds it — the symptom SH202 says is the one they see. → §XVI.74
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
-
-- 📋 **SH693** (deps: SH692 ✅) **The generated layout appends sections after the whole verbatim block, so the source footer precedes every section** — Measured on the replica home page: header at 95%, footer at 98%, then all 8 sections — the template emits content and then getRelation, never between. → §XVII.101
 
 ## Block F — Market positioning
 

@@ -571,7 +571,8 @@ export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-lab
 {{#if quotes}}<div class="shio-grid">{{#each quotes}}<blockquote class="shio-card" data-shio-row="quotes">{{#if quote}}<p sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-media" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
 </div>
 </section>
-{{/getRelation}}`;
+{{/getRelation}}
+{{#if contentAfter}}{{{contentAfter}}}{{/if}}`;
 
 /**
  * Which theme the one layout names — the whole of SH510, in one decision.
@@ -1053,7 +1054,11 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
         // is not one.
         ...(page.description ? { description: page.description } : {}),
         ...(sections.length ? { sections } : {}),
-        ...(body === null ? {} : { content: body }),
+        // SH693 — one field or two. `contentFor` answers with a string when the page is wholly
+        // verbatim (nothing to compose around) and with `{before, after}` when sections have to land
+        // inside the kept markup. `content` stays the field a fidelity page writes, so nothing that
+        // reads a verbatim replica changes; `contentAfter` is what the footer now travels in.
+        ...contentFields(body),
       },
     });
   }
@@ -1075,7 +1080,75 @@ function contentFor({ html, sections, kept, cut }) {
   // leave that one rendered both as markup and as a section. Refusing the remainder is the honest
   // half-answer, and it is exactly what the previous release wrote.
   if (!cut.length || cut.some((span) => !span)) return null;
-  return bodyOf(without(html, cut));
+  return splitAroundSections(html, cut);
+}
+
+/** Where the sections go, marked in the bytes before anything is cut out of them (SH693). */
+const SECTIONS_MARK = " shio:sections ";
+
+/**
+ * The verbatim halves as `Page` fields (SH693).
+ *
+ * <p>`content` keeps its meaning — the page's kept markup — so a fidelity replica and every reader
+ * of one are untouched. `contentAfter` appears only where there is markup that belongs <b>below</b>
+ * the sections, which is the case that used to put the source's footer above all of them. An empty
+ * trailing half writes no key: a field holding `""` is a value a curator has to notice and delete,
+ * and the layout's `{{#if}}` already treats absence as "render nothing" (SH465).</p>
+ */
+function contentFields(body) {
+  if (body === null || body === undefined) return {};
+  if (typeof body === "string") return { content: body };
+  const fields = {};
+  if (body.before?.trim()) fields.content = body.before;
+  if (body.after?.trim()) fields.contentAfter = body.after;
+  return fields;
+}
+
+/**
+ * The kept markup as **two** parts: what came before the accepted blocks, and what came after
+ * (SH693).
+ *
+ * <h3>Concatenation is not composition</h3>
+ *
+ * <p>The generated layout emitted `{{{content}}}` whole and then appended every section, so there
+ * was no position at which a section could land inside the kept markup. On a mixed page the source's
+ * header, nav <b>and footer</b> therefore all preceded every section — by construction, on every
+ * such page, in every replication. Measured by offset in the served home page (1,113,507 chars):
+ * header at 95%, footer at 98%, then sections #1–#8 to 99%.</p>
+ *
+ * <p>The information was never missing: `cut` is where each accepted block stood, and this function
+ * used to remove those spans and glue the remainder into one string. Splitting instead of gluing is
+ * the whole change — the layout emits `contentBefore`, the sections, then `contentAfter`.</p>
+ *
+ * <h3>The approximation, stated</h3>
+ *
+ * <p>Two parts and not N. Markup that sat <em>between</em> two accepted blocks cannot be placed
+ * without emitting the sections one at a time, which is a different shape of page and of layout; it
+ * is grouped into the leading part, and `describeConversion` prints its size when there is any. On
+ * the measured page it is a wrapper and whitespace. Chrome is overwhelmingly outside the run of
+ * blocks — that is what makes it chrome — so this is the cheap two-thirds of the answer, and the
+ * remaining third is a page shape nobody has yet produced.</p>
+ *
+ * <h3>Why the mark goes in before the cut</h3>
+ *
+ * <p>The spans address the original bytes. Marking first and shifting them keeps that true; cutting
+ * first would leave every offset past the first hole wrong by the size of the holes before it, which
+ * is the class of bug that reads as "the footer moved a bit".</p>
+ */
+function splitAroundSections(html, cut) {
+  if (typeof html !== "string") return bodyOf(html);
+  const at = Math.min(...cut.map(([start]) => start));
+  if (!Number.isInteger(at) || at < 0 || at > html.length) return bodyOf(without(html, cut));
+  const marked = html.slice(0, at) + SECTIONS_MARK + html.slice(at);
+  const shifted = cut.map(([start, end]) => [start + SECTIONS_MARK.length, end + SECTIONS_MARK.length]);
+  const body = bodyOf(without(marked, shifted));
+  if (typeof body !== "string" || !body.includes(SECTIONS_MARK)) {
+    // The mark fell outside <body> — a block accepted from the head, which the vocabulary does not
+    // produce. Fall back to the single-part form rather than losing the remainder.
+    return bodyOf(without(html, cut));
+  }
+  const [before, after] = body.split(SECTIONS_MARK);
+  return { before, after };
 }
 
 /**
