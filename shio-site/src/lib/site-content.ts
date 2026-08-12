@@ -314,6 +314,7 @@ export const MCP_TOOLS = [
   { name: "shio_verify", gloss: "the lint, and optionally the route proof" },
   { name: "shio_digest", gloss: "one page's structure, as text" },
   { name: "shio_remember", gloss: "what session N leaves for session N+1" },
+  { name: "shio_marketplace", gloss: "packages this instance could install" },
 ];
 
 export const MCP_RESOURCES = [

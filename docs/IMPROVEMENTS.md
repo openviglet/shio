@@ -210,9 +210,9 @@ nothing — it just moves the work. **Absorbs the old SH23 marketplace epic** (S
 
 The format, the verb, the first-party set, the section vocabulary, the Claude Code
 plugin, the five mismatches that shipping the two halves exposed, and the marketplace's
-catalogue, install, published seed and CLI are all shipped — see
-[CHANGELOG.md](CHANGELOG.md) Block J. What remains is the console, the agent path, and
-the role the writes still want (§XI.25, §XI.26, §XI.27).
+catalogue, install, published seed, CLI and MCP tool are all shipped — see
+[CHANGELOG.md](CHANGELOG.md) Block J. What remains is the console and the role the
+writes still want (§XI.25, §XI.27).
 
 ### XI.25 The console has no blueprint surface at all (SH679)
 
@@ -237,26 +237,6 @@ surprise worth spending a click on.
 
 Install progress is worth streaming the way Turing does, and i18n is `en`/`pt` like
 every other page here.
-
-### XI.26 The agent path is last, and the reason is a number (SH678)
-
-P1 orders MCP first and this task is deliberately last, which needs saying out loud
-rather than being quietly true. The reason is measured: `tools/list` is **2397 of 2400**
-and `shio_apply` is **441 of 460**. There is no room, and `token-budgets.properties`
-states the order — the trim comes before the raise, and a raise is argued in the file.
-
-So the sequence is: find the tokens, then decide the shape. Two shapes are plausible and
-the cheaper one may not be the right one. **An argument on `shio_apply`** (`from:
-"marketplace"`) is ~20–30 tokens and is semantically honest, because applying a catalog
-package is applying a package. **A `shio_marketplace` tool** is ~130–200 and is what an
-agent would look for when it does not yet know a package exists — which is the discovery
-case, and the case the whole marketplace is for.
-
-Worth carrying into the decision: the CLI already covers the scripted path (SH677), so
-what MCP adds is specifically **discovery without a shell** — a pure MCP client with no
-terminal, which is the same argument that overturned SH114 and bought `shio_remember`
-its 128 tokens. That is the strongest case for the more expensive shape, and it is also
-the case that can wait, because nothing else is blocked on it.
 
 ### XI.27 The marketplace writes want the role the reload already has (SH682)
 

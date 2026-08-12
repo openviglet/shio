@@ -55,7 +55,7 @@ one of those capabilities on a surface an agent can actually drive:
 
 | Surface | What it is |
 |---|---|
-| **MCP server** (`POST /mcp`) | 11 Model Context Protocol tools — `shio_context`, `shio_find`, `shio_read`, `shio_write`, `shio_apply`, `shio_publish`, `shio_assets`, `shio_changes`, `shio_verify`, `shio_digest`, `shio_remember` |
+| **MCP server** (`POST /mcp`) | 12 Model Context Protocol tools — `shio_context`, `shio_find`, `shio_read`, `shio_write`, `shio_apply`, `shio_publish`, `shio_assets`, `shio_changes`, `shio_verify`, `shio_digest`, `shio_remember`, `shio_marketplace` |
 | **Agent gateway** (`/api/v2/agent/**`) | A manifest, a context pack, planned batches, teaching errors, a review queue and a diagnostics endpoint |
 | **Content as files** (`shio/content/**`) | The whole site projected to front-mattered Markdown on disk, with a three-way merge back — so `Edit`, `Write` and `Grep` are all an agent needs to author |
 | **CLI** (`@viglet/shio`) | 31 verbs: `pull`, `push`, `apply`, `publish`, `verify`, `clone`, `convert`, `types`, `dev`, `deploy`, `marketplace`, … |

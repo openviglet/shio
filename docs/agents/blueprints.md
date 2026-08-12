@@ -629,7 +629,42 @@ was derived from "the registry has it", which stops being the same thing at the 
 package downloaded from a stranger was reported as having shipped with the instance. It reads the
 package's `origin` now.
 
-The console is SH679, and MCP is SH678 — last, because `tools/list` has three tokens of headroom.
+## `shio_marketplace` is read-only, and that is the design (SH678)
+
+The twelfth MCP tool lists what this instance could install and shows one package in detail. It
+does **not** install, and the reason is structural rather than staged: **MCP tools call services in
+process**. An API token reaches `/mcp` and is barred from `/api/v2/marketplace` — the refusal names
+the four namespaces a token authenticates (SH2) — so an install verb here would hand that token
+what the URL layer denies it. *"The agent path is not a privilege escalation"* is a non-goal by
+name. `ShMarketplaceCatalogTest#theMcpToolCannotInstall` asserts the schema has exactly one
+property, so the verb cannot come back later because it looked like a gap.
+
+What the tool adds is the half a terminal cannot give a client that has no terminal: **discovery**.
+That is SH160's argument arriving a second time — a pure MCP client could read the memory and not
+write one; here it can apply a package and never learn one exists.
+
+`features.marketplace` reports whether a catalogue is configured, read from the property. `false`
+does not mean no packages — the tool still lists what shipped with the instance — it means nothing
+new can arrive. It is a `features` flag rather than an "unclaimed" declaration in
+`ShAgentCapabilityJoinTest` because the marketplace is *off by default*, which is exactly the
+instance fact that table exists to report.
+
+### What it cost, measured
+
+The tool is **96 tokens** and `tools/list` went 2397 → 2493, so `mcp.tools.list.total` rose
+2400 → 2500. The trim came first and found nothing in the fat tools — `shio_apply` (441) and
+`shio_write` (427) were read line by line and are already phrases, with two prior trims recorded in
+their own comments. What it *did* find was in the new tool: the first draft measured 111 and ended
+"Apply an installed package with shio_apply", which restates `shio_apply`'s own `blueprint`
+parameter. Dropping it paid 15 of the 93.
+
+One feature key also pushed `response.manifest.terse` 2400 → 2410 and `response.manifest.check`
+380 → 390, both by single digits. **Headroom is now ~7 tokens on `tools/list` and 10 on
+`response.manifest`**, and this is the twelfth tool against `ShMcpServerTest`'s cap of twelve — so
+the next capability on this surface is an argument, a trim, or a conversation about which tool
+leaves.
+
+The console is SH679, and the writes still want the role SH682 will give them.
 
 ## The published catalogue, and why the six are republished under a prefix (SH676)
 

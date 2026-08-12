@@ -76,6 +76,43 @@ class ShMarketplaceCatalogTest {
     }
 
     @Test
+    @DisplayName("SH678: the MCP tool is read-only, because installing there would be an escalation")
+    void theMcpToolCannotInstall() {
+        var schema = new com.viglet.shio.api.agent.mcp.tools.ShMarketplaceTool(catalog)
+                .inputSchema();
+        @SuppressWarnings("unchecked")
+        var properties = (java.util.Map<String, Object>) schema.get("properties");
+
+        assertThat(properties)
+                .as("SH678: MCP tools call services in process, and an API token reaches /mcp while "
+                        + "being barred from /api/v2/marketplace — so an install verb here would "
+                        + "hand that token what the URL layer denies it. 'The agent path is not a "
+                        + "privilege escalation' is a non-goal by name, and this is the assertion "
+                        + "that would catch somebody adding the verb later because it looked like "
+                        + "a gap.")
+                .containsOnlyKeys("id");
+    }
+
+    @Test
+    @DisplayName("SH678: the manifest flag follows the property, so `false` is not a guess")
+    void theManifestFlagFollowsTheProperty() {
+        assertThat(properties.hasRemote())
+                .as("off by default — an agent that assumed a marketplace would be choosing from "
+                        + "a list nobody enabled")
+                .isFalse();
+
+        properties.setEnabled(true);
+        properties.setUrl("https://example.invalid/marketplace.json");
+        assertThat(properties.hasRemote()).isTrue();
+
+        properties.setEnabled(false);
+        assertThat(properties.hasRemote())
+                .as("SH678: `enabled` alone decides, so turning it off cannot leave the manifest "
+                        + "claiming a catalogue this instance no longer reads")
+                .isFalse();
+    }
+
+    @Test
     @DisplayName("SH646: with no catalogue configured, the built-in packages are still the answer")
     void theBuiltInPackagesAreTheAnswerWithNoCatalogue() {
         ShMarketplaceCatalog.Catalogue catalogue = catalog.catalogue();
