@@ -117,6 +117,109 @@ test("SH589: an instrument that did not run is unproven, never green, and says w
   assert.match(text, /ok is a claim about the 2 instrument\(s\) that ran/);
 });
 
+/**
+ * SH688 — the instrument that sat out the question it answers.
+ *
+ * <p>`audit` is the only instrument that renders in a browser and the only one that returns
+ * geometry: it reports overflow in pixels with a CSS selector each. On the `www.viglet.org` replica
+ * it printed `NOT RUN — not asked for — pass --browser` while the question being asked was *why does
+ * this page look wrong*, and the investigation went to hand-parsing 1.1 MB of HTML and then to
+ * asking a human for a screenshot.</p>
+ *
+ * <p>The honesty was never the problem — naming what it skipped is SH589 working. The default was.
+ * `judge` can <em>test</em> whether playwright resolves, and declining the only geometric instrument
+ * silently is a decision it should not make on the caller's behalf.</p>
+ */
+test("SH688: audit runs when playwright resolves, with no flag passed", async () => {
+  const asked = [];
+  const ctx = judgeCtx({
+    // The seam `browser.mjs` reads. A resolvable playwright is the whole precondition; the audit
+    // then fails at `launch()` on this stub, which is a DID NOT RUN from the instrument and not a
+    // finding — exactly as a missing chromium behaves in the real world.
+    import: async (name) => {
+      asked.push(name);
+      if (name === "playwright") return { chromium: { launch: async () => { throw new Error("no chromium"); } } };
+      throw new Error(`unexpected import ${name}`);
+    },
+  });
+
+  const result = await judge.run({ site: "Acme", checks: "content" }, [], ctx);
+
+  assert.ok(
+    asked.includes("playwright"),
+    "it asks whether the browser is there rather than waiting to be told (SH688)",
+  );
+  assert.ok(
+    !/not asked for/.test(reasonFor(result, "audit") ?? ""),
+    `audit was not declined for want of a flag: ${reasonFor(result, "audit")}`,
+  );
+});
+
+test("SH688: with no playwright the skip states the install, not a flag", async () => {
+  // "not asked for" reads as a preference and "not installed" reads as a fact, and only one of them
+  // is actionable. Telling a reader to pass a flag they did not withhold is a message nobody can act
+  // on (P6) — and it is what sent the original investigation looking for the wrong thing.
+  const ctx = judgeCtx({ import: async () => { throw new Error("Cannot find package 'playwright'"); } });
+
+  const result = await judge.run({ site: "Acme", checks: "content" }, [], ctx);
+  const reason = reasonFor(result, "audit");
+
+  assert.match(reason, /playwright is not installed/);
+  assert.match(reason, /pnpm add -D playwright/, "the install, because the fact is the actionable one");
+  assert.doesNotMatch(reason, /not asked for/, "nobody declined it — the dependency is absent");
+});
+
+test("SH688: --no-browser is still a way to decline, and says that is what happened", async () => {
+  // The cost is real — a page load each — so the caller keeps the override. What they lose is the
+  // silence: a skip now says which of the two things it was.
+  const ctx = judgeCtx({ import: async () => ({ chromium: {} }) });
+
+  const result = await judge.run({ site: "Acme", checks: "content", noBrowser: true }, [], ctx);
+  const reason = reasonFor(result, "audit");
+
+  assert.match(reason, /declined with --no-browser/);
+  assert.doesNotMatch(reason, /not installed/, "it is installed; the caller said no");
+});
+
+test("SH688: snapshot keeps saying `not asked for`, because for it that is true", async () => {
+  // Not the same case, and the fix must not flatten them: no `--against` means no baseline exists,
+  // and there is nothing to test for. Inventing one is worse than abstaining (SH589).
+  const ctx = judgeCtx({ import: async () => { throw new Error("no playwright"); } });
+
+  const result = await judge.run({ site: "Acme", checks: "content" }, [], ctx);
+
+  assert.match(reasonFor(result, "snapshot"), /not asked for — pass --against <origin>/);
+});
+
+/** A ctx whose verify answers clean and whose diff has no inventory, plus the import seam. */
+function judgeCtx(extra) {
+  return {
+    stdout: sink(),
+    env: {},
+    cwd: ".",
+    fs: {
+      async readFile() {
+        throw Object.assign(new Error("ENOENT: no such file"), { code: "ENOENT" });
+      },
+    },
+    fetch: async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return { findings: [], errors: 0, warnings: 0, checked: 3 };
+      },
+      async text() {
+        return "{}";
+      },
+    }),
+    ...extra,
+  };
+}
+
+function reasonFor(result, name) {
+  return (result.runs ?? result.instruments ?? []).find((run) => run.name === name)?.reason;
+}
+
 test("SH589: nothing ran at all is unproven, not ok", () => {
   const judgement = judgeRuns([{ name: "verify", ran: false, reason: "no instance" }]);
   assert.equal(judgement.verdict, "unproven");

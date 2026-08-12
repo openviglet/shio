@@ -1163,6 +1163,7 @@
 - **SH685** — The read is asked for ids, so all nine posts resolve and the replica home page reports 17 fields not editable rather than 4; an unresolved type now gates instead of being narrated.
 - **SH686** — Class selectors are read by a linear scan that unescapes them, so a Tailwind class resolves and page-unstyled stops accusing the half of the page that renders correctly.
 - **SH687** — The digest carries regions in document order with each one's provenance, so the replica's footer rendering above every section is one line instead of a screenshot.
+- **SH688** — judge now runs audit whenever playwright resolves, and a skip states the install rather than a flag — the hardcoded "not asked for" prefix that made a fact read as a preference is gone.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

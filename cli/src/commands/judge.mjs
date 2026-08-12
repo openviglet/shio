@@ -17,14 +17,26 @@
  * judgement, because a disagreement is a pointer at two reports and a reader who cannot see them
  * has to run the commands again.</p>
  *
- * <h2>Two of the four are opt-in, and the report says so rather than passing</h2>
+ * <h2>What runs by default, and what stays a judgement (SH688)</h2>
  *
  * <p>`verify` and `diff` are browser-free and always run. `audit` needs Chromium and a page at a
- * time; `snapshot` needs something to compare against, and choosing that for the caller would be
- * inventing the baseline whose absence is the whole question. So both are `NOT RUN` with the
- * reason and the flag that would run them — never green, because an instrument that did not run is
- * unproven and a verdict that treats the two the same is the defect this exists to remove.</p>
+ * time, and it used to be opt-in behind `--browser` — which meant that on the one investigation
+ * whose question was *why does this page look wrong*, the only instrument that renders in a browser
+ * and the only one that returns geometry printed `NOT RUN — not asked for` and the session went to
+ * hand-parsing HTML and then to asking a human for a screenshot. So it now runs whenever
+ * `playwright` resolves. The cost is real, and it is a cost the caller can decline (`--no-browser`);
+ * declining the only geometric instrument <em>silently</em> is the decision this command should not
+ * have been making.</p>
+ *
+ * <p>`snapshot` stays opt-in and that is not the same case: choosing what to compare pixels with is
+ * a judgement, and inventing the baseline whose absence is the whole question would be worse than
+ * abstaining. There is nothing to test for — no `--against` means no answer exists.</p>
+ *
+ * <p>Either way a skipped instrument is `NOT RUN` with the reason, never green: an instrument that
+ * did not run is unproven, and a verdict that treats the two the same is the defect this exists to
+ * remove (SH589).</p>
  */
+import { INSTALL, browserAvailable } from "../browser.mjs";
 import { describeJudgement, judgeRuns, subjectOf } from "../judge.mjs";
 import { helpText } from "../help.mjs";
 
@@ -32,6 +44,23 @@ export const HELP = helpText("judge");
 
 /** What each instrument is worth spending a browser on, when one is spent at all. */
 const DEFAULT_PAGES = 5;
+
+/**
+ * Why `audit` did not run, which is now two different sentences (SH688).
+ *
+ * <p>*"not asked for"* reads as a preference and *"not installed"* reads as a fact, and only one of
+ * those is actionable. While the browser was opt-in the first was true and the second was invisible;
+ * now that it runs whenever playwright resolves, a skip means either the caller declined it or the
+ * dependency is absent — and telling a reader to pass a flag they already passed, or that they chose
+ * something they did not, is the shape of a message nobody can act on (P6).</p>
+ */
+function auditSkipReason(flags) {
+  if (flags.noBrowser === true || flags.browser === false) {
+    return "declined with --no-browser — drop it to let this run whenever playwright resolves";
+  }
+  return `playwright is not installed, so the only instrument that renders in a browser cannot run\n`
+    + `      ${INSTALL}`;
+}
 
 export async function run(flags, positionals, ctx) {
   const site = String(flags.site ?? positionals[0] ?? "").trim();
@@ -54,12 +83,21 @@ export async function run(flags, positionals, ctx) {
 
   const pages = pagesToLookAt(diff, runs, Number(flags.pages) || DEFAULT_PAGES);
 
-  runs.push(await browserInstrument("audit", flags.browser === true, pages, site, flags, ctx,
-    reports, "pass --browser (it needs playwright, and loads one page at a time)"));
+  // SH688 — asked, not assumed. `audit` is the only instrument that renders in a browser and the
+  // only one that returns geometry, and it sat out the one investigation whose question was what the
+  // page looks like. It now runs whenever playwright resolves; `--browser` still forces it and
+  // `--no-browser` still declines it, so the flag remains the way to override a wrong guess.
+  const audit = flags.browser === true
+    || (flags.noBrowser !== true && flags.browser !== false && await browserAvailable(ctx));
+  runs.push(await browserInstrument("audit", audit, pages, site, flags, ctx,
+    reports, auditSkipReason(flags)));
+  // `snapshot` stays opt-in, and it is not the same case as `audit`: there is nothing to test for.
+  // No `--against` means no baseline exists, and choosing one for the caller would be inventing the
+  // thing whose absence is the question (SH589).
   runs.push(await browserInstrument("snapshot", typeof flags.against === "string" && flags.against,
     pages, site, flags, ctx, reports,
-    "pass --against <origin> — choosing what to compare pixels with would be inventing the "
-      + "baseline whose absence is the question"));
+    "not asked for — pass --against <origin>; choosing what to compare pixels with would be "
+      + "inventing the baseline whose absence is the question"));
 
   const judgement = judgeRuns(runs);
 
@@ -154,8 +192,12 @@ function fromDiff(run) {
  * over a 200-page replica becomes something nobody runs. The bound is <b>declared on the report</b>
  * rather than applied quietly — a silently truncated coverage set reads as "everything was fine".</p>
  */
-async function browserInstrument(name, asked, pages, site, flags, ctx, reports, how) {
-  if (!asked) return { name, ran: false, reason: `not asked for — ${how}` };
+async function browserInstrument(name, asked, pages, site, flags, ctx, reports, why) {
+  // SH688 — the whole reason, from the caller. This used to prepend a hardcoded `not asked for —`,
+  // which was true while both were opt-in and became a lie the moment one of them ran by default:
+  // "not asked for — playwright is not installed" states a preference and a fact as one clause, and
+  // tells a reader they declined something they did not. Each caller now says its own sentence.
+  if (!asked) return { name, ran: false, reason: why };
   if (!pages.length) {
     return { name, ran: false, reason: "no page to look at: nothing named one, and `diff` found "
       + "no capture to take a page list from" };

@@ -2872,3 +2872,48 @@ Nothing uses it now, so a reader could take the concept for dead and delete it. 
 next package added ahead of its release needs, and both branching readers are already written for
 it — `scaffold-versions.test.mjs` asserts the distinction between *declared-null* and *absent* so the
 branch is exercised without a real unpublished package to point at.
+
+## The instrument that sat out the question it answers (SH688)
+
+`shio judge` runs the instruments, answers once, and names where they disagreed. On the
+`www.viglet.org` replica it reported `FINDING from 2 instrument(s), 2 unproven` and said honestly:
+
+```
+audit  NOT RUN — not asked for — pass --browser
+  it would have answered: is anything wrong with the page a browser renders
+```
+
+The question being asked was *why does this page look wrong*. `audit` is the only instrument that
+renders in a browser and the only one that returns **geometry** — overflow in pixels, a CSS selector
+each. It sat out, and the session went to hand-parsing 1.1 MB of HTML and then to asking a human for
+a screenshot.
+
+The honesty was never the problem: naming what it skipped is SH589 working. **The default was.**
+`--browser` was off because playwright is optional and audit loads one page at a time, both real
+costs — but `judge` can *test* whether playwright resolves, and declining the only geometric
+instrument silently is a decision it should not make on the caller's behalf.
+
+### Two changes, and the second is the one that was hiding
+
+- **`audit` runs whenever `playwright` resolves.** `browserAvailable()` asks without constructing a
+  teaching error to discard — the refusal's wording is for somebody who asked for the browser.
+  `--no-browser` declines, `--browser` still forces. Resolution only: `pnpm add -D playwright`
+  without `npx playwright install chromium` is a real second state, and `launch()` is what reports it.
+- **A skip says which of two things it was.** *"not asked for"* reads as a preference and
+  *"not installed"* reads as a fact, and only one is actionable. This was not a wording change:
+  `browserInstrument` **prepended `not asked for —` to every reason**, which was true while both
+  instruments were opt-in and became a lie the moment one ran by default — *"not asked for —
+  playwright is not installed"* states a preference and a fact as one clause and tells a reader they
+  declined something they did not. Each caller now supplies its whole sentence.
+
+`snapshot` stays opt-in and it is **not** the same case: there is nothing to test for. No
+`--against` means no baseline exists, and inventing one is worse than abstaining. Its reason still
+begins *"not asked for"*, because for it that is true — a test asserts the two did not get flattened
+into one rule.
+
+### It cost a token budget, which is the ceiling working
+
+Rewriting the help pushed the whole-CLI help surface to ~9937 estimated tokens against a 9900
+ceiling, and `cli-help-budget.test.mjs` failed naming the number. The ceiling exists so a per-command
+surface cannot grow past the payload it was cheaper than, one defensible addition at a time — so the
+answer was to compress this command's help rather than to raise it.

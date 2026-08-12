@@ -1,11 +1,11 @@
 shio judge --site <name> — run the instruments, answer once, name the disagreements
 
-verify and diff always run (both browser-free). audit and snapshot are opt-in and are
-reported NOT RUN rather than green when they are not asked for. Exits 1 when any instrument
-that ran found something — a green from three and a red from one is a red.
+verify, diff and audit run (audit whenever playwright resolves — it is the only one that
+returns geometry). snapshot is opt-in: choosing what to compare pixels with is a judgement.
+A skipped instrument reads NOT RUN, never green. Exits 1 when anything that ran found something.
 
   --site <name>        The site to judge (or a bare positional)
-  --browser            Also run audit, which needs playwright
+  --no-browser         Skip audit even where playwright is installed (--browser forces it)
   --against <origin>   Also run snapshot against this origin (the source you replicated)
   --pages <n>          How many pages audit/snapshot look at (default 5)
   --verbose            Print each instrument's own report underneath the judgement
@@ -13,4 +13,4 @@ that ran found something — a green from three and a red from one is a red.
 
 Examples:
   shio judge --site Acme
-  shio judge --site Acme --browser --against https://acme.example.com
+  shio judge --site Acme --against https://acme.example.com

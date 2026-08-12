@@ -51,7 +51,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH688** (deps: SH589 ✅, SH687 ✅) **judge leaves out the only instrument that holds geometry, and the reason is that nobody passed a flag** — It answered from verify and diff and printed audit NOT RUN - not asked for, on the one investigation whose whole question was what the page looks like. → §XVII.98
 - 📋 **SH689** (deps: SH686 ✅) **font-fallback claims the page fell back and shows no evidence, so the finding cannot be checked from its own output** — It named both families on a page carrying 33 font-face rules declaring each twice, every data URI decoding to valid wOF2 and the url form answering 200. → §XVII.99
 - 📋 **SH692** (deps: SH687 ✅) **mixed is a label with no standard, and it is where ten of twelve replicated pages land** — diff assigns it at line 223 and then scores it by the authorable rule, so its whole answer is 20 shortfalls the mode does not claim. → §XVII.100
 - 📋 **SH693** (deps: SH692) **The generated layout appends sections after the whole verbatim block, so the source footer precedes every section** — Measured on the replica home page: header at 95%, footer at 98%, then all 8 sections — the template emits content and then getRelation sections, never between. → §XVII.101

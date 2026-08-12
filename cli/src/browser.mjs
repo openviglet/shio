@@ -51,6 +51,35 @@ export const INSTALL = "pnpm add -D playwright && npx playwright install chromiu
  * @param {object} ctx             the IO context; `import` is the seam, `env.SHIO_DEBUG` adds the
  *                                 resolution root
  */
+/**
+ * Whether `playwright` resolves at all — asked, never assumed (SH688).
+ *
+ * <p>`shio judge` used to leave `audit` out unless `--browser` was passed, and reported it as
+ * *"not asked for"*. On the one investigation whose whole question was **why does this page look
+ * wrong**, the only instrument that renders in a browser and the only one that returns geometry sat
+ * out, and the session went to hand-parsing 1.1 MB of HTML and then to asking a human for a
+ * screenshot.</p>
+ *
+ * <p>So the default is a fact rather than a preference: run it when it can run. This is the question
+ * that makes that possible, and it is deliberately <b>not</b> {@link requireBrowser} with a
+ * try/catch — a caller reading a boolean must not have to construct and discard a teaching error to
+ * learn a yes, and the refusal's wording is for somebody who asked for the browser.</p>
+ *
+ * <p>Resolution only. It cannot tell whether `chromium` itself is installed — `pnpm add -D
+ * playwright` without `npx playwright install chromium` is a real second state, and `launch()` is
+ * what reports it. That failure still arrives from the instrument, which is where the class note
+ * says it belongs.</p>
+ */
+export async function browserAvailable(ctx) {
+  const load = typeof ctx?.import === "function" ? ctx.import : (name) => import(name);
+  try {
+    await load("playwright");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function requireBrowser({ command, why, needs = "this command" }, ctx) {
   const load = typeof ctx?.import === "function" ? ctx.import : (name) => import(name);
   try {

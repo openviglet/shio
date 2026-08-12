@@ -923,34 +923,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.98 The instrument that sat out the question it answers (SH688)
-
-`shio judge` is the one-verdict verb: run the instruments, answer once, name where they
-disagreed. On the `www.viglet.org` replica it reported `FINDING from 2 instrument(s), 2
-unproven`, and said so honestly:
-
-    audit  NOT RUN — not asked for — pass --browser
-      it would have answered: is anything wrong with the page a browser renders
-
-The question being asked was *why does this page look wrong*. `audit` is the only
-instrument that renders in a browser and the only one that returns geometry — it reports
-overflow in pixels with a CSS selector each. It sat out, and the investigation went to
-hand-parsing HTML and then to asking a human for a screenshot.
-
-The honesty is not the problem; `judge` naming what it skipped is SH589 working. The
-default is. `--browser` is off because audit needs playwright and loads one page at a
-time, which are real costs — but `judge` can *test* whether playwright is present, and
-when it is, declining the only geometric instrument is a decision it should not make
-silently on a replica whose mode is `mixed`.
-
-Two changes, both small. Run audit when playwright resolves, and say so. When it does
-not resolve, keep the current line but state the install, because *not asked for* reads
-as a preference and *not installed* reads as a fact — and the fact is the actionable
-one.
-
-`snapshot` stays opt-in: choosing a baseline is a judgement, and SH589 is right that
-inventing one is worse than abstaining.
-
 ### XVII.99 A finding that cannot be falsified (SH689)
 
 `shio audit` returned ten warnings on the replica's home page, two of them:
