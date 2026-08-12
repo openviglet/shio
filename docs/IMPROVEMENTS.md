@@ -216,26 +216,146 @@ loop that cannot perceive itself is the failure this block should expect next.
 
 ### XI.21 Where the list lives, and who vouches (SH646)
 
-SH643 wrote down what an applied package may do and reserved the `shio-blueprint-`
-prefix so it can mean something. What it did not build is the **index** and a
-**provenance signal stronger than "it was in a directory"**, because those are not code:
-they are a place for the list to live and somebody to say what enters it.
+SH643 stated what an applied package may do and reserved the `shio-blueprint-` prefix.
+What was missing was the **index** and a **provenance signal stronger than "it was in a
+directory"** — a place for the list to live and somebody to say what enters it.
 
-Four homes, each with a real cost. **npm by naming convention** needs no infrastructure
-and inherits npm's provenance, but nobody curates — the product would point at a surface
-it does not control. **A curated JSON in the repository** makes the vouching explicit
-and reviewable in git, and costs recurring review. **A docs-site page** is that curation
-plus one more artefact to keep current. **Waiting** is free.
+**The answer is a marketplace, on the shape Turing already runs.** A catalog JSON an
+operator points at (`shio.marketplace.url`), **off by default**, with a classpath copy
+as the fallback. An item is a zip of a blueprint package — `blueprint.json`,
+`post-types/`, `content/`, `files/` — and installing one expands it into
+`shio.blueprint.path`.
 
-Waiting is the choice, and not out of caution: there is **no third-party package**. An
-index with nothing to index is infrastructure ahead of its problem, and the first real
-package is what settles whether authors want a registry or a review — a question whose
-answer is currently a guess.
+That is why this does not overturn SH96. `ShBlueprintProperties` refused URL fetching
+because it *"moves the decision from an operator to a network"*, and it still does: the
+operator turns the catalog on and names its URL, as they name a directory. The registry
+already validates a package as it does a first-party one, isolates one that will not
+load (SH217), refuses a collision and reports the origin. **The marketplace distributes
+what the trust model already accepts.**
 
-What should trigger this is the first package somebody outside the project asks to
-publish. The decision is cheap then because it has a subject, and the code half is
-already there: the bounds are stated and asserted, the prefix is reserved, and a package
-that will not load is refused on its own without taking the catalogue with it.
+The catalogue seeds with the six first-party packages, which is what makes the
+third-party half meaningful rather than speculative: the format is proven by items the
+project ships, and the install path is exercised before anyone outside is asked to meet
+it.
+
+The human half is greenfield — nothing in `shio-react` mentions a blueprint — and the
+agent half is budget-bound: `tools/list` sits at 2397 of 2400, so MCP follows CLI and
+REST rather than leads.
+
+### XI.22 Installing a catalog item is mostly work that already exists (SH675)
+
+Installing a catalog item is four steps and the interesting one is that three already
+exist. **Download** the zip named by `downloadUrl`. **Expand** it into
+`shio.blueprint.path` as one directory. **Validate** — not new work: the registry
+already reads that directory, holds a package to the same format checks as a first-party
+one, refuses a name collision naming both origins, and isolates a package that will not
+load so it cannot take the catalogue down with it (SH217). **Report** what was installed
+and from where, which the registry already records as the origin.
+
+So the task is the fetch and the unpacking, plus the refusals only a download can need:
+a zip that escapes its directory on expansion, a package whose `name` disagrees with its
+catalog `id`, a download that is not a zip, and a name already taken. Each is a P6
+teaching error rather than a stack trace.
+
+**Install is not apply.** Installing puts a package where the registry can see it;
+applying it to a site stays `shio apply --blueprint`, unchanged and already built.
+Keeping them separate is what makes an install auditable and re-appliable: the package
+survives, so `/agent/blueprints` lists it, a second site can use it, and an operator can
+read what they installed before anything writes to content.
+
+Uninstall is the same door in reverse and belongs here rather than as a follow-up,
+because a catalogue you can only add to is one nobody will experiment with.
+
+### XI.23 The first-party six are what proves the catalog (SH676)
+
+A catalog with nothing in it cannot be judged, and a format nobody has met is a guess.
+The six first-party packages — `blog`, `docs`, `landing`, `marketing-site`,
+`nextjs-starter`, `product-catalog` — are the answer to both: they exist, they are known
+good, and they already carry everything a catalog entry needs to describe.
+
+**What ships is a build step, not a rewrite.** Each package is already a directory under
+`src/main/resources/blueprints/`. Zipping each one, writing a `marketplace.json`
+describing them, and publishing both is the whole of it. The packages stay on the
+classpath as well — this is a second distribution channel for the same bytes, not a
+migration, so an instance with the catalog off behaves exactly as it does today.
+
+**The entry shape follows Turing's**, because that is a format with a working console
+behind it: `id`, `title`, `description`, `version`, `author`, `category`, `tags`,
+`icon`, `downloadUrl`, `readmeUrl`. Blueprints need two more that a Turing recipe does
+not: the **parameters** the package takes, so a form can be drawn without downloading it
+first, and the **opt-ins** it requires (SH151/SH152 — creating a site, editing an
+existing post-type), so a human can see what it is allowed to do before it does it. That
+second one is P7 read at catalogue level.
+
+Publishing is on `shio.viglet.org`, which makes the default `shio.marketplace.url` a
+real surface — the rule that site already holds every claim to.
+
+### XI.24 The CLI half is what keeps this from being console-only (SH677)
+
+The non-goals say it in one line: **no feature whose only interface is the console**. A
+marketplace is the kind of feature that invites the breach, because browsing a catalogue
+is such an obviously visual act that the CLI half reads as ceremony — right up to the
+moment an agent is asked to set an instance up without a human at the keyboard.
+
+Four verbs, and they are thin because the REST surface underneath them is the same one
+the console calls: `shio marketplace list` (with `--category`, `--tag`, `--json`), `shio
+marketplace show <id>` (the entry plus its README and its parameters), `shio marketplace
+install <id>` (with `--dry-run`, because P7 says an install is not a surprise), and
+`shio marketplace uninstall <id>`.
+
+**What this buys beyond compliance** is the pairing that makes a blueprint useful to an
+agent at all: `shio marketplace install blog && shio apply --blueprint blog --param
+blogTitle=…`. Two commands, no console, no session — which is exactly the shape P2 is
+about, and it is unavailable today because the first half does not exist.
+
+`--json` on every read verb, since the CLI is a tool an agent scripts rather than a
+screen it reads, and the gate order in `docs/agents/cli.md` gains nothing here: install
+writes to a directory rather than to content, so it sits before the content gates rather
+than inside them.
+
+### XI.25 The console has no blueprint surface at all (SH679)
+
+Measured before designed: **`grep -ril blueprint shio-react/src` returns nothing.** The
+console has no blueprint surface at all — not a list, not a detail, not an apply. So a
+curator cannot see what the instance can build from, which is the human half of the
+product's headline capability.
+
+The page is the Turing marketplace page read through Shio's console conventions: a
+filterable grid of catalog cards (category, tag, search), a detail sheet with the README
+rendered and the package's parameters listed, and an install dialog. Turing's
+`marketplace.list.page.tsx` and `recipe-install-dialog.tsx` are the reference for the
+shape, not for the code — the data model differs and the console stacks differ.
+
+**Two things the Turing page does not have to do.** A blueprint takes **parameters**, so
+installing and applying wants a generated form — and the console already builds forms
+from a schema for post-types, which is the machinery to reuse rather than re-invent. And
+a blueprint may require the **opt-ins** (create a site, edit an existing post-type),
+which the dialog has to show as a consent, not a footnote: P7 says the human is never
+surprised, and "this package will alter a post-type you already have" is precisely the
+surprise worth spending a click on.
+
+Install progress is worth streaming the way Turing does, and i18n is `en`/`pt` like
+every other page here.
+
+### XI.26 The agent path is last, and the reason is a number (SH678)
+
+P1 orders MCP first and this task is deliberately last, which needs saying out loud
+rather than being quietly true. The reason is measured: `tools/list` is **2397 of 2400**
+and `shio_apply` is **441 of 460**. There is no room, and `token-budgets.properties`
+states the order — the trim comes before the raise, and a raise is argued in the file.
+
+So the sequence is: find the tokens, then decide the shape. Two shapes are plausible and
+the cheaper one may not be the right one. **An argument on `shio_apply`** (`from:
+"marketplace"`) is ~20–30 tokens and is semantically honest, because applying a catalog
+package is applying a package. **A `shio_marketplace` tool** is ~130–200 and is what an
+agent would look for when it does not yet know a package exists — which is the discovery
+case, and the case the whole marketplace is for.
+
+Worth carrying into the decision: the CLI already covers the scripted path (SH677), so
+what MCP adds is specifically **discovery without a shell** — a pure MCP client with no
+terminal, which is the same argument that overturned SH114 and bought `shio_remember`
+its 128 tokens. That is the strongest case for the more expensive shape, and it is also
+the case that can wait, because nothing else is blocked on it.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
