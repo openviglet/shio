@@ -1058,6 +1058,33 @@ one.
 `snapshot` stays opt-in: choosing a baseline is a judgement, and SH589 is right that
 inventing one is worse than abstaining.
 
+### XVII.99 A finding that cannot be falsified (SH689)
+
+`shio audit` returned ten warnings on the replica's home page, two of them:
+
+    warn  font-fallback  Inter Variable — did not load, so the page fell back
+    warn  font-fallback  Plus Jakarta Sans Variable — did not load, so the page fell back
+
+The page carries **33** `@font-face` rules. Both families are declared twice over: once
+as `url()` into the replica's own asset space, once as an inline
+`data:font/woff2;base64` payload. Every data URI decodes to a valid woff2 — magic
+`wOF2`, 1,716 to 85,068 bytes. The `url()` form answers **200** with 85,068 bytes at the
+path the CSS names.
+
+So the fonts are present by two independent routes, and the warning asserts the
+opposite. Either it is wrong, or it observed a load that had not finished when it looked
+— a real and different thing. **Nothing in the output distinguishes those**, which is
+the defect: `did not load, so the page fell back` is a causal claim about the rendered
+result, made by the one instrument that has the rendered result in hand, and it reports
+neither the computed `font-family` of any element nor the load state it read.
+
+Report the rendered fact instead of the load event: the computed family of a sampled
+heading and body element, with the family the CSS asked for beside it. Then the finding
+is falsifiable, and a genuine fallback is still caught.
+
+This is the second appearance instrument on one page whose claim did not survive being
+checked (SH686 is the first), which is the substance of SH687.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
