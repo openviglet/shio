@@ -1699,6 +1699,39 @@ and restore ops add to both sides equally, so that comparison is untouched — w
 the size. **The next op should re-run the trade rather than move the line again**, which is
 **SH647**.
 
+### The folder half's plan did not read the trash (SH690)
+
+`postRestore` reads the trash in its `dryRun` branch and says why — *"a plan that said yes about a
+post nobody trashed is the plan an agent acts on."* `folderRestore`, one method below it, answered
+`UPDATE "from trash, with its subtree"` **unconditionally**, so a plan promised a section restore in
+three cases the write does not deliver: the id is not a trashed folder (`NOOP`), its **parent** is
+still trashed (`NOOP`, SH200's rule), or a post beneath it has had its friendly URL taken — SH243's
+409, which refuses the whole subtree. An agent that trusts the plan spends the confirm token to
+reach a different answer, and that is precisely the round trip P9 claims the cheap textual proof
+replaces.
+
+Three decisions worth keeping:
+
+- **The parent-trashed case keeps its own sentence** rather than folding into "not in the trash".
+  It is a different instruction — the caller has something to do about it — and
+  `ShReviewService.revertFolder` already prints that distinction; the wording is now shared with it
+  verbatim rather than re-invented.
+- **The plan raises SH243's refusal, it does not report it.** `ShFolderWriteService` now carries
+  both forms of the same question: `restoreUrlConflict` (returns the reason) for the review queue,
+  which must not *catch* a throw out of an inner `@Transactional` call, and `requireRestorableUrls`
+  (throws) for the batch plan, which refuses ops the way every other op is refused. The write's own
+  pre-flight loop is the private half of the throwing one, so the rule lives in a single place —
+  the version that lives in two is the one that disagrees with itself the first time either moves.
+- **All three checks run before `session.dryRun` is consulted.** That is what makes plan and apply
+  one answer instead of two that drift: the apply path reaches the same NOOPs and the same 409
+  through checks it was already running.
+
+The three assertions carrying the id are in `ShAgentTrashTest`, and building them turned up the trap
+worth naming: `run(batch, ids, actor)` nulls every `Change.id()` when `ids` is false, so a fixture
+that trashes a folder and then addresses it cannot use the reply it just got. A trashed folder is
+addressable *only* by id (SH222) — so `ids = true` is not a preference on this path, it is the only
+way to name what you deleted.
+
 ## A write proves its folders too, and says so when it proves nothing (SH228)
 
 `ShAgentProofService` collects the `post:` **and** `folder:` addresses a run touched. It

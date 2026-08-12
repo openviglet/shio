@@ -685,34 +685,6 @@ the cheap version is likely right: a write mapping on an API class whose body to
 `*Repository.save`/`delete` directly. Precision matters less than the build going red the day
 somebody adds the fifth one.
 
-### XVI.73 `folder.restore`'s plan says yes without reading the trash (SH690)
-
-`postRestore` reads the trash in its `dryRun` branch and says why: *"a plan that said
-yes about a post nobody trashed is the plan an agent acts on."* `folderRestore`, two
-methods below it in the same file, answers `UPDATE "from trash, with its subtree"`
-unconditionally — it never asks whether the id is a trashed folder at all, and after
-SH243 it does not ask the new refusal either.
-
-So a `dryRun` promises a section restore in three cases where the real run will not
-deliver one: the id is not in the trash (`NOOP`), its parent is still trashed (`NOOP`,
-the SH200 rule), or a post beneath it has had its friendly URL taken (a 409, which SH243
-made refuse the whole subtree). An agent that trusts the plan spends the confirm token
-and gets a different answer.
-
-Measured, not argued: the branch is one line and reads no state, at
-`ShAgentBatchService.java:1925`.
-
-The fix is the shape SH243 already put in place for the post half — ask
-`shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed)` and
-`ShFolderWriteService.restoreUrlConflict`, both of which exist and neither of which
-throws. The parent-trashed case is worth naming separately rather than folding into "not
-in the trash", because SH200's refusal already distinguishes them and the review queue
-prints that distinction.
-
-What makes this a task rather than a comment: P9's claim is that cheap textual proof
-stands in for a human round trip, and a plan that can be wrong in three ways is not that
-proof.
-
 ### XVI.74 The copy's title counter is still trash-blind (SH691)
 
 SH243 taught `ShFurlNaming` about the trash, so a copy no longer takes a friendly URL a

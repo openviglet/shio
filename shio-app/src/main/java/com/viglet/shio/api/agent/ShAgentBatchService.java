@@ -1919,9 +1919,40 @@ public class ShAgentBatchService {
                 : session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id);
     }
 
-    /** SH222 — the folder half, which brings its subtree's posts back with it (SH200). */
+    /**
+     * SH222 — the folder half, which brings its subtree's posts back with it (SH200).
+     *
+     * <h2>The plan reads the trash too (SH690)</h2>
+     *
+     * <p>This branch answered {@code UPDATE "from trash, with its subtree"} unconditionally, one
+     * method below the post half that reads the trash and says why. So a {@code dryRun} promised a
+     * section restore in three cases the write does not deliver: the id is not a trashed folder, its
+     * <b>parent</b> is still trashed (SH200's refusal), or a post beneath it has had its friendly URL
+     * taken — SH243's 409, which refuses the whole subtree. An agent that trusts the plan spends the
+     * confirm token and gets a different answer, and P9's claim is that the cheap textual proof
+     * stands in for a human round trip: a plan that can be wrong in three ways is not that proof.</p>
+     *
+     * <p>The parent-trashed case keeps its <b>own</b> wording rather than folding into "not in the
+     * trash", because it is a different instruction — the caller has something to do about it — and
+     * {@code ShReviewService.revertFolder} already prints that distinction; the sentence is its.</p>
+     *
+     * <p>All three are read <b>before</b> {@code session.dryRun} is consulted, which is what makes
+     * them one answer instead of two that drift: the apply path reaches the same two NOOPs and the
+     * same 409 through the checks it already ran, and the plan reaches them through the writer's own
+     * {@code requireRestorableUrls} rather than by re-deriving the rule here.</p>
+     */
     private Change folderRestore(ShAgentBatch.Op op, Session session) {
         String id = trashedId(op);
+        Optional<ShFolder> trashed = shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed);
+        if (trashed.isEmpty()) {
+            return session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id);
+        }
+        ShFolder parent = trashed.get().getParentFolder();
+        if (parent != null && parent.isTrashed()) {
+            return session.change(op, ShAddress.id(id), Change.NOOP,
+                    "its parent folder is in the trash — restore that instead", id);
+        }
+        shFolderWriteService.requireRestorableUrls(id);
         if (session.dryRun) {
             return session.change(op, ShAddress.id(id), Change.UPDATE, "from trash, with its subtree", id);
         }

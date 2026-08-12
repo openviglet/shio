@@ -27,6 +27,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentBatch.Op;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -210,7 +211,100 @@ class ShAgentTrashTest {
                 .satisfies(change -> assertThat(change.detail()).isEqualTo("not in the trash"));
     }
 
+    // --- SH690: the same question asked of the folder half ---
+
+    @Test
+    @DisplayName("SH690: a folder.restore plan reads the trash instead of answering yes about nothing")
+    void aFolderPlanReadsTheTrashToo() {
+        // The branch this task exists for: `folderRestore` answered UPDATE "from trash, with its
+        // subtree" unconditionally, one method below the post half that reads the trash and says
+        // why. Before the fix this asserts, it said yes about an id nobody has ever seen.
+        assertThat(plan(new Op(ShAgentBatchService.FOLDER_RESTORE, "id:" + UUID.randomUUID(),
+                null, null, null)).results())
+                .singleElement()
+                .satisfies(change -> {
+                    assertThat(change.action()).isEqualTo(Change.NOOP);
+                    assertThat(change.detail()).isEqualTo("not in the trash");
+                });
+    }
+
+    @Test
+    @DisplayName("SH690: a trashed parent is its own reason in the plan, not 'not in the trash'")
+    void aTrashedParentIsItsOwnReasonInThePlan() {
+        String section = "sh690-" + UUID.randomUUID().toString().substring(0, 8);
+        run(new Op(ShAgentBatchService.FOLDER_UPSERT,
+                "folder:" + siteName + "/" + section, null, null, null));
+        String childId = runWithIds(new Op(ShAgentBatchService.FOLDER_UPSERT,
+                "folder:" + siteName + "/" + section + "/inner", null, null, null))
+                .results().get(0).id();
+        assertThat(childId).as("fixture: the nested folder was created and has an id").isNotNull();
+        assertThat(confirmed(new Op(ShAgentBatchService.FOLDER_DELETE,
+                "folder:" + siteName + "/" + section, null, null, null)).results())
+                .as("fixture: the section really went to the trash, taking `inner` with it")
+                .singleElement()
+                .satisfies(change -> assertThat(change.action()).isEqualTo(Change.DELETE));
+
+        // SH200 refuses this one: restoring it would attach a live folder to a deleted one, which
+        // is invisible in navigation. The caller has something to do about it — restore the parent
+        // — so the plan says which, in the sentence ShReviewService.revertFolder already prints.
+        assertThat(plan(new Op(ShAgentBatchService.FOLDER_RESTORE, "id:" + childId,
+                null, null, null)).results())
+                .singleElement()
+                .satisfies(change -> {
+                    assertThat(change.action()).isEqualTo(Change.NOOP);
+                    assertThat(change.detail())
+                            .isEqualTo("its parent folder is in the trash — restore that instead");
+                });
+    }
+
+    @Test
+    @DisplayName("SH690: the plan refuses a subtree whose URL was taken, the way the write does")
+    void aTakenUrlRefusesThePlanAndNotOnlyTheWrite() {
+        String section = "sh690-" + UUID.randomUUID().toString().substring(0, 8);
+        String furl = "sh690-taken-" + UUID.randomUUID().toString().substring(0, 8);
+        run(new Op(ShAgentBatchService.FOLDER_UPSERT,
+                "folder:" + siteName + "/" + section, null, null, null));
+        run(new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + "/" + furl,
+                postTypeName, "/" + section, new ObjectMapper().readTree("{\"title\":\"Sleeping\"}")));
+        String sectionId = confirmed(new Op(ShAgentBatchService.FOLDER_DELETE,
+                "folder:" + siteName + "/" + section, null, null, null)).results().get(0).id();
+        // A live post moves onto the URL while the section sleeps. SH243 makes that refuse the
+        // whole subtree with a 409 — so a plan answering UPDATE spends a confirm token to reach a
+        // different answer, which is the round trip P9 says the textual proof replaces.
+        run(new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + "/" + furl,
+                postTypeName, "/", new ObjectMapper().readTree("{\"title\":\"Occupant\"}")));
+
+        assertThatThrownBy(() -> plan(new Op(ShAgentBatchService.FOLDER_RESTORE,
+                "id:" + sectionId, null, null, null)))
+                .as("""
+                        the plan raises SH243's refusal rather than reporting it: a batch op that \
+                        will be refused is refused when it is planned (SH690).""")
+                .hasMessageContaining(furl);
+    }
+
     private com.viglet.shio.api.agent.dto.ShAgentChangeSet run(Op op) {
         return shAgentBatchService.run(new ShAgentBatch(false, List.of(op)), false, "tester");
+    }
+
+    /**
+     * The dry run of one op — the document this task is about.
+     *
+     * <p>{@code ids = true}, unlike {@link #run}: {@code Session.change} nulls the id when the
+     * caller did not ask for one, and a folder in the trash is addressable <em>only</em> by id
+     * (SH222), so the fixtures below have no other way to name what they just trashed.</p>
+     */
+    private com.viglet.shio.api.agent.dto.ShAgentChangeSet plan(Op op) {
+        return shAgentBatchService.run(new ShAgentBatch(true, List.of(op)), true, "tester");
+    }
+
+    /** A destructive op and the confirm token from its own plan (SH108). */
+    private com.viglet.shio.api.agent.dto.ShAgentChangeSet confirmed(Op op) {
+        return shAgentBatchService.run(
+                new ShAgentBatch(false, List.of(op), plan(op).confirm()), true, "tester");
+    }
+
+    /** A write whose reply has to carry the id, for the same reason {@link #plan} does. */
+    private com.viglet.shio.api.agent.dto.ShAgentChangeSet runWithIds(Op op) {
+        return shAgentBatchService.run(new ShAgentBatch(false, List.of(op)), true, "tester");
     }
 }

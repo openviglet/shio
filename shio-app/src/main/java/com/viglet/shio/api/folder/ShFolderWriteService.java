@@ -385,9 +385,7 @@ public class ShFolderWriteService {
         List<ShPostUnified> posts = restorablePosts(restorable, trashedAt);
         // SH243 — the pre-flight. Nothing below has run yet, so a refusal here leaves the trash
         // exactly as the curator left it instead of relying on the rollback to put it back.
-        for (ShPostUnified post : posts) {
-            shPostUnifiedWriteService.requireRestorableUrl(post.getId());
-        }
+        requireRestorableUrls(posts);
         for (ShFolder node : restorable) {
             node.setDeletedDate(null);
             shFolderRepository.save(node);
@@ -397,6 +395,41 @@ public class ShFolderWriteService {
         }
         recordFolder(ShContentAction.RESTORE, folder, actor, null);
         return true;
+    }
+
+    /**
+     * The SH243 refusal for a whole subtree, asked <b>without restoring</b> — what a plan has
+     * to know (SH690).
+     *
+     * <p>The throwing half of the pair {@link #restoreUrlConflict} opens, and it exists for the
+     * same reason {@code ShPostUnifiedWriteService.requireRestorableUrl} does: {@code
+     * POST /agent/batch} with {@code dryRun} has to reach the answer the write reaches, and a
+     * plan that says yes about a restore the write will refuse with a 409 is the defect P9 is
+     * about. {@code ShReviewService} keeps the non-throwing form because it <em>reports</em>
+     * refusals; a batch plan raises them, the way every other refused op does.</p>
+     *
+     * <p>An id that is not a trashed folder passes silently rather than throwing: "there is
+     * nothing here" is a {@code NOOP} its caller answers, not a conflict — the same split
+     * {@link #restoreUrlConflict} documents.</p>
+     *
+     * @throws com.viglet.shio.api.post.unified.ShRestoreUrlConflictException when one of the
+     *         posts this restore would bring back has had its URL taken
+     */
+    @Transactional(readOnly = true)
+    public void requireRestorableUrls(String id) {
+        shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed).ifPresent(folder ->
+                requireRestorableUrls(restorablePosts(
+                        restorableNodes(folder, folder.getDeletedDate()), folder.getDeletedDate())));
+    }
+
+    /**
+     * The loop itself, so {@link #restore} runs the pre-flight it already had without paying for
+     * a second traversal of a subtree it has in hand.
+     */
+    private void requireRestorableUrls(List<ShPostUnified> posts) {
+        for (ShPostUnified post : posts) {
+            shPostUnifiedWriteService.requireRestorableUrl(post.getId());
+        }
     }
 
     /**
