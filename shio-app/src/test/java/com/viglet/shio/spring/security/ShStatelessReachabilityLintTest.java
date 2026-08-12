@@ -197,22 +197,13 @@ class ShStatelessReachabilityLintTest {
         // folder — and asks the operator to open the door. Recorded here rather than argued again,
         // and if that ever reads as too strict, the fix is a scope that may configure but not
         // enable, NOT moving this row.
-        // SH675 — and this one is the same shape as `site-form` below, one supply chain to the
-        // left. An agent can already apply a blueprint, so applying is not what a stateless install
-        // would add. What it would add is different in kind: *fetching a stranger's package and
-        // planting it where the registry loads it*, after which every later apply — including ones
-        // nobody is watching — runs whatever arrived. The operator is already the subject here,
-        // because the catalogue is off until they enable it and name its URL (SH646); an install
-        // route a token could call would take the one decision they were kept in and hand it back.
-        //
-        // The listing and the README stay readable to anything authenticated. It is only the two
-        // writes that are the operator's. SH677's CLI therefore has an auth question of its own to
-        // answer, and answering it there is the point — it is a decision about the CLI's identity,
-        // not a side effect of this row.
-        byPath.put("/api/v2/marketplace", new Requirement(Reason.CONSOLE_ADMIN,
-                "installing a third-party package plants code the registry will load on every "
-                + "later apply (SH675); the operator who enabled the catalogue and named its URL "
-                + "is the one who pulls the trigger, and a stateless route would hand that back"));
+        // SH677 — /api/v2/marketplace was CONSOLE_ADMIN here for one task, and it left this list
+        // the way /api/v2/render/** did: the capability became reachable. SH675's *reasoning* was
+        // that installing a stranger's package is the operator's act, and that still holds — what
+        // was wrong was the mechanism. "Holds a session" does not identify an operator, it
+        // identifies a browser, and it made the capability unreachable from a terminal, which is
+        // the console-only failure P1's non-goal names outright. The gate is `hasRole("ADMIN")`
+        // now, beside the blueprint reload it is strictly larger than.
         byPath.put("/api/v2/site-form", new Requirement(Reason.CONSOLE_ADMIN,
                 "where a site's public submissions land and whether it accepts them at all "
                 + "(SH632); enabling one converts an authenticated capability into a public write "

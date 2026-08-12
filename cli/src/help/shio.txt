@@ -21,6 +21,7 @@ Commands:
   import <file>  Clone an SH68 exchange package (.zip) into this instance — the way to accept
                  a site somebody hands you (export it with GET /api/v2/site/{id}/export)
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
+  marketplace    Browse and install blueprint packages from a catalogue
   publish [addr] Make drafts live, or take live pages down (--unpublish)
                  (--site <name> --all names every post the site holds; --dry-run first)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)

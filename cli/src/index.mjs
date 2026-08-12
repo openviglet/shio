@@ -97,6 +97,7 @@ const COMMANDS = {
   publish: () => import("./commands/publish.mjs"),
   import: () => import("./commands/import.mjs"),
   blueprints: () => import("./commands/blueprints.mjs"),
+  marketplace: () => import("./commands/marketplace.mjs"),
   verify: () => import("./commands/verify.mjs"),
   changes: () => import("./commands/changes.mjs"),
   report: () => import("./commands/report.mjs"),

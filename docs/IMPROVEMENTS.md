@@ -210,32 +210,9 @@ nothing — it just moves the work. **Absorbs the old SH23 marketplace epic** (S
 
 The format, the verb, the first-party set, the section vocabulary, the Claude Code
 plugin, the five mismatches that shipping the two halves exposed, and the marketplace's
-catalogue, install and published seed are all shipped — see [CHANGELOG.md](CHANGELOG.md)
-Block J. What remains is the rest of the marketplace: the CLI, the console and the agent
-path (§XI.24, §XI.25, §XI.26).
-
-### XI.24 The CLI half is what keeps this from being console-only (SH677)
-
-The non-goals say it in one line: **no feature whose only interface is the console**. A
-marketplace is the kind of feature that invites the breach, because browsing a catalogue
-is such an obviously visual act that the CLI half reads as ceremony — right up to the
-moment an agent is asked to set an instance up without a human at the keyboard.
-
-Four verbs, and they are thin because the REST surface underneath them is the same one
-the console calls: `shio marketplace list` (with `--category`, `--tag`, `--json`), `shio
-marketplace show <id>` (the entry plus its README and its parameters), `shio marketplace
-install <id>` (with `--dry-run`, because P7 says an install is not a surprise), and
-`shio marketplace uninstall <id>`.
-
-**What this buys beyond compliance** is the pairing that makes a blueprint useful to an
-agent at all: `shio marketplace install blog && shio apply --blueprint blog --param
-blogTitle=…`. Two commands, no console, no session — which is exactly the shape P2 is
-about, and it is unavailable today because the first half does not exist.
-
-`--json` on every read verb, since the CLI is a tool an agent scripts rather than a
-screen it reads, and the gate order in `docs/agents/cli.md` gains nothing here: install
-writes to a directory rather than to content, so it sits before the content gates rather
-than inside them.
+catalogue, install, published seed and CLI are all shipped — see
+[CHANGELOG.md](CHANGELOG.md) Block J. What remains is the console, the agent path, and
+the role the writes still want (§XI.25, §XI.26, §XI.27).
 
 ### XI.25 The console has no blueprint surface at all (SH679)
 
@@ -280,6 +257,33 @@ what MCP adds is specifically **discovery without a shell** — a pure MCP clien
 terminal, which is the same argument that overturned SH114 and bought `shio_remember`
 its 128 tokens. That is the strongest case for the more expensive shape, and it is also
 the case that can wait, because nothing else is blocked on it.
+
+### XI.27 The marketplace writes want the role the reload already has (SH682)
+
+`POST /api/v2/marketplace/{id}/install` and `DELETE /api/v2/marketplace/{id}` are
+`authenticated()` — the blanket rule. They should be **`hasRole("ADMIN")`**, and the
+argument is `BLUEPRINT_RELOAD_PATH`: merely re-reading the operator's package directory
+is already admin-gated, because it changes what every later apply can do. Installing is
+that act plus a download, so it cannot honestly be gated more weakly than the thing it
+contains.
+
+It was written that way in SH677 and taken out, because the role is unreachable for a
+locally authenticated user (SH681) — the reload answers 403 to the seeded admin. Gating
+a capability on a role nothing grants does not make it safer, it makes it dead, and a
+dead gate teaches the next reader that the gate is decorative.
+
+So this is a separate line rather than a `TODO` in the security config: the change is
+one expression, its precondition is somebody else's task, and the pair is only honest if
+both are visible in the same backlog.
+
+What lands with it is the assertion SH677 could not write for the same reason: a caller
+authenticated but not an administrator is refused the install, and an administrator is
+not. That test would have caught SH681 four tasks earlier, so it belongs here even
+though the code change is one line.
+
+Check in the same pass that the console's own call still works — it calls this with a
+session, and a role gate tested only against the CLI is a second way to ship something
+dead.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
@@ -499,6 +503,34 @@ again.
 Check in the same pass whether any deployment artefact relies on the broken behaviour:
 the Docker and compose files configure through environment variables, so this should
 widen what works rather than change what already does.
+
+### XIV.26 Only an OAuth login can be an administrator (SH681)
+
+`ShAuthorityResolver` reads user → groups → roles and adds **`ROLE_ADMIN`** for anyone
+in the `Administrator` group. Exactly two classes reference it: `ShOAuth2UserService`
+and `ShOidcUserService`. A password login goes through `ShCustomUserDetailsService`,
+which walks the same tables and builds authorities **from `ShRole` names alone** — no
+group rule, no `ROLE_ADMIN`.
+
+On a fresh instance `GET /api/v2/role` answers `[]`. So a password-authenticated user
+carries no role authorities at all, and every `hasRole("ADMIN")` gate is unreachable:
+the SH219 blueprint reload, the SH22 tenant writes, and whatever is added next.
+
+Measured rather than reasoned: `POST /api/v2/agent/blueprints/reload` answers **403** to
+the seeded `admin` — over a console session *and* over Basic auth — while
+`/api/v2/user/current` reports `"admin": true`. That endpoint exists to be called by an
+administrator and has not been callable by one since SH219. Found while wiring SH677,
+which wanted the same gate.
+
+Two things this is not. Not the OAuth path being wrong — that one works, which is why
+nobody noticed. And not `admin: true` being wrong: the flag is group membership, which
+is correct; what is missing is the step turning membership into an authority.
+
+The repair is one of two, and choosing is the task: wire `ShAuthorityResolver` into the
+local `UserDetailsService`, or seed the `ShRole` rows the group is meant to carry. The
+first makes one rule serve every login. Whichever lands, the assertion is the same and
+absent today: an admin-gated path, called by a locally authenticated administrator, must
+not answer 403.
 
 ## XV. The visible site (Block P)
 

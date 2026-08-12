@@ -585,14 +585,49 @@ that would apply nothing. The rollback was proved by an accident before it was p
 
 ### Where the two writes sit on the security surface
 
-`ShStatelessReachabilityLintTest` classifies `/api/v2/marketplace` as **CONSOLE_ADMIN** — the same
-shape as `site-form`, one supply chain to the left. An agent can already apply a blueprint, so
-applying is not what a stateless install would add; what it would add is *fetching a stranger's
-package and planting it where the registry loads it*, after which every later apply runs whatever
-arrived. The operator is already the subject, because the catalogue is off until they enable it and
-name its URL. The listing and the README stay readable to anything authenticated; only the two
-writes are the operator's. **SH677's CLI therefore has an auth question of its own**, and answering
-it there is the point.
+They were **CONSOLE_ADMIN** for one task and are **stateless-writable** now (SH677) — the path left
+`sessionRequired()` the way `/api/v2/render/**` did: the capability became reachable.
+
+The *reasoning* did not change. Installing a stranger's package is the operator's act, and an agent
+already applying blueprints gains nothing from it; what a wide install route would add is *fetching
+a package and planting it where the registry loads it*, after which every later apply runs whatever
+arrived. What was wrong was the **mechanism**: "holds a session" does not identify an operator, it
+identifies a browser — and it made the capability unreachable from a terminal, which is exactly the
+console-only failure P1's non-goal names.
+
+So the gate belongs on the credential. It should be `hasRole("ADMIN")`, beside the blueprint reload
+it is strictly larger than — and it is `authenticated()` instead, because **that role is currently
+unreachable for a locally authenticated user (SH681)**: `ShAuthorityResolver` grants `ROLE_ADMIN`
+from the Administrator group and is wired only into the OAuth2/OIDC services, while
+`ShCustomUserDetailsService` builds authorities from `ShRole` rows alone, and `GET /api/v2/role`
+answers `[]`. Measured: `POST /agent/blueprints/reload` answers 403 to the seeded admin over a
+session *and* over Basic auth, and has since SH219. **SH682** tightens the marketplace once SH681
+makes the role real.
+
+## The CLI, and what it is for (SH677)
+
+`shio marketplace list|show|install|uninstall`, over the Basic auth the CLI already carries. `list`
+prints where the entries came from on every run — a listing that silently shrank is
+indistinguishable from a catalogue that shrank — and `install` takes `--dry-run`.
+
+What it buys beyond P1 compliance is the pairing, which had no terminal form at all:
+
+```
+shio marketplace install shio-blueprint-blog
+shio apply --blueprint shio-blueprint-blog --site mysite
+```
+
+Two decisions worth keeping. **A 404 from this surface throws rather than becoming `null`** —
+`ShioAdminClient`'s shared helper maps 404 to an empty answer, which is right for "no such
+post-type" and wrong here, where the two 404s are the most instructive refusals the marketplace has
+(the feature is off; no entry has that id) and both carry `fix`. And **`show` fetches the README
+through the instance**, which is not only about CORS: the server proxies only a URL its own
+catalogue declares, so the command cannot be talked into fetching an arbitrary host.
+
+Driving it against a live instance is also what found a defect in the catalogue itself: `builtIn`
+was derived from "the registry has it", which stops being the same thing at the first install, so a
+package downloaded from a stranger was reported as having shipped with the instance. It reads the
+package's `origin` now.
 
 The console is SH679, and MCP is SH678 — last, because `tools/list` has three tokens of headroom.
 

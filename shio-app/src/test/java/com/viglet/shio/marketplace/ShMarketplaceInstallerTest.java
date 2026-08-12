@@ -62,6 +62,9 @@ class ShMarketplaceInstallerTest {
     @Autowired
     private ShBlueprintRegistry registry;
 
+    @Autowired
+    private ShMarketplaceCatalog catalog;
+
     @TempDir
     private Path packages;
 
@@ -120,6 +123,36 @@ class ShMarketplaceInstallerTest {
                 .as("and it is marked as not first-party, which is what a curator needs to know "
                         + "before it writes to their site (P7)")
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("SH677: an installed package is not reported as one that shipped with the instance")
+    void anInstalledPackageIsNotReportedAsBuiltIn() throws IOException {
+        publish("shio-blueprint-newsroom", zipOf("shio-blueprint-newsroom/",
+                pkg("shio-blueprint-newsroom", "2.0.0")));
+        installer.install("shio-blueprint-newsroom", false);
+
+        var entry = catalog.catalogue().items().stream()
+                .filter(item -> "shio-blueprint-newsroom".equals(item.id())).findFirst()
+                .orElseThrow();
+
+        // The provenance rule this protects is the registry's own (a package may not declare where
+        // it came from, because one that could would claim to be first-party). Cited rather than
+        // asserted: what is asserted below is the catalogue's report, not that rule's boundary.
+        assertThat(entry.installed()).isTrue();
+        assertThat(entry.builtIn())
+                .as("SH677: the catalogue derived `builtIn` from 'the registry has it', which stops "
+                        + "being the same thing at the first install — a package downloaded from a "
+                        + "stranger was then reported as having shipped with the instance, which is "
+                        + "the server making that claim on the package's behalf. Found by "
+                        + "installing one and reading the listing back, so the assertion is the "
+                        + "read that found it.")
+                .isFalse();
+        assertThat(catalog.catalogue().items())
+                .filteredOn(com.viglet.shio.marketplace.dto.ShMarketplaceItem::builtIn)
+                .allSatisfy(item -> assertThat(registry.require(item.id()).isLocal())
+                        .as("%s is reported as built-in and the registry calls it local", item.id())
+                        .isFalse());
     }
 
     @Test

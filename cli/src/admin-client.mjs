@@ -207,4 +207,56 @@ export class ShioAdminClient {
   deletePostTypeDef(name) {
     return this.#request("DELETE", `/${encodeURIComponent(name)}`);
   }
+
+  // --- the package marketplace (SH677) ---
+
+  /**
+   * One marketplace call, with a 404 that throws rather than becoming `null`.
+   *
+   * `#at` maps 404 to `null` because on the post-type surface it means "no such type", which the
+   * callers there treat as an answer. Here it is the opposite: the marketplace's 404s are its two
+   * most instructive refusals — the feature is not enabled, and no entry has that id — and each
+   * carries `fix` and `allowed` (P6). Swallowing them would turn the most useful message on this
+   * surface into an empty result, which is the shape SH513 was filed about.
+   */
+  async #marketplace(path, method = "GET") {
+    const url = `${this.baseUrl}/api/v2/marketplace${path}`;
+    const res = await this.fetch(url, {
+      method,
+      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+    });
+    if (!res.ok) {
+      throw new ShioHttpError(res.status, url, await bodyOf(res));
+    }
+    return res.status === 204 ? null : res.json();
+  }
+
+  /** GET /api/v2/marketplace — the catalogue, and where the list came from. */
+  marketplace() {
+    return this.#marketplace("");
+  }
+
+  /** GET /api/v2/marketplace/readme — one entry's README, by the URL the catalogue declared. */
+  async marketplaceReadme(readmeUrl) {
+    const url = `${this.baseUrl}/api/v2/marketplace/readme?url=${encodeURIComponent(readmeUrl)}`;
+    const res = await this.fetch(url, {
+      method: "GET",
+      headers: { Authorization: this.#authHeader(), Accept: "text/plain" },
+    });
+    if (!res.ok) {
+      throw new ShioHttpError(res.status, url, await bodyOf(res));
+    }
+    return res.text();
+  }
+
+  /** POST /api/v2/marketplace/{id}/install — admin-gated (SH677). */
+  installPackage(id, { dryRun = false } = {}) {
+    const query = dryRun ? "?dryRun=true" : "";
+    return this.#marketplace(`/${encodeURIComponent(id)}/install${query}`, "POST");
+  }
+
+  /** DELETE /api/v2/marketplace/{id} — removes a package installed from a catalogue. */
+  uninstallPackage(id) {
+    return this.#marketplace(`/${encodeURIComponent(id)}`, "DELETE");
+  }
 }

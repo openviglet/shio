@@ -109,9 +109,9 @@ public class ShMarketplaceCatalog {
 
     /** Every package this instance could install, with the built-in ones always present. */
     public Catalogue catalogue() {
-        List<ShMarketplaceItem> builtIn = builtInItems();
+        List<ShMarketplaceItem> present = installedItems();
         if (!properties.hasRemote()) {
-            return new Catalogue(builtIn,
+            return new Catalogue(present,
                     new Source(null, BUILTIN_ONLY, "shio.marketplace.enabled is false"));
         }
 
@@ -120,12 +120,12 @@ public class ShMarketplaceCatalog {
         try {
             remote = fetch(url);
         } catch (RuntimeException unreachable) {
-            return new Catalogue(builtIn, new Source(url, UNREACHABLE, unreachable.getMessage()));
+            return new Catalogue(present, new Source(url, UNREACHABLE, unreachable.getMessage()));
         }
 
         Set<String> taken = new LinkedHashSet<>();
-        builtIn.forEach(item -> taken.add(item.id()));
-        List<ShMarketplaceItem> items = new ArrayList<>(builtIn);
+        present.forEach(item -> taken.add(item.id()));
+        List<ShMarketplaceItem> items = new ArrayList<>(present);
         List<String> shadowed = new ArrayList<>();
         Set<String> installed = new LinkedHashSet<>(registry.names());
         for (ShMarketplaceItem item : remote) {
@@ -200,14 +200,32 @@ public class ShMarketplaceCatalog {
         return new java.io.ByteArrayInputStream(download(url));
     }
 
-    /** The packages that shipped with the instance, read from the registry rather than restated. */
-    private List<ShMarketplaceItem> builtInItems() {
+    /**
+     * Every package the registry holds, read from it rather than restated.
+     *
+     * <h2>Present is not the same as first-party (SH677)</h2>
+     *
+     * <p>This once stamped {@code builtIn=true} on everything the registry returned, which was true
+     * only until the first install: a package fetched from a catalogue lands in
+     * {@code shio.blueprint.path} and the registry then holds it too. The listing said a package
+     * somebody had just downloaded from a stranger <em>shipped with the instance</em> — the exact
+     * claim SH96 keeps {@code origin} out of a manifest to prevent, made by the server on the
+     * package's behalf. Found by installing one and reading the listing back.</p>
+     *
+     * <p>So {@code builtIn} is the summary's {@code origin}: absent means the classpath, present
+     * means an operator's directory. That is the same signal {@code /agent/blueprints} reports and
+     * for the same reason, which is why it is read here rather than decided again.</p>
+     */
+    private List<ShMarketplaceItem> installedItems() {
         List<ShMarketplaceItem> items = new ArrayList<>();
         for (ShBlueprint.Summary summary : registry.summaries()) {
+            boolean firstParty = summary.origin() == null || summary.origin().isBlank()
+                    || ShBlueprint.CLASSPATH.equals(summary.origin());
             items.add(new ShMarketplaceItem(summary.name(), summary.title(), summary.description(),
-                    summary.version(), ShMarketplaceItem.VIGLET, ShMarketplaceItem.FIRST_PARTY,
+                    summary.version(), firstParty ? ShMarketplaceItem.VIGLET : null,
+                    firstParty ? ShMarketplaceItem.FIRST_PARTY : null,
                     List.of(), summary.name(), null, null, summary.params(), List.of(),
-                    true, true));
+                    firstParty, true));
         }
         return items;
     }

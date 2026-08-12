@@ -1,0 +1,26 @@
+shio marketplace <list|show|install|uninstall> [id] — the package catalogue, from a terminal
+
+Bare, it lists what this instance could install. A catalogue is read only once an operator
+enables one (shio.marketplace.enabled, shio.marketplace.url); without one the listing still
+answers, with the packages that ship with this instance.
+
+Installing puts a package where the registry can see it and stops — applying it to a site
+stays shio apply --blueprint <id>. Install and uninstall need an admin credential.
+
+  list                 The catalogue, and where the list came from
+  show <id>            One entry in full, with its README
+  install <id>         Download and install
+  uninstall <id>       Remove a package installed from a catalogue
+
+  --category <name>    list: only entries in that category
+  --tag <tag>          list: only entries carrying that tag
+  --installed          list: only what is already here
+  --available          list: only what is not
+  --dry-run            install: validate everything and write nothing
+  --json               Raw JSON instead of the report
+
+Examples:
+  shio marketplace list --available
+  shio marketplace show shio-blueprint-blog
+  shio marketplace install shio-blueprint-blog --dry-run
+  shio marketplace uninstall shio-blueprint-blog

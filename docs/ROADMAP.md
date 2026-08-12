@@ -13,9 +13,9 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
-- 📋 **SH677** (deps: SH646 ✅, SH675 ✅) **The marketplace has no CLI path, so its only caller would be the console** — A capability whose sole interface is the console breaks P1 and the non-goal that states it, and the agent half cannot lead here because tools/list has three tokens left. → §XI.24
 - 📋 **SH678** (deps: SH675 ✅) **An agent cannot reach the marketplace over MCP, and the budget for a tool is three tokens** — The list is at 2397 of 2400 and shio_apply at 441 of 460, so this lands only after a trim finds the room, which the budget file requires before any raise. → §XI.26
 - 📋 **SH679** (deps: SH646 ✅, SH675 ✅) **Nothing in the console mentions a blueprint, so a curator cannot see or install one** — The human half is entirely unbuilt - zero files in shio-react name a blueprint - so browsing a catalog, reading a README and filling a package parameter form has no surface. → §XI.25
+- 📋 **SH682** (deps: SH677 ✅, SH681) **The marketplace writes are open to any authenticated caller** — Installing a package is the admin-gated blueprint reload plus a download, so it wants the same role - which is unreachable until SH681. → §XI.27
 
 ## Block L — Agent safety & human-in-the-loop
 
@@ -33,6 +33,7 @@
 
 - 📋 **SH672** (deps: —) **A floor in a docs reader fires when the corpus is correct, not when the reader breaks** — Three floors in the rationale reader are absolute counts over a corpus meant to empty, and a fourth already fired for the corpus being right rather than the reader being broken. → §XIV.24
 - 📋 **SH680** (deps: —) **Every command-line property passed to the jar is silently discarded** — The bootstrap calls application.run() instead of run(args), so --server.port and every other flag is dropped with no error and no log line. → §XIV.25
+- 📋 **SH681** (deps: —) **No locally authenticated user can reach an admin-gated path** — The resolver granting ROLE_ADMIN from the Administrator group is wired only into the OAuth2 and OIDC services, and the role table a password login reads is empty. → §XIV.26
 
 ## Block O — The human half (the console the curator uses)
 
