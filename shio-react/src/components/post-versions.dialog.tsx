@@ -83,9 +83,34 @@ interface Props {
   onRestored: (draft: ShPostUnified) => void
 }
 
+/**
+ * SH702 — the shell. It owns nothing but the open flag, so there is no state to go stale.
+ *
+ * <p>The body is mounted *inside* `DialogContent`, which Radix unmounts on close, and keyed on the
+ * post. Measured before this: with the versions read delayed to 2s, a reopened dialog kept the
+ * previous read's summary and its <b>Restaurar versão publicada</b> button for the whole two
+ * seconds, above a table that said it was still loading — a restore control acting on a version the
+ * dialog was no longer showing. Asserted by `e2e/dialog-remount.check.mjs`.</p>
+ */
 export function PostVersionsDialog({ postId, schema, open, setOpen, onRestored }: Props) {
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+        <PostVersionsBody
+          key={postId}
+          postId={postId}
+          schema={schema}
+          setOpen={setOpen}
+          onRestored={onRestored}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "open">) {
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [restoring, setRestoring] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [onlyChanges, setOnlyChanges] = useState(true)
@@ -94,23 +119,29 @@ export function PostVersionsDialog({ postId, schema, open, setOpen, onRestored }
 
   const emptyLabel = t("content.emptyValue")
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setConfirming(false)
-    try {
-      const versions = await service.versions(postId)
-      setDraft(versions.find((v) => v.state === "DRAFT") ?? null)
-      setPublished(versions.find((v) => v.state === "PUBLISHED") ?? null)
-    } catch {
-      toast.error(t("content.noVersions"))
-    } finally {
-      setLoading(false)
-    }
-  }, [postId, t])
+  /**
+   * The read. It raises no state before the request, because the mount already means "loading" —
+   * and `confirming` is false at mount for the same reason, so clearing it here would be the
+   * synchronous `setState` the mount was meant to remove. The restore path clears it itself.
+   *
+   * <p>A `.then` chain rather than `async`/`await`, and that is not style: the compiler rule does
+   * not model the suspension, so it reads every `setState` in an `async` body as synchronous and
+   * flags the effect that calls it. In a callback they are what they are — deferred.</p>
+   */
+  const load = useCallback(
+    () => service.versions(postId)
+      .then((versions) => {
+        setDraft(versions.find((v) => v.state === "DRAFT") ?? null)
+        setPublished(versions.find((v) => v.state === "PUBLISHED") ?? null)
+      })
+      .catch(() => toast.error(t("content.noVersions")))
+      .finally(() => setLoading(false)),
+    [postId, t],
+  )
 
   useEffect(() => {
-    if (open) load()
-  }, [open, load])
+    void load()
+  }, [load])
 
   const diff = useMemo(() => {
     if (!published && !draft) return []
@@ -156,8 +187,7 @@ export function PostVersionsDialog({ postId, schema, open, setOpen, onRestored }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+    <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="size-5 text-orange-500" />
@@ -284,7 +314,6 @@ export function PostVersionsDialog({ postId, schema, open, setOpen, onRestored }
             {t("common.cancel")}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   )
 }

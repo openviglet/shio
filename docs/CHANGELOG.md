@@ -582,6 +582,7 @@
 - **SH696** — folder.restore now asks the ACL, and a lint classifies every op: 12 of 13 check authorisation, render.provision exempt. Two ops it first read as unguarded carry a stronger check.
 - **SH699** — The mount effect now starts the fetch without raising state and loading begins true, so pnpm lint is green; the fifteen the SH665 baseline still absorbs are held by SH701.
 - **SH701** — eslint-suppressions.json is now a named list that prints its counts and fails on drift, with four of the fifteen paid off and the other eleven held by SH702-SH704.
+- **SH702** — Four dialogs mount their body inside DialogContent keyed on its subject, so a reopen renders nothing from the previous read - proved by a probe red before and green after.
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 

@@ -29,17 +29,39 @@ export function PermissionsDialog({
   open: boolean
   setOpen: (v: boolean) => void
 }) {
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="max-w-2xl">
+        {objectId && (
+          <PermissionsBody key={objectId} objectId={objectId} objectName={objectName} setOpen={setOpen} />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * SH702 — mounted inside `DialogContent`, so closing unmounts it and there is no grant list left
+ * over to render against the next object.
+ */
+function PermissionsBody({
+  objectId,
+  objectName,
+  setOpen,
+}: {
+  objectId: string
+  objectName?: string
+  setOpen: (v: boolean) => void
+}) {
   const { t } = useTranslation()
   const [entries, setEntries] = useState<ShContentAcl[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (open && objectId) {
-      setLoading(true)
-      service.get(objectId).then(setEntries).catch(() => setEntries([])).finally(() => setLoading(false))
-    }
-  }, [open, objectId])
+    void service.get(objectId).then(setEntries).catch(() => setEntries([]))
+      .finally(() => setLoading(false))
+  }, [objectId])
 
   const addRow = () =>
     setEntries((prev) => [...prev, { principalType: "USER", principalName: "", permission: "READ" }])
@@ -50,7 +72,6 @@ export function PermissionsDialog({
   const removeRow = (i: number) => setEntries((prev) => prev.filter((_, idx) => idx !== i))
 
   const save = async () => {
-    if (!objectId) return
     setSaving(true)
     try {
       const clean = entries.filter((e) => e.principalName.trim())
@@ -65,8 +86,7 @@ export function PermissionsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl">
+    <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5" /> {t("acl.title")}
@@ -124,7 +144,6 @@ export function PermissionsDialog({
           <Button variant="ghost" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button onClick={save} disabled={saving}>{t("common.save")}</Button>
         </div>
-      </DialogContent>
-    </Dialog>
+    </>
   )
 }

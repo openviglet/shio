@@ -659,54 +659,29 @@ leave the counter and let the *restore* refuse a title collision the way it now 
 a URL one. The second matches SH243's shape and costs a refusal on a name nobody
 addresses by.
 
-### XVI.78 Six dialogs sync to `open` where a keyed remount is the answer (SH702)
+### XVI.79 Five places that hold as state what they could compute (SH703)
 
-Six of the eleven `set-state-in-effect` suppressions SH701 left declared are one
-construction repeated:
+Five of the seven `set-state-in-effect` suppressions left after SH702, and all one idea:
+a value that changes *above* the component drives a flag the component sets by hand.
 
-    useEffect(() => { if (open) load() }, [open, load])
+- **The re-query spinner.** `object.children.page.tsx:190` raises `setLoading(true)` in the effect
+  that re-fetches page 0 when the sort key or search term changes. What `loading` means is "the
+  rows on screen are not the rows this key asks for" — a comparison. Holding the key that finished
+  loading and computing from it removes the setState and a frame: today the spinner appears one
+  render *after* the query changed.
+- **The selection reset.** `:197` clears `selectedItems` when the folder changes — the case React
+  documents as adjusting state on a prop change, whose answer is the remount SH702 used.
+- **The visual editor**, `:125` and `:311`, the same two shapes one page over.
+- **Two widgets, and they arrived here by being wrong somewhere else.**
+  `content-select.widget.tsx:128` and `file.widget.tsx:120` were filed under SH702 as dialogs.
+  Opening them found no `open` prop: they re-resolve a content path when `attr.strValue` changes,
+  which is the re-query spinner exactly. The grouping was made by reading a lint report rather
+  than the code, and this is what that costs.
 
-`permissions.dialog:39`, `post-schedule.dialog:65`, `post-versions.dialog:112`,
-`content-browser-dialog:231`, `content-select.widget:128`, `file.widget:120`.
-
-The lint objects to the synchronous `setState`, and it is pointing at something real
-rather than being fussy. A dialog that syncs to `open` keeps its previous state while
-closed, so the first frame after reopening paints **last time's** rows, spinner state
-and scroll position, and the new read overwrites them a tick later. Nobody filed it as a
-defect because it looks like a fast load.
-
-The fix is not a better effect. It is to stop the content component from surviving the
-close: mount it under `key={...}` — the object id, or `open` itself — so opening
-constructs it fresh with `loading` already `true`, and the read happens because the
-component mounted rather than because a flag flipped. That deletes the effect instead of
-rewriting it, which is why these six are one task and not six.
-
-What makes it a task rather than a sweep is that it changes what a curator sees on the
-second open, in six places, and nothing in this repository opens a dialog. It needs the
-console run against a real instance and each dialog opened twice — the second open being
-the whole point. `shio-react/e2e` is where that assertion belongs.
-
-### XVI.79 A spinner and a selection that should be computed, not set (SH703)
-
-Four of the eleven `set-state-in-effect` suppressions SH701 declared are on the two
-largest pages in the console: `object.children.page.tsx:190` and `:197`,
-`visual-editor.page.tsx:125` and `:311`.
-
-Two shapes, both of them state that is a function of something else:
-
-- **The re-query spinner.** `object.children:190` raises `setLoading(true)` in the effect that
-  re-fetches page 0 whenever the sort key or the search term changes. What `loading` actually
-  means is "the rows on screen are not the rows this key asks for" — a comparison, not a flag.
-  Holding a key that has finished loading and computing `loading` from it removes the setState
-  and also removes a frame: today the spinner appears one render *after* the query changed.
-- **The selection reset.** `:197` clears `selectedItems` when the folder changes. That is the
-  textbook case React documents as adjusting state on a prop change, and the textbook answer is
-  the same one SH702 needs — let the subtree remount rather than reach in and clear it.
-
-These are worth doing and they are not worth doing blind. `object.children` is the page
-a curator spends the day in, `loading` is read in three places, and the selection drives
-a bulk toolbar. The suppression makes the debt visible, which was SH701's job; paying it
-wants the console in front of somebody.
+Worth doing, not worth doing blind. `object.children` is the page a curator spends the
+day in, `loading` is read in three places and the selection drives a bulk toolbar. SH702
+showed the shape of the proof: drive the console and assert what a person would have had
+to notice.
 
 ### XVI.80 A module cache read through an effect that has to guard itself (SH704)
 
@@ -961,6 +936,29 @@ push nobody is reminded to make, and fails as though the docs were wrong — sen
 next reader to edit pages already correct. The fix is the push; what the task decides is
 what stops the next one, the candidate being a gate that reports the checkout's position
 against its remote, so red says *unpushed*.
+
+### XXI.13 XXI.13 The one address SH705 left behind, and the plugin it needs first (SH715)
+
+SH705 rewrote every sentence a reader meets — the hub's title, its heading, its prose,
+the nav cards and the table row that links to it — and left the address alone:
+`human-curates-it.mdx`, `slug: /category/human-curates-it`, and the matching `id` in
+`sidebars-shio.ts`. That was deliberate rather than an oversight, and the reason is
+worth writing down, because the same shape will come up again: a URL is the one part of
+a page that other people's documents point at, and changing it silently converts their
+link into a 404 rather than into different wording.
+
+The docs site has no `@docusaurus/plugin-client-redirects` in its config, so there is
+currently nothing that could catch the old address. That makes the plugin the first
+deliverable and the rename the second — in that order, or the rename ships a defect that
+only shows up in somebody else's bookmark.
+
+The target name should match what the copy now says: `curator-approves-it`, with
+`/category/human-curates-it` redirecting to it. Three places move together — the file,
+the `slug` in its frontmatter, and the `id` in `sidebars-shio.ts` — plus the four
+in-repo hrefs in `index.mdx` and `getting-started/intro.md`, and the CHANGELOG line for
+SH485 that names the file. The repo-side check that would catch a miss already exists:
+`docs-vocabulary.conformance.mjs` reads the published tree, so a dead in-repo link is a
+red gate rather than a discovery.
 
 ## XXII Realignment of what already shipped
 

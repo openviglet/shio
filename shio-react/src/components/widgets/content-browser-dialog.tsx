@@ -71,15 +71,29 @@ interface ContentBrowserDialogProps {
   selectMode?: "content" | "file"
 }
 
-export function ContentBrowserDialog({
-  open,
+export function ContentBrowserDialog({ open, onOpenChange, ...rest }: ContentBrowserDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+        <ContentBrowserBody key={rest.startFolderId ?? "__root__"} onOpenChange={onOpenChange} {...rest} />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * SH702 — mounted inside `DialogContent`, so closing unmounts it. Before this, reopening the
+ * browser showed the previous session's breadcrumb, rows and selection until the new read landed,
+ * and the effect that cleared them had to run after the paint that showed them.
+ */
+function ContentBrowserBody({
   onOpenChange,
   onSelect,
   startFolderId,
   selectMode = "content",
-}: ContentBrowserDialogProps) {
+}: Omit<ContentBrowserDialogProps, "open">) {
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [sites, setSites] = useState<ShSite[]>([])
   const [folders, setFolders] = useState<ShFolder[]>([])
   const [posts, setPosts] = useState<ConsolePostRow[]>([])
@@ -125,9 +139,10 @@ export function ContentBrowserDialog({
   }, [buildPathString, buildPathSegments, getCurrentFolderId])
 
   // Load site list
-  const loadSites = useCallback(async () => {
-    setLoading(true)
-    setSelectedItem(null)
+  // SH702 — `fetch*` reads, `load*` reads AND raises the flags. The mount effect uses the first,
+  // because a freshly mounted body is already `loading` with nothing selected; navigation inside
+  // the open dialog uses the second, where the spinner is a response to a click.
+  const fetchSites = useCallback(async () => {
     try {
       const res = await axios.get<ShSite[]>("/v2/site")
       setSites(res.data ?? [])
@@ -139,10 +154,14 @@ export function ContentBrowserDialog({
     }
   }, [t])
 
-  // Load children of an object (site or folder)
-  const loadChildren = useCallback(async (objectId: string, crumbs: BreadcrumbItem[]) => {
+  const loadSites = useCallback(async () => {
     setLoading(true)
     setSelectedItem(null)
+    await fetchSites()
+  }, [fetchSites])
+
+  // Load children of an object (site or folder)
+  const fetchChildren = useCallback(async (objectId: string, crumbs: BreadcrumbItem[]) => {
     try {
       const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?page=0&size=${PICKER_PAGE_SIZE}`)
       setFolders(res.data.folders ?? [])
@@ -156,6 +175,12 @@ export function ContentBrowserDialog({
       setLoading(false)
     }
   }, [])
+
+  const loadChildren = useCallback(async (objectId: string, crumbs: BreadcrumbItem[]) => {
+    setLoading(true)
+    setSelectedItem(null)
+    await fetchChildren(objectId, crumbs)
+  }, [fetchChildren])
 
   /**
    * The next page of this folder's posts (SH165).
@@ -225,12 +250,10 @@ export function ContentBrowserDialog({
     onOpenChange(false)
   }, [selectedItem, buildSelection, onSelect, onOpenChange])
 
-  // Initialize on open
+  // SH702 — the mount IS the open, so there is nothing to clear and no flag to check: `loading`
+  // starts true and `selectedItem` starts null because this component did not exist a moment ago.
   useEffect(() => {
-    if (!open) return
-    setSelectedItem(null)
     if (startFolderId) {
-      setLoading(true)
       axios.get(`/v2/object/${startFolderId}/path`).then((pathRes) => {
         const data = pathRes.data
         const crumbs: BreadcrumbItem[] = [
@@ -244,18 +267,17 @@ export function ContentBrowserDialog({
             crumbs.push({ id: c.id, name: c.name, type: "FOLDER" })
           }
         }
-        loadChildren(startFolderId, crumbs)
+        void fetchChildren(startFolderId, crumbs)
       }).catch(() => {
-        loadSites()
+        void fetchSites()
       })
     } else {
-      loadSites()
+      void fetchSites()
     }
-  }, [open, startFolderId, t, loadChildren, loadSites])
+  }, [startFolderId, t, fetchChildren, fetchSites])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+    <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {selectMode === "file" ? t("content.selectFile") : t("content.selectContent")}
@@ -405,7 +427,6 @@ export function ContentBrowserDialog({
             {t("content.select")}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Clock, Loader2, X } from "lucide-react"
 import {
@@ -43,27 +43,34 @@ interface Props {
   onScheduled: (draft: ShPostUnified) => void
 }
 
-export function PostScheduleDialog({
+export function PostScheduleDialog({ open, setOpen, ...rest }: Props) {
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-md">
+        <PostScheduleBody key={`${rest.postId}|${rest.publishAt}|${rest.unpublishAt}`}
+          setOpen={setOpen} {...rest} />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * SH702 — the inputs are seeded at mount from the props rather than reset by an effect on `open`.
+ *
+ * <p>The key carries the two dates as well as the post: a save updates them on the page behind, and
+ * the next open must start from what was saved rather than from what the last mount was given.</p>
+ */
+function PostScheduleBody({
   postId,
   publishAt,
   unpublishAt,
-  open,
   setOpen,
   onScheduled,
-}: Props) {
+}: Omit<Props, "open">) {
   const { t } = useTranslation()
   const [saving, setSaving] = useState(false)
-  const [publishInput, setPublishInput] = useState("")
-  const [unpublishInput, setUnpublishInput] = useState("")
-
-  const reset = useCallback(() => {
-    setPublishInput(toInputValue(publishAt))
-    setUnpublishInput(toInputValue(unpublishAt))
-  }, [publishAt, unpublishAt])
-
-  useEffect(() => {
-    if (open) reset()
-  }, [open, reset])
+  const [publishInput, setPublishInput] = useState(() => toInputValue(publishAt))
+  const [unpublishInput, setUnpublishInput] = useState(() => toInputValue(unpublishAt))
 
   async function handleSave() {
     setSaving(true)
@@ -83,8 +90,7 @@ export function PostScheduleDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
+    <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="size-5 text-orange-500" />
@@ -152,7 +158,6 @@ export function PostScheduleDialog({
             {t("common.cancel")}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   )
 }

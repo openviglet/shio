@@ -45,21 +45,21 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
 /**
  * The declared baseline: every suppressed violation, by file and rule.
  *
- * <h2>`set-state-in-effect` went 15 → 11, and the split is the finding</h2>
+ * <h2>`set-state-in-effect` went 15 → 11 → 7, and the split is the finding</h2>
  *
- * <p>It held **15 over 13 files** when SH701 opened, and the four that came off were all one
- * construction: a `useCallback` opening with `setLoading(true)`, invoked straight from a mount
- * effect. That is the shape SH699 landed on `marketplace.list.page.tsx` — start the fetch before
- * touching state, let `loading` begin `true`, and keep the explicit raise on the control the
- * curator actually pressed. Mechanical, and the four are `activity.list`, `review.list`, `trash`
- * and `static-file.list`.</p>
+ * <p>It held **15 over 13 files** when SH701 opened. The four SH701 took off were one construction:
+ * a `useCallback` opening with `setLoading(true)`, invoked straight from a mount effect — the shape
+ * SH699 landed on `marketplace.list.page.tsx`. Mechanical, and asserted only by eslint.</p>
  *
- * <p>The remaining eleven are <b>not</b> that shape, which is why they are still here rather than
- * fixed in the same pass. Each is a conditional `setState` inside an effect, and the correct fix
- * for every one is <b>derived state or a keyed remount</b> — a behaviour change in a dialog or in
- * one of the two largest pages in the console, none of which a suite in this repository opens. They
- * are grouped below by the fix they need, because that is what makes them work rather than a list:
- * SH702 holds the six dialogs, SH703 the four derived-state cases, SH704 the discovery hook.</p>
+ * <p>SH702 took four more, and those needed a behaviour change: four dialogs syncing to an `open`
+ * prop, replaced by a keyed remount so closing unmounts the body. That one is asserted against a
+ * <em>running console</em> by `shio-react/e2e/dialog-remount.check.mjs`, because what it fixes is
+ * not visible to a lint — a reopened version history kept the previous read's <b>Restaurar versão
+ * publicada</b> button for the whole of the next read.</p>
+ *
+ * <p>The remaining seven are grouped below by the fix they need: SH703 the five derived-state cases
+ * and SH704 the discovery hook. Two of the five arrived from SH702's list — opening them found no
+ * `open` prop at all, so they were filed under the wrong shape.</p>
  *
  * <h2>What stays, and why the rest is not the same kind of debt</h2>
  *
@@ -72,17 +72,14 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
  * leave visible here than to fix blind: they sit in the two largest pages in the console.</p>
  */
 const DECLARED = {
-  // SH703 — derived state. A re-query spinner and a selection reset, both driven by a value that
-  // changes above them, so the fix is to compute rather than to set.
-  // SH702 — dialogs syncing to an `open` prop; the fix is a keyed remount, not an effect.
+  // SH703 — derived state: a value that changes above the component drives a flag it sets by hand.
+  // The two widgets joined this group when SH702 opened them and found no `open` prop — they
+  // re-resolve a path when `attr.strValue` changes, which is the same shape as the re-query spinner
+  // and not the dialog one they were filed under.
   // SH704 — a module cache republished through an effect, one render late.
   "react-hooks/set-state-in-effect": {
     "src/app/console/content/object.children.page.tsx": 2,
     "src/app/console/universal-editor/visual-editor.page.tsx": 2,
-    "src/components/permissions.dialog.tsx": 1,
-    "src/components/post-schedule.dialog.tsx": 1,
-    "src/components/post-versions.dialog.tsx": 1,
-    "src/components/widgets/content-browser-dialog.tsx": 1,
     "src/components/widgets/content-select.widget.tsx": 1,
     "src/components/widgets/file.widget.tsx": 1,
     "src/hooks/use-discovery.ts": 1,
@@ -175,28 +172,38 @@ test("SH701: the lint baseline is exactly the declared list", async () => {
 });
 
 /**
- * The four SH701 paid off, held by name so they cannot be re-suppressed.
+ * What SH701 and SH702 paid off, held by name so they cannot be re-suppressed.
  *
  * <p>Separate from the table above on purpose. That one fails when the baseline *drifts*, in either
  * direction, and reads as bookkeeping. This one says the thing worth saying: these four pages were
  * fixed, and a regeneration that puts them back has undone work rather than recorded state.</p>
  */
 const PAID = [
+  // SH701 — the mechanical four: a `useCallback` opening with `setLoading(true)`, called from a
+  // mount effect.
   "src/app/console/admin/activity/activity.list.page.tsx",
   "src/app/console/admin/review/review.list.page.tsx",
   "src/app/console/content/trash.page.tsx",
   "src/app/console/content/static-file.list.page.tsx",
+  // SH702 — the four dialogs, by a keyed remount rather than a better effect. Driven and asserted
+  // against a running console by `shio-react/e2e/dialog-remount.check.mjs`: before it, a reopened
+  // version history kept the previous read's *Restaurar versão publicada* button for the whole of
+  // the next read.
+  "src/components/permissions.dialog.tsx",
+  "src/components/post-schedule.dialog.tsx",
+  "src/components/post-versions.dialog.tsx",
+  "src/components/widgets/content-browser-dialog.tsx",
 ];
 
-test("SH701: the four paid-off pages stay paid off", async () => {
+test("SH701: every paid-off page stays paid off", async () => {
   const document = JSON.parse(await readFile(BASELINE, "utf8"));
   const suppressed = byRule(document)["react-hooks/set-state-in-effect"] ?? {};
 
   assert.deepEqual(
     PAID.filter((file) => file in suppressed), [],
-    "SH699/SH701: a page SH701 paid off is suppressed again. The fix these four carry is to start "
-    + "the fetch before touching state and let `loading` begin `true`, so the mount effect raises "
-    + "nothing, keeping the explicit `setLoading(true)` on the control the curator pressed. "
+    "SH701/SH702: a page already paid off is suppressed again. Two fixes live in this list — start "
+    + "the fetch before touching state so the mount effect raises nothing (SH701), and mount a "
+    + "dialog's body inside DialogContent keyed on its subject so closing unmounts it (SH702). "
     + "Suppressing one instead re-opens the debt, and the next page written against these copies "
     + "whichever shape it finds — which is how the baseline reached fifteen.",
   );
