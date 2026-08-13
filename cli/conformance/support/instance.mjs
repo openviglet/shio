@@ -432,6 +432,47 @@ export async function batch({ baseUrl, user, password }, ops) {
   return res.ok ? parsed : { status: res.status, ...parsed };
 }
 
+/**
+ * Install the SH95 vocabulary types a fixture is about to write against (SH724).
+ *
+ * <h2>The instance was carrying the tests</h2>
+ *
+ * <p>A clean instance seeds thirteen post-types and `Page` is not one of them — it is vocabulary,
+ * installed on demand by `render.provision`. Seven suites here wrote `type: "Page"` and none of
+ * them asked for it, so they were green on any workstation that had ever applied a blueprint and
+ * refused the seed on a runner: <em>"No post-type named 'Page'"</em>, 5 failed and 46 cancelled.</p>
+ *
+ * <p>Which is the same defect `requireInstance` exists to catch one level up, arriving from inside:
+ * a live tier whose green means the instance is right rather than the code. `ShVocabularyPostTypes`
+ * names the shape in its own header, about a different caller, and Block V walked into it anyway.</p>
+ *
+ * <h2>A precondition, asserted, not a best-effort call</h2>
+ *
+ * <p>Idempotent — `render.provision` answers `noop` when everything is already there — and it fails
+ * loudly, because a fixture that seeds against a model it could not install produces failures about
+ * the tools rather than about the model. `render.conformance.mjs` has done it this way since SH325;
+ * this is that, shared, so the next suite needs an argument rather than a rediscovery.</p>
+ *
+ * @param connection `{ baseUrl, user, password }`, as {@link connection} returns
+ * @param types      vocabulary type names, e.g. `["Page"]`
+ */
+export async function requireVocabulary(connection, types = ["Page"]) {
+  const provisioned = await batch(connection, [
+    { op: "render.provision", data: { types } },
+  ]);
+  if (errorsIn(provisioned)) {
+    throw new Error(
+      `shio conformance: could not provision ${types.join(", ")} on ${connection.baseUrl}.\n\n`
+      + `${JSON.stringify(provisioned).slice(0, 500)}\n\n`
+      + `These are SH95 vocabulary types, which a fresh instance does not carry — nothing seeds\n`
+      + `them at startup and \`render.provision\` is what installs them. A suite that skipped this\n`
+      + `step used to pass anyway on a development instance that had accumulated the type from an\n`
+      + `earlier blueprint or conversion, which is SH724: the instance carrying the test.`,
+    );
+  }
+  return provisioned;
+}
+
 /** Whether a batch response reports anything that did not happen. */
 export function errorsIn(response) {
   if (response?.status && response.status >= 400) return true;

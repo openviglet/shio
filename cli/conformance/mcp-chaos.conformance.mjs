@@ -52,7 +52,8 @@ import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 
 import {
-  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance, scratchSite,
+  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance,
+  requireVocabulary, scratchSite,
 } from "./support/instance.mjs";
 import { openMcp } from "./support/mcp-stdio.mjs";
 
@@ -91,6 +92,9 @@ describe("SH712: the vocabulary driven out of order", () => {
 
   before(async () => {
     await requireInstance();
+    // SH724 — `Page` is SH95 vocabulary, not a seeded type: without this the fixture below is
+    // refused on any instance nobody built by hand, and every scenario behind it is cancelled.
+    await requireVocabulary(conn);
     const seeded = await batch(conn, [
       { op: "site.upsert", address: `site:${site}` },
       { op: "folder.upsert", address: `folder:${site}/a` },

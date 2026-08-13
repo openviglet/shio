@@ -39,7 +39,8 @@ import { after, before, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
-  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance, scratchSite,
+  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance,
+  requireVocabulary, scratchSite,
 } from "./support/instance.mjs";
 
 /** The bin `npm install -g @viglet/shio` puts on a PATH — the entry point `cli/test/` never runs. */
@@ -65,6 +66,9 @@ describe("SH711: the CLI as a process, against a live instance", () => {
 
   before(async () => {
     await requireInstance();
+    // SH724 — `Page` is SH95 vocabulary, not a seeded type: without this the fixture below is
+    // refused on any instance nobody built by hand, and every scenario behind it is cancelled.
+    await requireVocabulary(conn);
     cwd = await mkdtemp(join(tmpdir(), "shio-sh711-"));
     env = {
       ...process.env,
@@ -173,12 +177,31 @@ describe("SH711: the CLI as a process, against a live instance", () => {
   test("shio push: a local edit reaches the instance and the exit code says so", async () => {
     const home = join(cwd, "shio", "content", site, "index.md");
     const projected = await readFile(home, "utf8");
-    const parsed = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(projected);
+    const parsed = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(projected);
     assert.ok(parsed, `SH711: the projection is not front-matter plus a body: ${projected.slice(0, 200)}`);
 
-    // Edit the BODY — the field the front matter's `body:` names, and the thing an agent changes
-    // with `Edit` rather than with a read-modify-write over HTTP (P4).
-    await writeFile(home, `---\n${parsed[1]}\n---\nEdited on disk by SH711.\n`);
+    // **Where the editable text lives is a question, not an assumption**, and assuming cost this
+    // suite a red run on a clean instance (SH724's neighbour). A field whose widget is HTML is
+    // projected to a SIDECAR — `files: { content: index.content.html }` — and the `.md` then has
+    // front matter and no body at all. Writing a body into that file is refused by `push`, quite
+    // correctly: *"it has a body but no `body:` key saying which field the body is."*
+    //
+    // The suite was green here only because this developer's `Page` happened to carry `content` as
+    // a plain field. The canonical vocabulary type — the one `render.provision` installs, and the
+    // one a fresh instance therefore gets — does not.
+    //
+    // So the target is read out of the projection. Either shape is a real authoring path and both
+    // are the P4 claim being tested: an agent edits a file, and the edit reaches the instance.
+    const sidecar = /^\s{2}\w+:\s*(\S+)$/m.exec(/files:\n([\s\S]*?)(?=\n\w|$)/.exec(parsed[1])?.[1] ?? "");
+    const edited = "Edited on disk by SH711.";
+    if (sidecar) {
+      await writeFile(join(cwd, "shio", "content", site, sidecar[1]), `${edited}\n`);
+    } else {
+      assert.match(parsed[1], /^body:/m,
+        "SH711: the projection has neither a `files:` sidecar nor a `body:` key, so nothing on disk "
+        + "names the field an author is supposed to edit. That is a projection an agent cannot use.");
+      await writeFile(home, `---\n${parsed[1]}\n---\n${edited}\n`);
+    }
 
     const run = await shio(["push", "--content", "--site", site]);
     assert.equal(run.code, 0, `SH711: push failed:\n${run.output.slice(0, 800)}`);

@@ -33,7 +33,8 @@ import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 
 import {
-  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance, scratchSite,
+  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance,
+  requireVocabulary, scratchSite,
 } from "./support/instance.mjs";
 import { openMcp } from "./support/mcp-stdio.mjs";
 import { mcpTools } from "./support/product-vocabulary.mjs";
@@ -63,6 +64,9 @@ describe("SH710: every tool's wrong call comes back as something an agent can ac
 
   before(async () => {
     await requireInstance();
+    // SH724 — `Page` is SH95 vocabulary, not a seeded type: without this the fixture below is
+    // refused on any instance nobody built by hand, and every scenario behind it is cancelled.
+    await requireVocabulary(conn);
     const seeded = await batch(conn, [
       { op: "site.upsert", address: `site:${site}` },
       {

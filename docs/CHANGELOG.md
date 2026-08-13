@@ -1363,3 +1363,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH712** — Five named wrong sequences carry answers measured rather than predicted, and a seeded permutation ran 200 out-of-order calls with no 5xx and every refusal still teaching.
 - **SH713** — Two MCP sessions and a curator writing at once: four invariants hold — atomic publish, lossless cursor, whole winners, no deadlock — and three defects are pinned as SH719-SH721.
 - **SH714** — Every tool measured on the wire against 121 posts, held per row rather than per response; two P5/P3 defects found and filed as SH722 and SH723.
+- **SH724** — Seven suites provision the vocabulary they write against, and the whole run is green on a clean instance — the environment where it was 5 failed and 46 cancelled.

@@ -34,7 +34,8 @@ import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 
 import {
-  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance, scratchSite,
+  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance,
+  requireVocabulary, scratchSite,
 } from "./support/instance.mjs";
 import { openMcp } from "./support/mcp-stdio.mjs";
 
@@ -73,6 +74,9 @@ describe("SH709: the four tools that change something, against a store that keep
 
   before(async () => {
     await requireInstance();
+    // SH724 — `Page` is SH95 vocabulary, not a seeded type: without this the fixture below is
+    // refused on any instance nobody built by hand, and every scenario behind it is cancelled.
+    await requireVocabulary(conn);
     called = new Set();
     const seeded = await batch(conn, [{ op: "site.upsert", address: `site:${site}` }]);
     assert.ok(!errorsIn(seeded), `SH709: the site did not seed: ${JSON.stringify(seeded).slice(0, 400)}`);

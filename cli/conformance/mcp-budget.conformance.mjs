@@ -49,9 +49,11 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 
+import { ShioAdminClient } from "../src/admin-client.mjs";
 import { budgets, need, tokens } from "../test/support/token-budgets.mjs";
 import {
-  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance, scratchSite,
+  ConsoleSession, batch, connection, errorsIn, keepsFixtures, requireInstance,
+  requireVocabulary, scratchSite,
 } from "./support/instance.mjs";
 import { openMcp } from "./support/mcp-stdio.mjs";
 
@@ -62,12 +64,16 @@ const POSTS = 120;
 const ROUNDS = 5;
 /** How many identical calls each read gets, looking for the one that differs. */
 const REPEATS = 10;
+/** A post-type with two fields at one ordinal — the condition SH722 needs, seeded rather than found. */
+const COLLIDING_TYPE = "SH722Collision";
 
 describe("SH714: what every tool costs live, and whether it answers twice the same", () => {
   const conn = connection();
   const site = scratchSite("Budget");
   const declared = budgets();
   let mcp;
+  /** The one thing the agent surface cannot do: write a post-type (SH117's name-keyed surface). */
+  let admin;
 
   const textOf = (answer) => (answer?.result?.content ?? []).map((b) => b.text ?? "").join("\n");
   const refused = (answer) => Boolean(answer.error) || answer.result?.isError === true;
@@ -80,6 +86,9 @@ describe("SH714: what every tool costs live, and whether it answers twice the sa
 
   before(async () => {
     await requireInstance();
+    // SH724 — `Page` is SH95 vocabulary, not a seeded type: without this the fixture below is
+    // refused on any instance nobody built by hand, and every scenario behind it is cancelled.
+    await requireVocabulary(conn);
     const ops = [
       { op: "site.upsert", address: `site:${site}` },
       ...FOLDERS.map((path) => ({ op: "folder.upsert", address: `folder:${site}${path}` })),
@@ -110,11 +119,15 @@ describe("SH714: what every tool costs live, and whether it answers twice the sa
       })));
     }
     mcp = await openMcp(conn);
+    admin = new ShioAdminClient(conn);
   });
 
   after(async () => {
     await mcp?.close();
     if (keepsFixtures()) return;
+    // The post-type is instance-wide, so it outlives the site and has to be removed by name — a
+    // suite that leaves a type behind changes what the NEXT run's context pack costs.
+    await admin?.deletePostTypeDef(COLLIDING_TYPE).catch(() => {});
     await new ConsoleSession(conn).deleteSite(site).catch(() => {});
   });
 
@@ -252,15 +265,35 @@ describe("SH714: what every tool costs live, and whether it answers twice the sa
     // ASSERTED AS MEASURED. Ten identical calls, two distinct packs, one line apart: a post-type
     // whose attributes share an `ordinal` is sorted by a key that cannot separate them, out of a
     // Set. When SH722 lands, `seen.size` is 1, this fails, and the tool moves into the test above.
+    //
+    // **The collision is seeded here rather than found.** The first draft of this reproduced against
+    // `PT-FOLDER-INDEX`, a type this developer's instance happened to carry with two attributes at
+    // `ordinal: 2` — which is SH724 exactly, one file later: green because of what the instance had
+    // accumulated, and stable on a clean one for a reason that has nothing to do with the defect.
+    // A suite that measures a condition has to create it.
+    await admin.putPostTypeDef(COLLIDING_TYPE, {
+      name: COLLIDING_TYPE,
+      namePlural: `${COLLIDING_TYPE}s`,
+      title: "SH722 ordinal collision",
+      description: "Two fields at one ordinal. Seeded by SH714's suite; deleted when it ends.",
+      fields: [
+        { name: "TITLE", label: "Title", ordinal: 1, widget: "Text", isTitle: true, required: true },
+        // The collision, and nothing forbids it: the console writes an ordinal per field and never
+        // asserts the set is a permutation, so this is a shape a curator can produce by hand.
+        { name: "ALPHA", label: "Alpha", ordinal: 2, widget: "Text", required: false },
+        { name: "OMEGA", label: "Omega", ordinal: 2, widget: "Text Area", required: false },
+      ],
+    });
+
     const seen = new Set();
     for (let i = 0; i < REPEATS; i++) seen.add(await ask("shio_context", { site }));
     console.log(`[SH714] shio_context: ${seen.size} distinct over ${REPEATS} identical calls`);
 
     assert.ok(seen.size > 1,
-      `SH714/SH722: the pack was stable over ${REPEATS} calls. That is the fix — move shio_context `
-      + "into the P5 test above and delete this one. Note the defect needs a post-type with two "
-      + "attributes at one ordinal to reproduce, so a stable run on an instance that has none is "
-      + "not the same thing as SH722 being closed.");
+      `SH714/SH722: the pack was stable over ${REPEATS} calls with ${COLLIDING_TYPE} on the `
+      + "instance. That is the fix — move shio_context into the P5 test above and delete this one. "
+      + "It is also what a tiebreaker on the comparator looks like from out here, so check "
+      + "ShCdaMapper#schemaFields before concluding the collision stopped mattering.");
 
     const [first, second] = [...seen];
     const a = first.split("\n");
