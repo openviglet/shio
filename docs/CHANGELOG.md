@@ -1367,3 +1367,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH724** — Seven suites provision the vocabulary they write against, and the whole run is green on a clean instance — the environment where it was 5 failed and 46 cancelled.
 - **SH725** — The held socket is now waited for on the server's own connection event and asserted before the close, so the deadline is driven by a state that is there rather than assumed.
 - **SH726** — A launch that fails because the binary is missing is re-thrown as the same refusal the resolver writes, so both browser-absent states name this product's install line.
+- **SH717** — A near-miss tool name comes back with the edit in the message and the registry still in data, and a name near nothing is not guessed at.

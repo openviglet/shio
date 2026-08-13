@@ -161,9 +161,19 @@ describe("SH710: every tool's wrong call comes back as something an agent can ac
     assert.ok(answer.error, `SH710: a tool name nothing registers must be refused: ${JSON.stringify(answer)}`);
     const text = legible(answer);
     assert.ok(INSTRUMENTS.some((re) => re.test(text)) || /shio_read/.test(text),
-      `SH710: the refusal has to tell the agent what it could have called. Today it answers with the `
-      + `whole registry, which is 'allowed' — see SH717 for whether that is enough when the guess `
-      + `was one character out: ${text.slice(0, 300)}`);
+      `SH710: the refusal has to tell the agent what it could have called: ${text.slice(0, 300)}`);
+
+    // SH717 closed the question this test used to leave open. `shio_reed` is one character from
+    // `shio_read`, and the caller is holding the registry already — `tools/list` is the first thing
+    // it read. So the answer it needs is the EDIT, and this is the end of the loop that starts at
+    // the message: assert it over the wire, where a client actually meets it.
+    assert.match(answer.error?.message ?? "", /Did you mean '?shio_read'?/,
+      `SH717: a near-miss name must come back with the edit, not only with the catalogue. Answering `
+      + `twelve names to a one-character typo makes the agent re-read a list it is holding, which is `
+      + `the token cost P3 measures and the turn P2 exists to remove: ${text.slice(0, 300)}`);
+    assert.ok(Array.isArray(answer.error?.data) && answer.error.data.includes("shio_read"),
+      `SH717: and 'allowed' stays — the suggestion is an addition, not a swap. A name near nothing `
+      + `still needs the catalogue: ${JSON.stringify(answer.error?.data ?? null).slice(0, 200)}`);
   });
 
   test("SH710: nothing above wrote anything", async () => {

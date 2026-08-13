@@ -247,6 +247,50 @@ class ShMcpServerTest {
     }
 
     @Test
+    @DisplayName("SH717: a tool name one character out is told the edit, not handed the registry")
+    void aNearMissToolNameGetsTheSuggestion() {
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put("name", "shio_reed");
+        params.set("arguments", objectMapper.createObjectNode());
+
+        JsonNode error = call("tools/call", params).get("error");
+
+        assertThat(error.get("code").asInt()).isEqualTo(-32602);
+        assertThat(error.get("message").asString())
+                .as("SH717: the agent that wrote `shio_reed` already HAS the registry — tools/list "
+                        + "is the first thing it reads and P3 holds a 2500-token budget on it. What "
+                        + "it lacks is the one-character edit, and `allowed` alone makes it re-read "
+                        + "a list it is holding.")
+                .contains("shio_read");
+        assertThat(error.get("data").toString())
+                .as("SH717: and `allowed` stays — the suggestion is an addition, not a swap. An "
+                        + "unrelated name still needs the catalogue, and the wire shape is pinned "
+                        + "by ShMcpWireConformanceTest.")
+                .contains("shio_read")
+                .contains("shio_write");
+    }
+
+    @Test
+    @DisplayName("SH717: a name near nothing gets the list, and no misleading guess")
+    void anUnrelatedToolNameIsNotGuessedAt() {
+        // The guard on the suggestion. `ShDidYouMean` offers nothing past `max(2, len/3)` edits,
+        // and that restraint is the point: a confident wrong suggestion costs an agent a call and
+        // a retry, which is worse than the list it would otherwise have read (SH263).
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put("name", "delete_everything");
+        params.set("arguments", objectMapper.createObjectNode());
+
+        JsonNode error = call("tools/call", params).get("error");
+
+        assertThat(error.get("message").asString())
+                .as("SH717: nothing in the registry is close to this, so no edit may be offered.")
+                .doesNotContain("Did you mean");
+        assertThat(error.get("data").toString())
+                .as("SH717: and the catalogue is still there, which is what that caller needs.")
+                .contains("shio_read");
+    }
+
+    @Test
     void batchingIsRefusedWithTheReason() {
         JsonNode error = shMcpServer.handle(objectMapper.createArrayNode()).get("error");
 

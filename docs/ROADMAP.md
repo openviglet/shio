@@ -58,8 +58,6 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH717** (deps: —) **A tool name one character wrong gets the whole registry back and no suggestion** — shio_reed answers -32602 with all twelve names in data, so the agent that mistyped shio_read must re-read a list it already had instead of being told. → §XXIII.9
-
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and

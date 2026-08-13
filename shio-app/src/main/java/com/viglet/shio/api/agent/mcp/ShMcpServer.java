@@ -16,6 +16,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.agent.ShAgentManifestService;
+import com.viglet.shio.api.error.ShDidYouMean;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.utils.ShStableMap;
 
@@ -251,7 +252,7 @@ public class ShMcpServer {
         ShMcpTool tool = tools.stream().filter(candidate -> candidate.name().equals(name))
                 .findFirst()
                 .orElseThrow(() -> new ShMcpProtocolException(INVALID_PARAMS,
-                        "Unknown tool '" + name + "'.", toolNames()));
+                        unknownTool(name), toolNames()));
         JsonNode arguments = params.get("arguments");
         ObjectNode safe = arguments instanceof ObjectNode object
                 ? object : objectMapper.createObjectNode();
@@ -482,6 +483,38 @@ public class ShMcpServer {
 
     List<String> toolNames() {
         return tools.stream().map(ShMcpTool::name).toList();
+    }
+
+    /**
+     * The refusal for a tool name that is not one of ours, with the edit rather than the catalogue
+     * (SH717).
+     *
+     * <h2>What was wrong with the old message, which was not wrong</h2>
+     *
+     * <p>It answered {@code -32602} with every tool name in {@code data}. That is {@code allowed},
+     * one of P6's four instruments, so nothing was missing in the sense a lint could see. It is
+     * also the weakest of the four for this branch: the agent that wrote {@code shio_reed} <b>had
+     * the registry already</b> — {@code tools/list} is the first thing it reads and P3 holds a
+     * 2500-token budget on it — so what it lacks is not the catalogue but the one-character edit.
+     * The catalogue costs it a re-read of something it is holding.</p>
+     *
+     * <h2>In the message, not in `data`</h2>
+     *
+     * <p>{@code data} stays the plain array of names. It is pinned by {@code
+     * ShMcpWireConformanceTest} against a golden and read by SH710's live sweep, and more to the
+     * point a JSON-RPC {@code error} is swallowed by most clients as a transport fault — the
+     * sentence is the part a human or a model actually sees. So the suggestion goes where it is
+     * read, and the catalogue stays where it is parsed.</p>
+     *
+     * <p>{@link ShDidYouMean} is the same helper every HTTP refusal on this surface uses, including
+     * its rule about when a guess is more useful than misleading: nothing is offered unless the
+     * edit distance is inside {@code max(2, len/3)}. A near-miss gets the edit; an unrelated string
+     * gets the list, exactly as before.</p>
+     */
+    private String unknownTool(String name) {
+        return ShDidYouMean.nearest(name, toolNames())
+                .map(nearest -> "Unknown tool '" + name + "'. Did you mean '" + nearest + "'?")
+                .orElseGet(() -> "Unknown tool '" + name + "'.");
     }
 
     private List<String> resourceUris() {
