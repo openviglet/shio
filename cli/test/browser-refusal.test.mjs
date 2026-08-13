@@ -33,7 +33,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { test } from "node:test";
 
-import { INSTALL } from "../src/browser.mjs";
+import { INSTALL, launchBrowser, requireBrowser } from "../src/browser.mjs";
 import * as audit from "../src/commands/audit.mjs";
 import * as clone from "../src/commands/clone.mjs";
 import * as snapshot from "../src/commands/snapshot.mjs";
@@ -212,4 +212,79 @@ test("SH444: the browser dependencies resolve from the CLI in this checkout", as
         + "check whether it was moved back into a package's own devDependencies",
     );
   }
+});
+
+/**
+ * SH726 — **the package is here and the browser is not**, which is the state a runner is in.
+ *
+ * `browser.mjs` named this second state in its header and decided not to pre-empt it, correctly:
+ * whether the package resolves is answerable from a path and whether the binary is downloaded is
+ * not, so guessing would refuse machines that work. What was missing is the other half — nothing
+ * translated what `launch()` then says, so the reader got Playwright's own box drawing naming
+ * `pnpm exec playwright install` and never the line this product publishes in three commands' help.
+ *
+ * Found by CI, on the one environment where that state is the *normal* one: a plain `pnpm install`
+ * fetches the package and not the binary, and `source-corpus.conformance.mjs` holds SH434's rule
+ * that a machine with no browser gets the two commands that fix it.
+ *
+ * Asserted against a fake, because the real second state cannot be produced without deleting
+ * somebody's browsers — and the message Playwright prints is the contract being matched, so it is
+ * reproduced here verbatim rather than paraphrased.
+ */
+const PLAYWRIGHT_SAYS = "browserType.launch: Executable doesn't exist at "
+  + "/home/runner/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/"
+  + "chrome-headless-shell\n"
+  + "╔════════════════════════════════════════════════════════════╗\n"
+  + "║ Looks like Playwright was just installed or updated.       ║\n"
+  + "║ Please run the following command to download new browsers: ║\n"
+  + "║     pnpm exec playwright install                           ║\n"
+  + "╚════════════════════════════════════════════════════════════╝";
+
+/** A `playwright` whose module resolves and whose chromium will not start. */
+function playwrightWithNoBrowser(message = PLAYWRIGHT_SAYS) {
+  return {
+    chromium: {
+      launch: async () => {
+        throw new Error(message);
+      },
+    },
+  };
+}
+
+test("SH726: a resolved playwright with no browser refuses with this product's install line", async () => {
+  const ctx = { env: {}, import: async () => playwrightWithNoBrowser() };
+  const playwright = await requireBrowser(
+    { command: "snapshot", why: "The browser-free check is `shio digest`." },
+    ctx,
+  );
+
+  const failure = await launchBrowser(playwright, ctx).then(() => null, (error) => error);
+
+  assert.ok(failure, "SH726: a chromium that cannot start reported success.");
+  assert.match(failure.message, new RegExp(INSTALL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+    "SH726: the refusal has to carry the two commands this project publishes. Playwright's own "
+    + "message names `pnpm exec playwright install`, which is a third instruction for a reader who "
+    + "has already been given one — and it is not the one the docs and `--help` state.");
+  assert.match(failure.message, /shio snapshot:/,
+    "SH726: and it has to say which command refused, the way the not-installed refusal does — the "
+    + "whole point of remembering what was asked for is that both states read alike.");
+  assert.match(failure.message, /The browser-free check is `shio digest`\./,
+    "SH726: including the sentence that points at the browser-free alternative, which is per-command "
+    + "and is the only part of the message a caller cannot guess.");
+});
+
+test("SH726: a launch that failed for any other reason keeps its own message", async () => {
+  // The guard on the translation. Relabelling an unrelated failure as a missing install sends the
+  // reader to a command that changes nothing, which is worse than the raw error they would have had.
+  const ctx = { env: {}, import: async () => playwrightWithNoBrowser("Target page, context or browser has been closed") };
+  const playwright = await requireBrowser({ command: "audit", why: "irrelevant" }, ctx);
+
+  const failure = await launchBrowser(playwright, ctx).then(() => null, (error) => error);
+
+  assert.ok(failure, "SH726: the fake was supposed to throw.");
+  assert.equal(failure.message, "Target page, context or browser has been closed",
+    "SH726: only a failure that says the executable is missing may be re-labelled. Anything else is "
+    + "a different problem wearing this one's fix.");
+  assert.doesNotMatch(failure.message, /playwright install/,
+    "SH726: and it must not acquire an install line it has no use for.");
 });

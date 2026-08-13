@@ -25,7 +25,7 @@ import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { LANDMARKS, readShape } from "../audit.mjs";
-import { requireBrowser } from "../browser.mjs";
+import { launchBrowser, requireBrowser } from "../browser.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { helpText } from "../help.mjs";
 import {
@@ -530,7 +530,7 @@ async function withBrowser(playwright, ctx, body) {
   if (typeof ctx.capture === "function") {
     return body(null);
   }
-  const browser = await playwright.chromium.launch();
+  const browser = await launchBrowser(playwright, ctx);
   try {
     return await body(browser);
   } finally {

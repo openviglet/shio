@@ -82,14 +82,75 @@ export async function browserAvailable(ctx) {
 
 export async function requireBrowser({ command, why, needs = "this command" }, ctx) {
   const load = typeof ctx?.import === "function" ? ctx.import : (name) => import(name);
+  let playwright;
   try {
-    return await load("playwright");
+    playwright = await load("playwright");
   } catch {
+    throw new Error(refusal({ command, why, needs }, ctx, "which is not installed"));
+  }
+  // SH726 — remembered against the resolved module, so `launchBrowser` can write the SAME refusal
+  // without any caller repeating a `why`. The three commands launch chromium from inside helpers
+  // that never had these fields in scope (`renderer`, `withBrowser`, `inspect`), and passing them
+  // down would have put three copies of the sentence back — which is the drift this module's header
+  // is about. A WeakMap because the key is a module namespace nobody may mutate.
+  REFUSALS.set(playwright, { command, why, needs });
+  return playwright;
+}
+
+/** What each resolved `playwright` was asked for, so the second refusal reads like the first. */
+const REFUSALS = new WeakMap();
+
+/** The one refusal both states produce, so the install line is written once (SH726). */
+function refusal({ command, why, needs }, ctx, state) {
+  return `shio ${command}: ${needs} needs playwright, ${state}.\n`
+    + `  ${INSTALL}\n`
+    + why
+    + (ctx?.env?.SHIO_DEBUG ? `\n(resolved from ${process.cwd()})` : "");
+}
+
+/**
+ * Playwright's own way of saying the package is here and the browser is not.
+ *
+ * <p>Matched on the sentence rather than on an error class, because it arrives as a plain `Error`;
+ * both halves are required so an unrelated launch failure — a sandbox refusing, a profile locked —
+ * keeps its own message instead of being relabelled as a missing install, which would send the
+ * reader to a command that changes nothing.</p>
+ */
+function isMissingBrowser(error) {
+  const message = String(error?.message ?? "");
+  return /Executable doesn't exist/i.test(message) && /playwright install/i.test(message);
+}
+
+/**
+ * Launch chromium, or refuse the way {@link requireBrowser} does (SH726).
+ *
+ * <h2>The state this closes, and the one it deliberately still does not pre-empt</h2>
+ *
+ * <p>This module's header decides not to check whether the browser is <em>downloaded</em>: that
+ * cannot be answered from a path without refusing machines that work, so it is left to `launch()`.
+ * Correct, and incomplete — nothing translated what `launch()` then says. A plain `pnpm install`
+ * fetches the package and not the binary, so on a runner the reader gets Playwright's box drawing
+ * naming `pnpm exec playwright install`, and never the line this product publishes in three
+ * commands' help. CI found it, on the one environment where that state is the normal one.</p>
+ *
+ * <p>Nothing is decided in advance here either. The launch is attempted exactly as before and only
+ * a failure that says so is re-labelled, so a machine that can take the picture still does.</p>
+ *
+ * @param playwright the resolved module, as {@link requireBrowser} returns it
+ * @param ctx        the IO context
+ */
+export async function launchBrowser(playwright, ctx) {
+  try {
+    return await playwright.chromium.launch();
+  } catch (error) {
+    if (!isMissingBrowser(error)) throw error;
+    // A caller that resolved the module some other way still gets the install line; what it loses
+    // is the sentence naming the browser-free alternative, which is per-command and unguessable.
+    const asked = REFUSALS.get(playwright)
+      ?? { command: "clone", needs: "the browser", why: "" };
     throw new Error(
-      `shio ${command}: ${needs} needs playwright, which is not installed.\n` +
-        `  ${INSTALL}\n` +
-        why +
-        (ctx?.env?.SHIO_DEBUG ? `\n(resolved from ${process.cwd()})` : ""),
+      `${refusal(asked, ctx, "whose browser is not downloaded")}\n`
+      + `(playwright said: ${String(error.message).split("\n")[0]})`,
     );
   }
 }

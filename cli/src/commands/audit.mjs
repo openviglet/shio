@@ -26,7 +26,7 @@
  * `flag-meaning.test.mjs` is what keeps that true of the next command as well.
  */
 import { ShioAgentClient } from "../agent-client.mjs";
-import { requireBrowser } from "../browser.mjs";
+import { launchBrowser, requireBrowser } from "../browser.mjs";
 import { resolveAdmin } from "../context.mjs";
 import {
   LANDMARKS, PER_RULE_CAP, classify, describe, parseWidths, probe, readRegionScripts, readShape,
@@ -160,7 +160,7 @@ async function inspect(url, { widths, credentials, flags, browser: playwright },
     return ctx.audit(url, { widths, credentials }, flags);
   }
   const timeout = Number(flags.timeout ?? 30000);
-  const browser = await playwright.chromium.launch();
+  const browser = await launchBrowser(playwright, ctx);
   const requests = [];
   const consoleErrors = [];
   const probes = [];

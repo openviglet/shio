@@ -27,6 +27,7 @@
 - 📋 **SH720** (deps: SH719) **The duplicate-url refusal names verify, which cannot see the draft duplicates that produce it** — verify's duplicate check scans published posts only, so the instrument the refusal sends an agent to answers ok for the state a concurrent create leaves behind. → §XII.18
 - 📋 **SH721** (deps: —) **A curator's edit is overwritten by a concurrent agent write, and neither side is told** — Nothing on the write surface carries an expected version, so an upsert that declares whole state silently discards the field a curator merged while the plan was running. → §XII.19
 - 📋 **SH722** (deps: —) **Two identical context reads return two different field orders, so the pack's own digest flips** — The model is sorted by ordinal alone out of a hash-ordered Set, so two attributes sharing an ordinal tie-break differently on each call. → §XII.20
+- 📋 **SH727** (deps: —) **shio_assets refuses on an instance that has never held a file, instead of answering none** — It filters on the system File type, and a fresh instance has no such row, so a listing with nothing in it is refused with advice to create a post-type the caller never named. → §XII.21
 
 ## Block M — Token economy (measured)
 

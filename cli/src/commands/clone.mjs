@@ -57,7 +57,7 @@ import {
 } from "../clone.mjs";
 import { cloneProgress } from "../clone-progress.mjs";
 import { migrateInventory } from "../inventory-migrate.mjs";
-import { requireBrowser } from "../browser.mjs";
+import { launchBrowser, requireBrowser } from "../browser.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
 import { assetPathCollisions, siteDir } from "../content-files.mjs";
 import { helpText } from "../help.mjs";
@@ -1092,7 +1092,7 @@ async function renderer(flags, ctx, playwright) {
   if (typeof ctx.render === "function") {
     return ctx.render(flags);
   }
-  const browser = await playwright.chromium.launch();
+  const browser = await launchBrowser(playwright, ctx);
   const page = await browser.newPage({
     viewport: { width: 1280, height: 800 },
     userAgent: USER_AGENT,
