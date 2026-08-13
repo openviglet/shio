@@ -158,10 +158,16 @@ const UNEXERCISED = {
   // that a diff shows, rather than a tool quietly arriving with no live coverage.
   tools: [],
   ops: [
-    // `folder.upsert` came off with SH708, whose fixture needs a folder. What remains is every op
-    // that REMOVES or MOVES something — the three places SH202, SH203 and SH243 found defects.
-    "folder.delete", "folder.move", "folder.restore",
-    "post.delete", "post.move", "post.restore", "post.unpublish", "site.delete",
+    // `folder.upsert` came off with SH708, whose fixture needs a folder. `folder.move` and
+    // `post.delete` came off with SH712, which drives them out of order on purpose — the cycle
+    // guard and the confirm token are exactly the shapes a wrong ordering reaches.
+    //
+    // What is left is every op that RESTORES or UNPUBLISHES, plus the two deletes with no undo.
+    // Restore is the trash's other half and SH648 is the open task about a site not having one;
+    // `site.delete` purges, so a suite that exercised it would be asserting an irreversible act
+    // against an instance somebody else may be using.
+    "folder.delete", "folder.restore",
+    "post.move", "post.restore", "post.unpublish", "site.delete",
   ],
   verbs: [
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is

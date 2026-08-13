@@ -872,27 +872,6 @@ it out of order.
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
 
-### XXIII.6 The chaotic run — the vocabulary permuted, under a seed that replays (SH712)
-
-A per-verb suite proves each verb answers when everything before it went right. That is
-the state an agent is almost never in. Real sessions abandon a plan halfway, retry a
-call whose response was lost, publish something they have not created yet, delete a
-folder they are holding an address into, and re-run a whole sequence because the first
-attempt looked ambiguous.
-
-Two halves. The **named wrong sequences**, written by hand because they are the ones
-with known answers: publish before create; move a folder into its own descendant; write
-to a trashed post; apply a plan referencing an address deleted between plan and apply;
-read with an ETag from a version since overwritten; two upserts racing for the same
-friendly URL; a confirm token replayed after the thing it confirmed already went.
-
-And the **seeded permutation**: a generator drawing from the whole vocabulary — MCP
-tools and CLI commands both — emitting sequences under a seed printed on every run,
-asserting the invariants that must hold in every ordering rather than the outcome of any
-one: the instance stays up, no 5xx, every refusal still teaches, and the final state is
-reachable by some legal sequence. A red run prints its seed, so chaos replays exactly; a
-seed that ever found something is pinned into the suite as a permanent case.
-
 ### XXIII.7 Two agents and a curator, all writing at once (SH713)
 
 Shio's own story has at least two writers in it: the agent that builds and the curator
