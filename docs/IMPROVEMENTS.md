@@ -416,6 +416,29 @@ in a `@DisplayName`, or the first in the message, is the subject and the rest ar
 references — or a citation gets a spelling the reader skips, `see SH322`, checked by the
 reader so the convention cannot be forgotten silently.
 
+### XIV.29 The evidence a re-run destroys (SH735)
+
+`scripts/test-with-log.mjs` keeps every byte of a run under one fixed name, and its own
+comment argues for the fixed name well: *"the interesting comparison is against the
+previous run, and a directory that grows a file per invocation is one nobody prunes"*.
+Both halves are right. What follows from them is not.
+
+The stream opens with `flags: "w"`, so the **next** run truncates it — and after a red
+one, the next run is the one somebody makes to see whether it reproduces. Measured here:
+`fixture-traits.test.mjs` went red at file level with all nine assertions green, which
+is SH698's exact symptom; the re-run was green; and the SH698 handler's stderr —
+instrumentation added *because* that failure never printed a reason — went with the log.
+The sighting is a sentence in a commit message instead of a stack.
+
+SH354 argued this one level over, for the Maven suite: *tee the run, never pipe it into
+grep, because the next `clean` removes the reports and a red run leaves no record of
+which test failed*. This is that defect inside the instrument built from that lesson.
+
+The fix should not touch the green path: keep a red run under a second name —
+`shio-js-test.red.log` — written only on a non-zero exit, so the ordinary comparison is
+unchanged and the interesting run cannot be overwritten by a routine one. Two runs of
+green are worth less than one run of red.
+
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody
