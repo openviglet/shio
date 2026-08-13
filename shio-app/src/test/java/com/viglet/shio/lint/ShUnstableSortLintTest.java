@@ -90,7 +90,7 @@ class ShUnstableSortLintTest {
                         with it.
                         Fix: .thenComparing(...) on something unique — the name, or the id. \
                         ShAgentRenderService and ShAgentContextService already do it, which is why \
-                        this lint exists rather than one more repair (SH322).""",
+                        this lint exists rather than one more repair.""",
                         String.join("\n", violations))
                 .isEmpty();
     }

@@ -3147,3 +3147,39 @@ this is the cheap two-thirds of the answer.
 Two existing tests changed and neither claim did: SH520's *"the block nobody accepted is still on the
 page, byte for byte"* and SH422's chain assertion both now join the two halves. What they assert is
 that the bytes survive; SH693 is about where they sit.
+
+## A live suite creates what it measures, and a reader says which ones do not (SH728)
+
+SH724 is the rule. It broke three times in one afternoon, each found the same way — a clean instance,
+in CI — and each fixed by hand: seven suites wrote `type: "Page"`, which a fresh install does not
+declare; SH714's determinism case reproduced against `PT-FOLDER-INDEX`, a type one developer's box
+happened to carry with two attributes at one ordinal; SH711 edited a Markdown body that only exists
+when the content field is not projected to a sidecar. The fixes landed and **nothing looked for the
+fourth**, which is the inversion SH338 names: the instrument that finds every *other* break should
+land before the repairs.
+
+`cli/test/instance-assumptions.test.mjs` is that reader. Every `type:` literal under
+`cli/conformance/**` is either seeded by a fresh install, provisioned by the suite that uses it
+(`requireVocabulary`, `putPostTypeDef` — including `requireVocabulary`'s bare-call default of
+`["Page"]`, which is part of its contract), or a declared assumption. It runs in `pnpm test` in
+milliseconds, against a gate that otherwise costs a JVM and a live instance.
+
+**The seeded set is read from `shio-app/src/main/resources/import/post-types.json`, never copied.**
+Thirteen names in this file would be a second source of truth for the one fact the test checks, and
+it would go stale in the direction that makes the test *pass*: somebody seeds a new type, the copy
+does not know, and a legitimate use reads as a violation until somebody edits the test. The reader
+also asserts that `Page` is **not** in that file — if it ever becomes seeded, this test's whole
+premise is stale and it says so rather than quietly passing.
+
+**One declared assumption, and it is the inverse of the defect rather than an exception to it.**
+`mcp-write.conformance.mjs` writes `type: "NoSuchTypeAtAll"` because what it asserts is the
+*refusal*: it needs the type absent, so "install what you measure" cannot apply — what it measures is
+an absence. That category will recur, since every refusal case needs a name nothing declares. It is
+declared per file rather than matched by shape, because a rule like *names starting with `NoSuch` are
+exempt* is one an ordinary type name can wander into, and the value here is a list short enough to
+read.
+
+**What it does not cover, stated rather than implied.** SH711's break is a different dimension — a
+fixture assuming a *widget's* projection behaviour, not a type's existence — and a `type:` reader
+cannot see it. The design said a static reader "covers most of it", and this is the most, not the
+all.

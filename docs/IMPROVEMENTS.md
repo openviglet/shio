@@ -236,31 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.22 Three fixes and no instrument (SH728)
-
-SH724 is the rule: a live suite must create what it measures. It was broken three times
-in one afternoon, each found the same way — a clean instance, in CI — and each fixed by
-hand:
-
-- seven suites wrote `type: "Page"`, which a fresh install does not declare;
-- SH714's determinism case reproduced against `PT-FOLDER-INDEX`, a type this developer's box
-  happened to carry with two attributes at one ordinal;
-- SH711 edited a Markdown body that only exists when the content field is not projected to a
-  sidecar, which depends on the type's widget.
-
-agents.md's own rule (SH338) is that when a review finds a law being broken, the
-instrument that finds every *other* break lands **before** the fixes. Here the fixes
-landed and nothing looks for the fourth. The suite a runner catches is the one somebody
-else's session pays for: it arrives as five red files and forty-six cancelled scenarios,
-none of which name the cause.
-
-A static reader covers most of it and costs nothing to run. Every `type:` literal under
-`cli/conformance/**` is either provisioned by the suite that uses it —
-`requireVocabulary`, `putPostTypeDef` — or it is an assumption about the instance, and
-the second set should be a declared list rather than a discovery. Same shape as
-`live-coverage.test.mjs` and `assertion-debt.test.mjs`: a named list, in `pnpm test`,
-failing in seconds instead of in the gate that costs a JVM.
-
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
