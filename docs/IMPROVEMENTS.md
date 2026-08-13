@@ -374,34 +374,6 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
-### XIII.24 A ceiling that outlives its finding (SH683)
-
-Measured clean at `5737a217`, 1731 tests green. Every one of the six intents is now
-answered at rung 1, the context pack:
-
-    resume-a-session    2 / 1015      write-without-ids   2 /  987
-    recall-conventions  1 /  935      prove-the-work      2 /  955
-    reuse-a-blueprint   2 / 1434      diagnose-5xx        2 / 1037
-
-Total **6363** against a declared 11700. Two rows moved most: `diagnose-5xx` and
-`resume-a-session` were 3 calls and ~3300 tokens each because reaching them meant the
-~2400-token endpoint index. SH601 put both in `startHere` and they now cost a third of
-that.
-
-Nothing failed, because a benchmark asserts `isLessThanOrEqualTo`. That is right for a
-guard and wrong as a record: the ceiling still reads 3650, so the surface it protects
-could grow 3.5x before anything objected, and the *win* — the whole point of SH601 — is
-not written anywhere a build can see.
-
-Worse, the paragraph above those two lines still says `startHere` does not name them and
-calls the numbers *deliberately not good*. It describes the state SH601 removed. A
-reader lowering a ceiling would read a rationale arguing against doing it.
-
-So: re-measure the six, lower the ceilings onto the new figures with the headroom rule
-this file already states, and delete the prose that argues from the old ones. Then ask
-the harder question — whether a benchmark that only fails upward can record an
-improvement at all, or whether a floor is what a *finding* needs.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.

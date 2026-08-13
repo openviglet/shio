@@ -102,13 +102,22 @@ import jakarta.persistence.PersistenceContext;
  *   <li><b>Calls and tokens</b>, per intent, against ceilings in
  *       {@code src/test/resources/token-budgets.properties} — the same file every other budget
  *       lives in, because a second place to keep one is a place that goes stale.</li>
- *   <li><b>The total</b>, which is the headline: what it costs this instance to be found out.</li>
+ *   <li><b>The total</b>, which is the headline: what it costs this instance to be found out —
+ *       and the one figure with a <b>floor</b> as well as a ceiling (SH683).</li>
  * </ol>
  *
- * <p>The ceilings are today's measurement with a little headroom, and they are deliberately not
- * <em>good</em>. Half these intents are reachable only from the full index, which is the number
- * SH598–SH601 exist to move; a benchmark that had to be flattered before it could be committed
- * would be measuring the wrong thing. The run is written to
+ * <p>The ceilings are today's measurement with ~10% headroom. They were once deliberately not
+ * <em>good</em> — half these intents were reachable only from the ~2400-token endpoint index, which
+ * is the number SH598–SH601 existed to move, and they moved it: all six are now answered at rung 1
+ * and the headline fell 10651 → 6387.</p>
+ *
+ * <p><b>Nothing failed when it did (SH683).</b> An {@code isLessThanOrEqualTo} is right for a guard
+ * and insufficient as a record: the two ceilings SH601 invalidated read 3650 for weeks afterwards,
+ * so the surface they protect could have grown 3.5x before anything objected, and the win was
+ * written nowhere a build could see. The total is therefore asserted {@code isBetween} — a floor at
+ * ~5% below the measurement, on the total only, because a per-intent floor would put six tripwires
+ * under whoever improved one row. Falling through it is not a defect; it is an improvement that
+ * has not yet been recorded. The run is written to
  * {@code target/agent-discovery-benchmark.json} so a release can archive it.</p>
  *
  * @author Alexandre Oliveira
@@ -376,8 +385,14 @@ class ShAgentDiscoveryCostTest {
                         SH597: the headline — what it costs to find out how to do all six jobs \
                         from cold. It is a sum of independent cold starts, which is the honest \
                         shape of the claim: P2 says *one call* replaces a session, so every \
-                        intent that needs a second one is paying for the promise not holding.""")
-                .isLessThanOrEqualTo(budget("total", "tokens"));
+                        intent that needs a second one is paying for the promise not holding. \
+                        SH683: and it is bounded BELOW as well. An `isLessThanOrEqualTo` cannot \
+                        object to an improvement, so SH601's 40% win sat under a ceiling of 11700 \
+                        with nothing recording it and the surface free to grow back into the \
+                        headroom. Falling through the floor is not a defect — it means somebody \
+                        made the path cheaper and owes token-budgets.properties the new number, \
+                        which is the whole reason that file exists.""")
+                .isBetween(budget("total", "floor"), budget("total", "tokens"));
     }
 
     /**

@@ -411,6 +411,7 @@
 - **SH647** — The vocabulary's cost is decomposed into keys and prose and measured against the manifest alternative on every build, so the trade re-runs itself instead of waiting for the next op.
 - **SH651** — The probe found create assigned no furl at all; it now derives one from the title through the shared ShFurlNaming, suffixing on collision, skipping FILE posts, and taking a declared furl as identity.
 - **SH673** — The conformance constant follows the properties file at 2400, and cli/test/budget-restatement.test.mjs holds every restated budget against the key it restates - in pnpm test, where both sides are files and no instance is needed, so the drift is no longer only discoverable by the gate it breaks.
+- **SH683** — Re-measured 10651 to 6387 tokens with all six intents now at rung 1, the ceilings lowered onto that, the false prose deleted, and the total given a floor so the next win cannot be absorbed in silence.
 
 ## Block N — Realignment of what already shipped (SH74)
 

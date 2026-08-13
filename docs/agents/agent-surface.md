@@ -1140,12 +1140,20 @@ then the full endpoint index) until a rung's body *names* the move, which is the
 required to succeed. **The marker is a path, never a `features` flag**, because `diagnostics:
 true` is exactly what a replication round had in front of it while it grepped `store/logs`. An
 intent no rung names fails the build: a capability that shipped and cannot be found is P1's
-failure wearing a green build. Measured at **10604 tokens over six independent cold starts**
-(the sum is of cold starts, not of one session — an intent needing rung 2 is paying for the
-one-call promise not holding), and the printed table names the rung that answered each.
-**Two of the six cost ~3.7× the rest** because `startHere` names neither `/agent/diagnostics`
-nor `/agent/changes`, so the only route to them is the ~2400-token index. That is the finding,
-not drift to budget around.
+failure wearing a green build. First measured at **10604 tokens over six independent cold
+starts** (the sum is of cold starts, not of one session — an intent needing rung 2 is paying
+for the one-call promise not holding), and the printed table names the rung that answered each.
+Two of the six cost ~3.7× the rest because `startHere` named neither `/agent/diagnostics` nor
+`/agent/changes`, so the only route to them was the ~2400-token index. That was the finding,
+and SH601 moved it: **all six are now answered at rung 1, and the headline is 6387** (SH683
+re-measured it — `diagnose-5xx` 3307 → 1041, `resume-a-session` 3285 → 1019).
+**The ceilings did not move on their own, which is the second finding (SH683).** They read
+3650 for weeks after the fix made them 1041, because `isLessThanOrEqualTo` cannot object to an
+improvement: the surface could have grown 3.5× before a build failed, and the win was recorded
+nowhere. The total is now asserted `isBetween` — a floor ~5% under the measurement, on the
+**total only**, so a 40% win cannot be absorbed in silence again while a per-intent floor does
+not put six tripwires under whoever improves one row. Falling through the floor is not a
+defect; it is an improvement owing `token-budgets.properties` its new number.
 **And P2 has a grep now, not only a price (SH598).** `ShAgentP2ConformanceTest` is P1's
 instrument for the other law: discoverability — *named in a response already received* — is
 **graph reachability**, so it seeds with an entry point's response, opens every **door** that
@@ -1507,9 +1515,12 @@ one a familiar reader has memorised**.
 instance — no capture, no corpus, no proposal — scored with SH597's metric.
 
 **Measured: 5 calls, 1053 estimated tokens** for the whole shape (read the pack, read the write
-vocabulary, plan the batch, apply it, verify). A *single* discovery intent costs between 950 and
-3650 tokens to reach its first correct move. So the untuned shape is not more expensive than the
-tuned one — which is the answer SH603 wanted: P2 is not an artefact of familiarity.
+vocabulary, plan the batch, apply it, verify). A *single* discovery intent costs between 939 and
+1438 tokens to reach its first correct move (the band was 950–3650 when SH603 ran; SH683
+re-measured it after SH601). So the untuned shape is not more expensive than the tuned one — which
+is the answer SH603 wanted: P2 is not an artefact of familiarity. The conclusion survives the band
+narrowing by 2200 tokens, which is the stronger reading of it: the tuned shape got four times
+cheaper and the untuned one did not have to.
 
 **The first reading was 941 and was measuring nothing.** Two calls answered 400 and the last 404, so
 the figure was the cost of *failing* — comfortably under any ceiling, and it would have shipped as
