@@ -863,7 +863,10 @@ public class ShPostUnifiedWriteService {
     private static java.util.stream.Stream<ShPostTypeAttr> titleAttrs(ShPostType postType) {
         return postType.getShPostTypeAttrs().stream()
                 .filter(a -> a.getShParentPostTypeAttr() == null)
-                .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()));
+                // SH722 — a hand-written comparator hides the same defect a Comparator chain
+                // does, and this one feeds a write rather than a read.
+                .sorted(java.util.Comparator.comparingInt(ShPostTypeAttr::getOrdinal)
+                        .thenComparing(attr -> attr.getName() == null ? "" : attr.getName()));
     }
 
     private static void collectTitleSummary(ShPostTypeAttr attr, JsonNode data,

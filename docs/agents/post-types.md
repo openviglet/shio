@@ -262,3 +262,30 @@ Two things about the test worth keeping:
   context; it is not, so every assertion read 404 and `allowed` was empty. `allowed` and
   `didYouMean` are claims about a *population*, so borrowing another test's would have made them
   statements about suite order — SH315's rule, arrived at the hard way.
+
+## An ordinal is not a total order (SH722)
+
+P5 promises byte-identical serialization, and SH714 measured it failing on the wire: **ten identical
+`shio_context` calls returned two distinct packs**, differing in one line — two attributes swapping
+places. `ShCdaMapper#schemaFields` sorted by `ordinal` and nothing else, over the `Set` the
+persistence layer hands it in **hash order**, and `DESCRIPTION` and `PAGE-LAYOUT` both carried
+`ordinal: 2`. The comparator declared them equal and the tie went to whatever order the set iterated
+this time. *A stable sort over an unstable input is an unstable sort.*
+
+The consequences run past the bytes. The pack carries its own `digest`, so the digest flipped between
+two calls describing the same instance and P9's cheap proof stopped being one; and a conditional read
+is ETagged on the rendered bytes, so revalidation missed for a reason the caller could not see.
+
+**The fix is a tiebreaker. The deliverable is the lint (SH322).** The task named one line;
+`ShUnstableSortLintTest` found **seven**, and three call sites that already had the tiebreaker —
+which is the usual shape: somebody learned this before and fixed the call site in front of them, and
+nothing carried the lesson. The seven span the delivered CDA field order, the GraphQL schema
+published to every client, the console's post-type form, navigation ordering and a *write* path
+(`ShPostUnifiedWriteService`), so two of them were not reads at all. Two were invisible to a
+hand-written grep because they used a lambda (`(a, b) -> Integer.compare(...)`) rather than a
+`Comparator` chain.
+
+The rule the lint enforces is narrow on purpose: a sort is flagged only when its **only** key is one
+this codebase knows repeats — `ordinal` and `position`, both curator-editable numbers nothing forbids
+from colliding. A name, an id, an address or a URI needs no tiebreaker, and demanding one is how a
+lint gets muted.

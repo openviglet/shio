@@ -236,35 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.20 A sort key that is not unique (SH722)
-
-P5 promises byte-identical serialization, and SH714 measured it on the wire: ten
-identical `shio_context` calls returned **two** distinct packs. Every other read tool —
-`shio_read`, `shio_find`, `shio_changes`, `shio_marketplace` — was stable over the same
-ten.
-
-The difference is one line, and it alternates:
-
-```
-type PT-FOLDER-INDEX fields="TITLE:Text!,DESCRIPTION:Text Area!,PAGE-LAYOUT:Content Select!"
-type PT-FOLDER-INDEX fields="TITLE:Text!,PAGE-LAYOUT:Content Select!,DESCRIPTION:Text Area!"
-```
-
-`ShCdaMapper#schemaFields` sorts by `ordinal` and nothing else, over a `Set` the
-persistence layer hands it in hash order. `DESCRIPTION` and `PAGE-LAYOUT` both carry
-`ordinal: 2` — so the comparator declares them equal and the tie is broken by whatever
-order the set iterated this time. A stable sort over an unstable input is an unstable
-sort.
-
-Two consequences beyond the bytes. The pack carries its own `digest`, so the digest
-flips between two calls that describe the same instance, and P9's cheap proof stops
-being one. And a conditional read is ETagged on the rendered bytes, so revalidation
-misses for a reason the caller cannot see.
-
-The fix is a tiebreaker — ordinal, then name — and it is not specific to this type: any
-post-type whose attributes were seeded or edited into an ordinal collision has the same
-defect, and nothing forbids the collision.
-
 ### XII.22 Three fixes and no instrument (SH728)
 
 SH724 is the rule: a live suite must create what it measures. It was broken three times

@@ -226,7 +226,10 @@ public class ShGraphQLSchema {
         Set<String> used = new HashSet<>(COMMON_FIELDS.keySet());
         return postType.getShPostTypeAttrs().stream()
                 .filter(attr -> attr.getName() != null && !attr.getName().isBlank())
-                .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
+                // SH722 — the GraphQL schema's field order is published to every client, so an
+                // unstable one changes an API contract between two reads of the same instance.
+                .sorted(java.util.Comparator.comparingInt(ShPostTypeAttr::getOrdinal)
+                        .thenComparing(attr -> attr.getName() == null ? "" : attr.getName()))
                 .map(attr -> {
                     String fieldName = unique(decapitalize(sanitize(attr.getName(), "field")), used);
                     used.add(fieldName);

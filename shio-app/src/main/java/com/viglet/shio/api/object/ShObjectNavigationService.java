@@ -174,7 +174,9 @@ public class ShObjectNavigationService {
     private static List<ShFolder> sortedByPosition(Iterable<ShFolder> folders) {
         List<ShFolder> list = new ArrayList<>();
         folders.forEach(list::add);
-        list.sort(Comparator.comparingInt(ShObject::getPosition));
+        // SH722 — `position` repeats exactly as `ordinal` does, and navigation is rendered.
+        list.sort(Comparator.comparingInt(ShObject::getPosition)
+                .thenComparing(o -> o.getId() == null ? "" : o.getId()));
         return list;
     }
 

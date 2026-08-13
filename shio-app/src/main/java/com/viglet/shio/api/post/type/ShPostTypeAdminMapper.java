@@ -78,7 +78,10 @@ public class ShPostTypeAdminMapper {
         }
         return attrs.stream()
                 .filter(attr -> !topLevel || attr.getShParentPostTypeAttr() == null)
-                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
+                // SH722 — the console's field order is a rendering too, and a form whose fields
+                // swap places between two loads is the same defect a curator can see.
+                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal)
+                        .thenComparing(attr -> attr.getName() == null ? "" : attr.getName()))
                 .map(this::toAttrDef)
                 .toList();
     }

@@ -373,7 +373,9 @@ public class ShPostTypeAdminService {
                 .toList()) {
             boolean touched = false;
             for (ShPostTypeAttr attr : flatten(postType.getShPostTypeAttrs()).stream()
-                    .sorted(Comparator.comparing(ShPostTypeAttr::getOrdinal))
+                    // SH722 — ordinal alone is not a total order over a hash-ordered Set.
+                    .sorted(Comparator.comparing(ShPostTypeAttr::getOrdinal)
+                            .thenComparing(attr -> attr.getName() == null ? "" : attr.getName()))
                     .toList()) {
                 if (from.equals(ShPostReferenceFields.referencedPostType(attr, objectMapper))
                         && retarget(attr, to)) {

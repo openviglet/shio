@@ -20,7 +20,6 @@
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
-- 📋 **SH722** (deps: —) **Two identical context reads return two different field orders, so the pack's own digest flips** — The model is sorted by ordinal alone out of a hash-ordered Set, so two attributes sharing an ordinal tie-break differently on each call. → §XII.20
 - 📋 **SH728** (deps: —) **Three suites were fixed for depending on instance state, and nothing finds the fourth** — SH724 provisioned the type, SH714 seeded its own collision and SH711 stopped assuming a body, all found by a runner rather than by an instrument that reads the suites. → §XII.22
 
 ## Block M — Token economy (measured)

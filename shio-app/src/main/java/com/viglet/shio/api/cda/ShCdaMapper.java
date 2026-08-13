@@ -131,7 +131,11 @@ public class ShCdaMapper {
         }
         return postType.getShPostTypeAttrs().stream()
                 .filter(attr -> attr.getShParentPostTypeAttr() == null)
-                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
+                // SH722 — the tiebreaker. `ordinal` is a curator-editable number nothing forbids
+                // from colliding, and the input is a Set the persistence layer hands over in hash
+                // order, so without this the DELIVERED field order of a post flips between calls.
+                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal)
+                        .thenComparing(attr -> attr.getName() == null ? "" : attr.getName()))
                 .map(this::toField)
                 .toList();
     }
@@ -205,7 +209,10 @@ public class ShCdaMapper {
         return attrs.stream()
                 .filter(attr -> !topLevel || attr.getShParentPostTypeAttr() == null)
                 .filter(attr -> !isContainer(attr))
-                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
+                // SH722 — the line SH714 measured on the wire: two attributes at ordinal 2, and
+                // ten identical shio_context calls returning two distinct packs.
+                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal)
+                        .thenComparing(attr -> attr.getName() == null ? "" : attr.getName()))
                 .map(this::toSchemaField)
                 .toList();
     }
