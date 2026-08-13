@@ -20,7 +20,6 @@
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
-- 📋 **SH730** (deps: SH721 ✅) **Only post.upsert can be made conditional, so a move or a delete still overwrites a curator in silence** — SH721 put `expect` on the one op it measured, and post.move, post.delete and post.publish reach the same rows with no way to say only if unchanged. → §XII.23
 
 ## Block M — Token economy (measured)
 

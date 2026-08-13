@@ -405,6 +405,33 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   It costs nothing to anyone who does not ask: `include=digest` rides the parameter `include=impact`
   already uses (SH262), so there is no new endpoint, no new tool schema and no new query string, and
   a read that does not ask is byte-identical to what it was.
+- **`expect` covers the destructive ops too (SH730).** SH721 wired it into `post.upsert` because
+  that is the op SH713 measured; the window is not specific to it, and `post.move`, `post.delete`
+  and `post.publish` are the more destructive half — an upsert overwrites a field, a move changes
+  the address a curator just corrected, a delete removes the post they are editing. All three now
+  take it, and two of the three decisions are worth stating:
+
+  **`post.publish` compares the DRAFT**, not the published row. Publishing is not a content change,
+  so an expectation matched against what is live would refuse precisely the case publishing exists
+  for — a draft that differs from it, which is every publish that does anything. The draft is also
+  what an ordinary read returns, so the digest a caller already holds works without a second,
+  state-scoped read.
+
+  **`post.move` is checked before its already-moved branch.** That branch reports an idempotent
+  `noop`, and if somebody else performed the move while the plan was running, that *is* the
+  concurrent change `expect` was asked about — reporting it as a no-op would hide the one event the
+  caller opted in to hear.
+
+  **`post.unpublish` is deliberately not covered.** Its subject would be the published row, which
+  the DRAFT-preferred read does not return, so a caller would need `state=published` and the op
+  would mean something subtly different from its three neighbours. That is an argument to make, not
+  to guess at.
+
+  The vocabulary stayed under its 680-token ceiling by **trimming rather than raising**: four new
+  key declarations took it to 681, and `post.upsert`'s own `expect` sentence was shortened to pay
+  for them. `ShAgentOpsReachTest` says a raise is "a reason to re-open the surface choice, not to
+  raise the number quietly", and SH647's decomposition says which half grows — 523 of the tokens
+  are per-op prose and 104 are the keys, so prose is where a trim is found.
 - **A clamped `?digest=<n>` says so (SH319)** — the cut row fires when the *pages* run out; nothing
   fired when the *request* was reduced, so `?digest=200` on a ceiling of 100 that affected three
   pages returned three rows and the caller could not tell that from three being all there was. One

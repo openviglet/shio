@@ -141,14 +141,13 @@ public final class ShAgentOps {
                     List.of(ADDRESS), List.of(TYPE, FOLDER), List.of(), List.of(DATA, EXPECT),
                     "Declare a post's whole state at that address. `data` keys the post-type does "
                             + "not declare are refused; use post.move to change the address. "
-                            + "`expect` is a digest from read?include=digest - refused if it "
-                            + "changed since."),
+                            + "`expect`: a digest from read?include=digest, refused if stale."),
             new OpSpec(ShAgentBatchService.POST_MOVE,
-                    List.of(ADDRESS), List.of(), List.of(TO, FOLDER), List.of(),
+                    List.of(ADDRESS), List.of(), List.of(TO, FOLDER), List.of(EXPECT),
                     "Change a post's URL, its folder, or both, keeping its id and history. A "
                             + "published post's live URL changes immediately."),
             new OpSpec(ShAgentBatchService.POST_PUBLISH,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(WHEN),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, EXPECT),
                     "Publish the draft at that address, or schedule it with an ISO-8601 `when` "
                             + "(SH342). Needs a credential with mayPublish. Takes `id:` too, and "
                             + "only here: an asset has no URL to be addressed by, and an "
@@ -159,7 +158,7 @@ public final class ShAgentOps {
                     "Withdraw the published row; the draft stays. Takes `id:` on the same "
                             + "terms as post.publish."),
             new OpSpec(ShAgentBatchService.POST_DELETE,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(EXPECT),
                     "Trash a post. Needs `confirm` from its own dry run."),
             // SH222 — the undo `post.delete` has always promised in its own reply. Addressed by
             // `id:` because a trashed post has no reachable path; the ids come from

@@ -849,6 +849,69 @@ class ShAgentBatchTest {
         assertThat(shAddressResolver.resolve("post:" + siteName + url).title()).isEqualTo("Second");
     }
 
+    /**
+     * SH730 — the ops that take the whole post out from under the reader.
+     *
+     * <p>SH721 wired `expect` into `post.upsert` because that is the op SH713 measured. The window
+     * is not specific to it, and the other three are the more destructive half: an upsert overwrites
+     * a field, while a move changes the address a curator just corrected and a delete removes the
+     * post they are editing.</p>
+     */
+    @Test
+    void aStaleExpectationRefusesAMoveADeleteAndAPublish() {
+        for (String verb : java.util.List.of(ShAgentBatchService.POST_MOVE,
+                ShAgentBatchService.POST_DELETE, ShAgentBatchService.POST_PUBLISH)) {
+            String url = "/expect-" + verb.replace('.', '-') + "-"
+                    + UUID.randomUUID().toString().substring(0, 8);
+            run(false, post(url, "/", "First"));
+            String read = digestOf(url);
+            run(false, post(url, "/", "Changed underneath"));
+
+            Op op = switch (verb) {
+                case ShAgentBatchService.POST_MOVE -> new Op(verb, "post:" + siteName + url,
+                        null, null, "post:" + siteName + url + "-moved", null, null, null, null,
+                        null, read);
+                default -> new Op(verb, "post:" + siteName + url, null, null, null, null, null,
+                        null, null, null, read);
+            };
+
+            assertThatThrownBy(() -> run(false, op))
+                    .as("""
+                            %s reaches the same rows post.upsert does, and until SH730 there was                             no way to say `only if unchanged` about any of them.""", verb)
+                    .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                    .hasMessageContaining("to be unchanged");
+        }
+    }
+
+    /**
+     * SH730 — publish compares the DRAFT, and the choice is the whole design of this op.
+     *
+     * <p>Publishing is not a content change: matching `expect` against the PUBLISHED row would
+     * refuse precisely the case publishing exists for — a draft that differs from what is live. The
+     * draft is also what an ordinary read returns, so the digest a caller already holds works here
+     * without a second, state-scoped read.</p>
+     */
+    @Test
+    void publishComparesTheDraftAndNotThePublishedRow() {
+        String url = "/expect-publish-ok-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, post(url, "/", "First"));
+        run(false, new Op(ShAgentBatchService.POST_PUBLISH, "post:" + siteName + url,
+                null, null, null, null, null, null, null, null, null));
+
+        // The draft now differs from the published row, which is the ordinary pre-publish state.
+        run(false, post(url, "/", "Second"));
+        String draftDigest = digestOf(url);
+
+        ShAgentChangeSet result = run(false, new Op(ShAgentBatchService.POST_PUBLISH,
+                "post:" + siteName + url, null, null, null, null, null, null, null, null,
+                draftDigest));
+
+        assertThat(only(result).action())
+                .as("""
+                        a digest taken from the draft publishes it. Compared against the published                         row this would refuse every publish that changes anything, which is all of                         them.""")
+                .isEqualTo(Change.PUBLISH);
+    }
+
     /** The digest a read hands back, which is the only place `expect` may come from. */
     private String digestOf(String url) {
         return new TransactionTemplate(transactionManager).execute(status ->

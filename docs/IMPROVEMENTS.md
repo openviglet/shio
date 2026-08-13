@@ -236,30 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.23 The conditional write covers one op of eleven (SH730)
-
-SH721 answered the lost update SH713 measured: a read hands back `digest`, a write
-carries `expect`, and a mismatch is refused as `stale-expectation`. It was wired into
-`post.upsert` because that is the op the measurement used.
-
-The window it closes is not specific to that op. `post.move` changes an address a
-curator may have just corrected; `post.delete` removes a post somebody is editing;
-`post.publish` makes public a draft that changed after the plan read it. Each is the
-same shape — a plan composed against a state, applied against a later one — and each is
-the more destructive half, because an upsert overwrites a field while a move and a
-delete take the whole post out from under the reader.
-
-The machinery is already general: `ShAgentPostDigest.of` takes a row and
-`requireExpectedState` takes an op and a row, so the work is per-op wiring and the
-argument about what each one should compare, not new mechanism. `post.publish` is the
-interesting one: publishing is not a content change, so the digest of the draft is the
-right subject, and an `expect` that matched the *published* row would refuse the very
-case publishing exists for.
-
-What must not follow is `expect` becoming required. The default is last-write-wins
-because most writes are the only writer, and a surface that demands a digest per op
-costs every caller a read it did not need — SH721's argument, unchanged.
-
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened

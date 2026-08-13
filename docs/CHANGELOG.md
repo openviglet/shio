@@ -545,6 +545,7 @@
 - **SH721** — A read can hand back a state digest and a write op can carry it as `expect`, refused as stale-expectation when it no longer holds; the default stays last-write-wins, so only an agent that cares pays.
 - **SH722** — ShUnstableSortLintTest fails a sort whose only key is one that repeats, and the seven it found — CDA fields, the GraphQL schema, the console form, navigation and a write path — all break the tie by name.
 - **SH728** — cli/test/instance-assumptions.test.mjs classifies every post-type a conformance suite names as seeded, provisioned by that suite, or a declared assumption, reading the seeded set from the import file so it cannot go stale.
+- **SH730** — post.move, post.delete and post.publish take `expect` too, publish comparing the draft so it does not refuse every publish that changes something; the vocabulary paid for the four keys by trimming prose.
 
 ## Block O — The human half (the console the curator uses, SH74)
 

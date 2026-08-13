@@ -1730,6 +1730,11 @@ public class ShAgentBatchService {
                 ? null : requireExistingFolder(op, site);
 
         Optional<ShPostUnified> source = findPost(site, from.path());
+        // SH730 — checked against the post at `from`, and before the already-moved branch below:
+        // if somebody else moved it while this plan was running, that IS the concurrent change
+        // `expect` was asked about, and reporting it as an idempotent noop would hide exactly the
+        // event the caller opted in to hear about.
+        requireExpectedState(op, from, source.orElse(null));
         if (source.isEmpty()) {
             Optional<ShPostUnified> already = findPost(site, to.path());
             if (already.isPresent()) {
@@ -1853,6 +1858,11 @@ public class ShAgentBatchService {
         }
         ShPostUnified draft = state(site, address, ShPostState.DRAFT).orElse(null);
         Optional<ShPostUnified> published = state(site, address, ShPostState.PUBLISHED);
+        // SH730 — the DRAFT is the subject, deliberately. Publishing is not a content change, so an
+        // `expect` matched against the PUBLISHED row would refuse the very case publishing exists
+        // for; and the draft is what an ordinary read returns, so the digest a caller already holds
+        // is the one that works here without a second, state-scoped read.
+        requireExpectedState(op, address, draft);
         if (draft == null) {
             if (published.isPresent()) {
                 return session.change(op, address, Change.NOOP, "no draft to publish",
@@ -1967,6 +1977,9 @@ public class ShAgentBatchService {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
         ShSite site = requireSite(address.site(), session);
         Optional<ShPostUnified> post = findPost(site, address.path());
+        // SH730 — a delete is the widest thing that can happen to a post, so it is the op where a
+        // stale plan costs most: the row it removes may have been rewritten since it was read.
+        requireExpectedState(op, address, post.orElse(null));
         if (post.isEmpty()) {
             return session.change(op, address, Change.NOOP, "already absent", null);
         }
