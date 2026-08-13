@@ -872,27 +872,6 @@ it out of order.
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
 
-### XXIII.4 Every tool refused on purpose, thirteen times over (SH710)
-
-P6 says errors are instructions, and the assertion exists — for the HTTP ops. The
-transport is where an agent meets a refusal, and there the failure modes are the
-transport's own: a JSON-RPC error object with the teaching payload dropped into a field
-no client reads; a schema violation caught by the framing layer before the handler that
-would have taught anything; a stack trace where a `didYouMean` belonged.
-
-So: for each of the thirteen tools, a table-driven sweep of the ways a real agent gets
-it wrong — a required property omitted, a property invented, a property of the wrong
-type, an address in a form the verb does not take (a `site:` where writes take only
-`post:`/`folder:`), an address that parses and names nothing, a site that does not
-exist, an empty request body. Each case asserts the refusal is machine-readable, names
-at least one of `fix`/`allowed`/`didYouMean`/`example`, and — the part only a live run
-can check — that nothing was written.
-
-The near-miss cases are the valuable ones, because they are what a model actually does:
-`shio_blueprint` for a tool that is not there, `shio_delete` for a verb the surface
-never had, a tool name off by an underscore. `didYouMean` earns its place or it does
-not, and today nothing on the wire has ever asked.
-
 ### XXIII.5 The CLI, spawned as a process, against something running (SH711)
 
 `cli/test/` imports command modules; that is what makes `pnpm test` fast and it is the
@@ -978,3 +957,30 @@ into the payload — and every idempotent write repeated must leave one row and 
 response. Ordering instability is the defect this finds, and it is invisible to a
 fixture with too few rows to have an ambiguous order. Both checks run inside the chaotic
 suite's teardown too, where the state is unrepeatable by construction.
+
+### XXIII.9 The one refusal that lists everything and suggests nothing (SH717)
+
+Measured while SH710 drove the refusal sweep. A near-miss tool name comes back as a
+JSON-RPC error rather than as an `isError` result — the name never reaches a handler —
+and the payload is this:
+
+    {"code":-32602,"message":"Unknown tool 'shio_reed'.",
+     "data":["shio_apply","shio_assets", … all twelve … ]}
+
+That is `allowed`, and `allowed` is one of P6's four instruments, so SH710 passes it. It
+is also the weakest of the four for this case. The agent that wrote `shio_reed` had the
+registry already — `tools/list` is the first thing it read and P3 holds a 2500-token
+budget on it. What it lacks is not the catalogue but the *edit*: one character.
+
+`didYouMean` exists across this product's HTTP surface for exactly this, and the section
+SH710 came from asked the question outright — whether `didYouMean` earns its place, and
+said nothing on the wire had ever asked. Now something has, and the answer is that on
+the one branch where a guess is most likely to be a typo, it is absent.
+
+The fix is small and the sizing is the argument for doing it: the tool names are already
+in hand at the throw site, and the nearest name by edit distance is a few lines. What it
+buys is one turn — the difference between an agent re-reading twelve names and being
+handed the one it meant.
+
+Not a defect in SH710's sense: nothing is wrong, something is thinner than the law it
+satisfies.
