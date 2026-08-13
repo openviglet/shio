@@ -405,6 +405,26 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   It costs nothing to anyone who does not ask: `include=digest` rides the parameter `include=impact`
   already uses (SH262), so there is no new endpoint, no new tool schema and no new query string, and
   a read that does not ask is byte-identical to what it was.
+- **The trash is agent-reachable, and the instrument that said otherwise could not tell (SH732).**
+  `ShAgentP1ConformanceTest` held `trash` as `CONSOLE_ONLY` — *"an agent can fill the trash and can
+  neither list nor restore it"* — and both halves had been false for a block: SH222 gave
+  `find?trash=true` and `post.restore`/`folder.restore`, SH648 added `site.restore`. The manifest's
+  `elsewhere` map was still pointing agents at the console for something three ops do, which is
+  worse than no pointer, because P2 makes that document the read a session performs first.
+
+  **The staleness check was structurally blind to it.** It asked whether the entry's *named target*
+  — `/agent/find`… no: `/agent/trash`, a route nobody built and nobody will, because the capability
+  arrived as a shape over an existing read (P10). So an exception closed by a different mechanism
+  than the one it named could never go green. `Delivery.closedBy` now names, in advance, the ops
+  whose existence ends the exception, which makes each entry falsifiable instead of merely written.
+
+  **And it needed a new category, which is SH596's finding repeating.** That task added
+  `MCP_RESOURCE` because the vocabulary could not say "a resource delivers this", and wrote in the
+  enum that *a classification can only be as honest as its categories allow*. `trash` is delivered
+  by a parameter on a protocol route plus three ops, so it is neither a route nor a tool of its own:
+  classifying it as `AGENT_ROUTE → /agent/find` made it claim a route the protocol owns flagless,
+  and `ShAgentCapabilityJoinTest` refused — correctly, since a flag map that counts one capability
+  twice reads as an endpoint count. `COMPOSED` carries **no target** and names its evidence instead.
 - **`expect` covers the destructive ops too (SH730).** SH721 wired it into `post.upsert` because
   that is the op SH713 measured; the window is not specific to it, and `post.move`, `post.delete`
   and `post.publish` are the more destructive half — an upsert overwrites a field, a move changes

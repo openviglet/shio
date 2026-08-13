@@ -337,7 +337,11 @@ public class ShAgentManifestService {
         elsewhere.put("visualSnapshot", "shio snapshot <page>");
         // Console-shaped: a human is the point, or a browser protocol is.
         elsewhere.put("reviewQueue", "console");
-        elsewhere.put("trash", "console");
+        // SH732 — `trash` was here and had been wrong for a block. SH222 gave an agent
+        // `find?trash=true` to list it and `post.restore`/`folder.restore` to undo a delete, and
+        // SH648 added `site.restore`. A pointer that says "console" for something three ops do is
+        // worse than no pointer: it costs a caller the one read that would have told them
+        // otherwise, and P2 makes this document the read a session makes first.
         elsewhere.put("universalEditor", "console");
         // REST-only, and deliberately: the delivery surface a front end queries, and a body field
         // that would cost more on tools/list than it saves.

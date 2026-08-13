@@ -546,6 +546,7 @@
 - **SH722** — ShUnstableSortLintTest fails a sort whose only key is one that repeats, and the seven it found — CDA fields, the GraphQL schema, the console form, navigation and a write path — all break the tie by name.
 - **SH728** — cli/test/instance-assumptions.test.mjs classifies every post-type a conformance suite names as seeded, provisioned by that suite, or a declared assumption, reading the seeded set from the import file so it cannot go stale.
 - **SH730** — post.move, post.delete and post.publish take `expect` too, publish comparing the draft so it does not refuse every publish that changes something; the vocabulary paid for the four keys by trimming prose.
+- **SH732** — The trash is classified reachable and dropped from the manifest's elsewhere map, and an exception now names the ops that would close it, so one shut by another road fails instead of persisting.
 
 ## Block O — The human half (the console the curator uses, SH74)
 

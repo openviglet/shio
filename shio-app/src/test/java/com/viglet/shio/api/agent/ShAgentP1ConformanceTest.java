@@ -115,6 +115,24 @@ class ShAgentP1ConformanceTest {
         CROSS_CUTTING(false),
         /** Describes the installation, not a capability to invoke ({@code multiTenant}, {@code oidc}). */
         INSTANCE_FACT(false),
+        /**
+         * Reachable, and delivered by capabilities that are themselves claimed — a parameter on an
+         * existing read, plus ops (SH732).
+         *
+         * <p><b>SH732 added this category for the reason SH596 added {@code MCP_RESOURCE}, and the
+         * paragraph above predicted it: a classification can only be as honest as its categories
+         * allow.</b> The vocabulary could say "a tool delivers it" and "a route delivers it", and
+         * could not say "it is a shape over both" — which is what P10 produces every time it is
+         * obeyed. {@code trash} is exactly that: `find?trash=true` lists it and three ops undo a
+         * delete, and neither `/agent/find` nor `shio_write` belongs to it.</p>
+         *
+         * <p>So it carries <b>no target</b>. Claiming one would make this feature the owner of a
+         * route the protocol already owns flagless, which `ShAgentCapabilityJoinTest` refuses — and
+         * refuses correctly, since a flag map that counted one capability twice would read as an
+         * endpoint count. What it carries instead is {@link Delivery#closedBy}, which is the
+         * falsifiable half: name the ops, and the day one of them disappears this fails.</p>
+         */
+        COMPOSED(false),
 
         /** P1 break: HTTP-reachable, but undeclared here and unreachable from MCP. */
         REST_ONLY(true),
@@ -142,7 +160,25 @@ class ShAgentP1ConformanceTest {
      * @param why    the claim. For a cross-cutting or instance fact it is the whole justification;
      *               for an exception it is what P1 is paying for and, where one exists, the task id
      */
-    record Delivery(Reach reach, String target, String why) {
+    /**
+     * @param closedBy SH732 — what would make this exception stale, named in advance.
+     *
+     *                 <p>The staleness check used to ask whether {@link #target} now exists, and
+     *                 that is only the right question when the capability arrives by the road the
+     *                 entry named. {@code trash} arrived by a different one — a query parameter on
+     *                 an existing read plus three restore ops — so its exception could never go
+     *                 green, and the check that exists to stop a held list rotting was blind to the
+     *                 commonest way an entry becomes wrong.</p>
+     *
+     *                 <p>Naming the evidence turns the entry into a falsifiable claim: an op name, a
+     *                 tool, or a route whose existence means the gap closed. Empty for an exception
+     *                 whose target IS the evidence, which is most of them.</p>
+     */
+    record Delivery(Reach reach, String target, String why, List<String> closedBy) {
+
+        Delivery(Reach reach, String target, String why) {
+            this(reach, target, why, List.of());
+        }
     }
 
     private static Delivery mcp(String tool, String why) {
@@ -328,10 +364,20 @@ class ShAgentP1ConformanceTest {
                 "SH109 put this off the agent namespace on purpose — it is the human's veto over "
                 + "the agent's work, so an agent approving its own run is the thing it prevents. The "
                 + "one exception here that is a design decision rather than a gap"));
-        byFeature.put("trash", new Delivery(Reach.CONSOLE_ONLY, "/agent/trash",
-                "SH222 — an agent can fill the trash (folder.delete, post.delete) and can neither "
-                + "list nor restore it, so the recoverability SH200 built is not recoverability from "
-                + "where the deletion was made"));
+        // SH732 — reclassified, and the old entry is worth keeping in view because of how it went
+        // wrong. It read: "an agent can fill the trash (folder.delete, post.delete) and can neither
+        // list nor restore it". SH222 answered the listing with `find?trash=true` and the restore
+        // with `post.restore`/`folder.restore`; SH648 added `site.restore`. Both halves had been
+        // false for a block, and the staleness check could not see it because the entry named a
+        // route — `/agent/trash` — that was never built and never will be: the capability arrived
+        // as a shape over a read (P10), which is the better design and the one the check was blind
+        // to. `closedBy` now names the evidence so the same thing cannot happen quietly again.
+        byFeature.put("trash", new Delivery(Reach.COMPOSED, null,
+                "SH222/SH648 — `find?trash=true` lists it and post.restore, folder.restore and "
+                + "site.restore bring things back, so the recoverability SH200 built is reachable "
+                + "from where the deletion was made. PURGE is not, and that is the honest remainder: "
+                + "an agent can undo a delete and cannot make one final",
+                List.of("post.restore", "folder.restore", "site.restore")));
         // SH268 — a decision now, not a gap, and SH186 is what makes it one rather than a preference.
         // That task took a REST-only capability whose input is *JSON* and made it an op, reaching MCP
         // through an existing tool. An SH68 package is a **zip**: a client with no filesystem can
@@ -435,6 +481,24 @@ class ShAgentP1ConformanceTest {
                                 + "', which is not in the endpoint index");
                     }
                 }
+                case COMPOSED -> {
+                    if (delivery.target() != null) {
+                        problems.add(feature + ": a composed capability owns no target — the things "
+                                + "that deliver it are claimed already, and naming one here would "
+                                + "count the same capability twice");
+                    }
+                    if (delivery.closedBy().isEmpty()) {
+                        problems.add(feature + ": composed, but names nothing that delivers it, so "
+                                + "the claim is unfalsifiable");
+                    }
+                    for (String evidence : delivery.closedBy()) {
+                        if (!tools.contains(evidence) && !declaredPaths.contains(evidence)
+                                && !ShAgentBatchService.OPS.contains(evidence)) {
+                            problems.add(feature + ": says '" + evidence + "' delivers it, and no "
+                                    + "tool, route or op by that name exists");
+                        }
+                    }
+                }
                 case CROSS_CUTTING, INSTANCE_FACT -> {
                     if (delivery.target() != null) {
                         problems.add(feature + ": a cross-cutting property names a target, which "
@@ -445,6 +509,17 @@ class ShAgentP1ConformanceTest {
                     if (tools.contains(delivery.target()) || declaredPaths.contains(delivery.target())) {
                         problems.add(feature + ": exception is stale — '" + delivery.target()
                                 + "' now exists, so the capability is reachable and the entry must go");
+                    }
+                    // SH732 — and the question the target alone cannot ask. An exception that named
+                    // a route nobody built stays held forever while the capability arrives by ops,
+                    // which is exactly what `trash` did between SH222 and SH648.
+                    for (String evidence : delivery.closedBy()) {
+                        if (tools.contains(evidence) || declaredPaths.contains(evidence)
+                                || ShAgentBatchService.OPS.contains(evidence)) {
+                            problems.add(feature + ": exception is stale — '" + evidence
+                                    + "' exists, which this entry itself names as what would close "
+                                    + "it, so the classification must be re-decided");
+                        }
                     }
                 }
             }
@@ -508,7 +583,6 @@ class ShAgentP1ConformanceTest {
                         "postTypeMerge",
                         "reviewQueue",
                         "siteCapture",
-                        "trash",
                         "universalEditor",
                         "visualSnapshot");
 
