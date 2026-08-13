@@ -1359,3 +1359,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH709** — Every write scenario is call-then-look against the published projection, so dry-run, draft-default and a refused plan are proved by what is absent - live tool coverage is 12 of 12.
 - **SH710** — Seven wrong-call shapes and an unknown tool name are refused over the wire carrying one of P6's instruments, with the store unchanged - and the sweep found SH717.
 - **SH711** — Ten verbs are spawned as a process against a live instance with a pull-push-pull round trip, taking verb coverage from 7 of 31 to 16, and dev, build and deploy are named out of scope.
+- **SH718** — The plan uses url rather than address, so it is refused for the missing post-type instead of an unknown key, and the reason is asserted rather than the flag.

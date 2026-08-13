@@ -170,20 +170,26 @@ describe("SH709: the four tools that change something, against a store that keep
     // The commit-order question `ShAgentCommitOrderTest` asks of a mock, asked where the
     // transaction is real: a plan is one unit, so a document that cannot be applied whole must not
     // be applied in part.
+    // SH718 — `shio_apply.posts[]` takes `url`, the friendly URL, NOT `address`. Written with
+    // `address` this case passed while asking nothing: SH331's strict-argument guard refused the
+    // call for the unknown key, before any post-type was looked at, and the absence asserted below
+    // was the absence of an attempt. A refusal is not evidence unless it is the RIGHT refusal, so
+    // the message is checked rather than the flag.
     const good = `post:${site}/plan-one`;
     const answer = await call("shio_apply", {
       site,
       posts: [
-        { address: good, type: "Page", folder: "/", data: { title: "Plan one", content: "ok" } },
+        { url: "/plan-one", type: "Page", folder: "/", data: { title: "Plan one", content: "ok" } },
         // No such post-type. The refusal has to arrive before anything is committed.
-        { address: `post:${site}/plan-two`, type: "NoSuchTypeAtAll", folder: "/", data: { title: "Plan two" } },
+        { url: "/plan-two", type: "NoSuchTypeAtAll", folder: "/", data: { title: "Plan two" } },
       ],
     });
 
-    const refused = Boolean(answer.error) || answer.result?.isError
-      || /error|refus|unknown|not a post type|no such/i.test(textOf(answer));
-    assert.ok(refused,
+    assert.ok(Boolean(answer.error) || answer.result?.isError,
       `SH709: a plan naming a post-type that does not exist was accepted: ${textOf(answer).slice(0, 300)}`);
+    assert.match(textOf(answer) || JSON.stringify(answer.error), /NoSuchTypeAtAll|post-type/i,
+      "SH718: the plan was refused for something other than the missing post-type, so this case is "
+      + "back to proving nothing. Assert the reason, not the flag — that is the whole finding.");
 
     assert.equal(await exists(good), false,
       "SH709: the first post of a refused plan survived it. A partially applied plan is the worst "
