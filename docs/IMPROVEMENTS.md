@@ -841,29 +841,6 @@ this converts into a sentence.
 It stays open. Nothing here found the cause, and closing it would say something untrue
 about a red that is still out there.
 
-### XXI.13 XXI.13 The one address SH705 left behind, and the plugin it needs first (SH715)
-
-SH705 rewrote every sentence a reader meets — the hub's title, its heading, its prose,
-the nav cards and the table row that links to it — and left the address alone:
-`human-curates-it.mdx`, `slug: /category/human-curates-it`, and the matching `id` in
-`sidebars-shio.ts`. That was deliberate rather than an oversight, and the reason is
-worth writing down, because the same shape will come up again: a URL is the one part of
-a page that other people's documents point at, and changing it silently converts their
-link into a 404 rather than into different wording.
-
-The docs site has no `@docusaurus/plugin-client-redirects` in its config, so there is
-currently nothing that could catch the old address. That makes the plugin the first
-deliverable and the rename the second — in that order, or the rename ships a defect that
-only shows up in somebody else's bookmark.
-
-The target name should match what the copy now says: `curator-approves-it`, with
-`/category/human-curates-it` redirecting to it. Three places move together — the file,
-the `slug` in its frontmatter, and the `id` in `sidebars-shio.ts` — plus the four
-in-repo hrefs in `index.mdx` and `getting-started/intro.md`, and the CHANGELOG line for
-SH485 that names the file. The repo-side check that would catch a miss already exists:
-`docs-vocabulary.conformance.mjs` reads the published tree, so a dead in-repo link is a
-red gate rather than a discovery.
-
 ## XXII Realignment of what already shipped
 
 Block N's family. It holds the cases where a capability shipped complete against its own

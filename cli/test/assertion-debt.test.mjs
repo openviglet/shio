@@ -134,9 +134,15 @@ const ELSEWHERE = {
   // the fixes sat unpushed on a laptop. There is no assertion to write here, because the thing that
   // was wrong was not in any file this suite can reach. It is also the entry that says what the
   // conformance tier is for: it read a state nobody had looked at.
+  //
+  // SH715 is here for the same boundary and is worth distinguishing from SH628's split above. Its
+  // deliverable was a Docusaurus plugin and a slug rename in that repository, and the assertion
+  // that would have caught the defect is a **build of that site** — the old address exists only
+  // because the redirect emits it, which was proved by removing the redirect and watching the page
+  // vanish. That build is not a thing any suite here can run.
   docs: ["SH479", "SH480", "SH481", "SH482", "SH483", "SH484", "SH485", "SH486", "SH487", "SH488",
     "SH489", "SH490", "SH491", "SH492", "SH493", "SH494", "SH495", "SH496", "SH497", "SH498",
-    "SH504", "SH623", "SH624", "SH625", "SH626", "SH627", "SH629", "SH700"],
+    "SH504", "SH623", "SH624", "SH625", "SH626", "SH627", "SH629", "SH700", "SH715"],
 };
 
 /**

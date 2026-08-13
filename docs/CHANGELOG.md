@@ -1350,6 +1350,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH697** — The tool table is read on SH663's narrow rule, and two new assertions hold the registered set and every stated count against the product — the direction a docs-to-product check cannot have.
 - **SH698 (the instrument)** — The teardown now names the server, the deadline and the open socket count instead of printing nothing, and both mechanisms the section proposed were measured and refuted.
 - **SH700** — The docs repo's thirteen commits are on origin, so the gate reads 19 of 19 against the same published state CI reads, and the dated exception comes out with it.
+- **SH715** — The redirect plugin lands first and the hub moves to curator-approves-it second, so the old address still answers - proved by a build where removing the redirect makes it vanish.
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 

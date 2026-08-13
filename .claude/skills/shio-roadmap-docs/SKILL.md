@@ -289,7 +289,7 @@ re-running before committing.
   the job* (agent builds it / human curates it / CDA delivers it), and since SH482
   those four hubs **are** the sidebar. A page absent from it builds as an unlisted
   route and no reader ever reaches it.
-- **The hub's own landing page** (`agent-builds-it.mdx`, `human-curates-it.mdx`,
+- **The hub's own landing page** (`agent-builds-it.mdx`, `curator-approves-it.mdx`,
   `cda-delivers-it.mdx`, `run-it.mdx`) is what most block completions actually
   change: it is the text that summarises the capability, and it is the text a
   per-task edit never touches.
