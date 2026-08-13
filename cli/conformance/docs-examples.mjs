@@ -87,9 +87,30 @@ function walk(dir, out = []) {
   return out;
 }
 
+/**
+ * The fenced blocks, on either line ending (SH674).
+ *
+ * <h3>`\r?\n`, and it was worth a whole task</h3>
+ *
+ * <p>This required a bare `\n` after the language tag, so on a **CRLF** file the `\r` sat where
+ * the pattern wanted the newline and nothing matched — not one block, on the whole page. Seven of
+ * the thirty-three published pages are CRLF, including `agent-surface.md` and
+ * `content-modeling.md`, and they were invisible here.</p>
+ *
+ * <p>What made it cost a task rather than a minute is that <b>it fails as an absence</b>. An
+ * extractor that reads no block reports no subject, and a checker handed no subjects passes. So the
+ * four discovery GETs `MUST_ANSWER_200` names read as *"no longer published — this list has
+ * outlived its page"*, which is a sentence about the documentation, and the failure was filed
+ * against the other repository twice: once as SH674 and once as an exception in `red-suites.json`
+ * saying no change in this tree could turn it green. The pages had never stopped publishing them.</p>
+ *
+ * <p>The tell was available and nobody had reason to look for it: `blueprints.md` came back on its
+ * own the moment an unrelated task edited it, because the editor wrote LF. A defect that repairs
+ * itself when a file is touched for another reason is one that will be re-filed rather than found.</p>
+ */
 function fences(text) {
   const out = [];
-  const re = /```([a-zA-Z]*)\n([\s\S]*?)```/g;
+  const re = /```([a-zA-Z]*)\r?\n([\s\S]*?)```/g;
   let m;
   while ((m = re.exec(text)) !== null) {
     out.push({ lang: m[1].toLowerCase(), body: m[2], index: m.index });

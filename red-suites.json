@@ -1,14 +1,5 @@
 {
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
-  "exceptions": [
-    {
-      "suite": "conformance",
-      "test": "SH499 conformance: the published examples, executed › 'the discovery calls a page promises answer immediately actually do' and 'SH499: what was not executed, and what is held, are named rather than dropped' — two assertions, one cause",
-      "task": "SH674",
-      "declared": "2026-08-12",
-      "expires": "2026-08-26",
-      "why": "The four P2 discovery GETs (/agent/manifest, /agent/context, /agent/blueprints, GET /api/v2/post-type) are no longer printed as runnable requests on any docs-shio page, so the suite reports them as 'no longer published' and drops to 5 executable requests of 10, tripping its own no-op floor. The red is a documentation regression in a different repository (vigletdocs at d7735f3, clean tree) and not a defect in this source tree: docs-vocabulary still resolves every one of those names here, and each endpoint answers 200 when called directly. Safe to commit over from this repo because no change here can turn it green; SH674 carries the page repair and the COVERAGE row that claimed the surface was documented."
-    }
-  ]
+  "exceptions": []
 }

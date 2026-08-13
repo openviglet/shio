@@ -884,29 +884,6 @@ altitudes, which is why they are one block rather than a footnote on the last on
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
 
-### XXI.10 No page publishes the four discovery calls as a runnable request (SH674)
-
-`docs-examples.conformance.mjs` does what no vocabulary check can: it issues the
-requests the end-user pages print, against a running instance. Four are named rather
-than inferred — `GET /api/v2/agent/manifest`, `/agent/context`, `/agent/blueprints` and
-`GET /api/v2/post-type` — because they are the discovery surface, P2's *one call
-replaces a session*, and a page showing them promises a reader they answer immediately.
-
-Run today against `docs-shio` at `d7735f3`, all four report *"no longer published — this
-list has outlived its page"*, and the suite falls to 5 executable requests out of 10,
-tripping its own no-op floor. Nothing 500s and nothing 404s: the calls are **absent from
-every page**. The gate is red for a documentation regression, which is the gate working.
-
-Two things this is not. Not a stale list — `docs-vocabulary` still resolves those names
-against this source tree, so the endpoints exist and answer. And not one page's edit:
-four requests spread across the hubs went at once, which points at a restructure that
-moved prose and left the request blocks behind.
-
-The repair is a page decision and belongs with the COVERAGE row claiming the discovery
-surface is documented. Worth carrying into it: a row can be ✅ while the request it
-promises is gone, because the matrix records that a page exists and this suite records
-that it still works — the same two-altitudes split Block U was opened for.
-
 ### XXI.3 The docs vocabulary gate reads MCP tool names from examples only, not from the page's tool table (SH697)
 
 `docs-vocabulary.conformance.mjs` asserts that every documented MCP tool is one the

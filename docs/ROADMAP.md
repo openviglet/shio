@@ -55,7 +55,6 @@
 
 ## Block U — Documentation the matrix still names
 
-- 📋 **SH674** (deps: SH499 ✅) **No end-user page publishes the four discovery calls as a runnable request any more** — The suite that executes the published examples finds none of the four P2 discovery GETs on any page, so the promise the product is sold on is the one a reader cannot copy. → §XXI.10
 - 📋 **SH697** (deps: —) **The docs vocabulary gate reads MCP tool names from examples only, not from the page's tool table** — Injecting `shio_nonexistent` into mcp.md's table leaves the check green, which is how two tools the product rejected stayed published while the one it shipped never arrived. → §XXI.3
 
 ## Non-goals (do NOT add as tasks)

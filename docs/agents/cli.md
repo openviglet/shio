@@ -2388,10 +2388,37 @@ in two halves that answer different questions at very different prices:
   match counted those and came to 50. Proved by widening the matcher and watching both the tally and
   the guard fail; the guard's first draft named one of that table's rows and **passed while a
   different one leaked**, which is this file's own defect one level down.
-- **`docs-examples.conformance.mjs` — the requests.** The 15 read-only documented requests are
-  issued against a live instance. It catches the three things a name check structurally cannot: an
+- **`docs-examples.conformance.mjs` — the requests.** The read-only documented requests are
+  issued against a live instance — 16 of 33 as of SH674, the rest being mutating and declared
+  unexecuted rather than dropped. It catches the three things a name check structurally cannot: an
   endpoint that is mapped and 500s, one whose response lost the key the page shows, and one a page
   presents as open that now needs a credential it does not mention.
+
+**Seven of the thirty-three pages were invisible to all of it, and the absence read as news about
+the other repository (SH674).** `fences()` matched ` ```<lang>\n `. On a **CRLF** file the `\r` sits
+where that pattern wants the newline, so the regex matched nothing at all — not one block, on the
+whole page. `agent-surface.md` and `content-modeling.md` are two of the seven, and between them they
+publish `GET /api/v2/agent/manifest`, `GET /api/v2/agent/context` and `GET /api/v2/post-type`: three
+of the four calls `MUST_ANSWER_200` names as the discovery surface. The fix is `\r?`. Fixing it took
+the corpus from **55 executable blocks to 82** and the requests from 11 to 24.
+
+The reason it cost a task is the shape of the failure, and it is worth keeping: **an extractor that
+reads nothing reports no subjects, and a checker handed no subjects passes.** So the gate did not say
+"this page is unreadable" — it said the calls were *"no longer published — this list has outlived its
+page"*, which is a sentence about `docs-shio`. That sentence was believed twice: SH674 was filed
+against the pages, and `red-suites.json` carried an exception recording that **no change in this tree
+could turn the suite green**. Both were wrong in the same direction, and the pages had never stopped
+publishing anything.
+
+The tell existed and nobody had cause to read it: `blueprints.md` came back on its own when SH682's
+sweep edited it, because the editor wrote LF — visible only as the executable count moving 5 → 7 for
+no stated reason. **A defect that repairs itself when a file is touched for something else is one
+that gets re-filed rather than found**, which is why the assertion is a fixture pair in
+`cli/test/docs-crlf-fences.test.mjs` rather than anything reading the real corpus: the published
+pages will be normalised to LF one file at a time, silently, and a check measuring them would go
+quiet without being fixed. It asserts a CRLF page and an identical LF page extract to the same
+subjects — **and** that the LF side is non-empty, because `deepEqual([], [])` is green and that is
+precisely the bug.
 
 **Both live in `cli/conformance/` because their input is another repository.** `docs-shio` is not a
 checkout `cli/test/` can see, so a gate there would have to *skip* when it is absent — the failure
