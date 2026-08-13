@@ -236,31 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.16 Nothing stops a fetch-type change from breaking authorization (SH650)
-
-SH225 set out to make a permission decision independent of `spring.jpa.open-in-view` and
-found the premise already false: `ShFolder.parentFolder` is a plain `@ManyToOne`, and
-JPA's default there is EAGER, so the ancestor chain arrived with the `findById`. A test
-written to catch the predicted `LazyInitializationException` — `open-in-view` off, three
-levels deep — passed on the unfixed code.
-
-The dependency was real one level down. The check worked *because of an entity mapping's
-default fetch type*. Marking that association `LAZY` is the ordinary JPA hygiene move,
-someone will make it for reasons unrelated to permissions, and before SH225 it would
-have broken **authorization** — as a 500 rather than a denial, which is neither an allow
-nor a deny and cannot be handled as either.
-
-SH225 removed the dependency by walking the chain by id, and could not stop the next
-edit putting it back, because the property is a *shape*: the walk must not navigate an
-association. `ShContentAclEntryPointTest` asserts the annotation half by reflection;
-this half has no fixture that can express it, since any behavioural test is green on
-both sides — which is why that one was withdrawn rather than kept as reassurance.
-
-So the deliverable is the instrument, per SH338: a lint failing when the chain walk
-reaches for the entity graph. The narrow form scans that one class; the form worth
-having asks which security-relevant reads navigate associations at all, which overlaps
-the SH22 join hazard the same walk used to carry.
-
 ### XII.17 A concurrent create leaves two posts on one URL (SH719)
 
 Measured by SH713's concurrency suite, at the smallest concurrency there is: two MCP

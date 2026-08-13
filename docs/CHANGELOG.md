@@ -539,6 +539,7 @@
 - **SH226** — One resolver, ShLiveObject.of, is the only spelling for resolving an object id, and ShLiveObjectInvariantTest fails the build on any production read that skips it - which on its first run found two unguarded call sites, one of them a live defect: a section could be created inside a trashed folder and then appear in no listing.
 - **SH727** — An absent system File type is an empty listing rather than a refusal, and find is not reached at all — while a type the caller did name still refuses.
 - **SH648** — A site delete now trashes and `site.restore`/`/untrash` bring it back with its content; a trashed site keeps its unique name, and the create that meets it is told where the name went.
+- **SH650** — ShAclAssociationWalkLintTest fails the build when a security-relevant read navigates an association, with the banned getters derived from the entity model rather than listed; the standing count is zero.
 
 ## Block O — The human half (the console the curator uses, SH74)
 

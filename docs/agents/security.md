@@ -467,8 +467,36 @@ allow nor a deny, and not handleable as either. Hence the rule:
 
 > **A permission decision may not depend on a fetch strategy.** Resolve the chain by id.
 
-Nothing enforces that yet, because the property is a *shape* and no fixture can express it
-— any behavioural test is green on both sides. That instrument is SH650.
+**`ShAclAssociationWalkLintTest` enforces it (SH650).** The property is a *shape* and no fixture
+can express it — any behavioural test is green on both sides of the line — so the deliverable was
+the instrument (SH338), and it is a source scan rather than a runtime check for exactly that reason.
+It asks two questions:
+
+- **The narrow one, on `ShContentAclService`:** the chain walk may not call any association getter.
+  The failure message names the line and the two id projections that exist for this
+  (`findParentIdOf`, `findFolderIdOf`).
+- **The wider one the design asked for:** *which security-relevant reads navigate associations at
+  all* — over every main source that references `AccessDeniedException`, `ShAclPermission` or
+  `GrantedAuthority`, derived from what the file does rather than from where it lives, so a check
+  that moves package cannot leave a path-keyed list quietly scanning nothing.
+
+**The banned getters are derived from the entity model**, not written down: every
+`@ManyToOne`/`@OneToMany`/`@OneToOne`/`@ManyToMany` field as the accessor Lombok generates for it
+(18 on the last run; the number prints, so it is never a comment that has started rotting). A list
+in the test would be a second copy of the mapping, and the failure it would miss is precisely the
+one this exists for — an association added later, navigated by an edit nobody connected to
+authorization.
+
+**The answer to the wider question is currently zero, and it was measured rather than assumed.** The
+first draft of the declared list guessed two entries — the principal walk in `ShAuthorityResolver`
+and `ShCustomUserDetails` — and the run said none: those read `role.getName()` on an already-loaded
+row, which is a property and not a navigation. The only two textual hits in the whole population are
+the *prose* in `ShContentAclService` explaining what SH225 removed, stripped by `ShSourceText`
+(SH613) — SH206's defect avoided by construction rather than by luck. So the list is empty and it is
+a **declared list rather than a ceiling**: a ceiling lets one task pay the debt and the next spend it.
+
+The SH22 half of the same walk — navigating past the `id` of an `ShObject`-subclass association in
+JPQL — is `ShTenantJoinLintTest`'s, and is not duplicated here.
 
 The half that does have an assertion is the annotation. `requireRead`/`requireWrite` reached
 `canRead`/`canWrite` by **self-invocation**, which never crosses the Spring proxy, so the
