@@ -219,6 +219,16 @@ const DEBT = [
   // `ci-gates.test.mjs` asserts what makes it count — that CI passes `--strict` and that the script
   // acts on it — which is instance-free, in a tree this reader already walks, and is the boundary
   // the defect actually crossed. An unread assertion and an unrun one are not the same gap.
+  //
+  // EARNS, and it is the one entry here whose boundary already fires. SH699's defect is caught by
+  // `pnpm lint` exactly — eslint's `react-hooks/set-state-in-effect` is the assertion, at the
+  // boundary the defect crossed, and CI went red on it before any human opened the page. What a
+  // rule cannot do is name a task, so this reader cannot find it and the loop stays open from the
+  // ledger's end. That is a real gap and a narrow one: it is not that nothing checks the console's
+  // effects, it is that the thing that does speaks a different vocabulary of ids. SH701 is where it
+  // closes — the instrument that reads `eslint-suppressions.json` is a suite file this reader
+  // walks, and it can name this id beside the count it prints.
+  "SH699",
 ].sort(byId);
 
 /**

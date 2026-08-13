@@ -44,7 +44,7 @@ export default function MarketplaceListPage() {
   const { resetBreadcrumb } = useBreadcrumb()
 
   const [catalogue, setCatalogue] = useState<ShMarketplaceCatalogue | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [term, setTerm] = useState("")
   const [category, setCategory] = useState<string | null>(null)
   const [selected, setSelected] = useState<ShMarketplaceItem | null>(null)
@@ -52,19 +52,31 @@ export default function MarketplaceListPage() {
   const [plan, setPlan] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  /**
+   * The read. It touches no state before the request starts, which is what lets the mount effect
+   * call it (SH699): `loading` already begins `true`, so raising it there would be the cascading
+   * render `react-hooks/set-state-in-effect` is about.
+   */
+  const fetchCatalogue = useCallback(
+    () =>
+      service
+        .catalogue()
+        .then(setCatalogue)
+        .catch(() => setCatalogue(null))
+        .finally(() => setLoading(false)),
+    [],
+  )
+
+  /** The curator asked — refresh, install, uninstall — so the spinner is a response to them. */
   const load = useCallback(() => {
     setLoading(true)
-    service
-      .catalogue()
-      .then(setCatalogue)
-      .catch(() => setCatalogue(null))
-      .finally(() => setLoading(false))
-  }, [])
+    void fetchCatalogue()
+  }, [fetchCatalogue])
 
   useEffect(() => {
     resetBreadcrumb()
-    load()
-  }, [resetBreadcrumb, load])
+    void fetchCatalogue()
+  }, [resetBreadcrumb, fetchCatalogue])
 
   const categories = useMemo(() => {
     const found = new Set<string>()

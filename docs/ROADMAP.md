@@ -37,6 +37,7 @@
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
 - 💭 **SH691** (deps: SH243 ✅) **The copy's title counter is still trash-blind, so a restore leaves two rows a curator cannot tell apart** — ShObjectWriteService.java:364 reads live rows only, so a clone retakes "Home (2)" while a trashed one holds it — the symptom SH202 says is the one they see. → §XVI.74
+- 📋 **SH701** (deps: —) **The lint baseline absorbs fifteen violations with no ledger, no count and no expiry** — eslint-suppressions.json holds 15 set-state-in-effect entries over 13 files, and nothing prints the number, dates it, or fails when a regenerate quietly grows it. → §XVI.77
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
@@ -54,6 +55,7 @@
 ## Block U — Documentation the matrix still names
 
 - 📋 **SH698** (deps: —) **`fixture-traits.test.mjs` fails at file level about one run in five, with every assertion in it green** — Caught once in five `pnpm test` runs: the file reports `test failed` and names no assertion, 951 ms against 209 ms alone, so the gate is red for something outside the tests. → §XXI.11
+- 📋 **SH700** (deps: —) **`pnpm conformance:docs` is red on ten checks against the published documentation** — The docs-shio checkout states Spring Boot 4.0.4 where the pom declares 4.1.0 and thirteen MCP tools where the server registers 12, and SH653's summary sentence was reworded past its own reader. → §XXI.12
 
 ## Non-goals (do NOT add as tasks)
 

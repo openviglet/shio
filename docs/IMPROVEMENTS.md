@@ -657,6 +657,32 @@ leave the counter and let the *restore* refuse a title collision the way it now 
 a URL one. The second matches SH243's shape and costs a refusal on a name nobody
 addresses by.
 
+### XVI.77 The lint baseline is a debt nothing counts (SH701)
+
+SH665 adopted the `react-hooks` compiler rules against an existing console by writing
+`shio-react/eslint-suppressions.json` — a baseline. That was the right call: the
+alternative was 28 files of unrelated churn in the commit that fixed the config. What it
+left behind is a debt with none of the properties this project already requires of a
+debt.
+
+It holds **15 `set-state-in-effect` violations across 13 files** (plus 14
+`react-refresh/only-export-components`, 2 `static-components`, and two singletons).
+Nothing prints those numbers, nothing dates them, and nothing fails when the file grows.
+SH699 is the evidence that the shape matters: a page written after the baseline hit the
+identical defect, and it was CI that found it rather than anybody reading the
+suppression list — while thirteen older instances of the same defect sat green.
+
+The instrument already exists one directory over. `cli/test/assertion-debt.test.mjs`
+solved this exact shape for SH527 and stated why: hold a **named list**, not a ceiling,
+because a ceiling lets one task pay the debt and the next task spend it. It prints both
+counts on every run, so the number is visible without anybody choosing to look.
+
+So the deliverable is the instrument first, per SH322: a test that reads
+`eslint-suppressions.json`, asserts its contents against a named list, and prints the
+totals. Then the open question it makes answerable — whether the 15 get worked off, or
+an expiry date, or a recorded decision that this shape is acceptable in a page that
+loads once.
+
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
@@ -855,3 +881,29 @@ one has a name at all.
 What would close it: make the failure legible before making it rare. Bind to port 0 if
 it does not already, await `close`, and fail with the reason rather than `'test
 failed'`.
+
+### XXI.12 The published docs drifted off the product, and the gate that says so is red (SH700)
+
+`pnpm conformance:docs` fails 10 of 19 in CI. Its input is a *different* repository —
+`vigletdocs.github.io/docs-shio`, read through `SHIO_DOCS_DIR` — so nothing in this
+worktree can turn it green, and that is the point of the check rather than an excuse:
+the published page is what a reader sets an environment up against.
+
+What the run names, each with a file:
+
+- **SH628, the stack.** `developer-guide.md:19` states Spring Boot 4.0.4; the pom declares
+  4.1.0. Three siblings fail with it — a stated Node version, a retired dependency still
+  presented as part of the stack, and a licence this repository does not carry.
+- **SH697, the tool count.** `architecture-overview.md` says "13 tools", `mcp.md` and
+  `token-economy.md` say "thirteen"; the server registers 12. SH697 shipped the check that
+  derives that number, and the pages it points at were never corrected.
+- **SH653, the coverage summary.** The reader matches that sentence *by shape*, and it has
+  been reworded, so it now matches nothing — which it reports, correctly: a reader that
+  silently matches nothing is how the typed number drifted before.
+- **SH499/SH652.** A documented MCP tool the server does not register, a `shio.*` property
+  nothing binds, and an audit rule `cli.md` does not define.
+
+Two of these are one defect wearing different numbers: a count typed into prose in a
+repository no build watches. The fix is the docs edit; what the task must decide is
+whether those figures should be typed at all, or generated the way the tool table now
+is.
