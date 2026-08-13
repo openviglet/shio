@@ -1,5 +1,14 @@
 {
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
-  "exceptions": []
+  "exceptions": [
+    {
+      "suite": "conformance",
+      "test": "docs-vocabulary / docs-stack / docs-coverage — 10 of 19 failing in CI",
+      "task": "SH700",
+      "declared": "2026-08-13",
+      "expires": "2026-08-20",
+      "why": "Red in CI only. The same command against the same SHIO_DOCS_DIR passes 19 of 19 here: vigletdocs.github.io is 13 commits ahead of origin/main and 0 behind, unpushed since 2026-08-11, and those commits are the named fixes for every failure reported (SH697's tool count, SH653's summary sentence, SH628's stack, SH652's audit rules). CI reads an older documentation repository, not a stale product, so nothing in this repo is wrong and committing over it changes nothing about what the gate will say once the push lands. The owner is doing the push; SH700 holds the guard that makes a red run say unpushed rather than wrong."
+    }
+  ]
 }

@@ -55,7 +55,7 @@
 ## Block U — Documentation the matrix still names
 
 - 📋 **SH698** (deps: —) **`fixture-traits.test.mjs` fails at file level about one run in five, with every assertion in it green** — Caught once in five `pnpm test` runs: the file reports `test failed` and names no assertion, 951 ms against 209 ms alone, so the gate is red for something outside the tests. → §XXI.11
-- 📋 **SH700** (deps: —) **`pnpm conformance:docs` is red on ten checks against the published documentation** — The docs-shio checkout states Spring Boot 4.0.4 where the pom declares 4.1.0 and thirteen MCP tools where the server registers 12, and SH653's summary sentence was reworded past its own reader. → §XXI.12
+- 📋 **SH700** (deps: —) **`pnpm conformance:docs` is red on ten checks against the published documentation** — The docs repo is 13 commits ahead of origin and every failing check is fixed in them, so the gate reads a published state that stopped matching the local one on 2026-08-11. → §XXI.12
 
 ## Non-goals (do NOT add as tasks)
 
