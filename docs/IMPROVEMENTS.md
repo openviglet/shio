@@ -236,28 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.18 The instrument a refusal names cannot see the case (SH720)
-
-P6 says an error carries something to act on, and this one does: two posts at one URL is
-refused with *"Give all but one of them a different URL … `GET /api/v2/agent/verify`
-reports this as `duplicate-url` with both addresses."* Measured against a running
-instance, that last sentence is false in the case that produces it. `duplicateUrls`
-iterates the scan's **published** rows, so a pair of drafts sharing a URL — precisely
-what SH719's race leaves behind — comes back as `report ok`.
-
-So the sequence an agent is instructed to follow ends in a wrong conclusion: refused,
-sent to an instrument, told nothing is wrong. Its next move is to disbelieve one of the
-two answers, and neither choice is safe. A refusal that names an instrument which cannot
-answer is worse than one that names none, because it costs a call to find out.
-
-Two directions, and the choice is real rather than an oversight. Either the check widens
-to drafts — an unpublished duplicate harms no visitor, and a report full of findings
-about drafts somebody is still writing is the noise that gets a check switched off — or
-the refusal stops promising it.
-
-The narrow half is free either way: the refusal already lists both `id:` addresses under
-`Allowed:`, which is the thing the agent actually needs and the sentence buries.
-
 ### XII.19 A write nobody can make conditional (SH721)
 
 SH335 added the console `PATCH` for one stated reason: a client-side read-modify-write

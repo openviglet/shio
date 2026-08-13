@@ -600,14 +600,32 @@ public class ShAgentVerifyService {
         Set<String> allIds = new HashSet<>();
         Set<String> publishedIds = new HashSet<>();
         Map<String, Map<String, List<String>>> publishedByUrl = new HashMap<>();
+        Map<String, Map<String, List<String>>> claimantsByUrl = new HashMap<>();
         Map<String, String> publishedLocales = new HashMap<>();
         for (ShSite each : sites) {
             siteById.put(each.getId(), each);
             Map<String, List<String>> byUrl = new HashMap<>();
+            Map<String, List<String>> claimants = new HashMap<>();
             for (Object[] row : shPostUnifiedRepository.findUrlIndexBySiteId(each.getId(), BOTH_STATES)) {
                 String id = (String) row[0];
                 String furl = (String) row[1];
                 allIds.add(id);
+                // SH720 — distinct POST IDS per url, over both states. A post's DRAFT and PUBLISHED
+                // rows share a furl by design (SH81), so the id is what makes two rows of one post
+                // one claimant; keying by row is what forced the old check to look at published
+                // rows alone, and what made it blind to the pair a race leaves.
+                if (!isBlank(furl)) {
+                    List<String> ids = claimants.computeIfAbsent(normalized(furl),
+                            ignored -> new ArrayList<>());
+                    if (!ids.contains(id)) {
+                        ids.add(id);
+                    }
+                    // Locale is read for every claimant now, not only published ones: a finding
+                    // about a draft pair has the same reason to say "these are two translations".
+                    if (!isBlank((String) row[3])) {
+                        publishedLocales.putIfAbsent(id, (String) row[3]);
+                    }
+                }
                 if (row[2] == ShPostState.PUBLISHED) {
                     publishedIds.add(id);
                     if (!isBlank(furl)) {
@@ -619,6 +637,7 @@ public class ShAgentVerifyService {
                 }
             }
             publishedByUrl.put(each.getId(), byUrl);
+            claimantsByUrl.put(each.getId(), claimants);
         }
 
         Map<String, ShPostUnified> draftPreferred = new LinkedHashMap<>();
@@ -640,7 +659,7 @@ public class ShAgentVerifyService {
                 .sorted(Comparator.comparing(ShPostUnified::getId))
                 .toList();
         return new Scan(siteById, posts, published, allIds, publishedIds, publishedByUrl,
-                publishedLocales,
+                claimantsByUrl, publishedLocales,
                 folders(siteById.keySet(), scope.folderIds()),
                 shFolderRepository.findParentFolderIds(),
                 shPostUnifiedRepository.findFolderIdsWithPosts());
@@ -1583,9 +1602,42 @@ public class ShAgentVerifyService {
     }
 
     /**
-     * Two published posts claiming one URL. Only published rows count: a draft sharing a
-     * URL with the live page it will replace is the normal editing state, and flagging it
-     * would fire on every single edit.
+     * Two <b>posts</b> claiming one URL, in whatever state (SH720).
+     *
+     * <h2>The promise this had to make true</h2>
+     *
+     * <p>The {@code duplicate-url} refusal an agent meets on a contested address ends with
+     * <i>"{@code GET /api/v2/agent/verify} reports this as {@code duplicate-url} with both
+     * addresses."</i> Measured against a running instance, that sentence was <b>false in the case
+     * that produces it</b>: this check iterated published rows only, so the pair of drafts SH719's
+     * race left behind came back as {@code report ok}. The agent's instructed sequence therefore
+     * ended in a wrong conclusion — refused, sent to an instrument, told nothing is wrong — and its
+     * next move is to disbelieve one of two answers, neither choice safe. A refusal naming an
+     * instrument that cannot answer is worse than one naming none, because it costs a call to find
+     * out.</p>
+     *
+     * <h2>Why widening is not the noise it looked like</h2>
+     *
+     * <p>The old restriction was not caution about work-in-progress, it was structural, and its
+     * comment said so: <i>"a draft sharing a URL with the live page it will replace is the normal
+     * editing state, and flagging it would fire on every single edit."</i> True — of an index keyed
+     * by <b>row</b>. A post's DRAFT and PUBLISHED rows share a furl by design (SH81), so counting
+     * rows makes every ordinary published page its own duplicate.</p>
+     *
+     * <p>Counting <b>distinct post ids</b> asks the question that was always meant: two rows of one
+     * post are one claimant. Nothing about an ordinary edit fires, and three real cases that were
+     * invisible now do — draft vs draft, draft vs another post's published row, and the published
+     * pair that was already caught. It also inherits SH719's key exactly: that index is unique over
+     * {@code (site, state, locale, furl)}, so a state pair of one post is legal there for the same
+     * reason it is one claimant here.</p>
+     *
+     * <p>Two further arguments now hold that did not before. SH719 makes this state
+     * <b>unreachable by ordinary work</b> — the database refuses the second insert — so what remains
+     * to report is legacy damage rather than somebody's unfinished draft, and the "a report full of
+     * findings gets the check switched off" objection loses its population. And an unpublished
+     * duplicate is not harmless just because no visitor sees it: {@code ShAddressResolver} refuses
+     * {@code post:<site>/<furl>} whatever the state, so <b>no write can name either post</b>. That
+     * is the agent's problem, and this is the agent's instrument.</p>
      *
      * <p>Asked <b>per subject against the site's index</b> rather than by grouping the loaded
      * rows, so a scoped run still finds the duplicate whose twin is outside its scope — the
@@ -1593,11 +1645,22 @@ public class ShAgentVerifyService {
      * group is a subject, so the output is the same one-finding-per-post it always was.</p>
      */
     private void duplicateUrls(String check, Scan scan, List<Finding> findings) {
-        for (ShPostUnified post : scan.published()) {
-            if (post.getShSite() == null || isBlank(post.getFurl())) {
+        // One subject per (post, url) pair rather than per row or per post, and a test found why.
+        // A post's two state rows usually share a furl and collapse to one pair — so an ordinary
+        // published page is one subject, which is what keeps this from firing on every edit. But
+        // they need not: the fixture that pins this check moves only the PUBLISHED row onto another
+        // post's address, exactly as an import or a pre-SH134 move does. Keyed by post, that row's
+        // URL is invisible (the draft-preferred row still carries the old one) and the second half
+        // of the collision goes unreported.
+        Set<String> reported = new HashSet<>();
+        List<ShPostUnified> subjects = new ArrayList<>(scan.posts());
+        subjects.addAll(scan.published());
+        for (ShPostUnified post : subjects) {
+            if (post.getShSite() == null || isBlank(post.getFurl())
+                    || !reported.add(post.getId() + " " + normalized(post.getFurl()))) {
                 continue;
             }
-            List<String> claiming = scan.publishedByUrl()
+            List<String> claiming = scan.claimantsByUrl()
                     .getOrDefault(post.getShSite().getId(), Map.of())
                     .getOrDefault(normalized(post.getFurl()), List.of());
             if (claiming.size() <= 1) {
@@ -1606,10 +1669,20 @@ public class ShAgentVerifyService {
             String others = claiming.stream().sorted()
                     .reduce((first, second) -> first + ", " + second).orElse("");
             String locales = distinctLocales(claiming, scan);
-            findings.add(Finding.error(check, "duplicate-url", address(post), null,
-                    "Published URL '" + post.getFurl() + "' is claimed by "
+            // Whether a visitor can reach the collision decides which harm the sentence names, and
+            // the published wording is kept byte-identical (SH298): an instance whose duplicates
+            // were already reported sees the same finding it saw yesterday.
+            boolean live = claiming.stream().allMatch(id -> scan.publishedIds().contains(id));
+            String detail = live
+                    ? "Published URL '" + post.getFurl() + "' is claimed by "
                             + claiming.size() + " posts (" + others + ") — which one a "
                             + "visitor gets is undefined."
+                    : "URL '" + post.getFurl() + "' is claimed by " + claiming.size()
+                            + " posts (" + others + "), not all of them published — so no visitor "
+                            + "sees the collision and no write can name either post: an SH79 "
+                            + "address is post:<site>/<furl> and carries no state.";
+            findings.add(Finding.error(check, "duplicate-url", address(post), null,
+                    detail
                             + (locales == null ? ""
                                     : " They are different translations (" + locales + "), which "
                                     + "does not make the URL free: an SH79 address carries no "
@@ -2841,6 +2914,9 @@ public class ShAgentVerifyService {
      * almost nothing next to a full read pass.</p>
      *
      * @param publishedByUrl siteId → normalized url → the published post ids claiming it
+     * @param claimantsByUrl siteId → normalized url → every distinct post id claiming it, in any
+     *                       state (SH720). Two rows of one post are one claimant, which is what
+     *                       lets the duplicate check see a draft pair without firing on every edit
      * @param folderParents  every folder id that is some folder's parent
      * @param foldersWithPosts every folder id holding at least one post
      */
@@ -2848,6 +2924,7 @@ public class ShAgentVerifyService {
                         List<ShPostUnified> published, Set<String> allIds,
                         Set<String> publishedIds,
                         Map<String, Map<String, List<String>>> publishedByUrl,
+                        Map<String, Map<String, List<String>>> claimantsByUrl,
                         Map<String, String> publishedLocales,
                         List<Scanned> folders, Set<String> folderParents,
                         Set<String> foldersWithPosts) {

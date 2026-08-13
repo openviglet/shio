@@ -287,37 +287,45 @@ describe("SH713: two agents and a curator, all writing at once", () => {
       + `the address is dead anyway, which is the worst of both.\n${legible(read)}`);
   });
 
-  // SKIPPED BY SH719, and the reason is worth more than the test was.
+  // REWRITTEN BY SH720, and what it no longer asserts is the point.
   //
-  // This asserts that `verify`'s duplicate check scans PUBLISHED rows only, so the instrument the
-  // `duplicate-url` refusal sends an agent to answers `report ok` for the draft duplicates a race
-  // leaves behind. That gap is real and is still open as SH720 — but its fixture was
-  // `raceForADuplicate`, and SH719 made racing incapable of producing a duplicate. The line above
-  // (`claiming.length === 2`) can no longer be satisfied by any sequence of calls this suite can
-  // make over HTTP.
+  // It used to pin the gap: `verify`'s duplicate check scanned PUBLISHED rows only, so the drafts a
+  // race left behind came back `report ok` — the agent refused, sent to an instrument, and told
+  // nothing was wrong. SH720 widened the check to count distinct post ids across both states, so
+  // that case is now reported.
   //
-  // Skipped rather than deleted or quietly weakened: the rows SH720 is about still exist on any
-  // instance that met SH719 before it was fixed — `ShPostUrlKeyBackfillRunner` leaves a losing row
-  // un-keyed rather than refusing to start — so the check is as narrow as it ever was. What is gone
-  // is this suite's ability to CREATE one. SH720 owns rebuilding the fixture from that legacy state
-  // and turning this back on; a skip is visible and named, where a weakened assertion is not.
-  test.skip("SH720: the refusal names verify, and verify cannot see the drafts that caused it", async () => {
-    const { url, claiming } = await raceForADuplicate("unseen");
-    assert.equal(claiming.length, 2, "SH713/SH720: the fixture needs the duplicate SH719 produces.");
+  // The draft-pair fixture itself moved OUT of this suite, and had to: SH719 made a duplicate
+  // unreachable through any sequence of calls a client can make, so the only way to build one is a
+  // bulk row update — which is `ShAgentVerifyTest.twoDraftsOnOneUrlAreReportedToo`, where the state a
+  // pre-SH719 instance holds can actually be constructed. Those rows still exist on such an instance
+  // (`ShPostUrlKeyBackfillRunner` leaves a loser un-keyed rather than refusing to start), which is
+  // why the check keeps earning its place even though nothing new can produce the input.
+  //
+  // What is left here is the half only a live instance can answer: that the sequence the refusal
+  // INSTRUCTS an agent to follow now terminates in a right conclusion instead of a contradiction.
+  test("SH720: the sequence the refusal sends an agent through ends somewhere true", async () => {
+    const { url, pair } = await raceForADuplicate("unseen");
 
-    const refusal = legible(await agentA.call("shio_read", { address: `post:${site}${url}` }));
-    assert.match(refusal, /agent\/verify/,
-      "SH713/SH720: the refusal stopped naming verify, which is one of the two ways SH720 can be "
-      + "closed — the other is the check widening. Either way this assertion is the one to update.");
+    const refusal = legible(pair.find(refused));
+    assert.match(refusal, /[Rr]etry/,
+      `SH713/SH720: the loser is told to retry — the instruction has to be one that works, and `
+      + `after SH719 it is: the address exists, so post.upsert updates the winner.\n${refusal}`);
+
+    // The retry the refusal names, actually taken. This is the whole loop closing.
+    const retried = await upsert(agentB, url, { title: "B retried", content: "B retried" });
+    assert.ok(!refused(retried),
+      `SH713/SH720: the retry the refusal instructed was itself refused, which leaves the agent `
+      + `with no move at all.\n${legible(retried)}`);
 
     const report = textOf(await agentA.call("shio_verify", { site }));
     assert.ok(!/duplicate-url/.test(report),
-      `SH713/SH720: verify now reports duplicate-url for DRAFT posts — SH720 shipped, and this `
-      + `test is the wrong way round.\n${report.slice(0, 400)}`);
+      `SH713/SH720: verify reports duplicate-url after a race that produced no duplicate. The `
+      + `check widened in SH720 and must not now see a collision where there is one post.`
+      + `\n${report.slice(0, 400)}`);
     assert.match(report, /^report ok/m,
-      `SH713/SH720: the instrument an agent was told to run answers "ok" while the site holds an `
-      + `address no write can name. Being refused and then told nothing is wrong is worse than `
-      + `either alone: the agent's next move is to disbelieve one of two answers.\n${report.slice(0, 300)}`);
+      `SH713/SH720: refused, told to retry, retried successfully — and the instrument still says `
+      + `something is wrong. Being refused and then told nothing is wrong was the old defect; this `
+      + `is its mirror, and costs the agent the same call to find out.\n${report.slice(0, 300)}`);
   });
 
   test("SH721: a curator's edit under a concurrent plan is accepted, then discarded in silence", async () => {

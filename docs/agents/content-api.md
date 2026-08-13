@@ -298,12 +298,25 @@ declared address is identity and must never be renumbered; what nothing had chos
 it meant putting a **second** post on it. Refusing is the other answer that leaves one post at one
 address, and it leaves the rule intact.
 
+*And `verify` can see the case its own refusal names (SH720).* The refusal ends *"`GET
+/api/v2/agent/verify` reports this as `duplicate-url` with both addresses"*, and that sentence was
+**false in the case that produces it**: the check iterated published rows only, so a draft pair came
+back `report ok` — refused, sent to an instrument, told nothing is wrong, with no safe way to
+believe both answers. The check now counts **distinct post ids** per URL across both states. That is
+what makes widening safe rather than noisy: a post's DRAFT and PUBLISHED rows share a furl by design
+(SH81), so counting *rows* makes every published page its own duplicate — which is why the old check
+looked at published rows alone, and the comment saying so was right about rows and wrong about the
+question. Counting ids fires on nothing ordinary and catches three cases that were invisible: draft
+vs draft, draft vs another post's published row, and the published pair already caught.
+
 **A friendly URL was not unique by construction, and the two readers differ (SH321).** Nothing in the
 schema prevented two posts in one site claiming one — `duplicate-url` is an SH99 *error* for exactly
 that — so the finder returns an **ordered `List`**. That reader is not obsolete: SH719 cannot act
 retroactively, and `ShPostUrlKeyBackfillRunner` deliberately leaves a losing row un-keyed rather
 than refusing to start, so an instance that met the defect keeps its duplicates and keeps needing
-them reported. A reader that must serve something takes the
+them reported. It is also why SH720's fixture lives in the **unit** suite: the conformance suite can
+no longer build a duplicate through any sequence of calls, so the state is reachable only by a bulk
+row update, which is exactly what a pre-SH719 instance holds. A reader that must serve something takes the
 first (`findByShSite_IdAndFurlAndState`'s default): consistently wrong beats alternating, SH278's
 rule on a second identity. **`ShAddressResolver` refuses** with a teaching **409** naming both posts
 by `id:`, because an address is what a *write* takes and picking the first is how an edit lands on

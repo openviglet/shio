@@ -384,6 +384,81 @@ class ShAgentVerifyTest {
                 .allSatisfy(finding -> assertThat(finding.severity()).isEqualTo(ShAgentReport.ERROR));
     }
 
+    /**
+     * SH720 — the case the instrument could not see, which is the case that produces the refusal.
+     *
+     * <h2>The promise that was false</h2>
+     *
+     * <p>{@code duplicate-url}'s refusal ends <i>"GET /api/v2/agent/verify reports this as
+     * duplicate-url with both addresses"</i>. This check iterated <b>published</b> rows only, so
+     * the pair of drafts SH719's race left behind came back {@code report ok}: the agent is
+     * refused, sent to an instrument, and told nothing is wrong. Its next move is to disbelieve
+     * one of two answers, and neither choice is safe.</p>
+     *
+     * <p>Two unpublished rows, so nothing here is visible to a visitor — which was the argument
+     * for not looking. It does not survive contact with the agent surface: {@code ShAddressResolver}
+     * refuses {@code post:<site>/<furl>} whatever the state, so <b>no write can name either post</b>,
+     * and this is the agent's instrument.</p>
+     */
+    @Test
+    void twoDraftsOnOneUrlAreReportedToo() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> run(
+                new Op(ShAgentBatchService.POST_UPSERT, post("/draft-dup-a"), postTypeName, base,
+                        data(Map.of("headline", "Draft Dup A"))),
+                new Op(ShAgentBatchService.POST_UPSERT, post("/draft-dup-b"), postTypeName, base,
+                        data(Map.of("headline", "Draft Dup B")))));
+        // Neither is published, and the collision is forced at the row level for the reason the
+        // test above records — and now for one more: SH719's unique index refuses it through any
+        // write, so a bulk update is the only way to reach the state a pre-SH719 instance holds.
+        tx.executeWithoutResult(status -> entityManager.createQuery(
+                        "update ShPostUnified p set p.furl = :furl "
+                                + "where p.furl = :old and p.state = 'DRAFT'")
+                .setParameter("furl", base + "/draft-dup-a")
+                .setParameter("old", base + "/draft-dup-b")
+                .executeUpdate());
+
+        // Filtered to this test's own URL: the class shares one site across methods, so the
+        // published pair above is still reported and an unfiltered count would make these two
+        // tests order-dependent on each other.
+        assertThat(findings("content", "duplicate-url").stream()
+                .filter(finding -> finding.address().contains("/draft-dup-a")).toList())
+                .as("""
+                        before SH720 this was an empty list, and the refusal that sent the agent \
+                        here said it would not be.""")
+                .hasSize(2)
+                .allSatisfy(finding -> {
+                    assertThat(finding.severity()).isEqualTo(ShAgentReport.ERROR);
+                    assertThat(finding.message())
+                            .as("the harm named is the one that applies: no visitor sees this, and "
+                                    + "no write can name either post")
+                            .contains("not all of them published")
+                            .contains("no write can name either post");
+                });
+    }
+
+    /**
+     * SH720 — and an ordinary published page is still not its own duplicate.
+     *
+     * <p>The old check looked at published rows alone <em>because</em> a post's DRAFT and PUBLISHED
+     * rows share a furl (SH81), so counting rows makes every published page a collision with
+     * itself. Counting distinct post <b>ids</b> is what makes widening safe, and this is that claim
+     * as an assertion rather than as a paragraph: without it, the widening above would fire on
+     * every edit in the instance and the check would be switched off within a day.</p>
+     */
+    @Test
+    void aPostsOwnDraftAndPublishedRowsAreNotADuplicate() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> run(
+                new Op(ShAgentBatchService.POST_UPSERT, post("/two-states"), postTypeName, base,
+                        data(Map.of("headline", "Two States"))),
+                new Op(ShAgentBatchService.POST_PUBLISH, post("/two-states"), null, null, null)));
+
+        assertThat(findings("content", "duplicate-url"))
+                .as("one post with two rows at one URL is one claimant, not two")
+                .noneSatisfy(finding -> assertThat(finding.address()).contains("/two-states"));
+    }
+
     // --- SH100: routes ---
 
     @Test
