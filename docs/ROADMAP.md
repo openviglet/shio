@@ -37,7 +37,6 @@
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
 - 💭 **SH691** (deps: SH243 ✅) **The copy's title counter is still trash-blind, so a restore leaves two rows a curator cannot tell apart** — ShObjectWriteService.java:364 reads live rows only, so a clone retakes "Home (2)" while a trashed one holds it — the symptom SH202 says is the one they see. → §XVI.74
-- 📋 **SH716** (deps: —) **Every post in a site's root folder renders a duplicate React key, and the console check fails on it** — page-header.tsx:43 keys the breadcrumb on item.label while post.edit.page.tsx pushes both the site name and the folder name, which are the same string for a root folder. → §XVI.81
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

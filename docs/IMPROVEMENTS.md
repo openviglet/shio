@@ -659,34 +659,6 @@ leave the counter and let the *restore* refuse a title collision the way it now 
 a URL one. The second matches SH243's shape and costs a refusal on a name nobody
 addresses by.
 
-### XVI.81 A breadcrumb keyed on a label that repeats by design (SH716)
-
-`pnpm console:check` fails one probe of nineteen, and has for at least three runs:
-
-    FAIL post-edit:File  /console/content/post/490bd18c-…
-      error: Encountered two children with the same key, `%s`.
-
-`page-header.tsx:43` renders the crumb list as `<React.Fragment key={item.label}>`.
-`post.edit.page.tsx:76-78` builds that list by pushing the **site name** and then the
-**folder name**. For a post in a site's **root** folder those are the same string — the
-root folder carries the site's name — so the key repeats on every such page. That is not
-an edge case: it is the default shape of a new site, and the fixture this instance ships
-is exactly it (site `teste`, root folder `teste`).
-
-The symptom React describes is the one that matters: two children under one key, so the
-reconciler may keep one component's state on the other's props. On a breadcrumb the
-damage is small; the defect is that a *label* was ever load-bearing. A crumb's identity
-is its position and its target, not the text a curator chose.
-
-So the fix is the key, not the labels: the `href` where there is one, position otherwise
-— a breadcrumb is a positional list that re-renders whole, so the index is honest here
-rather than the usual smell.
-
-Worth its own line rather than folding into SH703 because the evidence is different in
-kind: a red probe naming a file, not a lint report. And it is the only thing standing
-between `console:check` and 19 of 19, which is a gate that will otherwise be read as
-"known red".
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

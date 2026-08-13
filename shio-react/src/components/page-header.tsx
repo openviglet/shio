@@ -3,6 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { useCurrentUser } from "@/contexts/user.context"
 import { useDiscovery } from "@/hooks/use-discovery"
+import { crumbKey } from "@/lib/breadcrumb-key"
 import { IconChevronLeft } from "@tabler/icons-react"
 import React, { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -40,7 +41,10 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
             <Breadcrumb>
               <BreadcrumbList>
                 {items.map((item, index) => (
-                  <React.Fragment key={item.label}>
+                  // SH716 — keyed on where the crumb goes, not on what it says. A site and its
+                  // root folder carry the same name, so the label repeated on every post page in
+                  // one.
+                  <React.Fragment key={crumbKey(item, index)}>
                     {index > 0 && <BreadcrumbSeparator />}
                     <BreadcrumbItem>
                       {item.href ? <BreadcrumbLink asChild><NavLink to={item.href}>{item.label}</NavLink></BreadcrumbLink> : <BreadcrumbPage>{item.label}</BreadcrumbPage>}
