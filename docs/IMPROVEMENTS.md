@@ -922,30 +922,6 @@ it out of order.
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
 
-### XXIII.2 The read half, spoken over the wire against a seeded site (SH708)
-
-One conformance suite driving every read-side tool over `shio mcp`'s newline-delimited
-JSON-RPC, against a scratch site the suite seeds itself: `shio_context`, `shio_read`,
-`shio_find`, `shio_changes`, `shio_digest`, `shio_verify`, `shio_assets`,
-`shio_marketplace`.
-
-What a live call can be wrong about, and a MockMvc test cannot: the declared input
-schema an agent fills in from `tools/list` rather than from the handler's signature; the
-address forms — `post:<site>/<furl>`, the home page's bare `post:<site>/`, `folder:`,
-`site:`, `id:` — resolved against rows that exist rather than against a mock; a
-projection that reads fine on a two-post fixture and truncates on a real tree;
-`shio_changes` cursors that must survive a second call; ETag and conditional-read paths
-that need a real store to have a real version.
-
-Each tool gets its happy path, its empty result, and at least one case the fixture
-cannot fake — `shio_find` over content seeded to collide on the term, `shio_assets`
-against a real uploaded binary, `shio_verify` against a site with a deliberate finding
-in it, `shio_digest` called twice with nothing changed in between.
-
-The suite seeds and tears down through the same `scratchSite` helper the replication run
-uses, so a red run leaves the instance where it found it, and `keepsFixtures` still
-holds when someone needs to look.
-
 ### XXIII.3 The write half, where a guard that fails leaves a real row (SH709)
 
 `shio_write`, `shio_apply`, `shio_publish` and `shio_remember` are the four tools that

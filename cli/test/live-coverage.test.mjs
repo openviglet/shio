@@ -75,9 +75,19 @@ function batchOps() {
   return new Set([...found].map((m) => m[1]));
 }
 
-/** Tools reached through `mcp.call("…")` — the only way `mcp-stdio.mjs` speaks to the server. */
+/**
+ * Tools reached through a `call("…")` — `mcp.call` directly, or a suite's own thin wrapper round it.
+ *
+ * <p>The receiver is optional and that widening was <b>forced by the instrument refusing to be
+ * flattered</b>: SH708 drove all eight read tools through a local `call(name, args)` helper, and a
+ * regex keyed on `.call(` credited none of them — coverage still read 2 of 12 with the suite
+ * written and passing. Requiring the dot was over-tight, not strict.</p>
+ *
+ * <p>What it still requires is <b>call syntax with a literal name</b>. A mention in prose does not
+ * match, which is the distinction the whole file rests on and the next test proves is still true.</p>
+ */
 function toolsCalled() {
-  return new Set([...SOURCE.matchAll(/\.call\(\s*["'`]([a-z_]+)["'`]/g)].map((m) => m[1]));
+  return new Set([...SOURCE.matchAll(/\bcall\(\s*["'`]([a-z_]+)["'`]/g)].map((m) => m[1]));
 }
 
 /** Ops reached as `op: "…"` inside an ops array handed to the batch surface. */
@@ -120,12 +130,14 @@ function verbsCalled() {
  * where SH202, SH203 and SH243 all found defects.</p>
  */
 const UNEXERCISED = {
-  tools: [
-    "shio_apply", "shio_assets", "shio_changes", "shio_digest", "shio_find",
-    "shio_marketplace", "shio_publish", "shio_remember", "shio_verify", "shio_write",
-  ],
+  // SH708 covered the read half — `mcp-read.conformance.mjs` drives all eight over the wire against
+  // a site it seeds. What is left is exactly the write half, and that is the finding rather than a
+  // coincidence: nothing that CHANGES anything has ever been spoken over this transport.
+  tools: ["shio_apply", "shio_publish", "shio_remember", "shio_write"],
   ops: [
-    "folder.delete", "folder.move", "folder.restore", "folder.upsert",
+    // `folder.upsert` came off with SH708, whose fixture needs a folder. What remains is every op
+    // that REMOVES or MOVES something — the three places SH202, SH203 and SH243 found defects.
+    "folder.delete", "folder.move", "folder.restore",
     "post.delete", "post.move", "post.restore", "post.unpublish", "site.delete",
   ],
   verbs: [
@@ -179,9 +191,11 @@ test("SH707: exercised means called, not mentioned", () => {
     + "framed the request and read the answer; anything looser makes this instrument report "
     + "coverage that nobody wrote.");
 
-  assert.deepEqual([...called].filter((t) => mcpTools().has(t)).sort(), ["shio_context", "shio_read"],
-    "SH707: the live tier calls exactly two real tools, both reads. This is the headline finding "
-    + "and it is asserted rather than described, so the day it stops being true something says so.");
+  const writes = ["shio_apply", "shio_publish", "shio_remember", "shio_write"];
+  assert.deepEqual(writes.filter((t) => called.has(t)), [],
+    "SH707: a write tool has been spoken over the wire. That is good news and this list is now "
+    + "wrong — move it out of UNEXERCISED in the same commit. Until then the headline stands: the "
+    + "live tier reads and has never written, which SH708 left exactly as it found it.");
 });
 
 test("SH707: the populations are read from the product, not from this file", () => {

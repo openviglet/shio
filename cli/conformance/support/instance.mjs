@@ -344,3 +344,42 @@ export class ConsoleSession {
     return res.ok || res.status === 404;
   }
 }
+
+/**
+ * `POST /api/v2/agent/batch` — the write surface, as a client speaks it.
+ *
+ * <p>Not on `ShioAgentClient`: the CLI has no command that sends ops, so a suite that needs to
+ * seed content has to frame the request itself. Lived in `render.conformance.mjs` alone until
+ * SH708 needed the same thing, which is the point at which a private copy becomes the shape
+ * SH245 is about — four times the second copy of a shared verb was the careless one.</p>
+ *
+ * @param connection `{ baseUrl, user, password }`, as {@link connection} returns
+ * @param ops        the op array; `dryRun` is false, because a seed that did not happen is not one
+ * @returns the parsed body, or `{ status, ... }` when the call was refused — the teaching body
+ *          travels intact, because on this surface it is the useful half of a failure (SH80/P6)
+ */
+export async function batch({ baseUrl, user, password }, ops) {
+  const res = await fetch(`${baseUrl}/api/v2/agent/batch`, {
+    method: "POST",
+    headers: {
+      Authorization: basic(user, password),
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ dryRun: false, ops }),
+  });
+  const body = await res.text();
+  let parsed;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    parsed = { status: res.status, body };
+  }
+  return res.ok ? parsed : { status: res.status, ...parsed };
+}
+
+/** Whether a batch response reports anything that did not happen. */
+export function errorsIn(response) {
+  if (response?.status && response.status >= 400) return true;
+  return (response?.changes ?? []).some((row) => row.error || row.action === "ERROR");
+}

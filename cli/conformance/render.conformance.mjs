@@ -27,7 +27,7 @@ import { after, before, describe, test } from "node:test";
 
 import { ShioAdminClient } from "../src/admin-client.mjs";
 import { ShioAgentClient } from "../src/agent-client.mjs";
-import { ConsoleSession, basic, keepsFixtures, requireInstance, scratchSite } from "./support/instance.mjs";
+import { ConsoleSession, basic, batch, errorsIn, keepsFixtures, requireInstance, scratchSite } from "./support/instance.mjs";
 
 const LAYOUT = "SH448_LAYOUT";
 const NAV_REGION = "SH448_NAV";
@@ -341,34 +341,3 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
   });
 });
 
-/** POST /api/v2/agent/batch. Not on `ShioAgentClient` — the CLI has no command that sends ops. */
-async function batch({ baseUrl, user, password }, ops) {
-  const res = await fetch(`${baseUrl}/api/v2/agent/batch`, {
-    method: "POST",
-    headers: {
-      Authorization: basic(user, password),
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({ dryRun: false, ops }),
-  });
-  const body = await res.text();
-  let parsed;
-  try {
-    parsed = JSON.parse(body);
-  } catch {
-    parsed = { status: res.status, body };
-  }
-  if (!res.ok) {
-    // The teaching body is the useful half of a failure here (SH80/P6), so it travels intact
-    // into the assertion message rather than being collapsed to a status code.
-    return { status: res.status, ...parsed };
-  }
-  return parsed;
-}
-
-/** Whether a batch response reports anything that did not happen. */
-function errorsIn(response) {
-  if (response?.status && response.status >= 400) return true;
-  return (response?.changes ?? []).some((row) => row.error || row.action === "ERROR");
-}

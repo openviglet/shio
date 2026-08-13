@@ -2036,3 +2036,37 @@ Same walk, same names, slightly *less* heap. The names do not multiply — they 
 costs twice only where two sheets both define it. The concern was written into the task by the person
 who filed it (me, one round earlier) and did not survive being measured, which is the ordinary
 outcome of applying *measure before you fix* to a premise rather than to a defect.
+
+## The read half is spoken over the wire now (SH707, SH708)
+
+**SH707 is the count, and it exists because "write six suites" is unmeasurable without one.**
+`cli/test/live-coverage.test.mjs` joins three registries — the MCP tools, the CLI command directory
+and `ShAgentBatchService`'s op constants — against what `cli/conformance/` *calls*, and holds the
+rest as a named list. Both numbers §XXIII.1 stated were wrong: twelve tools and thirty-one verbs,
+not thirteen and thirty-three. Every figure is derived now, so that is the last time either is typed.
+
+**Exercised means called, and the distinction is the instrument.** The first reader counted any
+occurrence under `conformance/` and reported five tools covered — three of the five were prose. A
+mention is what a comment does; the claim being measured is that a client had to guess the name,
+spell the schema, frame the request and read the refusal.
+
+**Then the same strictness bit the other way, which is the useful half of the story.** SH708 drove
+all eight read tools through a local `call(name, args)` wrapper, and a reader keyed on `.call(`
+credited none of them: coverage still read 2 of 12 with the suite written and passing. The receiver
+is optional now. Call syntax with a literal name is still required, and `shio_write` — named in
+prose, called nowhere — is the asserted proof that the looser rule did not become a lax one.
+
+**`mcp-read.conformance.mjs` (SH708)** seeds a scratch site through the batch surface and drives
+`shio_context`, `shio_read`, `shio_find`, `shio_changes`, `shio_digest`, `shio_verify`,
+`shio_assets` and `shio_marketplace` over `shio mcp`. What it can be wrong about and MockMvc cannot:
+the declared input schema an agent fills in from `tools/list`, the bare `post:<site>/` home address
+SH433 is about, a `shio_changes` cursor that has to survive the next call, and a `find` over two
+rows seeded to collide on one term — a single match proves nothing about SH131's `%`-wrapping.
+
+Live tool coverage went **2/12 → 8/12**. What is left is exactly the write half: `shio_write`,
+`shio_apply`, `shio_publish`, `shio_remember`. Nothing that changes anything has ever been spoken
+over this transport, and the op table says the same from the other end — every op that **removes**
+or **moves** is still unexercised, which is where SH202, SH203 and SH243 each found a defect.
+
+**Not covered:** the suite asserts that a tool answers and that its answer is about the content
+seeded, not that every field of every projection is right. A response schema per tool is SH712's.
