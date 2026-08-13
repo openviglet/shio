@@ -33,6 +33,29 @@ import { test } from "node:test";
 import { scanPage } from "../src/clone.mjs";
 import { serveFixture } from "../conformance/support/fixture-site.mjs";
 
+/*
+ * SH698 — so the next occurrence names itself.
+ *
+ * This file was seen to fail at file level with every assertion in it green, once in five runs,
+ * printing `'test failed'` and nothing else. An unhandled rejection or an uncaught exception during
+ * a test file produces exactly that report: the runner marks the file failed and has no assertion
+ * to point at, because none of them failed.
+ *
+ * The handlers below do not change the outcome — the file still fails, as it should. They print the
+ * reason first, on `stderr`, where a captured run keeps it (SH354's rule: keep the run, so the name
+ * survives). Node runs each test file in its own process, so this is scoped to this file and cannot
+ * mask anything elsewhere.
+ *
+ * It did not reproduce in eighteen consecutive runs while SH698 was worked, twelve ordinary and six
+ * at `--test-concurrency=32`. That is why this is instrumentation and not a cure.
+ */
+for (const event of ["unhandledRejection", "uncaughtException"]) {
+  process.on(event, (error) => {
+    process.stderr.write(`\nSH698: ${event} in fixture-traits.test.mjs — this is the file-level red `
+      + `with green assertions, and here is the reason it never printed:\n${error?.stack ?? error}\n`);
+  });
+}
+
 /** Fetches one path off the running fixture and scans it the way `clone` does. */
 async function scan(origin, path) {
   const url = `${origin}${path}`;

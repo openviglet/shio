@@ -219,8 +219,59 @@ export async function serveFixture() {
   return {
     origin: `http://127.0.0.1:${port}`,
     requested,
-    close: () => new Promise((resolve) => server.close(resolve)),
+    close: () => closeFixture(server),
   };
+}
+
+/** How long a teardown may take before it is a finding rather than a wait (SH698). */
+export const CLOSE_DEADLINE_MS = 2000;
+
+/**
+ * Close the fixture, and say what happened if it will not (SH698).
+ *
+ * <h2>Why a deadline at all</h2>
+ *
+ * <p>`fixture-traits.test.mjs` was seen to fail <b>at file level with every assertion green</b>,
+ * once in five `pnpm test` runs, printing `'test failed'` and naming nothing. A teardown that never
+ * settles is one of the few shapes that produces exactly that, and a plain `server.close(resolve)`
+ * is silent about it forever: it waits on open connections with no timeout and no report.</p>
+ *
+ * <p><b>This is instrumentation, not a fix, and the difference is deliberate.</b> The two mechanisms
+ * that section proposed were measured and neither holds — `close` resolves in under a millisecond
+ * with eight connections outstanding, and the port has been ephemeral since SH448. Eighteen
+ * consecutive runs (twelve ordinary, six at `--test-concurrency=32`) did not reproduce it. So
+ * nothing here claims to have removed the cause. What it removes is the *silence*: if this ever
+ * hangs again, the run says which server, for how long, and how many sockets were still open,
+ * which is the difference between a second data point and a second mystery.</p>
+ *
+ * @param server       the listening `node:http` server
+ * @param deadlineMs   how long to wait before reporting (default {@link CLOSE_DEADLINE_MS})
+ * @returns resolves when closed; rejects, naming the state, when the deadline passes
+ */
+export function closeFixture(server, deadlineMs = CLOSE_DEADLINE_MS) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      // `getConnections` is the only thing that can say *why* it is still waiting, and it is worth
+      // the extra tick: "2 sockets open" and "0 sockets open" point at completely different bugs.
+      server.getConnections((err, count) => {
+        const open = err ? "an unreadable number of" : String(count);
+        reject(new Error(
+          `SH698: the fixture server on ${JSON.stringify(server.address())} did not close within `
+          + `${deadlineMs}ms, with ${open} connection(s) still open. This is the teardown that made `
+          + "the whole file red with every assertion in it green — if you are reading this, the "
+          + "intermittent failure finally named itself. A non-zero count means a request outlived "
+          + "its test; zero means `close` is waiting on something that is not a socket.",
+        ));
+      });
+    }, deadlineMs);
+    // Unref'd so a fixture that closes normally never holds the process open for the deadline.
+    timer.unref?.();
+    server.close((err) => {
+      clearTimeout(timer);
+      if (err) reject(err);
+      else resolve();
+    });
+  });
 }
 
 function send(res, status, type, body) {

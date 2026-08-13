@@ -834,29 +834,31 @@ altitudes, which is why they are one block rather than a footnote on the last on
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
 
-### XXI.11 `fixture-traits.test.mjs` fails at file level with every assertion green (SH698)
+### XXI.11 A file-level red nobody can reproduce, now instrumented rather than cured (SH698)
 
-Observed once in five consecutive `pnpm test` runs while landing SH697. The runner
-prints `✖ test\fixture-traits.test.mjs (951.4674ms)` and beneath it `'test failed'` — no
-assertion, no diff, no named subtest. Run alone the file is 9 of 9 green in 209 ms; the
-four runs after it were 1436 of 1436. The red is not a failing expectation, it is the
-file's own result, and the only thing that changed was two new test files adding
-parallel load.
+Observed once in five `pnpm test` runs while landing SH697: `✖
+test\fixture-traits.test.mjs (951ms)` and beneath it `'test failed'` — no assertion, no
+diff, no named subtest, 9 of 9 green run alone.
 
-The shape points at the socket rather than the assertions: the suite starts an HTTP
-server and closes it in `t.after(() => source.close())`, and a file-level red with green
-children is what an unhandled rejection or a hook throwing after the tests pass looks
-like under `--test-force-exit`. A port or close race under Node's file-level parallelism
-fits both the intermittency and the 4.5x wall-clock.
+**Both mechanisms this section first proposed are wrong, and they were measured rather
+than argued.** The port has been ephemeral since SH448. And `close` does *not* wait on
+the sockets `fetch` leaves: driven with the suite's own request pattern, eight
+connections outstanding, it resolves in **0–1 ms**. It then failed to reproduce in
+**eighteen consecutive runs** — twelve ordinary, six at `--test-concurrency=32`.
 
-Worth a task rather than a shrug because it is the SH354 shape one gate over: an
-intermittent red nobody can reproduce is the one that gets re-run until it passes and
-then forgotten, and SH354's remedy — keep the run, so the name survives — is why this
-one has a name at all.
+So the deliverable is the half the section asked for first: **make the failure legible
+before making it rare.** `closeFixture` bounds the teardown and rejects naming the
+server, the elapsed deadline and the open socket count; `fixture-traits.test.mjs` prints
+any unhandled rejection or uncaught exception on stderr before the runner reduces it to
+`'test failed'` — which is the report an unhandled rejection produces, and the closest
+thing to a lead the original symptom had.
 
-What would close it: make the failure legible before making it rare. Bind to port 0 if
-it does not already, await `close`, and fail with the reason rather than `'test
-failed'`.
+The instrument is asserted by driving it, not by trusting it: a held socket makes the
+deadline fire, and removing the deadline hangs the test *for ever*, which is the failure
+this converts into a sentence.
+
+It stays open. Nothing here found the cause, and closing it would say something untrue
+about a red that is still out there.
 
 ### XXI.12 The docs gate is red because the fixes were never pushed (SH700)
 

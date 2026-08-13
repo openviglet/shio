@@ -1347,6 +1347,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH653** — A cluster is one table row, so the summary reads 48 (43 ✅, 5 🧩, 0 wrong), and docs-coverage recomputes it from the tables and prints the sentence to write when the two disagree.
 - **SH674** — The pages had never stopped publishing: the extractor's fence regex read no block at all on a CRLF file, hiding seven pages. `\r?` took the corpus from 55 blocks to 82 and the gate to green.
 - **SH697** — The tool table is read on SH663's narrow rule, and two new assertions hold the registered set and every stated count against the product — the direction a docs-to-product check cannot have.
+- **SH698 (the instrument)** — The teardown now names the server, the deadline and the open socket count instead of printing nothing, and both mechanisms the section proposed were measured and refuted.
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
