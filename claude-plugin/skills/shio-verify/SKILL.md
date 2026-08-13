@@ -3,10 +3,10 @@ name: shio-verify
 description: Check Shio content before handing work over — the content lint, route resolution, a page's structural digest, and recent asynchronous failures. Use when content has just been written or published, when a page looks wrong, when something failed silently, or before reporting that a Shio task is done.
 ---
 
-# Checking Shio work without asking a human
+# Checking Shio work without asking a curator
 
 Verification is the cheapest thing in the system and it replaces the most expensive one: a
-human round trip. Run it before you say you are done.
+round trip to a curator. Run it before you say you are done.
 
 ## The content lint
 
@@ -40,7 +40,7 @@ visitor's side unless that call actually succeeded.
 
 ## What failed while you were not looking
 
-`shio_changes` — content transitions since a cursor, including a human's console edits. Read
+`shio_changes` — content transitions since a cursor, including a curator's console edits. Read
 it at the start of a follow-up session before trusting a cached context digest.
 
 `GET /api/v2/agent/diagnostics` — webhook deliveries, image transforms, scheduled publishes

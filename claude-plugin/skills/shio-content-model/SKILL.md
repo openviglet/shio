@@ -64,5 +64,5 @@ data). A widget name outside that list is a 400 that names the ones that exist.
   console. That is the point — but tell the user before you push a type they edit by hand.
 - **System post-types cannot be changed** (409). Neither can a type a blueprint provisioned
   *if* you try to replace it wholesale: a blueprint seeds a model and does not own it, so
-  applying one again never reverts a field a human added.
+  applying one again never reverts a field a curator added.
 - **Deleting a field deletes its content.** Say so before doing it.

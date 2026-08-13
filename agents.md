@@ -3,8 +3,8 @@
 ## Product orientation — read this before writing code
 
 **Shio is a CMS whose primary operator is a coding agent.** The agent builds and
-maintains the site (MCP tools + content as files + blueprints); the **human
-curates** — approves, corrects, tweaks (React console, Universal Editor, preview
+maintains the site (MCP tools + content as files + blueprints); the **curator
+approves** — corrects and tweaks (React console, Universal Editor, preview
 links); the **CDA delivers** (REST/GraphQL + the TS SDKs). Every design decision is
 judged by *agent cycles and tokens*, not by clicks.
 
@@ -23,9 +23,9 @@ the headless JS/TS delivery layer stay as they are; we do **not** rewrite the ba
 | P4 | **Files beat APIs for authoring** — project content to disk; `Edit`/`Write`/`Grep` are the agent's cheapest tools. |
 | P5 | **Determinism over cleverness** — stable ordering, path addressing, idempotent writes, byte-identical serialization. |
 | P6 | **Errors are instructions** — every 4xx carries `fix`/`allowed`/`didYouMean`/`example`. |
-| P7 | **Never surprise the human** — draft-default, dry-run, explicit publish, confirm tokens, attribution, review queue. |
+| P7 | **Never surprise the curator** — draft-default, dry-run, explicit publish, confirm tokens, attribution, review queue. |
 | P8 | **Skipping steps needs appliable units** — blueprints, not prose recipes. |
-| P9 | **Close the perception loop** — cheap textual proof (lint, routes, render digest) instead of a human round trip. |
+| P9 | **Close the perception loop** — cheap textual proof (lint, routes, render digest) instead of asking someone to look. |
 | P10 | **Compose, don't fork** — MCP is a *shape* over the CDA + console services, never a third contract. |
 
 Full concept, protocol design, tool surface and worked example:

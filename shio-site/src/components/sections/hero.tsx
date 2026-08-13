@@ -74,7 +74,7 @@ export function Hero() {
         <div className="min-w-0">
           <AgentTranscript />
           <p className="mt-3 text-center font-mono text-xs text-[#8d7b74]">
-            One session. One page. Six calls, and a human still decides.
+            One session. One page. Six calls, and you still decide.
           </p>
         </div>
       </Container>

@@ -10,7 +10,7 @@
 **Viglet Shio** is an **open source headless CMS** (content management system)
 whose **primary operator is a coding agent**. An AI coding agent such as
 [Claude Code](https://claude.com/claude-code) builds and maintains the site
-through **MCP tools, content as files and blueprints**; the **human curates** in
+through **MCP tools, content as files and blueprints**; the **curator approves** in
 a React console with a Universal Editor and preview links; and a **Content
 Delivery API** (REST + GraphQL, with TypeScript SDKs) delivers the content to
 Next.js, Astro, React, Vue, Svelte or any front end you like.
@@ -60,7 +60,7 @@ one of those capabilities on a surface an agent can actually drive:
 | **Content as files** (`shio/content/**`) | The whole site projected to front-mattered Markdown on disk, with a three-way merge back — so `Edit`, `Write` and `Grep` are all an agent needs to author |
 | **CLI** (`@viglet/shio`) | 31 verbs: `pull`, `push`, `apply`, `publish`, `verify`, `clone`, `convert`, `types`, `dev`, `deploy`, `marketplace`, … |
 | **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with zero-dependency TypeScript SDKs — plus two narrow writes: the Universal Editor's save-back, and form submissions landing as drafts |
-| **React console** | The human's half: content browser, 15 form widgets, Universal Editor, review queue, preview links |
+| **React console** | The curator's half: content browser, 15 form widgets, Universal Editor, review queue, preview links |
 
 Keywords, so you can find this again: *headless CMS, agent-native CMS, AI CMS,
 MCP server, Model Context Protocol, Claude Code, content management system, Java
@@ -72,14 +72,14 @@ GitOps CMS, open source CMS, self-hosted CMS.*
 Every mainstream headless CMS was designed for a person clicking through a web
 UI, and then had an API bolted on. When an agent drives one of those, it burns a
 whole session discovering what exists, guesses at IDs, gets a `400 Bad Request`
-with no instruction in it, and cannot prove its work without a human looking at
+with no instruction in it, and cannot prove its work without asking someone to look at
 a screen.
 
 Shio inverts the order. **Every capability lands MCP → files/CLI → REST →
 console** — a console-only feature is considered incomplete. Discovery is one
 call. Errors carry `fix`, `allowed`, `didYouMean` and `example`. Response sizes
 are a *measured budget* asserted in CI, so a token regression fails the build
-like any other test. And the human is never surprised: writes are draft by
+like any other test. And the curator is never surprised: writes are draft by
 default, publishing is explicit, and every agent change lands in a review queue
 with attribution.
 
@@ -93,8 +93,14 @@ Read the full concept:
 ### Run with Docker
 
 ```bash
-docker run -p 2710:2710 ghcr.io/openviglet/shio-ce:latest
+docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=shio123 ghcr.io/openviglet/shio-ce:latest
 ```
+
+`SHIO_ADMIN_PASSWORD` (minimum 6 characters) is applied on the **first** start and gives you a
+usable `admin` login straight away — which is what makes the container scriptable, since every
+API surface answers 401 until a password exists. Leave it out and the console asks you to set
+one on first access instead. It is **never** applied over a password that is already
+configured, so it is safe to leave in a compose file: a restart is a no-op.
 
 ### Or run from source
 
@@ -106,7 +112,8 @@ cd shio
 
 Then open:
 
-- **Console** — <http://localhost:2710> (login `admin` / `admin`)
+- **Console** — <http://localhost:2710> (log in as `admin`; the password is the one
+  `SHIO_ADMIN_PASSWORD` set, or the one the first-access screen asks you for)
 - **Sample site** — <http://localhost:2710/sites/viglet/default/en-us>
 
 Requirements: **Java 21**, **Node ≥ 26** and **pnpm ≥ 11** (only if you build the
@@ -163,7 +170,7 @@ npx @viglet/shio publish   # explicit, never implicit
 
 `shio clone` captures a live site, `propose` derives a content model from its
 markup, and `convert` turns it into real Shio posts — fidelity mode for a
-pixel-accurate copy, authorable mode for one a human can edit:
+pixel-accurate copy, authorable mode for one a curator can edit:
 
 ```bash
 npx @viglet/shio clone https://example.com --max-pages 50 --render --assets
@@ -204,9 +211,9 @@ A feature that violates one of these is wrong even if it was requested.
 | **P4** | **Files beat APIs for authoring** — `Edit`, `Write` and `Grep` are the cheapest tools an agent has |
 | **P5** | **Determinism over cleverness** — stable ordering, path addressing, idempotent writes |
 | **P6** | **Errors are instructions** — every 4xx carries `fix`, `allowed`, `didYouMean`, `example` |
-| **P7** | **Never surprise the human** — draft-default, dry-run, explicit publish, review queue |
+| **P7** | **Never surprise the curator** — draft-default, dry-run, explicit publish, review queue |
 | **P8** | **Skipping steps needs appliable units** — blueprints, not prose recipes |
-| **P9** | **Close the perception loop** — cheap textual proof instead of a human round trip |
+| **P9** | **Close the perception loop** — cheap textual proof instead of asking someone to look |
 | **P10** | **Compose, don't fork** — MCP is a *shape* over the delivery API, never a third contract |
 
 Full text and rationale: [agents.md](agents.md).

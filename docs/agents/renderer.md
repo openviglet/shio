@@ -255,7 +255,7 @@ renderer over one body of content at a second address. See the section on it bel
   `shio propose` now proposes them as a `SiteScripts` list, every entry **for the head** (moving one
   later is a reviewer's decision, not a command's), with a **recognised** consent category where the host
   says so and a blank where it does not — a guess presented as a fact would be worse than a blank on a
-  consent gate, and the report counts how many need a human.
+  consent gate, and the report counts how many need a curator.
   **One process note worth keeping:** `./mvnw -q compile` printed nothing on a run that had *failed to
   compile*, and I read the silence as success. That is agents.md's `-q` trap one command along — it
   documents `-q` hiding a test total, and it hides a build failure exactly as well. Compile without it.
@@ -376,7 +376,7 @@ renderer over one body of content at a second address. See the section on it bel
   `visualSnapshot: true` would hunt for a PNG that does not exist, which is what `universalEditor`
   did once. The honest scope is also the design: there is no layout engine, so the digest covers the
   appearance failure an **agent** creates (markup written against class names the theme lacks) and
-  not the ones a human notices (SH265).
+  not the ones a person notices (SH265).
 - **The drift is a fact about the instance, and it is a GET (SH295)** —
   `GET /api/v2/render/post-types/drift` names each render type this instance has that is missing a
   field the shipped model declares. The comparison existed before, as
@@ -1136,7 +1136,7 @@ renderer over one body of content at a second address. See the section on it bel
   multilingual page the day the JDK is upgraded — the same reason SH377 keeps no timestamp in its
   inventory.
   **The group is read off the row, never put on the model**: `translationGroup` is a UUID, and SH79's
-  rule is that an address a human writes is never one — the model is what a human writes against.
+  rule is that an address a person writes is never one — the model is what a person writes against.
   `rowsOf` is the SH353 per-transaction read already in hand, so finding self in it costs nothing.
   **And no locale-prefixed route**, deliberately: SH323 makes a friendly URL site-unique, so `/en/about`
   and `/pt/sobre` are ordinary distinct URLs in one site and the preview needs no new addressing. A
@@ -1542,7 +1542,7 @@ component at a time is then a diff that visibly shrinks a list.
 SH524's instrument counted it: **25 of 25** section fields carried no editing annotation, so every
 page composed from `@viglet/shio-sections` was content the Universal Editor could not reach. That
 matters because the package is what a conversion writes — SH464's authorable mode turns captured
-markup into fields a human edits, and if the component annotates none of them the mode delivers a
+markup into fields a curator edits, and if the component annotates none of them the mode delivers a
 model nobody can use *from the page*, putting the curator back in the console form the visual editor
 exists to remove.
 

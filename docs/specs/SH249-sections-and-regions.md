@@ -15,7 +15,7 @@ of nothing.
 **`/preview/{site}/{url}` composed regions.** SH183 follows `sh-region="NAME"` inside a layout's
 HTML and fills each slot from a `Region` post.
 
-So an agent proving structure and a human looking at the page could be reading two different
+So an agent proving structure and a person looking at the page could be reading two different
 compositions of the same post, and nothing reported the disagreement. That is the perception loop
 (law P9) failing in the one place it is supposed to work: the whole value of a cheap textual proof
 is that it stands in for looking.

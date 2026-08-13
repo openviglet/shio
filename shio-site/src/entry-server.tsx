@@ -23,7 +23,7 @@ export const routes: PrerenderRoute[] = [
     path: "/",
     title: "Viglet Shio — the CMS whose operator is Claude Code",
     description:
-      "An open-source, self-hosted headless CMS designed for a coding agent: MCP-native, one call replaces a discovery session, content lives as files, every 4xx carries the fix, and every write lands as a draft a human approves.",
+      "An open-source, self-hosted headless CMS designed for a coding agent: MCP-native, one call replaces a discovery session, content lives as files, every 4xx carries the fix, and every write lands as a draft a curator approves.",
   },
   {
     path: "/claude-code",
@@ -45,7 +45,7 @@ export const routes: PrerenderRoute[] = [
   },
   {
     path: "/curator",
-    title: "The human half — what stops the agent | Viglet Shio",
+    title: "The curator’s half — what stops the agent | Viglet Shio",
     description:
       "An agent wrote nine pages last night and nobody has seen them yet. The curator half of Shio: the review queue an agent token cannot reach, expiring preview links, inline editing on the rendered page, draft-published diff and restore, reversible deletes, and the six gates that are on by default rather than configurable.",
   },

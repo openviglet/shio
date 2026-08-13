@@ -42,7 +42,7 @@ writes on the delivery API, and neither is worth a query playground.
 all?** `ShCsrfExemptionLintTest` asks whether an exemption is a *decision* — the right question from
 the security side, which leaves the operator side unasked, and the cost of that gap is a recurring
 class: SH170 (creating a site needs session + CSRF, worked around by hand in `e2e/provision.mjs`),
-then SH327 (`/api/v2/render/**`) and SH335 — the same defect three times, each found by a human doing
+then SH327 (`/api/v2/render/**`) and SH335 — the same defect three times, each found by someone doing
 a build rather than by a build failing. `ShStatelessReachabilityLintTest` asserts over the same
 configuration that **every mutating controller root is stateless-writable or classified**, and prints
 the inventory: **25 roots**, of which the writable count and the classified ones are printed by the
@@ -561,3 +561,34 @@ signature, reproduced on purpose.
 needs an OIDC provider this suite does not stand up. The rule there is a copy, asserted only by
 reading. The console needed no change — the marketplace page already lives in the admin area beside
 users, groups and roles, so the gate matches where the UI is.
+
+## Getting in on a fresh instance (SH706)
+
+`ShUserOnStartup` seeds `admin` with a **null** password. That is deliberate — no shipped default
+credential — but it left `POST /api/v2/setup`, behind the console's first-access screen, as the only
+writer. A fresh container therefore started in a state no script could leave: every surface answers
+401, and the remedy was a person opening a browser. Law P1, on the one capability that gates every
+other one, because an agent cannot reach a first correct call at all.
+
+**`SHIO_ADMIN_PASSWORD`** is the second door, bound as `shio.admin.password` so it is configuration
+rather than a `System.getenv` somewhere. `ShOnStartup` applies it **outside** the first-time gate:
+inside it, it would help exactly the installs that do not need help, while the case an automated
+deploy actually meets — an instance seeded before the variable was supplied, or one whose setup
+screen was never completed — would be the one it skipped.
+
+**`ShAdminPasswordService` is the single owner of that field**, and the endpoint delegates to it.
+Two code paths encoding the same password eventually disagree about the minimum length or the
+encoder; SH245 is the open task about that exact shape, filed after the console's copy of a shared
+verb turned out to be the careless one four times.
+
+Three rules make it safe to leave in a compose file, and each is asserted by name in
+`ShAdminPasswordServiceTest`: it **never overwrites** a configured password (a restart is a no-op,
+and an operator's console change is not reverted by their own deployment); it **never fails
+startup** — blank, too short and unset are each a log line and a return, because `ShOnStartup` is an
+`ApplicationRunner` and a throw there turns an env-var typo into an outage; and it stores the value
+**encoded**, so the compose file's secret is not in the database in clear.
+
+**Not covered:** nothing asserts the wiring end to end — that `ShOnStartup` calls it, and that
+`shio.admin.password` binds from `SHIO_ADMIN_PASSWORD`. The service is asserted directly and the
+binding is a one-line property; a context test for it would cost a slot `ShContextCacheHeadroomTest`
+counts (SH315) to check Spring does its own job.

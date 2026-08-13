@@ -17,7 +17,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
     ],
   },
   {
-    heading: "For the human",
+    heading: "For the curator",
     links: [
       { label: "What stops the agent", href: "/curator" },
       { label: "Blueprints", href: "/#blueprints" },
@@ -47,7 +47,7 @@ export function SiteFooter() {
           <div>
             <Logo className="text-[#f6ece8]" />
             <p className="mt-3 max-w-xs text-sm leading-relaxed">
-              A CMS whose primary operator is a coding agent. The human curates, the
+              A CMS whose primary operator is a coding agent. The curator approves, the
               delivery API delivers, and every design decision is judged in agent
               cycles and tokens.
             </p>

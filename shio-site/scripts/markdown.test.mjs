@@ -51,7 +51,7 @@ test("a code block survives verbatim, newlines and all", () => {
 });
 
 test("a link keeps its href, and an in-page anchor keeps only its text", () => {
-  assert.match(md('<p><a href="/curator">The human half</a></p>'), /\[The human half\]\(\/curator\)/);
+  assert.match(md('<p><a href="/curator">For the curator</a></p>'), /\[For the curator\]\(\/curator\)/);
   assert.match(md('<p><a href="#laws">The ten laws</a></p>'), /^The ten laws$/m);
 });
 

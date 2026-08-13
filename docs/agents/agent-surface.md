@@ -274,7 +274,7 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   over `data` matches `/target-2` for `/target` and matches prose that merely mentions the path;
   that scanner is the lint's own, so the two surfaces cannot disagree about what a link is.
   **Published rows only** (a draft's broken link is work in progress), the moved post itself is
-  excluded, a **dry run answers the same question** (which is what makes it a plan a human can read
+  excluded, a **dry run answers the same question** (which is what makes it a plan a curator can read
   — P7), a move that changes only the folder reports nothing, and a post that was never live
   reports nothing either: links to it were already broken and belong to `link-unresolved`, not to
   this op. Capped at ten with `found` always stated (SH138), and **absent rather than empty** when
@@ -420,7 +420,7 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   filename there, which is what `fileNameOf` has always read it as. **Two readers of one field, and
   the louder one was wrong.** A gate that cries wolf is worse than one that stays quiet, and this
   crossed the line where a reader stops looking; on the replication path it is worse than noise,
-  since those checks exist so an agent can prove a replica *without* a human. The exemption is the
+  since those checks exist so an agent can prove a replica *without* a person looking. The exemption is the
   **field**, not the widget: `File` stays in `REFERENCE_WIDGETS` because a user field — the seeded
   `Article.FILE`, or the `hero` the test asserts on — really does hold a file post's id, and it is
   the only path to `missing-asset`. Dropping the widget would silence 84 false errors by deleting a
@@ -537,7 +537,7 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   **Since SH249 it reads the *rendered* page** (`source: rendered`) whenever the post-type has an
   SH183 layout binding — the artefact a visitor gets, and the only one that reflects regions *and*
   sections at once. Before that, this endpoint composed sections (SH169) while `/preview` composed
-  regions, and neither knew the other existed, so a structural proof and a human looking at the
+  regions, and neither knew the other existed, so a structural proof and a person looking at the
   page could describe two different compositions. The decision behind it is a document —
   [docs/specs/SH249-sections-and-regions.md](docs/specs/SH249-sections-and-regions.md): **two
   mechanisms, one composition path.** A region is named by a layout, by title, and varies with the
@@ -667,7 +667,7 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   occurrence, which is what makes the table grow with the number of *problems*; and the feed
   position is **`lastSeen`**, so an incident that is still happening is re-delivered with a
   higher count rather than being reported once, ever.
-  **The key is a `signature`, not the message (SH205).** The message is prose for a human — "gave
+  **The key is a `signature`, not the message (SH205).** The message is prose for a reader — "gave
   up after 3 attempt(s), last status 500" — so the same webhook answering 503 next publish was a
   *different row*, and folding failed on a **flapping target**, which is the highest-volume case
   and the one whose every occurrence differs. The near-duplicates then evicted unrelated incidents
@@ -885,7 +885,7 @@ which is why **P1 was the only one of the ten laws with no instrument** while P3
 tests, P5 has `ShByteStabilityLintTest`, P6 has a `fix` on every 4xx and P10 has
 `ShConsoleShapeOverlapTest`. The cost is not hypothetical: SH160's `instanceMemory: true`
 half-truth came back as SH326's `serverRender: true`, and SH170's session+CSRF friction came back
-as SH327 and SH335 — the same classes, two blocks apart, each found by a human doing a build rather
+as SH327 and SH335 — the same classes, two blocks apart, each found by someone doing a build rather
 than by a build failing. **Before "fix the thirteen instances", ask what would have failed.**
 
 **`site.delete` closes the other half of SH170 (SH463)**, and the instrument half of that task is
@@ -898,7 +898,7 @@ hand-rolled a session for it and called the asymmetry "not this task's to fix" i
 filed nowhere. The op is destructive (SH108's confirm token) and its plan line says the thing
 `folder.delete`'s cannot: **it is purged, not trashed, so there is no undo** —
 `ShSiteWriteService.delete` trashes each root folder and then purges it (SH454), and an agent that
-read this as restorable would not offer the human an undo that does not exist. Scoped credentials
+read this as restorable would not offer the curator an undo that does not exist. Scoped credentials
 are refused: an allow-list says what may be read and written, never that the container may be
 destroyed.
 
@@ -912,7 +912,7 @@ carries a `scratch` column, `site.upsert` reads `data.scratch:true` **on the cre
 nowhere else**, and `shio site rm --scratch` sweeps every site carrying it in one confirmation.
 **The create-only rule is the entire safety argument**, not a limitation: a flag an existing site
 could gain would make the sweep a fast way to delete a site somebody chose to keep, whereas a flag
-set at creation was declared in a document a human could read *before there was anything in it to
+set at creation was declared in a document a curator could read *before there was anything in it to
 lose* — P7 satisfied rather than waived. `ShAgentSiteDeleteTest` asserts both directions (a create
 marks, an upsert on an existing site does not), because that is the property that stays true only
 until somebody adds a convenience. **Nothing in SH108 changed**, and that is worth stating: the
@@ -924,8 +924,8 @@ bulk-deleted is the last place to be generous about spelling), and the flag is *
 context pack when false, because `scratch:false` on every row is a token per site to say the
 ordinary thing (P3). The second half of the task is worth as much as the first — `shio context` and
 `shio site` now **mark** the disposable ones, since a listing showing thirteen sites with no
-difference between the two a human curates and the eleven an agent left behind is a listing the
-human cannot act on.
+difference between the two a curator maintains and the eleven an agent left behind is a listing
+the curator cannot act on.
 
 **Two instruments existed to find that gap and neither could — which is the part to remember
 (SH463).** `ShAgentP1ConformanceTest` is keyed on manifest `features`, and site deletion had **no
@@ -980,7 +980,7 @@ what the instance advertises** — a config-driven flag (`webhooks`, `previewTok
 shrinks when somebody turns something off is measuring the environment (SH315's lesson, one
 surface along). And **the run prints it**, like the SH264 sweep benchmark.
 The measured answer: **52 features, 14 not agent-reachable** — 8 `REST_ONLY`, 3 `CONSOLE_ONLY`,
-3 `CLI_ONLY`. Only `reviewQueue` is a decision (SH109 keeps the human's veto off the agent
+3 `CLI_ONLY`. Only `reviewQueue` is a decision (SH109 keeps the curator's veto off the agent
 namespace) and three more are deliberate trades (`graphql` is the front end's, `contentAsFiles` is
 CLI-shaped by P4, `postTypeMerge` would put `shio_apply` over its SH132 ceiling). The rest are
 gaps, and **four had no task at all** before this ran: `locales` and `scheduledPublish` (SH342 —
@@ -990,14 +990,14 @@ thirteen known instances by hand.
 
 **Which surface owns a capability is a decision, and it is written down now (SH393).** SH268
 argued a zip cannot be a JSON-RPC message, SH186 that a JSON-shaped verb becomes an op rather than
-a thirteenth tool, SH104 that a human artifact has no server surface, SH288 that a file beats a
+a thirteenth tool, SH104 that a curator's artifact has no server surface, SH288 that a file beats a
 read command, SH262 that a projection beats a new endpoint, SH391 that a browser lives where a
 browser lives. **Six tasks, one boundary, derived six times — each correctly, and each from
 memory**: exactly the shape SH338 named one level up. The rule they converge on:
 
 > **MCP owns address-in, small-JSON-out verbs a session repeats**, because a client may have no
-> shell. **The CLI owns whatever has a file, a byte stream, a browser or a human on one end**,
-> because none of those fits a JSON-RPC frame. **The console owns the human's veto.** Nothing is
+> shell. **The CLI owns whatever has a file, a byte stream, a browser or a person on one end**,
+> because none of those fits a JSON-RPC frame. **The console owns the curator's veto.** Nothing is
 > owned by neither — an unowned capability is the gap, not the answer.
 
 Two things make it checkable rather than another paragraph to remember. The classification already
@@ -1301,7 +1301,7 @@ it is a different one. That is never a reason to loosen the agent path to match.
   protocol's guards. It extends the SH2/SH5/SH13 model (expiry, site allow-list, rate
   limit), so an agent credential can be scoped and expiring instead of a console password.
 - **Session identity (SH106).** `ShHistory.agent_session_id` — the column SH75 deferred, and
-  what makes SH109 a `where` clause. `owner` names only the human whose credential was used.
+  what makes SH109 a `where` clause. `owner` names only the person whose credential was used.
   Set by **`ShAgentSessionFilter`** from the `Mcp-Session-Id` header on the agent namespace,
   and by MCP's own `initialize`; **never minted per request** — a session is a *run*, and one
   session per call is the same as none. `ShAgentSessionContext` is the ThreadLocal (it used to
@@ -1325,7 +1325,7 @@ it is a different one. That is never a reason to loosen the agent path to match.
   proposal — so approve = publish the run's drafts and revert reuses SH14 restore + the SH55
   trash, per entry, reporting what it cannot honestly undo instead of guessing. Since SH200 an
   entry may name a **folder**: reverting that one restores the whole deleted section, which is
-  the gesture a human means by "undo that", and `approve` skips folder entries because a section
+  the gesture a curator means by "undo that", and `approve` skips folder entries because a section
   has no draft to publish.
   **`GET /api/v2/review/pending` is the navigation badge's read (SH207).** SH104's handoff answers
   "what did the agent do since I last looked" for whoever ran `shio report`; a curator who never
@@ -1465,7 +1465,7 @@ comparison would have passed while proving nothing.
 
 Twelve rounds produced roughly forty tasks and **every one came from the same place**: a session
 ended, somebody read it back, and a pattern was noticed. That collector is expensive, lossy, and
-only runs when a human asks — so it does not run at all for readers who are not this one. Nobody is
+only runs when someone asks — so it does not run at all for readers who are not this one. Nobody is
 going to narrate a stranger's session.
 
 `ShAgentFrictionLog` counts what readers **asked for and did not get**, and `diagnostics` reports
@@ -1585,7 +1585,7 @@ the published row's **fields**, so a fact-level comparison of draft against live
 assembled at all: not expensively, at any price. The rendered live page is reachable (`/preview`,
 `/sites/**`), so a *pixel* answer existed; the cheap one — which fields changed, the question
 somebody asks before publishing — lived only inside the console's diff dialog, one post at a time,
-in a browser, to a human.
+in a browser, to a person.
 
 ### The decision: a parameter, not a diff endpoint
 
@@ -1665,7 +1665,7 @@ from the defect. That is not added noise — it inverts the answer.
 ## The undo the protocol already promised (SH222)
 
 `post.delete` answers `"to trash (restorable)"` on purpose — an agent that believes it destroyed
-something will not offer the human the undo. **That string was the only place the trash appeared on
+something will not offer the curator the undo. **That string was the only place the trash appeared on
 the agent surface.** No read listed it, no MCP tool reached it, no CLI command restored it, while
 `GET /api/v2/post-unified/trash` and its `untrash` twin are console endpoints. So the protocol told
 a caller an undo existed and gave it nowhere to go — P1 inverted on the capability an agent needs
@@ -1681,7 +1681,7 @@ paid on every turn of every session while a restore happens once in a hundred. T
 
 **Does a restore need a confirm token?** No. SH108's rule is that a *destructive* op needs the plan
 it was shown; a restore destroys nothing and the thing it undoes is itself reversible. It is not
-free — it can bring back content a human deliberately removed — so it is **audited** (SH200's
+free — it can bring back content a curator deliberately removed — so it is **audited** (SH200's
 `RESTORE` action) and answers with what came back. A token would put a round trip in front of the
 one call somebody makes in a hurry.
 
@@ -1976,7 +1976,7 @@ regions (document order):
 ```
 
 The footer is region 4 and the authored content starts at 5 — **the footer renders above every
-section**, which is the finding, and it took a screenshot from a human to see. Two things the filed
+section**, which is the finding, and it took a screenshot from a person to see. Two things the filed
 section had not predicted also fall out: `section×9` was one *verbatim* section plus eight authored
 ones, which the histogram merged into a single number; and every undefined class is in the captured
 chrome, none in the authored sections, so the one warning that speaks about styling now points at a

@@ -110,7 +110,16 @@ class ShSilentCatchInventoryTest {
             // codebase makes at every fork of this kind. What the catch buys is that the proposal
             // stays readable: a post whose data will not parse would otherwise count as violating
             // every required field, and drown the finding somebody actually asked for.
-            "api", 58,
+            //
+            // 59 since SH706: `ShSetupAPI.setup` catches the `IllegalArgumentException`
+            // `ShAdminPasswordService` throws for a password under the minimum, and answers 400 with
+            // its message. The fourth shape, and the one this project has already ruled on — it is a
+            // **4xx**, and SH103 refused recording those as incidents precisely so a handled
+            // condition does not fill the diagnostics window. The catch is not silent to the person
+            // it concerns: P6 says errors are instructions, and the instruction is in the response
+            // body the caller is already reading. What it must not become is a `catch` that swallows
+            // the message, which is why it is counted here rather than exempted.
+            "api", 59,
             "tenant", 4,
             // 4 since SH217, and the two are different judgements filed under one number.
             //

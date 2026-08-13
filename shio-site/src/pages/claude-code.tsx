@@ -208,7 +208,7 @@ export function ClaudeCodePage() {
                   <span className="text-primary">deliberately not a superset</span>
                 </>
               }
-              description="An agent needs to write, and the two credentials that already existed were both wrong: one can patch live content outside the agent protocol's guards, and the other is every capability the human has, with no expiry."
+              description="An agent needs to write, and the two credentials that already existed were both wrong: one can patch live content outside the agent protocol's guards, and the other is every capability the account holder has, with no expiry."
             />
 
             <TableScroll

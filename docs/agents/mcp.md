@@ -159,7 +159,7 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   before it existed simply do not have one — there is no backfill for a fact nobody
   recorded. It rides in the audit **actor string** (`alice (agent:7f3c…)`) rather than in a
   column of its own: SH106 owns the credential model and should migrate the schema once,
-  and the human stays visible in every row because an agent acts *as* somebody.
+  and the person stays visible in every row because an agent acts *as* somebody.
 - A tool-count test fails the build past 12 — tool schemas are context paid every turn.
   The real ceilings are `mcp.tools.list.total` (**2400** after SH227, measured 2397) and
   `mcp.tools.list.max-per-tool` (460) in

@@ -13,13 +13,13 @@
 Shio today is a **headless CMS for JavaScript developers**: a Java content engine,
 a versioned Content Delivery API, TS SDKs, a Next.js starter, post-types as typed
 code, a React console. That foundation is done and it is good. It optimizes for a
-**human** who reads docs, clicks a console, and writes a front end by hand.
+**person** who reads docs, clicks a console, and writes a front end by hand.
 
 The new orientation keeps every one of those parts and changes **who the primary
 operator is**:
 
 > **Shio is a CMS whose primary operator is a coding agent.**
-> The agent builds and maintains the site. The human curates, approves and tweaks.
+> The agent builds and maintains the site. The curator approves, corrects and tweaks.
 > The CDA delivers. Every design decision is judged by *agent cycles and tokens*,
 > not by clicks.
 
@@ -34,7 +34,7 @@ call. The differentiator is protocol quality, not intelligence.
   bottleneck is no longer "can a JS dev use this API" — it's "how many tool calls
   and tokens does an agent burn before the site is right".
 - **Nobody has built for it.** Contentful/Strapi/Sanity ship MCP servers that are
-  thin CRUD wrappers over human-shaped REST: entity-shaped payloads, UUID
+  thin CRUD wrappers over console-shaped REST: entity-shaped payloads, UUID
   addressing, no plan/apply, no verification, errors that don't teach. They are
   *reachable* by an agent, not *designed for* one. That gap is a real, defensible
   position and it is available now.
@@ -43,7 +43,7 @@ call. The differentiator is protocol quality, not intelligence.
   audit trail (SH51), soft-delete (SH55), scoped tokens (SH2/SH5) are *exactly*
   the primitives an agent-native protocol needs. This is a reframe with a running
   start, not a rewrite.
-- **The human path is not sacrificed, it is promoted.** With the agent doing data
+- **The curator's path is not sacrificed, it is promoted.** With the agent doing data
   entry and scaffolding, the console stops being a form-filling tool and becomes
   what it should be: review, approval, and visual tweaking (the Universal Editor,
   SH10). That is a better console, not a deprecated one.
@@ -53,7 +53,7 @@ call. The differentiator is protocol quality, not intelligence.
 | Actor | Interface | Job |
 |---|---|---|
 | **Agent** (Claude Code) | MCP tools + files on disk + CLI | Build & maintain: model, structure, content, front end, verification |
-| **Human** (developer / editor) | React console, Universal Editor, preview links, PR review | Curate: approve, correct, tweak copy, decide |
+| **Curator** (developer / editor) | React console, Universal Editor, preview links, PR review | Curate: approve, correct, tweak copy, decide |
 | **Front end** (Next.js/any) | CDA (REST/GraphQL) + SDKs | Deliver |
 
 Everything below serves the first column without degrading the other two.
@@ -88,7 +88,7 @@ idempotent writes, byte-identical serialization. A re-read must be free (ETag
 allowed values, the nearest match, a minimal correct example. An error that costs
 a round trip to interpret is a defect.
 
-**P7 — Never surprise the human.** Draft by default, dry-run available, explicit
+**P7 — Never surprise the curator.** Draft by default, dry-run available, explicit
 publish, confirm tokens for destructive ops, every change attributed to an agent
 session, a review surface to approve or revert.
 
@@ -98,7 +98,7 @@ appliable, verifiable packages (Block J).
 
 **P9 — Close the perception loop.** The agent cannot see. Give it cheap, textual
 proof that what it built is correct — lint, route checks, a structural render
-digest (Block K). Otherwise every mistake costs a human round trip.
+digest (Block K). Otherwise every mistake costs a round trip to a person.
 
 **P10 — Compose, don't fork.** MCP is a **shape** over the existing CDA + console
 services. It is not a third contract with its own semantics. (Extends the standing
@@ -118,11 +118,11 @@ current response shapes; SH112 replaces them with measurements.
 | Create the model | `shio push` (good — already code-shaped) | Cheap ✅ |
 | Create structure + content | POST per folder, POST per post, read-back per post, UUIDs threaded by hand | **~1–3k tokens per write**, 20–40 calls, no atomicity |
 | Wire the front end | Hand-write routes/components from a doc recipe | Reimplementation from prose |
-| Verify | *Nothing.* Ask the human to look | **2–3 human round trips** — the most expensive unit in the system |
+| Verify | *Nothing.* Ask a person to look | **2–3 curator round trips** — the most expensive unit in the system |
 | Next session | Re-derive everything (stale `CLAUDE.md` or none) | Full discovery cost again, every time |
 
-Ballpark: **~80–150k tokens, 40+ tool calls, 3 human cycles.** Two of those three
-human cycles exist purely because the agent cannot verify its own work.
+Ballpark: **~80–150k tokens, 40+ tool calls, 3 curator cycles.** Two of those three
+curator cycles exist purely because the agent cannot verify its own work.
 
 ### 3.1 The same task under this proposal
 
@@ -135,8 +135,8 @@ human cycles exist purely because the agent cannot verify its own work.
 6. shio_report                         → handoff summary + preview links        (~0.3k)
 ```
 
-Target: **~10–15k tokens, ~6 tool calls, 1 human cycle (approve).** ≈10× tokens,
-≈6× calls, ≈3× human cycles. These are the **targets SH112 must prove or falsify** —
+Target: **~10–15k tokens, ~6 tool calls, 1 curator cycle (approve).** ≈10× tokens,
+≈6× calls, ≈3× curator cycles. These are the **targets SH112 must prove or falsify** —
 they are stated as acceptance criteria, not as achievements.
 
 ### 3.2 The compounding part
@@ -146,7 +146,7 @@ session N+1 cheaper than session N:
 
 1. **Cacheable context** (SH116) — unchanged context returns `304`, costing ~0.
 2. **Delta reads** (SH88) — `changes?since=<cursor>` returns only what moved,
-   including the human's console edits. A follow-up session syncs in one small call.
+   including the curator's console edits. A follow-up session syncs in one small call.
 3. **Instance memory** (SH114/SH115) — conventions and decisions are stored in the
    instance and served in the context pack, and `AGENTS.md` is *generated* from the
    live instance instead of hand-maintained and rotting. The agent stops
@@ -185,7 +185,7 @@ write. A tool count in the forties is itself a token cost (schemas are context).
 | `shio_publish` | Publish / unpublish / schedule by path | Gated by `mayPublish` (P7) |
 | `shio_verify` | Lint + routes + render digest | Returns a report + pass/fail |
 | `shio_assets` | Upload / list / transform-URL for media | Over SH38–SH43 |
-| `shio_changes` | Delta since a cursor | Includes human console edits |
+| `shio_changes` | Delta since a cursor | Includes a curator's console edits |
 
 **MCP resources** (read-only, cacheable, zero-argument): `shio://manifest`,
 `shio://context`, `shio://schema/{postType}`, `shio://blueprints`.
@@ -262,7 +262,7 @@ the agent does not have to spend.
 - **Plan/apply** — generalize `shio push --check` (SH65) from post-types to
   **content**: a declarative desired-state document → `plan` (a diff, no writes) →
   `apply`. This is the pattern that lets an agent act confidently without
-  read-modify-write loops, and lets a human review before anything changes.
+  read-modify-write loops, and lets a curator review before anything changes.
 
 ---
 
@@ -277,7 +277,7 @@ medium for an agent; a git-diffable text tree is the right one.
 - **Two-way sync (SH87)** — `shio pull --content` / `push --content` on the SH82
   plan/apply engine, with `--check` drift for CI.
 - **Change feed (SH88)** — `changes?since=<cursor>` over the SH51 audit, so the
-  human's console edits flow back and a follow-up session reads only the delta.
+  curator's console edits flow back and a follow-up session reads only the delta.
 - **Conflict policy (SH89)** — per-field 3-way merge with explicit conflicts;
   never a silent clobber. Both actors are legitimate writers (the same reasoning
   that produced the SH66 "managed by code" lock).
@@ -308,7 +308,7 @@ is **appliable**, not readable.
   (`hero`, `feature-grid`, `cta`, `logo-wall`, …) instead of invented ad-hoc
   post-types. This gives the agent, the console and the front end **one shared
   vocabulary** — which is exactly what makes "now change the site" cheap instead of
-  archaeological. It is also what the human's Universal Editor gets to manipulate.
+  archaeological. It is also what the curator's Universal Editor gets to manipulate.
 - **Registry + community convention (SH96)** — `shio-blueprint-*` naming, manifest
   validation, a curated index (absorbs SH28/SH29/SH31).
 - **Claude Code plugin (SH97)** — Shio ships a `.claude` plugin: MCP server config,
@@ -320,7 +320,7 @@ is **appliable**, not readable.
 
 ## 7. Block K — the perception loop (P9)
 
-Two of the three human cycles in §3 exist because the agent cannot check its work.
+Two of the three curator cycles in §3 exist because the agent cannot check its work.
 
 - **Content lint (SH99)** — required fields, dangling references, missing assets,
   duplicate furls, orphan folders, unpublished dependencies → machine-readable
@@ -332,10 +332,10 @@ Two of the three human cycles in §3 exist because the agent cannot check its wo
   text, word counts. Not pixels — the cheap textual proof that the page is
   structurally right. This is the single most requested missing capability.
 - **Visual snapshot + diff (SH102, optional)** — Playwright PNG + diff vs previous,
-  for the human handoff rather than for the agent.
+  for the curator handoff rather than for the agent.
 - **Diagnostics (SH103)** — `GET /api/v2/agent/diagnostics`: last N errors, failed
   webhooks, broken transforms, schema drift. One call instead of log grepping.
-- **Handoff report (SH104)** — `shio report` generates the human-facing change
+- **Handoff report (SH104)** — `shio report` generates the curator-facing change
   summary: what changed, preview links, open questions. Drops straight into a PR
   body or a console banner. This is the "help the interaction with the developer"
   half of the request.
@@ -344,7 +344,7 @@ Two of the three human cycles in §3 exist because the agent cannot check its wo
 
 ## 8. Block L — safety and human-in-the-loop (P7)
 
-An agent-driven CMS is only adoptable if a human can bound it and undo it.
+An agent-driven CMS is only adoptable if a curator can bound it and undo it.
 
 - **`AGENT` scope + session identity (SH106)** — scoped, budgeted, expiring
   credential; every write tagged with the session id (SH2/SH5 + SH51).
@@ -352,9 +352,9 @@ An agent-driven CMS is only adoptable if a human can bound it and undo it.
   is a separate tool, disabled unless the token says `mayPublish`.
 - **Confirm tokens (SH108)** — deletes/prunes/apply-with-prune take two steps, the
   second carrying the **plan hash**, so an agent cannot destroy something it didn't
-  just show the human.
+  just show the curator.
 - **Review queue (SH109)** — a console surface: "the agent proposed N changes" →
-  diff (reuse SH14), approve, revert (reuse SH55 trash). The human's new primary
+  diff (reuse SH14), approve, revert (reuse SH55 trash). The curator's new primary
   workflow.
 - **Budget guards (SH110)** — per-session call/write/storage ceilings (ties to SH45).
 
@@ -395,12 +395,12 @@ The reorientation is mostly additive, but it does invalidate some existing choic
 | **Align console read shapes with the CDA DTOs** where they overlap | SH120 | One shape to learn. P5/P10. |
 | **Drop Block D (GraalJS server-side JS templates, SH17/SH18)** → non-goal | — | An agent writes Next.js; it does not need an in-JVM template language. A sandboxed script engine is pure liability with no agent-side benefit. |
 | **Old SH24 MCP epic (SH32–SH37) superseded** by Block H | — | It was CRUD-over-MCP; it would have reproduced every §3 cost. |
-| **Old SH23 marketplace (SH27–SH31) absorbed** into Block J | — | A human-browsable template catalog becomes an agent-appliable blueprint registry. |
+| **Old SH23 marketplace (SH27–SH31) absorbed** into Block J | — | A browsable template catalog becomes an agent-appliable blueprint registry. |
 
 Retained unchanged and *more* valuable under this orientation: the CDA (SH1–SH5),
 the SDKs (SH6/SH7), post-types as code (SH62–SH66), the exchange engine
 (SH68–SH72), the audit trail (SH51), soft-delete (SH55), the Universal Editor
-(SH10) and the Media Library (SH73) — the last two are now the *human's* surfaces.
+(SH10) and the Media Library (SH73) — the last two are now the *curator's* surfaces.
 
 ---
 

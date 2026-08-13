@@ -31,7 +31,7 @@ from becoming a third contract (P10).
   caused it. `ShBlueprintRegistryTest` runs without a Spring context, so it is cheap enough
   to run on every change to a package.
 - **The model is provisioned, never upserted.** An existing post-type of the same name is
-  left exactly as it is (including a field a human added) and the response *names the fields
+  left exactly as it is (including a field a curator added) and the response *names the fields
   it lacks* — the bootstrap `Page` (SH71: `title` + `content`) versus the section
   vocabulary's `Page` is the collision this actually happens to. SH152 reconciles.
 - **A plan writes nothing and needs no write transaction (SH153).** It used to provision the
@@ -669,7 +669,7 @@ leaves.
 `/console/admin/marketplace` — a filterable grid of package cards, a detail dialog with the
 package's parameters and its README, a dry run, install and uninstall. Before it,
 `grep -ril blueprint shio-react/src` returned nothing: a curator could not see what the instance
-can build from, which is the human side of the product's headline capability.
+can build from, which is the curator's side of the product's headline capability.
 
 Under **Administration** rather than Content, because what the page does is install software into
 the instance, not author anything. It sits beside the API tokens and the webhooks for the same

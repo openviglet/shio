@@ -11,7 +11,7 @@ Verify the Shio content$ARGUMENTS and report what is actually true.
    `limit` before drawing conclusions about what is not in the list.
 3. For any page the user cares about, `shio_digest` on its address — confirm the heading
    outline and that every image has alt text.
-4. `shio_changes` — what changed recently, and by whom. A human edit in the console is the
+4. `shio_changes` — what changed recently, and by whom. A curator's edit in the console is the
    usual explanation for a surprise.
 5. Read `GET /api/v2/agent/diagnostics` for asynchronous failures. Remember the window is in
    memory and bounded: an empty report means "nothing since it started collecting".

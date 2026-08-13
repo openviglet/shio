@@ -9,10 +9,10 @@ import { GUARDRAILS } from "@/lib/site-content";
  * section is six mechanisms and no adjectives. SH536 gives the curator's half a
  * page of its own.
  */
-export function HumanHalf() {
+export function CuratorHalf() {
   return (
     <section
-      id="human"
+      id="curator"
       className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
     >
       <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
@@ -20,7 +20,7 @@ export function HumanHalf() {
 
       <Container>
         <div className="mx-auto mb-12 max-w-2xl text-center">
-          <Eyebrow>P7 &mdash; the human half</Eyebrow>
+          <Eyebrow>P7 &mdash; the curator&rsquo;s half</Eyebrow>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
             An agent with write access to your site.{" "}
             <span className="text-gradient">What stops it?</span>

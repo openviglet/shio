@@ -135,7 +135,7 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   `files:` is a refusal, since "empty" publishes a blank layout and "absent" makes
   `post.upsert` clear the server's copy; and a sidecar the post **no longer needs is removed**,
   read off the file on disk rather than inferred. A `.remote` conflict copy stays **whole**
-  (values in `fields:`), so the artifact a human diffs is one file.
+  (values in `fields:`), so the artifact a curator diffs is one file.
   Since **SH252** a `Theme`'s `CSS` is declared `Ace Editor - CSS`, so it lands in a `.css` — and the
   projection needed no change for that, because this map keys on the *widget*. Note the limit:
   `ShRenderPostTypes.ensure` never touches an existing post-type (SH152), so an instance that already

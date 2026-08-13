@@ -174,7 +174,7 @@ failed the build rather than being remembered:
   It is **`CONSOLE_ADMIN`**, and unlike every other row there the reason is not that the capability
   is stronger than the agent's: an agent can already create a folder and a post-type, so naming
   those adds nothing. What `enabled` adds is different in kind — it converts an authenticated
-  capability into a **public** one. The agent still builds the form; the human opens the door. If
+  capability into a **public** one. The agent still builds the form; the curator opens the door. If
   that ever reads as too strict the fix is a scope that may configure but not enable, not moving the
   row.
 

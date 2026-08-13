@@ -14,7 +14,7 @@ none of it needs the console.
    in one call. Store the `digest` it returns. Next session, compare it before re-reading
    anything — over HTTP it is also the `ETag`, so an unchanged instance answers `304`.
    **Read the conventions properly.** Lines prefixed `[memory:key]` were written down by an
-   earlier session or by a human and name their author; a derived line above them is true by
+   earlier session or by a curator and name their author; a derived line above them is true by
    construction. When you work something out that the next session would otherwise
    re-derive, write it back with `shio remember <key> "<note>"` — that is the only thing
    here that makes the *next* session cheaper rather than this one.

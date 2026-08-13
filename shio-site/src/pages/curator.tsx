@@ -21,7 +21,7 @@ export function CuratorPage() {
       <SiteNav />
       <main className="flex-1">
         <PageHero
-          eyebrow="The human half"
+          eyebrow="The curator’s half"
           title={
             <>
               An agent wrote nine pages last night.{" "}
@@ -165,8 +165,8 @@ export function CuratorPage() {
                   </div>
                   <div className="rounded-lg border border-dashed border-border p-3">
                     <p className="text-sm text-muted-foreground">
-                      A CMS whose primary operator is a coding agent. The human
-                      curates. The delivery API delivers.
+                      A CMS whose primary operator is a coding agent. The curator
+                      approves. The delivery API delivers.
                     </p>
                   </div>
                   <div className="rounded-lg border border-dashed border-border p-3">

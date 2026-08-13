@@ -178,7 +178,7 @@ shio apply --blueprint corporate \\
     },
     {
       title: "The model is provisioned, never upserted",
-      body: "An existing post type of the same name is left exactly as it is — including a field a human added — and the response names the fields it lacks instead of overwriting them. A plan writes nothing and needs no write transaction, so looking before you write works on a read-only credential.",
+      body: "An existing post type of the same name is left exactly as it is — including a field a curator added — and the response names the fields it lacks instead of overwriting them. A plan writes nothing and needs no write transaction, so looking before you write works on a read-only credential.",
       law: "P8",
     },
   ],
@@ -288,7 +288,7 @@ shio init --blueprint corporate --site acme`,
   ],
   related: [
     { label: "Rendering and themes", href: "/features/rendering" },
-    { label: "The human half", href: "/curator" },
+    { label: "The curator’s half", href: "/curator" },
   ],
 };
 

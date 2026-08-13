@@ -8,7 +8,7 @@ import { ContentFiles } from "@/components/sections/content-files";
 import { Surface } from "@/components/sections/surface";
 import { Errors } from "@/components/sections/errors";
 import { Verify } from "@/components/sections/verify";
-import { HumanHalf } from "@/components/sections/human";
+import { CuratorHalf } from "@/components/sections/curator-half";
 import { Blueprints } from "@/components/sections/blueprints";
 import { Replicate } from "@/components/sections/replicate";
 import { Delivery } from "@/components/sections/delivery";
@@ -45,7 +45,7 @@ export function LandingPage() {
         <Surface />
         <Errors />
         <Verify />
-        <HumanHalf />
+        <CuratorHalf />
         <Blueprints />
         <Replicate />
         <Delivery />

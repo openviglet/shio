@@ -89,10 +89,10 @@ export const LAWS: Law[] = [
   },
   {
     id: "P7",
-    title: "Never surprise the human",
+    title: "Never surprise the curator",
     gloss:
       "Draft-default, dry-run, explicit publish, confirm tokens, attribution, a review queue.",
-    anchor: "#human",
+    anchor: "#curator",
   },
   {
     id: "P8",
@@ -104,7 +104,7 @@ export const LAWS: Law[] = [
     id: "P9",
     title: "Close the perception loop",
     gloss:
-      "Cheap textual proof — a lint, the routes, a render digest — instead of a human round trip.",
+      "Cheap textual proof — a lint, the routes, a render digest — instead of asking someone to look.",
     anchor: "#verify",
   },
   {
@@ -214,12 +214,12 @@ export const TRANSCRIPT: TranscriptStep[] = [
     },
   },
   {
-    call: "Prove it before a human looks",
+    call: "Prove it before a curator looks",
     tool: "shio verify --delivery",
     result: "ok — 0 errors, 1 warning: hero image has no alt text",
     law: "P9",
     artefact: {
-      label: "the proof, before a human looks",
+      label: "the proof, before a curator looks",
       lines: [
         "ok    post:acme/            200  layout Home",
         "ok    post:acme/launch      200  layout Page",
@@ -270,8 +270,8 @@ export const ROLES: Role[] = [
   },
   {
     icon: ClipboardCheck,
-    actor: "The human",
-    verb: "curates",
+    actor: "The curator",
+    verb: "approves",
     description:
       "Approves, corrects and tweaks. Everything the agent wrote arrives as a draft with attribution on it, in a queue, with a preview link that opens the real page.",
     surface: ["React console", "Universal Editor", "Preview links"],
@@ -333,7 +333,7 @@ export const CLI_VERBS = [
   { verb: "shio verify", gloss: "the content lint; --delivery adds the route proof" },
   { verb: "shio digest", gloss: "a page's structure, cheap enough to read every turn" },
   { verb: "shio audit", gloss: "the browser as an instrument — overflow, contrast, dead requests" },
-  { verb: "shio snapshot", gloss: "a PNG, for the human who has to look" },
+  { verb: "shio snapshot", gloss: "a PNG, for whoever has to look" },
   { verb: "shio clone", gloss: "capture an existing site, writing no content" },
   { verb: "shio report", gloss: "the handoff — what changed, with a preview link each" },
   { verb: "shio remember", gloss: "the instance memory, so the next session is cheaper" },
@@ -364,7 +364,7 @@ folder: folder:acme/
 ---
 
 Shio is a CMS whose primary operator is a coding agent.
-The human curates. The delivery API delivers.`;
+The curator approves. The delivery API delivers.`;
 
 /* ── P6: an error that is an instruction ─────────────────────────────────── */
 
@@ -463,7 +463,7 @@ export const PROOFS: Proof[] = [
   {
     icon: Gauge,
     command: "shio snapshot",
-    title: "A picture, for the human",
+    title: "A picture, for a person",
     description:
       "The one output that is deliberately for a person. A per-pixel diff against a baseline, and a draft is stamped as a draft because the image cannot say so itself.",
   },
@@ -589,7 +589,7 @@ export const COMPARISON: ComparisonRow[] = [
   { feature: "Self-host, your database", shio: "yes", headless: "no", diy: "yes" },
 ];
 
-/* ── /curator — the human half ───────────────────────────────────────────── */
+/* ── /curator — the curator's half ───────────────────────────────────────────── */
 
 export interface CuratorMoment {
   when: string;

@@ -23,7 +23,7 @@ export function Verify() {
               <span className="text-primary">So the page describes itself.</span>
             </>
           }
-          description="Asking a human whether it looks right is the round trip that makes an agent slow. Four instruments replace it — three of them text, and the fourth deliberately for a person."
+          description="Asking someone whether it looks right is the round trip that makes an agent slow. Four instruments replace it — three of them text, and the fourth deliberately for a person."
         />
 
         <div className="grid items-start gap-8 lg:grid-cols-[1fr_1fr] [&>*]:min-w-0">
@@ -54,7 +54,7 @@ export function Verify() {
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               The warnings do not vanish either &mdash;{" "}
               <span className="font-mono text-foreground">shio report</span> restates
-              them as open questions in the handoff a human reads.
+              them as open questions in the handoff a curator reads.
             </p>
           </div>
         </div>

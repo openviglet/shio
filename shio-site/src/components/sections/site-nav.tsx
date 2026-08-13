@@ -34,7 +34,7 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "For the human",
+    label: "For the curator",
     items: [
       { label: "What stops the agent", href: "/curator" },
       { label: "Replicate a site", href: "/replicate" },

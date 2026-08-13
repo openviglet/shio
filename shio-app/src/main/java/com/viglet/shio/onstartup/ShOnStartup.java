@@ -16,6 +16,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.auth.ShAdminPasswordService;
 import com.viglet.shio.onstartup.provider.auth.ShAuthProviderInstanceOnStartup;
 import com.viglet.shio.onstartup.provider.auth.ShAuthProviderVendorOnStartup;
 import com.viglet.shio.onstartup.provider.exchange.ShExchangeProviderVendorOnStartup;
@@ -40,6 +41,7 @@ public class ShOnStartup implements ApplicationRunner {
 	private final ShAuthProviderVendorOnStartup shAuthProviderVendorOnStartup;
 	private final ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup;
 	private final ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup;
+	private final ShAdminPasswordService shAdminPasswordService;
 
 	public ShOnStartup(ShConfigProperties shConfigProperties,
 					   ShConfigVarRepository shConfigVarRepository,
@@ -50,7 +52,9 @@ public class ShOnStartup implements ApplicationRunner {
 					   ShUserOnStartup shUserOnStartup,
 					   ShAuthProviderVendorOnStartup shAuthProviderVendorOnStartup,
 					   ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup,
-					   ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup) {
+					   ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup,
+					   ShAdminPasswordService shAdminPasswordService) {
+		this.shAdminPasswordService = shAdminPasswordService;
 		this.shConfigProperties = shConfigProperties;
 		this.shConfigVarRepository = shConfigVarRepository;
 		this.shLocaleOnStartup = shLocaleOnStartup;
@@ -100,6 +104,13 @@ public class ShOnStartup implements ApplicationRunner {
 
 			log.info("Configuration finished.");
 		}
+
+		// SH706 — headless admin bootstrap (SHIO_ADMIN_PASSWORD), OUTSIDE the first-time gate on
+		// purpose. Inside it, this would help exactly the installs that do not need help: an
+		// instance seeded before the variable was supplied, or one whose setup screen was never
+		// completed, is the case an automated deploy actually meets. It is a no-op once a password
+		// exists, so a restart with the variable still in the compose file never overwrites one.
+		shAdminPasswordService.bootstrapFromConfiguration();
 
 	}
 

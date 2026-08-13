@@ -9,12 +9,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
-import com.viglet.shio.persistence.model.auth.ShUser;
-import com.viglet.shio.persistence.repository.auth.ShUserRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -31,45 +26,38 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ShSetupAPI {
 
-    private static final String ADMIN = "admin";
-    private static final int MIN_PASSWORD_LENGTH = 6;
+    /**
+     * SH706 — the write lives in {@link ShAdminPasswordService}, and this holds only the HTTP
+     * contract. The moment the screen and the headless bootstrap encode a password through two
+     * code paths, they eventually disagree about the minimum length or the encoder; SH245 is the
+     * open task about exactly that shape, filed after the console's copy of a shared verb turned
+     * out to be the careless one four times.
+     */
+    private final ShAdminPasswordService shAdminPasswordService;
 
-    private final ShUserRepository shUserRepository;
-    private final PasswordEncoder passwordEncoder;
-
-    public ShSetupAPI(ShUserRepository shUserRepository, PasswordEncoder passwordEncoder) {
-        this.shUserRepository = shUserRepository;
-        this.passwordEncoder = passwordEncoder;
+    public ShSetupAPI(ShAdminPasswordService shAdminPasswordService) {
+        this.shAdminPasswordService = shAdminPasswordService;
     }
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> status() {
-        return ResponseEntity.ok(Map.of("required", isSetupRequired()));
+        return ResponseEntity.ok(Map.of("required", shAdminPasswordService.isSetupRequired()));
     }
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> setup(@RequestBody Map<String, String> body) {
-        if (!isSetupRequired()) {
+        if (!shAdminPasswordService.isSetupRequired()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Setup already completed."));
         }
 
-        String password = body.get("password");
-        if (!StringUtils.hasText(password) || password.length() < MIN_PASSWORD_LENGTH) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Password must be at least " + MIN_PASSWORD_LENGTH + " characters."));
+        try {
+            shAdminPasswordService.setPassword(body.get("password"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-
-        ShUser admin = shUserRepository.findByUsername(ADMIN);
-        admin.setPassword(passwordEncoder.encode(password));
-        shUserRepository.saveAndFlush(admin);
 
         log.info("Admin password set via first-access setup.");
         return ResponseEntity.ok(Map.of("status", "ok"));
-    }
-
-    private boolean isSetupRequired() {
-        ShUser admin = shUserRepository.findByUsername(ADMIN);
-        return admin != null && !StringUtils.hasText(admin.getPassword());
     }
 }

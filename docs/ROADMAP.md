@@ -59,6 +59,17 @@
 - 📋 **SH698** (deps: —) **`fixture-traits.test.mjs` fails at file level about one run in five, with every assertion in it green** — Caught once in five `pnpm test` runs: the file reports `test failed` and names no assertion, 951 ms against 209 ms alone, so the gate is red for something outside the tests. → §XXI.11
 - 📋 **SH700** (deps: —) **`pnpm conformance:docs` is red on ten checks against the published documentation** — The docs repo is 13 commits ahead of origin and every failing check is fixed in them, so the gate reads a published state that stopped matching the local one on 2026-08-11. → §XXI.12
 
+## Block V — The vocabulary proved live (integration tests against a running instance)
+
+- 📋 **SH707** (deps: —) **No instrument says which of the agent's verbs a live suite has ever called** — Thirteen MCP tools, thirty-three CLI commands and the agent ops are proved by MockMvc and module imports, and only two tools are ever spoken over a wire. → §XXIII.1
+- 📋 **SH708** (deps: SH707) **Eight read tools have never answered a real client against real content** — find, changes, digest, verify, assets, marketplace, context and read are proved against MockMvc fixtures, so a schema or projection drift shows up first in Claude Code. → §XXIII.2
+- 📋 **SH709** (deps: SH707) **No live run has ever written, published or rolled back through the MCP tools** — write, apply, publish and remember carry draft-default, dry-run and confirm tokens, and every one of those guards is asserted against a mock that cannot leave a wrong row behind. → §XXIII.3
+- 📋 **SH710** (deps: SH707) **P6 is asserted on the ops but never on the thirteen tools a client actually calls** — A refusal is the agent's recovery path, and no live run has checked that each tool's wrong call comes back carrying fix, allowed, didYouMean or example. → §XXIII.4
+- 📋 **SH711** (deps: SH707) **Thirty-three CLI commands, and only the clone-propose-convert chain is ever run against an instance** — pull, push, apply, verify, diff, impact, audit, doctor, site, types and the rest are proved by importing the module, which skips argv, exit codes and the HTTP client. → §XXIII.5
+- 📋 **SH712** (deps: SH708, SH709, SH710) **Every suite calls the verbs in the order its author imagined, which is the one order that works** — An agent publishes before it creates, moves a folder into its own child and reads what it deleted, and nothing exercises the vocabulary out of order on purpose. → §XXIII.6
+- 📋 **SH713** (deps: SH712) **Nothing has ever pointed two agents and a curator at one instance at the same time** — Every suite is one caller in sequence, so lost updates, half-visible publishes and a console edit landing mid-plan are failure modes the product has never been asked about. → §XXIII.7
+- 📋 **SH714** (deps: SH708, SH709) **Response budgets are measured on fixtures, and P5's byte-identical promise on one call** — A payload sized against a two-post fixture says nothing about a real tree, and no live run repeats a call to check the second answer matches the first byte for byte. → §XXIII.8
+
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and

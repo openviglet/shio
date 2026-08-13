@@ -119,9 +119,9 @@ which was right about a **decision** and wrong about a **blank**, since the agen
 just deployed the front end and knows the address.
 
 **It fills what is empty and never replaces what somebody chose (SH184).** SH170 refused to update
-at all, reasoning that a site's URL and description are console concerns with a human looking at
+at all, reasoning that a site's URL and description are console concerns with a curator looking at
 them — right about a *decision*, wrong about a *blank*, and it left an agent able to build a site,
-deploy a front end and not connect the two without a human opening the console. An empty `url`,
+deploy a front end and not connect the two without a curator opening the console. An empty `url`,
 `description` or `furl` is now filled and reported as an `update` naming the fields; a non-empty
 one is **kept**, and the note says which and points at the console, because a bare `noop` reads as
 the request having been ignored rather than as a value having been protected. Three rules: the op
@@ -249,7 +249,7 @@ the likeliest way to arrive at this 404 at all. `didYouMean` was already a solve
 codebase; this is the endpoint it was invented for.
 
 **The cost was not cosmetic.** With zero bytes back, a renamed type and a type that never existed
-are the same answer, and the caller's next move — retry, create, or ask a human — depends on which.
+are the same answer, and the caller's next move — retry, create, or ask a curator — depends on which.
 An agent that cannot tell them apart guesses, and guessing on a model change is how a second
 post-type gets created beside the one that was meant. So the `fix` names *both* moves: create it,
 or ask `?dryRun=true` (SH523) what adopting a definition would cost first.

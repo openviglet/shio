@@ -16,7 +16,7 @@ export function Roles() {
           eyebrow="Three roles"
           title={
             <>
-              The agent builds. The human curates.{" "}
+              The agent builds. The curator approves.{" "}
               <span className="text-primary">The API delivers.</span>
             </>
           }

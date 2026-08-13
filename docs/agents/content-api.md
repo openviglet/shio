@@ -359,7 +359,7 @@ suite with the 500 that started this.
   SQL: timestamp equality is a fractional-second promise H2, MariaDB and PostgreSQL do not make
   the same way.
 - **The audit records the folder *and* each post**, which is what lets the SH109 queue undo a
-  section in one entry — "restore the section" is the gesture a human means. `/agent/changes`
+  section in one entry — "restore the section" is the gesture a curator means. `/agent/changes`
   resolves a folder address for such an entry (through the trash, since the folder is deleted by
   then): an entry nobody can address is a change nobody can act on.
 

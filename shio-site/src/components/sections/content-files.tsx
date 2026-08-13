@@ -4,7 +4,7 @@ import { CONTENT_FILE, CONTENT_TREE } from "@/lib/site-content";
 
 const ADDRESSES = [
   { form: "post:<site>/<friendly-url>", gloss: "a post — and post:acme/ is the home page" },
-  { form: "folder:<site>/<name-chain>", gloss: "a folder, by the names a human reads" },
+  { form: "folder:<site>/<name-chain>", gloss: "a folder, by the names a person reads" },
   { form: "site:<name>", gloss: "the site itself" },
   { form: "id:<uuid>", gloss: "when you already have the id — reads only" },
 ];
@@ -34,7 +34,7 @@ export function ContentFiles() {
               </h3>
               <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
                 The same four forms in the CLI, over REST and over MCP. Writes take
-                only the first two, because an id is not a place a human can name.
+                only the first two, because an id is not a place anyone can name.
               </p>
               <dl className="mt-4 space-y-2.5">
                 {ADDRESSES.map((a) => (

@@ -25,6 +25,8 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
+## Block V — The vocabulary proved live (integration tests against a running instance)
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -959,3 +961,210 @@ push nobody is reminded to make, and fails as though the docs were wrong — sen
 next reader to edit pages already correct. The fix is the push; what the task decides is
 what stops the next one, the candidate being a gate that reports the checkout's position
 against its remote, so red says *unpushed*.
+
+## XXII Realignment of what already shipped
+
+Block N's family. It holds the cases where a capability shipped complete against its own
+brief and incomplete against a law — most often P1, where the console got an interface
+and nothing else did. These are not defects in the feature; the feature works. They are
+defects in its *reach*, and they are filed separately because the fix is almost never in
+the code the original task wrote.
+
+## XXIII The vocabulary proved live (integration tests against a running instance)
+
+Shio's whole product claim is a vocabulary an external agent drives: thirteen MCP tools
+over `POST /mcp` and `shio mcp`, thirty-three CLI commands, and the `/api/v2/agent/**`
+ops underneath both. Almost all of it is proved by MockMvc in `shio-app` and by module
+imports in `cli/test/` — two tiers that, by construction, cannot be wrong about the
+thing an agent actually meets: the tool name it must guess right, the input schema it
+must spell, the framing, the response budget, and the shape of the refusal it has to
+read to recover. `cli/conformance/` is the tier with an instance, and it calls two
+tools.
+
+This block closes that gap deliberately and in order. First the instrument that counts
+what has never been spoken live, because six suites with no denominator prove nothing
+about coverage. Then the read half, the write half, the teaching errors, the CLI surface
+and the live budgets. Then the part a per-verb suite structurally cannot reach: the
+chaotic run — verbs interleaved, sequenced wrongly on purpose, permuted under a recorded
+seed — because an agent does not call the vocabulary in the order a test author
+imagined, and every ordering bug in the product to date has been found by somebody doing
+it out of order.
+
+Non-goals bind here as everywhere: the instance runs no browser, and none of this
+becomes a third contract.
+
+### XXIII.1 The ledger of what a running instance has never been asked (SH707)
+
+The vocabulary is proved everywhere except where it is used. `shio-app` has forty-odd
+`ShAgent*Test` classes, all MockMvc; `cli/test/` has sixty-odd module-level suites; and
+`cli/conformance/`, the only tier that has an instance, calls exactly two of the
+thirteen MCP tools — `shio_context` and `shio_read` — because SH561 set out to prove the
+transport, not the surface it carries. `shio_write`, `shio_apply`, `shio_publish`,
+`shio_remember`, `shio_find`, `shio_changes`, `shio_digest`, `shio_verify`,
+`shio_assets`, `shio_marketplace` have never been called by a client that had to guess
+the tool name right, spell the input schema, frame the request and read the refusal.
+
+Every gap below this line is a suite somebody has to write, and the first thing that
+must exist is the count — otherwise the block ships six suites and nobody can say what
+fraction of the vocabulary that bought. Same shape as SH338: before "write the tests",
+the instrument that names every verb the agent can utter and marks which have been
+uttered against something running.
+
+So: one lint enumerating the MCP tool registry, the CLI command directory and the agent
+op table, joined against what the conformance tier actually calls, holding the
+unexercised ones as an asserted list rather than a ceiling. It prints both counts on
+every run. A verb added without live coverage fails it, which is how the list stays
+honest after this block closes.
+
+### XXIII.2 The read half, spoken over the wire against a seeded site (SH708)
+
+One conformance suite driving every read-side tool over `shio mcp`'s newline-delimited
+JSON-RPC, against a scratch site the suite seeds itself: `shio_context`, `shio_read`,
+`shio_find`, `shio_changes`, `shio_digest`, `shio_verify`, `shio_assets`,
+`shio_marketplace`.
+
+What a live call can be wrong about, and a MockMvc test cannot: the declared input
+schema an agent fills in from `tools/list` rather than from the handler's signature; the
+address forms — `post:<site>/<furl>`, the home page's bare `post:<site>/`, `folder:`,
+`site:`, `id:` — resolved against rows that exist rather than against a mock; a
+projection that reads fine on a two-post fixture and truncates on a real tree;
+`shio_changes` cursors that must survive a second call; ETag and conditional-read paths
+that need a real store to have a real version.
+
+Each tool gets its happy path, its empty result, and at least one case the fixture
+cannot fake — `shio_find` over content seeded to collide on the term, `shio_assets`
+against a real uploaded binary, `shio_verify` against a site with a deliberate finding
+in it, `shio_digest` called twice with nothing changed in between.
+
+The suite seeds and tears down through the same `scratchSite` helper the replication run
+uses, so a red run leaves the instance where it found it, and `keepsFixtures` still
+holds when someone needs to look.
+
+### XXIII.3 The write half, where a guard that fails leaves a real row (SH709)
+
+`shio_write`, `shio_apply`, `shio_publish` and `shio_remember` are the four tools that
+change something, and they carry the guards P7 exists for: draft by default, `dryRun`
+that must write nothing, confirm tokens on the destructive paths, attribution on what
+lands. A mock proves the branch was taken. Only an instance proves the row is absent
+afterwards — which is the assertion that matters, because every one of these guards
+fails in the same direction: the response says refused and the write happened anyway.
+
+So each scenario is call-then-look: `dryRun` followed by a read that must still 404; a
+write without `publish` followed by a delivery read that must not see it; a
+confirm-token path called once without the token and once with a stale one, then
+verified against the store; `shio_apply` given a plan whose second op is invalid,
+asserting the first op did not survive it — the commit-order question
+`ShAgentCommitOrderTest` asks of a mock, asked where a transaction is real.
+
+`shio_remember` is the odd one: its whole point is that a note outlives the call, so the
+only honest test reads it back through a second connection.
+
+Idempotence gets its first pass here — the same upsert twice is one row — with the wider
+determinism sweep left to its own task.
+
+### XXIII.4 Every tool refused on purpose, thirteen times over (SH710)
+
+P6 says errors are instructions, and the assertion exists — for the HTTP ops. The
+transport is where an agent meets a refusal, and there the failure modes are the
+transport's own: a JSON-RPC error object with the teaching payload dropped into a field
+no client reads; a schema violation caught by the framing layer before the handler that
+would have taught anything; a stack trace where a `didYouMean` belonged.
+
+So: for each of the thirteen tools, a table-driven sweep of the ways a real agent gets
+it wrong — a required property omitted, a property invented, a property of the wrong
+type, an address in a form the verb does not take (a `site:` where writes take only
+`post:`/`folder:`), an address that parses and names nothing, a site that does not
+exist, an empty request body. Each case asserts the refusal is machine-readable, names
+at least one of `fix`/`allowed`/`didYouMean`/`example`, and — the part only a live run
+can check — that nothing was written.
+
+The near-miss cases are the valuable ones, because they are what a model actually does:
+`shio_blueprint` for a tool that is not there, `shio_delete` for a verb the surface
+never had, a tool name off by an underscore. `didYouMean` earns its place or it does
+not, and today nothing on the wire has ever asked.
+
+### XXIII.5 The CLI, spawned as a process, against something running (SH711)
+
+`cli/test/` imports command modules; that is what makes `pnpm test` fast and it is the
+right trade for sixty suites. What it removes is everything between a user's keystroke
+and the module: argv parsing, flag meaning, the exit code CI reads, the auth handshake,
+the HTTP client's error mapping, and the file the command writes to disk. SH456 already
+established that an exit code is something a module call structurally cannot see.
+
+So: a conformance suite that spawns `src/index.mjs` for the whole command surface
+against a live instance, grouped by what they touch. The round-trip group — `init`,
+`pull`, `push`, `apply`, `verify`, `report`, `remember` — run as one sequence, ending
+with a `pull` whose output must be byte-identical to what the first one wrote (P5, and
+the three-way merge is the part with the most places to be wrong). The read group —
+`context`, `changes`, `digest`, `diff`, `impact`, `audit`, `resolve`, `types`, `site`,
+`annotations`, `marketplace`, `doctor` — asserted on exit code, on the shape of what
+they print, and on not needing a browser.
+
+`publish` and `import` get the write treatment from the sibling task. `dev`, `build` and
+`deploy` are named explicitly as out of scope, with the reason recorded, so the ledger
+does not read them as forgotten.
+
+### XXIII.6 The chaotic run — the vocabulary permuted, under a seed that replays (SH712)
+
+A per-verb suite proves each verb answers when everything before it went right. That is
+the state an agent is almost never in. Real sessions abandon a plan halfway, retry a
+call whose response was lost, publish something they have not created yet, delete a
+folder they are holding an address into, and re-run a whole sequence because the first
+attempt looked ambiguous.
+
+Two halves. The **named wrong sequences**, written by hand because they are the ones
+with known answers: publish before create; move a folder into its own descendant; write
+to a trashed post; apply a plan referencing an address deleted between plan and apply;
+read with an ETag from a version since overwritten; two upserts racing for the same
+friendly URL; a confirm token replayed after the thing it confirmed already went.
+
+And the **seeded permutation**: a generator drawing from the whole vocabulary — MCP
+tools and CLI commands both — emitting sequences under a seed printed on every run,
+asserting the invariants that must hold in every ordering rather than the outcome of any
+one: the instance stays up, no 5xx, every refusal still teaches, and the final state is
+reachable by some legal sequence. A red run prints its seed, so chaos replays exactly; a
+seed that ever found something is pinned into the suite as a permanent case.
+
+### XXIII.7 Two agents and a curator, all writing at once (SH713)
+
+Shio's own story has at least two writers in it: the agent that builds and the curator
+who corrects. Every test in the repo has one, calling in sequence, and the whole class
+of defects that needs two — lost updates, a read that sees half a publish, a plan
+applied around a console edit that landed inside it — has never been reachable.
+
+So: a suite that runs concurrent sessions against one instance. Two MCP connections
+writing to the same site, one to the same post; an `apply` running while a console PUT
+touches an object in its plan; a `pull`/`push` round trip straddling a publish;
+`shio_changes` polled by one session while another writes, which is the cursor question
+SH232 raises asked where it can actually fail.
+
+The assertions are the ones concurrency needs, not the ones a sequential suite writes:
+no lost update — every accepted write is in the final state or was refused with a
+reason; no torn read — nothing observes a partially published set; no deadlock; and
+every conflict refused rather than silently merged, carrying a `fix` the loser can act
+on.
+
+The tenant ITs are the precedent for the harness shape. This is the same trade one tier
+up: expensive, opt-in, and the only place a whole failure class is visible at all.
+
+### XXIII.8 What every tool costs, and whether it answers twice the same (SH714)
+
+P3 makes a token regression a build failure and `ShAgentResponseBudgetTest` enforces it
+— against fixtures. The number an agent pays is the one a real site produces, and the
+two diverge exactly where it matters: a listing that fits its budget on three posts and
+blows it on three hundred, a manifest that grew because a site has more post types than
+the fixture, a context pack sized against content nobody seeded.
+
+So: measure every tool's response on the wire against a seeded site large enough to be
+honest, report the measurement, and hold it against the budget file the way
+`budget-restatement.test.mjs` holds the transport constant. The measurement is the
+deliverable, in that order — the numbers first, then whatever they argue for. SH673's
+lesson is the guard rail: a constant restated in a second place drifts silently unless
+something joins the two.
+
+P5 gets the same treatment. Every read repeated with nothing changed in between must
+return byte-identical output — same ordering, same serialization, no timestamp leaking
+into the payload — and every idempotent write repeated must leave one row and the same
+response. Ordering instability is the defect this finds, and it is invisible to a
+fixture with too few rows to have an ambiguous order. Both checks run inside the chaotic
+suite's teardown too, where the state is unrepeatable by construction.
