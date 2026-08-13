@@ -872,28 +872,6 @@ it out of order.
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
 
-### XXIII.3 The write half, where a guard that fails leaves a real row (SH709)
-
-`shio_write`, `shio_apply`, `shio_publish` and `shio_remember` are the four tools that
-change something, and they carry the guards P7 exists for: draft by default, `dryRun`
-that must write nothing, confirm tokens on the destructive paths, attribution on what
-lands. A mock proves the branch was taken. Only an instance proves the row is absent
-afterwards — which is the assertion that matters, because every one of these guards
-fails in the same direction: the response says refused and the write happened anyway.
-
-So each scenario is call-then-look: `dryRun` followed by a read that must still 404; a
-write without `publish` followed by a delivery read that must not see it; a
-confirm-token path called once without the token and once with a stale one, then
-verified against the store; `shio_apply` given a plan whose second op is invalid,
-asserting the first op did not survive it — the commit-order question
-`ShAgentCommitOrderTest` asks of a mock, asked where a transaction is real.
-
-`shio_remember` is the odd one: its whole point is that a note outlives the call, so the
-only honest test reads it back through a second connection.
-
-Idempotence gets its first pass here — the same upsert twice is one row — with the wider
-determinism sweep left to its own task.
-
 ### XXIII.4 Every tool refused on purpose, thirteen times over (SH710)
 
 P6 says errors are instructions, and the assertion exists — for the HTTP ops. The

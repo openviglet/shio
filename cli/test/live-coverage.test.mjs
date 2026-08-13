@@ -122,18 +122,21 @@ function verbsCalled() {
  *
  * <h2>The shape of what is missing</h2>
  *
- * <p>The two tools that are called are `shio_context` and `shio_read` — a read and a read. Nothing
- * that <em>writes</em> has ever been spoken over a wire: not `shio_write`, not `shio_apply`, not
- * `shio_publish`. The op table is the same story from the other end — the ops a conformance
- * scenario uses are the ones building a fixture needs, so `post.upsert` and `post.publish` are
- * covered and every op that <b>removes</b> or <b>moves</b> something is not. Delete and move are
- * where SH202, SH203 and SH243 all found defects.</p>
+ * <p>It opened at <b>2 of 12</b> — `shio_context` and `shio_read`, a read and a read, with nothing
+ * that <em>writes</em> ever spoken over a wire. SH708 took the read half and SH709 the write half,
+ * so the tool row is now <b>12 of 12</b>.</p>
+ *
+ * <p>The op table still tells the other half of the story, and it is the same shape: the ops a
+ * conformance scenario uses are the ones building a fixture needs, so `post.upsert` and
+ * `post.publish` are covered and every op that <b>removes</b> or <b>moves</b> something is not.
+ * Delete and move are where SH202, SH203 and SH243 each found a defect.</p>
  */
 const UNEXERCISED = {
-  // SH708 covered the read half — `mcp-read.conformance.mjs` drives all eight over the wire against
-  // a site it seeds. What is left is exactly the write half, and that is the finding rather than a
-  // coincidence: nothing that CHANGES anything has ever been spoken over this transport.
-  tools: ["shio_apply", "shio_publish", "shio_remember", "shio_write"],
+  // Empty since SH709, and left declared rather than deleted: SH708 took the read half and SH709
+  // the write half, so all twelve are now spoken by a client that had to guess the name, spell the
+  // schema and read the refusal. A key at `[]` makes a reintroduction a change to a declared zero
+  // that a diff shows, rather than a tool quietly arriving with no live coverage.
+  tools: [],
   ops: [
     // `folder.upsert` came off with SH708, whose fixture needs a folder. What remains is every op
     // that REMOVES or MOVES something — the three places SH202, SH203 and SH243 found defects.
@@ -178,24 +181,33 @@ test("SH707: the live tier's coverage of the agent vocabulary is the declared li
 });
 
 test("SH707: exercised means called, not mentioned", () => {
-  // The guard on the reader itself. The first draft matched any occurrence of a name under
-  // `conformance/` and reported five tools covered; three of those five are prose. A reader that
-  // cannot tell a comment from a call flatters every number it prints.
-  const called = toolsCalled();
+  // The guard on the reader itself, and it is written against a **sample** rather than against the
+  // corpus on purpose. It used to anchor on `shio_write` being named in prose and called nowhere;
+  // SH709 called it, and an assertion whose premise the work keeps invalidating is one that gets
+  // deleted rather than fixed. The rule it protects does not change: a mention is what a comment
+  // does, and the claim being measured is that a client framed a request.
+  const prose = `
+    A comment about shio_write and shio_publish, and a sentence naming shio_apply.
+    A markdown list: - shio_remember, the note that outlives the call.
+  `;
+  const calls = `
+    await mcp.call("shio_read", { address });
+    const answer = await call('shio_find', { q });
+  `;
 
-  assert.ok(SOURCE.includes("shio_write"),
-    "SH707: `shio_write` is named somewhere under conformance/ — in prose. If this fails the "
-    + "premise of this test has changed and the next assertion proves nothing.");
-  assert.ok(!called.has("shio_write"),
-    "SH707: the reader counted a tool that is only mentioned. Exercised has to mean a client "
-    + "framed the request and read the answer; anything looser makes this instrument report "
-    + "coverage that nobody wrote.");
+  // The same expression `toolsCalled` uses. Stated here rather than shared, so the sample
+  // proves the RULE, and loosening the reader has to be done in two places on purpose.
+  const readerOver = (text) => new Set(
+    [...text.matchAll(/\bcall\(\s*["'`]([a-z_]+)["'`]/g)].map((m) => m[1]),
+  );
 
-  const writes = ["shio_apply", "shio_publish", "shio_remember", "shio_write"];
-  assert.deepEqual(writes.filter((t) => called.has(t)), [],
-    "SH707: a write tool has been spoken over the wire. That is good news and this list is now "
-    + "wrong — move it out of UNEXERCISED in the same commit. Until then the headline stands: the "
-    + "live tier reads and has never written, which SH708 left exactly as it found it.");
+  assert.deepEqual([...readerOver(prose)], [],
+    "SH707: the reader credited a tool that only appears in prose. That is how the first draft "
+    + "reported five tools covered when two were, and a coverage number that counts comments is "
+    + "worse than no number — it is a number somebody will quote.");
+  assert.deepEqual([...readerOver(calls)].sort(), ["shio_find", "shio_read"],
+    "SH707: the reader must see BOTH shapes — `mcp.call(...)` and a suite's own `call(...)` "
+    + "wrapper. Missing the second is what made SH708 read as uncovered while it was passing.");
 });
 
 test("SH707: the populations are read from the product, not from this file", () => {
