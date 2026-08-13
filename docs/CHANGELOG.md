@@ -583,6 +583,7 @@
 - **SH699** — The mount effect now starts the fetch without raising state and loading begins true, so pnpm lint is green; the fifteen the SH665 baseline still absorbs are held by SH701.
 - **SH701** — eslint-suppressions.json is now a named list that prints its counts and fails on drift, with four of the fifteen paid off and the other eleven held by SH702-SH704.
 - **SH702** — Four dialogs mount their body inside DialogContent keyed on its subject, so a reopen renders nothing from the previous read - proved by a probe red before and green after.
+- **SH703** — Six hand-maintained flags become derived - the spinner is a comparison, the selection and the bridge handshake carry what they belong to, and the widgets tag their resolved path, closing a race.
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 

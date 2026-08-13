@@ -659,30 +659,6 @@ leave the counter and let the *restore* refuse a title collision the way it now 
 a URL one. The second matches SH243's shape and costs a refusal on a name nobody
 addresses by.
 
-### XVI.79 Five places that hold as state what they could compute (SH703)
-
-Five of the seven `set-state-in-effect` suppressions left after SH702, and all one idea:
-a value that changes *above* the component drives a flag the component sets by hand.
-
-- **The re-query spinner.** `object.children.page.tsx:190` raises `setLoading(true)` in the effect
-  that re-fetches page 0 when the sort key or search term changes. What `loading` means is "the
-  rows on screen are not the rows this key asks for" — a comparison. Holding the key that finished
-  loading and computing from it removes the setState and a frame: today the spinner appears one
-  render *after* the query changed.
-- **The selection reset.** `:197` clears `selectedItems` when the folder changes — the case React
-  documents as adjusting state on a prop change, whose answer is the remount SH702 used.
-- **The visual editor**, `:125` and `:311`, the same two shapes one page over.
-- **Two widgets, and they arrived here by being wrong somewhere else.**
-  `content-select.widget.tsx:128` and `file.widget.tsx:120` were filed under SH702 as dialogs.
-  Opening them found no `open` prop: they re-resolve a content path when `attr.strValue` changes,
-  which is the re-query spinner exactly. The grouping was made by reading a lint report rather
-  than the code, and this is what that costs.
-
-Worth doing, not worth doing blind. `object.children` is the page a curator spends the
-day in, `loading` is read in three places and the selection drives a bulk toolbar. SH702
-showed the shape of the proof: drive the console and assert what a person would have had
-to notice.
-
 ### XVI.80 A module cache read through an effect that has to guard itself (SH704)
 
 The last of the eleven `set-state-in-effect` suppressions SH701 declared is
@@ -710,6 +686,34 @@ the same effect.
 
 Small, and worth its own line rather than a footnote on SH702 or SH703: it is the one of
 the eleven that is not about a page, and it is on the path every page takes.
+
+### XVI.81 A breadcrumb keyed on a label that repeats by design (SH716)
+
+`pnpm console:check` fails one probe of nineteen, and has for at least three runs:
+
+    FAIL post-edit:File  /console/content/post/490bd18c-…
+      error: Encountered two children with the same key, `%s`.
+
+`page-header.tsx:43` renders the crumb list as `<React.Fragment key={item.label}>`.
+`post.edit.page.tsx:76-78` builds that list by pushing the **site name** and then the
+**folder name**. For a post in a site's **root** folder those are the same string — the
+root folder carries the site's name — so the key repeats on every such page. That is not
+an edge case: it is the default shape of a new site, and the fixture this instance ships
+is exactly it (site `teste`, root folder `teste`).
+
+The symptom React describes is the one that matters: two children under one key, so the
+reconciler may keep one component's state on the other's props. On a breadcrumb the
+damage is small; the defect is that a *label* was ever load-bearing. A crumb's identity
+is its position and its target, not the text a curator chose.
+
+So the fix is the key, not the labels: the `href` where there is one, position otherwise
+— a breadcrumb is a positional list that re-renders whole, so the index is honest here
+rather than the usual smell.
+
+Worth its own line rather than folding into SH703 because the evidence is different in
+kind: a red probe naming a file, not a lint report. And it is the only thing standing
+between `console:check` and 19 of 19, which is a gate that will otherwise be read as
+"known red".
 
 # Part 2 — pre-existing sections
 

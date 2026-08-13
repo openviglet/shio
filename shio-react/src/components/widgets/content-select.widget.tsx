@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ChevronRight, FileText, Folder, Search, X } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
 import type { WidgetProps } from "./index"
@@ -98,8 +98,16 @@ export function ContentSelectWidget({ attr, onChange }: WidgetProps) {
   const { t } = useTranslation()
   const [browserOpen, setBrowserOpen] = useState(false)
   const [browserStartId, setBrowserStartId] = useState<string | undefined>(undefined)
-  const [resolved, setResolved] = useState<ResolvedContent | null>(null)
-  const [resolving, setResolving] = useState(false)
+  /**
+   * SH703 — the resolved content, tagged with the id it belongs to; `resolved` and `resolving` are
+   * computed from it rather than set. Same reasoning as `file.widget`: the effect stops raising
+   * state before its request, and a late answer for a content item the curator has already replaced
+   * is ignored instead of overwriting the new one.
+   */
+  const [entry, setEntry] = useState<{ id: string; content: ResolvedContent | null } | null>(null)
+  const contentId = attr.strValue ?? ""
+  const resolved = entry && entry.id === contentId ? entry.content : null
+  const resolving = contentId !== "" && entry?.id !== contentId
 
   const settings = useMemo(() => parseSettings(attr.shPostTypeAttr?.widgetSettings), [attr.shPostTypeAttr?.widgetSettings])
 
@@ -108,40 +116,34 @@ export function ContentSelectWidget({ attr, onChange }: WidgetProps) {
     setBrowserOpen(true)
   }
 
-  const doResolve = useCallback(async (contentId: string) => {
-    if (!contentId) {
-      setResolved(null)
-      return
-    }
-    setResolving(true)
-    try {
-      const result = await resolveFullPath(contentId)
-      setResolved(result)
-    } catch {
-      setResolved(null)
-    } finally {
-      setResolving(false)
-    }
-  }, [])
-
+  // SH703 — no state raised before the request. `.then` and not `await`, because the compiler rule
+  // does not model the suspension and reads a `setState` after an await as synchronous.
   useEffect(() => {
-    doResolve(attr.strValue ?? "")
-  }, [attr.strValue, doResolve])
+    if (!contentId) return
+    let alive = true
+    void resolveFullPath(contentId)
+      .then((content) => { if (alive) setEntry({ id: contentId, content }) })
+      .catch(() => { if (alive) setEntry({ id: contentId, content: null }) })
+    return () => { alive = false }
+  }, [contentId])
 
   const handleBrowserSelect = (selection: ContentBrowserSelection) => {
     onChange({ ...attr, strValue: selection.id })
-    // The path from the browser is already complete
-    setResolved({
-      name: selection.name,
-      path: selection.pathSegments ?? [],
-      parentFolderId: selection.parentFolderId,
-      type: selection.type,
+    // The path from the browser is already complete, and it is tagged with the id being selected
+    // so it shows the moment the attribute catches up.
+    setEntry({
+      id: selection.id,
+      content: {
+        name: selection.name,
+        path: selection.pathSegments ?? [],
+        parentFolderId: selection.parentFolderId,
+        type: selection.type,
+      },
     })
   }
 
   const handleClear = () => {
     onChange({ ...attr, strValue: "" })
-    setResolved(null)
   }
 
   return (

@@ -88,8 +88,20 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
   const { t } = useTranslation()
   const [browserOpen, setBrowserOpen] = useState(false)
   const [browserStartId, setBrowserStartId] = useState<string | undefined>(undefined)
-  const [resolved, setResolved] = useState<ResolvedFile | null>(null)
-  const [resolving, setResolving] = useState(false)
+  /**
+   * SH703 — the resolved path, tagged with the id it belongs to.
+   *
+   * <p>`resolved` and `resolving` are <b>computed</b> from this and from the attribute's current
+   * value rather than set by hand. Two things fall out. The effect no longer raises state before
+   * its request, which is the lint's objection; and a slow response for a file the curator has
+   * already replaced can no longer land on the new one, because a tag that does not match is not
+   * shown. Under the flag that was a real race — pick a file, pick another before the first
+   * resolves, and the first answer wins the panel.</p>
+   */
+  const [entry, setEntry] = useState<{ id: string; file: ResolvedFile | null } | null>(null)
+  const fileId = attr.strValue ?? ""
+  const resolved = entry && entry.id === fileId ? entry.file : null
+  const resolving = fileId !== "" && entry?.id !== fileId
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -101,38 +113,35 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
     setBrowserOpen(true)
   }
 
-  const doResolve = useCallback(async (fileId: string) => {
-    if (!fileId) {
-      setResolved(null)
-      return
-    }
-    setResolving(true)
-    try {
-      setResolved(await resolveFullPath(fileId))
-    } catch {
-      setResolved(null)
-    } finally {
-      setResolving(false)
-    }
-  }, [])
-
+  // SH703 — no state raised before the request, and the answer is tagged so a late one for a
+  // replaced file is ignored rather than shown. `.then` and not `await`: the compiler rule does
+  // not model the suspension, so a `setState` after an await reads to it as synchronous.
   useEffect(() => {
-    doResolve(attr.strValue ?? "")
-  }, [attr.strValue, doResolve])
+    if (!fileId) return
+    let alive = true
+    void resolveFullPath(fileId)
+      .then((file) => { if (alive) setEntry({ id: fileId, file }) })
+      .catch(() => { if (alive) setEntry({ id: fileId, file: null }) })
+    return () => { alive = false }
+  }, [fileId])
 
   const handleBrowserSelect = (selection: ContentBrowserSelection) => {
     onChange({ ...attr, strValue: selection.id })
-    setResolved({
-      name: selection.name,
-      path: selection.pathSegments ?? [],
-      parentFolderId: selection.parentFolderId,
-      type: selection.type,
+    // Tagged with the id being selected, so it is shown the moment the attribute catches up and
+    // the effect's own read for the same id is a no-op rather than a second flash.
+    setEntry({
+      id: selection.id,
+      file: {
+        name: selection.name,
+        path: selection.pathSegments ?? [],
+        parentFolderId: selection.parentFolderId,
+        type: selection.type,
+      },
     })
   }
 
   const handleClear = () => {
     onChange({ ...attr, strValue: "" })
-    setResolved(null)
   }
 
   // --- Upload logic ---

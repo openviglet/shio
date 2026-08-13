@@ -57,9 +57,14 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
  * not visible to a lint — a reopened version history kept the previous read's <b>Restaurar versão
  * publicada</b> button for the whole of the next read.</p>
  *
- * <p>The remaining seven are grouped below by the fix they need: SH703 the five derived-state cases
- * and SH704 the discovery hook. Two of the five arrived from SH702's list — opening them found no
- * `open` prop at all, so they were filed under the wrong shape.</p>
+ * <p>SH703 took six more by deriving instead of setting, leaving <b>one</b>: SH704's discovery hook.
+ * Two of SH703's six arrived from SH702's list — opening them found no `open` prop at all, so they
+ * had been filed under the wrong shape by reading a lint report rather than the code.</p>
+ *
+ * <p>What SH703's own change is <b>not</b> asserted by is a browser. Its user-visible effects are
+ * one frame wide — the spinner arriving a render late, a selection count clearing a render late —
+ * and an assertion that cannot distinguish one frame reliably is a flaky gate, which is worse than
+ * none (SH579). It is on the declared debt in `assertion-debt.test.mjs` with that reason.</p>
  *
  * <h2>What stays, and why the rest is not the same kind of debt</h2>
  *
@@ -72,16 +77,8 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
  * leave visible here than to fix blind: they sit in the two largest pages in the console.</p>
  */
 const DECLARED = {
-  // SH703 — derived state: a value that changes above the component drives a flag it sets by hand.
-  // The two widgets joined this group when SH702 opened them and found no `open` prop — they
-  // re-resolve a path when `attr.strValue` changes, which is the same shape as the re-query spinner
-  // and not the dialog one they were filed under.
-  // SH704 — a module cache republished through an effect, one render late.
+  // SH704 — the last one: a module cache republished through an effect, one render late.
   "react-hooks/set-state-in-effect": {
-    "src/app/console/content/object.children.page.tsx": 2,
-    "src/app/console/universal-editor/visual-editor.page.tsx": 2,
-    "src/components/widgets/content-select.widget.tsx": 1,
-    "src/components/widgets/file.widget.tsx": 1,
     "src/hooks/use-discovery.ts": 1,
   },
   "@typescript-eslint/no-unused-expressions": {
@@ -193,6 +190,14 @@ const PAID = [
   "src/components/post-schedule.dialog.tsx",
   "src/components/post-versions.dialog.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
+  // SH703 — derived instead of set: the re-query spinner is a comparison, the selection and the
+  // editor handshake carry the folder and the destination they belong to, and the two widgets tag
+  // their resolved path with the id it is for. That last one closed a real race — a slow answer for
+  // a file the curator had already replaced used to land on the new one.
+  "src/app/console/content/object.children.page.tsx",
+  "src/app/console/universal-editor/visual-editor.page.tsx",
+  "src/components/widgets/content-select.widget.tsx",
+  "src/components/widgets/file.widget.tsx",
 ];
 
 test("SH701: every paid-off page stays paid off", async () => {

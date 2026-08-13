@@ -228,6 +228,19 @@ const DEBT = [
   // the other end — it asserts the *baseline*, names SH699 in the message, and the thing it asserts
   // is the one eslint structurally cannot: that the suppression file did not absorb the next one.
   // An assertion that exists and an assertion this reader can find were the same gap here.
+  //
+  // DOES NOT EARN one, and this is the SH529 verdict rather than a shrug. SH703 replaced six
+  // hand-maintained flags with derived ones. Every user-visible difference it makes is **one frame
+  // wide** — the spinner arriving a render late, a selection count clearing a render late, a
+  // `Connected` badge outliving its destination by a render — because the effects it deleted did
+  // run, just after the paint. SH702 was assertable precisely because its stale state lasted the
+  // whole read; this one is not, and an e2e that cannot reliably distinguish a frame is a flaky
+  // gate, which SH579 says is worse than a red one. What IS asserted is the shape:
+  // `lint-baseline.test.mjs` holds all six files as paid off, so re-suppressing one fails a gate.
+  // The one behavioural thing SH703 fixed that is not a frame — a slow resolve for a file the
+  // curator had already replaced landing on the new one — would earn a probe, and needs a post with
+  // a File field and two selections raced against a route delay.
+  "SH703",
 ].sort(byId);
 
 /**

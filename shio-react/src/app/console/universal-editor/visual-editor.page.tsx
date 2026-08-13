@@ -79,7 +79,12 @@ export default function VisualEditorPage() {
   const [searchParams] = useSearchParams()
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const [src, setSrc] = useState<string>("")
+  /**
+   * SH703 — the destination the site lookup produced. The external one is not state at all: it is
+   * `?url=`, read straight from the query string, so the effect below no longer has a branch that
+   * writes what it could have computed.
+   */
+  const [fetchedSrc, setFetchedSrc] = useState<string>("")
   // SH333 — the three states this used to collapse into two. The frame had no `onLoad` and no
   // `onError`, and the SH185 handshake had no deadline, so "still loading" and "this will never
   // load" were the same word: a curator opening the editor on a site with no page at `/` read
@@ -87,9 +92,18 @@ export default function VisualEditorPage() {
   //
   // One state rather than a `ready` boolean beside it: two fields that must agree about the same
   // handshake are two fields that can disagree about it.
-  const [bridge, setBridge] = useState<BridgeState>("waiting")
-  const [frameLoaded, setFrameLoaded] = useState(false)
-  const ready = bridge === "ready"
+  /**
+   * SH703 — the handshake, tagged with the destination it belongs to.
+   *
+   * <p>`bridge` and `frameLoaded` were reset by an effect on `src`, which is the shape this task is
+   * about: a value changing above them drove two flags maintained by hand, and the reset landed one
+   * render after the paint that still said `Connected`. Tagging them means a handshake for another
+   * destination simply is not this destination's — it reads as `waiting` with no frame loaded,
+   * without anybody clearing it afterwards, and the stale `Connected` window closes entirely.</p>
+   */
+  const [handshake, setHandshake] = useState<{ src: string; bridge: BridgeState; frameLoaded: boolean }>(
+    () => ({ src: "", bridge: "waiting", frameLoaded: false }),
+  )
   const [editMode, setEditMode] = useState(true)
   const [mobile, setMobile] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -119,13 +133,23 @@ export default function VisualEditorPage() {
   // moment made it unavailable for exactly the sites that most needed looking at. SH183
   // renders the page here, and the fallback mirrors ShSiteFrontEnd on the server so the two
   // cannot come to disagree about where a site is visible.
+  const externalSrc = siteId === "external" ? searchParams.get("url") : null
+  const src = externalSrc ?? fetchedSrc
+  const bridge: BridgeState = handshake.src === src ? handshake.bridge : "waiting"
+  const frameLoaded = handshake.src === src && handshake.frameLoaded
+  // Every write stamps the destination it is about, and carries the sibling flag over only when it
+  // belonged to that same destination. Without the stamp a frame's `onLoad` would land under the
+  // previous `src` and the derived value would never see it.
+  const setBridge = useCallback((next: BridgeState) => setHandshake((prev) => ({
+    src, bridge: next, frameLoaded: prev.src === src && prev.frameLoaded,
+  })), [src])
+  const setFrameLoaded = useCallback((next: boolean) => setHandshake((prev) => ({
+    src, frameLoaded: next, bridge: prev.src === src ? prev.bridge : "waiting",
+  })), [src])
+  const ready = bridge === "ready"
+
   useEffect(() => {
-    const external = searchParams.get("url")
-    if (siteId === "external" && external) {
-      setSrc(external)
-      setSiteError(null)
-      return
-    }
+    if (externalSrc) return
     if (!siteId) return
     siteService
       .get(siteId)
@@ -134,11 +158,11 @@ export default function VisualEditorPage() {
         // rather than something the parent turns on afterwards, so an ordinary preview never
         // ships editor code — and it is harmless on an external front end that ignores it.
         const destination = siteDestination(site)
-        setSrc(withEditorFlag(destination.url))
+        setFetchedSrc(withEditorFlag(destination.url))
         setSiteError(null)
       })
       .catch(() => setSiteError(t("universalEditor.siteNotFound", { key: siteId })))
-  }, [siteId, searchParams, t])
+  }, [siteId, externalSrc, t])
 
   /**
    * The origin the framed page lives at (SH185).
@@ -194,7 +218,7 @@ export default function VisualEditorPage() {
     }
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)
-  }, [frameOrigin])
+  }, [frameOrigin, setBridge])
 
   /**
    * SH333 — the handshake gets a deadline.
@@ -211,7 +235,7 @@ export default function VisualEditorPage() {
     if (bridge !== "waiting" || !frameLoaded) return
     const timer = window.setTimeout(() => setBridge("absent"), HANDSHAKE_TIMEOUT_MS)
     return () => window.clearTimeout(timer)
-  }, [bridge, frameLoaded])
+  }, [bridge, frameLoaded, setBridge])
 
   // Push the current mode to the iframe whenever it changes (once ready).
   useEffect(() => {
@@ -305,12 +329,10 @@ export default function VisualEditorPage() {
     if (iframeRef.current) iframeRef.current.src = src
   }
 
-  // A new destination is a new handshake: without this, navigating from a page that answered to
-  // one that does not would keep reporting `Connected` against a frame that never spoke.
-  useEffect(() => {
-    setBridge("waiting")
-    setFrameLoaded(false)
-  }, [src])
+  // A new destination is a new handshake. SH703 — that is now a property of the state rather than
+  // an effect that repairs it: the handshake carries the `src` it belongs to, so navigating from a
+  // page that answered to one that does not reads as `waiting` on the first render instead of
+  // reporting `Connected` against a frame that never spoke until the effect caught up.
 
   return (
     <div className="flex flex-col h-screen">

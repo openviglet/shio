@@ -111,6 +111,14 @@ const SELECT_ALL_CAP = 1000
  */
 const POST_SORT: Record<string, string> = { order: "title", name: "title", date: "date" }
 
+/**
+ * SH703 — one frozen empty set, at module scope on purpose.
+ *
+ * A `new Set()` per render would be a new identity every time, so every `useMemo` and every child
+ * keyed on the selection would recompute on every render of a page that renders a lot.
+ */
+const EMPTY_SELECTION: Set<string> = new Set<string>()
+
 export default function ObjectChildrenPage() {
   const { objectId } = useParams() as { objectId: string }
   const { t } = useTranslation()
@@ -120,9 +128,41 @@ export default function ObjectChildrenPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [appliedQuery, setAppliedQuery] = useState("")
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbPathItem[]>([])
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  /**
+   * SH703 — the selection, tagged with the folder it was made in.
+   *
+   * <p>It used to be cleared by an effect on `objectId`, which is the case React documents as
+   * adjusting state to a prop and answers with a remount. A remount is not available here — the
+   * router keeps this page mounted across `/object/:objectId` — so the tag does the same job: a
+   * selection belonging to another folder is not the selection, and reads as empty without anybody
+   * clearing it after the fact.</p>
+   *
+   * <p>`setSelectedItems` keeps both call shapes, the value and the updater, so the twelve places
+   * that select rows did not have to learn about this.</p>
+   */
+  const [selection, setSelection] = useState<{ folder: string; ids: Set<string> }>(
+    () => ({ folder: objectId, ids: new Set() }),
+  )
+  const selectedItems = selection.folder === objectId ? selection.ids : EMPTY_SELECTION
+  const setSelectedItems = useCallback(
+    (next: Set<string> | ((prev: Set<string>) => Set<string>)) =>
+      setSelection((prev) => {
+        const base = prev.folder === objectId ? prev.ids : EMPTY_SELECTION
+        return { folder: objectId, ids: typeof next === "function" ? next(base) : next }
+      }),
+    [objectId],
+  )
   const [lastPostType, setLastPostType] = useState<ShPostType | null>(null)
-  const [loading, setLoading] = useState(true)
+  /**
+   * SH703 — which query's rows are on screen. `loading` is **computed** from it rather than set.
+   *
+   * <p>What the flag meant was "the rows showing are not the rows this query asks for", which is a
+   * comparison and was being maintained by hand. Deriving it removes the synchronous `setState` the
+   * effect opened with, and it removes a frame with it: the spinner used to appear one render
+   * <em>after</em> the sort or the search term changed, because the effect that raised it runs after
+   * the paint that showed the stale rows.</p>
+   */
+  const [loadedQuery, setLoadedQuery] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState("order")
   const [viewMode, setViewMode] = useState<"list" | "grid" | "spreadsheet">("list")
   const [searchOpen, setSearchOpen] = useState(false)
@@ -158,6 +198,10 @@ export default function ObjectChildrenPage() {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
+  /** The identity of the current query. `loading` is this against what finished loading. */
+  const queryKey = `${objectId}|${sortBy}|${appliedQuery}`
+  const loading = loadedQuery !== queryKey
+
   /** One page of posts, plus the folder's whole subfolder set. */
   const fetchPage = useCallback((page: number) => {
     const params = new URLSearchParams({
@@ -185,17 +229,15 @@ export default function ObjectChildrenPage() {
   }, [fetchPage, listData.page])
 
   // Sort and search re-query from page 0: the server owns both, so changing either changes
-  // which rows the first page holds.
+  // which rows the first page holds. SH703 — nothing is raised here; `loading` is already true
+  // because `queryKey` moved, and it goes false when this query is the one that landed.
   useEffect(() => {
-    setLoading(true)
     fetchPage(0)
       .then((res) => setListData(res.data))
-      .finally(() => setLoading(false))
-  }, [fetchPage])
+      .finally(() => setLoadedQuery(queryKey))
+  }, [fetchPage, queryKey])
 
   useEffect(() => {
-    setSelectedItems(new Set())
-
     axios.get(`/v2/object/${objectId}/path`).then((res) => {
       const data = res.data
       const items: BreadcrumbPathItem[] = []
@@ -279,7 +321,7 @@ export default function ObjectChildrenPage() {
       else next.add(id)
       return next
     })
-  }, [])
+  }, [setSelectedItems])
 
   /**
    * SH237 — every id of every post that matches, not just the ones on screen.
