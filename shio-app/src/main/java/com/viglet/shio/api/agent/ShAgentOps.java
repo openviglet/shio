@@ -101,6 +101,8 @@ public final class ShAgentOps {
     private static final String TO = "to";
     private static final String DATA = "data";
     private static final String WHEN = "when";
+    /** SH721 — the digest a read handed back, making the write conditional on it. */
+    private static final String EXPECT = "expect";
 
     /**
      * SH197 — a {@code LinkedHashMap}, not the stability helper wrapped around a {@code Map.of}.
@@ -136,9 +138,11 @@ public final class ShAgentOps {
                     "Trash a folder and everything beneath it. Needs `confirm` from its own dry "
                             + "run; use folder.move to rename."),
             new OpSpec(ShAgentBatchService.POST_UPSERT,
-                    List.of(ADDRESS), List.of(TYPE, FOLDER), List.of(), List.of(DATA),
+                    List.of(ADDRESS), List.of(TYPE, FOLDER), List.of(), List.of(DATA, EXPECT),
                     "Declare a post's whole state at that address. `data` keys the post-type does "
-                            + "not declare are refused; use post.move to change the address."),
+                            + "not declare are refused; use post.move to change the address. "
+                            + "`expect` is a digest from read?include=digest - refused if it "
+                            + "changed since."),
             new OpSpec(ShAgentBatchService.POST_MOVE,
                     List.of(ADDRESS), List.of(), List.of(TO, FOLDER), List.of(),
                     "Change a post's URL, its folder, or both, keeping its id and history. A "

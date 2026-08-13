@@ -377,6 +377,34 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   (SH171); the **single**-address form still 404s. The read path is
   `noRollbackFor = ShTeachingException.class` for that reason — catching a teaching exception
   inside a read transaction otherwise blows up at commit.
+- **`include=digest` makes the next write conditional (SH721).** A curator patching one field while
+  an agent ran `post.upsert` on the same post got `200`, the agent got `changed=1`, and the
+  curator's field was gone — **with no signal to either party**. SH335 added the console `PATCH` for
+  exactly that reason (*"reintroduces a lost update on a surface whose premise is several curators
+  on one site"*) and the reasoning stopped at the console door. Neither side could prevent it,
+  because nothing on the surface expressed *only if unchanged*.
+
+  So a read can hand back `digest` — `ShAgentPostDigest`, over everything `post.upsert` declares:
+  type, folder, address, locale and the **full** `data`, even when the read projected a subset,
+  because an upsert overwrites all of it and a digest over the projection would promise only about
+  the part the caller happened to look at. Deliberately **not** `modifiedDate`: it is a timestamp
+  (SH200's precision argument), and it moves when a write changes nothing, which would refuse a
+  caller whose expectation was correct. Deliberately not `shio_digest` or the SH194 appearance
+  digest either — those are about a rendered *page*, so they move on a theme change and stay still
+  when an unrendered field is rewritten. Both directions wrong.
+
+  The write op then takes `expect`, and the refusal is `stale-expectation` (409). **The default
+  stays last-write-wins**, which is what keeps the write surface cheap; what changed is that an
+  agent that *cares* can say so. Three details are the design rather than the implementation:
+  a **dry run refuses too** (P9 — a plan that says `update` about a post somebody has since
+  rewritten is a plan whose only use is to be trusted); an **absent** post fails the check, because
+  absence is a different state and re-creating what somebody deleted is its own surprise; and the
+  `fix` says *read again and compose a new write*, never *re-send with the fresh digest* — that
+  instruction would perform the very overwrite `expect` was asked to prevent.
+
+  It costs nothing to anyone who does not ask: `include=digest` rides the parameter `include=impact`
+  already uses (SH262), so there is no new endpoint, no new tool schema and no new query string, and
+  a read that does not ask is byte-identical to what it was.
 - **A clamped `?digest=<n>` says so (SH319)** — the cut row fires when the *pages* run out; nothing
   fired when the *request* was reduced, so `?digest=200` on a ceiling of 100 that affected three
   pages returned three rows and the caller could not tell that from three being all there was. One

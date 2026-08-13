@@ -70,6 +70,8 @@ class ShAgentBatchTest {
     private ObjectMapper objectMapper;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
+    @Autowired
+    private ShAgentReadService shAgentReadService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -755,5 +757,108 @@ class ShAgentBatchTest {
             fields.put("description", description);
         }
         return objectMapper.valueToTree(fields);
+    }
+
+    // --- SH721: a write that can be made conditional ---
+
+    /**
+     * SH721 — the lost update the surface could not express a defence against.
+     *
+     * <p>Measured by SH713: a curator patching one field while an agent runs {@code post.upsert} on
+     * the same post gets {@code 200}, the agent gets {@code changed=1}, and the curator's field is
+     * <b>gone</b> — with no signal to either party. SH335 added the console {@code PATCH} for
+     * precisely this reason and the reasoning stopped at the console door.</p>
+     *
+     * <p>The curator here is the second write: what matters is not who ran it but that it landed
+     * between the read that planned the agent's write and the write itself, which is the whole
+     * window.</p>
+     */
+    @Test
+    void anExpectedDigestRefusesAWriteThatWouldOverwriteSomebodyElse() {
+        String url = "/expect-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, post(url, "/", "First"));
+        String read = digestOf(url);
+        assertThat(read)
+                .as("a read asked for `include=digest` hands back the value `expect` takes")
+                .isNotBlank();
+
+        // The edit that lands inside the agent's window.
+        run(false, post(url, "/", "Curator merged a correction"));
+
+        assertThatThrownBy(() -> run(false, expecting(post(url, "/", "Agent plan"), read)))
+                .as("""
+                        before SH721 this SUCCEEDED and the correction was gone, with both sides                         told they had won. Nothing on the surface said `only if unchanged`.""")
+                // The batch layer wraps a per-op teaching error so the refusal names WHICH op of
+                // twenty failed, which is the form a caller actually receives.
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .hasMessageContaining("to be unchanged")
+                .hasMessageContaining("Somebody wrote to it");
+
+        assertThat(shAddressResolver.resolve("post:" + siteName + url).title())
+                .as("and the refusal wrote nothing, which is what makes it safe to act on")
+                .isEqualTo("Curator merged a correction");
+    }
+
+    @Test
+    void anExpectedDigestThatStillHoldsWritesNormally() {
+        String url = "/expect-ok-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, post(url, "/", "First"));
+
+        ShAgentChangeSet result = run(false, expecting(post(url, "/", "Second"), digestOf(url)));
+
+        assertThat(only(result).action()).isEqualTo(Change.UPDATE);
+        assertThat(shAddressResolver.resolve("post:" + siteName + url).title()).isEqualTo("Second");
+    }
+
+    @Test
+    void aDryRunRefusesTheStaleExpectationTheWriteWouldRefuse() {
+        String url = "/expect-plan-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, post(url, "/", "First"));
+        String read = digestOf(url);
+        run(false, post(url, "/", "Changed underneath"));
+
+        assertThatThrownBy(() -> run(true, expecting(post(url, "/", "Agent plan"), read)))
+                .as("""
+                        P9: a plan that says `update` about a post somebody has since rewritten is                         a plan whose only use is to be trusted, and it would be wrong.""")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .hasMessageContaining("to be unchanged");
+    }
+
+    @Test
+    void expectingAPostThatIsGoneIsAlsoRefused() {
+        String url = "/expect-gone-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, post(url, "/", "First"));
+        String read = digestOf(url);
+
+        assertThatThrownBy(() -> run(false,
+                expecting(post(url + "-elsewhere", "/", "Agent plan"), read)))
+                .as("""
+                        absence is not `unchanged` — it is a different state, and re-creating what                         somebody deleted is the surprise `expect` exists to catch, not one it                         should wave through.""")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .hasMessageContaining("there is no post there now");
+    }
+
+    @Test
+    void withoutExpectTheSurfaceIsStillLastWriteWins() {
+        String url = "/expect-off-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, post(url, "/", "First"));
+        run(false, post(url, "/", "Second"));
+
+        // The default is deliberate and is what keeps the write surface cheap: the guarantee is
+        // opt-in because most writes are the only writer, and an agent that CARES can now say so.
+        assertThat(shAddressResolver.resolve("post:" + siteName + url).title()).isEqualTo("Second");
+    }
+
+    /** The digest a read hands back, which is the only place `expect` may come from. */
+    private String digestOf(String url) {
+        return new TransactionTemplate(transactionManager).execute(status ->
+                shAgentReadService.read(List.of("post:" + siteName + url), List.of(), false,
+                                false, null, true)
+                        .get(0).digest());
+    }
+
+    private static Op expecting(Op op, String digest) {
+        return new Op(op.op(), op.address(), op.type(), op.folder(), op.to(), op.data(),
+                op.when(), op.locale(), op.translationOf(), op.url(), digest);
     }
 }

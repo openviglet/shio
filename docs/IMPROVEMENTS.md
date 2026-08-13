@@ -236,28 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.19 A write nobody can make conditional (SH721)
-
-SH335 added the console `PATCH` for one stated reason: a client-side read-modify-write
-"reintroduces a lost update on a surface whose premise is several curators on one site."
-That reasoning stops at the console door. Measured by SH713: a curator patching one
-field while an agent runs `post.upsert` on the same post gets `200`, the agent gets
-`changed=1`, and the curator's field is gone. The same holds with `shio_apply` in place
-of the write — a plan applied around an edit that landed inside it.
-
-Neither side can prevent it, because nothing on the surface expresses *only if
-unchanged*. There is no `If-Match`, no expected digest, no version on a write op — and
-the instance already computes exactly the value such a field would carry: `shio_digest`
-and the appearance digest exist and are stable by P5.
-
-So the smallest honest fix is an optional `expect` on a write op, carrying a digest a
-previous read handed back, refused with P6's instruments when it no longer matches. The
-default stays last-write-wins, which is what makes the write surface cheap; what changes
-is that an agent that *cares* can say so, which today it cannot.
-
-P7 is the law this sits under. Losing a curator's correction with no signal to either
-party is the surprise that law names.
-
 ### XII.20 A sort key that is not unique (SH722)
 
 P5 promises byte-identical serialization, and SH714 measured it on the wire: ten

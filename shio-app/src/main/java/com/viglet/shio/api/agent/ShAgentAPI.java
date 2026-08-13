@@ -350,8 +350,12 @@ public class ShAgentAPI {
         // comparison is two reads of one address at two moments, which composes (P10) instead of
         // adding a third contract that would then need its own tool, its own budget and its own
         // conformance row.
+        //
+        // SH721 — and `include=digest` is the third rider on the same parameter, which is why the
+        // conditional write needed no new endpoint, no new tool and no new query string: a caller
+        // that intends to write asks the read it was already making for the one extra value.
         List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids,
-                includes(include, "impact"), state);
+                includes(include, "impact"), state, includes(include, "digest"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);

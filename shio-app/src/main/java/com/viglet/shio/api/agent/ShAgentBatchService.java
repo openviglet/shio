@@ -1408,11 +1408,37 @@ public class ShAgentBatchService {
 
     // --- post ops ---
 
+    /**
+     * SH721 — {@code expect} means <i>only if unchanged</i>, and this is where it is enforced.
+     *
+     * <p>Absent, nothing happens and the write stays last-write-wins, which is what keeps this
+     * surface cheap: the guarantee is opt-in because most writes are the only writer. Present, the
+     * post's current {@link ShAgentPostDigest} has to equal what the caller read, and a post that
+     * is no longer there fails it as well — {@code null} is not "unchanged", it is a different
+     * state, and it is the one a caller is least likely to have intended.</p>
+     */
+    private void requireExpectedState(ShAgentBatch.Op op, ShAddress address, ShPostUnified current) {
+        String expected = op.expect();
+        if (expected == null || expected.isBlank()) {
+            return;
+        }
+        String actual = ShAgentPostDigest.of(current);
+        if (!expected.equals(actual)) {
+            throw new ShStaleExpectationException(address.toString(), expected, actual);
+        }
+    }
+
     private Change postUpsert(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
         ShSite site = requireSite(address.site(), session);
         Optional<ShPostUnified> existing = findPost(site, address.path());
         String declaredFurl = declaredFurl(op, address);
+
+        // SH721 — asked before anything is decided, and on BOTH branches of `dryRun`: a plan that
+        // said "update" about a post somebody has since rewritten is the plan P9 exists to stop
+        // being trusted. The absent case refuses too, because a create is not the op the caller
+        // planned: they read a post, and re-creating what somebody deleted is its own surprise.
+        requireExpectedState(op, address, existing.orElse(null));
 
         if (existing.isPresent()) {
             ShPostUnified post = existing.get();

@@ -260,7 +260,7 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact) {
-        return readDocs(addresses, fields, ids, impact, null);
+        return readDocs(addresses, fields, ids, impact, null, false);
     }
 
     /**
@@ -269,7 +269,18 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state) {
-        return readDocs(addresses, fields, ids, impact, wanted(state));
+        return readDocs(addresses, fields, ids, impact, wanted(state), false);
+    }
+
+    /**
+     * @param digest SH721 — attach each row's state digest, which is what {@code expect} on a write
+     *               op takes. Opt-in on the same {@code include} parameter as {@code impact} and for
+     *               the same reason: sixteen hex characters plus a key on every row of every read is
+     *               a cost every caller pays and the one about to write actually uses
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state, boolean digest) {
+        return readDocs(addresses, fields, ids, impact, wanted(state), digest);
     }
 
     /**
@@ -292,7 +303,7 @@ public class ShAgentReadService {
     }
 
     private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
-                                      boolean impact, ShPostState state) {
+                                      boolean impact, ShPostState state, boolean digest) {
         if (addresses == null || addresses.isEmpty()) {
             throw new NoAddressException();
         }
@@ -307,11 +318,11 @@ public class ShAgentReadService {
             // back to reading them one at a time to find out which one was wrong. A single
             // address still throws, because a one-address read that 404s is correct.
             if (addresses.size() == 1) {
-                docs.add(doc(address, wanted, ids, impact, state));
+                docs.add(doc(address, wanted, ids, impact, state, digest));
                 continue;
             }
             try {
-                docs.add(doc(address, wanted, ids, impact, state));
+                docs.add(doc(address, wanted, ids, impact, state, digest));
             } catch (ShTeachingException failure) {
                 docs.add(failed(address, failure));
             }
@@ -338,7 +349,7 @@ public class ShAgentReadService {
     }
 
     private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids, boolean impact,
-                           ShPostState state) {
+                           ShPostState state, boolean digest) {
         var resolved = shAddressResolver.resolve(rawAddress);
         ShPostUnified post = rowFor(rawAddress, resolved, state);
         JsonNode data = readTree(post.getData());
@@ -360,7 +371,10 @@ public class ShAgentReadService {
                 // `shio pull` of a replica rebuilt every directory-style page one character short
                 // and Block I's promise that the tree describes a site whole stopped being true.
                 // `withUrl` drops it when it equals the address's path, which is almost every post.
-                .withUrl(post.getFurl());
+                .withUrl(post.getFurl())
+                // SH721 — last in the chain and null unless asked, so a read that did not want it
+                // is byte-identical to the one it was before this shipped.
+                .withDigest(digest ? ShAgentPostDigest.of(post) : null);
     }
 
     /**

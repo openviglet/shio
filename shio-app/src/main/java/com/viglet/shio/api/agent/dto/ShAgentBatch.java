@@ -117,7 +117,17 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                manifest advertised and only an id-keyed console route could reach.
      */
     public record Op(String op, String address, String type, String folder, String to,
-                     JsonNode data, String when, String locale, String translationOf, String url) {
+                     JsonNode data, String when, String locale, String translationOf, String url,
+                     String expect) {
+
+        /**
+         * The ten-field form, before SH721 made a write conditional on the state it was planned
+         * against.
+         */
+        public Op(String op, String address, String type, String folder, String to, JsonNode data,
+                  String when, String locale, String translationOf, String url) {
+            this(op, address, type, folder, to, data, when, locale, translationOf, url, null);
+        }
 
         /** The nine-field form, before SH467 made the declared spelling survive the address. */
         public Op(String op, String address, String type, String folder, String to, JsonNode data,

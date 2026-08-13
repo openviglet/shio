@@ -63,7 +63,16 @@ import tools.jackson.databind.JsonNode;
 public record ShAgentDoc(String address, String type, String state, String folder,
                          java.util.List<String> fields, JsonNode data, String id,
                          Problem error, Impact impact, String locale, String translationOf,
-                         Boolean published, String url) {
+                         Boolean published, String url, String digest) {
+
+    /** The thirteen-field form, before SH721 made a write conditional on what was read. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, null);
+    }
 
     /** The twelve-field form, before SH585 made the stored spelling readable. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -72,6 +81,20 @@ public record ShAgentDoc(String address, String type, String state, String folde
                       Boolean published) {
         this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
                 published, null);
+    }
+
+    /**
+     * The same row with SH721's state digest attached — what {@code expect} on a write op takes.
+     *
+     * <p>Attached only where a caller asked for it ({@code digest=true}), which is SH121's shape
+     * and not timidity: it is sixteen hex characters plus a key on <em>every</em> row of every
+     * read, and the caller who needs it is the one about to write. A field every reader pays for
+     * and one in fifty uses is the P3 regression this surface measures for.</p>
+     */
+    public ShAgentDoc withDigest(String stateDigest) {
+        return stateDigest == null ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, stateDigest);
     }
 
     /**
@@ -88,7 +111,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return declared.equals(path)
                 ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, declared);
+                        locale, translationOf, published, declared, digest);
     }
 
     /**
@@ -111,7 +134,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     /** The same row with SH348's locale attached. */
     public ShAgentDoc withLocale(String postLocale) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                postLocale, translationOf, published, url);
+                postLocale, translationOf, published, url, digest);
     }
 
     /**
@@ -128,7 +151,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withTranslationOf(String anchorAddress) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
-                anchorAddress, published, url);
+                anchorAddress, published, url, digest);
     }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
@@ -154,13 +177,13 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withPublished(Boolean live) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                locale, translationOf, live, url);
+                locale, translationOf, live, url, digest);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
-                locale, translationOf, published, url);
+                locale, translationOf, published, url, digest);
     }
 
     /**
