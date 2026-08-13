@@ -1361,3 +1361,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH711** — Ten verbs are spawned as a process against a live instance with a pull-push-pull round trip, taking verb coverage from 7 of 31 to 16, and dev, build and deploy are named out of scope.
 - **SH718** — The plan uses url rather than address, so it is refused for the missing post-type instead of an unknown key, and the reason is asserted rather than the flag.
 - **SH712** — Five named wrong sequences carry answers measured rather than predicted, and a seeded permutation ran 200 out-of-order calls with no 5xx and every refusal still teaching.
+- **SH713** — Two MCP sessions and a curator writing at once: four invariants hold — atomic publish, lossless cursor, whole winners, no deadlock — and three defects are pinned as SH719-SH721.

@@ -23,6 +23,9 @@
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
 - 💭 **SH648** (deps: SH200 ✅, SH223 ✅) **A deleted site cannot be restored, because only its content passes through the trash** — Trashing the site row needs a deleted_date of its own plus an answer for the name it still occupies, which is a schema change and a teaching error rather than a service fix. → §XII.13
 - 💭 **SH650** (deps: SH225 ✅) **Nothing stops a fetch-type change from breaking authorization** — SH225 made the ACL walk independent of ShFolder.parentFolder being EAGER, but that independence is a code shape nothing checks. → §XII.16
+- 📋 **SH719** (deps: —) **Two agents creating one address get two posts at it, and both are told they succeeded** — post.upsert resolves the address and then inserts, so two callers that both find nothing both create — leaving a URL no write can name and no read can resolve. → §XII.17
+- 📋 **SH720** (deps: SH719) **The duplicate-url refusal names verify, which cannot see the draft duplicates that produce it** — verify's duplicate check scans published posts only, so the instrument the refusal sends an agent to answers ok for the state a concurrent create leaves behind. → §XII.18
+- 📋 **SH721** (deps: —) **A curator's edit is overwritten by a concurrent agent write, and neither side is told** — Nothing on the write surface carries an expected version, so an upsert that declares whole state silently discards the field a curator merged while the plan was running. → §XII.19
 
 ## Block M — Token economy (measured)
 
@@ -53,7 +56,6 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH713** (deps: SH712 ✅) **Nothing has ever pointed two agents and a curator at one instance at the same time** — Every suite is one caller in sequence, so lost updates, half-visible publishes and a console edit landing mid-plan are failure modes the product has never been asked about. → §XXIII.7
 - 📋 **SH714** (deps: SH708 ✅, SH709 ✅) **Response budgets are measured on fixtures, and P5's byte-identical promise on one call** — A payload sized against a two-post fixture says nothing about a real tree, and no live run repeats a call to check the second answer matches the first byte for byte. → §XXIII.8
 - 📋 **SH717** (deps: —) **A tool name one character wrong gets the whole registry back and no suggestion** — shio_reed answers -32602 with all twelve names in data, so the agent that mistyped shio_read must re-read a list it already had instead of being told. → §XXIII.9
 

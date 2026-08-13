@@ -314,6 +314,60 @@ export class ConsoleSession {
   }
 
   /**
+   * The site's root folder id — the one folder that carries `shSite`, and the only handle the
+   * console's own listing offers into a site's content.
+   *
+   * <p>SH713 needs it because the curator half of a concurrent scenario is addressed the way the
+   * console addresses things — by id — while the agent half speaks SH79 addresses. Nothing on
+   * `/api/v2/agent/**` returns an id for a post (that is the point of an address), so the bridge
+   * between the two callers is this listing.</p>
+   */
+  async rootFolderId(siteName) {
+    const site = await this.site(siteName);
+    if (!site?.id) return null;
+    const res = await this.#fetch(`/api/v2/object/${encodeURIComponent(site.id)}/list`, { method: "GET" });
+    if (!res.ok) throw new ShioHttpError(res.status, `/api/v2/object/${site.id}/list`, await res.text());
+    const body = await res.json();
+    return body.folders?.find((folder) => folder.root)?.id ?? body.folders?.[0]?.id ?? null;
+  }
+
+  /** The posts directly in a folder, as the content browser lists them — `id` and `furl` included. */
+  async postsIn(folderId) {
+    const res = await this.#fetch(`/api/v2/object/${encodeURIComponent(folderId)}/list`, { method: "GET" });
+    if (!res.ok) throw new ShioHttpError(res.status, `/api/v2/object/${folderId}/list`, await res.text());
+    return (await res.json()).posts ?? [];
+  }
+
+  /**
+   * `PATCH /api/v2/post-unified/{id}` — the curator's edit, as the Universal Editor makes it.
+   *
+   * <p>SH335's verb, and the one a concurrency scenario wants: it merges a few fields into the
+   * draft rather than declaring the whole state, so a curator changing one field while an agent
+   * rewrites another is a real interleaving rather than two whole-document writes. It needs the
+   * browser's dance — CSRF token plus the cookie — because it is not on `ShStatelessRequestMatcher`.
+   * A caller that sends Basic alone gets a bare 403, which is how the first draft of SH713's probe
+   * mistook an authentication failure for a concurrency refusal.</p>
+   *
+   * @returns `{ status, body }` — the status matters, because on this surface a refusal is a result
+   */
+  async patchPost(id, attrs, { publish = false } = {}) {
+    const { value, header } = await this.#csrf();
+    const res = await this.#fetch(`/api/v2/post-unified/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { [header]: value, "Content-Type": "application/json" },
+      body: JSON.stringify({ attrs, publish }),
+    });
+    const text = await res.text();
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
+    return { status: res.status, body };
+  }
+
+  /**
    * Delete a site by name, and everything in it.
    *
    * Idempotent: a site that is not there is a clean teardown, not a failure — a test that

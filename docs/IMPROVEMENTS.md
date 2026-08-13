@@ -288,6 +288,74 @@ reaches for the entity graph. The narrow form scans that one class; the form wor
 having asks which security-relevant reads navigate associations at all, which overlaps
 the SH22 join hazard the same walk used to carry.
 
+### XII.17 A concurrent create leaves two posts on one URL (SH719)
+
+Measured by SH713's concurrency suite, at the smallest concurrency there is: two MCP
+connections, one `post.upsert` each, the same new address. Both answered `changed=1`.
+The site then holds two posts at that friendly URL, and every later call against it is
+refused — *"is claimed by 2 posts … any write against it would land on whichever the
+database sorted first"*. The address is unwritable, unreadable, and removable only by
+id.
+
+The shape is the ordinary check-then-act. The resolver looks the URL up, finds nothing,
+and the write proceeds to insert; nothing between those two steps is atomic, so the
+window is as wide as the lookup. It does not need contention to reach — two agents
+starting the same blueprint is enough, and so is one agent retrying a call whose
+response it never saw.
+
+What makes this worse than a lost update is that nobody is told. A lost update loses one
+write; this keeps both and destroys the address, and both callers were told they
+succeeded, so neither has a reason to look.
+
+The fix is uniqueness the database enforces rather than uniqueness a service checks: a
+unique index over site and friendly URL, with the constraint violation translated into
+the `duplicate-url` refusal the resolver already writes. One racer then loses, with
+something to act on, and no state is left ambiguous.
+
+### XII.18 The instrument a refusal names cannot see the case (SH720)
+
+P6 says an error carries something to act on, and this one does: two posts at one URL is
+refused with *"Give all but one of them a different URL … `GET /api/v2/agent/verify`
+reports this as `duplicate-url` with both addresses."* Measured against a running
+instance, that last sentence is false in the case that produces it. `duplicateUrls`
+iterates the scan's **published** rows, so a pair of drafts sharing a URL — precisely
+what SH719's race leaves behind — comes back as `report ok`.
+
+So the sequence an agent is instructed to follow ends in a wrong conclusion: refused,
+sent to an instrument, told nothing is wrong. Its next move is to disbelieve one of the
+two answers, and neither choice is safe. A refusal that names an instrument which cannot
+answer is worse than one that names none, because it costs a call to find out.
+
+Two directions, and the choice is real rather than an oversight. Either the check widens
+to drafts — an unpublished duplicate harms no visitor, and a report full of findings
+about drafts somebody is still writing is the noise that gets a check switched off — or
+the refusal stops promising it.
+
+The narrow half is free either way: the refusal already lists both `id:` addresses under
+`Allowed:`, which is the thing the agent actually needs and the sentence buries.
+
+### XII.19 A write nobody can make conditional (SH721)
+
+SH335 added the console `PATCH` for one stated reason: a client-side read-modify-write
+"reintroduces a lost update on a surface whose premise is several curators on one site."
+That reasoning stops at the console door. Measured by SH713: a curator patching one
+field while an agent runs `post.upsert` on the same post gets `200`, the agent gets
+`changed=1`, and the curator's field is gone. The same holds with `shio_apply` in place
+of the write — a plan applied around an edit that landed inside it.
+
+Neither side can prevent it, because nothing on the surface expresses *only if
+unchanged*. There is no `If-Match`, no expected digest, no version on a write op — and
+the instance already computes exactly the value such a field would carry: `shio_digest`
+and the appearance digest exist and are stable by P5.
+
+So the smallest honest fix is an optional `expect` on a write op, carrying a digest a
+previous read handed back, refused with P6's instruments when it no longer matches. The
+default stays last-write-wins, which is what makes the write surface cheap; what changes
+is that an agent that *cares* can say so, which today it cannot.
+
+P7 is the law this sits under. Losing a curator's correction with no signal to either
+party is the surprise that law names.
+
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
@@ -845,28 +913,6 @@ it out of order.
 
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
-
-### XXIII.7 Two agents and a curator, all writing at once (SH713)
-
-Shio's own story has at least two writers in it: the agent that builds and the curator
-who corrects. Every test in the repo has one, calling in sequence, and the whole class
-of defects that needs two — lost updates, a read that sees half a publish, a plan
-applied around a console edit that landed inside it — has never been reachable.
-
-So: a suite that runs concurrent sessions against one instance. Two MCP connections
-writing to the same site, one to the same post; an `apply` running while a console PUT
-touches an object in its plan; a `pull`/`push` round trip straddling a publish;
-`shio_changes` polled by one session while another writes, which is the cursor question
-SH232 raises asked where it can actually fail.
-
-The assertions are the ones concurrency needs, not the ones a sequential suite writes:
-no lost update — every accepted write is in the final state or was refused with a
-reason; no torn read — nothing observes a partially published set; no deadlock; and
-every conflict refused rather than silently merged, carrying a `fix` the loser can act
-on.
-
-The tenant ITs are the precedent for the harness shape. This is the same trade one tier
-up: expensive, opt-in, and the only place a whole failure class is visible at all.
 
 ### XXIII.8 What every tool costs, and whether it answers twice the same (SH714)
 
