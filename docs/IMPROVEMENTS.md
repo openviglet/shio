@@ -233,8 +233,46 @@ giving the two writes the role the blueprint reload already had.
 
 ### XII.5 Agent budget guards (SH110)
 
-Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
-that lands. A runaway agent should hit a ceiling and report it, not a bill.
+A **storage** ceiling per tenant, layered on SH45's metering when that lands. A runaway
+agent should hit a ceiling and report it, not a bill.
+
+Narrowed by SH734, which measured the blocker instead of trusting it. This read
+"per-session call/write/storage ceilings" and two of the three had stopped waiting on
+anything: `BatchTooLargeException` caps ops per batch, and SH22/D's `VigletQuotaService`
+is already called from the agent write path (`checkCanCreateSite`,
+`checkCanCreatePost`), so a tenant at its plan limit is refused on this surface today.
+The session window went to SH734, which needs no metering at all.
+
+What is left here is the part the dep genuinely covers: bytes. Counting storage means
+knowing what an upload cost and what a purge returned, per tenant, over time — which is
+SH45's meter and not a counter anybody can add beside it.
+
+### XII.26 The half of SH110 that is not blocked (SH734)
+
+SH110 reads *"per-session call/write/storage ceilings, layered on SH45's per-tenant
+metering when that lands"*, and it has been blocked on SH45 since. Two of those three no
+longer wait on anything.
+
+**Per-call is there:** `BatchTooLargeException` caps ops per batch and teaches the
+split. **Per-tenant is there:** SH22/D built `VigletQuotaService` and
+`ShTenantPlanLimits`, and the agent write path already calls `checkCanCreateSite()` and
+`checkCanCreatePost()` — so a tenant at its plan limit is refused on the agent surface
+today, which is most of *"hit a ceiling and report it, not a bill"*.
+
+What is genuinely missing is the **session** window: nothing counts what one credential
+did across many batches, so an agent looping can stay under the per-batch cap and under
+a generous tenant total while making ten thousand calls. That needs a counter keyed on
+the credential with a reset rule, and it needs neither billing nor storage metering.
+
+Storage does still need SH45, and SH110 keeps it. This is the split, not a supersession.
+
+Worth doing for the reason SH108 is: the confirm token stops a destructive op arriving
+as a typo, and nothing stops a *cheap* op arriving ten thousand times. The refusal is
+the deliverable — a 429 with the window, what it counted and when it resets, so an agent
+waits rather than retries into it.
+
+Found by checking a blocker rather than trusting it: `deps` reported SH45 open and said
+nothing about the ground having moved underneath the design.
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
