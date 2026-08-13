@@ -62,9 +62,14 @@ export default function StaticFileListPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragDepth = useRef(0)
 
+  /** The read. It raises no state before the request, which is what lets the mount effect call it. */
+  const fetchList = () =>
+    service.list().then(setItems).catch(() => setItems([])).finally(() => setLoading(false))
+
+  /** The curator asked — upload, delete, move — so the spinner is a response to them (SH701). */
   const load = () => {
     setLoading(true)
-    service.list().then(setItems).catch(() => setItems([])).finally(() => setLoading(false))
+    void fetchList()
   }
 
   useEffect(() => {
@@ -72,7 +77,7 @@ export default function StaticFileListPage() {
       { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
       { label: t("staticFile.title") },
     ])
-    load()
+    void fetchList()
     siteService.query().then((s) => {
       setSites(s)
       if (s.length > 0) setTargetSite((prev) => prev || s[0].id)

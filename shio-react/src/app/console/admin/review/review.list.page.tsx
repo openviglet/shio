@@ -44,27 +44,31 @@ export default function ReviewListPage() {
   const { refresh: refreshPending } = useReviewPending()
   const [sessions, setSessions] = useState<ShReviewSession[]>([])
   const [open, setOpen] = useState<Record<string, ShReviewDetail | null>>({})
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
   const [diffPostId, setDiffPostId] = useState<string | null>(null)
   const [diffSchema, setDiffSchema] = useState<ShPostTypeSchemaField[]>([])
 
+  /** The read. It raises no state before the request, which is what lets the mount effect call it. */
+  const fetchSessions = useCallback(
+    () => service.sessions().then(setSessions).catch(() => setSessions([]))
+      .finally(() => setLoading(false)),
+    [],
+  )
+
+  /** The curator asked, so the spinner is a response to them (SH701). */
   const load = useCallback(() => {
     setLoading(true)
-    service
-      .sessions()
-      .then(setSessions)
-      .catch(() => setSessions([]))
-      .finally(() => setLoading(false))
-  }, [])
+    void fetchSessions()
+  }, [fetchSessions])
 
   useEffect(() => {
     resetBreadcrumb([
       { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
       { label: t("review.title") },
     ])
-    load()
-  }, [resetBreadcrumb, t, load])
+    void fetchSessions()
+  }, [resetBreadcrumb, t, fetchSessions])
 
   const toggle = async (session: string) => {
     if (session in open) {

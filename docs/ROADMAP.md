@@ -37,7 +37,9 @@
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
 - 💭 **SH691** (deps: SH243 ✅) **The copy's title counter is still trash-blind, so a restore leaves two rows a curator cannot tell apart** — ShObjectWriteService.java:364 reads live rows only, so a clone retakes "Home (2)" while a trashed one holds it — the symptom SH202 says is the one they see. → §XVI.74
-- 📋 **SH701** (deps: —) **The lint baseline absorbs fifteen violations with no ledger, no count and no expiry** — eslint-suppressions.json holds 15 set-state-in-effect entries over 13 files, and nothing prints the number, dates it, or fails when a regenerate quietly grows it. → §XVI.77
+- 📋 **SH702** (deps: SH701 ✅) **Six dialogs load their content by syncing an effect to the `open` prop** — Each raises state synchronously when opened, which is six suppressed lint violations and a reopen that can paint last time's data before this time's arrives. → §XVI.78
+- 📋 **SH703** (deps: SH701 ✅) **The two largest console pages hold as state what they could compute** — A re-query spinner and a selection reset are set from effects rather than derived, so four suppressed violations sit on the folder browser and the visual editor. → §XVI.79
+- 📋 **SH704** (deps: SH701 ✅) **`useDiscovery` re-publishes a module cache through an effect that also has to guard itself** — use-discovery.ts:37 copies a module-level cache into state from inside the effect, so the one hook every console page calls carries the last suppressed violation. → §XVI.80
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

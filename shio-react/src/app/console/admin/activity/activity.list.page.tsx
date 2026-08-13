@@ -27,20 +27,28 @@ export default function ActivityListPage() {
   const { t } = useTranslation()
   const { resetBreadcrumb } = useBreadcrumb()
   const [items, setItems] = useState<ShHistory[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
+  /** The read. It raises no state before the request, which is what lets the mount effect call it. */
+  const fetchRecent = useCallback(
+    () => service.recent(200).then(setItems).catch(() => setItems([]))
+      .finally(() => setLoading(false)),
+    [],
+  )
+
+  /** The curator asked, so the spinner is a response to them (SH701). */
   const load = useCallback(() => {
     setLoading(true)
-    service.recent(200).then(setItems).catch(() => setItems([])).finally(() => setLoading(false))
-  }, [])
+    void fetchRecent()
+  }, [fetchRecent])
 
   useEffect(() => {
     resetBreadcrumb([
       { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
       { label: t("activity.title") },
     ])
-    load()
-  }, [resetBreadcrumb, t, load])
+    void fetchRecent()
+  }, [resetBreadcrumb, t, fetchRecent])
 
   const actionLabel = (action: string) => {
     const key = `activity.action${action.charAt(0)}${action.slice(1).toLowerCase()}`

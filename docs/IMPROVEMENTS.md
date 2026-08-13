@@ -657,31 +657,82 @@ leave the counter and let the *restore* refuse a title collision the way it now 
 a URL one. The second matches SH243's shape and costs a refusal on a name nobody
 addresses by.
 
-### XVI.77 The lint baseline is a debt nothing counts (SH701)
+### XVI.78 Six dialogs sync to `open` where a keyed remount is the answer (SH702)
 
-SH665 adopted the `react-hooks` compiler rules against an existing console by writing
-`shio-react/eslint-suppressions.json` — a baseline. That was the right call: the
-alternative was 28 files of unrelated churn in the commit that fixed the config. What it
-left behind is a debt with none of the properties this project already requires of a
-debt.
+Six of the eleven `set-state-in-effect` suppressions SH701 left declared are one
+construction repeated:
 
-It holds **15 `set-state-in-effect` violations across 13 files** (plus 14
-`react-refresh/only-export-components`, 2 `static-components`, and two singletons).
-Nothing prints those numbers, nothing dates them, and nothing fails when the file grows.
-SH699 is the evidence that the shape matters: a page written after the baseline hit the
-identical defect, and it was CI that found it rather than anybody reading the
-suppression list — while thirteen older instances of the same defect sat green.
+    useEffect(() => { if (open) load() }, [open, load])
 
-The instrument already exists one directory over. `cli/test/assertion-debt.test.mjs`
-solved this exact shape for SH527 and stated why: hold a **named list**, not a ceiling,
-because a ceiling lets one task pay the debt and the next task spend it. It prints both
-counts on every run, so the number is visible without anybody choosing to look.
+`permissions.dialog:39`, `post-schedule.dialog:65`, `post-versions.dialog:112`,
+`content-browser-dialog:231`, `content-select.widget:128`, `file.widget:120`.
 
-So the deliverable is the instrument first, per SH322: a test that reads
-`eslint-suppressions.json`, asserts its contents against a named list, and prints the
-totals. Then the open question it makes answerable — whether the 15 get worked off, or
-an expiry date, or a recorded decision that this shape is acceptable in a page that
-loads once.
+The lint objects to the synchronous `setState`, and it is pointing at something real
+rather than being fussy. A dialog that syncs to `open` keeps its previous state while
+closed, so the first frame after reopening paints **last time's** rows, spinner state
+and scroll position, and the new read overwrites them a tick later. Nobody filed it as a
+defect because it looks like a fast load.
+
+The fix is not a better effect. It is to stop the content component from surviving the
+close: mount it under `key={...}` — the object id, or `open` itself — so opening
+constructs it fresh with `loading` already `true`, and the read happens because the
+component mounted rather than because a flag flipped. That deletes the effect instead of
+rewriting it, which is why these six are one task and not six.
+
+What makes it a task rather than a sweep is that it changes what a curator sees on the
+second open, in six places, and nothing in this repository opens a dialog. It needs the
+console run against a real instance and each dialog opened twice — the second open being
+the whole point. `shio-react/e2e` is where that assertion belongs.
+
+### XVI.79 A spinner and a selection that should be computed, not set (SH703)
+
+Four of the eleven `set-state-in-effect` suppressions SH701 declared are on the two
+largest pages in the console: `object.children.page.tsx:190` and `:197`,
+`visual-editor.page.tsx:125` and `:311`.
+
+Two shapes, both of them state that is a function of something else:
+
+- **The re-query spinner.** `object.children:190` raises `setLoading(true)` in the effect that
+  re-fetches page 0 whenever the sort key or the search term changes. What `loading` actually
+  means is "the rows on screen are not the rows this key asks for" — a comparison, not a flag.
+  Holding a key that has finished loading and computing `loading` from it removes the setState
+  and also removes a frame: today the spinner appears one render *after* the query changed.
+- **The selection reset.** `:197` clears `selectedItems` when the folder changes. That is the
+  textbook case React documents as adjusting state on a prop change, and the textbook answer is
+  the same one SH702 needs — let the subtree remount rather than reach in and clear it.
+
+These are worth doing and they are not worth doing blind. `object.children` is the page
+a curator spends the day in, `loading` is read in three places, and the selection drives
+a bulk toolbar. The suppression makes the debt visible, which was SH701's job; paying it
+wants the console in front of somebody.
+
+### XVI.80 A module cache read through an effect that has to guard itself (SH704)
+
+The last of the eleven `set-state-in-effect` suppressions SH701 declared is
+`src/hooks/use-discovery.ts:37`, and it is the odd one: not a page, not a dialog, but
+the hook that answers "what does this instance support" for every console page that
+asks.
+
+    useEffect(() => {
+      if (cached) { if (data !== cached) setData(cached); return; }
+      ...fetchDiscovery().then(...)
+    }, [data]);
+
+The synchronous branch is the violation: when the module-level `cached` is already
+populated — which it is for every mount after the first — the effect immediately copies
+it into state, one render late. The value was available at `useState`'s initializer,
+which is where the hook already reads it; the effect exists to catch the case where
+another component's fetch filled the cache *between* this component's render and its
+effect.
+
+So the fix is to stop keeping a second copy. A module cache read through
+`useSyncExternalStore` is exactly this problem's shape — subscribe to the cache, return
+it, and let React handle the between-render window it was written to cover. That removes
+the branch, the extra render and the `alive` flag SH665 had to add to the other half of
+the same effect.
+
+Small, and worth its own line rather than a footnote on SH702 or SH703: it is the one of
+the eleven that is not about a page, and it is on the path every page takes.
 
 # Part 2 — pre-existing sections
 

@@ -31,13 +31,13 @@ export default function TrashPage() {
   const { t } = useTranslation()
   const { resetBreadcrumb } = useBreadcrumb()
   const [items, setItems] = useState<TrashRow[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const load = useCallback(() => {
-    setLoading(true)
+  /** The read. It raises no state before the request, which is what lets the mount effect call it. */
+  const fetchTrash = useCallback(() => {
     // Both halves in one list. A read that fails must not hide the other's rows, so each
     // falls back to empty instead of rejecting the pair.
-    Promise.all([
+    return Promise.all([
       postService.trash().catch(() => []),
       folderService.trash().catch(() => []),
     ])
@@ -60,13 +60,15 @@ export default function TrashPage() {
       .finally(() => setLoading(false))
   }, [t])
 
+  // No `load` wrapper here: this page has no refresh control, so the mount read is the only one
+  // and a `setLoading(true)` nobody triggers would be the cascading render itself (SH701).
   useEffect(() => {
     resetBreadcrumb([
       { label: t("content.sites"), href: `${ROUTES.CONSOLE}/content` },
       { label: t("content.trash") },
     ])
-    load()
-  }, [resetBreadcrumb, t, load])
+    void fetchTrash()
+  }, [resetBreadcrumb, t, fetchTrash])
 
   const drop = (row: TrashRow) =>
     setItems((prev) => prev.filter((r) => !(r.kind === row.kind && r.id === row.id)))

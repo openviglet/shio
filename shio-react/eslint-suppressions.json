@@ -1,14 +1,4 @@
 {
-  "src/app/console/admin/activity/activity.list.page.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
-  "src/app/console/admin/review/review.list.page.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
   "src/app/console/content/object.children.page.tsx": {
     "@typescript-eslint/no-unused-expressions": {
       "count": 1
@@ -23,16 +13,8 @@
     }
   },
   "src/app/console/content/static-file.list.page.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    },
     "react-hooks/static-components": {
       "count": 2
-    }
-  },
-  "src/app/console/content/trash.page.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
     }
   },
   "src/app/console/universal-editor/visual-editor.page.tsx": {
