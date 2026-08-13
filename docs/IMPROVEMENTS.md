@@ -385,32 +385,6 @@ The fix is a tiebreaker — ordinal, then name — and it is not specific to thi
 post-type whose attributes were seeded or edited into an ordinal collision has the same
 defect, and nothing forbids the collision.
 
-### XII.21 An empty listing refused as a typo (SH727)
-
-`shio_assets` is a shape over `find` with `type = File`, and `find` refuses a type it
-cannot resolve — correctly, because the usual caller typed it and `Artcle` deserves a
-teaching error with `allowed` and `didYouMean`. Here nobody typed it. `File` is
-`ShSystemPostType.FILE`, the product's own name for its own row, and on a fresh instance
-no such row exists until something uploads.
-
-So the first `shio_assets` of a new install answers:
-
-    No post-type named 'File'
-    Fix: Use one of the listed names, or create a new type with PUT /api/v2/post-type/{name}.
-
-Every clause of that is unusable. The caller asked what files this site has; the true
-answer is none. It is pointed at a name it did not choose and told to create a type
-whose creation is not its job — and if it followed the advice it would create a *wrong*
-`File`, because the system definition carries attributes the refusal does not mention.
-
-Found by SH724's clean-instance run, which is the environment a first-time user is in
-and the one nobody had. Two suites went red on it and the second only because the first
-left the type behind.
-
-The narrow fix is at the tool: an absent system type is an empty result, not a refusal.
-What must not change is the refusal for a type a caller *did* name — that distinction is
-the whole value of the message, and it is the assertion this closes with.
-
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened

@@ -73,6 +73,16 @@ public class ShAssetsTool implements ShMcpTool {
 
     @Override
     public String call(JsonNode arguments) {
+        // SH727 — an instance that has never held an upload declares no `File` type, and `find`
+        // refuses a type it cannot resolve. That refusal is right for a caller who typed a name and
+        // wrong here: nobody typed this one. The true answer to "what files does this site have" is
+        // none, and the message it used to give — "create a new type with PUT /api/v2/post-type/
+        // {name}" — points at a system definition whose attributes it does not even list, so a
+        // caller that followed it would create the wrong `File`. It is the first assets call of
+        // every new install, which is exactly the caller least able to tell a defect from a rule.
+        if (!shAgentReadService.hasType(ShSystemPostType.FILE)) {
+            return ShTerse.line("assets").word(0).build();
+        }
         ShAgentFound found = shAgentReadService.find(
                 ShMcpArgs.string(arguments, "site"),
                 ShSystemPostType.FILE,

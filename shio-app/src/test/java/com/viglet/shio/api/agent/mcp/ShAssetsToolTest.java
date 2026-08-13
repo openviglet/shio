@@ -1,0 +1,118 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.agent.mcp;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.Test;
+
+import com.viglet.shio.api.agent.ShAgentReadService;
+import com.viglet.shio.api.agent.mcp.tools.ShAssetsTool;
+import com.viglet.shio.post.type.ShSystemPostType;
+
+import tools.jackson.databind.ObjectMapper;
+
+/**
+ * SH727 — <b>an empty listing is not a typo.</b>
+ *
+ * <h2>The call this is filed on</h2>
+ *
+ * <p>{@code shio_assets} is a shape over {@code find} with {@code type = File}, and {@code find}
+ * refuses a type it cannot resolve. That refusal is right for the caller it was written for —
+ * somebody typed {@code Artcle}, and the {@code allowed} list is the whole value of the message.
+ * It is wrong here, because nobody typed this name: {@code File} is
+ * {@link ShSystemPostType#FILE}, the product's own name for its own row, and an instance that has
+ * never held an upload does not have it.</p>
+ *
+ * <p>So the first {@code shio_assets} of a new install answered <em>"No post-type named 'File' …
+ * create a new type with PUT /api/v2/post-type/&#123;name&#125;"</em> — advice naming a system
+ * definition whose attributes the message does not list, given to the caller least able to tell a
+ * defect from a rule.</p>
+ *
+ * <h2>Found where the instance was not carrying the test</h2>
+ *
+ * <p>By SH724's clean-instance conformance run. No Spring test could see it, because a shared test
+ * datasource holds whatever every other class created — which is SH724's own shape one tier down.
+ * The obvious fix was a {@code @SpringBootTest} with an empty database of its own, and SH423's
+ * gauge refused it with <b>zero slots left</b> under the context ceiling.</p>
+ *
+ * <p>That refusal was right, and not merely a budget: the branch under test is a
+ * <em>conditional in the tool</em>, and the only collaborator it needs is a read service that
+ * answers whether the type exists. A whole Spring context to arrange one boolean would have bought
+ * 1.5 seconds of run time and a slot the next task then could not have. So the collaborator is
+ * stubbed, and the assertion is about the branch rather than about Spring.</p>
+ *
+ * @author Alexandre Oliveira
+ */
+class ShAssetsToolTest {
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void assetsOnAnInstanceWithNoFileTypeAnswersNoneRatherThanRefusing() {
+        ShAgentReadService reads = mock(ShAgentReadService.class);
+        when(reads.hasType(ShSystemPostType.FILE)).thenReturn(false);
+
+        String answer = new ShAssetsTool(reads).call(objectMapper.createObjectNode());
+
+        assertThat(answer)
+                .as("SH727: the true answer to \"what files does this site have\" on an instance "
+                        + "that has never held one is none. It used to be a refusal.")
+                .startsWith("assets 0");
+        assertThat(answer)
+                .as("SH727: and it must not carry the teaching error either — a caller told to "
+                        + "create a post-type it never named would create the wrong `File`, "
+                        + "because the system definition's attributes are not in that message.")
+                .doesNotContain("No post-type named")
+                .doesNotContain("post-type/");
+    }
+
+    @Test
+    void theListingIsNotEvenAttemptedWhenTheTypeIsAbsent() {
+        // The half that says WHY it is not a refusal, and it is the load-bearing one: `find` is the
+        // thing that throws, so a fix that still called it and swallowed the exception would pass
+        // the assertion above while leaving the refusal one stack frame away — and would swallow a
+        // real failure with it. Not asked at all is the property.
+        ShAgentReadService reads = mock(ShAgentReadService.class);
+        when(reads.hasType(ShSystemPostType.FILE)).thenReturn(false);
+
+        new ShAssetsTool(reads).call(objectMapper.createObjectNode());
+
+        verify(reads, never()).find(any(), any(), any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void aFileTypeThatExistsIsListedThroughFindAsBefore() {
+        // The guard on the narrowing. The branch above must be reachable ONLY when the type is
+        // absent; if it ever answered `assets 0` on an instance that has files, this fix would have
+        // replaced a bad refusal with a wrong answer, which is the worse of the two (SH263).
+        ShAgentReadService reads = mock(ShAgentReadService.class);
+        when(reads.hasType(ShSystemPostType.FILE)).thenReturn(true);
+        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean()))
+                .thenThrow(new IllegalStateException("SH727: find was reached, which is the point"));
+
+        try {
+            new ShAssetsTool(reads).call(objectMapper.createObjectNode());
+        } catch (IllegalStateException expected) {
+            assertThat(expected).hasMessageContaining("find was reached");
+            return;
+        }
+        throw new AssertionError(
+                "SH727: the tool answered without asking `find` on an instance that HAS the File "
+                        + "type. The empty-listing branch is for an absent type only — widened, it "
+                        + "would report zero assets to somebody who has some.");
+    }
+}

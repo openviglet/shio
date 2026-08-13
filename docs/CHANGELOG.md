@@ -537,6 +537,7 @@
 - **SH224** — purge fired the DELETE lifecycle event and wrote no audit row, so the reversible half of the trash was fully recorded and the irreversible half recorded nothing - and a caller walking the feed saw a post enter the trash and never learned it was gone for good. PURGE is its own action rather than a second DELETE, because those are the two states a reader most needs to tell apart. It takes the actor the endpoints already have, and a cascade passes null honestly rather than attributing to whoever was nearest. Threading it created an overload pair, and SH358's lint refused the shape rather than the annotation: its advice is to collapse, which is what shipped - the first attempt ran the native purge with no transaction because a delegation is a self-invocation.
 - **SH225** — A permission decision no longer depends on how folders are fetched: the entry points carry their own transaction and the ancestor walk resolves parent ids by query.
 - **SH226** — One resolver, ShLiveObject.of, is the only spelling for resolving an object id, and ShLiveObjectInvariantTest fails the build on any production read that skips it - which on its first run found two unguarded call sites, one of them a live defect: a section could be created inside a trashed folder and then appear in no listing.
+- **SH727** — An absent system File type is an empty listing rather than a refusal, and find is not reached at all — while a type the caller did name still refuses.
 
 ## Block O — The human half (the console the curator uses, SH74)
 

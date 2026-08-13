@@ -538,6 +538,26 @@ public class ShAgentReadService {
         return rows;
     }
 
+    /**
+     * Whether this instance declares a post-type by that name (SH727).
+     *
+     * <p>For the caller that did <b>not</b> type the name. {@link #find} refuses an unresolvable
+     * type and must keep doing so — the usual caller wrote {@code Artcle} and the refusal's
+     * {@code allowed} list is the whole value of the message. {@code shio_assets} is the other
+     * case: it filters on {@link com.viglet.shio.post.type.ShSystemPostType#FILE}, the product's
+     * own name for its own row, and on an instance that has never held an upload there is no such
+     * row — so the first assets call of a new install was refused, and told to create a post-type
+     * nobody had asked about.</p>
+     *
+     * <p>A question rather than a widened {@code find}, because the distinction it protects is the
+     * one that matters: absent-and-nobody-named-it is an empty answer, absent-and-you-named-it is
+     * a teaching error.</p>
+     */
+    public boolean hasType(String name) {
+        return name != null && !name.isBlank()
+                && shPostTypeRepository.findByName(name.trim()) != null;
+    }
+
     private ShPostType requireType(String name) {
         ShPostType postType = shPostTypeRepository.findByName(name.trim());
         if (postType == null) {
