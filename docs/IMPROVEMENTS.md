@@ -841,33 +841,6 @@ this converts into a sentence.
 It stays open. Nothing here found the cause, and closing it would say something untrue
 about a red that is still out there.
 
-### XXI.12 The docs gate is red because the fixes were never pushed (SH700)
-
-`pnpm conformance:docs` fails 10 of 19 in CI. Run here, against the same command and the
-same `SHIO_DOCS_DIR`, it passes **19 of 19**. That difference is the finding, and the
-first reading of it was wrong: this looked like documentation drifting off the product,
-and it is the opposite.
-
-`vigletdocs.github.io` is **13 commits ahead of `origin/main` and 0 behind**, unpushed
-since 2026-08-11. Every failure CI reported is fixed in them, by name:
-
-- `docs(shio): the tool count sentence names what it counts` — SH697's three pages.
-- `docs(coverage): the summary is derived from the tables (SH653)` — the sentence the reader
-  matches by shape.
-- `docs(shio): rewrite the developer guide against the real stack (SH628)` — Spring Boot,
-  Node, the retired dependency, the licence.
-- `docs(cli): define every shio audit rule (SH652)`.
-
-The counts agree with that story rather than merely allowing it: CI reads 48 cluster
-rows and 73 executable blocks over 19 pages, this checkout 49 and 83 over 21. CI is not
-reading a stale *product*; it is reading an older *documentation repository*.
-
-So the defect is in neither repository's content. It is that a binding gate depends on a
-push nobody is reminded to make, and fails as though the docs were wrong — sending the
-next reader to edit pages already correct. The fix is the push; what the task decides is
-what stops the next one, the candidate being a gate that reports the checkout's position
-against its remote, so red says *unpushed*.
-
 ### XXI.13 XXI.13 The one address SH705 left behind, and the plugin it needs first (SH715)
 
 SH705 rewrote every sentence a reader meets — the hub's title, its heading, its prose,

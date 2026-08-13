@@ -127,9 +127,16 @@ const ELSEWHERE = {
   // deliverable was an instrument rather than prose, so it is asserted like any other change, by
   // `cli/conformance/docs-stack.conformance.mjs`. That split is the useful thing this list records:
   // a docs task whose claim is checkable lands a check, and only the prose stays elsewhere.
+  //
+  // SH700 is the purest case this list has, and worth naming as such: its deliverable was a `git
+  // push` of thirteen commits in that repository. The gate it turned green — `conformance:docs` —
+  // already existed and already asserted the content; what was red was that CI read `origin` while
+  // the fixes sat unpushed on a laptop. There is no assertion to write here, because the thing that
+  // was wrong was not in any file this suite can reach. It is also the entry that says what the
+  // conformance tier is for: it read a state nobody had looked at.
   docs: ["SH479", "SH480", "SH481", "SH482", "SH483", "SH484", "SH485", "SH486", "SH487", "SH488",
     "SH489", "SH490", "SH491", "SH492", "SH493", "SH494", "SH495", "SH496", "SH497", "SH498",
-    "SH504", "SH623", "SH624", "SH625", "SH626", "SH627", "SH629"],
+    "SH504", "SH623", "SH624", "SH625", "SH626", "SH627", "SH629", "SH700"],
 };
 
 /**

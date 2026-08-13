@@ -52,7 +52,6 @@
 ## Block U — Documentation the matrix still names
 
 - ⏳ **SH698** (deps: —) **`fixture-traits.test.mjs` fails at file level about one run in five, with every assertion in it green** — Caught once in five `pnpm test` runs: the file reports `test failed` and names no assertion, 951 ms against 209 ms alone, so the gate is red for something outside the tests. → §XXI.11
-- 📋 **SH700** (deps: —) **`pnpm conformance:docs` is red on ten checks against the published documentation** — The docs repo is 13 commits ahead of origin and every failing check is fixed in them, so the gate reads a published state that stopped matching the local one on 2026-08-11. → §XXI.12
 - 📋 **SH715** (deps: SH705 ✅) **The docs hub still answers on /category/human-curates-it, the one place SH705 could not reach** — Renaming the slug without a redirect breaks every external link into the curator hub, and the docs site has no redirect plugin installed to catch them. → §XXI.13
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
