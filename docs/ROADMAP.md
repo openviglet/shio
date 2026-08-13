@@ -11,7 +11,6 @@
 
 ## Priority
 
-- Block J
 - Block O
 - Block L
 - Block M
@@ -55,8 +54,6 @@
 ## Block S — The public site (shio.viglet.org)
 
 ## Block U — Documentation the matrix still names
-
-## Block V — The vocabulary proved live (integration tests against a running instance)
 
 ## Non-goals (do NOT add as tasks)
 

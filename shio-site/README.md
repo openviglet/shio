@@ -117,6 +117,16 @@ instance (SH540) is all that is left, and it is what turns the scripted session
 in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
 
+Block V closed on 2026-08-13 and changed no claim here, and it is the block most likely to have
+been assumed rather than checked: thirteen entries, every one of them a suite. The two numbers
+this copy could have got wrong are the ones a testing block does not move — twelve MCP tools and
+thirty-one CLI verbs, both still what `tools/list` and the command registry answer. SH714 did add
+keys to `token-budgets.properties`, which is the file `scripts/token-budgets.mjs` reads on every
+build, and they are additive: the generator names the keys it needs, so a `live.*` row it does not
+ask for cannot reach the page. The one claim worth re-reading was the guardrails copy, because
+SH717 and SH726 both changed what a refusal *says* — neither sentence is quoted here, which is the
+same property that saved Block N.
+
 Block J closed on 2026-08-12 and changed no claim here, but unlike the two below it that was
 not free — it was checked, and the check found the drift somewhere else. The site names
 twelve MCP tools including `shio_marketplace` and thirty-one CLI verbs including
