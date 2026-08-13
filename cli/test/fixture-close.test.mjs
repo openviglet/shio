@@ -58,15 +58,29 @@ test("SH698: a held socket makes the deadline fire, and the reason names the sta
 
   // A raw connection that sends nothing and closes nothing — exactly the state `server.close`
   // waits on, and exactly what it says nothing about.
+  //
+  // **Waited for from the SERVER's end, which is SH725.** The client's `connect` fires on the
+  // SYN-ACK; the server accepts on a later turn of its own loop, and in between `getConnections()`
+  // is 0 and `close` has nothing to wait for — so it completes, no deadline fires, and this test
+  // reports the very defect SH698 exists to find. Forty attempts on Windows never reproduced it and
+  // a Linux runner reddened the gate. A precondition has to be observed where it becomes true.
+  const accepted = new Promise((resolve) => server.once("connection", resolve));
   const held = connect(port, "127.0.0.1");
   await new Promise((resolve, reject) => {
     held.once("connect", resolve);
     held.once("error", reject);
   });
+  await accepted;
   t.after(() => {
     held.destroy();
     server.close();
   });
+
+  const open = await new Promise((resolve) => server.getConnections((err, count) => resolve(err ? -1 : count)));
+  assert.equal(open, 1,
+    `SH725: the server reports ${open} connection(s) after accepting one. Everything below measures `
+    + "what `close` does with a socket outstanding, so a run that starts without one is not "
+    + "measuring it — which is how this test came to assert the opposite of what it checks.");
 
   const error = await closeFixture(server, 150).then(() => null, (e) => e);
 
