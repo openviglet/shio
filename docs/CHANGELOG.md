@@ -1352,3 +1352,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
+- **SH707** — The live tier calls 2 of 12 tools, 4 of 13 ops and 7 of 31 verbs - counted at the call site, held as a named list, and the section's own thirteen and thirty-three were both wrong.

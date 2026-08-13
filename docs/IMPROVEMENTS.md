@@ -922,29 +922,6 @@ it out of order.
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
 
-### XXIII.1 The ledger of what a running instance has never been asked (SH707)
-
-The vocabulary is proved everywhere except where it is used. `shio-app` has forty-odd
-`ShAgent*Test` classes, all MockMvc; `cli/test/` has sixty-odd module-level suites; and
-`cli/conformance/`, the only tier that has an instance, calls exactly two of the
-thirteen MCP tools — `shio_context` and `shio_read` — because SH561 set out to prove the
-transport, not the surface it carries. `shio_write`, `shio_apply`, `shio_publish`,
-`shio_remember`, `shio_find`, `shio_changes`, `shio_digest`, `shio_verify`,
-`shio_assets`, `shio_marketplace` have never been called by a client that had to guess
-the tool name right, spell the input schema, frame the request and read the refusal.
-
-Every gap below this line is a suite somebody has to write, and the first thing that
-must exist is the count — otherwise the block ships six suites and nobody can say what
-fraction of the vocabulary that bought. Same shape as SH338: before "write the tests",
-the instrument that names every verb the agent can utter and marks which have been
-uttered against something running.
-
-So: one lint enumerating the MCP tool registry, the CLI command directory and the agent
-op table, joined against what the conformance tier actually calls, holding the
-unexercised ones as an asserted list rather than a ceiling. It prints both counts on
-every run. A verb added without live coverage fails it, which is how the list stays
-honest after this block closes.
-
 ### XXIII.2 The read half, spoken over the wire against a seeded site (SH708)
 
 One conformance suite driving every read-side tool over `shio mcp`'s newline-delimited
