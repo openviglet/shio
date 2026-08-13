@@ -250,36 +250,58 @@ describe("SH713: two agents and a curator, all writing at once", () => {
 
   // ------------------------------------------------------------------ what it found
 
-  test("SH719: two agents creating one address leave two posts on it, both told they won", async () => {
-    // ASSERTED AS MEASURED, not as it should be. When SH719 lands this test goes red — flip the
-    // two assertions below to `refused` on exactly one of the pair and `1` post at the URL, and
-    // delete this paragraph. A comment saying "this is wrong" would not have failed on the fix.
+  test("SH719: two agents creating one address leave ONE post on it, and the loser is told", async () => {
+    // TURNED AROUND, which is what the previous paragraph asked for: it asserted the defect as
+    // measured — both creates succeeding, two posts at the URL, the address dead — and said in as
+    // many words that landing SH719 would make this test red and which lines to flip. It did, and
+    // these are they. The race itself is unchanged, because what has to be proven is that racing
+    // no longer produces the state, not that the race stopped happening.
     const { url, pair, claiming, attempt } = await raceForADuplicate("race");
-    console.log(`[SH713] the create race duplicated on attempt ${attempt}`);
+    console.log(`[SH713] the create race ran ${attempt} attempt(s) and produced no duplicate`);
 
-    assert.equal(pair.filter(refused).length, 0,
-      "SH713/SH719: one of the two creates was refused, which is the FIX — see SH719 and turn this "
-      + `test around.\n${pair.map(legible).join("\n---\n")}`);
+    assert.equal(claiming.length, 1,
+      `SH713/SH719: ${claiming.length} post(s) at ${url} after ${attempt} attempt(s). One is the `
+      + `whole of SH719 — a unique index over (site, state, locale, furl) means the second insert `
+      + `cannot land, so an address means one post no matter how the two callers interleave.`);
 
-    assert.equal(claiming.length, 2,
-      `SH713/SH719: ${claiming.length} post(s) at ${url} after ${attempt} attempt(s). Two is the `
-      + `defect this pins; one every time means SH719 shipped and these assertions are now the `
-      + `wrong way round.`);
+    // Exactly one refusal, not "at least one": both being refused would mean the address ended up
+    // with nobody on it, which is a different defect wearing this one's clothes.
+    assert.equal(pair.filter(refused).length, 1,
+      `SH713/SH719: ${pair.filter(refused).length} of the two creates were refused. One winner and `
+      + `one loser is the contract; two winners was the defect and two losers would be a new one.`
+      + `\n${pair.map(legible).join("\n---\n")}`);
 
+    const refusal = legible(pair.find(refused));
+    assert.match(refusal, /duplicate-url/,
+      `SH713/SH719: the loser has to be told WHICH failure this was — a generic conflict sends an `
+      + `agent looking for a malformed request.\n${refusal}`);
+    assert.match(refusal, /[Rr]etry/,
+      `SH713/SH719: and told to retry, which is the one action that works and the opposite of what `
+      + `every other constraint on this surface says. post.upsert is an upsert: the address exists `
+      + `now, so repeating the op updates the winner instead of creating a second post.\n${refusal}`);
+
+    // And the address the winner was told it created is usable, which is the point of all of it.
     const read = await agentA.call("shio_read", { address: `post:${site}${url}` });
-    assert.ok(refused(read),
-      `SH713/SH719: the address resolves after the race, which would make the duplicate harmless.`);
-    assert.match(legible(read), /claimed by 2 posts/,
-      `SH713/SH719: the address an agent was told it created is now unusable, and the refusal must `
-      + `at least say why. This is the whole cost of the race: two successes, one dead address.`);
-    assert.match(legible(read), /Allowed:.*id:/s,
-      `SH713/SH719: the only way out of this state is by id, so the refusal has to hand both over.`);
+    assert.ok(!refused(read),
+      `SH713/SH719: the address still does not resolve after the race. The duplicate is gone and `
+      + `the address is dead anyway, which is the worst of both.\n${legible(read)}`);
   });
 
-  test("SH720: the refusal names verify, and verify cannot see the drafts that caused it", async () => {
-    // ASSERTED AS MEASURED. `duplicateUrls` iterates the scan's published rows, so the drafts the
-    // race above leaves are invisible to the instrument the refusal sends the agent to. When SH720
-    // lands, `duplicate-url` appears in the report and this test fails naming itself.
+  // SKIPPED BY SH719, and the reason is worth more than the test was.
+  //
+  // This asserts that `verify`'s duplicate check scans PUBLISHED rows only, so the instrument the
+  // `duplicate-url` refusal sends an agent to answers `report ok` for the draft duplicates a race
+  // leaves behind. That gap is real and is still open as SH720 — but its fixture was
+  // `raceForADuplicate`, and SH719 made racing incapable of producing a duplicate. The line above
+  // (`claiming.length === 2`) can no longer be satisfied by any sequence of calls this suite can
+  // make over HTTP.
+  //
+  // Skipped rather than deleted or quietly weakened: the rows SH720 is about still exist on any
+  // instance that met SH719 before it was fixed — `ShPostUrlKeyBackfillRunner` leaves a losing row
+  // un-keyed rather than refusing to start — so the check is as narrow as it ever was. What is gone
+  // is this suite's ability to CREATE one. SH720 owns rebuilding the fixture from that legacy state
+  // and turning this back on; a skip is visible and named, where a weakened assertion is not.
+  test.skip("SH720: the refusal names verify, and verify cannot see the drafts that caused it", async () => {
     const { url, claiming } = await raceForADuplicate("unseen");
     assert.equal(claiming.length, 2, "SH713/SH720: the fixture needs the duplicate SH719 produces.");
 

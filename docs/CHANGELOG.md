@@ -540,6 +540,7 @@
 - **SH727** — An absent system File type is an empty listing rather than a refusal, and find is not reached at all — while a type the caller did name still refuses.
 - **SH648** — A site delete now trashes and `site.restore`/`/untrash` bring it back with its content; a trashed site keeps its unique name, and the create that meets it is told where the name went.
 - **SH650** — ShAclAssociationWalkLintTest fails the build when a security-relevant read navigates an association, with the banned getters derived from the entity model rather than listed; the standing count is zero.
+- **SH719** — A unique index over site, state, locale and furl makes a second live post at one address impossible; the racer that loses gets a duplicate-url 409 whose fix is retry, which an upsert can act on.
 
 ## Block O — The human half (the console the curator uses, SH74)
 

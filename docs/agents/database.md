@@ -120,6 +120,16 @@ that layout from `ShTenantContext`.
 Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from
 entity metadata via `ddl-auto=create-drop` on a fresh in-memory H2 per run.
 
+**Which means a constraint declared only in the changelog does not exist in the unit suite —
+and this cost a green run on a broken fix (SH719).** The changelog added a unique index; the test
+that asserted the second insert was refused **passed by inserting it**, because H2's schema came
+from `@Table(indexes = …)` and knew nothing about the changeset. A guard the tests cannot see is a
+guard whose regression nothing reports until production. So a constraint that the code depends on
+is declared **in both places** — `@Table(indexes = @Index(..., unique = true))` for the suite,
+Liquibase for every real database — and the duplication is deliberate rather than an oversight.
+The cross-DB ITs are the only place the changelog itself is exercised, which is the other half of
+why `-DskipITs=false` is the rule on a schema change.
+
 **The test context cache has a chosen ceiling, and a guard keeps room under it (SH347).**
 `spring.test.context.cache.maxSize=64` in `src/test/resources/application.properties`, because
 SH315's isolated-datasource rule has produced **28** in-memory databases and the framework default is

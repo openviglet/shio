@@ -23,7 +23,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.viglet.shio.ShFixtureShapeGuard;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -54,10 +53,10 @@ import tools.jackson.databind.node.ObjectNode;
  */
 @SpringBootTest(properties = "shio.schedule.enabled=false")
 @TestInstance(Lifecycle.PER_CLASS)
-@ShFixtureShapeGuard.BuildsDuplicateUrls(
-        "aDeclaredFurlIsIdentityAndIsNeverRenumbered has to produce the collision to prove the "
-                + "declared address survives it — that is the whole difference between a declared "
-                + "furl and a derived one, and it cannot be asserted without two rows on one URL")
+// SH719 removed this class's `@ShFixtureShapeGuard.BuildsDuplicateUrls` declaration, because it no
+// longer builds one: a declared furl that is taken is now REFUSED by the database instead of
+// creating a second post at the address. The declaration said the collision "cannot be asserted
+// without two rows on one URL", and that was true of the old behaviour and is the defect.
 class ShPostFurlOnCreateTest {
 
     @Autowired
@@ -167,18 +166,30 @@ class ShPostFurlOnCreateTest {
     }
 
     @Test
-    void aDeclaredFurlIsIdentityAndIsNeverRenumbered() {
+    void aDeclaredFurlIsIdentityAndIsRefusedRatherThanRenumbered() {
         createPost("Taken Address");
 
         ObjectNode data = objectMapper.createObjectNode();
         data.put("headline", "Taken Address");
-        ShPostUnified declared = writeService.create(new CreateRequest(
-                folderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null, "taken-address"));
 
-        assertThat(declared.getFurl())
-                .as("SH651/SH81 — a declared address is the post's identity: renumbering it "
-                        + "would make the next upsert of the same document create a second post")
-                .isEqualTo("taken-address");
+        // SH651/SH81 say a declared address is the post's identity and must never be RENUMBERED —
+        // renumbering it would make the next upsert of the same document create a second post. That
+        // rule is intact and this is the other half of it, which nothing had chosen: the write used
+        // to keep the declared address by putting a SECOND post on it, which is SH719's defect and
+        // not a property of declaredness. Refusing keeps the address meaning one thing.
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> writeService.create(new CreateRequest(
+                folderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null, "taken-address")))
+                .as("""
+                        the declared furl is still not renumbered — it is refused, which is the \
+                        only other answer that leaves one post at one address (SH719).""")
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+
+        // And the post that holds it is untouched, which is what makes the refusal safe to retry.
+        assertThat(writeService.create(new CreateRequest(
+                folderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null, "free-address"))
+                .getFurl())
+                .as("a declared address that is free is still taken as given")
+                .isEqualTo("free-address");
     }
 
     @Test

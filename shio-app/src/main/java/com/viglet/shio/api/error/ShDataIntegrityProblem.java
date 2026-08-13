@@ -66,6 +66,9 @@ public final class ShDataIntegrityProblem {
         String message = message(failure);
         boolean tooLong = VALUE_TOO_LONG.equals(sqlState(failure));
         String wrote = subject == null || subject.isBlank() ? "" : " while running " + subject;
+        if (isAddressAlreadyTaken(failure)) {
+            return addressTaken(subject);
+        }
         return tooLong
                 ? ShProblem.badRequest("value-too-long", "A value is wider than its column")
                         .withDetail("The database refused this write" + wrote + ": " + message)
@@ -78,6 +81,65 @@ public final class ShDataIntegrityProblem {
                         .withFix("Read the current state (GET /api/v2/agent/read) and retry against "
                                 + "it — the request is well-formed, so repeating it unchanged will "
                                 + "be refused again.");
+    }
+
+    /**
+     * SH719's index. Named in the driver's message by all three engines — H2 quotes
+     * {@code PUBLIC.UK_POST_UNIFIED_URL}, PostgreSQL {@code unique constraint "uk_post_unified_url"},
+     * MariaDB {@code for key 'uk_post_unified_url'} — so one case-insensitive test covers them.
+     */
+    private static final String ADDRESS_INDEX = "uk_post_unified_url";
+
+    /** Whether the database refused this write because the address was already occupied (SH719). */
+    private static boolean isAddressAlreadyTaken(DataAccessException failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            String message = cause.getMessage();
+            if (message != null && message.toLowerCase(java.util.Locale.ROOT).contains(ADDRESS_INDEX)) {
+                return true;
+            }
+            if (cause.getCause() == cause) {
+                break;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The one refusal on this surface whose right answer is <b>retry</b> (SH719).
+     *
+     * <h2>Why it is not the generic conflict above</h2>
+     *
+     * <p>Every other constraint here is a request that cannot succeed as written, so the generic
+     * text says so: <i>"repeating it unchanged will be refused again."</i> This one is the exact
+     * opposite and would be actively misleading — the write lost a race for an address that now
+     * <em>exists</em>, and {@code post.upsert} is an upsert, so repeating it unchanged resolves the
+     * winner and updates it. An agent that read the generic sentence would abandon the one action
+     * that works.</p>
+     *
+     * <h2>What it replaces</h2>
+     *
+     * <p>Two connections creating one address both answered {@code changed=1} and the site was left
+     * with two posts on one friendly URL — an address no write could name and no read could resolve,
+     * removable only by id, with both callers told they had won. One racer now loses <em>and is told
+     * so</em>, which is the whole difference: a refusal somebody can act on, instead of a success
+     * nobody has a reason to check.</p>
+     *
+     * <p>The URL is not read back out of the index — it is a digest (SH719 explains why) — so the
+     * address comes from {@code subject}, which is the caller's own op and address. Where the
+     * boundary could not name one, the refusal says what happened without pretending to know which
+     * address it was.</p>
+     */
+    private static ShProblem addressTaken(String subject) {
+        boolean named = subject != null && !subject.isBlank();
+        return ShProblem.of("duplicate-url", HttpStatus.CONFLICT,
+                        "That address was taken while this write was in flight")
+                .withDetail((named ? subject + " lost a race: another" : "Another")
+                        + " write created a post at this friendly URL between the moment this one "
+                        + "resolved the address and the moment it inserted. Only one post may hold "
+                        + "an address, so the database refused the second — nothing was written.")
+                .withFix("Retry the same op. The address exists now, so post.upsert resolves it and "
+                        + "updates the post that won instead of creating a second one. If you meant "
+                        + "a different post, give it its own URL first (post.move).");
     }
 
     /** The five-character SQLSTATE of the underlying {@link SQLException}, or {@code null}. */

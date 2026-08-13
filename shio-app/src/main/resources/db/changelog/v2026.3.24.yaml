@@ -1,0 +1,77 @@
+databaseChangeLog:
+  # SH719 — two agents creating one address get two posts at it, and both are told they succeeded.
+  #
+  # Measured by SH713's concurrency suite at the smallest concurrency there is: two MCP connections,
+  # one `post.upsert` each, the same new address. Both answered `changed=1`. The site then holds two
+  # posts at that friendly URL and every later call against it is refused — the address is
+  # unwritable, unreadable, and removable only by id. The shape is the ordinary check-then-act: the
+  # resolver looks the URL up, finds nothing, and the write inserts; nothing between those two steps
+  # is atomic, so the window is as wide as the lookup. It needs no contention to reach — two agents
+  # starting the same blueprint is enough, and so is one agent retrying a call whose response it
+  # never saw.
+  #
+  # What makes it worse than a lost update is that nobody is told. A lost update loses one write;
+  # this keeps both, destroys the address, and reports success to both callers, so neither has a
+  # reason to look. So the fix is uniqueness the DATABASE enforces rather than uniqueness a service
+  # checks.
+  #
+  # ## Why a hash column and not (site_id, state, furl)
+  #
+  # Three constraints have to hold at once, and only this shape holds all three:
+  #
+  # 1. **A trashed post must not reserve its URL.** SH243 is explicit that a live post may take a
+  #    trashed one's address and that the RESTORE is what gets refused. A plain unique index would
+  #    reverse that shipped decision. Partial indexes (`WHERE deleted_date IS NULL`) would express it
+  #    exactly, and MariaDB and H2 have none — so the exclusion is carried as a NULL instead, which
+  #    every one of the three engines treats as distinct in a unique index. `ShPostUnified` computes
+  #    the column and writes NULL when the row is trashed or has no furl.
+  # 2. **DRAFT and PUBLISHED of one post share a furl**, so `state` is part of the key: one row of
+  #    each per address is exactly one logical post.
+  # 3. **The index has to fit on all three engines.** `furl` is VARCHAR(510); a composite over
+  #    site_id + state + furl reaches ~2.4 KB of multi-byte characters, which is inside MariaDB's
+  #    3072-byte limit and uncomfortably near PostgreSQL's ~2704-byte btree row — a long non-ASCII
+  #    URL would fail at INSERT, on one engine, in production. A SHA-256 of `site|state|furl` is 64
+  #    ASCII characters and has no such ceiling.
+  #
+  # Created with the column all-NULL and no backfill in this file, deliberately: an instance that
+  # ALREADY holds SH719's duplicates cannot have a unique index built over them, and a migration that
+  # cannot run is worse than the defect. `ShPostUrlKeyBackfillRunner` fills it row by row at startup
+  # and skips a row whose key is taken — so pre-existing damage stays visible to `verify` (which
+  # already reports `duplicate-url`) instead of blocking the guard for everyone.
+  #
+  # SH26: preserve identifier case on PostgreSQL (QUOTE_ALL_OBJECTS does not propagate through
+  # `include`, so it is re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh719-post-unified-url-key
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_unified
+                columnName: url_key
+      changes:
+        - addColumn:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: url_key
+                  type: VARCHAR(64)
+  - changeSet:
+      id: sh719-post-unified-url-key-unique
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: sh_post_unified
+                indexName: uk_post_unified_url
+      changes:
+        - createIndex:
+            tableName: sh_post_unified
+            indexName: uk_post_unified_url
+            unique: true
+            columns:
+              - column:
+                  name: url_key

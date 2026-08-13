@@ -276,9 +276,34 @@ spell `"post:" + site + "/blog/new-url"` as an *example* of the grammar. A gate 
 seven is one people bypass. `ShSiteExportServiceTest` carries the behavioural half: the same row
 stored `/broken-post` and `broken-post` must export as one address.
 
-**A friendly URL is not unique by construction, and the two readers differ (SH321).** Nothing in the
-schema prevents two posts in one site claiming one — `duplicate-url` is an SH99 *error* for exactly
-that — so the finder returns an **ordered `List`**. A reader that must serve something takes the
+**The schema now prevents a new one, and everything below still applies to the old ones (SH719).**
+A unique index over `(site, state, locale, furl)` — carried as a SHA-256 `url_key` column the entity
+derives in `@PrePersist`/`@PreUpdate`, for the three reasons `v2026.3.24.yaml` sets out — means a
+second *live* post cannot reach an occupied address. It closed a data-corruption defect a lookup
+could not: two connections, one `post.upsert` each, the same new address, **both told
+`changed=1`**, and an address left that no write can name and no read can resolve. The loser now
+gets a `duplicate-url` 409 whose fix says **retry** — the one refusal on this surface where that is
+right, because `post.upsert` is an upsert and the address exists now.
+
+Three things the key deliberately does *not* forbid: a post's own DRAFT and PUBLISHED rows sharing a
+furl (`state` is in the key, or publishing would refuse itself — SH81); **two locales at one furl**,
+which SH348 calls content by design; and a **trashed** row's address, which stays free because SH243
+is explicit that a live post may take it and the *restore* is what gets refused. The last two are
+carried as `locale` in the digest and NULL for a trashed row — all three engines treat NULLs as
+distinct under a unique index, which is how a partial index is expressed where MariaDB and H2 have
+none.
+
+*And a declared furl is refused rather than renumbered when taken.* SH81/SH651's rule was that a
+declared address is identity and must never be renumbered; what nothing had chosen was that keeping
+it meant putting a **second** post on it. Refusing is the other answer that leaves one post at one
+address, and it leaves the rule intact.
+
+**A friendly URL was not unique by construction, and the two readers differ (SH321).** Nothing in the
+schema prevented two posts in one site claiming one — `duplicate-url` is an SH99 *error* for exactly
+that — so the finder returns an **ordered `List`**. That reader is not obsolete: SH719 cannot act
+retroactively, and `ShPostUrlKeyBackfillRunner` deliberately leaves a losing row un-keyed rather
+than refusing to start, so an instance that met the defect keeps its duplicates and keeps needing
+them reported. A reader that must serve something takes the
 first (`findByShSite_IdAndFurlAndState`'s default): consistently wrong beats alternating, SH278's
 rule on a second identity. **`ShAddressResolver` refuses** with a teaching **409** naming both posts
 by `id:`, because an address is what a *write* takes and picking the first is how an edit lands on

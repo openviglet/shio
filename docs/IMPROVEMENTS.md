@@ -236,30 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.17 A concurrent create leaves two posts on one URL (SH719)
-
-Measured by SH713's concurrency suite, at the smallest concurrency there is: two MCP
-connections, one `post.upsert` each, the same new address. Both answered `changed=1`.
-The site then holds two posts at that friendly URL, and every later call against it is
-refused — *"is claimed by 2 posts … any write against it would land on whichever the
-database sorted first"*. The address is unwritable, unreadable, and removable only by
-id.
-
-The shape is the ordinary check-then-act. The resolver looks the URL up, finds nothing,
-and the write proceeds to insert; nothing between those two steps is atomic, so the
-window is as wide as the lookup. It does not need contention to reach — two agents
-starting the same blueprint is enough, and so is one agent retrying a call whose
-response it never saw.
-
-What makes this worse than a lost update is that nobody is told. A lost update loses one
-write; this keeps both and destroys the address, and both callers were told they
-succeeded, so neither has a reason to look.
-
-The fix is uniqueness the database enforces rather than uniqueness a service checks: a
-unique index over site and friendly URL, with the constraint violation translated into
-the `duplicate-url` refusal the resolver already writes. One racer then loses, with
-something to act on, and no state is left ambiguous.
-
 ### XII.18 The instrument a refusal names cannot see the case (SH720)
 
 P6 says an error carries something to act on, and this one does: two posts at one URL is

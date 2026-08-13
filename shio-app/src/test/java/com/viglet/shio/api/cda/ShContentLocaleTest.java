@@ -168,7 +168,13 @@ class ShContentLocaleTest {
         // contested URL, which is what SH321 fixed one parameter along.
         String contested = "/contested-loc";
         persistPublished(contested, "en", "First", UUID.randomUUID().toString());
+        // SH719 made a second live post at one address impossible, so the first row's key is
+        // removed before the second is written — the state a pre-SH719 instance is in, and the one
+        // `ShPostUrlKeyBackfillRunner` leaves rather than refusing to start. What is asserted below
+        // is delivery over rows that ALREADY exist, which SH719 cannot undo retroactively.
+        unkeyContested(contested);
         persistPublished(contested, "en", "Second", UUID.randomUUID().toString());
+        unkeyContested(contested);
 
         ShCdaPost scoped = shCdaService.getPostByUrl(siteId, contested, "en").orElseThrow();
         ShCdaPost blind = shCdaService.getPostByUrl(siteId, contested).orElseThrow();
@@ -273,6 +279,12 @@ class ShContentLocaleTest {
                         ((com.viglet.shio.api.agent.ShAgentBatchService.BatchOpException) failure)
                                 .problem().toProblemDetail().getProperties().get("fix").toString())
                         .contains("push the post it translates first"));
+    }
+
+    /** SH719 — the pre-guard state, in its own transaction so the native update sees the insert. */
+    private void unkeyContested(String furl) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                com.viglet.shio.ShLegacyAddressKeys.unkey(entityManager, furl));
     }
 
     private void persistPublished(String furl, String locale, String title, String group) {

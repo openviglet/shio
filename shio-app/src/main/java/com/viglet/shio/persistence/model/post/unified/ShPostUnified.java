@@ -29,6 +29,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import org.hibernate.annotations.SQLRestriction;
@@ -57,7 +59,15 @@ import org.hibernate.annotations.TenantId;
         indexes = {
                 @Index(name = "idx_post_unified_folder", columnList = "folder_id, state"),
                 @Index(name = "idx_post_unified_type", columnList = "post_type_id, state"),
-                @Index(name = "idx_post_unified_furl", columnList = "furl, state")
+                @Index(name = "idx_post_unified_furl", columnList = "furl, state"),
+                // SH719 — declared HERE as well as in the changelog, and the duplication is the
+                // point rather than an oversight. The unit suite runs with `spring.liquibase.enabled
+                // =false` and builds its schema from this metadata (`ddl-auto=create-drop`), so a
+                // constraint that lived only in Liquibase would not exist in the suite at all: the
+                // first version of SH719's test inserted a second row at one address and PASSED,
+                // against code whose changelog was correct. A guard the tests cannot see is a guard
+                // whose regression nothing reports until production.
+                @Index(name = "uk_post_unified_url", columnList = "url_key", unique = true)
         })
 @IdClass(ShPostUnifiedId.class)
 // SH55 — soft-delete: every Hibernate-generated read of this entity (CDA, console
@@ -168,6 +178,101 @@ public class ShPostUnified implements Serializable {
      */
     @Column(name = "deleted_date")
     private Instant deletedDate;
+
+    /**
+     * SH719 — the address this row occupies, as the one value a UNIQUE index can hold.
+     *
+     * <h2>What it stops</h2>
+     *
+     * <p>Two connections, one {@code post.upsert} each, the same new address: both answered
+     * {@code changed=1}, and the site was left with two posts on one friendly URL — an address no
+     * write can name and no read can resolve, removable only by id. The shape is the ordinary
+     * check-then-act, and the window is as wide as the lookup; it needs no contention to reach,
+     * since one agent retrying a call whose response it never saw is enough. <b>Worse than a lost
+     * update</b>, because a lost update loses one write and this keeps both, destroys the address,
+     * and tells both callers they won.</p>
+     *
+     * <h2>Why it is derived here rather than by the writers</h2>
+     *
+     * <p>Six paths set a furl — create, {@code setFurl}, copy, move, import, restore — and a
+     * uniqueness column one of them forgets is a guard that is off exactly where nobody looked. A
+     * lifecycle callback runs on all six by construction, which is the same argument
+     * {@code ShFolderSite.of} rests on one model over.</p>
+     *
+     * <h2>Null is the trash, and the exclusion the engines cannot express</h2>
+     *
+     * <p>SH243 is explicit that a live post may take a <em>trashed</em> post's URL and that the
+     * restore is what gets refused, so a trashed row must not reserve its address. A partial index
+     * (<code>WHERE deleted_date IS NULL</code>) says exactly that and MariaDB and H2 have none — so
+     * the exclusion is carried as NULL, which all three engines treat as distinct under a unique
+     * index. A row with no furl is null for the same reason: an uploaded file post has no address
+     * (SH38), and "no address" is not one to hold against anybody.</p>
+     *
+     * <h2>Why a digest</h2>
+     *
+     * <p>{@code furl} is VARCHAR(510), so a composite index over site + state + furl reaches ~2.4 KB
+     * of multi-byte characters — inside MariaDB's 3072-byte limit and uncomfortably near
+     * PostgreSQL's ~2704-byte btree row, where a long non-ASCII URL would fail at INSERT, on one
+     * engine, in production. 64 hex characters has no such ceiling. The refusal does not read the
+     * URL back out of it: the caller sent the address, so the boundary already has it.</p>
+     *
+     * <p>The <b>site</b> and not the tenant: a site belongs to one tenant and its id is a UUID, so
+     * keying on it is tenant-unique without depending on {@code @TenantId} having been populated by
+     * the time this callback runs.</p>
+     */
+    @Column(name = "url_key", length = 64)
+    private String urlKey;
+
+    /**
+     * Recomputes {@link #urlKey} on every insert and every update — the whole guarantee.
+     *
+     * <p>{@code getShSite().getId()} does not initialize the lazy proxy: an id is the one property
+     * a Hibernate proxy answers without a fetch, which is what keeps this callback from turning
+     * every post write into an extra select.</p>
+     */
+    @PrePersist
+    @PreUpdate
+    void deriveUrlKey() {
+        this.urlKey = urlKeyOf(shSite == null ? null : shSite.getId(), state, locale, furl, deletedDate);
+    }
+
+    /**
+     * The key a row with this state would occupy, or {@code null} when it occupies no address.
+     *
+     * <p>Static and public so the SH719 backfill can ask the question without constructing an
+     * entity, and so a test can assert the two rows of one post differ — SH245's rule: the second
+     * copy of a shared rule is where the careless version grows.</p>
+     */
+    public static String urlKeyOf(String siteId, ShPostState state, String locale, String furl,
+            Instant deletedDate) {
+        if (deletedDate != null || siteId == null || furl == null || furl.isBlank()) {
+            return null;
+        }
+        // A separator no component can contain, so two different triples cannot digest to
+        // one subject: a site id is a UUID, a state is an enum name, a furl is a URL slug.
+        String separator = String.valueOf((char) 0x1F);
+        String subject = siteId + separator + state + separator
+                + (locale == null ? "" : locale) + separator + furl;
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(subject.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                hex.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
+            }
+            return hex.toString();
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            // SHA-256 is required of every JRE by the platform specification, so this branch is
+            // unreachable rather than unhandled. Rethrown rather than degraded: silently writing a
+            // null here would turn the uniqueness guarantee off for the whole instance.
+            throw new IllegalStateException("SHA-256 is not available", impossible);
+        }
+    }
+
+    /** SH719 — read-only; the value is the callback's, never a caller's. */
+    public String getUrlKey() {
+        return urlKey;
+    }
 
     public String getId() {
         return id;

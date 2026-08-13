@@ -140,7 +140,13 @@ class ShAddressResolverTest {
                     .setParameter("n", postTypeName)
                     .getSingleResult();
             post(site, root, type, "First", contested, ShPostState.DRAFT);
+            // SH719 made a second live post at one address impossible, so the second row is written
+            // with the first one's key already removed — which is precisely the state a pre-SH719
+            // instance is in, and the state `ShPostUrlKeyBackfillRunner` deliberately leaves behind
+            // rather than refusing to start. The refusal below is about rows that already exist.
+            com.viglet.shio.ShLegacyAddressKeys.unkey(entityManager, contested);
             post(site, root, type, "Second", contested, ShPostState.DRAFT);
+            com.viglet.shio.ShLegacyAddressKeys.unkey(entityManager, contested);
         });
 
         assertThatThrownBy(() -> resolver.resolve("post:" + siteName + contested))

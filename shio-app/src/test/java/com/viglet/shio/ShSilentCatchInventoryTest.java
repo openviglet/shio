@@ -185,7 +185,13 @@ class ShSilentCatchInventoryTest {
             // not two — which is also why they read as duplicates here and are counted anyway.
             "render", 9,
             "utils", 2,
-            "migration", 1,
+            // SH719 raised this from 1 to 2. `ShPostUrlKeyBackfillRunner` swallows the failure of
+            // its own startup pass, and the degradation is genuinely not worth an incident: the
+            // only way it fails is a `url_key` column that is not there yet — a partial import, or
+            // a changelog that has not run — and the honest consequence is that the address guard
+            // is off until it has, not that content is wrong. Refusing to start over it would take
+            // the instance down to protect a constraint that has nothing to protect yet.
+            "migration", 2,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
             // as "no text", and does not record it. The render path already reports that exact post
             // as a CONTENT degradation, which is the branch of SH270's own rule this falls under —
