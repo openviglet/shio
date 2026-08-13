@@ -193,10 +193,31 @@ class ShAgentOpsReachTest {
         // folding the vocabulary into the manifest would cost 24% of it for every session, writer
         // or not, against the 19% that made SH346 reject that option. Still a regression, so the
         // surface choice stands and the next op is an ordinary act rather than a ceiling move.
+        //
+        // SH733 raised this from 680 to 720, measured at 696, and here is the re-examination the
+        // message below demands rather than a number moved in passing.
+        //
+        // WHAT BOUGHT THE 16 TOKENS. Two `[data]` keys — `post.delete` and `folder.delete` gained
+        // the purge modifier `site.delete` already had — and one grammar line stating it once. It
+        // was 30 over before that line: the three ops each explained the same key, and three
+        // explanations of one modifier cost more than the modifier. So the trim came first, as it
+        // did for SH262, SH342 and SH721, and this is what would not compress further without
+        // rewriting contracts SH170 and SH413 own.
+        //
+        // WHY NOT AN OP. `post.purge` and `folder.purge` were the obvious shape and are what the
+        // ceiling exists to argue against: two names on `tools/list` for every caller forever,
+        // against two keys read only by a caller who declines the trash. SH413's rule decided it —
+        // a modifier of an existing op rides it — and SH648 had already applied that rule to the
+        // third delete, so this is the vocabulary staying consistent rather than growing.
+        //
+        // AND THE SURFACE CHOICE, RE-RUN. 696 against a manifest of 2343 is 30%, worse than the 24%
+        // SH647 measured and much worse than the 19% that made SH346 reject the manifest. The
+        // comparison has moved further in the direction that already settled it, so the answer is
+        // the same and is now better supported than when it was made.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
-                .isLessThan(680);
+                .isLessThan(720);
     }
 
     @Test

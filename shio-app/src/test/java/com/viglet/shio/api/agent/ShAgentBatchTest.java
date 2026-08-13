@@ -920,6 +920,55 @@ class ShAgentBatchTest {
                         .get(0).digest());
     }
 
+    /**
+     * SH733 — an agent could fill the trash and never empty it.
+     *
+     * <h2>The half that is not about row growth</h2>
+     *
+     * <p>`post.delete` and `folder.delete` trash, and <b>purge is what fires the {@code DELETE}
+     * lifecycle event</b>: `ShStaticFileCleanupListener` releases an uploaded file's bytes on it and
+     * the SH12 webhook is delivered on it. `site.delete` gained `data.purge` in SH648 and the two
+     * ops an agent actually uses did not, so on an agent-driven instance every deleted asset kept
+     * its bytes for ever and no downstream system was ever told the post went — while the delete
+     * looked complete from every surface an agent can read.</p>
+     */
+    @Test
+    void aPurgingDeleteRemovesTheRowAndAPlainOneKeepsIt() {
+        String trashed = "/purge-off-" + UUID.randomUUID().toString().substring(0, 8);
+        String purged = "/purge-on-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, post(trashed, "/", "Kept"), post(purged, "/", "Gone"));
+        String trashedId = idOf(trashed);
+        String purgedId = idOf(purged);
+
+        run(false, new Op(ShAgentBatchService.POST_DELETE, "post:" + siteName + trashed,
+                null, null, null, null, null));
+        run(false, new Op(ShAgentBatchService.POST_DELETE, "post:" + siteName + purged,
+                null, null, null, objectMapper.valueToTree(Map.of("purge", true)), null));
+
+        assertThat(rowsFor(trashedId))
+                .as("""
+                        the default is unchanged: SH55's trash keeps the row so the delete can be                         undone, and that is the behaviour P7 wants.""")
+                .isNotZero();
+        assertThat(rowsFor(purgedId))
+                .as("""
+                        and `data.purge` removes it, which is the only path on this surface that                         fires the DELETE event — without it an agent's deleted asset keeps its                         bytes for ever and no webhook says it went (SH733).""")
+                .isZero();
+    }
+
+    /** Native, because @SQLRestriction hides a trashed row and "gone" must not look like "trashed". */
+    private long rowsFor(String postId) {
+        return new TransactionTemplate(transactionManager).execute(status -> ((Number) entityManager
+                .createNativeQuery("select count(*) from sh_post_unified where id = :id")
+                .setParameter("id", postId)
+                .getSingleResult()).longValue());
+    }
+
+    private String idOf(String url) {
+        return new TransactionTemplate(transactionManager).execute(status ->
+                shAgentReadService.read(List.of("post:" + siteName + url), List.of(), true,
+                        false, null, false).get(0).id());
+    }
+
     private static Op expecting(Op op, String digest) {
         return new Op(op.op(), op.address(), op.type(), op.folder(), op.to(), op.data(),
                 op.when(), op.locale(), op.translationOf(), op.url(), digest);

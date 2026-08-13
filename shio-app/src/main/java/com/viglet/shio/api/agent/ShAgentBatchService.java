@@ -1393,17 +1393,26 @@ public class ShAgentBatchService {
             return session.change(op, address, Change.NOOP, "already absent", null);
         }
         String id = folder.get().getId();
+        // SH733 — the same modifier site.delete carries (SH648). `purge` trashes first and then
+        // removes, because ShFolderWriteService.purge operates ON the trash and refuses a live
+        // folder; the two halves are one gesture when the caller has declined the undo.
+        boolean purge = flag(op.data(), PURGE_KEY);
         if (!session.dryRun) {
             shContentAclService.requireWrite(id);
             shFolderWriteService.delete(id, session.actor);
+            if (purge) {
+                shFolderWriteService.purge(id, session.actor);
+            }
         }
         // Folder deletion cascades to every post beneath it (ShFolderWriteService), so
         // the plan says so rather than letting the caller discover it afterwards (P7).
         // Since SH200 the cascade goes through the post writer, so the whole subtree lands
         // in SH55's trash — said out loud for the same reason post.delete says it: an agent
         // that believes it destroyed a section will not offer the human the undo.
-        return session.change(op, address, Change.DELETE,
-                "with all content beneath it, to trash (restorable)", id);
+        return session.change(op, address, Change.DELETE, purge
+                ? "with all content beneath it, permanently - `data.purge` declines the trash, so "
+                        + "the file bytes are released and the DELETE webhook fires"
+                : "with all content beneath it, to trash (restorable)", id);
     }
 
     // --- post ops ---
@@ -1984,13 +1993,24 @@ public class ShAgentBatchService {
             return session.change(op, address, Change.NOOP, "already absent", null);
         }
         String id = post.get().getId();
+        // SH733 — an agent could fill the trash and never empty it, and purge is what fires the
+        // DELETE lifecycle event: without it `ShStaticFileCleanupListener` never releases an
+        // uploaded file's bytes and the SH12 webhook never tells anybody the post went.
+        boolean purge = flag(op.data(), PURGE_KEY);
         if (!session.dryRun) {
             shContentAclService.requireWrite(id);
             shPostUnifiedWriteService.delete(id, session.actor);
+            if (purge) {
+                shPostUnifiedWriteService.purge(id, session.actor);
+            }
         }
-        // SH55: this is the reversible trash, not a purge. Say so — an agent that
-        // believes it destroyed something will not offer the human the undo.
-        return session.change(op, address, Change.DELETE, "to trash (restorable)", id);
+        // SH55: the default is the reversible trash. Say which it was — an agent that believes it
+        // destroyed something will not offer the human the undo, and one that believes it kept an
+        // undo it declined will offer one that is not there.
+        return session.change(op, address, Change.DELETE, purge
+                ? "permanently - `data.purge` declines the trash, so the file bytes are released "
+                        + "and the DELETE webhook fires"
+                : "to trash (restorable)", id);
     }
 
     /**

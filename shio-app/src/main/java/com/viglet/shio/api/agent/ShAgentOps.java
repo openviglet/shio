@@ -125,7 +125,7 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.SITE_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Trash a site and every folder and post in it. Needs `confirm` from its own "
-                    + "dry run. `data.purge:true` removes it outright instead - no undo."),
+                    + "dry run."),
             new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Create a folder at that whole name chain, or confirm it is there."),
@@ -134,7 +134,7 @@ public final class ShAgentOps {
                     "Rename or relocate a section. `to` is the whole new name chain, so its last "
                             + "segment is the new name. No post's URL changes."),
             new OpSpec(ShAgentBatchService.FOLDER_DELETE,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Trash a folder and everything beneath it. Needs `confirm` from its own dry "
                             + "run; use folder.move to rename."),
             new OpSpec(ShAgentBatchService.POST_UPSERT,
@@ -158,7 +158,7 @@ public final class ShAgentOps {
                     "Withdraw the published row; the draft stays. Takes `id:` on the same "
                             + "terms as post.publish."),
             new OpSpec(ShAgentBatchService.POST_DELETE,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(EXPECT),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(EXPECT, DATA),
                     "Trash a post. Needs `confirm` from its own dry run."),
             // SH222 — the undo `post.delete` has always promised in its own reply. Addressed by
             // `id:` because a trashed post has no reachable path; the ids come from
@@ -236,6 +236,11 @@ public final class ShAgentOps {
                 + "[name]=optional\n");
         text.append("# every op takes `op` plus the keys below and nothing else; batch-level keys "
                 + "are dryRun, confirm, verify, digest\n");
+        // SH733 — said once. site.delete, post.delete and folder.delete all carry this modifier,
+        // and three explanations of one key cost more than the key does: with them the vocabulary
+        // went 30 tokens over its ceiling, and with this line and none of them it is under.
+        text.append("# on any delete, `data.purge:true` removes instead of trashing — frees file "
+                + "bytes, fires the DELETE webhook, no undo\n");
         for (OpSpec spec : all()) {
             text.append(spec.op());
             spec.required().forEach(key -> text.append(' ').append(key));

@@ -405,6 +405,26 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   It costs nothing to anyone who does not ask: `include=digest` rides the parameter `include=impact`
   already uses (SH262), so there is no new endpoint, no new tool schema and no new query string, and
   a read that does not ask is byte-identical to what it was.
+- **And an agent can now empty the trash it fills (SH733).** SH732's reclassification named this
+  while closing something else: an agent could undo a delete and could not make one final.
+  `post.delete` and `folder.delete` trash; `site.delete` gained `data.purge` in SH648; the two ops
+  an agent actually uses had no purge at all, and `DELETE /post-unified/{id}/purge` is
+  console-shaped. Row growth is the boring half — **purge is what fires the `DELETE` lifecycle
+  event**, so `ShStaticFileCleanupListener` never released a deleted asset's bytes and the SH12
+  webhook never told anybody the post went, while the delete looked complete from every surface an
+  agent can read.
+
+  `data.purge:true` on both, the modifier SH413 established. **Not `post.purge`/`folder.purge`** —
+  two names on `tools/list` for every caller forever, against two keys read only by a caller who
+  declines the trash.
+
+  **It cost 16 tokens and the ceiling moved, loudly.** The first attempt was 30 over, because all
+  three deletes explained the same modifier; the grammar states it once now and the three sentences
+  are gone. What remained would not compress without rewriting contracts SH170 and SH413 own, so
+  `ShAgentOpsReachTest` went 680 → 720 with the re-examination its own message demands — including
+  the surface choice re-run: 696 against a manifest of 2343 is **30%**, worse than the 24% SH647
+  measured and the 19% that made SH346 reject the manifest, so the answer is unchanged and better
+  supported than when it was made.
 - **The trash is agent-reachable, and the instrument that said otherwise could not tell (SH732).**
   `ShAgentP1ConformanceTest` held `trash` as `CONSOLE_ONLY` — *"an agent can fill the trash and can
   neither list nor restore it"* — and both halves had been false for a block: SH222 gave

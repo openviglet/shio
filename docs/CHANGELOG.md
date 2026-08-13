@@ -547,6 +547,7 @@
 - **SH728** — cli/test/instance-assumptions.test.mjs classifies every post-type a conformance suite names as seeded, provisioned by that suite, or a declared assumption, reading the seeded set from the import file so it cannot go stale.
 - **SH730** — post.move, post.delete and post.publish take `expect` too, publish comparing the draft so it does not refuse every publish that changes something; the vocabulary paid for the four keys by trimming prose.
 - **SH732** — The trash is classified reachable and dropped from the manifest's elsewhere map, and an exception now names the ops that would close it, so one shut by another road fails instead of persisting.
+- **SH733** — post.delete and folder.delete take `data.purge:true`, so an agent can release a deleted asset's bytes and fire the DELETE webhook; the modifier is stated once in the grammar and the ceiling moved 680 to 720 with the argument.
 
 ## Block O — The human half (the console the curator uses, SH74)
 
