@@ -55,7 +55,7 @@
 
 ## Block U — Documentation the matrix still names
 
-- 📋 **SH697** (deps: —) **The docs vocabulary gate reads MCP tool names from examples only, not from the page's tool table** — Injecting `shio_nonexistent` into mcp.md's table leaves the check green, which is how two tools the product rejected stayed published while the one it shipped never arrived. → §XXI.3
+- 📋 **SH698** (deps: —) **`fixture-traits.test.mjs` fails at file level about one run in five, with every assertion in it green** — Caught once in five `pnpm test` runs: the file reports `test failed` and names no assertion, 951 ms against 209 ms alone, so the gate is red for something outside the tests. → §XXI.11
 
 ## Non-goals (do NOT add as tasks)
 

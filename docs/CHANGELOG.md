@@ -1336,3 +1336,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH652** — The cli page gained a row per audit rule plus the two always-printed lines, and docs-vocabulary now fails on a rule AUDIT_RULES emits that the page does not name.
 - **SH653** — A cluster is one table row, so the summary reads 48 (43 ✅, 5 🧩, 0 wrong), and docs-coverage recomputes it from the tables and prints the sentence to write when the two disagree.
 - **SH674** — The pages had never stopped publishing: the extractor's fence regex read no block at all on a CRLF file, hiding seven pages. `\r?` took the corpus from 55 blocks to 82 and the gate to green.
+- **SH697** — The tool table is read on SH663's narrow rule, and two new assertions hold the registered set and every stated count against the product — the direction a docs-to-product check cannot have.

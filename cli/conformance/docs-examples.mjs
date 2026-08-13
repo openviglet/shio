@@ -193,6 +193,66 @@ export function propertyRows(text) {
   return { rows, skipped, relativeRows };
 }
 
+/**
+ * SH697 — the MCP tool names a Markdown table holds, which no fence contains.
+ *
+ * <h3>The same defect as SH663, one vocabulary over</h3>
+ *
+ * <p>`CLAIMS`' `mcp` entry takes a JSON fence carrying a `tools/call`. `mcp.md` has exactly one,
+ * so of the twelve tools the page publishes, **one** was ever held against the product — and the
+ * *table*, which is the thing a reader consults, was unread. Measured: `shio_nonexistent` dropped
+ * into that table left the check green, while a bad property key on the same page turned SH663's
+ * red.</p>
+ *
+ * <p>What it cost: the page published `shio_blueprint` and `shio_forget` as tools. Neither exists,
+ * and neither is an oversight — `ShApplyTool` and `ShRememberTool` both record the decision to make
+ * that capability a *parameter* rather than pay for a schema on every turn. Two rejected designs
+ * were published as shipped surface, and `shio_marketplace` shipped without ever reaching the page.
+ * The root README never drifted this way because `readme-surface.test.mjs` holds its list against
+ * `mcpTools()`; the published documentation was the surface with no instrument.</p>
+ *
+ * <h3>The narrow rule, for SH663's reason</h3>
+ *
+ * <p>Only the **first** cell, and only in a table whose header names a tool column. A `shio_apply`
+ * cited in a *What it does* column is prose about another row — and the page now carries a
+ * paragraph naming `shio_blueprint` and `shio_forget` precisely to say they are **not** tools,
+ * which a looser reader would report as the defect it is explaining.</p>
+ */
+export function toolRows(text) {
+  const rows = [];
+  let skipped = 0;
+  const lines = text.split("\n");
+  for (let at = 0; at < lines.length; at += 1) {
+    if (!lines[at].trimStart().startsWith("|")) continue;
+    const header = cells(lines[at]);
+    const divider = lines[at + 1] ?? "";
+    if (!divider.trimStart().startsWith("|") || !/^[\s|:-]+$/.test(divider)) continue;
+
+    const start = at;
+    let body = at + 2;
+    const gathered = [];
+    while (body < lines.length && lines[body].trimStart().startsWith("|")) {
+      gathered.push(lines[body]);
+      body += 1;
+    }
+    at = body - 1;
+
+    if (!/^tools?$/i.test((header[0] ?? "").replace(/[*`]/g, "").trim())) {
+      // Reported, never guessed at: a table naming tools under some other header is a thing this
+      // reader declined, and the printed count is what stops that being invisible.
+      if (gathered.some((line) => /`shio_[a-z]/i.test(line))) skipped += 1;
+      continue;
+    }
+    for (const line of gathered) {
+      const first = cells(line)[0] ?? "";
+      for (const match of first.matchAll(/`(shio_[a-z_]+)`/g)) {
+        rows.push({ name: match[1], line: start + 1 });
+      }
+    }
+  }
+  return { rows, skipped };
+}
+
 /** A table row's cells, without the leading and trailing pipe. */
 function cells(line) {
   return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
@@ -203,6 +263,7 @@ export function extract(docsDir = DEFAULT_DOCS) {
   let illustrative = 0;
   let tablesSkipped = 0;
   let rowsRelative = 0;
+  let toolTablesSkipped = 0;
   for (const file of walk(docsDir)) {
     const text = readFileSync(file, "utf8");
     // SH663 — the table rows first, so a page whose properties are documented as a table is read at
@@ -226,6 +287,26 @@ export function extract(docsDir = DEFAULT_DOCS) {
         body: keys.join("\n"),
       });
     }
+    // SH697 — the tool table, emitted as an ordinary `mcp` block for SH663's stated reason: every
+    // consumer already holds `subjects` against the product, and a second kind would be a second
+    // thing somebody has to remember to check.
+    const tools = toolRows(text);
+    toolTablesSkipped += tools.skipped;
+    const toolsByLine = new Map();
+    for (const row of tools.rows) {
+      if (!toolsByLine.has(row.line)) toolsByLine.set(row.line, []);
+      toolsByLine.get(row.line).push(row.name);
+    }
+    for (const [line, names] of toolsByLine) {
+      blocks.push({
+        file: relative(docsDir, file).replace(/\\/g, "/"),
+        line,
+        kind: "mcp",
+        from: "table",
+        subjects: [...new Set(names)],
+        body: names.join("\n"),
+      });
+    }
     for (const fence of fences(text)) {
       const claim = CLAIMS.find(
         (c) => c.langs.includes(fence.lang) && c.match(fence.body),
@@ -243,13 +324,13 @@ export function extract(docsDir = DEFAULT_DOCS) {
       });
     }
   }
-  return { blocks, illustrative, tablesSkipped, rowsRelative };
+  return { blocks, illustrative, tablesSkipped, rowsRelative, toolTablesSkipped };
 }
 
 function main() {
   const args = process.argv.slice(2);
   const docsDir = args.find((a) => !a.startsWith("--")) ?? DEFAULT_DOCS;
-  const { blocks, illustrative, tablesSkipped, rowsRelative } = extract(docsDir);
+  const { blocks, illustrative, tablesSkipped, rowsRelative, toolTablesSkipped } = extract(docsDir);
 
   if (args.includes("--json")) {
     process.stdout.write(`${JSON.stringify(blocks, null, 2)}\n`);
@@ -273,7 +354,9 @@ function main() {
   // SH663 — named rather than silent. A table holding `shio.*` keys under no property column is
   // coverage this reader does not have, and a count that omitted it would read as completeness.
   process.stdout.write(`    ${"tables past".padEnd(12)} ${String(tablesSkipped).padStart(3)}  (hold a shio.* key under no property column)\n`);
-  process.stdout.write(`    ${"rows relative".padEnd(12)} ${String(rowsRelative).padStart(3)}  (a field named under a prefix stated elsewhere)\n\n`);
+  process.stdout.write(`    ${"rows relative".padEnd(12)} ${String(rowsRelative).padStart(3)}  (a field named under a prefix stated elsewhere)\n`);
+  // SH697 — the same courtesy for the tool tables, and for the same reason.
+  process.stdout.write(`    ${"tool tables".padEnd(12)} ${String(toolTablesSkipped).padStart(3)}  (name a shio_ tool under no tool column)\n\n`);
 
   process.stdout.write(`  Distinct assertable subjects: ${subjects.size}\n`);
   const files = new Set(blocks.map((b) => b.file));

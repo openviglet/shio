@@ -37,13 +37,13 @@
  * These two files are what changes that.
  */
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 
 import { AUDIT_RULES } from "../src/audit.mjs";
 
-import { extract } from "./docs-examples.mjs";
+import { extract, toolRows } from "./docs-examples.mjs";
 import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs";
 
 /**
@@ -111,6 +111,22 @@ function docs() {
     );
   }
   return extract(DOCS);
+}
+
+/**
+ * Every published page as `[name, text]` (SH697).
+ *
+ * <p>Not derived from `blocks`: a page whose only defect is a wrong sentence carries no executable
+ * block, and reading only the pages that already produced one would skip exactly the page this is
+ * looking for.</p>
+ */
+function pages(dir = DOCS, out = []) {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) pages(full, out);
+    else if (/\.mdx?$/.test(name)) out.push([name, readFileSync(full, "utf8")]);
+  }
+  return out;
 }
 
 const { blocks } = docs();
@@ -286,6 +302,78 @@ describe("SH499 conformance: the published vocabulary is this product's vocabula
           + "nobody joins to anything",
       );
     }
+  });
+
+  /**
+   * SH697 — the direction a docs-to-product check cannot have.
+   *
+   * <p>Every test above asks whether a documented name is real. None asks whether a real name is
+   * documented, and by construction none can: a tool missing from the page contributes no subject,
+   * and a checker handed no subject passes. `shio_marketplace` shipped in SH678 and never reached
+   * `mcp.md`, which is a whole capability unadvertised on the page that exists to list them.</p>
+   *
+   * <p>Held against the **table**, not against every mention: the table is the page's catalogue,
+   * and `mcp.md` deliberately names two non-tools in prose to say they are parameters.</p>
+   */
+  test("SH697: every tool the server registers is on the published tool table", () => {
+    const published = new Set(
+      blocks.filter((block) => block.kind === "mcp" && block.from === "table")
+        .flatMap((block) => block.subjects),
+    );
+    assert.ok(
+      published.size > 0,
+      "SH697: no tool table was read at all, so the comparison below would pass by having no "
+        + "subjects — which is the exact defect this test exists for",
+    );
+    const undocumented = [...vocabulary.mcpTools].filter((name) => !published.has(name)).sort();
+    assert.deepEqual(
+      undocumented,
+      [],
+      "SH697: this server registers a tool the published tool table does not list, so a real "
+        + "capability is unadvertised and the page's own count is wrong. The root README has been "
+        + "held to this since SH499 (`readme-surface.test.mjs`); the published documentation was "
+        + `the surface with no instrument.\n  published: ${[...published].sort().join(" ")}`,
+    );
+  });
+
+  /**
+   * SH697 — and the number in the prose, derived rather than typed.
+   *
+   * <p>The page said *"Thirteen"* while `ShMcpServerTest` capped the list at twelve, because the
+   * table listed two tools the product had rejected. Spelled out as a word, which is why this reads
+   * both forms: the sentence is prose and should stay prose.</p>
+   */
+  test("SH697: the tool count a page states is the number of tools", () => {
+    const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+      "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+      "eighteen", "nineteen", "twenty"];
+    const size = vocabulary.mcpTools.size;
+    const claims = [];
+    for (const [file, text] of pages()) {
+      // Which counts are about *these* tools, and the rule has to be narrow for SH663's reason.
+      // `content-lifecycle.md` says "all five tools below" about the curator's console tools, and
+      // reading that as an MCP count would report a page for saying a true thing. So a line counts
+      // when it names MCP, or when the page is the one carrying the tool table — derived from the
+      // table rather than an allow-list of filenames, which is the thing that rots.
+      const isToolPage = toolRows(text).rows.length > 0;
+      for (const line of text.split("\n")) {
+        if (!isToolPage && !/mcp/i.test(line)) continue;
+        for (const m of line.matchAll(/\b([A-Za-z]+|\d+)\s+(?:Model Context Protocol\s+)?tools?\b/g)) {
+          const raw = m[1].toLowerCase();
+          const value = /^\d+$/.test(raw) ? Number(raw) : WORDS.indexOf(raw);
+          // Only a token that IS a number is a count. "the tools" and "MCP tools" read as -1 here
+          // and are prose, not a claim.
+          if (value >= 0 && value !== size) claims.push({ subject: `${m[1]} tools`, where: [file] });
+        }
+      }
+    }
+    assert.deepEqual(
+      claims,
+      [],
+      `SH499/SH697: a page states a number of MCP tools that is not ${size}. A hand-typed count in `
+        + "an ungated file is the thing that rots — this one said thirteen for as long as the table "
+        + `held two tools that were never built.\n${report(claims)}`,
+    );
   });
 
   test("SH499: the counts are printed, because a gate that checks nothing passes quietly", () => {

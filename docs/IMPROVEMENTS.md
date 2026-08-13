@@ -884,27 +884,26 @@ altitudes, which is why they are one block rather than a footnote on the last on
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
 
-### XXI.3 The docs vocabulary gate reads MCP tool names from examples only, not from the page's tool table (SH697)
+### XXI.11 `fixture-traits.test.mjs` fails at file level with every assertion green (SH698)
 
-`docs-vocabulary.conformance.mjs` asserts that every documented MCP tool is one the
-server registers. Measured: injecting `shio_nonexistent` into the tool table in `mcp.md`
-leaves that test **green**, while injecting `shio.marketplace.enable` into prose on the
-same page turns the property check red. So the gate reads `shio.*` keys from prose and
-tool names only from executable `tools/call` blocks — and the table, which is the thing
-a reader actually consults, is unguarded.
+Observed once in five consecutive `pnpm test` runs while landing SH697. The runner
+prints `✖ test\fixture-traits.test.mjs (951.4674ms)` and beneath it `'test failed'` — no
+assertion, no diff, no named subtest. Run alone the file is 9 of 9 green in 209 ms; the
+four runs after it were 1436 of 1436. The red is not a failing expectation, it is the
+file's own result, and the only thing that changed was two new test files adding
+parallel load.
 
-What it cost, found during Block J's sweep: `mcp.md` published `shio_blueprint` and
-`shio_forget` as tools. Neither exists, and neither is an oversight — `ShApplyTool` line
-43 and `ShRememberTool` line 64 record the decision to make each a parameter rather than
-pay for a schema on every turn. The page presented both rejected designs as shipped
-surface.
+The shape points at the socket rather than the assertions: the suite starts an HTTP
+server and closes it in `t.after(() => source.close())`, and a file-level red with green
+children is what an unhandled rejection or a hook throwing after the tests pass looks
+like under `--test-force-exit`. A port or close race under Node's file-level parallelism
+fits both the intermittency and the 4.5x wall-clock.
 
-The second half is a direction nothing checks at all: `shio_marketplace` shipped in
-SH678 and never reached the page, so the count sentence said thirteen while
-`ShMcpServerTest` caps the list at twelve. A missing tool is invisible to a
-docs-to-product check by construction.
+Worth a task rather than a shrug because it is the SH354 shape one gate over: an
+intermittent red nobody can reproduce is the one that gets re-run until it passes and
+then forgotten, and SH354's remedy — keep the run, so the name survives — is why this
+one has a name at all.
 
-So the fix is two assertions, not one: read tool names from the table as well as from
-examples, and assert the **set** matches `toolNames()` in both directions. The count in
-the prose should then be derived from that set rather than typed, which is the same move
-SH653 made for the coverage summary.
+What would close it: make the failure legible before making it rare. Bind to port 0 if
+it does not already, await `close`, and fail with the reason rather than `'test
+failed'`.

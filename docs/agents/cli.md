@@ -2420,6 +2420,35 @@ quiet without being fixed. It asserts a CRLF page and an identical LF page extra
 subjects — **and** that the LF side is non-empty, because `deepEqual([], [])` is green and that is
 precisely the bug.
 
+**And the tool table was unread, which is SH663 one vocabulary over (SH697).** The `mcp` claim takes
+a JSON fence carrying a `tools/call`; `mcp.md` has exactly **one**, so of the twelve tools the page
+publishes, one was ever held against the product. `shio_nonexistent` dropped into that table left the
+check green. What it cost: the page published `shio_blueprint` and `shio_forget` as tools, and
+neither is an oversight — `ShApplyTool` and `ShRememberTool` each record the decision to make that
+capability a *parameter* rather than pay for a schema on every turn. Two rejected designs were
+published as shipped surface. `toolRows()` now reads the table on SH663's narrow rule: **first cell
+only, under a header saying `Tool`**, because the page carries a paragraph naming those two
+non-tools in order to say they are parameters, and a looser reader would report the sentence that
+documents the decision.
+
+**The direction that had no check at all is the one that mattered more.** Every assertion here asks
+whether a documented name is real; none asked whether a real name is documented, and by construction
+none could — a tool missing from the page contributes no subject, and a checker handed no subjects
+passes. `shio_marketplace` shipped in SH678 and never reached `mcp.md`, so the page's count said
+thirteen while `ShMcpServerTest` capped the list at twelve. Two assertions close it: the registered
+set must equal the published table, and any *number of tools* a page states must equal
+`mcpTools().size`. The count rule is narrowed the same way — a line qualifies when it names MCP or
+sits on the page carrying the tool table, because `content-lifecycle.md` says *"all five tools
+below"* about the curator's console tools and reading that as an MCP count reports a page for saying
+something true.
+
+Worth naming as a pattern rather than two bugs: **the root README never drifted this way**, because
+`readme-surface.test.mjs` has held its list and its count against `mcpTools()` since SH499. The
+published documentation was the surface with no instrument, and it drifted exactly as far as the
+absence of one allowed. One prose edit went the other way on purpose — *"Twelve, and the number is
+the point"* became *"Twelve tools, …"* so the sentence falls under the rule. **Make the prose
+checkable before making the checker clever.**
+
 **Both live in `cli/conformance/` because their input is another repository.** `docs-shio` is not a
 checkout `cli/test/` can see, so a gate there would have to *skip* when it is absent — the failure
 mode `support/instance.mjs` exists to refuse. Here the bargain is already opt-in, so an absent
