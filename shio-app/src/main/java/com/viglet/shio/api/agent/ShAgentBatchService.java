@@ -235,6 +235,8 @@ public class ShAgentBatchService {
     private final ShSiteWriteService shSiteWriteService;
     private final ShContentAclService shContentAclService;
     private final ShTenantQuotaService shTenantQuotaService;
+    /** SH734 — what one credential may write across a window; off unless an operator sets it. */
+    private final ShAgentSessionBudget shAgentSessionBudget;
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
     private final ShTemplateValidator shTemplateValidator;
@@ -255,6 +257,7 @@ public class ShAgentBatchService {
                                ShSiteWriteService shSiteWriteService,
                                ShContentAclService shContentAclService,
                                ShTenantQuotaService shTenantQuotaService,
+                               ShAgentSessionBudget shAgentSessionBudget,
                                ObjectMapper objectMapper,
                                ShAgentProperties properties,
                                ShTemplateValidator shTemplateValidator,
@@ -272,6 +275,7 @@ public class ShAgentBatchService {
         this.shSiteWriteService = shSiteWriteService;
         this.shContentAclService = shContentAclService;
         this.shTenantQuotaService = shTenantQuotaService;
+        this.shAgentSessionBudget = shAgentSessionBudget;
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.shTemplateValidator = shTemplateValidator;
@@ -522,6 +526,13 @@ public class ShAgentBatchService {
             if (expected != null) {
                 ShAgentConfirm.require(batch.confirm(), expected, plan);
             }
+        }
+        // SH734 — charged after the plan and before the write, and only on a real run. A dry run
+        // costs nothing (a plan writes nothing, and the confirm token above means a destructive run
+        // MUST plan first — charging would tax the safe path twice), and charging before the
+        // confirm check would spend a caller's window on a run that never happened.
+        if (!batch.dryRun()) {
+            shAgentSessionBudget.spend(ops.size());
         }
         ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, actor, declared));
         // The token rides back on a dryRun only: on a real run it has been spent, and echoing

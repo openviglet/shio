@@ -405,6 +405,29 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   It costs nothing to anyone who does not ask: `include=digest` rides the parameter `include=impact`
   already uses (SH262), so there is no new endpoint, no new tool schema and no new query string, and
   a read that does not ask is byte-identical to what it was.
+- **A credential has a write ceiling across a window, if an operator sets one (SH734).** Two
+  ceilings already existed and neither saw the case between them: `batch.maxOps` caps one batch, and
+  SH22/D's quota caps a tenant's total — the agent write path has called `checkCanCreateSite` and
+  `checkCanCreatePost` since it shipped. **An agent looping passes both**: every batch is small, the
+  tenant total is generous, and ten thousand calls go through. SH108's confirm token stops a
+  destructive op arriving as a typo; nothing stopped a cheap op arriving ten thousand times.
+
+  `shio.agent.batch.max-session-ops` over `session-window`, keyed on the API token when there is one
+  and the authenticated name otherwise — two agents sharing a login are two credentials and should
+  have two budgets. **Off by default (`0`)**, the shape Turing indexing takes: a default-on limit
+  would be either generous enough to be theatre or tight enough to break a legitimate bulk run, and
+  there is no measurement of what a real replication spends.
+
+  Three decisions worth naming. **A dry run costs nothing** — a plan writes nothing, and since the
+  confirm token makes a destructive run plan *first*, charging would tax the safe path twice.
+  **A refused run keeps its charge**, so a caller cannot sit at the ceiling and retry for ever; the
+  window ends it, not restraint. And the refusal is a **429 naming the reset instant**, which is the
+  only refusal on this surface whose answer is to wait rather than to edit — a 429 with no instant
+  is an invitation to retry immediately, which is how a runaway becomes a busy loop.
+
+  **This was SH110's for its whole life and did not need to be.** SH734 measured the blocker instead
+  of trusting it: SH45's meter is genuinely required for the *storage* third, and the session and
+  per-call thirds had already stopped waiting. SH110 keeps bytes.
 - **And an agent can now empty the trash it fills (SH733).** SH732's reclassification named this
   while closing something else: an agent could undo a delete and could not make one final.
   `post.delete` and `folder.delete` trash; `site.delete` gained `data.purge` in SH648; the two ops

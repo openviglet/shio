@@ -548,6 +548,7 @@
 - **SH730** — post.move, post.delete and post.publish take `expect` too, publish comparing the draft so it does not refuse every publish that changes something; the vocabulary paid for the four keys by trimming prose.
 - **SH732** — The trash is classified reachable and dropped from the manifest's elsewhere map, and an exception now names the ops that would close it, so one shut by another road fails instead of persisting.
 - **SH733** — post.delete and folder.delete take `data.purge:true`, so an agent can release a deleted asset's bytes and fire the DELETE webhook; the modifier is stated once in the grammar and the ceiling moved 680 to 720 with the argument.
+- **SH734** — A credential's writes are counted across a configurable window and refused with a 429 naming the reset instant; dry runs are free, a refused run keeps its charge, and the ceiling is off until an operator sets one.
 
 ## Block O — The human half (the console the curator uses, SH74)
 

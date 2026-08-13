@@ -271,6 +271,35 @@ public class ShAgentProperties {
          * with a count and a way to narrow scope, never shortened.</p>
          */
         private int maxDocumentOps = 2000;
+
+        /**
+         * Ops one credential may WRITE across a rolling window, or {@code 0} for no ceiling
+         * (SH734).
+         *
+         * <h2>The gap it closes</h2>
+         *
+         * <p>{@link #maxOps} caps one batch and SH22/D's quota caps a tenant's total, and between
+         * them sits the case neither sees: an agent looping stays under the per-batch cap and under
+         * a generous tenant total while making ten thousand calls. SH108's confirm token stops a
+         * destructive op arriving as a typo; nothing stopped a <em>cheap</em> op arriving ten
+         * thousand times.</p>
+         *
+         * <h2>Off by default, and that is a decision</h2>
+         *
+         * <p>Zero means no ceiling, which is what a single-tenant install gets — the same shape
+         * Turing indexing takes (off until an operator asks for it). A default-on limit would have
+         * to be either generous enough to be theatre or tight enough to break a legitimate bulk
+         * run, and this codebase has no measurement of what a real replication spends. An operator
+         * who wants the guard sets a number they can defend; SH110 is where a per-plan version
+         * belongs, because that needs SH45's meter.</p>
+         *
+         * <p><b>Dry runs are free.</b> A plan writes nothing, and charging for one would push a
+         * caller towards writing blind — the opposite of what SH108 and P9 ask for.</p>
+         */
+        private int maxSessionOps = 0;
+
+        /** The window {@link #maxSessionOps} is counted over. Fixed, not sliding: see the service. */
+        private java.time.Duration sessionWindow = java.time.Duration.ofHours(1);
     }
 
     /** Context-pack defaults (SH77) and its token ceiling (SH78). */

@@ -20,7 +20,6 @@
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — SH734 took the session and per-call halves, which needed no metering; what is left is the storage ceiling, and counting bytes per tenant over time is SH45's meter. → §XII.5
-- 📋 **SH734** (deps: SH106 ✅) **A runaway agent is capped per batch and per tenant total, and by nothing across one session** — SH110 waits on SH45 for all three ceilings, and two of them shipped in SH22/D — the agent path already calls the quota checks, so only the session window is missing. → §XII.26
 
 ## Block M — Token economy (measured)
 
