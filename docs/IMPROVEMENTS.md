@@ -784,25 +784,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.11 A public instance to point at (SH540)
-
-Turing's landing page went from a scripted demo to a genuinely live one by pointing the
-widgets at a public read-only instance, and that change is what turned its centrepiece
-from an illustration into evidence. Shio's equivalent is an instance serving a seeded
-demo site, read-only, with a CDA token scoped to it.
-
-What it makes live is specific and small: the manifest and context pack the page quotes,
-the CDA queries behind the delivery section, a preview link that opens a real rendered
-page, and the transcript player's outputs checked against what the instance actually
-returns. The write half stays a recording - a public instance an anonymous visitor can
-write to is a different product with a different threat model.
-
-The condition for building it is that a stale instance is worse than none: SH460 already
-made an instance date its own build and the conformance harness refuse one older than
-HEAD, so the demo is deployable on that discipline rather than on somebody remembering.
-The site degrades to the scripted content when the instance is unreachable, and says
-which one it is showing.
-
 ## XX End-user documentation, round two (Block T)
 
 Block R measured this and could not fix it. It took the coverage matrix from **33 wrong

@@ -49,8 +49,6 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH540** (deps: SH530 ✅) **Nothing on the site is answered by a running Shio** — The transcripts, the preview links and the manifest read are all recordings, so the single claim a visitor cannot check is the one the whole page rests on. → §XIX.11
-
 ## Block U — Documentation the matrix still names
 
 - ⏳ **SH698** (deps: —) **`fixture-traits.test.mjs` fails at file level about one run in five, with every assertion in it green** — Caught once in five `pnpm test` runs: the file reports `test failed` and names no assertion, 951 ms against 209 ms alone, so the gate is red for something outside the tests. → §XXI.11
@@ -59,7 +57,7 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH707** (deps: —) **No instrument says which of the agent's verbs a live suite has ever called** — Thirteen MCP tools, thirty-three CLI commands and the agent ops are proved by MockMvc and module imports, and only two tools are ever spoken over a wire. → §XXIII.1
+- 🛠 **SH707** (deps: —) **No instrument says which of the agent's verbs a live suite has ever called** — Thirteen MCP tools, thirty-three CLI commands and the agent ops are proved by MockMvc and module imports, and only two tools are ever spoken over a wire. → §XXIII.1
 - 📋 **SH708** (deps: SH707) **Eight read tools have never answered a real client against real content** — find, changes, digest, verify, assets, marketplace, context and read are proved against MockMvc fixtures, so a schema or projection drift shows up first in Claude Code. → §XXIII.2
 - 📋 **SH709** (deps: SH707) **No live run has ever written, published or rolled back through the MCP tools** — write, apply, publish and remember carry draft-default, dry-run and confirm tokens, and every one of those guards is asserted against a mock that cannot leave a wrong row behind. → §XXIII.3
 - 📋 **SH710** (deps: SH707) **P6 is asserted on the ops but never on the thirteen tools a client actually calls** — A refusal is the agent's recovery path, and no live run has checked that each tool's wrong call comes back carrying fix, allowed, didYouMean or example. → §XXIII.4
