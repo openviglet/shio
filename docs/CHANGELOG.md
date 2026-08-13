@@ -1358,3 +1358,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH708** — One suite drives all eight read tools over the wire against a site it seeds, taking live tool coverage from 2 of 12 to 8 of 12 - and the ledger's reader had to widen to see them.
 - **SH709** — Every write scenario is call-then-look against the published projection, so dry-run, draft-default and a refused plan are proved by what is absent - live tool coverage is 12 of 12.
 - **SH710** — Seven wrong-call shapes and an unknown tool name are refused over the wire carrying one of P6's instruments, with the store unchanged - and the sweep found SH717.
+- **SH711** — Ten verbs are spawned as a process against a live instance with a pull-push-pull round trip, taking verb coverage from 7 of 31 to 16, and dev, build and deploy are named out of scope.

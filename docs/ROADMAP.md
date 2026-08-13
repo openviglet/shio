@@ -55,7 +55,6 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH711** (deps: SH707 ✅) **Thirty-three CLI commands, and only the clone-propose-convert chain is ever run against an instance** — pull, push, apply, verify, diff, impact, audit, doctor, site, types and the rest are proved by importing the module, which skips argv, exit codes and the HTTP client. → §XXIII.5
 - 📋 **SH712** (deps: SH708 ✅, SH709 ✅, SH710 ✅) **Every suite calls the verbs in the order its author imagined, which is the one order that works** — An agent publishes before it creates, moves a folder into its own child and reads what it deleted, and nothing drives the vocabulary out of order. → §XXIII.6
 - 📋 **SH713** (deps: SH712) **Nothing has ever pointed two agents and a curator at one instance at the same time** — Every suite is one caller in sequence, so lost updates, half-visible publishes and a console edit landing mid-plan are failure modes the product has never been asked about. → §XXIII.7
 - 📋 **SH714** (deps: SH708 ✅, SH709 ✅) **Response budgets are measured on fixtures, and P5's byte-identical promise on one call** — A payload sized against a two-post fixture says nothing about a real tree, and no live run repeats a call to check the second answer matches the first byte for byte. → §XXIII.8

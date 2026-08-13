@@ -872,27 +872,6 @@ it out of order.
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
 
-### XXIII.5 The CLI, spawned as a process, against something running (SH711)
-
-`cli/test/` imports command modules; that is what makes `pnpm test` fast and it is the
-right trade for sixty suites. What it removes is everything between a user's keystroke
-and the module: argv parsing, flag meaning, the exit code CI reads, the auth handshake,
-the HTTP client's error mapping, and the file the command writes to disk. SH456 already
-established that an exit code is something a module call structurally cannot see.
-
-So: a conformance suite that spawns `src/index.mjs` for the whole command surface
-against a live instance, grouped by what they touch. The round-trip group — `init`,
-`pull`, `push`, `apply`, `verify`, `report`, `remember` — run as one sequence, ending
-with a `pull` whose output must be byte-identical to what the first one wrote (P5, and
-the three-way merge is the part with the most places to be wrong). The read group —
-`context`, `changes`, `digest`, `diff`, `impact`, `audit`, `resolve`, `types`, `site`,
-`annotations`, `marketplace`, `doctor` — asserted on exit code, on the shape of what
-they print, and on not needing a browser.
-
-`publish` and `import` get the write treatment from the sibling task. `dev`, `build` and
-`deploy` are named explicitly as out of scope, with the reason recorded, so the ledger
-does not read them as forgotten.
-
 ### XXIII.6 The chaotic run — the vocabulary permuted, under a seed that replays (SH712)
 
 A per-verb suite proves each verb answers when everything before it went right. That is

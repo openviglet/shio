@@ -96,18 +96,38 @@ function opsCalled() {
 }
 
 /**
- * Verbs whose command module a scenario imports.
+ * Verbs a scenario drives, by either of the two ways a conformance suite can drive one.
  *
- * <p>`content-pull.mjs` and `content-push.mjs` back the `pull` and `push` verbs, so the file name
- * is mapped rather than assumed — a reader that missed that would report two covered verbs as
- * uncovered and send somebody to write a suite that exists.</p>
+ * <h2>Importing the module, and spawning the bin</h2>
+ *
+ * <p>`import * as convert from "../src/commands/convert.mjs"` is the cheap form and was the only
+ * one this reader knew. `shio(["pull", "--content", …])` — spawning `src/index.mjs` as a process —
+ * is the <b>stronger</b> one: it is the only shape that exercises argv parsing, the exit code CI
+ * reads, and the auth handshake. SH456 was a command that did its work and exited 1, which no
+ * import can see.</p>
+ *
+ * <p>So the reader counting only the weaker form was backwards, and SH711 is what found it: a suite
+ * that spawned ten verbs left this number at 7 of 31. Same correction as SH708's, from the other
+ * direction — the instrument refusing to credit the better evidence.</p>
+ *
+ * <p>`content-pull.mjs` and `content-push.mjs` back the `pull` and `push` verbs, so the file name is
+ * mapped rather than assumed; a reader that missed that would send somebody to write a suite that
+ * already exists.</p>
  */
 const MODULE_VERB = { "content-pull": "pull", "content-push": "push", "content-watch": "watch" };
 
 function verbsCalled() {
   const imported = [...SOURCE.matchAll(/from\s+["'`][^"'`]*\/src\/commands\/([a-z-]+)\.mjs["'`]/g)]
     .map((m) => MODULE_VERB[m[1]] ?? m[1]);
-  return new Set(imported);
+  // The verb is argv[0] of the spawned bin, as a literal — call syntax with a literal name, which
+  // is the same rule `toolsCalled` applies and the same reason: a mention must not count.
+  const spawned = [...SOURCE.matchAll(/\bshio\(\s*\[\s*["'`]([a-z-]+)["'`]/g)].map((m) => m[1]);
+  // And a table row that names the verb it drives. A sweep over ten verbs is naturally written as
+  // data, so insisting the literal sit at the call site would count the one-off spawns and miss the
+  // systematic ones — which is precisely backwards. `verb:` is specific enough to be a declaration
+  // rather than a mention, and every hit is intersected with the real registry by the caller.
+  const tabled = [...SOURCE.matchAll(/\bverb:\s*["'`]([a-z-]+)["'`]/g)].map((m) => m[1]);
+  return new Set([...imported, ...spawned, ...tabled]);
 }
 
 /**
@@ -144,12 +164,16 @@ const UNEXERCISED = {
     "post.delete", "post.move", "post.restore", "post.unpublish", "site.delete",
   ],
   verbs: [
-    "annotations", "apply", "audit", "blueprints", "build", "changes", "context", "deploy", "dev",
-    // `pull` is NOT here: `replication.conformance.mjs` imports `content-pull.mjs`, which is the
-    // module behind that verb. The first draft listed it, and the mapping above is what caught it —
-    // a reader keyed on file names alone would have sent somebody to write a suite that exists.
-    "digest", "doctor", "impact", "import", "judge", "marketplace", "mcp", "publish",
-    "push", "remember", "report", "resolve", "site", "snapshot", "types",
+    // SH711 spawned ten of these as a process. What is left splits three ways, and the split is
+    // more useful than the count:
+    //
+    // - `dev`, `build`, `deploy` — declared out of scope in `cli-surface.conformance.mjs`, with the
+    //   reason: a front-end toolchain and a hosting target are not this instance.
+    // - `types` needs a CDA API token, which `/api/v2/cda/**` requires and a console credential
+    //   does not carry (SH2). Covering it means minting one, which is its own decision.
+    // - the rest are simply unwritten: a verb somebody has to drive and assert.
+    "annotations", "apply", "audit", "build", "deploy", "dev", "impact", "import", "judge",
+    "mcp", "publish", "remember", "report", "snapshot", "types",
   ],
 };
 
