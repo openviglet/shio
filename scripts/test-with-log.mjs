@@ -31,7 +31,7 @@
  * *this* into `grep` still has the whole run on disk afterwards — which is the entire point.
  */
 import { spawn } from "node:child_process";
-import { createWriteStream, mkdirSync } from "node:fs";
+import { copyFileSync, createWriteStream, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -107,9 +107,50 @@ export function runWithLog(command, args, logPath, { io = process, shell = true 
       log.write(outcome);
       // `?? 1` rather than `?? 0`: a child killed by a signal reports a null code, and reading that
       // as success is the exact swallow this whole file refuses.
-      log.end(() => resolve(code === 0 ? 0 : (code ?? 1)));
+      log.end(() => {
+        keepIfRed(code, logPath, io);
+        resolve(code === 0 ? 0 : (code ?? 1));
+      });
     });
   });
+}
+
+/**
+ * Copies a failing run aside, so the next run cannot erase it (SH735).
+ *
+ * <p>The fixed name above is right and its comment says why — the interesting comparison is against
+ * the previous run, and a directory growing a file per invocation is one nobody prunes. What
+ * followed from it was not: the stream opens `"w"`, so the NEXT run truncates the log, and after a
+ * red one the next run is the one somebody makes to see whether it reproduces. Measured: a
+ * file-level red in `fixture-traits.test.mjs` with all nine assertions green — SH698's exact
+ * symptom — was re-run, came back green, and took SH698's own stderr handler output with it. That
+ * handler exists *because* the failure never printed a reason.</p>
+ *
+ * <p>SH354 argued this one level over, for the Maven suite: tee the run and keep it, because the
+ * next `clean` removes the reports and a red run otherwise leaves no record of which test failed.
+ * This is that defect inside the instrument built from that lesson.</p>
+ *
+ * <p>The green path is untouched on purpose. A red run is worth more than any number of green ones,
+ * so only red is copied, and it is a copy rather than a rename because the ordinary comparison
+ * against the previous run has to keep working exactly as it did.</p>
+ */
+export function keepIfRed(code, logPath, io = process) {
+  if (code === 0) {
+    return null;
+  }
+  const kept = logPath.replace(/(\.log)?$/, ".red.log");
+  try {
+    copyFileSync(logPath, kept);
+    io.stdout.write(`Kept the failing run at ${kept} — a re-run truncates ${logPath} (SH735).
+`);
+    return kept;
+  } catch (error) {
+    // Never turn a red run into a crash about bookkeeping: the exit code is the contract, and a
+    // caller reading "could not copy" instead of the failing test's name is worse off than before.
+    io.stderr.write(`test-with-log: could not keep the failing run: ${error.message}
+`);
+    return null;
+  }
 }
 
 // Only when run, never when read: the test imports this module for `runWithLog`, and a module that

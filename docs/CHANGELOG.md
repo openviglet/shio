@@ -498,6 +498,7 @@
 - **SH680** — The bootstrap passes its arguments to run, so --server.port=8099 now answers on 8099 where it silently came up on 2710 — and a lint refuses the argument-less form.
 - **SH681** — The local login resolves authorities through the same resolver OAuth2 and OIDC use, so the seeded admin carries ROLE_ADMIN and the blueprint reload stops answering 403 to an administrator.
 - **SH706** — SHIO_ADMIN_PASSWORD gives a container a usable admin login on first start, through one service the setup screen now delegates to, and it never overwrites nor fails startup.
+- **SH735** — A failing run is copied to shio-js-test.red.log and a green one is not, so the re-run that checks whether a flake reproduces no longer destroys the only record of it.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

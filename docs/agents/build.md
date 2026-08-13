@@ -309,6 +309,21 @@ flake it is chasing. Verified in both directions: green, and with a deliberate f
 the exit is 1 and the test's name is in the log. `pnpm test:raw` is the unlogged form. The log is
 `.gitignore`d by the existing `/*.log`.
 
+**And the next run cannot erase it (SH735).** The fixed name is right and its own comment says why —
+the interesting comparison is against the *previous* run, and a directory growing a file per
+invocation is one nobody prunes. What followed from it was not: the stream opens `"w"`, so the next
+run truncates the log, and after a red one **the next run is the one somebody makes to see whether
+it reproduces**. Measured in the same session that shipped this: `fixture-traits.test.mjs` went red
+at file level with all nine assertions green — SH698's exact symptom — the re-run was green, and it
+took SH698's own stderr handler output with it. That handler exists *because* the failure never
+prints a reason. This is SH354's lesson failing inside the instrument built from it.
+
+A red run is now copied to **`shio-js-test.red.log`** and a green one is not, so the file's presence
+means something. Copy rather than rename, and green untouched, so the ordinary comparison keeps
+working exactly as it did — and a failure to copy is written to stderr rather than thrown, because a
+caller reading "could not copy" instead of the failing test's name is worse off than before. Also
+covered by the existing `/*.log`.
+
 **Both cheap causes the task named are ruled out**, so the next sighting starts from the log rather
 than from these: no cli test uses a fixed temp path (every one is `mkdtemp`), `create-shio-app`'s
 `emit.test.mjs` only reads and compares rather than running `emit` into the tree, and every test

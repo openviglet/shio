@@ -74,6 +74,41 @@ test("SH645: a failing child's exit code reaches the caller, unchanged", async (
     "and says so where a human is looking, naming the log rather than assuming they know it exists");
 });
 
+test("SH735: a green re-run cannot erase the red run it followed", async () => {
+  // The assertion that would have caught it, at the boundary it crossed. `fixture-traits.test.mjs`
+  // went red at file level with all nine assertions green — SH698's exact symptom — and the re-run
+  // that checks whether a flake reproduces truncated the log carrying SH698's own stderr handler
+  // output. That handler exists BECAUSE the failure never printed a reason.
+  const io = recorder();
+  await inTemp(async (log) => {
+    await runWithLog(process.execPath, ["-e", "console.log('the reason it went red'); process.exit(1)"],
+      log, { io, shell: false });
+    const kept = log.replace(/(\.log)?$/, ".red.log");
+    assert.match(await readFile(kept, "utf8"), /the reason it went red/,
+      "SH735: the failing run has to survive somewhere the next run does not write");
+
+    // The re-run. This is the whole defect: it is what anybody does after a flake.
+    await runWithLog(process.execPath, ["-e", "0"], log, { io, shell: false });
+
+    assert.doesNotMatch(await readFile(log, "utf8"), /the reason it went red/,
+      "the fixed name is still overwritten, which is the behaviour its own comment argues for — "
+      + "the green path is deliberately untouched");
+    assert.match(await readFile(kept, "utf8"), /the reason it went red/,
+      "SH735: and the kept copy is still there. SH354 made this argument one level over, for the "
+      + "Maven suite; this is that defect inside the instrument built from that lesson");
+  });
+});
+
+test("SH735: a green run keeps nothing aside, so the copy means what it says", async () => {
+  const io = recorder();
+  await inTemp(async (log) => {
+    await runWithLog(process.execPath, ["-e", "0"], log, { io, shell: false });
+    await assert.rejects(() => readFile(log.replace(/(\.log)?$/, ".red.log"), "utf8"),
+      "a .red.log written by a green run would make its presence meaningless, and somebody would "
+      + "read a stale one as this run's evidence");
+  });
+});
+
 test("SH645: a green child exits 0 and the log still names itself", async () => {
   const io = recorder();
   const code = await inTemp((log) => runWithLog(process.execPath, ["-e", "0"], log, { io, shell: false }));

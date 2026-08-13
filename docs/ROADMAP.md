@@ -32,7 +32,6 @@
 
 - 📋 **SH729** (deps: —) **A constraint declared only in Liquibase is absent from the unit suite, so its test passes by violating it** — Tests build the schema from entity metadata with Liquibase off, so SH719's unique index was absent and the test that a second insert is refused passed by inserting it. → §XIV.27
 - 📋 **SH731** (deps: —) **Citing a task id in an assertion message pays off that task's debt, and it has now happened three times** — SH527's reader cannot tell an assertion ABOUT an id from one that merely cites it, so writing (SH322) in a failure message marked SH322 asserted. → §XIV.28
-- 📋 **SH735** (deps: —) **A green re-run erases the red run's log, which is the one thing anybody does after a flake** — test-with-log opens the fixed name with flags "w", so SH698's stderr diagnostic survived exactly until the run somebody makes to see whether it reproduces. → §XIV.29
 
 ## Block O — The human half (the console the curator uses)
 
