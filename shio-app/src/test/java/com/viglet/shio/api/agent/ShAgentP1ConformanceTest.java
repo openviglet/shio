@@ -593,6 +593,46 @@ class ShAgentP1ConformanceTest {
     }
 
     /**
+     * SH732 — the assertion that would have caught it, at the boundary it crossed.
+     *
+     * <h2>What went wrong, and where a caller met it</h2>
+     *
+     * <p>`trash` was classified `CONSOLE_ONLY` with the reason *"an agent can fill the trash and can
+     * neither list nor restore it"*. Both halves had been false for a block: SH222 shipped
+     * `find?trash=true` and `post.restore`/`folder.restore`, SH648 added `site.restore`. The
+     * classification is an internal table, but its consequence was not — the manifest's
+     * {@code elsewhere} map told every agent that the trash lives in the <b>console</b>, and P2
+     * makes that document the read a session performs first. So the product's own answer to "can I
+     * undo this delete" was no, for three ops that say yes.</p>
+     *
+     * <h2>Why this assertion and not a tighter one</h2>
+     *
+     * <p>The obvious test — *`elsewhere` has no `trash` key* — passes forever after one edit and
+     * proves nothing about the next entry. This asks the invariant instead: <b>a pointer sending an
+     * agent off this surface must belong to a capability this surface genuinely cannot deliver.</b>
+     * The day another exception is closed by an op and its pointer is left behind, this fails
+     * naming it, which is the failure SH732 was.</p>
+     */
+    @Test
+    @DisplayName("SH732: no `elsewhere` pointer names a capability an op already delivers")
+    void noElsewherePointerContradictsAnOpThatExists() {
+        Map<String, Delivery> classified = classification();
+        List<String> contradictions = new ArrayList<>();
+        shAgentManifestService.manifest().elsewhere().forEach((feature, where) -> {
+            Delivery delivery = classified.get(feature);
+            if (delivery != null && !delivery.reach().isException()) {
+                contradictions.add(feature + " → '" + where + "', but it is classified "
+                        + delivery.reach() + " and is reachable here");
+            }
+        });
+
+        assertThat(contradictions)
+                .as("""
+                        A pointer that outlives its exception is worse than no pointer: it costs a                         caller the one read that would have told them otherwise, and the manifest                         is the read P2 asks a session to make first. `trash` said "console" for a                         block after three restore ops shipped (SH732).""")
+                .isEmpty();
+    }
+
+    /**
      * SH393 — every exception on that list is <b>published</b>, and nothing else is.
      *
      * <h2>What this closes</h2>
