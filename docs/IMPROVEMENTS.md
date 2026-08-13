@@ -659,34 +659,6 @@ leave the counter and let the *restore* refuse a title collision the way it now 
 a URL one. The second matches SH243's shape and costs a refusal on a name nobody
 addresses by.
 
-### XVI.80 A module cache read through an effect that has to guard itself (SH704)
-
-The last of the eleven `set-state-in-effect` suppressions SH701 declared is
-`src/hooks/use-discovery.ts:37`, and it is the odd one: not a page, not a dialog, but
-the hook that answers "what does this instance support" for every console page that
-asks.
-
-    useEffect(() => {
-      if (cached) { if (data !== cached) setData(cached); return; }
-      ...fetchDiscovery().then(...)
-    }, [data]);
-
-The synchronous branch is the violation: when the module-level `cached` is already
-populated — which it is for every mount after the first — the effect immediately copies
-it into state, one render late. The value was available at `useState`'s initializer,
-which is where the hook already reads it; the effect exists to catch the case where
-another component's fetch filled the cache *between* this component's render and its
-effect.
-
-So the fix is to stop keeping a second copy. A module cache read through
-`useSyncExternalStore` is exactly this problem's shape — subscribe to the cache, return
-it, and let React handle the between-render window it was written to cover. That removes
-the branch, the extra render and the `alive` flag SH665 had to add to the other half of
-the same effect.
-
-Small, and worth its own line rather than a footnote on SH702 or SH703: it is the one of
-the eleven that is not about a page, and it is on the path every page takes.
-
 ### XVI.81 A breadcrumb keyed on a label that repeats by design (SH716)
 
 `pnpm console:check` fails one probe of nineteen, and has for at least three runs:

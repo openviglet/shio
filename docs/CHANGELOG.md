@@ -584,6 +584,7 @@
 - **SH701** — eslint-suppressions.json is now a named list that prints its counts and fails on drift, with four of the fifteen paid off and the other eleven held by SH702-SH704.
 - **SH702** — Four dialogs mount their body inside DialogContent keyed on its subject, so a reopen renders nothing from the previous read - proved by a probe red before and green after.
 - **SH703** — Six hand-maintained flags become derived - the spinner is a comparison, the selection and the bridge handshake carry what they belong to, and the widgets tag their resolved path, closing a race.
+- **SH704** — The cache became a subscription, so there is no second copy to republish and no alive flag to remember - and it moved somewhere a Node test can drive it, which is where the five assertions live.
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 

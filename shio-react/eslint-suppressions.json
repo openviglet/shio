@@ -83,10 +83,5 @@
     "react-refresh/only-export-components": {
       "count": 1
     }
-  },
-  "src/hooks/use-discovery.ts": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
   }
 }

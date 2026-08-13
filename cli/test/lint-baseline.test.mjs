@@ -45,7 +45,12 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
 /**
  * The declared baseline: every suppressed violation, by file and rule.
  *
- * <h2>`set-state-in-effect` went 15 → 11 → 7, and the split is the finding</h2>
+ * <h2>`set-state-in-effect` went 15 → 0, and the route there is the finding</h2>
+ *
+ * <p>Four tasks, and no two of them were the same fix — which is the argument for a baseline being
+ * a <em>list</em> rather than a number. A count of fifteen suggests one sweep; the list is what
+ * showed that the fifteen were four different defects, and that two of them had been grouped by
+ * reading the lint report instead of the code.</p>
  *
  * <p>It held **15 over 13 files** when SH701 opened. The four SH701 took off were one construction:
  * a `useCallback` opening with `setLoading(true)`, invoked straight from a mount effect — the shape
@@ -57,9 +62,14 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
  * not visible to a lint — a reopened version history kept the previous read's <b>Restaurar versão
  * publicada</b> button for the whole of the next read.</p>
  *
- * <p>SH703 took six more by deriving instead of setting, leaving <b>one</b>: SH704's discovery hook.
- * Two of SH703's six arrived from SH702's list — opening them found no `open` prop at all, so they
- * had been filed under the wrong shape by reading a lint report rather than the code.</p>
+ * <p>SH703 took six more by deriving instead of setting — a spinner that was a comparison, a
+ * selection and a bridge handshake that now carry what they belong to, and two widgets that tag
+ * their resolved path, which closed a real race rather than a frame. Two of those six arrived from
+ * SH702's list: opening them found no `open` prop at all.</p>
+ *
+ * <p>SH704 took the last, and is the only one that left a test behind. The module cache became a
+ * subscription in `@/lib/discovery-store` — a plain module a Node test can drive — so what it
+ * promises is asserted directly instead of by this file's count.</p>
  *
  * <p>What SH703's own change is <b>not</b> asserted by is a browser. Its user-visible effects are
  * one frame wide — the spinner arriving a render late, a selection count clearing a render late —
@@ -77,10 +87,11 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
  * leave visible here than to fix blind: they sit in the two largest pages in the console.</p>
  */
 const DECLARED = {
-  // SH704 — the last one: a module cache republished through an effect, one render late.
-  "react-hooks/set-state-in-effect": {
-    "src/hooks/use-discovery.ts": 1,
-  },
+  // Empty, and left declared rather than deleted (SH704 paid the last one off). An absent key and
+  // a key at `{}` read the same to a person and differently to this test: with the key here, a
+  // reintroduction is a *change to a declared zero* that a diff shows, rather than a new rule
+  // quietly appearing in a file somebody regenerated.
+  "react-hooks/set-state-in-effect": {},
   "@typescript-eslint/no-unused-expressions": {
     "src/app/console/content/object.children.page.tsx": 1,
   },
@@ -198,6 +209,10 @@ const PAID = [
   "src/app/console/universal-editor/visual-editor.page.tsx",
   "src/components/widgets/content-select.widget.tsx",
   "src/components/widgets/file.widget.tsx",
+  // SH704 — the last one, and the only one with a test of its own: the module cache became a
+  // subscription (`@/lib/discovery-store`), which is drivable under plain Node, so what it promises
+  // is asserted in `shio-react/test/use-discovery.test.mjs` rather than by this file's count alone.
+  "src/hooks/use-discovery.ts",
 ];
 
 test("SH701: every paid-off page stays paid off", async () => {

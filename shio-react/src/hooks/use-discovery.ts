@@ -1,58 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { ShAuthorizationService } from "@/services/auth/authorization.service";
+import { createDiscoveryStore } from "@/lib/discovery-store";
 import type { ShDiscoveryAPI } from "@/models/auth/discovery";
 
 /**
- * Module-level cache so multiple components (header, login, admin settings,
- * …) don't each issue their own request to /discovery.
+ * The one this console uses. The store itself is in `@/lib/discovery-store` (SH704), which is
+ * where it can be driven by a test — this file is the wiring and nothing else.
  */
-let cached: ShDiscoveryAPI | undefined;
-let inflight: Promise<ShDiscoveryAPI> | undefined;
-
-function fetchDiscovery(): Promise<ShDiscoveryAPI> {
-  if (cached) return Promise.resolve(cached);
-  inflight ??= new ShAuthorizationService()
-    .discovery()
-    .then((data) => {
-      cached = data;
-      inflight = undefined;
-      return data;
-    })
-    .catch((err) => {
-      inflight = undefined;
-      throw err;
-    });
-  return inflight;
-}
+export const discoveryStore = createDiscoveryStore(() => new ShAuthorizationService().discovery());
 
 /**
  * Read the cached discovery response. Fetches once on first use.
  * Returns `undefined` while loading, so callers can render defaults.
  */
 export function useDiscovery(): ShDiscoveryAPI | undefined {
-  const [data, setData] = useState<ShDiscoveryAPI | undefined>(cached);
+  const value = useSyncExternalStore(
+    discoveryStore.subscribe,
+    discoveryStore.get,
+    discoveryStore.get,
+  );
 
   useEffect(() => {
-    if (cached) {
-      if (data !== cached) setData(cached);
-      return;
-    }
-    // SH665 — the flag needs the cleanup that clears it, and never had one. `prefer-const` was
-    // the tell: a guard that is only ever `true` guards nothing, so a response arriving after the
-    // component unmounted still called `setData`. The lint has reported this since the day it was
-    // written and nothing ran the lint.
-    let alive = true;
-    fetchDiscovery()
-      .then((d) => {
-        if (alive) setData(d);
-      })
-      .catch(() => {
-        // discovery failed — keep undefined, components fall back to defaults
-      });
-    return () => {
-      alive = false;
-    };
-  }, [data]);
+    // Nothing is set here — `load` writes to the store and the subscription delivers it. That is
+    // the whole of SH704: the effect starts work, it does not maintain a copy of the answer.
+    void discoveryStore.load().catch(() => {
+      // Discovery failed; components fall back to their defaults, which is the documented state.
+    });
+  }, []);
 
-  return data;
+  return value;
 }
