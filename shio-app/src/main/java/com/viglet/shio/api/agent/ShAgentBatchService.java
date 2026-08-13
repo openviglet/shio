@@ -1956,6 +1956,12 @@ public class ShAgentBatchService {
         if (session.dryRun) {
             return session.change(op, ShAddress.id(id), Change.UPDATE, "from trash, with its subtree", id);
         }
+        // SH696 — the guard every other mutating op runs, and the only one that was missing. A
+        // restore brings back a whole subtree (SH200), so a credential scoped to part of a tree
+        // could resurrect a section it could not have deleted; `folderDelete` has asked since
+        // SH200 and `postRestore` since SH222. Non-goal: "the agent path is not a privilege
+        // escalation".
+        shContentAclService.requireWrite(id);
         return shFolderWriteService.restore(id, session.actor)
                 ? session.change(op, ShAddress.id(id), Change.UPDATE, "from trash, with its subtree", id)
                 : session.change(op, ShAddress.id(id), Change.NOOP, "not in the trash", id);

@@ -1732,6 +1732,35 @@ that trashes a folder and then addresses it cannot use the reply it just got. A 
 addressable *only* by id (SH222) — so `ids = true` is not a preference on this path, it is the only
 way to name what you deleted.
 
+### `folder.restore` was the one op that wrote without asking the ACL (SH696)
+
+Every mutating op in `ShAgentBatchService` calls `shContentAclService.requireWrite` before it
+writes. `folderRestore` did not — `folderDelete` has since SH200 and `postRestore` since SH222 — so
+a credential scoped to part of a tree could bring back a section it could not have deleted, and a
+restore carries the whole subtree's posts with it. That is the non-goal *"the agent path is not a
+privilege escalation"*, and the fix is one line.
+
+**SH690 rewrote that method four commits earlier and did not notice**, which is the finding rather
+than the fix: a *missing* call is invisible to review, because there is nothing on the screen to look
+at. So the deliverable is `ShAgentOpAclLintTest` — it reads the dispatch switch, extracts each
+handler's body, and classifies **every** op in `OPS`. A fourteenth op arriving unguarded fails the
+build instead of waiting to be read, and the run prints both counts, because a lint that reports only
+what it dislikes cannot be told from one that found nothing.
+
+**Writing it corrected the task's own premise.** The first draft looked for
+`shContentAclService.require` and reported *three* unguarded ops, not one. Two of them —
+`site.upsert`'s create branch and `site.delete` — carry `requireUnscopedCredential` instead, a
+*stronger* check chosen on purpose: a credential scoped to a list of sites must not create or destroy
+a member of it. Listing those as exempt would have recorded a guard as an absence, which is this
+file's own mistake pointed the other way. The measured answer is **12 of 13 check authorisation, one
+exempt** — `render.provision`, SH186's addressless op, which acts on no content object and has no id
+an ACL could hang on.
+
+The lint is paired with a behavioural assertion in `ShAgentTrashTest` rather than trusted alone: a
+source scan cannot tell whether the guard is the *right* one. That test also asserts the folder is
+**still trashed** afterwards — a refusal thrown after the write would be the same defect wearing a
+403.
+
 ## A write proves its folders too, and says so when it proves nothing (SH228)
 
 `ShAgentProofService` collects the `post:` **and** `folder:` addresses a run touched. It

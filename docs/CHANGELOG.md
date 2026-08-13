@@ -577,6 +577,7 @@
 - **SH654** — Publish and Unpublish sit beside Save on the post edit screen; publish saves the form first, and Unpublish reads whether a live row exists rather than the edited row's state.
 - **SH243** — The naming loop now sees the trash, so a copy skips a sleeping URL, and a restore onto an occupied one is refused naming the occupant instead of duplicating silently.
 - **SH690** — A folder.restore plan now reads the trash, names a trashed parent as its own reason, and raises SH243's refusal — so plan and apply give one answer.
+- **SH696** — folder.restore now asks the ACL, and a lint classifies every op: 12 of 13 check authorisation, render.provision exempt. Two ops it first read as unguarded carry a stronger check.
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 

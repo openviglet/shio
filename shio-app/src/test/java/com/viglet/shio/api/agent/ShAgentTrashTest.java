@@ -25,11 +25,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentBatch.Op;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
+import com.viglet.shio.persistence.model.acl.ShAclPermission;
+import com.viglet.shio.persistence.model.acl.ShAclPrincipalType;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -65,6 +73,10 @@ class ShAgentTrashTest {
     private ShAgentReadService shAgentReadService;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private ShContentAclService aclService;
+    @Autowired
+    private ShFolderRepository shFolderRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -280,6 +292,42 @@ class ShAgentTrashTest {
                         the plan raises SH243's refusal rather than reporting it: a batch op that \
                         will be refused is refused when it is planned (SH690).""")
                 .hasMessageContaining(furl);
+    }
+
+    @Test
+    @DisplayName("SH696: a caller with no write access cannot restore the section")
+    void aRestoreAsksTheAclLikeEveryOtherWrite() {
+        String section = "sh696-" + UUID.randomUUID().toString().substring(0, 8);
+        String sectionId = runWithIds(new Op(ShAgentBatchService.FOLDER_UPSERT,
+                "folder:" + siteName + "/" + section, null, null, null)).results().get(0).id();
+        confirmed(new Op(ShAgentBatchService.FOLDER_DELETE,
+                "folder:" + siteName + "/" + section, null, null, null));
+        // An ACL that grants write to somebody else. `hasPermission` is default-allow until a row
+        // exists up the chain, so the grant to `alice` is what makes the question askable at all.
+        aclService.replaceAcl(sectionId, List.of(new ShContentAclService.AclEntry(
+                ShAclPrincipalType.USER, "alice", ShAclPermission.WRITE)));
+        try {
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken("bob", "x", List.of()));
+
+            // The guard every other mutating op has run for blocks, and the one folder.restore
+            // did not. A restore brings the whole subtree's posts back with it (SH200), so this
+            // is not "read a folder you shouldn't" — it is resurrecting a section on somebody
+            // else's tree, with a credential that could not have deleted it.
+            assertThatThrownBy(() -> run(new Op(ShAgentBatchService.FOLDER_RESTORE,
+                    "id:" + sectionId, null, null, null)))
+                    .isInstanceOf(AccessDeniedException.class);
+
+            assertThat(shFolderRepository.findAnyById(sectionId))
+                    .as("""
+                            and it really is still in the trash: a refusal that threw after the \
+                            write would be the same defect wearing a 403 (SH696).""")
+                    .get()
+                    .matches(ShFolder::isTrashed, "still trashed");
+        } finally {
+            SecurityContextHolder.clearContext();
+            aclService.replaceAcl(sectionId, List.of());
+        }
     }
 
     private com.viglet.shio.api.agent.dto.ShAgentChangeSet run(Op op) {
