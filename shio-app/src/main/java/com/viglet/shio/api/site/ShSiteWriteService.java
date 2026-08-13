@@ -418,7 +418,145 @@ public class ShSiteWriteService {
     }
 
     /**
-     * Deletes a site and everything in it (SH454).
+     * Puts a site and everything in it in the trash — <b>reversible</b> (SH648).
+     *
+     * <h2>The level the trash stopped one short of</h2>
+     *
+     * <p>SH55 gave posts a trash, SH200 gave folders one, and SH454 made a site delete go down
+     * through both writers — so every page of a deleted site could be restored and the site itself
+     * could not, because its row was removed on the way out. The most destructive gesture in the
+     * product was the only one with no undo, which is the inversion SH200 fixed one level down and
+     * for the same reason: a curator who deletes forty pages one at a time can get them back; the
+     * same curator using the site's delete button could not.</p>
+     *
+     * <p>So this stamps {@link ShSite#getDeletedDate()} and trashes each root folder through the
+     * folder writer — the composition SH454 established, minus the purge. Nothing is removed, which
+     * is what {@link #restore} depends on: the posts keep their {@code folder_id} and the root
+     * folders their {@code site_id}, so the site row has to outlive the gesture that deleted it.
+     * The rows go at {@link #purge} time instead, which is also where the FK ordering SH454
+     * documents is satisfied.</p>
+     *
+     * <p><b>The site is stamped before the folders are trashed</b>, deliberately. {@link #restore}
+     * brings back only what this deletion trashed, comparing the folder's instant against the
+     * site's; stamping the site last would put it after every folder's instant and the comparison
+     * would exclude the whole tree.</p>
+     *
+     * <p>No lifecycle event fires here — SH55's rule, not an omission: a reversible trash has no
+     * side effects, and the webhook plus the byte cleanup run on the irreversible purge.</p>
+     *
+     * @param actor who deleted it, for the audit entries the post writer and the folder writer
+     *              record on the way down (SH51/SH196)
+     * @return {@code false} when no live site has that id
+     */
+    @Transactional
+    public boolean delete(String id, String actor) {
+        Optional<ShSite> found = shSiteRepository.findById(id);
+        if (found.isEmpty()) {
+            return false;
+        }
+        ShSite site = found.get();
+        site.setDeletedDate(Instant.now());
+        shSiteRepository.save(site);
+        for (String rootFolderId : rootFolderIds(site)) {
+            shFolderWriteService.delete(rootFolderId, actor);
+        }
+        shContentAuditService.record(ShContentAction.DELETE, ShContentSubject.SITE, id, id,
+                site.getName(), actor, "the site and everything in it, to the trash");
+        return true;
+    }
+
+    /**
+     * Restores a trashed site and the content that went into the trash with it (SH648).
+     *
+     * <p>Only what this deletion trashed, which is SH200's rule and its class of comparison: a root
+     * folder marked <em>before</em> the site's own {@code deletedDate} was somebody else's decision
+     * and stays where they put it. The folder writer applies the same test one level down, so a
+     * post that was already in the trash when the site was deleted does not come back either.</p>
+     *
+     * <p>A site's name cannot be taken while it sleeps — {@code ShSite.name} is unique and
+     * {@link ShSiteNameHeldByTrashException} refuses the create that would have taken it — but its
+     * <b>furl is not unique</b>, so a live site can and does end up answering at the address this
+     * one is asking to get back. That is refused rather than silently renamed, for SH243's reason:
+     * a restore asks for the thing that was there, and returning it at a different address is the
+     * surprise P7 exists to prevent.</p>
+     *
+     * @return {@code false} when the id is not a trashed site
+     * @throws ShSiteRestoreConflictException when a live site took this one's furl
+     */
+    @Transactional
+    public boolean restore(String id, String actor) {
+        Optional<ShSite> found = shSiteRepository.findAnyById(id).filter(ShSite::isTrashed);
+        if (found.isEmpty()) {
+            return false;
+        }
+        ShSite site = found.get();
+        requireRestorableFurl(site);
+        Instant trashedAt = site.getDeletedDate();
+        site.setDeletedDate(null);
+        shSiteRepository.save(site);
+        for (ShFolder folder : restorableRoots(site, trashedAt)) {
+            shFolderWriteService.restore(folder.getId(), actor);
+        }
+        shContentAuditService.record(ShContentAction.RESTORE, ShContentSubject.SITE, id, id,
+                site.getName(), actor, "the site and the content that went into the trash with it");
+        return true;
+    }
+
+    /**
+     * The pre-flight, run before the first row is written: a refusal here leaves the trash exactly
+     * as the curator left it rather than relying on the rollback to put it back (SH243's shape).
+     */
+    @Transactional(readOnly = true)
+    public void requireRestorableFurl(ShSite site) {
+        if (!hasText(site.getFurl())) {
+            return;
+        }
+        ShSite occupant = shSiteRepository.findByFurl(site.getFurl());
+        if (occupant != null && !occupant.getId().equals(site.getId())) {
+            throw new ShSiteRestoreConflictException(site.getFurl(), occupant.getName());
+        }
+    }
+
+    /**
+     * The root folders this deletion trashed — on the loaded instants rather than in SQL, because
+     * an equality test against a timestamp column is a promise about fractional-second precision
+     * that three database engines do not make the same way (SH200).
+     */
+    private static List<ShFolder> restorableRoots(ShSite site, Instant trashedAt) {
+        List<ShFolder> roots = new ArrayList<>();
+        for (ShFolder folder : site.getShFolders()) {
+            if (folder.isTrashed() && !folder.getDeletedDate().isBefore(trashedAt)) {
+                roots.add(folder);
+            }
+        }
+        return roots;
+    }
+
+    /** SH648 — sites currently in the trash, newest deletion first. */
+    @Transactional(readOnly = true)
+    public List<ShSite> listTrash() {
+        return shSiteRepository.findTrashedSites();
+    }
+
+    /**
+     * Why a create naming {@code name} would be refused, without attempting it (SH648).
+     *
+     * <p>Non-throwing, for the callers that <em>report</em> a refusal rather than raising it — a
+     * dry run has to reach the answer the write reaches, which is SH690's rule for the same split
+     * one level down. {@link ShSiteAPI#create} raises; a plan prints.</p>
+     *
+     * @return the trashed site holding that name, or empty when the name is free
+     */
+    @Transactional(readOnly = true)
+    public Optional<ShSite> nameHeldByTrash(String name) {
+        if (!hasText(name)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(shSiteRepository.findAnyByName(name)).filter(ShSite::isTrashed);
+    }
+
+    /**
+     * Permanently removes a site and everything in it (SH454, SH648) — <b>irreversible</b>.
      *
      * <h2>What this was, and why only an empty site deleted</h2>
      *
@@ -452,26 +590,33 @@ public class ShSiteWriteService {
      *              record on the way down (SH51/SH196)
      */
     @Transactional
-    public boolean delete(String id, String actor) {
-        Optional<ShSite> found = shSiteRepository.findById(id);
+    public boolean purge(String id, String actor) {
+        Optional<ShSite> found = shSiteRepository.findAnyById(id);
         if (found.isEmpty()) {
             return false;
         }
         for (String rootFolderId : rootFolderIds(found.get())) {
             // Trash first because `purge` operates *on* the trash and refuses a live folder — the
-            // two halves are one gesture here, since a site delete has no undo to preserve.
+            // two halves are one gesture here, and a folder this site's own delete already trashed
+            // answers the first call with a harmless false.
             shFolderWriteService.delete(rootFolderId, actor);
             shFolderWriteService.purge(rootFolderId, actor);
         }
-        return shSiteRepository.findById(id).map(site -> {
+        // SH648 — findAnyById, not findById: a purge of a site that is already in the trash is the
+        // ordinary path now, and the live-only read would report it absent one line before removing
+        // it. The re-read itself is SH454's: `purge` clears the persistence context, so the instance
+        // loaded above is detached by the time it returns.
+        return shSiteRepository.findAnyById(id).map(site -> {
             String name = site.getName();
             shSiteRepository.delete(site);
             // SH223 — the row the largest deletion in the product never wrote. Its posts and
             // folders were audited one and two levels down, so a reader of the SH88 feed saw every
             // page of a site leave and nothing saying the site had. Written AFTER the delete
             // succeeded, because an audit row for something that did not happen is worse than none.
-            shContentAuditService.record(ShContentAction.DELETE, ShContentSubject.SITE, id, id,
-                    name, actor, "the site and everything in it");
+            // PURGE rather than DELETE since SH648: DELETE is now the reversible half, and an entry
+            // the SH109 queue offers to revert had better be one that can be.
+            shContentAuditService.record(ShContentAction.PURGE, ShContentSubject.SITE, id, id,
+                    name, actor, "the site and everything in it, permanently");
             return true;
         }).orElse(false);
     }

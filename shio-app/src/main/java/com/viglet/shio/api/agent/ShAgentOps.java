@@ -121,10 +121,9 @@ public final class ShAgentOps {
                             + "index, paged by `data.limit`/`data.from`. Never replaces a value "
                             + "somebody set."),
             new OpSpec(ShAgentBatchService.SITE_DELETE,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Remove a site and every folder and post in it. Needs `confirm` from its "
-                    + "own dry run, and unlike folder.delete it is PURGED rather than trashed "
-                    + "- there is no undo (SH463)."),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
+                    "Trash a site and every folder and post in it. Needs `confirm` from its own "
+                    + "dry run. `data.purge:true` removes it outright instead - no undo."),
             new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Create a folder at that whole name chain, or confirm it is there."),
@@ -167,6 +166,11 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.FOLDER_RESTORE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Undo a folder trash, with its posts. `id:` address."),
+            // SH648 — `site:<name>`, not `id:`. A trashed site keeps its unique name, so it is the
+            // one restore addressable by the same form its delete took.
+            new OpSpec(ShAgentBatchService.SITE_RESTORE,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(),
+                    "Undo a site trash, with its content. `site:` address."),
             // SH186 — the one addressless op. It acts on the instance's model rather than on a post, a
             // folder or a site, and `address` is optional only so a row can echo the site being built.
             new OpSpec(ShAgentBatchService.RENDER_PROVISION,

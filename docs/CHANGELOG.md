@@ -538,6 +538,7 @@
 - **SH225** — A permission decision no longer depends on how folders are fetched: the entry points carry their own transaction and the ancestor walk resolves parent ids by query.
 - **SH226** — One resolver, ShLiveObject.of, is the only spelling for resolving an object id, and ShLiveObjectInvariantTest fails the build on any production read that skips it - which on its first run found two unguarded call sites, one of them a live defect: a section could be created inside a trashed folder and then appear in no listing.
 - **SH727** — An absent system File type is an empty listing rather than a refusal, and find is not reached at all — while a type the caller did name still refuses.
+- **SH648** — A site delete now trashes and `site.restore`/`/untrash` bring it back with its content; a trashed site keeps its unique name, and the create that meets it is told where the name went.
 
 ## Block O — The human half (the console the curator uses, SH74)
 

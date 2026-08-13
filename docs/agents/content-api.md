@@ -417,20 +417,51 @@ deletion in the product.
 `ShContentSubject` gains `SITE` beside `POST` and `FOLDER`, and the delete records itself **after
 the delete succeeds**, because an audit row for something that did not happen is worse than none.
 
-### What is still open, and why it is not here
+## A deleted site can be restored (SH648)
 
-**Is a deleted site trashed, or only its content?** Today it is purged, so there is no undo at site
-level while there is one at every level below. Trashing the content and removing the site row cannot
-work — the posts keep their `folder_id` and the root folders their `site_id`, which is exactly why
-SH200 gave the folder a `deleted_date` rather than deleting it.
+The question SH223 left open — *is a deleted site trashed, or only its content?* — is answered:
+**trashed.** Until this, the recoverability of a gesture *decreased* as it got wider. A curator who
+deleted forty pages one at a time could restore them; the same curator deleting the section could
+restore it (SH200); the same curator deleting the **site** could not. That is the inversion, and it
+is the one nothing asserted, because every level was individually correct.
 
-So the site needs one too, and that is a Liquibase change, a filter on every read that lists sites,
-and the cross-DB ITs a schema move brings. It also drags a second question: a trashed site still
-occupies its name and friendly URL, so re-creating it collides and *"that name is taken by something
-you deleted"* is a teaching error somebody has to write.
+`ShSite` gains a `deleted_date` for the reason `ShFolder` needed one: the posts keep their
+`folder_id` and the root folders their `site_id`, so removing the site row is what makes the gesture
+irreversible. The row now outlives the delete.
 
-Filed as **SH648**. The precedent is clear and the cost is schema plus a listing rule, not design —
-which is precisely why it should not ride along inside a service fix.
+**The verbs, and which is which.**
+
+- `DELETE /v2/site/{id}` — **trashes**, stamping the site and then trashing each root folder through
+  `ShFolderWriteService.delete`. The site is stamped **first**: `restore` brings back only what this
+  deletion trashed, comparing each folder's instant against the site's, and stamping the site last
+  would put it after every folder's and exclude the whole tree.
+- `POST /v2/site/{id}/untrash` — restores, cascading into the folder writer's own restore.
+- `DELETE /v2/site/{id}/purge` — SH454's gesture, now asked for by name. It takes a **live** site as
+  well as a trashed one, which is what keeps "remove this and everything in it" one call for the
+  callers that never wanted a trash: the conformance teardown and `shio site rm --scratch`.
+- `GET /v2/site/trash` — what is in there, newest first.
+
+**Every site read excludes a trashed site**, in `ShSiteRepository`, its finders spelled out as JPQL
+with `deletedDate is null` and their names kept so no call site changed — the same choice
+`ShFolderRepository` made, and for the same reason: an `@SQLRestriction` on `ShSite` would also fire
+when a `@ManyToOne` to it is initialized, and a trashed site's root folder reads `getShSite()` on
+exactly the path a restore walks. The trash's own reads are `findAnyById`, `findAnyByName`,
+`findAnyByFurl` and `findTrashedSites`.
+
+**The collision it introduces, which is why this was a schema task and not a service fix.**
+`ShSite.name` is `unique`, so a trashed site keeps holding its name and the re-create that used to
+succeed now reaches the database. Left alone that is a body-less 500 naming a site the caller cannot
+find in any listing — the worst possible moment to meet it. `ShSiteNameHeldByTrashException` (409)
+says where the name went and names both ways out. The **furl** carries no such constraint, so the
+opposite case exists too: a live site can take a trashed one's address, and the restore that meets
+it is refused by `ShSiteRestoreConflictException` rather than renamed — SH243's rule, one level up.
+
+**On the agent surface**, `site.delete` now trashes and its plan line says so; `data.purge:true`
+declines the trash (SH413's modifier shape — the same gesture with the undo declined). `site.restore`
+is a name of its own, because a restore is not a way of declaring a site's state and calling it
+anything else would break the one vocabulary a caller has already learned from `post.restore` and
+`folder.restore`. It is the one restore addressed by `site:<name>` rather than `id:`: a trashed site
+keeps its unique name, so an agent that trashed a site can undo it without having kept an id.
 
 ## The one write nobody recorded (SH224)
 

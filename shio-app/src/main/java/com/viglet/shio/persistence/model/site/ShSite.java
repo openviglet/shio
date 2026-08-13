@@ -137,5 +137,37 @@ public class ShSite extends ShObject {
 	public boolean isScratch() {
 		return Boolean.TRUE.equals(this.scratch);
 	}
-	
+
+	/**
+	 * When this site was put in the trash (SH648); {@code null} = live.
+	 *
+	 * <p>The site half of SH55's soft-delete, and the level the trash stopped one short of.
+	 * A site delete already went down through the folder writer and the post writer (SH454),
+	 * so every page of a deleted site could be restored — and the site itself could not,
+	 * because its row was removed. That inversion put the least recoverable step at the top
+	 * of the most destructive gesture in the product.</p>
+	 *
+	 * <p>Deliberately <b>no {@code @SQLRestriction}</b>, the same choice
+	 * {@link com.viglet.shio.persistence.model.folder.ShFolder} records: a restriction here
+	 * would also fire when a {@code @ManyToOne} to a site is initialized, and a trashed site's
+	 * root folder reads {@code getShSite()} on exactly that path — which is what a restore and
+	 * the trash listing need. Live-only filtering lives in
+	 * {@code ShSiteRepository} instead, where every read already goes.</p>
+	 *
+	 * <p>{@link #name} is {@code unique}, so a trashed site keeps holding its name: that is a
+	 * refusal somebody has to write rather than a constraint violation somebody has to read
+	 * as a 500 — see {@code ShSiteNameHeldByTrashException}.</p>
+	 */
+	@Column(name = "deleted_date")
+	private java.time.Instant deletedDate;
+
+	public void setDeletedDate(java.time.Instant deletedDate) {
+		this.deletedDate = deletedDate;
+	}
+
+	/** Whether this site is in the trash (SH648) — the readable form of a null check. */
+	public boolean isTrashed() {
+		return deletedDate != null;
+	}
+
 }

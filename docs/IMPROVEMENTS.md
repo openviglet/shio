@@ -236,31 +236,6 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.13 A site the trash cannot hold (SH648)
-
-SH223 found its symptom mostly fixed: `ShSiteWriteService.delete` already trashes each
-root folder before purging it, so the posts leave through SH55's trash with their audit
-rows, the SH88 feed and the `DELETE` events. What it did not record was **the site
-itself**, which SH223 added.
-
-What is still open is that task's first design question: **is a deleted site trashed, or
-only its content?** Today it is purged, so there is no undo at site level while there is
-one at every level below.
-
-Trashing the content and removing the site row cannot work, for the reason it could not
-for a folder: the posts keep their `folder_id` and the root folders their `site_id`. So
-the site needs a `deleted_date` of its own — a Liquibase change, a filter on every read
-that lists sites, and the cross-DB ITs a schema move brings.
-
-It drags the second question with it. A trashed site still occupies its name and
-friendly URL, so re-creating it collides; "that name is taken by something you deleted"
-is a teaching error somebody has to write, and it is the kind a caller meets at the
-worst moment.
-
-Worth doing as its own task rather than inside a service fix: SH200 chose exactly this
-shape one level down, so the precedent is clear and the cost is schema plus a listing
-rule, not design.
-
 ### XII.16 Nothing stops a fetch-type change from breaking authorization (SH650)
 
 SH225 set out to make a permission decision independent of `spring.jpa.open-in-view` and

@@ -1,0 +1,42 @@
+databaseChangeLog:
+  # SH648 — a site delete can be undone, which is the level the trash stopped one short of.
+  #
+  # SH55 gave posts a trash and SH200 gave folders one; a site delete went through both on its
+  # way down (SH454) and then *purged*, so the most destructive gesture in the product was the
+  # only one with no undo — while every level beneath it had one. This is the site half of the
+  # same soft-delete: a non-null `deleted_date` means the site is in the trash.
+  #
+  # It has to be a column rather than a service rule for the reason it had to be one on ShFolder:
+  # the posts keep their `folder_id` and the root folders their `site_id`, so removing the site
+  # row is what makes the gesture irreversible. The row now outlives the delete and goes at purge
+  # time instead.
+  #
+  # Deliberately NOT paired with a Hibernate @SQLRestriction, the same choice ShFolder made: a
+  # restriction here would also fire when a @ManyToOne to ShSite is initialized, and a trashed
+  # site's root folder reads `getShSite()` on exactly that path. The exclusion lives in
+  # ShSiteRepository instead, where every read already goes.
+  #
+  # `ShSite.name` is UNIQUE, so a trashed site keeps holding its name — that is what
+  # ShSiteNameHeldByTrashException exists to say, rather than the constraint violation a caller
+  # would otherwise meet as a 500.
+  #
+  # Nullable, no backfill (existing sites stay live = null). Type DB-agnostic (TIMESTAMP) per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL (QUOTE_ALL_OBJECTS
+  # does not propagate through `include`, so it is re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh648-site-deleted-date
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShSite
+                columnName: deleted_date
+      changes:
+        - addColumn:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: deleted_date
+                  type: TIMESTAMP

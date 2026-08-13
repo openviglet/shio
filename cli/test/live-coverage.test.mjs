@@ -162,12 +162,13 @@ const UNEXERCISED = {
     // `post.delete` came off with SH712, which drives them out of order on purpose — the cycle
     // guard and the confirm token are exactly the shapes a wrong ordering reaches.
     //
-    // What is left is every op that RESTORES or UNPUBLISHES, plus the two deletes with no undo.
-    // Restore is the trash's other half and SH648 is the open task about a site not having one;
-    // `site.delete` purges, so a suite that exercised it would be asserting an irreversible act
-    // against an instance somebody else may be using.
+    // What is left is every op that RESTORES or UNPUBLISHES, plus the deletes that act on a whole
+    // container. SH648 gave a site delete an undo, so `site.delete` is no longer irreversible —
+    // but it is still the widest gesture on the surface, and a suite that exercised it would be
+    // trashing a whole site on an instance somebody else may be using. `site.restore` joins the
+    // list for the ordinary reason the other two restores are on it: nothing drives it yet.
     "folder.delete", "folder.restore",
-    "post.move", "post.restore", "post.unpublish", "site.delete",
+    "post.move", "post.restore", "post.unpublish", "site.delete", "site.restore",
   ],
   verbs: [
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is

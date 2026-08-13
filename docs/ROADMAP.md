@@ -20,7 +20,6 @@
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
-- 💭 **SH648** (deps: SH200 ✅, SH223 ✅) **A deleted site cannot be restored, because only its content passes through the trash** — Trashing the site row needs a deleted_date of its own plus an answer for the name it still occupies, which is a schema change and a teaching error rather than a service fix. → §XII.13
 - 💭 **SH650** (deps: SH225 ✅) **Nothing stops a fetch-type change from breaking authorization** — SH225 made the ACL walk independent of ShFolder.parentFolder being EAGER, but that independence is a code shape nothing checks. → §XII.16
 - 📋 **SH719** (deps: —) **Two agents creating one address get two posts at it, and both are told they succeeded** — post.upsert resolves the address and then inserts, so two callers that both find nothing both create — leaving a URL no write can name and no read can resolve. → §XII.17
 - 📋 **SH720** (deps: SH719) **The duplicate-url refusal names verify, which cannot see the draft duplicates that produce it** — verify's duplicate check scans published posts only, so the instrument the refusal sends an agent to answers ok for the state a concurrent create leaves behind. → §XII.18

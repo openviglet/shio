@@ -143,7 +143,7 @@
   "content.trash": "Trash",
   "content.trashDescription": "Deleted content is kept here. Restore it, or delete it permanently.",
   "content.trashEmpty": "Trash is empty",
-  "content.trashEmptyHint": "Posts and folders you delete are moved here and can be restored until you delete them permanently.",
+  "content.trashEmptyHint": "Sites, folders and posts you delete are moved here and can be restored until you delete them permanently.",
   "content.trashRestore": "Restore",
   "content.trashRestored": "Restored from trash",
   "content.trashSection": "Folder",

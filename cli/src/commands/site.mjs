@@ -109,7 +109,17 @@ async function remove(client, sites, flags, ctx) {
     return { deleted: [], planned: [] };
   }
 
-  const ops = doomed.map((site) => ({ op: "site.delete", address: `site:${site.name}` }));
+  // `data.purge` (SH648), because a sweep that only trashed would not do the job this command
+  // exists for. A trashed site keeps its unique name and still counts against the tenant's site
+  // quota, so thirteen replication leftovers would still be thirteen names nothing else can take —
+  // the debris this removes, left in place under a different word. The declaration that makes the
+  // deletion safe is the same one that makes the purge safe: `--scratch` acts only on sites marked
+  // disposable by the run that created them, before there was anything in them to lose.
+  const ops = doomed.map((site) => ({
+    op: "site.delete",
+    address: `site:${site.name}`,
+    data: { purge: true },
+  }));
   // `dryRun` is a key of the document, not a query parameter — the batch endpoint reads it
   // off the body, and a plan that quietly ran would be the worst possible way to learn that.
   const plan = await client.batch({ ops, dryRun: true });
@@ -118,7 +128,7 @@ async function remove(client, sites, flags, ctx) {
   if (flags.dryRun) {
     ctx.stdout.write(
       `shio site rm: would delete ${names.length} scratch site(s) — ${names.join(", ")}\n`
-        + "  purged, not trashed: there is no undo (SH463)\n",
+        + "  purged, not trashed: there is no undo (SH463, SH648)\n",
     );
     return { planned: names, deleted: [], exitCode: 0 };
   }

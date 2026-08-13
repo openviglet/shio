@@ -180,7 +180,7 @@ one — there is no root folder page, and suggesting `folder:Site/` would point 
 not exist. This is P6 and P2, not a capability gap: nothing was missing except the sentence.
 
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
-- `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `site.delete`,
+- `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `site.delete`, `site.restore`,
   `folder.upsert`, `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`,
   `folder.delete`, `post.delete`) in one transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
   SH108's `confirm` from its own dry run. **`?verify=true` returns the run's own proof
@@ -895,12 +895,30 @@ on all sixteen and only `GET /api/v2/csrf` + its cookie + the echoed token worke
 maintenance rather than an edge case — SH448's suite seeds a site per scenario and a **failed**
 test never reaches teardown, so every red run leaves debris, and the suite's own harness had
 hand-rolled a session for it and called the asymmetry "not this task's to fix" in a code comment,
-filed nowhere. The op is destructive (SH108's confirm token) and its plan line says the thing
-`folder.delete`'s cannot: **it is purged, not trashed, so there is no undo** —
-`ShSiteWriteService.delete` trashes each root folder and then purges it (SH454), and an agent that
-read this as restorable would not offer the curator an undo that does not exist. Scoped credentials
+filed nowhere. The op is destructive (SH108's confirm token). Scoped credentials
 are refused: an allow-list says what may be read and written, never that the container may be
 destroyed.
+
+**SH648 gave it an undo, and the plan line is where that is decided.** `site.delete` used to say the
+thing `folder.delete`'s could not — *purged, not trashed, so there is no undo* — and an agent that
+read it as restorable would have offered the curator an undo that did not exist. It now **trashes**,
+so the sentence names the op that reverses it, and the failure has an exact mirror: an agent that
+failed to offer the undo that *does* exist is the same P7 defect from the other side. Which the
+caller believes is decided by that one line, on both branches:
+
+- `site.delete` → *"…to the trash - site.restore brings it back"*
+- `site.delete` + `data.purge:true` → *"…permanently - `data.purge` declines the trash, so this one
+  has no undo"*
+
+A key on the existing op rather than a fourteenth name, because a purge is SH413's *modifier* shape:
+the same gesture with the undo declined. `site.restore` **is** a name of its own — a restore is not
+a way of declaring a site's state, and calling it anything else would make the vocabulary a caller
+has already learned from `post.restore` and `folder.restore` inconsistent at the point they reach
+for it. It is the one restore addressed by `site:<name>` rather than `id:`: a trashed site keeps its
+unique name (that is what `ShSiteNameHeldByTrashException` exists to say), so an agent that trashed
+a site can undo it without having kept an id. Same `requireUnscopedCredential` as the delete, and
+for SH696's reason from the other direction: a credential scoped to a site list must not be able to
+*add* a member by resurrection any more than it may remove one.
 
 **And a site that was never meant to be kept (SH591).** Twelve replication rounds left thirteen
 sites on one instance — `R6Fid`, `R6Aut`, `R9Aut`, `R9Loc`, `R10Ssr`, `R11`, `R12` and six older

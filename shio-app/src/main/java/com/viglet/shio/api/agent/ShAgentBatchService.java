@@ -150,6 +150,23 @@ public class ShAgentBatchService {
     public static final String SITE_DELETE = "site.delete";
 
     /**
+     * SH648 — the site half of the trash, which is the level the undo stopped one short of.
+     *
+     * <p>A thirteenth name rather than a key on {@code site.upsert}: SH413's rule is that a
+     * <em>modifier</em> of an existing op rides it, and a restore is not a way of declaring a
+     * site's state — it is {@code post.restore} and {@code folder.restore} one level up, and
+     * naming it anything else would make the one vocabulary that is already learned inconsistent
+     * at exactly the point a caller reaches for it.</p>
+     *
+     * <p>The purge, by contrast, <b>does</b> ride {@code site.delete} as {@code data.purge:true}:
+     * it is the same gesture with the undo declined, which is precisely the modifier shape.</p>
+     */
+    public static final String SITE_RESTORE = "site.restore";
+
+    /** SH648 — {@code site.delete} with the trash declined; irreversible, and says so in its plan. */
+    public static final String PURGE_KEY = "purge";
+
+    /**
      * SH186 — provisions the three render post-types, which was the last step only REST could take.
      *
      * <p>An MCP-only client has no HTTP of its own, and {@code PUT /api/v2/post-type/{name}} refuses a
@@ -186,15 +203,15 @@ public class ShAgentBatchService {
     public static final List<String> OPS = List.of(
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT,
             POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
-            FOLDER_RESTORE, RENDER_PROVISION);
+            FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
      * on this surface is recoverable by another write; these three are not.
      *
-     * <p>{@code site.delete} (SH463) is the least recoverable of them and the only one with no
-     * trash behind it at all: {@code ShSiteWriteService.delete} trashes each root folder and then
-     * <b>purges</b> it, because a site delete has no undo to preserve. Its plan line says so.</p>
+     * <p>{@code site.delete} (SH463) is the widest of them: it takes a whole site out at once, and
+     * until SH648 it was also the only one with no trash behind it. It has one now — the plan line
+     * says which of the two it is about to be, because {@code data.purge:true} declines it.</p>
      */
     public static final List<String> DESTRUCTIVE_OPS =
             List.of(SITE_DELETE, FOLDER_DELETE, POST_DELETE);
@@ -639,6 +656,7 @@ public class ShAgentBatchService {
         return switch (name) {
             case SITE_UPSERT -> siteUpsert(op, session);
             case SITE_DELETE -> siteDelete(op, session);
+            case SITE_RESTORE -> siteRestore(op, session);
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_MOVE -> folderMove(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
@@ -990,14 +1008,18 @@ public class ShAgentBatchService {
      * code comment ("not this task's to fix"), filed nowhere. A suite that seeds a site per scenario
      * and cannot remove one after a <em>failed</em> run leaves debris on every red run.</p>
      *
-     * <h2>Destructive, and the least recoverable op on the surface</h2>
+     * <h2>Destructive, and the widest gesture on the surface</h2>
      *
-     * <p>It carries the SH108 confirm token that {@code folder.delete} and {@code post.delete} carry,
-     * and its plan line says something theirs cannot: <b>there is no trash behind it</b>.
-     * {@code ShSiteWriteService.delete} trashes each root folder and then purges it, because a site
-     * delete has no undo to preserve (SH454). An agent that believed this was restorable would not
-     * offer the human the undo that does not exist, which is the P7 failure the wording exists to
-     * prevent.</p>
+     * <p>It carries the SH108 confirm token that {@code folder.delete} and {@code post.delete}
+     * carry. Its plan line used to say something theirs could not — <b>there is no trash behind
+     * it</b> — because a site delete purged (SH454) and an agent that believed it was restorable
+     * would have offered the human an undo that did not exist.</p>
+     *
+     * <p><b>SH648 gave it one</b>, so the line now names the op that reverses it, and the P7 failure
+     * has an exact mirror: an agent that fails to offer the undo that <em>does</em> exist is wrong
+     * in the same way and from the other side. Which the caller believes is decided by that one
+     * sentence, which is why it is written from the same {@code purge} flag the write branches on
+     * rather than from a second reading of the request.</p>
      *
      * <h2>Unscoped credentials only</h2>
      *
@@ -1016,12 +1038,59 @@ public class ShAgentBatchService {
         }
         requireUnscopedCredential(name);
         String id = existing.get().getId();
+        // SH648 — which of the two gestures this is, decided before the plan line is written so a
+        // dry run and the write it predicts cannot disagree about whether there is an undo.
+        boolean purge = flag(op.data(), PURGE_KEY);
         if (!session.dryRun) {
-            shSiteWriteService.delete(id, session.actor);
+            if (purge) {
+                shSiteWriteService.purge(id, session.actor);
+            } else {
+                shSiteWriteService.delete(id, session.actor);
+            }
         }
-        return session.change(op, address, Change.DELETE,
-                "with every folder and post in it, permanently - a site delete is purged rather "
-                        + "than trashed, so this one has no undo", id);
+        return session.change(op, address, Change.DELETE, purge
+                ? "with every folder and post in it, permanently - `data.purge` declines the trash, "
+                        + "so this one has no undo"
+                : "with every folder and post in it, to the trash - site.restore brings it back", id);
+    }
+
+    /**
+     * Brings a trashed site back, with the content that went into the trash with it (SH648).
+     *
+     * <h2>Why it is addressed by name and not by id</h2>
+     *
+     * <p>{@code post.restore} and {@code folder.restore} take {@code id:}, because a trashed post
+     * has no reachable friendly URL to be named by (SH222). A site is the one level where that is
+     * not true: its <b>name is unique and it keeps holding it while it sleeps</b> — that is the
+     * whole reason {@code ShSiteNameHeldByTrashException} exists — so {@code site:<name>} still
+     * resolves it unambiguously, and it is the form the caller already has in their hand. Which
+     * makes this the one restore whose address is the same one the delete took: an agent that
+     * trashed a site can undo it without having kept an id.</p>
+     *
+     * <h2>Unscoped credentials only</h2>
+     *
+     * <p>The same check {@code site.delete} makes, and the mirror of SH696's argument one level
+     * down: a credential scoped to a site list must not be able to add a member to it by
+     * resurrection any more than it may remove one. Non-goal: "the agent path is not a privilege
+     * escalation".</p>
+     */
+    private Change siteRestore(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.SITE);
+        String name = address.site();
+        Optional<ShSite> trashed = shSiteWriteService.nameHeldByTrash(name);
+        if (trashed.isEmpty()) {
+            return session.change(op, address, Change.NOOP, "not in the trash", null);
+        }
+        requireUnscopedCredential(name);
+        String id = trashed.get().getId();
+        // Asked on both branches, so a dry run refuses the furl conflict the write would refuse
+        // (SH690) instead of planning a restore that 409s when it runs.
+        shSiteWriteService.requireRestorableFurl(trashed.get());
+        if (!session.dryRun) {
+            shSiteWriteService.restore(id, session.actor);
+        }
+        return session.change(op, address, Change.UPDATE,
+                "from trash, with every folder and post that went in with it", id);
     }
 
     /**

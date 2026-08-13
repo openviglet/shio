@@ -147,10 +147,14 @@ class ShAgentSiteDeleteTest {
         ShAgentChangeSet result = run(false, delete(siteName));
 
         assertThat(result.results()).singleElement().satisfies(change -> assertThat(change.toString())
-                .as("the plan line has to say there is no undo: ShSiteWriteService.delete trashes "
-                        + "each root folder and then PURGES it, so an agent that read this as "
-                        + "restorable would not offer the human an undo that does not exist (P7)")
-                .contains("no undo"));
+                .as("""
+                        the plan line has to say which of the two gestures this is. SH648 gave a \
+                        site delete an undo, so the sentence that used to read "no undo" now names \
+                        the op that performs it — an agent that offered a restore that did not \
+                        exist and one that failed to offer the restore that does are the same P7 \
+                        failure, and this line is what decides which the caller believes.""")
+                .contains("to the trash")
+                .contains("site.restore"));
         assertThat(shSiteRepository.findByName(siteName)).isNull();
         assertThat(shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT))
                 .as("and the content went with it — a site delete that left orphaned posts is the "
@@ -164,7 +168,8 @@ class ShAgentSiteDeleteTest {
     void itIsDestructiveAndSaysSo() {
         assertThat(ShAgentBatchService.DESTRUCTIVE_OPS)
                 .as("SH108's two-step is what stops a delete arriving as a typo, and this is the "
-                        + "least recoverable op on the surface — the only one with no trash behind it")
+                        + "widest gesture on the surface — SH648 gave it a trash, and taking a "
+                        + "whole site out is still not something to do on a typo")
                 .contains(ShAgentBatchService.SITE_DELETE);
 
         // Without the token: refused, and the site is still there.
@@ -216,6 +221,69 @@ class ShAgentSiteDeleteTest {
 
     private static Op delete(String site) {
         return new Op(ShAgentBatchService.SITE_DELETE, "site:" + site, null, null, null, null, null);
+    }
+
+    /**
+     * SH648 — the round trip on the surface the product is designed for first (P1).
+     *
+     * <p>{@code ShSiteTrashTest} asserts the same undo through the write service. This asserts that
+     * an <b>agent</b> can reach it, which is the half P1 makes binding and the half that was
+     * missing at every other level's restore until somebody asked for it: {@code post.restore} was
+     * SH222 and {@code folder.restore} was SH222's other half, both filed after the trash shipped
+     * without them.</p>
+     *
+     * <p>Addressed by {@code site:<name>} rather than {@code id:}, which is what the assertion
+     * below is really about: a trashed site keeps its unique name, so this is the one restore whose
+     * address is the same one the delete took — an agent that trashed a site can undo it without
+     * having kept an id.</p>
+     */
+    @Test
+    @DisplayName("SH648: site.restore brings back the site site.delete trashed, by the same address")
+    void aTrashedSiteComesBackThroughTheSurface() {
+        run(false, delete(siteName));
+        assertThat(shSiteRepository.findByName(siteName))
+                .as("trashed, so every live read answers absent")
+                .isNull();
+
+        ShAgentChangeSet restored = run(false, restore(siteName));
+
+        assertThat(restored.changed()).isEqualTo(1);
+        assertThat(shSiteRepository.findByName(siteName))
+                .as("""
+                        before SH648 this address named nothing an agent could act on: the row was \
+                        purged, so the widest gesture on the surface was the only one whose undo \
+                        an agent could not offer.""")
+                .isNotNull();
+        assertThat(shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT))
+                .as("with the content that went into the trash with it")
+                .isPresent();
+    }
+
+    @Test
+    @DisplayName("SH648: data.purge declines the trash, and the plan line says so before it runs")
+    void purgeIsTheSameOpWithTheUndoDeclined() {
+        ShAgentChangeSet plan = run(true, purge(siteName));
+
+        assertThat(plan.results()).singleElement().satisfies(change -> assertThat(change.toString())
+                .as("a dry run that promised an undo the write will not leave is the P7 failure "
+                        + "the confirm token exists to make impossible")
+                .contains("no undo"));
+
+        run(false, purge(siteName));
+
+        assertThat(shSiteRepository.findAnyByName(siteName))
+                .as("findAnyByName, not findByName: a trash would satisfy the live read and leave "
+                        + "the row — which is exactly the difference this key declares")
+                .isNull();
+    }
+
+    private static Op restore(String site) {
+        return new Op(ShAgentBatchService.SITE_RESTORE, "site:" + site, null, null, null, null, null);
+    }
+
+    private static Op purge(String site) {
+        return new Op(ShAgentBatchService.SITE_DELETE, "site:" + site, null, null, null,
+                json("{\"purge\":true}"));
     }
 
     /**

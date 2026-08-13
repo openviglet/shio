@@ -105,6 +105,12 @@ public class ShSiteAPI {
         if (shSiteRepository.findByName(payload.name()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+        // SH648 — the collision a soft-delete introduced, and the one nothing else can explain.
+        // `ShSite.name` is unique and a trashed site keeps holding its name, so without this the
+        // create passes every service check and comes back as a body-less constraint violation
+        // naming a site the caller cannot find in any listing.
+        requireNameFree(payload.name(), "name");
+        requireNameFree(payload.furl(), "friendly URL");
         // SH22/D — enforce the tenant's plan site quota (402); no-op single-tenant.
         shTenantQuotaService.checkCanCreateSite();
         ShSite created = shSiteWriteService.create(toEntity(payload),
@@ -137,12 +143,65 @@ public class ShSiteAPI {
         return site;
     }
 
+    /**
+     * The name or furl is free, or the caller is told which trashed site is holding it (SH648).
+     *
+     * <p>Only a <em>trashed</em> holder reaches here — a live one was refused two lines above with
+     * the 409 this endpoint has always answered. The two are separate on purpose: "there is already
+     * a site called that" is a fact the caller can check, and "there is one you deleted" is not.</p>
+     */
+    private void requireNameFree(String value, String field) {
+        shSiteWriteService.nameHeldByTrash(value).ifPresent(trashed -> {
+            throw new ShSiteNameHeldByTrashException(value, field);
+        });
+    }
+
+    /**
+     * Puts the site and everything in it in the trash (SH648) — reversible via {@link #untrash}.
+     *
+     * <p>It used to purge, so the largest deletion in the product was the only one with no undo
+     * while every level beneath it had one. {@link #purge} is that gesture, now asked for by
+     * name.</p>
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id, Principal principal) {
         // SH454 — the actor, because the site delete now goes down through the folder and post
         // writers and each of them records an audit entry. Without it the most destructive gesture
         // in the console is the one with no name against it.
         return shSiteWriteService.delete(id, principal != null ? principal.getName() : null)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    /** SH648 — deleted sites currently in the trash, newest first. Mirrors {@code /folder/trash}. */
+    @GetMapping("/trash")
+    public List<ShSite> trash() {
+        return shSiteWriteService.listTrash();
+    }
+
+    /**
+     * SH648 — restore a trashed site: the site, its folders and the posts that went into the
+     * trash with it. Mirrors {@code /folder/{id}/untrash}.
+     */
+    @PostMapping("/{id}/untrash")
+    public ResponseEntity<Void> untrash(@PathVariable String id, Principal principal) {
+        return shSiteWriteService.restore(id, principal != null ? principal.getName() : null)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    /**
+     * SH648 — permanently delete a site (irreversible; this is what fires each post's
+     * {@code DELETE} lifecycle event, so the SH12 webhook and the SH38 byte cleanup run here and
+     * not on the reversible delete above).
+     *
+     * <p>Takes a live site as well as a trashed one, which is what keeps "remove this site and
+     * everything in it" a single call for the callers that never wanted the trash — a teardown, a
+     * disposable replication target (SH591). It trashes on the way through rather than refusing.</p>
+     */
+    @DeleteMapping("/{id}/purge")
+    public ResponseEntity<Void> purge(@PathVariable String id, Principal principal) {
+        return shSiteWriteService.purge(id, principal != null ? principal.getName() : null)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }

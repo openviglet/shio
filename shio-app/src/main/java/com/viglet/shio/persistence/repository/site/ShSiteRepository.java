@@ -28,22 +28,66 @@ import org.springframework.stereotype.Repository;
 import com.viglet.shio.persistence.model.site.ShSite;
 
 /**
+ * Sites, and <b>only the live ones</b> unless the method says otherwise (SH648).
+ *
+ * <p>A trashed site is a row with a {@code deleted_date}, and every ordinary read — the console
+ * listing, the CDA, the renderer's site resolution, the address resolver — must not see it, or a
+ * deleted site keeps answering at its URL. The exclusion is spelled out here rather than as a
+ * Hibernate {@code @SQLRestriction} on {@link ShSite} for the reason {@code ShFolderRepository}
+ * records one level down: a restriction fires when a {@code @ManyToOne} to the entity is
+ * initialized too, and a trashed site's root folder reads {@code getShSite()} on exactly the path
+ * a restore walks. Filtering here keeps the association honest and costs one predicate per query.</p>
+ *
+ * <p>The trash's own reads are the {@code findAny…} and {@code findTrashedSites} methods, which are
+ * the only ones that may see a trashed row.</p>
+ *
  * @author Alexandre Oliveira
  */
 @Repository
 public interface ShSiteRepository extends JpaRepository<ShSite, String> {
 
+	@Query("select s from ShSite s where s.deletedDate is null")
 	List<ShSite> findAll();
 
+	@Query("select s from ShSite s where s.id = ?1 and s.deletedDate is null")
 	Optional<ShSite> findById(String id);
 
+	@Query("select s from ShSite s where s.id in ?1 and s.deletedDate is null")
 	List<ShSite> findByIdIn(Collection<String> ids);
-	
+
+	@Query("select s from ShSite s where (s.owner = ?1 or s.owner is null) and s.deletedDate is null")
 	List<ShSite> findByOwnerOrOwnerIsNull(String owner);
-	
+
+	@Query("select s from ShSite s where s.name = ?1 and s.deletedDate is null")
 	ShSite findByName(String name);
-	
+
+	@Query("select s from ShSite s where s.furl = ?1 and s.deletedDate is null")
 	ShSite findByFurl(String furl);
+
+	/**
+	 * The site whether or not it is trashed — what a restore, a purge and the SH88 change feed
+	 * need, since each of them has to address the site it just reported deleted (SH648).
+	 */
+	@Query("select s from ShSite s where s.id = ?1")
+	Optional<ShSite> findAnyById(String id);
+
+	/**
+	 * The site holding that name, trashed or not (SH648).
+	 *
+	 * <p>{@code ShSite.name} is {@code unique}, so a trashed site still owns its name and a
+	 * re-create collides in the database rather than in the service. This is the read that turns
+	 * that collision into {@code ShSiteNameHeldByTrashException} instead of a 500.</p>
+	 */
+	@Query("select s from ShSite s where s.name = ?1")
+	ShSite findAnyByName(String name);
+
+	/** The site holding that friendly URL, trashed or not — the furl half of {@link #findAnyByName}. */
+	@Query("select s from ShSite s where s.furl = ?1")
+	ShSite findAnyByFurl(String furl);
+
+	/** SH648 — what is in the trash, newest deletion first, which is the order a curator scans. */
+	@Query("select s from ShSite s where s.deletedDate is not null order by s.deletedDate desc")
+	List<ShSite> findTrashedSites();
 
 	@SuppressWarnings("unchecked")
 	ShSite save(ShSite shSite);

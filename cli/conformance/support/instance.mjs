@@ -386,12 +386,18 @@ export class ConsoleSession {
    * the one verb that already gets the ordering right — so the teardown is one call again. Which
    * makes it the assertion rather than the workaround: if the cascade regresses, every scenario in
    * this suite fails in its own `after` with the 500 that started this.
+   *
+   * **SH648 gave the site delete an undo, so this asks for the other verb by name.** `DELETE
+   * /api/v2/site/{id}` now trashes, and a trashed site keeps holding its unique name — so a
+   * teardown that used it would leave the next run of the same scenario unable to create the site
+   * it seeds, refused by `ShSiteNameHeldByTrashException`. `/purge` takes a live site as well as a
+   * trashed one precisely so this stays one call.
    */
   async deleteSite(name) {
     const site = await this.site(name).catch(() => null);
     if (!site?.id) return false;
     const { value, header } = await this.#csrf();
-    const res = await this.#fetch(`/api/v2/site/${encodeURIComponent(site.id)}`, {
+    const res = await this.#fetch(`/api/v2/site/${encodeURIComponent(site.id)}/purge`, {
       method: "DELETE",
       headers: { [header]: value },
     });

@@ -90,7 +90,9 @@ class ShSiteDeleteTest {
                 .as("the fixture is the shape that broke: a site with posts under it")
                 .isNotEmpty();
 
-        assertThatCode(() -> shSiteWriteService.delete(siteId, "admin"))
+        // SH648 renamed this half. The FK ordering SH454 fixed is a property of the gesture that
+        // REMOVES the rows, which is now `purge`; `delete` stamps a column and never reaches it.
+        assertThatCode(() -> shSiteWriteService.purge(siteId, "admin"))
                 .as("the folder delete used to be ordered against posts that still referenced it, "
                         + "so this threw a referential-integrity violation the controller turned "
                         + "into a body-less 500")
@@ -113,10 +115,10 @@ class ShSiteDeleteTest {
     void theCasesThatAlreadyWorkedStillWork() {
         ShSite blank = shSiteWriteService.createBlank(payload("ut-sh454-blank-"), "admin");
 
-        assertThat(shSiteWriteService.delete(blank.getId(), "admin")).isTrue();
-        assertThat(shSiteRepository.findById(blank.getId())).isEmpty();
+        assertThat(shSiteWriteService.purge(blank.getId(), "admin")).isTrue();
+        assertThat(shSiteRepository.findAnyById(blank.getId())).isEmpty();
         // Absent is `false`, which is what the controller turns into a 404 — never an exception.
-        assertThat(shSiteWriteService.delete(UUID.randomUUID().toString(), "admin")).isFalse();
+        assertThat(shSiteWriteService.purge(UUID.randomUUID().toString(), "admin")).isFalse();
     }
 
     private static ShSite payload(String prefix) {

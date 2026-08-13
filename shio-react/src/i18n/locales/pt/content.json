@@ -143,7 +143,7 @@
   "content.trash": "Lixeira",
   "content.trashDescription": "O conteúdo excluído fica aqui. Restaure-o ou exclua permanentemente.",
   "content.trashEmpty": "A lixeira está vazia",
-  "content.trashEmptyHint": "Os posts e as pastas excluídos são movidos para cá e podem ser restaurados até serem excluídos permanentemente.",
+  "content.trashEmptyHint": "Os sites, as pastas e os posts excluídos são movidos para cá e podem ser restaurados até serem excluídos permanentemente.",
   "content.trashRestore": "Restaurar",
   "content.trashRestored": "Restaurado da lixeira",
   "content.trashSection": "Pasta",
