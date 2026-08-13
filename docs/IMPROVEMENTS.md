@@ -236,6 +236,30 @@ giving the two writes the role the blueprint reload already had.
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
+### XII.23 The conditional write covers one op of eleven (SH730)
+
+SH721 answered the lost update SH713 measured: a read hands back `digest`, a write
+carries `expect`, and a mismatch is refused as `stale-expectation`. It was wired into
+`post.upsert` because that is the op the measurement used.
+
+The window it closes is not specific to that op. `post.move` changes an address a
+curator may have just corrected; `post.delete` removes a post somebody is editing;
+`post.publish` makes public a draft that changed after the plan read it. Each is the
+same shape — a plan composed against a state, applied against a later one — and each is
+the more destructive half, because an upsert overwrites a field while a move and a
+delete take the whole post out from under the reader.
+
+The machinery is already general: `ShAgentPostDigest.of` takes a row and
+`requireExpectedState` takes an op and a row, so the work is per-op wiring and the
+argument about what each one should compare, not new mechanism. `post.publish` is the
+interesting one: publishing is not a content change, so the digest of the draft is the
+right subject, and an `expect` that matched the *published* row would refuse the very
+case publishing exists for.
+
+What must not follow is `expect` becoming required. The default is last-write-wins
+because most writes are the only writer, and a surface that demands a digest per op
+costs every caller a read it did not need — SH721's argument, unchanged.
+
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
@@ -354,6 +378,56 @@ watched rather than remembered.
 > building it opened (SH163–SH167, SH233, SH234) and the ones that finishing it turned
 > up (SH235–SH237, SH239, SH240, SH668). Nothing is left open here.
 > Concept spec §10 has the original table.
+
+### XIV.27 A constraint the tests cannot see (SH729)
+
+SH719 added a unique index in `v2026.3.24.yaml` and a test asserting the second insert
+is refused. The test passed **by performing the insert**:
+`src/test/resources/application.properties` sets `spring.liquibase.enabled=false` and
+builds H2 from entity metadata via `ddl-auto=create-drop`, so nothing in the changelog
+exists during `mvn test`. The changeset was correct, the assertion was correct, and
+together they proved nothing.
+
+It was caught only because the assertion had been written to fail first and did not.
+Written after the fix — the ordinary order — it would have been green on arrival, and
+the guard would have shipped switched off, to be discovered on whichever database first
+met a concurrent create.
+
+SH719's repair was to declare the index twice: `@Table(indexes = @Index(..., unique =
+true))` for the suite and Liquibase for every real database. That is the right shape and
+it is now a convention nothing enforces. Any later `addUniqueConstraint`, unique
+`createIndex` or `addNotNullConstraint` can land changelog-only and stay invisible to
+eighteen hundred tests.
+
+So the deliverable is the reader, per SH338: parse the changelogs for constraints the
+entity metadata should also declare, and fail naming the pair that disagree. The
+cross-DB ITs do execute the changelog, but they are opt-in since SH415 and skip without
+Docker, so they are not this backstop — they answer *does the migration apply*, not
+*does the suite know about it*.
+
+### XIV.28 A citation is not an assertion (SH731)
+
+`assertion-debt.test.mjs` counts an id named in an assertion message as asserted, which
+is what makes the rule checkable at all — the alternative, a separate registry, is a
+second thing to keep true. The cost is that it cannot distinguish *this assertion is the
+one SH322 asked for* from *this message mentions SH322 in passing*.
+
+Recorded twice before as a mislabel: a case named SH568 that belonged to SH575, and one
+more. **SH722 made it three, by a different mechanism.** Its lint's failure message
+ended "…which is why this lint exists rather than one more repair (SH322)" — a citation
+of the rule the lint follows, not a claim to close it. The reader dropped SH322 from the
+debt list and the suite went red saying somebody had paid it off. Nothing was wrong
+except the sentence.
+
+The repair was to move the citation into the javadoc, which the reader correctly
+ignores. That works, and it is a rule nobody can follow reliably: *do not name another
+task's id in an assertion message* is invisible while you write it, and the message is
+exactly where a reader wants the reference.
+
+Two directions. Either the reader distinguishes a cited id from an asserted one — the id
+in a `@DisplayName`, or the first in the message, is the subject and the rest are
+references — or a citation gets a spelling the reader skips, `see SH322`, checked by the
+reader so the convention cannot be forgotten silently.
 
 ## XV. The visible site (Block P)
 

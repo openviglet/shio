@@ -20,6 +20,7 @@
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
+- 📋 **SH730** (deps: SH721 ✅) **Only post.upsert can be made conditional, so a move or a delete still overwrites a curator in silence** — SH721 put `expect` on the one op it measured, and post.move, post.delete and post.publish reach the same rows with no way to say only if unchanged. → §XII.23
 
 ## Block M — Token economy (measured)
 
@@ -29,6 +30,9 @@
 - 📋 **SH723** (deps: —) **The largest response on the agent surface is the one with no token budget** — shio_changes at its documented max returns 19k estimated tokens in one call, with no ceiling and no truncation marker, while the context pack self-limits at 4000. → §XIII.25
 
 ## Block N — Realignment of what already shipped
+
+- 📋 **SH729** (deps: —) **A constraint declared only in Liquibase is absent from the unit suite, so its test passes by violating it** — Tests build the schema from entity metadata with Liquibase off, so SH719's unique index was absent and the test that a second insert is refused passed by inserting it. → §XIV.27
+- 📋 **SH731** (deps: —) **Citing a task id in an assertion message pays off that task's debt, and it has now happened three times** — SH527's reader cannot tell an assertion ABOUT an id from one that merely cites it, so writing (SH322) in a failure message marked SH322 asserted. → §XIV.28
 
 ## Block O — The human half (the console the curator uses)
 
