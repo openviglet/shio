@@ -26,12 +26,14 @@
 - 📋 **SH719** (deps: —) **Two agents creating one address get two posts at it, and both are told they succeeded** — post.upsert resolves the address and then inserts, so two callers that both find nothing both create — leaving a URL no write can name and no read can resolve. → §XII.17
 - 📋 **SH720** (deps: SH719) **The duplicate-url refusal names verify, which cannot see the draft duplicates that produce it** — verify's duplicate check scans published posts only, so the instrument the refusal sends an agent to answers ok for the state a concurrent create leaves behind. → §XII.18
 - 📋 **SH721** (deps: —) **A curator's edit is overwritten by a concurrent agent write, and neither side is told** — Nothing on the write surface carries an expected version, so an upsert that declares whole state silently discards the field a curator merged while the plan was running. → §XII.19
+- 📋 **SH722** (deps: —) **Two identical context reads return two different field orders, so the pack's own digest flips** — The model is sorted by ordinal alone out of a hash-ordered Set, so two attributes sharing an ordinal tie-break differently on each call. → §XII.20
 
 ## Block M — Token economy (measured)
 
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
 - 💭 **SH231** (deps: SH161 ✅) **An instance's own notes travel nowhere** — A site's notes ride its export and the instance's own travel nowhere, which is right for an import and wrong for a move. → §XIII.11
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
+- 📋 **SH723** (deps: —) **The largest response on the agent surface is the one with no token budget** — shio_changes at its documented max returns 19k estimated tokens in one call, with no ceiling and no truncation marker, while the context pack self-limits at 4000. → §XIII.25
 
 ## Block N — Realignment of what already shipped
 
@@ -56,7 +58,6 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH714** (deps: SH708 ✅, SH709 ✅) **Response budgets are measured on fixtures, and P5's byte-identical promise on one call** — A payload sized against a two-post fixture says nothing about a real tree, and no live run repeats a call to check the second answer matches the first byte for byte. → §XXIII.8
 - 📋 **SH717** (deps: —) **A tool name one character wrong gets the whole registry back and no suggestion** — shio_reed answers -32602 with all twelve names in data, so the agent that mistyped shio_read must re-read a list it already had instead of being told. → §XXIII.9
 
 ## Non-goals (do NOT add as tasks)

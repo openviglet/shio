@@ -356,6 +356,35 @@ is that an agent that *cares* can say so, which today it cannot.
 P7 is the law this sits under. Losing a curator's correction with no signal to either
 party is the surprise that law names.
 
+### XII.20 A sort key that is not unique (SH722)
+
+P5 promises byte-identical serialization, and SH714 measured it on the wire: ten
+identical `shio_context` calls returned **two** distinct packs. Every other read tool —
+`shio_read`, `shio_find`, `shio_changes`, `shio_marketplace` — was stable over the same
+ten.
+
+The difference is one line, and it alternates:
+
+```
+type PT-FOLDER-INDEX fields="TITLE:Text!,DESCRIPTION:Text Area!,PAGE-LAYOUT:Content Select!"
+type PT-FOLDER-INDEX fields="TITLE:Text!,PAGE-LAYOUT:Content Select!,DESCRIPTION:Text Area!"
+```
+
+`ShCdaMapper#schemaFields` sorts by `ordinal` and nothing else, over a `Set` the
+persistence layer hands it in hash order. `DESCRIPTION` and `PAGE-LAYOUT` both carry
+`ordinal: 2` — so the comparator declares them equal and the tie is broken by whatever
+order the set iterated this time. A stable sort over an unstable input is an unstable
+sort.
+
+Two consequences beyond the bytes. The pack carries its own `digest`, so the digest
+flips between two calls that describe the same instance, and P9's cheap proof stops
+being one. And a conditional read is ETagged on the rendered bytes, so revalidation
+misses for a reason the caller cannot see.
+
+The fix is a tiebreaker — ordinal, then name — and it is not specific to this type: any
+post-type whose attributes were seeded or edited into an ordinal collision has the same
+defect, and nothing forbids the collision.
+
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
@@ -443,6 +472,29 @@ Three shapes, in increasing order of how much they concede:
 
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
+
+### XIII.25 The feed has a row cap where it needs a token budget (SH723)
+
+Measured by SH714 against a seeded site with more than 500 transitions in it:
+`shio_changes` with `limit=500` — the documented maximum — returns 500 rows and about
+**20,000 estimated tokens** in a single response. `shio_find` at its own maximum returns
+200 rows; on the same fixture that is roughly 4,500. The context pack, which exists to
+be the big one, reports `budget est=3932 limit=4000` and truncates itself to stay there.
+
+So the surface has a token budget in exactly one place, and it is not the place that
+produces the largest payload. P3 says tokens are a measured budget; a **row** cap is not
+one, because a row's cost is not fixed — a change entry carries an actor, an address, a
+timestamp and a `what` sentence somebody else wrote, and this fixture's rows measured 41
+tokens each against a `find` row's 23.
+
+Two things follow, and they are separable. The feed needs a token ceiling with the
+marker the pack already emits, so a caller that asks for 500 gets what fits and a cursor
+for the rest — the cursor already exists (SH88), which makes this cheap. And the ceiling
+belongs in `token-budgets.properties` beside the others, where a raise has to be argued.
+
+The measurement is what makes this fileable rather than arguable, and it is the
+deliverable SH714 shipped. The suite prints both figures on every run, so the gap is
+watched rather than remembered.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
@@ -913,28 +965,6 @@ it out of order.
 
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
-
-### XXIII.8 What every tool costs, and whether it answers twice the same (SH714)
-
-P3 makes a token regression a build failure and `ShAgentResponseBudgetTest` enforces it
-— against fixtures. The number an agent pays is the one a real site produces, and the
-two diverge exactly where it matters: a listing that fits its budget on three posts and
-blows it on three hundred, a manifest that grew because a site has more post types than
-the fixture, a context pack sized against content nobody seeded.
-
-So: measure every tool's response on the wire against a seeded site large enough to be
-honest, report the measurement, and hold it against the budget file the way
-`budget-restatement.test.mjs` holds the transport constant. The measurement is the
-deliverable, in that order — the numbers first, then whatever they argue for. SH673's
-lesson is the guard rail: a constant restated in a second place drifts silently unless
-something joins the two.
-
-P5 gets the same treatment. Every read repeated with nothing changed in between must
-return byte-identical output — same ordering, same serialization, no timestamp leaking
-into the payload — and every idempotent write repeated must leave one row and the same
-response. Ordering instability is the defect this finds, and it is invisible to a
-fixture with too few rows to have an ambiguous order. Both checks run inside the chaotic
-suite's teardown too, where the state is unrepeatable by construction.
 
 ### XXIII.9 The one refusal that lists everything and suggests nothing (SH717)
 
