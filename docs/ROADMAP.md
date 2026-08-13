@@ -51,8 +51,6 @@
 
 ## Block U — Documentation the matrix still names
 
-- ⏳ **SH698** (deps: —) **`fixture-traits.test.mjs` fails at file level about one run in five, with every assertion in it green** — Caught once in five `pnpm test` runs: the file reports `test failed` and names no assertion, 951 ms against 209 ms alone, so the gate is red for something outside the tests. → §XXI.11
-
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
 - 📋 **SH713** (deps: SH712 ✅) **Nothing has ever pointed two agents and a curator at one instance at the same time** — Every suite is one caller in sequence, so lost updates, half-visible publishes and a console edit landing mid-plan are failure modes the product has never been asked about. → §XXIII.7

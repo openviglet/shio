@@ -815,32 +815,6 @@ altitudes, which is why they are one block rather than a footnote on the last on
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
 
-### XXI.11 A file-level red nobody can reproduce, now instrumented rather than cured (SH698)
-
-Observed once in five `pnpm test` runs while landing SH697: `✖
-test\fixture-traits.test.mjs (951ms)` and beneath it `'test failed'` — no assertion, no
-diff, no named subtest, 9 of 9 green run alone.
-
-**Both mechanisms this section first proposed are wrong, and they were measured rather
-than argued.** The port has been ephemeral since SH448. And `close` does *not* wait on
-the sockets `fetch` leaves: driven with the suite's own request pattern, eight
-connections outstanding, it resolves in **0–1 ms**. It then failed to reproduce in
-**eighteen consecutive runs** — twelve ordinary, six at `--test-concurrency=32`.
-
-So the deliverable is the half the section asked for first: **make the failure legible
-before making it rare.** `closeFixture` bounds the teardown and rejects naming the
-server, the elapsed deadline and the open socket count; `fixture-traits.test.mjs` prints
-any unhandled rejection or uncaught exception on stderr before the runner reduces it to
-`'test failed'` — which is the report an unhandled rejection produces, and the closest
-thing to a lead the original symptom had.
-
-The instrument is asserted by driving it, not by trusting it: a held socket makes the
-deadline fire, and removing the deadline hangs the test *for ever*, which is the failure
-this converts into a sentence.
-
-It stays open. Nothing here found the cause, and closing it would say something untrue
-about a red that is still out there.
-
 ## XXII Realignment of what already shipped
 
 Block N's family. It holds the cases where a capability shipped complete against its own
