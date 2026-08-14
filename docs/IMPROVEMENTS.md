@@ -233,19 +233,28 @@ giving the two writes the role the blueprint reload already had.
 
 ### XII.5 Agent budget guards (SH110)
 
-A **storage** ceiling per tenant, layered on SH45's metering when that lands. A runaway
-agent should hit a ceiling and report it, not a bill.
+A **storage** ceiling per tenant. A runaway agent should hit a ceiling and report it,
+not a bill.
 
-Narrowed by SH734, which measured the blocker instead of trusting it. This read
-"per-session call/write/storage ceilings" and two of the three had stopped waiting on
-anything: `BatchTooLargeException` caps ops per batch, and SH22/D's `VigletQuotaService`
-is already called from the agent write path (`checkCanCreateSite`,
+Narrowed twice, both times by measuring the blocker instead of trusting it. SH734 took
+the first two thirds: this read "per-session call/write/storage ceilings" and two had
+stopped waiting on anything — `BatchTooLargeException` caps ops per batch, and
+`VigletQuotaService` is already called from the agent write path (`checkCanCreateSite`,
 `checkCanCreatePost`), so a tenant at its plan limit is refused on this surface today.
-The session window went to SH734, which needs no metering at all.
+The session window went to SH734, which needed no metering.
 
-What is left here is the part the dep genuinely covers: bytes. Counting storage means
-knowing what an upload cost and what a purge returned, per tenant, over time — which is
-SH45's meter and not a counter anybody can add beside it.
+**SH746 took the third: bytes are counted.** `sh_tenant.storage_bytes` is maintained and
+read in O(1), with `reconcile` recovering the truth from the tenant's own directory.
+What this task was waiting for therefore exists.
+
+What is left is only the **ceiling**, and the blocker moved outside Shio.
+`VigletQuotaService.check(resource)` compares the *current* count against the limit,
+which is exact where each write adds one and wrong for bytes: a single 1 GB upload under
+a 512 MB plan passes it whenever the tenant is at zero. Shio deliberately shipped no
+`checkCanStore` rather than advertise that as a guarantee. Enforcing storage needs
+`check(resource, delta)` in **Viglet's shared quota SPI** — a change to the kernel, not
+to this repository, which is worth stating because it decides who can do the work rather
+than merely how much is left.
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 

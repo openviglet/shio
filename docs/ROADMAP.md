@@ -18,7 +18,7 @@
 
 ## Block L — Agent safety & human-in-the-loop
 
-- 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — SH734 took the session and per-call halves, which needed no metering; what is left is the storage ceiling, and counting bytes per tenant over time is SH45's meter. → §XII.5
+- 💭 **SH110** (deps: SH746 ✅, SH106 ✅, viglet-quota-spi) **The storage meter landed, so what blocks the ceiling is a delta-aware check in the shared quota SPI** — SH746 counts the bytes; the ceiling needs check(resource, delta) upstream, since the current call compares a total and one upload can exceed it. → §XII.5
 
 ## Block O — The human half (the console the curator uses)
 
