@@ -39,7 +39,10 @@ import { join } from "node:path";
 import { describe, test } from "node:test";
 
 import { cliVerbs, mcpTools } from "../conformance/support/product-vocabulary.mjs";
+import { unquoted } from "./support/source-text.mjs";
 
+// @scans both — reason: README.md and the sweep checklist are Markdown, so the prose IS the
+// subject; what must not be read as a claim is a span the document has quoted (SH740).
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const readme = readFileSync(join(ROOT, "README.md"), "utf8");
 const siteContent = readFileSync(join(ROOT, "shio-site/src/lib/site-content.ts"), "utf8");
@@ -108,15 +111,23 @@ describe("SH499: the README's surface table is derived from the product, not rem
     // in the same command. A wrong sentence in a checklist costs exactly as much as a wrong number
     // in the README, and until now only one of the two could fail.
     //
-    // The phrase check below is SH613's hazard by construction: a scan over prose cannot tell a
-    // rule from a sentence about the rule, so the corrected section must PARAPHRASE the claim it
-    // is correcting rather than quote it. That is not a hypothetical — the first version of this
-    // pair failed on the very paragraph explaining the fix, which is the third time in this
-    // session that writing carefully about a rule broke the check for it.
-    const checklist = readFileSync(join(ROOT, ".claude/skills/shio-roadmap-docs/SKILL.md"), "utf8");
+    // The phrase check below is SH613's hazard by construction, and the first version of this pair
+    // failed on the very paragraph explaining the fix — the corrected section had to quote the
+    // claims it was correcting, and quoting them tripped the check for them. The first repair was
+    // to paraphrase, which protects the counter by degrading the writing: a reader cannot see what
+    // changed. SH740 gave it the honest tool instead. `unquoted` drops fenced blocks, inline code
+    // spans and quoted phrases, so the checklist may quote both sentences verbatim and only an
+    // unquoted claim counts.
+    //
+    // The two halves read different forms, and that is the point rather than an inconsistency.
+    // "Does it name the guard" wants the whole document — the name is written in backticks, which
+    // `unquoted` removes. "Does it claim X" wants the unquoted text, because a quoted X is a
+    // quotation. Same file, two questions, two readings.
+    const raw = readFileSync(join(ROOT, ".claude/skills/shio-roadmap-docs/SKILL.md"), "utf8");
+    const checklist = unquoted(raw);
 
     assert.ok(
-      checklist.includes("readme-surface.test.mjs"),
+      raw.includes("readme-surface.test.mjs"),
       "SH739: the block-completion checklist no longer names this guard, so the next sweep is told "
         + "the README's counts are underived and will re-derive them by hand — or file a task to "
         + "build this file a second time. If this file was renamed, rename it there too.",

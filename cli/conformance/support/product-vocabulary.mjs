@@ -27,6 +27,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// @scans both reason: verbs and tool names are extracted from JS and Java source, and the
+// registries it reads are declarations rather than prose, but the walk does not strip (SH740).
+
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
 const JAVA_MAIN = join(REPO, "shio-app", "src", "main", "java");

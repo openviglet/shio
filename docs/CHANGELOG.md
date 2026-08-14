@@ -507,6 +507,7 @@
 - **SH731** — A reference is now spelled see SHnnn and the reader skips it, chosen over the first-id-is-subject rule by measurement: that one loses credit for 58 genuinely asserted ids, this one for none.
 - **SH738** — The classifier now walks the Java suites too and knows AssertJ's spelling of a bound, so the half of the repository SH737 happened in is inside the population it reports.
 - **SH739** — The sweep checklist now names readme-surface.test.mjs and marks which rows it derives, and that pointer is asserted, so renaming the guard fails the document that sends people to it.
+- **SH740** — support/source-text.mjs is the one stripper and source-scan.test.mjs the lint: fourteen scans declare code, prose or both, and Markdown gets unquoted() so a quoted claim is not read as a claim.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

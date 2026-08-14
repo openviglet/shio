@@ -41,6 +41,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+// @scans prose reason: CHANGELOG.md is Markdown and its headings are the subject, so there is
+// no code half to separate — every line read is prose on purpose (SH740).
+
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
 /**

@@ -759,35 +759,11 @@ and nothing else did. These are not defects in the feature; the feature works. T
 defects in its *reach*, and they are filed separately because the fix is almost never in
 the code the original task wrote.
 
-Its last two entries widened that: an instrument can ship complete against its brief and
-be blind to half the repository (SH738), and a *process document* can send a reader past
-an instrument that already exists (SH739). Nothing is left open here →
-[CHANGELOG.md](CHANGELOG.md) Block N.
-
-### XXII.3 SH613's rule stops at the language boundary (SH740)
-
-SH613 established that a textual guard cannot tell a rule from a sentence about the
-rule, and answered it for the Java suites: `@ShSourceScan` declares whether a scan reads
-code or prose, `ShSourceText` is the one stripper, and `ShSourceScanLintTest` refuses a
-`CODE` claim that greps raw text. Twelve Java scans are held to it.
-
-The JavaScript half has none of that, and it now scans more than code. Of the readers
-that walk text for a rule, only `assertion-debt.test.mjs` distinguishes prose at all,
-through a private `isProse` of its own; `floor-kind.test.mjs`, `readme-surface.test.mjs`
-and `docs-vocabulary.conformance.mjs` read raw. That is the "five private strippers with
-five ideas of what a comment is" state SH613 found, one language across.
-
-Three guards have been tripped by prose about their own rule. SH722's failure message
-cited SH322 and paid its debt. Then, in one session: a corrected failure message naming
-the defect it fixed credited that id again, and a checklist paragraph quoting the two
-false claims it was correcting failed the assertion written to catch those claims. Each
-was caught within a minute and each cost a diagnosis, which is the tax SH613 removed on
-the other side of the repository.
-
-The shape cannot be a straight port. These readers scan Markdown — a skill file,
-published pages — where prose is the whole document and the question is which spans are
-quotations. So the declaration is the reusable half, and what a scan promises to skip is
-the design.
+Its last three entries widened that beyond features: an instrument can ship complete
+against its brief and be blind to half the repository (SH738), a *process document* can
+send a reader past an instrument that already exists (SH739), and a rule established in
+one language can simply stop at the boundary of another (SH740). Nothing is left open
+here → [CHANGELOG.md](CHANGELOG.md) Block N.
 
 ## XXIII The vocabulary proved live (integration tests against a running instance)
 

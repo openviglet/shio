@@ -52,6 +52,9 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
+// @scans prose reason: the subject IS the copy — which noun names a person in site strings and
+// documentation — so stripping prose would leave nothing to check (SH740).
+
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
 /**

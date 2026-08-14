@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+// @scans prose reason: workflow YAML and package scripts are read as text, and the gate names
+// inside them are the subject rather than any code around them (SH740).
+
 /**
  * SH241 — the gates run on the branch the work happens on.
  *

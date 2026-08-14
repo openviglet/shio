@@ -44,6 +44,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+// @scans both reason: it reads suite sources for what they assume, and an assumption stated in
+// a comment is as much the subject as one written in code (SH740).
+
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const CONFORMANCE = join(ROOT, "cli", "conformance");
 const SEED = join(ROOT, "shio-app", "src", "main", "resources", "import", "post-types.json");

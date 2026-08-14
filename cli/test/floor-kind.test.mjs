@@ -37,6 +37,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
+import { code } from "./support/source-text.mjs";
+
+// @scans code — a javadoc explaining why a floor is the honest kind must not itself read as one.
 const SUITES = fileURLToPath(new URL("./", import.meta.url));
 
 /**
@@ -112,13 +115,16 @@ const JAVA_FLOOR =
 
 function suites() {
   const files = new Map();
+  // SH740 — comments stripped, which this file had not been doing. A floor written inside a
+  // javadoc explaining floors is exactly the sentence-about-the-rule case, and this file is full
+  // of that prose by construction.
   for (const name of readdirSync(SUITES)) {
     if (name.endsWith(".test.mjs")) {
-      files.set(name, readFileSync(new URL(name, import.meta.url), "utf8"));
+      files.set(name, code(readFileSync(new URL(name, import.meta.url), "utf8")));
     }
   }
   for (const path of javaFiles(JAVA_SUITES)) {
-    files.set(path.split(/[/\\]/).pop(), readFileSync(path, "utf8"));
+    files.set(path.split(/[/\\]/).pop(), code(readFileSync(path, "utf8")));
   }
   return files;
 }

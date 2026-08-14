@@ -37,6 +37,9 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
+// @scans prose reason: it holds a published Markdown table against build files, both read as
+// text; the versions inside them are the subject (SH740).
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
 

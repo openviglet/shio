@@ -17,6 +17,9 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 import {
+
+// @scans both reason: token names are extracted from Java source, and the javadoc naming them
+// is deliberately part of what is read (SH740).
   buildTheme,
   customPropertyFor,
   declaredTokens,

@@ -53,6 +53,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 
+// @scans prose reason: IMPROVEMENTS.md and ROADMAP.md are Markdown, and a section heading is
+// exactly the prose this counts (SH740).
+
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const read = (name) => readFileSync(join(ROOT, "docs", name), "utf8");
 

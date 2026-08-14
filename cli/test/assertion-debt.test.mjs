@@ -44,6 +44,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { isProse } from "./support/source-text.mjs";
+
+// @scans code — an id in a comment is a sentence about a task, not an assertion about it.
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
 /**
@@ -545,11 +548,8 @@ const FENCE = new RegExp(String.fromCharCode(34).repeat(3), "g");
  */
 const CITATION = /\b(?:see also|see|cf\.?)\s+SH\d+\b/gi;
 
-/** A line that is nothing but comment. No state, so no regex literal can derail it. */
-function isProse(line) {
-  const text = line.trim();
-  return text.startsWith("//") || text.startsWith("*") || text.startsWith("/*");
-}
+// SH740 — the private copy of this lived here, and three others lived elsewhere. It is now one
+// function in support/source-text.mjs, which is what `@scans code` above promises.
 
 /** A file with this reader's own declaration cut out, and every other file unchanged. */
 function withoutDeclaration(body) {

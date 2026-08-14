@@ -346,8 +346,8 @@ the stated verb count against `COMMANDS` in `cli/src/index.mjs`, and the site's
 list against the README's. If those numbers are wrong, `pnpm test` is already red
 and you will not need this checklist to find out.
 
-This section used to claim the opposite — that no instrument derived those rows and
-that nothing went red when they drifted — and it cost a whole sweep: an agent
+This section used to claim the opposite — "nothing derives them" and
+"nothing fails when they do" — and it cost a whole sweep: an agent
 hand-counted twelve tools and thirty-one verbs, concluded they were correct only by
 luck, and filed a task to build a guard that had just run green in the same command.
 That is why the column exists rather than a sentence. The ❌ rows are genuinely

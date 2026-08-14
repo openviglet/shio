@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+// @scans prose reason: it asks what a published package CONTAINS, so a file's presence and its
+// text both count and neither half can be stripped away (SH740).
+
 /**
  * SH605 — what is actually in the box.
  *

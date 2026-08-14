@@ -28,8 +28,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH740** (deps: —) **The JS readers have no shared answer to whether a line is a rule or a sentence about the rule** — SH613 gave the Java suites a declaration and one stripper; three JS guards have now been tripped by prose about their own rule, two of them in one session. → §XXII.3
-
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4

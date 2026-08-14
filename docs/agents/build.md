@@ -843,6 +843,31 @@ was extended — 277 more files, five of which read a shrinking corpus, and **on
 which counts the ledger and is therefore the honest kind. So the population it now reports is the
 whole repository rather than the half somebody happened to write the reader in.
 
+### A JS scan over this repository declares what it reads (SH740)
+
+SH613 gave the Java suites `@ShSourceScan` + one shared `ShSourceText`, because a textual guard
+cannot tell a rule from a sentence about the rule. The JS half had four private ideas of what a
+comment is and three guards were tripped by prose about their own rule — SH722's message citing
+SH322, then twice in one session while fixing that.
+
+`cli/test/support/source-text.mjs` is now the one answer and `cli/test/source-scan.test.mjs` the
+lint. A scan declares `// @scans code`, `prose` or `both`; `code` is held to using the shared
+stripper, and `prose`/`both` need a written `reason:` because an accident cannot explain itself.
+
+Two strippers, not one, and that is the part that is **not** a port of the Java rule. `code()`
+drops whole-line comments, line-oriented and stateless so a regex literal cannot derail it
+(SH630). `unquoted()` is for Markdown, where prose is the whole document and "strip the comments"
+means nothing: it drops fenced blocks, inline code spans and quoted phrases, because when a
+document is asked *do you claim X*, a phrase it has put in quotation marks is a quotation. That is
+what lets the sweep checklist quote the two false sentences it replaced instead of paraphrasing
+them to protect a counter. It matches within a line only — a quotation broken across a line break
+is not stripped, so wrap a quoted claim onto one line.
+
+The population is **files that scan this repository's own source or docs**, not every suite that
+reads a file: `"foo.mjs"` is usually a fixture filename in JS, and including fixture reads took it
+from 14 to 23 and then 66 with data formats. A suite that reads back a tree it just wrote cannot
+be tripped by prose. The count and every file's mode print on each run.
+
 ### The console lint is a CI check, not a fourth gate (SH665)
 
 `pnpm lint` runs in the `pnpm test` job and is **not** one of the three SH579 gates: it has no

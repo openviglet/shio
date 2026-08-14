@@ -49,6 +49,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+// @scans prose reason: the governed ledgers are Markdown; the declared-debt entries this reads
+// back are prose by construction (SH740).
+
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
 /**

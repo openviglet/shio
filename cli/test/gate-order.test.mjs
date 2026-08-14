@@ -37,6 +37,9 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
+// @scans both reason: it holds a Markdown page describing the gate order against the JS that
+// implements it, so one side is prose by nature and the other is code (SH740).
+
 const CLI_DOC = fileURLToPath(new URL("../../docs/agents/cli.md", import.meta.url));
 const CONFORMANCE = fileURLToPath(
   new URL("../conformance/replication.conformance.mjs", import.meta.url));
