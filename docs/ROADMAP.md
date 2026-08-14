@@ -28,7 +28,7 @@
 
 ## Block F — Market positioning
 
-- 💭 **SH45** (deps: SH22 ✅) **Tenant quotas & billing** — per-tenant usage metering + quota enforcement + billing-export hooks (SH110 builds on this). → §VI.1
+- 💭 **SH45** (deps: SH22 ✅) **Quota enforcement shipped; nothing meters API calls or storage, and there are no billing-export hooks** — Sites and posts are counted and checked at three call sites; the other two resources SH22 named and the export half were never built. → §VI.1
 
 ## Block S — The public site (shio.viglet.org)
 

@@ -545,11 +545,22 @@ provisioning, tenant-keyed CDA cache and the console Tenants page all shipped �
 [specs/SH22-multi-tenancy.md](specs/SH22-multi-tenancy.md). Identity is the existing
 `workspace_id`-claim/username resolution (`ShTenantFilter`), and it stays the only way a
 tenant is entered — cross-tenant impersonation was SH44 and is retired, so there is no
-privileged switch to design around. Open:
+privileged switch to design around.
 
-- **SH45 — Tenant quotas & billing**: per-tenant usage metering (content count, API calls, storage) + quota enforcement + billing-export hooks. §XII.5's per-agent-session guards layer on this.
-- **SH46 — Nav/feature gating by tenant**: show/hide console nav + features by `multiTenant`/role so single-tenant installs don't surface SaaS-only UI.
-- **SH47 — Per-tenant file storage**: prefix `tenantId` into the id-keyed `ShFileStorageService` layout (`file_source/{tenantId}/<postId>/...`) from `ShTenantContext` (SH38 shipped, so this is now unblocked).
+**Two of the three follow-ups turned out to be already built**, filed against SH22's
+state and never revisited while the code moved past them. SH47's per-tenant
+`file_source` layout is in `ShFileStorageService` with an isolation IT proving it;
+SH46's gating existed in the page header and was missing only from the sidebar. Both
+were found by reading the line rather than by any instrument — which is what SH745 is
+about, and what it still cannot catch, because neither id appeared in an assertion.
+
+One remains, and it is smaller than the title suggested:
+
+- **SH45 — the half of quotas nobody built**: `ShTenantQuotaService` counts sites and posts from
+  the repositories and enforces them at `ShSiteAPI`, `ShPostUnifiedAPI` and `ShAgentBatchService`,
+  with plan limits on `ShTenant`. What SH22 also named and nothing implements is metering **API
+  calls and storage**, and the **billing-export hooks**. §XII.5's per-agent-session guards layer on
+  the metering, not on the enforcement that already exists.
 
 ## VII. Content portability
 
