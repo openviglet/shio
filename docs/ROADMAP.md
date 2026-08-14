@@ -13,15 +13,12 @@
 
 - Block O
 - Block L
-- Block M
 
 ## Block I — Content as files (local-first authoring)
 
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — SH734 took the session and per-call halves, which needed no metering; what is left is the storage ceiling, and counting bytes per tenant over time is SH45's meter. → §XII.5
-
-## Block M — Token economy (measured)
 
 ## Block O — The human half (the console the curator uses)
 

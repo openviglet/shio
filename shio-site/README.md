@@ -117,6 +117,14 @@ instance (SH540) is all that is left, and it is what turns the scripted session
 in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
 
+Block M closed on 2026-08-14 and changed no claim here, and this is the one closure where that
+needed checking rather than reasoning: SH230 **moved a published number**, taking
+`response.manifest.terse` from 2410 to 2050. It is safe because `scripts/token-budgets.mjs` names
+the four ceilings this site shows — `manifest.check`, `manifest`, `mcp.tools.list.total` and the
+task figure — and the one that moved is not among them. That is the generator's whole design
+working: a budget can change without anyone having to remember whether the marketing copy quoted
+it, because the copy cannot quote a number the generator does not hand it.
+
 Block V closed on 2026-08-13 and changed no claim here, and it is the block most likely to have
 been assumed rather than checked: thirteen entries, every one of them a suite. The two numbers
 this copy could have got wrong are the ones a testing block does not move — twelve MCP tools and
