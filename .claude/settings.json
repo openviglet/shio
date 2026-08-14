@@ -78,7 +78,7 @@
           {
             "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/roadkeep-launch.py\" guard",
-            "timeout": 70
+            "timeout": 10
           }
         ]
       }
@@ -90,7 +90,7 @@
           {
             "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/roadkeep-launch.py\" guard",
-            "timeout": 15
+            "timeout": 10
           }
         ]
       }
@@ -106,5 +106,8 @@
         ]
       }
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "roadkeep"
+  ]
 }
