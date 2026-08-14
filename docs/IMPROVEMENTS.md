@@ -517,33 +517,6 @@ the cheap version is likely right: a write mapping on an API class whose body to
 `*Repository.save`/`delete` directly. Precision matters less than the build going red the day
 somebody adds the fifth one.
 
-### XVI.74 The copy's title counter is still trash-blind (SH691)
-
-SH243 taught `ShFurlNaming` about the trash, so a copy no longer takes a friendly URL a
-deleted post is sleeping on. `freeNaming`'s **other** counter was left alone:
-`postTitlesIn` at `ShObjectWriteService.java:364` reads `findByShFolderAndStateIn`,
-blind to the trash by construction, so cloning a page whose previous clone is deleted
-produces a second "Home (2)". Restore the first and the folder holds two rows with one
-title.
-
-A deliberate limit, not an oversight —
-`ShObjectCopyNamingTest.aCopySkipsAUrlHeldByATrashedPost` asserts the URLs and says so —
-on the grounds that a title is a per-folder *display* concern while a URL is the
-address. The grounds are incomplete: SH202's design says the identical title is **the
-symptom the curator actually sees**, which is why a clone moves both names and not only
-the one the resolver cares about.
-
-The counter-argument, and why this is undesigned rather than a filed defect: numbering a
-title against content no listing shows is what SH243's `liveOccupant` split refuses to
-do for refusals. "Home (3)" in a folder holding one visible "Home (2)" is a rename the
-curator cannot account for — the confound `freeNaming`'s two-counter note already
-describes.
-
-Two honest exits: count the trash for titles too and accept an unexplainable number, or
-leave the counter and let the *restore* refuse a title collision the way it now refuses
-a URL one. The second matches SH243's shape and costs a refusal on a name nobody
-addresses by.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

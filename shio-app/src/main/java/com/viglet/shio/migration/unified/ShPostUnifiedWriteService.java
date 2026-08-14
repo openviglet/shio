@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
+import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.post.unified.ShRestoreTitleConflictException;
 import com.viglet.shio.api.post.unified.ShRestoreUrlConflictException;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
@@ -710,7 +712,7 @@ public class ShPostUnifiedWriteService {
      * question is {@code ShFurlNaming}'s — it walks the SH583 spellings, which a check written
      * here would have had to copy for the third time.</p>
      */
-    private Optional<ShRestoreUrlConflictException> restoreConflict(List<ShPostUnified> trashed) {
+    private Optional<ShTeachingException> restoreConflict(List<ShPostUnified> trashed) {
         for (ShPostUnified row : trashed) {
             Optional<ShPostUnified> occupant =
                     shFurlNaming.liveOccupant(siteIdOf(row), row.getFurl(), row.getId());
@@ -718,8 +720,49 @@ public class ShPostUnifiedWriteService {
                 return Optional.of(new ShRestoreUrlConflictException(
                         row.getFurl(), occupant.get().getTitle()));
             }
+            // SH691 — the other name a copy moves. The URL is checked first because it is the one
+            // an address resolves by; a post can collide on both and the address is the refusal
+            // worth reading, so the order is the priority rather than an accident.
+            Optional<ShPostUnified> sameTitle = liveTitleHolder(row);
+            if (sameTitle.isPresent()) {
+                return Optional.of(new ShRestoreTitleConflictException(
+                        row.getTitle(), folderNameOf(row)));
+            }
         }
         return Optional.empty();
+    }
+
+    /**
+     * A live post in the same folder already spelled the same as this trashed one (SH691).
+     *
+     * <p>Per <b>folder</b>, not per site, because that is the scope the counter numbers in and the
+     * scope a curator reads: the same title in a sibling folder is two ordinary pages. Blank and
+     * null titles are never a collision — an uploaded file has no title (SH38), and refusing a
+     * restore because two of them are equally untitled would refuse on a name that is not a name.</p>
+     *
+     * <p>Only {@code DRAFT} and {@code PUBLISHED} count. A trashed neighbour holding the title is
+     * the case SH691 exists for: it is not shown to anybody, so it cannot be the row the curator
+     * cannot tell this one apart from.</p>
+     */
+    /** The two states a curator can see. `findByShFolderAndStateIn` is trash-blind, which is
+     *  what SH691 wants here: a trashed neighbour is not a row anybody is confused by. */
+    private static final java.util.List<ShPostState> LIVE_STATES =
+            java.util.List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
+
+    private Optional<ShPostUnified> liveTitleHolder(ShPostUnified row) {
+        String title = row.getTitle();
+        if (title == null || title.isBlank() || row.getShFolder() == null) {
+            return Optional.empty();
+        }
+        return shPostUnifiedRepository
+                .findByShFolderAndStateIn(row.getShFolder(), LIVE_STATES).stream()
+                .filter(live -> !live.getId().equals(row.getId()))
+                .filter(live -> title.equalsIgnoreCase(live.getTitle()))
+                .findFirst();
+    }
+
+    private String folderNameOf(ShPostUnified row) {
+        return row.getShFolder() == null ? null : row.getShFolder().getName();
     }
 
     /**

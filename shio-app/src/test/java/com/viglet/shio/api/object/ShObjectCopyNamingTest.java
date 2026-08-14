@@ -32,6 +32,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.api.post.unified.ShRestoreTitleConflictException;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
@@ -226,11 +227,60 @@ class ShObjectCopyNamingTest {
                         must skip to `sleeper-3` (SH243).""")
                 .containsExactlyInAnyOrder("sleeper", "sleeper-3");
 
-        // And the sleeping post comes back to the address it always held, rather than to a
-        // numbered one — which is the half SH243 refuses instead of renaming.
+        // SH691 — and now the restore is REFUSED, where it used to go through and leave the folder
+        // holding two rows both called "Sleeper (2)".
+        //
+        // This is the assertion that would have caught it, and it is the same shape SH243 gave the
+        // URL one step earlier: the title counter is trash-blind on purpose — numbering against
+        // content no listing shows would produce "Sleeper (3)" beside a single visible
+        // "Sleeper (2)", a rename the curator cannot account for — so the collision is allowed to
+        // happen and refused where it becomes real. The URL is free by now (`sleeper-2`); the name
+        // the curator reads is not.
+        assertThatThrownBy(() -> shPostUnifiedWriteService.restoreFromTrash(sleepingId, "curator"))
+                .as("SH691: the restore used to succeed and leave the folder holding two rows both "
+                        + "called 'Sleeper (2)' — the symptom SH202 says is the one a curator "
+                        + "actually sees, and the half SH243 left when it taught the URL counter "
+                        + "about the trash")
+                .isInstanceOf(ShRestoreTitleConflictException.class)
+                .hasMessageContaining("Sleeper (2)")
+                .as("SH691: the folder is named because the collision is per-folder — sending a "
+                        + "curator to rename a same-titled post in a sibling folder is sending "
+                        + "them where nothing is wrong")
+                .hasMessageContaining("sleeping-url");
+    }
+
+    @Test
+    void aRenamedOccupantLetsTheSleeperBackToItsOwnUrl() {
+        // SH691's other half, and the reason the refusal is a refusal rather than a wall: it names
+        // one action, the curator takes it, and the restore then does what SH243 promised — the
+        // post returns to the address it always held rather than to a numbered one.
+        // Its own slug, for the reason the class note gives and the reason this test first failed:
+        // a friendly URL is unique per SITE, so reusing the neighbour's `sleeper` made the two
+        // depend on which ran first — and SH719's unique index refused the write rather than
+        // letting it pass quietly, which is that guard earning its place.
+        String folderId = folder("renamed-occupant");
+        String sourceId = post(folderId, siteId, "Dozer", "dozer", ShPostState.DRAFT);
+
+        shObjectWriteService.copyTo(folderId, List.of(sourceId));
+        String sleepingId = onlyCopyIn(folderId, sourceId).getId();
+        shPostUnifiedWriteService.delete(sleepingId, "curator");
+        shObjectWriteService.copyTo(folderId, List.of(sourceId));
+
+        // The one action the refusal asks for, on the live post that took the name — inside a
+        // transaction, so the row is managed and Hibernate updates it. A detached `save()` here
+        // merged into an INSERT and SH719's unique index on `url_key` refused it, which is that
+        // guard doing exactly its job one layer under this one.
+        tx().executeWithoutResult(status -> shPostUnifiedRepository
+                .findByShFolderAndStateIn(shFolderRepository.findById(folderId).orElseThrow(), BOTH)
+                .stream()
+                .filter(row -> "Dozer (2)".equals(row.getTitle()))
+                .forEach(row -> row.setTitle("Dozer (renamed)")));
+
         assertThat(shPostUnifiedWriteService.restoreFromTrash(sleepingId, "curator")).isTrue();
         assertThat(furlsIn(folderId))
-                .containsExactlyInAnyOrder("sleeper", "sleeper-2", "sleeper-3");
+                .as("the sleeper comes back to `dozer-2`, its own address, which is what SH243 "
+                        + "refuses to renumber")
+                .containsExactlyInAnyOrder("dozer", "dozer-2", "dozer-3");
     }
 
     /**

@@ -288,7 +288,14 @@ right, because `post.upsert` is an upsert and the address exists now.
 Three things the key deliberately does *not* forbid: a post's own DRAFT and PUBLISHED rows sharing a
 furl (`state` is in the key, or publishing would refuse itself — SH81); **two locales at one furl**,
 which SH348 calls content by design; and a **trashed** row's address, which stays free because SH243
-is explicit that a live post may take it and the *restore* is what gets refused. The last two are
+is explicit that a live post may take it and the *restore* is what gets refused. **SH691 gave the
+title the same treatment**: a copy's title counter is trash-blind on purpose — numbering against
+content no listing shows would produce "Home (3)" beside a single visible "Home (2)", a rename the
+curator cannot account for — so a clone may retake a trashed post's title, and the restore refuses
+with `restore-title-conflict` (409) naming the folder. Both refusals live in one place,
+`ShPostUnifiedWriteService.restoreConflict`, so the throwing half (the folder pre-flight, the batch
+plan) and the reporting half (`ShReviewService`) cannot disagree about what a restore would do; the
+URL is checked first because it is what an address resolves by. The last two are
 carried as `locale` in the digest and NULL for a trashed row — all three engines treat NULLs as
 distinct under a unique index, which is how a partial index is expressed where MariaDB and H2 have
 none.
