@@ -95,6 +95,28 @@ test("SH394: the whole CLI's help has a ceiling, unbounded being the failure mod
       `surface is how a CLI grows past the payload it was cheaper than, one command at a time, ` +
       `with every single addition defensible.`
   );
+
+  // SH736 — the ceiling must also have room under it, and this is the half that was missing.
+  //
+  // Twice now the ceiling has been raised to *exactly* the total that had just breached it: SH677
+  // noticed the shape one ceiling over, and SH231 met it again when a single flag and one line of
+  // `pull` — about 90 tokens — failed a gate sitting at 9900 of 9900. A gate at its limit does not
+  // measure the next addition, it refuses it, whatever it is; and the cheapest way to pass is to
+  // delete another command's documented behaviour, which is the "optimize a benchmark by degrading
+  // correctness" non-goal by name.
+  //
+  // So the headroom is asserted rather than hoped for. Raising the ceiling to today's total now
+  // fails here instead of passing quietly and charging the next task for every verb before it.
+  const headroom = ceiling - total;
+  const required = Math.round(ceiling * 0.04);
+  assert.ok(
+    headroom >= required,
+    `The help total is ~${total} against a ceiling of ${ceiling} — ${headroom} tokens of room, and `
+      + `this gate needs ${required} (4%) to still be measuring anything. Raising the ceiling to `
+      + `meet the total is what put it here twice. Trim instead: the recurring waste is a flag `
+      + `description explaining WHY a behaviour is useful rather than what it does, and shio.txt `
+      + `and clone.txt are a quarter of the total between them (SH736).`,
+  );
 });
 
 test("SH394: the per-session comparison, printed rather than asserted", () => {

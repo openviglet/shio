@@ -415,6 +415,7 @@
 - **SH723** — The feed charges each row against a token ceiling before committing it: a delta stops at the last row that fit and the cursor carries the rest, a window narrows from its old end, and budget.truncated plus a note say which happened. Default 6000 (declared in token-budgets.properties), ?budget=0 opts out, and the terse header carries max-tokens= so the bound is visible before it cuts.
 - **SH232** — Both modes revalidate now. Measuring found SH147's watermark had already made a non-empty window byte-stable and nobody noticed; the one case left was the empty window, whose cursor was the ceiling and so was now to the microsecond. It is the start of the trail instead — an empty window proves no row exists below the ceiling, so a floor skips nothing — with a note, since cursor=1970-01-01 otherwise reads as a bug.
 - **SH231** — An instance's own notes now project to shio/.memory.yaml on a pull — beside content/, since they describe the installation and not any site. They are reported and never applied by a push unless --adopt-memory is passed, which keeps SH161's refusal while removing the hole it left: the least reproducible thing in the system had no export path at all.
+- **SH736** — The help total is 9475 of a 9950 ceiling, and the gate now asserts 4% headroom under it, so raising the ceiling to meet the total fails instead of charging the next task for every verb.
 
 ## Block N — Realignment of what already shipped (SH74)
 

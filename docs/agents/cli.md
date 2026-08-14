@@ -2301,6 +2301,16 @@ being the rule two paragraphs up: *an instrument that cries wolf in the gate is 
 outside it*, while SH338 requires the assertion to land before the fix. Read **both** directions:
 a held case that goes green **fails**, naming the id to delete, and a held key no assertion
 exercises fails too. Every run prints the count and the owners, the way
+**The help budget needs room under it, not just a number (SH736).** `cli.help.all` was raised to
+exactly the total that had just breached it, twice — SH677 saw the shape, SH231 met it again when
+one flag and one line, about 90 tokens, failed a gate sitting at 9900 of 9900. A gate at its limit
+does not measure the next addition, it refuses it; and the cheapest way to pass is to delete
+another command's documented behaviour, which is a non-goal by name. `cli-help-budget.test.mjs`
+now asserts **4% headroom**, so raising the ceiling to meet the total fails there instead of
+passing quietly. The trim that bought it took 9950 → 9475 by deleting *why* a behaviour is useful
+and keeping *what* it does — `shio.txt` was the worst offender against its own stated policy, which
+says it stopped describing flags when each command grew its own help, then did so in eight places.
+
 `assertion-debt.test.mjs` does, and for the same reason — a ceiling lets one task pay the debt and
 the next task spend it. Its first run held six red cases owned by five open tasks, three of which
 (SH563, SH564, SH565) it found: a redirect `buildInventory` drops, an absolute href stored in a

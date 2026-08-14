@@ -16,9 +16,8 @@ shio/conversion-plan.json and applies nothing.
   --out <file>         Proposal path (default shio/.shio/conversion-proposal.json)
   --from <address…>    Model from content that already exists instead of from a capture:
                        "what post-type are these instances of". Repeatable or comma-
-                       separated. Reports which instances lack each field, because a
-                       field two of three share is a different proposal from one all
-                       three do. Needs --url/--user/--password (SH525)
+                       separated. Reports which instances lack each field. Needs
+                       --url/--user/--password (SH525)
   --name <type>        With --from: the type to propose (default: the instances' own)
   --json               The proposal on stdout instead of the report
 

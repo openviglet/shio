@@ -7,45 +7,38 @@ rests on: read the inventory before anything else happens.
   --depth <n>              How deep to follow internal links (default 3; 0 = the seed page)
   --max-pages <n>          Ceiling on pages fetched (default 200); a cut is recorded, so a
                            partial capture can never read as a complete one
-  --markup                 Keep each page's HTML — what shio propose computes from. Costs
-                           no extra request; the flag is a decision about keeping a
-                           stranger's HTML in the tree
+  --markup                 Keep each page's HTML — what shio propose computes from
   --assets                 Download the bytes the inventory names (needs --site)
   --site <name>            With --assets: whose asset tree the bytes go under
   --max-assets <n>         With --assets: ceiling on downloads (default 500)
   --max-asset-bytes <n>    With --assets: skip anything larger (default 26214400)
-  --scripts                With --assets: take this site's own <script src> too, so the
-                           replica works and not only renders. Off by default because
-                           --render bakes the post-hydration DOM, and handing that page
-                           its own bundle back is a hydration nobody asked for. What is
-                           dropped is always named in the report, flag or no flag
-  --refresh                Re-check the capture already in --out instead of crawling. Each
-                           captured page is asked for conditionally with the ETag and
-                           Last-Modified it recorded; a 304 is rebuilt from the markup on
-                           disk and never re-rendered, which is where the ten minutes go.
-                           Needs a capture taken with --markup. It re-checks what was
-                           captured and does NOT walk for new pages — anything linked from
-                           a changed page is named in the notes, never followed
+  --scripts                With --assets: take this site's own <script src> too. Off by
+                           default, because --render already bakes the post-hydration DOM.
+                           What is dropped is named in the report, flag or no flag
+  --refresh                Re-check the capture in --out instead of crawling. Each page is
+                           asked for conditionally with the ETag and Last-Modified it
+                           recorded; a 304 is rebuilt from the markup on disk and never
+                           re-rendered. Needs a capture taken with --markup. Does NOT walk
+                           for new pages — anything linked from a changed page is named in
+                           the notes, never followed
   --render                 Drive a browser, for a page that renders itself (needs
                            playwright). Without it the crawl reads what the server sent
-  --ignore-robots          Crawl anyway. Recorded in the inventory, so a capture taken
-                           without permission cannot later pass for one taken with it
+  --ignore-robots          Crawl anyway; recorded in the inventory
   --delay <seconds>        Wait between requests (default: the site's own Crawl-delay)
   --timeout <ms>           Per-page timeout with --render (default 30000)
-  --no-progress            Write only what was asked for. By default the crawl reports where it
-                           is as it goes, to two files beside the inventory, because a long run
-                           is followed rather than watched:
+  --no-progress            Write only what was asked for. By default the crawl reports where
+                           it is, to two files beside the inventory:
                              shio/.shio/clone-status.json    where it is now — one small Read,
-                                                             the same size however long it runs.
-                                                             startedAt/updatedAt is what tells a
-                                                             slow page from a wedged one
+                                                             the same size however long it runs;
+                                                             startedAt/updatedAt tells a slow
+                                                             page from a wedged one
                              shio/.shio/clone-progress.jsonl one line per page or asset, with
                                                              what it cost — grep it for failures
   --out <file>             Inventory path (default shio/.shio/source-inventory.json)
   --json                   The inventory on stdout instead of the report
-  --url <url>              The site to capture, when no positional is given. This is the ONE
-                           command where --url means the target rather than the instance:
-                           clone never talks to a Shio instance at all
+  --url <url>              The site to capture, when no positional is given. The ONE command
+                           where --url is the target, not the instance: clone never talks to
+                           a Shio instance
 
 Examples:
   shio clone https://acme.example.com --markup
@@ -55,7 +48,7 @@ Examples:
   the site is, so a mistyped one cannot refresh against a different host:
     shio clone --refresh
 
-  A long one, followed rather than watched — this is the shape a caller wants for a real
-  site, where --render can spend the per-page timeout on every page of a 200-page ceiling:
+  A long one, followed rather than watched — the shape for a real site, where --render can
+  spend the per-page timeout on every page of a 200-page ceiling:
     shio clone https://acme.example.com --render --assets --site Acme > clone.log 2>&1 &
     cat shio/.shio/clone-status.json      # where it is; safe to repeat, never grows

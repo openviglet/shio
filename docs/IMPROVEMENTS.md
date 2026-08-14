@@ -292,31 +292,6 @@ A third: the index is the most cacheable document on the surface and never chang
 between builds, so a separate `/agent/endpoints` with a long-lived tag would make the
 manifest small permanently — at the cost of one more endpoint.
 
-### XIII.26 The CLI's help total had no headroom (SH736)
-
-SH231 added one flag — `push --content --adopt-memory` — and one `pull` line saying the
-file it adopts exists. About 90 estimated tokens, and it failed `cli.help.all`, which
-sat at **9900 of 9900**.
-
-The trim came first and paid 40, both from files that task already touched. The
-remaining 50 raised the ceiling to 9950 — the honest entry, and SH677's comment on the
-previous raise had already noticed the same shape one ceiling over.
-
-**The finding is the headroom, not the fifty tokens.** A gate at exactly its limit does
-not measure the next addition; it refuses it, whatever it is. The next feature to touch
-any of the 31 verbs' help pays for all of them, and the cheapest way to pass is to cut
-another command's documented behaviour — the "optimize a benchmark by degrading
-correctness" non-goal by name, and why SH231 did not.
-
-So: a trim pass with a target. Read the 31 files for the defect the previous raises kept
-finding by hand — help restating a flag listed a few rows below, prose explaining *why*
-a behaviour is useful rather than what it does. `shio.txt` (1233) and `clone.txt` (1146)
-are 24% of the total. Under 9500 leaves the gate measuring again.
-
-Pair it with an instrument (SH338): the recurring defect is mechanical — a help
-paragraph repeating a `--flag` documented in the same file's list — and a lint naming
-those is what stops the next five raises being found by hand.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.

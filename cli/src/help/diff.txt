@@ -4,27 +4,23 @@ Walks the capture's pages, asks the instance for each one, and reads the served 
 the same scanner the capture used. What comes back is not pixels: the counts the source
 recorded against the counts the page shows, per page and per fact.
 
-Exits 1 when a page lost something. A fact the replica GAINED is never a failure - a Shio
-layout adds links, and a gate that called that damage would fire on every working
-conversion.
+Exits 1 when a page lost something; a fact the replica GAINED is never a failure.
 
-A page composed from the section vocabulary drops the source's nav, favicon and
-stylesheet by design, so the capture's counts are not a claim about it. --mode says what
-the counts ARE a claim about, and defaults to reading it off the conversion plan.
+A page composed from the section vocabulary drops the source's nav, favicon and stylesheet
+by design, so the capture's counts are not a claim about it. --mode says what they ARE a
+claim about, and defaults to reading it off the conversion plan.
 
   --site <name>        The site the replica lives in (required)
   --against <what>     Which declaration to judge against (default: capture)
                        capture  - the served page against what the source declared
                        proposal - the content the instance holds against what the plan
-                                  said the conversion would make. Reads documents, not the
-                                  wire: "the conversion did not do what it promised" and
-                                  "it did, and the layout is wrong" are different findings
+                                  said the conversion would make. Reads documents, not
+                                  the wire
                        published - the draft against what is live: which fields would
-                                  change if you published now. Two reads of one address,
-                                  so it needs no capture and no plan
-  --address <address>  Narrow --against published to these posts (repeatable). Without it
-                       the answer is the site's, because "what will change when I publish"
-                       is asked before a batch rather than before one page
+                                  change if you published now. Needs no capture and no
+                                  plan
+  --address <address>  Narrow --against published to these posts (repeatable); without
+                       it the answer is the site's
   --plan <file>        Read the accepted decisions from somewhere else (--against proposal)
   --proposal <file>    Read the candidates from somewhere else (--against proposal)
   --mode <how>         auto (default), fidelity, mixed or authorable

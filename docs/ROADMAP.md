@@ -24,7 +24,6 @@
 ## Block M — Token economy (measured)
 
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
-- 💭 **SH736** (deps: —) **The CLI's help total had no headroom, so any addition anywhere fails the gate** — SH394's ceiling sat at 9900 of 9900, which makes the next feature pay for every verb before it. → §XIII.26
 
 ## Block O — The human half (the console the curator uses)
 
