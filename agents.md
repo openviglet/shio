@@ -248,6 +248,17 @@ path and the query surface. Neither is restated here: a rule in two files is two
 disagree, and the tool's copy is the one that is enforced. Per-task specs are
 `docs/specs/SH<n>-<slug>.md`, which roadkeep does not govern.
 
+**Run it as `python .roadkeep/scripts/roadkeep.py`, and nothing else.** The engine is vendored
+into `.roadkeep/` the way `node_modules` is — git-ignored, reproduced by `install-roadkeep.cmd`,
+never committed — and `ROADKEEP_HOME` points there, which is the launcher's own first resolution
+step, so the guard hook, the MCP server and a hand-run command all reach one engine. Two reasons it
+is not run from wherever it is found: **every distinct command path is a fresh authorization
+prompt**, and **which copy answers is not decidable by looking** — this machine carries plugin
+caches at four different versions across two config directories, and a live checkout can be
+mid-refactor (a session lost time to an `ImportError` out of a half-edited tree). `install-roadkeep`
+picks by **version**, not by position; `update-roadkeep.cmd` refreshes the plugin first when you
+want something newer than any cache holds.
+
 **This file's own split came from the same drift.** `agents.md` reached 186 KB
 (~46k tokens, resident every turn) by absorbing the rationale of every shipped task
 — P3 violated by the file that declares P3. When you finish a task, the decision

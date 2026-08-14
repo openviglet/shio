@@ -42,7 +42,9 @@
       "ReportFindings",
       "ShareOnboardingGuide",
       "mcp__plugin_roadkeep_roadkeep",
-      "mcp__roadkeep"
+      "mcp__roadkeep",
+      "Bash(python .roadkeep/scripts/roadkeep.py:*)",
+      "Bash(python \"${CLAUDE_PROJECT_DIR}/.roadkeep/scripts/roadkeep.py\":*)"
     ],
     "deny": [],
     "ask": []
@@ -97,5 +99,8 @@
   },
   "enabledMcpjsonServers": [
     "roadkeep"
-  ]
+  ],
+  "env": {
+    "ROADKEEP_HOME": "${CLAUDE_PROJECT_DIR}/.roadkeep"
+  }
 }
