@@ -62,8 +62,13 @@ class ShStaticFileTenantIsolationIT {
         asTenant(BETA, () -> storage.store(FILE_ID, FILE_NAME, bytes("BETA")));
 
         // Each tenant reads back exactly its own content for the identical id + name.
-        assertThat(asTenant(ALPHA, () -> read(storage.resolve(FILE_ID, FILE_NAME)))).isEqualTo("ALPHA");
-        assertThat(asTenant(BETA, () -> read(storage.resolve(FILE_ID, FILE_NAME)))).isEqualTo("BETA");
+        assertThat(asTenant(ALPHA, () -> read(storage.resolve(FILE_ID, FILE_NAME))))
+                .as("SH47: one file id, two tenants, and neither may see the other's bytes — the "
+                        + "isolation SH22 deferred because the file subsystem did not exist yet")
+                .isEqualTo("ALPHA");
+        assertThat(asTenant(BETA, () -> read(storage.resolve(FILE_ID, FILE_NAME))))
+                .as("SH47: and the same in the other direction, so the guarantee is not one-sided")
+                .isEqualTo("BETA");
 
         // The bytes live under distinct <root>/<tenant>/<fileId> directories.
         Path alphaPath = asTenant(ALPHA, () -> storage.resolve(FILE_ID, FILE_NAME));

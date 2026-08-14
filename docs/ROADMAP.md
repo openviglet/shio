@@ -20,6 +20,10 @@
 
 - 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — SH734 took the session and per-call halves, which needed no metering; what is left is the storage ceiling, and counting bytes per tenant over time is SH45's meter. → §XII.5
 
+## Block N — Realignment of what already shipped
+
+- 💭 **SH745** (deps: —) **An open task whose id the suite already asserts is drift nothing reports** — SH47 was implemented, tested by an isolation IT and left open on the roadmap; assertion-debt computes the mirror of this and nothing computes this direction. → §XXII.6
+
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
@@ -30,7 +34,6 @@
 
 - 💭 **SH45** (deps: SH22 ✅) **Tenant quotas & billing** — per-tenant usage metering + quota enforcement + billing-export hooks (SH110 builds on this). → §VI.1
 - 💭 **SH46** (deps: SH22 ✅) **Nav/feature gating by tenant** — hide SaaS surfaces on single-tenant installs. → §VI.1
-- 💭 **SH47** (deps: SH22 ✅, SH38 ✅) **Per-tenant file storage** — prefix `tenantId` into the id-keyed `ShFileStorageService` layout from `ShTenantContext`. → §VI.1
 
 ## Block S — The public site (shio.viglet.org)
 
