@@ -652,30 +652,6 @@ reader past an instrument that exists (SH739), a rule stopping at a language bou
 population found by naming convention rather than by structure (SH742). Nothing is left
 open here → [CHANGELOG.md](CHANGELOG.md) Block N.
 
-### XXII.6 The ledger and the suite disagree in two directions, and only one is read (SH745)
-
-`assertion-debt.test.mjs` computes one direction: a task the ledger records as shipped
-that no suite asserts. The other is not computed at all — a task the roadmap still shows
-as **open** whose id the suite already names.
-
-SH47 was that. `ShFileStorageService` roots every lookup at the `ShTenantContext`
-tenant, its javadoc credits SH47 by name, and `ShStaticFileTenantIsolationIT` proves two
-tenants keep distinct bytes for one file id. It sat 💭 regardless, found only because the
-backlog had shrunk far enough that somebody read it. Measured after shipping it: **0**
-open tasks are asserted, so this is a guard rather than a cleanup.
-
-**Why this is an idea and not a design.** The obvious check — fail when an open id
-appears in a suite — fires on a practice this project encourages. SH448's shape is to
-write the assertion *first*, red, and the house rule is that a defect closes with the
-assertion that would have caught it; both put an open id in the suite legitimately. A
-static reader cannot tell "asserted and passing, so it shipped" from "asserted and
-failing, so it is being worked on".
-
-So the honest forms are narrower than a lint. It could report rather than fail — a short
-list a person triages, which is all SH47 needed. Or it could ask whether the assertion
-*passes*, which is a much more expensive instrument. Filed so the next reader need not
-rediscover that the cheap version contradicts the house style.
-
 ## XXIII The vocabulary proved live (integration tests against a running instance)
 
 Shio's whole product claim is a vocabulary an external agent drives: thirteen MCP tools

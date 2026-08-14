@@ -513,6 +513,7 @@
 - **SH740** — support/source-text.mjs is the one stripper and source-scan.test.mjs the lint: fourteen scans declare code, prose or both, and Markdown gets unquoted() so a quoted claim is not read as a claim.
 - **SH741** — TOLERATED is the sixth row in LEDGERS and the count is asserted at six, with a staleness check asking whether the floor each exemption excuses still exists, over the scan the lint itself uses.
 - **SH742** — The population is found by naming a path inside this repository rather than by a constant's spelling, which takes it from 15 to 23 and finally includes the three readers that scan the published docs.
+- **SH745** — assertion-debt now prints the open tasks the suite already asserts, deliberately as a report rather than a failure, because red-first assertions put an open id in the suite legitimately.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

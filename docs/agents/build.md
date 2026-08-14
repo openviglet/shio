@@ -865,6 +865,25 @@ trimming it is a P2 decision, and `include=features,limits` is already the small
 is. A third key arriving at its wall fails the build; an exemption that stops being tight also
 fails, so the list shrinks rather than accumulates.
 
+### The ledger and the suite can disagree in two directions (SH745)
+
+`assertion-debt.test.mjs` **fails** on one: a task the ledger calls shipped that no suite asserts.
+It now **prints** the other: a task the roadmap still calls open whose id the suite already names.
+
+That second direction is what hid SH47 — implemented, proved by `ShStaticFileTenantIsolationIT`,
+and left 💭 for blocks, found only when the backlog shrank enough that somebody read it.
+
+**It prints and does not fail, and that is the design.** Failing would fire on a practice this
+project requires: SH448's shape is to write the assertion *first* and red, and a defect closes with
+the assertion that would have caught it. Both put an open id in the suite legitimately, and nothing
+static separates "asserted and passing, so it shipped" from "asserted and failing, so it is being
+worked on". The report demonstrated this on its first run by naming **itself** — SH745 was open and
+the test asserting it was already written.
+
+So read a line there as a question, not a defect: either `roadkeep ship` it, or it is red-first work
+and there is nothing to do. What *is* asserted is that both readers found something, because a
+report whose inputs came back empty prints a reassuring zero for ever.
+
 ### A new ledger of what is knowingly wrong is a row, not a reader (SH741)
 
 `known-debt.test.mjs` is the one reader over this repository's ledgers of accepted wrongness, and

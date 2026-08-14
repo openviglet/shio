@@ -414,6 +414,18 @@ function byId(a, b) {
 }
 
 /** Every id the ledger records as shipped. `🗑` retirements are not shipments and are excluded. */
+/**
+ * Every id the roadmap still shows as open (SH745).
+ *
+ * <p>The other half of the disagreement this file computes. `shippedIds` finds tasks the ledger
+ * says are done; this finds the ones it says are not, so the two can be asked whether the suite
+ * agrees with either.</p>
+ */
+async function openIds() {
+  const roadmap = await readFile(join(ROOT, "docs/ROADMAP.md"), "utf8");
+  return new Set([...roadmap.matchAll(/\*\*(SH\d+)\*\*/g)].map(([, id]) => id));
+}
+
 async function shippedIds() {
   const ledger = await readFile(join(ROOT, "docs/CHANGELOG.md"), "utf8");
   return new Set([...ledger.matchAll(/^- \*\*(SH\d+)/gm)].map(([, id]) => id));
@@ -776,6 +788,36 @@ test("SH642: every revealed entry points at a file that still names it", async (
     "a revealed entry names the suite file that mentions the task, so paying it off is moving the "
       + "id into that file's assertion rather than hunting for one. A pointer nobody maintains is "
       + "a line the next reader trusts and should not (SH642)");
+});
+
+test("SH745: an open task the suite already asserts is printed, never failed", async () => {
+  // The mirror of this file's own question, and the one nothing computed. SH47 was implemented,
+  // proved by `ShStaticFileTenantIsolationIT`, and left open on the roadmap for blocks — found
+  // only because the backlog shrank far enough that somebody read it.
+  //
+  // PRINTED, and that is the design rather than timidity. Failing here would fire on a practice
+  // this project actively requires: SH448's shape is to write the assertion FIRST and red, and the
+  // house rule is that a defect closes with the assertion that would have caught it. Both put an
+  // open id in the suite legitimately, and nothing static can tell "asserted and passing, so it
+  // shipped" from "asserted and failing, so it is being worked on". A list somebody reads is what
+  // SH47 needed; a red build would have taught people to ignore it.
+  const [open, { found, by }] = await Promise.all([openIds(), assertedIds()]);
+  const already = [...open].filter((id) => found.has(id)).sort(byId);
+
+  console.log(
+    `SH745: ${open.size} open task(s), ${already.length} of them already asserted`
+      + (already.length
+        ? `\n  ${already.map((id) => `${id} <- ${(by.get(id) ?? []).join(", ")}`).join("\n  ")}`
+          + "\n  Each is either shipped-and-unrecorded (roadkeep ship it) or an assertion written "
+          + "first and still red (nothing to do)."
+        : ""),
+  );
+
+  // What IS asserted is that both readers work. A report whose inputs came back empty would print
+  // a reassuring zero for ever, which is the failure every instrument here is warned about — and
+  // the reason this file already guards `shippedIds` the same way.
+  assert.ok(open.size > 0, "the roadmap yielded no open task, so this report cannot mean anything");
+  assert.ok(found.size > 100, `the suites yielded ${found.size} asserted ids`);
 });
 
 test("SH642: the header group names ids the map actually holds", () => {

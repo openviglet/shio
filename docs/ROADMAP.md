@@ -22,8 +22,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 💭 **SH745** (deps: —) **An open task whose id the suite already asserts is drift nothing reports** — SH47 was implemented, tested by an isolation IT and left open on the roadmap; assertion-debt computes the mirror of this and nothing computes this direction. → §XXII.6
-
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4

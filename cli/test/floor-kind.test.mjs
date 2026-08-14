@@ -57,6 +57,15 @@ const TOLERATED = new Map([
     "counts ledger entries that bold a second id, which is the same growing corpus one column along"],
   ["clean-room.test.mjs:box.files>5",
     "counts the files a clean-room box was handed, which is a source tree and grows"],
+  // SH745 taught assertion-debt to read ROADMAP.md, which correctly moved it into this
+  // population — the classifier reacting to a real change rather than a false positive. Both of
+  // its floors count growing corpora, which is the same argument the two entries above make.
+  ["assertion-debt.test.mjs:shipped>400",
+    "counts the CHANGELOG's shipped ids — a ledger gains an entry per ship and never loses one, "
+      + "so four hundred can only fall if the reader broke"],
+  ["assertion-debt.test.mjs:found>100",
+    "counts the ids the SUITES name, which grows with the test corpus; it guards the walk having "
+      + "run at all, not how much work is left"],
   // The only thing the Java half turned out to hold (SH738). Measured when the walk was extended:
   // 277 more files, five of them reading a shrinking corpus, one floor among them — and it counts
   // the ledger's shipped ids, so it is the honest kind. Its neighbour in the same file was the
