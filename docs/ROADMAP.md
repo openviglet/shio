@@ -28,7 +28,7 @@
 
 ## Block F — Market positioning
 
-- 💭 **SH45** (deps: SH22 ✅) **Quota enforcement shipped; nothing meters API calls or storage, and there are no billing-export hooks** — Sites and posts are counted and checked at three call sites; the other two resources SH22 named and the export half were never built. → §VI.1
+- 📋 **SH45** (deps: SH22 ✅) **Quota enforcement shipped; nothing meters API calls or storage, and there are no billing-export hooks** — Sites and posts are counted and checked at three call sites; the other two resources SH22 named and the export half were never built. → §VI.5
 
 ## Block S — The public site (shio.viglet.org)
 

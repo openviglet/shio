@@ -537,30 +537,29 @@ expensive.
 
 ## VI. Market positioning
 
-### VI.1 Multi-tenancy / SaaS (SH45, SH46, SH47) — SH22's core shipped, follow-ups open
+### VI.5 Counting a tenant's bytes is the undesigned half (SH45)
 
-Core DB isolation, the tenant catalog, delivery-path token→tenant resolution, per-tenant
-provisioning, tenant-keyed CDA cache and the console Tenants page all shipped →
-[CHANGELOG.md](CHANGELOG.md) Block F; spec
-[specs/SH22-multi-tenancy.md](specs/SH22-multi-tenancy.md). Identity is the existing
-`workspace_id`-claim/username resolution (`ShTenantFilter`), and it stays the only way a
-tenant is entered — cross-tenant impersonation was SH44 and is retired, so there is no
-privileged switch to design around.
+Enforcement exists and metering does not, and the reason is not that nobody got to it.
+**Counting storage cheaply is a design problem this task never settled**, and it is what
+SH110's remaining half waits on too.
 
-**Two of the three follow-ups turned out to be already built**, filed against SH22's
-state and never revisited while the code moved past them. SH47's per-tenant
-`file_source` layout is in `ShFileStorageService` with an isolation IT proving it;
-SH46's gating existed in the page header and was missing only from the sidebar. Both
-were found by reading the line rather than by any instrument — which is what SH745 is
-about, and what it still cannot catch, because neither id appeared in an assertion.
+A file's size is stamped by SH399 as `"SIZE"` inside `ShPostUnified.data` — a `String`
+column holding JSON, not a queryable number. So the three candidate shapes are:
 
-One remains, and it is smaller than the title suggested:
+- **Walk `<root>/<tenant>`.** SH47 gives every tenant its own directory, so this is correct and
+  needs no schema. It is also disk I/O proportional to the file count, on a path
+  `VigletQuotaService.check` runs *before every upload*.
+- **Sum `DATA_SIZE` across the tenant's `File` posts.** No disk I/O, but the value is inside a JSON
+  string, so every row must be loaded and parsed — still O(files), and a `JSON_VALUE`/`->>` query
+  that would avoid it is engine-specific, which the SH26 cross-DB ITs and the DB-agnostic changelog
+  rule refuse.
+- **A maintained counter**, incremented on upload and decremented on delete/purge. O(1) at the
+  check, which is the only shape that survives a large tenant — at the cost of drift, so it needs a
+  reconciler and a decision about what happens when the two disagree.
 
-- **SH45 — the half of quotas nobody built**: `ShTenantQuotaService` counts sites and posts from
-  the repositories and enforces them at `ShSiteAPI`, `ShPostUnifiedAPI` and `ShAgentBatchService`,
-  with plan limits on `ShTenant`. What SH22 also named and nothing implements is metering **API
-  calls and storage**, and the **billing-export hooks**. §XII.5's per-agent-session guards layer on
-  the metering, not on the enforcement that already exists.
+The third is almost certainly right and is the most work. What must not happen is the
+first shipped because it is the shortest diff: a quota check that walks a filesystem is
+a per-upload cost nobody measured, which is the shape P3 exists to refuse.
 
 ## VII. Content portability
 

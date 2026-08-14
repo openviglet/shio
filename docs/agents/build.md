@@ -884,6 +884,15 @@ So read a line there as a question, not a defect: either `roadkeep ship` it, or 
 and there is nothing to do. What *is* asserted is that both readers found something, because a
 report whose inputs came back empty prints a reassuring zero for ever.
 
+**And it cannot catch the commoner case, which is worth knowing before trusting it.** Block F's
+three SH22 follow-ups were filed in one batch against the code as it stood, and none was revisited
+while the code moved past them: SH47 was fully built with an isolation IT proving it, SH46 was built
+in the page header and missing only from the sidebar, SH45 had its enforcement half shipped. All
+three were found by *reading the line*, and this report saw none of them, because it keys on ids the
+suite asserts and none of those ids appeared in an assertion. **A batch of follow-ups filed against
+one snapshot is the shape to re-read directly** — the instrument only covers the tasks somebody
+already wrote a test for.
+
 ### A new ledger of what is knowingly wrong is a row, not a reader (SH741)
 
 `known-debt.test.mjs` is the one reader over this repository's ledgers of accepted wrongness, and
