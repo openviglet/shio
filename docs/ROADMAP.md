@@ -28,8 +28,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH731** (deps: —) **Citing a task id in an assertion message pays off that task's debt, and it has now happened three times** — SH527's reader cannot tell an assertion ABOUT an id from one that merely cites it, so writing (SH322) in a failure message marked SH322 asserted. → §XIV.28
-
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4

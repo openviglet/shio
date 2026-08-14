@@ -321,33 +321,10 @@ those is what stops the next five raises being found by hand.
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
-> building it opened (SH163–SH167, SH233, SH234) and the ones that finishing it turned
-> up (SH235–SH237, SH239, SH240, SH668). Nothing is left open here.
-> Concept spec §10 has the original table.
-
-### XIV.28 A citation is not an assertion (SH731)
-
-`assertion-debt.test.mjs` counts an id named in an assertion message as asserted, which
-is what makes the rule checkable at all — the alternative, a separate registry, is a
-second thing to keep true. The cost is that it cannot distinguish *this assertion is the
-one SH322 asked for* from *this message mentions SH322 in passing*.
-
-Recorded twice before as a mislabel: a case named SH568 that belonged to SH575, and one
-more. **SH722 made it three, by a different mechanism.** Its lint's failure message
-ended "…which is why this lint exists rather than one more repair (SH322)" — a citation
-of the rule the lint follows, not a claim to close it. The reader dropped SH322 from the
-debt list and the suite went red saying somebody had paid it off. Nothing was wrong
-except the sentence.
-
-The repair was to move the citation into the javadoc, which the reader correctly
-ignores. That works, and it is a rule nobody can follow reliably: *do not name another
-task's id in an assertion message* is invisible while you write it, and the message is
-exactly where a reader wants the reference.
-
-Two directions. Either the reader distinguishes a cited id from an asserted one — the id
-in a `@DisplayName`, or the first in the message, is the subject and the rest are
-references — or a citation gets a spelling the reader skips, `see SH322`, checked by the
-reader so the convention cannot be forgotten silently.
+> building it opened (SH163–SH167, SH233, SH234), the ones that finishing it turned up
+> (SH235–SH237, SH239, SH240, SH668), and the last three, which were all about an
+> instrument being wrong rather than a feature (SH729, SH731, SH737). Nothing is left
+> open here. Concept spec §10 has the original table.
 
 ## XV. The visible site (Block P)
 

@@ -504,6 +504,7 @@
 - **SH735** — A failing run is copied to shio-js-test.red.log and a green one is not, so the re-run that checks whether a flake reproduces no longer destroys the only record of it.
 - **SH737** — The vacuity check now asserts the heading scan found every anchor the roadmap points at, a yes/no derived from the roadmap instead of a floor pinned near the count it watches.
 - **SH729** — ShLiquibaseEntityConstraintLintTest parses the changelogs for unique and not-null constraints and fails naming any the entity metadata does not also declare; it found the agent-memory upsert index, which the suite could not see.
+- **SH731** — A reference is now spelled see SHnnn and the reader skips it, chosen over the first-id-is-subject rule by measurement: that one loses credit for 58 genuinely asserted ids, this one for none.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

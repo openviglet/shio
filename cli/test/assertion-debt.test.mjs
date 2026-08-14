@@ -419,6 +419,10 @@ async function shippedIds() {
 /** Every id any suite in this repository names. */
 async function assertedIds() {
   const found = new Set();
+  // Which file credited each id (SH731). Only ever read on the failure paths, where "SH322 is not
+  // in debt after all" is useless and "ShFooLintTest.java credits SH322" is the whole diagnosis —
+  // that is the trip the SH722 mislabel actually cost, made in advance rather than by hand.
+  const by = new Map();
   let files = 0;
   for (const suite of SUITES) {
     const { tree, only } = typeof suite === "string" ? { tree: suite, only: null } : suite;
@@ -426,10 +430,13 @@ async function assertedIds() {
       if (only && !only.test(path)) continue;
       files += 1;
       const body = withoutDeclaration(await readFile(path, "utf8"));
-      for (const id of assertedIn(body, path.endsWith(".java"))) found.add(id);
+      for (const id of assertedIn(body, path.endsWith(".java"))) {
+        found.add(id);
+        by.set(id, [...(by.get(id) ?? []), path.split(/[/\\]/).pop()]);
+      }
     }
   }
-  return { found, files };
+  return { found, files, by };
 }
 
 /**
@@ -472,11 +479,45 @@ async function assertedIds() {
  * <p>Conservative on purpose: an id in a trailing comment <i>after</i> code on the same line still
  * counts. That errs toward keeping a payment rather than inventing debt, which is the direction a
  * ledger should be wrong in.</p>
+ *
+ * <h2>A citation is not an assertion (SH731)</h2>
+ *
+ * <p>The rule above still cannot tell <i>this assertion is the one SH322 asked for</i> from <i>this
+ * message mentions SH322 in passing</i>, and that mislabelled three tasks. The third is the one
+ * worth reading: SH722's lint ended its failure message "…which is why this lint exists rather than
+ * one more repair (SH322)" — a citation of the rule it follows, not a claim to close it. This
+ * reader dropped SH322 from the debt list and the suite went red saying somebody had paid it off.
+ * Nothing was wrong except the sentence, and the repair — move the citation into the javadoc — is a
+ * rule nobody can follow reliably, because the message is exactly where a reader wants the
+ * reference.</p>
+ *
+ * <p><b>SH731 named two candidate repairs and a count decided between them</b>, the same way SH630
+ * chose this function's rule. Measured over all 405 suite files, 699 ids credited today:</p>
+ *
+ * <pre>
+ *   the first id on a line is the subject   641 ids   58 lose ALL credit
+ *   a citation spelling the reader skips    699 ids    0 lose ALL credit
+ * </pre>
+ *
+ * <p>The first candidate <b>invents 58 units of debt</b> for tasks that are genuinely asserted —
+ * wrong in the one direction the paragraph above says a ledger must not be wrong in, because a
+ * message may legitimately assert two ids and taking only the first discards the second. The second
+ * candidate costs nothing at all today, so the convention is free to adopt and the reader keeps
+ * erring toward keeping a payment.</p>
+ *
+ * <p>So a reference is spelled <b>see SHnnn</b> (or "see also", or "cf.") and this skips it. That
+ * cannot be enforced — the reader cannot know an intent that was never written down — but it does
+ * not have to be remembered either: the two failures that fire when a citation is miscounted now
+ * name the crediting file and the spelling, which is the moment the convention is learnable.</p>
  */
 function assertedIn(body, java) {
   const found = new Set();
   let inTextBlock = false;
-  for (const line of body.split("\n")) {
+  for (const raw of body.split("\n")) {
+    // SH731 — a reference, blanked before the id match so `see SH322` credits nothing. Deliberately
+    // a short, explicit list of markers: a broad one ("per", "following", "as in") would start
+    // swallowing subjects, and the measurement above says nothing is gained by reaching further.
+    const line = raw.replace(CITATION, " ");
     const wasInBlock = inTextBlock;
     // Java only, and the reason is this file. A text-block fence is three double quotes, and
     // the FIRST version of this line contained one — inside its own regex — so `assertedIn`
@@ -494,6 +535,15 @@ function assertedIn(body, java) {
 
 /** The Java text-block fence, BUILT rather than written, so this source contains no fence. */
 const FENCE = new RegExp(String.fromCharCode(34).repeat(3), "g");
+
+/**
+ * A reference to another task rather than a claim about this one (SH731).
+ *
+ * <p>Its own test proves it matches, because the failure mode of a rule like this is silence: a
+ * regex that matched nothing would blank no citation, credit every id exactly as before, and pass
+ * every test here that only checks the count did not move.</p>
+ */
+const CITATION = /\b(?:see also|see|cf\.?)\s+SH\d+\b/gi;
 
 /** A line that is nothing but comment. No state, so no regex literal can derail it. */
 function isProse(line) {
@@ -560,13 +610,15 @@ test("SH527: every shipped task carries an assertion, or is on the declared debt
       + "the id in it so this reader can find it.\n"
       + "If it genuinely cannot carry one, add it to DEBT with the reason — in a diff somebody "
       + "reviews. A ceiling would let one task pay the debt and the next spend it.\n"
-      + "If it is in `- expected`, somebody paid one off: delete the line.",
+      + "If it is in `- expected`, either somebody paid one off — delete the line — or a message "
+      + "you just wrote merely CITES that id in passing. A reference is spelled `see SHnnn` and "
+      + "this reader skips it (SH731); a bare `(SHnnn)` reads as a claim to have closed it.",
   );
 });
 
 test("SH527: the reader is not vacuous — it reads real suites and a real ledger", async () => {
   const shipped = await shippedIds();
-  const { found, files } = await assertedIds();
+  const { found, files, by } = await assertedIds();
 
   assert.ok(shipped.size > 400, `the ledger yielded ${shipped.size} shipped ids`);
   assert.ok(files > 200, `the suites yielded ${files} files`);
@@ -580,9 +632,18 @@ test("SH527: the reader is not vacuous — it reads real suites and a real ledge
   assert.ok(found.has("SH527"), "and this file counts like any other suite outside its declaration "
     + "region — the assertion for SH527 is these very test names, so a reader that could not see "
     + "them would report itself as debt, which it did until the exclusion moved off the file");
-  assert.ok(
-    ![...DEBT, ...REVEALED_IDS].some((id) => found.has(id)),
-    "and nothing on the declared debt is actually asserted: a stale entry here hides a real one",
+  // SH731 — this is the assertion that fired for the SH322 mislabel, and it said only that a stale
+  // entry existed. Naming the id and the file that credits it turns "somebody paid one off" into a
+  // question with two readable answers, which is the whole difference between the two cases.
+  const credited = [...DEBT, ...REVEALED_IDS].filter((id) => found.has(id))
+    .map((id) => `${id} (credited by ${(by.get(id) ?? []).join(", ")})`);
+  assert.deepEqual(
+    credited,
+    [],
+    "and nothing on the declared debt is actually asserted: a stale entry here hides a real one.\n"
+      + "Two ways this happens. Either the assertion was genuinely added — delete the debt entry — "
+      + "or the file above merely CITES the id while asserting something else, the way SH722 did "
+      + "(see SH322). A reference is spelled `see SHnnn` and this reader skips it (SH731).",
   );
 });
 
@@ -619,7 +680,11 @@ test("SH630: the example ids here are not real tasks, and that is not fussiness"
   // loud. Four digits starting at 9 are past anything the ledger will reach for a long time, and
   // this checks rather than trusts that.
   const shipped = await shippedIds();
-  for (const id of ["SH9101", "SH9102", "SH9103", "SH9104", "SH9105", "SH9106", "SH9107"]) {
+  for (const id of ["SH9101", "SH9102", "SH9103", "SH9104", "SH9105", "SH9106", "SH9107",
+    // SH731's illustrations. Five of these are credited by this very file, and SH9109/SH9111/
+    // SH9113 are the ones the citation rule blanks — so if any became real, this file would both
+    // pay three debts by example and hide three more.
+    "SH9108", "SH9109", "SH9110", "SH9111", "SH9112", "SH9113", "SH9114", "SH9115"]) {
     assert.ok(!shipped.has(id),
       `${id} is used above as an illustration and is a real shipped task, so this file now pays `
       + "its debt by example — which is the exact defect SH630 fixed");
@@ -643,6 +708,33 @@ test("SH630: a regex literal holding a quote cannot derail the scan", () => {
   assert.ok(found.has("SH9107"), "and the scan is still correct AFTER it — the desync that made "
     + "this necessary swallowed everything downstream");
   assert.ok(!found.has("SH9106"), "while the comment between them asserts nothing");
+});
+
+test("SH731: a message that cites another task's id does not pay its debt", () => {
+  // The assertion that would have caught it, at the boundary it crossed. SH722's lint ended its
+  // failure message "(SH322)" as a citation of the rule it follows; this reader read it as a claim
+  // to close SH322, dropped SH322 from the debt list, and the suite went red saying somebody had
+  // paid it off. Written as the exact shape of that line, not a paraphrase.
+  const citing = [
+    '    assert.ok(ok, "SH9108: the guard holds — which is why this lint exists rather than one '
+      + 'more repair (see SH9109)");',
+  ].join("\n");
+  const found = assertedIn(citing, false);
+  assert.ok(found.has("SH9108"), "the subject of the message is still asserted — the citation rule "
+    + "must not cost the assertion it is written beside");
+  assert.ok(!found.has("SH9109"), "while the id it merely refers to is not: a citation is not an "
+    + "assertion, and reading it as one retires a debt nobody paid");
+
+  // Both spellings, because "see also" and "cf." are how the reference actually gets written half
+  // the time and a convention that only covers one of them is a convention with a hole in it.
+  assert.ok(!assertedIn('  ok(x, "SH9110: holds (see also SH9111)");', false).has("SH9111"));
+  assert.ok(!assertedIn('  ok(x, "SH9112: holds (cf. SH9113)");', false).has("SH9113"));
+
+  // And the direction that matters most: a bare mention is still a claim. Nothing about SH731
+  // loosens the old rule, so a task that really is closed by a message keeps its credit.
+  assert.ok(assertedIn('  ok(x, "SH9114: holds, as SH9115 required");', false).has("SH9115"),
+    "a bare id in a message still counts — the citation spelling is opt-in, and making the "
+      + "unmarked case mean 'reference' would invent debt for 58 ids that are genuinely asserted");
 });
 
 test("SH630: the revealed debt is held apart from the triaged debt", () => {

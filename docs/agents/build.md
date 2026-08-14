@@ -57,6 +57,23 @@ order is ship → run → commit, and a task whose assertion names its own id pa
 run instead of the second. Nothing lints it locally; `.github/workflows/suites.yml` is what
 catches it, one push later.
 
+**Naming another task's id in an assertion message pays that task's debt — spell a reference
+`see SHnnn` (SH731).** The reader credits any `SH\d+` on a non-comment line, which is what makes
+the rule checkable without a second registry to keep true, and the cost is that it cannot tell
+*this assertion is the one SH322 asked for* from *this message mentions SH322 in passing*. It has
+mislabelled three tasks; the third was a failure message ending "…rather than one more repair
+(SH322)", a citation of the rule the lint follows, and the suite went red claiming somebody had
+paid SH322 off. Nothing was wrong except the sentence. So `see SHnnn`, `see also SHnnn` and
+`cf. SHnnn` are skipped by the reader, and a bare `(SHnnn)` still reads as a claim.
+
+The convention cannot be *enforced* — nothing can read an intent that was never written — but it
+does not have to be remembered: both failures name the file that credits the id and the spelling
+that fixes it, which is the moment it is learnable. SH731 chose this over the other candidate
+(*the first id on a line is the subject, the rest are references*) on a measurement, not a
+preference: over 405 suite files and 699 credited ids, the first-id rule loses all credit for **58
+ids that are genuinely asserted**, because a message may legitimately assert two; the citation
+spelling costs **0**. A debt ledger must err toward keeping a payment rather than inventing one.
+
 **And since SH529 each DEBT group carries a verdict, because a list is not a decision.** SH527
 established the count and held it; the question it left open was *which of these earn an
 assertion* — not all do, and saying which is the work rather than a way out of it. Every group now
