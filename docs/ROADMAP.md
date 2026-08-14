@@ -26,6 +26,10 @@
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
 - 💭 **SH736** (deps: —) **The CLI's help total had no headroom, so any addition anywhere fails the gate** — SH394's ceiling sat at 9900 of 9900, which makes the next feature pay for every verb before it. → §XIII.26
 
+## Block N — Realignment of what already shipped
+
+- 📋 **SH741** (deps: —) **The tolerated-floor list is the sixth ledger the registry warned about, and it never joined** — SH672 took assertion-debt's named-list shape without its staleness guard, so a tolerance whose floor is gone persists and only a throwaway script can tell. → §XXII.4
+
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
