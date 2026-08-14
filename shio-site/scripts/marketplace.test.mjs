@@ -1,3 +1,6 @@
+// @scans prose reason: it reads the generated catalogue and the package descriptions it
+// publishes, both as text (SH740).
+//
 // SH676 — the published catalogue is generated, installable, and the same bytes every build.
 //
 // ## The one assertion that needed something other than this file

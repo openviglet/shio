@@ -59,6 +59,9 @@ import * as propose from "../src/commands/propose.mjs";
 import { injectedFetch, loadAll } from "../../fixtures/source-sites/corpus.mjs";
 import { holdings } from "../../fixtures/source-sites/open-findings.mjs";
 
+// @scans prose reason: it reads the corpus ledger and the archetype descriptions as text; the
+// findings it holds are prose by construction (SH740).
+
 /** The origin every archetype is served at. Fixed, because a capture records paths against it. */
 const ORIGIN = "https://fixture.test";
 

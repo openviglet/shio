@@ -45,6 +45,9 @@ import { fileURLToPath } from "node:url";
 import { extract } from "./docs-examples.mjs";
 import { basic, requireInstance } from "./support/instance.mjs";
 
+// @scans prose reason: it extracts the requests published on Markdown pages, so the prose is
+// what it reads and a fenced block is the payload rather than noise (SH740).
+
 const DOCS = process.env.SHIO_DOCS_DIR
   ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
 

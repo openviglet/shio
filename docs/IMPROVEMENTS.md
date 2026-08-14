@@ -759,11 +759,12 @@ and nothing else did. These are not defects in the feature; the feature works. T
 defects in its *reach*, and they are filed separately because the fix is almost never in
 the code the original task wrote.
 
-Its recent entries widened that beyond features: an instrument blind to half the
-repository (SH738), a *process document* routing a reader past an instrument that exists
-(SH739), a rule stopping at a language boundary (SH740), and a ledger that took a shape
-without the guard that makes the shape safe (SH741). Nothing is left open here →
-[CHANGELOG.md](CHANGELOG.md) Block N.
+Its recent entries widened that beyond features, and mostly concern instruments failing
+to reach: one blind to half the repository (SH738), a *process document* routing a
+reader past an instrument that exists (SH739), a rule stopping at a language boundary
+(SH740), a ledger taking a shape without the guard that makes it safe (SH741), and a
+population found by naming convention rather than by structure (SH742). Nothing is left
+open here → [CHANGELOG.md](CHANGELOG.md) Block N.
 
 ## XXIII The vocabulary proved live (integration tests against a running instance)
 

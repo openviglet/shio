@@ -37,6 +37,9 @@ import { join, relative, resolve, sep } from "node:path";
 
 import { zip } from "./zip.mjs";
 
+// @scans prose reason: it reads each package's README and manifest to build the published
+// catalogue, so the long-form description is the subject (SH740).
+
 /** The packages, as the jar carries them. */
 const SOURCE = resolve(process.cwd(), "..", "shio-app", "src", "main", "resources", "blueprints");
 

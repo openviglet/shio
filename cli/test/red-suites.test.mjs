@@ -56,6 +56,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
+// @scans prose reason: red-suites.json is a ledger read as text, and the reasons and dates
+// inside its entries are exactly what this checks (SH740).
+
 const LEDGER = new URL("../../red-suites.json", import.meta.url);
 const ROADMAP = new URL("../../docs/ROADMAP.md", import.meta.url);
 const CHANGELOG = new URL("../../docs/CHANGELOG.md", import.meta.url);

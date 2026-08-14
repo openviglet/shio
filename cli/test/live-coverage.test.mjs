@@ -43,6 +43,10 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { cliVerbs, mcpTools } from "../conformance/support/product-vocabulary.mjs";
+import { code } from "./support/source-text.mjs";
+
+// @scans code reason: it reads the conformance suites to find which verbs are exercised, and a
+// verb named only in a javadoc has not been spoken to an instance (SH740).
 
 const CONFORMANCE = new URL("../conformance/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const BATCH_SERVICE = new URL(
@@ -60,7 +64,9 @@ function conformanceSources(dir = CONFORMANCE, out = []) {
   return out;
 }
 
-const SOURCE = conformanceSources().map((f) => readFileSync(f, "utf8")).join("\n");
+// Comments stripped (SH740/SH742): this asks which verbs a running instance has actually been
+// asked, and a verb named in a javadoc explaining why it is NOT covered would answer yes.
+const SOURCE = conformanceSources().map((f) => code(readFileSync(f, "utf8"))).join("\n");
 
 /**
  * The batch op vocabulary, read from the service that dispatches it.

@@ -20,6 +20,9 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+// @scans prose reason: it reads Markdown tables and fences on the published pages; SH663 exists
+// because it was NOT reading the table half (SH740).
+
 const DEFAULT_DOCS = "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
 
 /** A fenced block is executable when it makes a checkable claim about this instance. */

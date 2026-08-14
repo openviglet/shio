@@ -26,6 +26,8 @@
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
 - 💭 **SH736** (deps: —) **The CLI's help total had no headroom, so any addition anywhere fails the gate** — SH394's ceiling sat at 9900 of 9900, which makes the next feature pay for every verb before it. → §XIII.26
 
+## Block N — Realignment of what already shipped
+
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4

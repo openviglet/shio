@@ -41,6 +41,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 
+// @scans prose reason: COVERAGE.md is Markdown and its table rows ARE the subject — the
+// summary is derived from them, so nothing here can be stripped away (SH740).
+
 const DOCS = process.env.SHIO_DOCS_DIR
   ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
 

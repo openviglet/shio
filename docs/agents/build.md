@@ -885,9 +885,28 @@ them to protect a counter. It matches within a line only — a quotation broken 
 is not stripped, so wrap a quoted claim onto one line.
 
 The population is **files that scan this repository's own source or docs**, not every suite that
-reads a file: `"foo.mjs"` is usually a fixture filename in JS, and including fixture reads took it
-from 14 to 23 and then 66 with data formats. A suite that reads back a tree it just wrote cannot
-be tripped by prose. The count and every file's mode print on each run.
+reads a file: `"foo.mjs"` is usually a fixture filename in JS, and taking every read gives 66,
+mostly temp trees a suite wrote itself. A suite that reads back a tree it just wrote cannot be
+tripped by prose. The count and every file's mode print on each run.
+
+**How that population is found is structural, and SH742 is why.** The first rule asked whether a
+file named `ROOT`, `REPO`, or a two-level relative URL — a naming convention, deciding membership
+by how a constant is spelled. It found 15 and missed 9, and the misses were the worst available:
+`docs-vocabulary`, `docs-coverage` and `docs-examples`, the three readers that scan the *published
+documentation*. The question now is whether the file names a path **inside this repository** — a
+repo directory, a governed Markdown file, or `SHIO_DOCS_DIR` — which a fixture read cannot, since
+its path is built at runtime. That is 23, gaining all 9 and losing none.
+
+Two traps that cost a run each, both worth knowing before editing this:
+
+- **The population map is keyed by repo-relative path, never basename.** There are two
+  `marketplace.test.mjs` (`cli/test/`, `shio-site/scripts/`), and a basename key silently
+  overwrote one with the other — so a declaration added to the hidden one had no effect and the
+  file it hid was never asked for one.
+- **A declaration is a comment, so where it is inserted matters.** Adding one "after the last
+  `import` line" put it inside an embedded Python heredoc in `shio-site/scripts/marketplace.test.mjs`
+  — the last `import` in that file is `import json, sys, zipfile` inside a template literal — and
+  broke the test. Put it at the top of the file, with the header.
 
 ### The console lint is a CI check, not a fourth gate (SH665)
 

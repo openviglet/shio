@@ -40,6 +40,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
+// @scans prose reason: the ESLint baseline is JSON and the rule ids inside it are the subject,
+// read as text rather than as code around them (SH740).
+
 const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.meta.url);
 
 /**

@@ -46,6 +46,9 @@ import { AUDIT_RULES } from "../src/audit.mjs";
 import { extract, toolRows } from "./docs-examples.mjs";
 import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs";
 
+// @scans prose reason: it reads the published Markdown pages for the verbs, routes, tool names
+// and property keys they spell, so the prose IS the corpus being checked (SH740).
+
 /**
  * Where the published pages are.
  *

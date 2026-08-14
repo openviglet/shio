@@ -46,14 +46,36 @@ const SCANNED = /\.(mjs|js|ts|tsx|java|md|mdx)"/;
  * ...and the file being read being **this repository's own**, rather than a fixture the suite
  * wrote a moment ago.
  *
- * <p>This is the clause that makes the population honest, and it is not in SH613's Java rule
- * because Java did not need it: a Java test naming `".java"` is scanning source. In JavaScript,
- * `"foo.mjs"` is overwhelmingly a <i>filename inside a fixture</i> — `apply`, `clone`, `init` and
- * twenty others build a temp tree and read it back. Those cannot be tripped by prose, because the
- * prose they read is prose they just wrote. Without this clause the population is 23 and mostly
- * noise; with it, 10 — and all three files this defect has actually bitten are in it.</p>
+ * <p>This clause is not in SH613's Java rule because Java did not need it: a Java test naming
+ * `".java"` is scanning source. In JavaScript, `"foo.mjs"` is overwhelmingly a <i>filename inside a
+ * fixture</i> — `apply`, `clone`, `init` and twenty others build a temp tree and read it back.
+ * Those cannot be tripped by prose, because the prose they read is prose they just wrote. Without
+ * the clause the population is 66 and mostly noise.</p>
+ *
+ * <p><b>Structural, not lexical (SH742).</b> The first version asked whether the file named `ROOT`,
+ * `REPO`, or a two-level relative URL — a naming convention, deciding the population by how a
+ * constant happens to be spelled. It found 15 and missed 9, and the misses were the worst possible
+ * ones: `docs-vocabulary`, `docs-coverage` and `docs-examples`, the three readers that scan the
+ * <i>published documentation</i>. One roots itself at `SHIO_DOCS_DIR`, the others resolve one level
+ * up rather than two. So the guard against a scan being wrong about prose could not see the scans
+ * that read the most of it.</p>
+ *
+ * <p>The question asked now is whether the file names a path <b>inside this repository</b>: a repo
+ * directory, one of the governed Markdown files, or the docs root. A fixture read cannot, because a
+ * fixture's path is built at runtime from a temp root. Measured: 24, gaining all 9 and losing none.
+ * The old spellings stay in the union — they are still how most of these are written, and dropping
+ * them would trade one blind spot for another.</p>
  */
-const READS_THIS_REPOSITORY = /\bROOT\b|\bREPO\b|fileURLToPath\(new URL\("\.\.\/\.\.\//;
+const READS_THIS_REPOSITORY = new RegExp(
+  // How most of them are written: an explicit repository root.
+  "\\bROOT\\b|\\bREPO\\b|fileURLToPath\\(new URL\\(\"\\.\\./\\.\\./"
+  // ...or a literal path into a tree only this repository has.
+  + '|"(?:\\.\\./)*(?:docs|cli/src|cli/test|cli/conformance|shio-app|shio-react|shio-site'
+  + '|claude-plugin|create-shio-app|\\.github|\\.claude)/'
+  // ...or one of the governed documents by name, or the published-docs root.
+  + '|"(?:README|CHANGELOG|ROADMAP|IMPROVEMENTS|COVERAGE|AGENTS|agents)\\.md"'
+  + "|SHIO_DOCS_DIR",
+);
 
 const DECLARATION = /@scans\s+(code|prose|both)\b/;
 const REASON = /@scans\s+(?:prose|both)\b[^\n]*\breason:\s*\S/;
@@ -88,8 +110,13 @@ function scanners() {
   const found = new Map();
   for (const tree of TREES) {
     for (const path of walk(join(ROOT, tree))) {
-      const name = path.split(/[/\\]/).pop();
-      if (SELF.has(name)) continue;
+      // Keyed by repository-relative path, not basename (SH742). Two files here are called
+      // `marketplace.test.mjs` — one under `cli/test`, one under `shio-site/scripts` — and a
+      // basename key silently overwrote the first with the second, so a declaration added to one of
+      // them had no effect and the file it hid was never asked for one. A reader that loses a
+      // subject to a name collision is the same failure as one that never walked the tree.
+      const name = path.slice(ROOT.length).replace(/\\/g, "/");
+      if (SELF.has(name.split("/").pop())) continue;
       const raw = readFileSync(path, "utf8");
       const source = code(raw);
       if (READS_A_FILE.test(source) && SCANNED.test(source)
@@ -169,8 +196,9 @@ describe("SH740: a JS scan over source or documentation declares what it reads",
     // anything and correctly left this population. A named list catches that on the next run; a
     // count would have shrunk by one and said nothing.
     assert.deepEqual(
-      ["assertion-debt.test.mjs", "floors.mjs", "readme-surface.test.mjs"]
-        .filter((name) => !scanners().has(name)),
+      ["cli/test/assertion-debt.test.mjs", "cli/test/support/floors.mjs",
+        "cli/test/readme-surface.test.mjs", "cli/conformance/docs-vocabulary.conformance.mjs"]
+        .filter((path) => !scanners().has(path)),
       [],
       "the walk lost a scan that has been bitten by this defect, so a green run means nothing",
     );

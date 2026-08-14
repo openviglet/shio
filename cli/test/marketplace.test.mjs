@@ -10,6 +10,9 @@ import { test } from "node:test";
 
 import { run } from "../src/commands/marketplace.mjs";
 
+// @scans prose reason: the catalogue and its package descriptions are read as text, and a
+// package's README is the subject rather than any code beside it (SH740).
+
 const CATALOGUE = {
   items: [
     {
