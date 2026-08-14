@@ -204,8 +204,11 @@ Built incrementally, each part green on `mvn verify` (112 unit + 14 IT) + the co
   Turing's `TurFilesystemStorageService`).
 
 ### Still open (future)
-Cross-tenant superadmin impersonation, tenant quotas/billing, nav gating by `multiTenant`/role,
-and the per-tenant file storage of Part E once the upload feature exists.
+Tenant quotas/billing, nav gating by `multiTenant`/role, and the per-tenant file storage of
+Part E once the upload feature exists. Cross-tenant superadmin impersonation was SH44 and is
+**retired** (→ [CHANGELOG.md](../CHANGELOG.md) Block F): a console-only privileged switch is
+what the "No feature whose only interface is the console" non-goal forbids, so the
+principal-derived `ShTenantContext` resolution stays the only way a tenant is entered.
 
 - `./mvnw -pl shio-app test` — full module suite incl. `ShLiquibaseChangelogAgnosticTest`
   (confirms `v2026.2.4` is `VARCHAR` / no banned types).

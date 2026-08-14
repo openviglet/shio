@@ -28,7 +28,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH738** (deps: —) **The floor classifier cannot see the Java half of the repository, where the floor that actually broke lived** — SH672 walks only cli/test/*.test.mjs for the assert.ok(x.length > N) shape, so SH737's AssertJ floor over IMPROVEMENTS survived it at 50 and again at 10. → §XXII.1
 - 📋 **SH739** (deps: —) **The README's tool and verb counts are hand-typed, and the one instrument that checks such counts does not read it** — 12 MCP tools and 31 CLI verbs are right today only because a block sweep re-derived them by hand; docs-vocabulary checks the docs-shio pages, never the front door. → §XXII.2
 
 ## Block O — The human half (the console the curator uses)
@@ -41,7 +40,6 @@
 
 ## Block F — Market positioning
 
-- 💭 **SH44** (deps: SH22 ✅) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited). → §VI.1
 - 💭 **SH45** (deps: SH22 ✅) **Tenant quotas & billing** — per-tenant usage metering + quota enforcement + billing-export hooks (SH110 builds on this). → §VI.1
 - 💭 **SH46** (deps: SH22 ✅) **Nav/feature gating by tenant** — hide SaaS surfaces on single-tenant installs. → §VI.1
 - 💭 **SH47** (deps: SH22 ✅, SH38 ✅) **Per-tenant file storage** — prefix `tenantId` into the id-keyed `ShFileStorageService` layout from `ShTenantContext`. → §VI.1

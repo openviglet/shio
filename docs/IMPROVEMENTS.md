@@ -405,27 +405,27 @@ twenty years of enterprise use behind it, not an invention.
 
 ### XV.0.4 The objection: V7 rendered with a script engine too
 
-It did, and that precedent is
-real — the objection deserves an answer rather than a restatement of the non-goal. Two things
-changed, and neither is about capability.
+It did, and that precedent is real — the objection deserves an answer rather than a
+restatement of the non-goal. Two things changed, and neither is about capability.
 
-*The threat model.* In V7's era a template author was a trusted employee, templates shipped
-through a controlled release process, and the server sat on a corporate network. In Shio a
-layout is content; content is written by an **agent**, and packages are meant to arrive from a
-registry whose trust story is still an open question (SH96 exists precisely because "where may a
-package come from" is unanswered). Add the multi-tenant direction (SH22, SH44–SH47) and
-"content can execute arbitrary JVM code" stops being a convenience and becomes a tenant escape.
-The same design is safe under one set of assumptions and not under the other.
+*The threat model.* In V7's era a template author was a trusted employee, templates
+shipped through a controlled release process, and the server sat on a corporate network.
+In Shio a layout is content; content is written by an **agent**, and packages are meant
+to arrive from a registry whose trust story is still an open question (SH96 exists
+precisely because "where may a package come from" is unanswered). Add the multi-tenant
+direction (SH22, SH45–SH47) and "content can execute arbitrary JVM code" stops being a
+convenience and becomes a tenant escape. The same design is safe under one set of
+assumptions and not under the other.
 
-*The runtime.* Nashorn was deprecated in JDK 11 and **removed from the JDK in 15**. What is left
-is the standalone `org.openjdk.nashorn` artifact — the one still sitting unused in
-`shio-app/pom.xml`, pinned at 15.7, on a project running Java 21. Building the product's
-differentiator on it would mean betting the render path on a library that exists to ease
-migration *away* from itself.
+*The runtime.* Nashorn was deprecated in JDK 11 and **removed from the JDK in 15**. What
+is left is the standalone `org.openjdk.nashorn` artifact — the one still sitting unused
+in `shio-app/pom.xml`, pinned at 15.7, on a project running Java 21. Building the
+product's differentiator on it would mean betting the render path on a library that
+exists to ease migration *away* from itself.
 
 So the conclusion is not "V7 was wrong". It is that the part of V7 worth keeping is the
-**model** — page → template → component, presentation as managed content — and the part that
-has to be replaced is the host that ran it.
+**model** — page → template → component, presentation as managed content — and the part
+that has to be replaced is the host that ran it.
 
 ### XV.0.5 What a real template looked like: regions are slotted by an HTML attribute
 
@@ -651,25 +651,19 @@ addresses by.
 
 ## VI. Market positioning
 
-### VI.1 Multi-tenancy / SaaS (SH44, SH45, SH46, SH47) — SH22's core shipped, follow-ups open
+### VI.1 Multi-tenancy / SaaS (SH45, SH46, SH47) — SH22's core shipped, follow-ups open
 
-Core DB isolation, the tenant catalog, delivery-path token→tenant resolution,
-per-tenant provisioning, tenant-keyed CDA cache and the console Tenants page all
-shipped → [CHANGELOG.md](CHANGELOG.md) Block F; spec
-[specs/SH22-multi-tenancy.md](specs/SH22-multi-tenancy.md). Identity is the
-existing `workspace_id`-claim/username resolution (`ShTenantFilter`). Open:
+Core DB isolation, the tenant catalog, delivery-path token→tenant resolution, per-tenant
+provisioning, tenant-keyed CDA cache and the console Tenants page all shipped →
+[CHANGELOG.md](CHANGELOG.md) Block F; spec
+[specs/SH22-multi-tenancy.md](specs/SH22-multi-tenancy.md). Identity is the existing
+`workspace_id`-claim/username resolution (`ShTenantFilter`), and it stays the only way a
+tenant is entered — cross-tenant impersonation was SH44 and is retired, so there is no
+privileged switch to design around. Open:
 
-- **SH44 — Superadmin impersonation**: let a privileged operator act as / switch
-  into any tenant from the console (audited), beyond the principal-derived
-  `ShTenantContext` resolution.
-- **SH45 — Tenant quotas & billing**: per-tenant usage metering (content count,
-  API calls, storage) + quota enforcement + billing-export hooks. §XII.5's
-  per-agent-session guards layer on this.
-- **SH46 — Nav/feature gating by tenant**: show/hide console nav + features by
-  `multiTenant`/role so single-tenant installs don't surface SaaS-only UI.
-- **SH47 — Per-tenant file storage**: prefix `tenantId` into the id-keyed
-  `ShFileStorageService` layout (`file_source/{tenantId}/<postId>/...`) from
-  `ShTenantContext` (SH38 shipped, so this is now unblocked).
+- **SH45 — Tenant quotas & billing**: per-tenant usage metering (content count, API calls, storage) + quota enforcement + billing-export hooks. §XII.5's per-agent-session guards layer on this.
+- **SH46 — Nav/feature gating by tenant**: show/hide console nav + features by `multiTenant`/role so single-tenant installs don't surface SaaS-only UI.
+- **SH47 — Per-tenant file storage**: prefix `tenantId` into the id-keyed `ShFileStorageService` layout (`file_source/{tenantId}/<postId>/...`) from `ShTenantContext` (SH38 shipped, so this is now unblocked).
 
 ## VII. Content portability
 
@@ -764,32 +758,6 @@ brief and incomplete against a law — most often P1, where the console got an i
 and nothing else did. These are not defects in the feature; the feature works. They are
 defects in its *reach*, and they are filed separately because the fix is almost never in
 the code the original task wrote.
-
-### XXII.1 A classifier that cannot see half the repository (SH738)
-
-SH672 built the right instrument for the right reason: a non-vacuity floor may fire when
-the *reader* breaks, never when the *corpus* is right, and a floor over a corpus meant
-to empty is a second deadline nobody declared. It classifies each floor by what it
-counts, tolerates absolute bounds over corpora that only grow, and holds the rest as a
-named list.
-
-Then SH737 happened anyway, in the shape SH672 describes almost exactly — a floor over
-`IMPROVEMENTS.md`'s section count, wrong at 50, lowered to 10, wrong again at 10 when
-block completions pruned the file to exactly that. The classifier did not miss it. The
-classifier **could not see it**, for two independent reasons:
-
-- **Tree.** `suites()` reads one flat directory, `cli/test/*.test.mjs`. The whole of
-  `shio-app/src/test/java/**` is outside the walk, and that is where the governed-docs
-  readers with the longest history live.
-- **Shape.** `FLOOR` matches `assert.ok(x.length > N)`, a `node:test` idiom. The Java half
-  writes `assertThat(x).hasSizeGreaterThan(N)` and `.isGreaterThan(N)`, which that regex
-  cannot express at all.
-
-So the population it reports is honest about the tree it walks and silent about the tree
-it does not, which is the reporting-zero-forever shape SH613 names. Measured now: the
-Java suites hold exactly one remaining floor over a governed file, and it is over the
-ledger and therefore honest. The deliverable is not that number — it is that nothing
-would have told us, and the next one lands unseen.
 
 ### XXII.2 The front door's numbers are the ones nothing derives (SH739)
 

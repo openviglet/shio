@@ -33,10 +33,24 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 const SUITES = fileURLToPath(new URL("./", import.meta.url));
+
+/**
+ * The other half of the repository, and the reason SH738 exists.
+ *
+ * <p>SH672 shipped complete against its own brief and blind against its reach: the walk read one
+ * flat directory of `.test.mjs`, so `shio-app/src/test/java/**` — where the governed-docs readers
+ * with the longest history live — was outside it entirely. SH737 then happened in exactly the shape
+ * the header above describes: a floor over `IMPROVEMENTS.md`'s section count, written at 50,
+ * lowered to 10, wrong again at 10 when block completions pruned the file to exactly that. This
+ * classifier did not miss it. It <b>could not see it</b>, and would have flagged it on the first
+ * run — which is what {@code theRuleWouldHaveCaughtSH737} asserts rather than claims.</p>
+ */
+const JAVA_SUITES = fileURLToPath(new URL("../../shio-app/src/test/java/", import.meta.url));
 
 /**
  * The governed files whose contents are **meant to shrink**.
@@ -73,10 +87,28 @@ const TOLERATED = new Map([
     "counts ledger entries that bold a second id, which is the same growing corpus one column along"],
   ["clean-room.test.mjs:box.files>5",
     "counts the files a clean-room box was handed, which is a source tree and grows"],
+  // The only thing the Java half turned out to hold (SH738). Measured when the walk was extended:
+  // 277 more files, five of them reading a shrinking corpus, one floor among them — and it counts
+  // the ledger's shipped ids, so it is the honest kind. Its neighbour in the same file was the
+  // dishonest kind and is gone: SH737 replaced `headings > 10` with the yes/no it always meant.
+  ["ShImprovementsStaleSectionRatchetTest.java:hasSizeGreaterThan>100",
+    "counts the CHANGELOG's shipped ids, the same growing corpus as the two entries above — a "
+      + "ledger gains an entry per ship and never loses one"],
 ]);
 
 /** `assert.ok(x.length > 12` / `x.size > 12` — the shape a non-vacuity floor is written in. */
 const FLOOR = /assert\.ok\(\s*([A-Za-z_$][\w$.]*)\.(length|size)\s*>\s*(\d+)/g;
+
+/**
+ * The same claim in AssertJ, which is the second half of why SH737 was invisible (SH738).
+ *
+ * <p>A bound here is a <i>method</i>, and several of them mean the same thing, so this is a list
+ * where the JavaScript side is one comparison. The subject is whatever the assertion was opened on
+ * — usually a chained expression rather than a name — so it is captured loosely and only used to
+ * label the offender.</p>
+ */
+const JAVA_FLOOR =
+  /\.(hasSizeGreaterThan|hasSizeGreaterThanOrEqualTo|isGreaterThan|isGreaterThanOrEqualTo)\(\s*(\d+)\s*\)/g;
 
 function suites() {
   const files = new Map();
@@ -85,7 +117,27 @@ function suites() {
       files.set(name, readFileSync(new URL(name, import.meta.url), "utf8"));
     }
   }
+  for (const path of javaFiles(JAVA_SUITES)) {
+    files.set(path.split(/[/\\]/).pop(), readFileSync(path, "utf8"));
+  }
   return files;
+}
+
+/** Every `.java` under a tree. Recursive, because the Java suites are a package hierarchy. */
+function javaFiles(dir) {
+  const out = [];
+  let entries;
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) out.push(...javaFiles(path));
+    else if (entry.endsWith(".java")) out.push(path);
+  }
+  return out;
 }
 
 /** Which corpus a file reads — by the governed names it mentions at all. */
@@ -103,6 +155,10 @@ function floorsIn(body) {
   let match;
   while ((match = FLOOR.exec(body)) !== null) {
     found.push({ subject: match[1], bound: Number(match[3]) });
+  }
+  JAVA_FLOOR.lastIndex = 0;
+  while ((match = JAVA_FLOOR.exec(body)) !== null) {
+    found.push({ subject: match[1], bound: Number(match[2]) });
   }
   return found;
 }
@@ -153,6 +209,35 @@ test("SH672: the reader finds floors at all, and tells the two kinds apart", () 
     floorsIn("assert.ok(rows.length > 0, 'x')")[0].bound === 0,
     "and a `> 0` floor is still found — it is simply the honest one",
   );
+});
+
+test("SH738: the walk reaches the Java suites, and would have caught SH737 there", () => {
+  // The assertion that would have caught it, at the boundary it crossed. Not a paraphrase: this is
+  // the line ShImprovementsStaleSectionRatchetTest actually carried, over the corpus it actually
+  // read, and it is asserted to be an offender — because the whole finding is that this classifier
+  // was built to refuse exactly this and never saw the file it was in.
+  const sh737 = [
+    'private static final Path IMPROVEMENTS = Path.of("..", "docs", "IMPROVEMENTS.md");',
+    "assertThat(HEADING.matcher(read(IMPROVEMENTS)).results().count())",
+    "        .isGreaterThan(10);",
+  ].join("\n");
+
+  assert.deepEqual(corporaOf(sh737).shrinking, ["IMPROVEMENTS"],
+    "the file reads a corpus whose whole purpose is to reach zero");
+  assert.deepEqual(floorsIn(sh737), [{ subject: "isGreaterThan", bound: 10 }],
+    "and AssertJ's spelling of a floor is a method, which the JavaScript-only pattern could not "
+      + "express — half the reason SH737 lived through two wrong values unseen");
+
+  // The other half: the tree. A walk that stopped finding Java files would report the same green
+  // as one that read them and found nothing, which is this file's own subject one level up.
+  const names = [...suites().keys()];
+  assert.ok(names.includes("ShImprovementsStaleSectionRatchetTest.java"),
+    "the Java walk found nothing: the file SH737 happened in is the one this must reach");
+  assert.ok(names.filter((n) => n.endsWith(".java")).length > 200,
+    `the Java walk reached ${names.filter((n) => n.endsWith(".java")).length} files, which is too `
+      + "few to be the suite tree — a moved directory turns this instrument off silently");
+  assert.ok(names.some((n) => n.endsWith(".test.mjs")),
+    "and the original half is still walked, so extending the reach did not replace it");
 });
 
 test("SH672: the tolerated list is a list, not a ceiling", () => {

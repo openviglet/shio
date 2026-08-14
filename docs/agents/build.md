@@ -828,6 +828,21 @@ a non-vacuity check is actually asking: *did the reader read anything?* The shap
 it (this regex matches what roadkeep writes, and rejects what it must not) are what prove the reader
 is correct; the count only proves it ran.
 
+`cli/test/floor-kind.test.mjs` is what enforces this, and **it reads both halves of the repository
+(SH738)**. It shipped reading only `cli/test/*.test.mjs` for the `assert.ok(x.length > N)` shape,
+which left `shio-app/src/test/java/**` — where the governed-docs readers with the longest history
+live — entirely outside it. SH737 then happened there, in exactly the shape above: a floor over
+`IMPROVEMENTS.md`'s heading count, written at 50, lowered to 10, and wrong again at 10 when block
+completions pruned the file to exactly that. The classifier did not miss it; it could not see it,
+for two independent reasons — the tree, and AssertJ spelling a bound as a *method*
+(`hasSizeGreaterThan(N)`, `isGreaterThan(N)`) that no `assert.ok` pattern can express.
+
+Both are fixed, and the extension is asserted rather than assumed: `theWalkReachesTheJavaSuites`
+runs the classifier over SH737's actual line and requires it to be flagged. Measured when the walk
+was extended — 277 more files, five of which read a shrinking corpus, and **one** floor among them,
+which counts the ledger and is therefore the honest kind. So the population it now reports is the
+whole repository rather than the half somebody happened to write the reader in.
+
 ### The console lint is a CI check, not a fourth gate (SH665)
 
 `pnpm lint` runs in the `pnpm test` job and is **not** one of the three SH579 gates: it has no
