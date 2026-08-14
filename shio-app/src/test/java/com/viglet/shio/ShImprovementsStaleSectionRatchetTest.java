@@ -154,16 +154,43 @@ class ShImprovementsStaleSectionRatchetTest {
                 .as("a ledger scan that came back empty would make every section look live")
                 .hasSizeGreaterThan(100)
                 .contains("SH183", "SH290");
-        assertThat(HEADING.matcher(read(IMPROVEMENTS)).results().count())
+        // SH737: this asked the same question as a threshold twice — first at 50 against a file
+        // holding 59, then at 10 against a file that block completions pruned to exactly 10 — and
+        // was wrong at both. A floor near the count it watches is a second ratchet, and it fires on
+        // precisely the pruning the ratchet above exists to encourage; the cheapest repair is
+        // always to lower the number, which reschedules the defect rather than fixing it. A vacuity
+        // check asks *did the instrument run*, which is a yes/no, so it is asserted as one — and
+        // against a named anchor, because a count is a number somebody relaxes rather than
+        // investigates.
+        Set<String> anchors = new TreeSet<>();
+        Matcher heading = HEADING.matcher(read(IMPROVEMENTS));
+        while (heading.find()) {
+            anchors.add(heading.group(1));
+        }
+
+        Set<String> pointedAt = new TreeSet<>();
+        Matcher pointer = ROADMAP_POINTER.matcher(read(ROADMAP));
+        while (pointer.find()) {
+            pointedAt.add(pointer.group(2));
+        }
+
+        // Derived, not typed. Naming a section would only relocate the brittleness — nothing in
+        // IMPROVEMENTS is permanent, because triaging it away is the whole point of the file. What
+        // is permanent is that an open task's `→ §` pointer must resolve, so the expectation comes
+        // from the roadmap and moves with it.
+        assertThat(pointedAt)
+                .as("the roadmap always carries open tasks, and each names the anchor its rationale "
+                        + "lives at — if this were empty the check below would be vacuous too")
+                .isNotEmpty();
+
+        assertThat(anchors)
                 .as("""
-                        and a heading scan that matched nothing would make every section invisible. \
-                        The floor is deliberately far below the live count: this asserts the regex \
-                        still matches *something*, and it was written at 50 against a file holding \
-                        59 — so the first legitimate cleanup that dropped nine orphans failed the \
-                        build for a reason that had nothing to do with the change. A vacuity check \
-                        pinned near the value it watches is a ratchet nobody asked for, and it \
-                        fires on exactly the work the ratchet above exists to encourage.""")
-                .isGreaterThan(10);
+                        a heading scan that matched nothing would make every section invisible and \
+                        the staleness ratchet above would pass forever. Asserted as the yes/no it \
+                        is, against what the roadmap actually points at, rather than as a floor — \
+                        a floor was tried at 50 and at 10 and was wrong at both (SH737).""")
+                .isNotEmpty()
+                .containsAll(pointedAt);
     }
 
     private static Set<String> shippedIds() {
