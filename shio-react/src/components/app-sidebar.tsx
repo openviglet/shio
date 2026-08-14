@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ShLogo } from "@/components/logo/sh-logo"
 import { useReviewPending } from "@/contexts/review-pending.context"
+import { useDiscovery } from "@/hooks/use-discovery"
 
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -41,6 +42,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { toggleSidebar, state, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
   const { pending } = useReviewPending()
+  // SH46 — the same flag the page header already gates the tenant switcher on.
+  // `shio.multi-tenant` is off by default, and an ungated nav item offered every
+  // single-tenant install a page for managing tenants that install does not have.
+  const discovery = useDiscovery()
+  const multiTenant = discovery?.multiTenant === true
 
   const navGroups = React.useMemo(() => [
     {
@@ -64,7 +70,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [
         { title: t("admin.title"), url: ROUTES.ADMIN_ROOT, icon: IconShieldCog },
         { title: t("apiToken.title"), url: ROUTES.ADMIN_TOKENS, icon: IconKey },
-        { title: t("tenantAdmin.title"), url: ROUTES.ADMIN_TENANTS, icon: IconBuildingSkyscraper },
+        ...(multiTenant
+          ? [{ title: t("tenantAdmin.title"), url: ROUTES.ADMIN_TENANTS, icon: IconBuildingSkyscraper }]
+          : []),
         { title: t("authProvider.title"), url: ROUTES.ADMIN_AUTH_PROVIDERS, icon: IconFingerprint },
         { title: t("exchangeProvider.title"), url: ROUTES.ADMIN_EXCHANGE_PROVIDERS, icon: IconArrowsExchange },
         { title: t("emailConfig.title"), url: ROUTES.ADMIN_EMAIL_CONFIG, icon: IconMail },
@@ -85,7 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         { title: t("graphql.title"), url: ROUTES.GRAPHQL_ROOT, icon: IconBrandGraphql },
       ],
     },
-  ], [t, pending])
+  ], [t, pending, multiTenant])
 
   return (
     <Sidebar collapsible="icon" side={isMobile ? "right" : "left"} {...props}>

@@ -585,3 +585,26 @@ asking". That is the right way to leave a disagreement — stated, not hidden �
 a small change rather than a rediscovery. `ShReviewPendingTest` now asserts the two counts agree, and
 that a run's own count **reaches zero** once its work is released, which is the assertion that would
 have caught the original (SH527).
+
+## A single-tenant install does not advertise the tenant admin (SH46)
+
+`shio.multi-tenant` is **off by default**, so almost every install is single-tenant. The page
+header had gated the tenant switcher on `discovery.multiTenant` since SH22; the sidebar's Tenants
+item was never gated at all. So the default install offered a curator a page for managing tenants
+it does not have, and `GET /api/v2/tenant/current` answers `shio` there whatever they do on it —
+a surface that accepts attention and returns nothing, which is what P7 is about.
+
+The item is now spread into the group behind the same flag the header reads. **One fact, one
+source**: two surfaces deciding "is this a SaaS install" by different means is SH583's shape, and
+it is how the two came to disagree in the first place — `shio-react/test/tenant-nav-gating.test.mjs`
+asserts both read `discovery?.multiTenant` rather than merely that each gates on something.
+
+Two things that test checks which a pair of `grep`s would not:
+
+- the route constant is **inside** the conditional, not merely present in the same file — a sidebar
+  carrying both the flag and an unconditional item would pass two naive `match` calls and ship the
+  defect;
+- `multiTenant` is in the `useMemo` dependency list. `useDiscovery` resolves asynchronously, so a
+  memo that reads the flag without listing it freezes whatever was true on first paint — which is
+  `undefined`, and would hide the item on a *multi-tenant* install instead. The gate has to be able
+  to change its mind.
