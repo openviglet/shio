@@ -112,10 +112,24 @@ for that repository.
 
 ## Backlog
 
-Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the public read-only demo
-instance (SH540) is all that is left, and it is what turns the scripted session
-in the hero into a live one. Its design is `§XIX.11` in
-[`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).
+Nothing. Block S closed on 2026-08-13, and it closed by **retirement** rather than by
+shipping: SH540 — the public read-only demo instance that would have turned the hero's
+scripted session into a live one — was judged infrastructure and demo work rather than
+product, so it left the backlog and the hero keeps its script. A block emptied by a
+retirement completes exactly as one emptied by a ship, because what changed is what
+these pages may claim.
+
+This paragraph said SH540 "is all that is left" for a day after it stopped being true,
+which is the failure mode a backlog note in a README has and the reason each closure
+below gets a line of its own.
+
+Block O closed on 2026-08-14 and changed no claim here, and the reason is worth one line because
+the block's last task is the kind that usually does move copy. SH244 gave `folder.copy` to the
+agent surface, so P1's own sentence on this site — *"a console-only feature is incomplete"* — has
+one fewer counter-example behind it, and the ops line in the protocol sample (`ops: post.upsert,
+post.move, folder.upsert, ...`) is abbreviated rather than counted, so a fifteenth op does not
+make it wrong. A list that ends in an ellipsis is the reason this closure is a paragraph instead
+of an edit.
 
 Block M closed on 2026-08-14 and changed no claim here, and this is the one closure where that
 needed checking rather than reasoning: SH230 **moved a published number**, taking

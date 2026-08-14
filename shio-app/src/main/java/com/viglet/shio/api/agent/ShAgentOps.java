@@ -185,8 +185,9 @@ public final class ShAgentOps {
                     List.of(), List.of(), List.of(), List.of(ADDRESS, DATA),
                     "Create the PageLayout/Region/Theme post-types this instance renders with, "
                             + "idempotently. Do this once before writing a layout: post.upsert "
-                            + "cannot create a system type. `data.reconcile:true` also adds an "
-                            + "older instance's render types are missing. `data.types` installs "
+                            + "cannot create a system type. `data.reconcile:true` also adds the "
+                            + "fields an older instance's render types are missing. `data.types` "
+                            + "installs "
                             + "SH95 vocabulary types by name (Page, SectionHero) - a bare "
                             + "instance ships none. Takes no address."));
 
