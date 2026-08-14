@@ -317,3 +317,56 @@ compares the *current* count against the limit, which is exact for sites and pos
 write adds one. Bytes do not: a single 1 GB upload under a 512 MB plan passes that test whenever the
 tenant is at zero, so the check would advertise a guarantee it does not give. Enforcing storage
 needs `check(resource, delta)` in Viglet's shared quota SPI, which is not Shio's to change alone.
+
+## A tenant's API calls are a flow, so they get a table (SH45)
+
+`sh_tenant_api_call` (`v2026.3.26.yaml`) is one row per **(tenant, day, surface)**, unique on those
+three, moved only by addition. `ShTenantApiCallMeter` accumulates in heap and flushes to it;
+`ShTenantApiCallFilter` classifies each request; `ShBillingExportService` reads a period out.
+
+**Why not the shape the paragraph above just described.** Storage is a **level** — how much is held
+right now — which is what `VigletResourceCounter.count(tenant, resource)` models and why one column
+fitted. An API call is a **flow**: the billing question is calls *per period*, and a level has no
+period to be asked about. A cumulative column grows forever and resetting it monthly is a scheduled
+job nobody designed. So the period is part of the key and the row *is* the bucket. The period is a
+UTC day, stored as ISO-8601 **text**: a month is the billing unit but cannot answer "how much so
+far", an hour multiplies the rows by 24 for a question nobody asks, and text compares and orders
+identically on all three engines where DATE arithmetic is where the dialects diverge.
+
+**Why not `ShCdaRateLimiter`, which already counts calls.** Its own javadoc disqualifies it: the
+buckets live in one JVM's heap, so a second node doubles the budget and a restart loses the count.
+Fine for a burst guard, disqualifying for anything a bill is computed from.
+
+**The accumulator in front of the table is not that defect again**, and the difference is worth
+being precise about: it decides nothing from what it holds. The flush is `calls = calls + :delta`
+**in the database**, and addition commutes — two nodes flushing 100 each leave 200 in either order,
+which is exactly what a level could not do. A crash loses at most one flush window
+(`shio.meter.flush-interval-millis`, default 60s; `@PreDestroy` flushes an orderly shutdown), and
+the drain is `AtomicLong.getAndSet(0)` rather than removing the map entry, because removal loses
+whatever a concurrent request added between the read and the removal.
+
+**Three surfaces, recorded apart** — `cda` (`/api/v2/cda/**`, `/graphql`), `agent`
+(`/api/v2/agent/**`, `/mcp`), `console` (everything else under `/api/**`). "CDA only, or the agent
+and console too?" is a *pricing* question; totalling them here would throw the answer away with no
+migration back. `401`/`403`/`429` are **not** counted — they cost no credential to produce, so
+counting them would let a stranger run up a tenant's bill; a `404` is counted, because the instance
+did the work of deciding.
+
+**The filter is mounted at `LOWEST_PRECEDENCE - 30`, and that is load-bearing.** It puts the meter
+*inside* the Spring Security chain, where `ShTenantFilter` has resolved the tenant and has not yet
+run the clear it always does on the way out. Outside it, the meter reads an empty tenant on every
+request and files nothing — a meter reading zero, which is the SH751 failure exactly.
+
+**Not `@TenantId`-scoped**, like `sh_tenant` itself: it is the global usage catalog an operator
+exports across every tenant. The unique key is declared **twice** — Liquibase and
+`@Table(uniqueConstraints)` — per SH729, because `mvn test` builds H2 from entity metadata with
+Liquibase off, and it is what turns a lost insert race into a retry instead of a duplicate bucket.
+
+**Export is a hook, not an endpoint.** Publish a `ShBillingExporter` bean and it receives every
+tenant's `ShTenantUsage` when the meter first notices the UTC day rolled; it is opt-in
+(`shio.meter.export-on-rollover`, default off — P7), at-least-once per node, and implementations
+must be idempotent on `(tenant, period)`. The pull side is `GET /api/v2/tenant/usage?from=&to=`,
+scoped to the caller's own tenant, and it is the backstop for a period no node was up to watch
+close. `usage(period)` is driven from the tenant catalog rather than from the meter rows, so a
+tenant that used nothing is present with an empty map — an absent row is indistinguishable from a
+tenant the export forgot.

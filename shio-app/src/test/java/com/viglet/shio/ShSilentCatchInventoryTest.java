@@ -128,7 +128,28 @@ class ShSilentCatchInventoryTest {
             // asked for this and is reading its result, so the finding has a reader already. It
             // errs low, which is the safe direction for a meter that gates writes.
             "api", 60,
-            "tenant", 4,
+            // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
+            // accounting side-effect of a call that has already been served, so nothing it fails at
+            // may become the caller's problem or the operator's incident.
+            //
+            // `ShTenantApiCallFilter` catches around `meter.record` — letting a meter turn a 200
+            // into a 500 would trade the product for the invoice. `ShTenantApiCallMeter.flush` and
+            // `flushOnShutdown` catch a bucket that will not write and put the increments BACK, so
+            // the loss is a minute of latency rather than a minute of calls; that is a retry, not a
+            // swallow, and the lint cannot see the difference. `persist` catches the unique-key
+            // violation that means another node inserted the same bucket first, and re-reads — the
+            // catch IS the concurrency protocol, the third shape the `marketplace` entry below
+            // describes. `ShBillingExportService` catches one exporter so the others still receive
+            // the period, because one billing integration being down is not a reason for the rest
+            // to lose a day.
+            //
+            // Not incidents, for SH103's reason: none of them is visible to the tenant as a broken
+            // request, and a diagnostics window that fills with a flush retrying is a window that
+            // gets ignored. Four log at WARN with the SH45 tag, which is where an operator
+            // debugging a meter that reads low will already be looking; `persist` deliberately does
+            // not, because losing the insert race is the normal path on more than one node and a
+            // line per concurrent flush would be noise about a mechanism working.
+            "tenant", 9,
             // 4 since SH217, and the two are different judgements filed under one number.
             //
             // The first is a catch that DOES record — the registry refuses one local package and

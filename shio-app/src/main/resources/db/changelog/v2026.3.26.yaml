@@ -1,0 +1,101 @@
+databaseChangeLog:
+  # SH45 — how many API calls a tenant made, per day and per surface. The half SH746 did not do.
+  #
+  # Storage is a LEVEL — how much is held right now — which is why it fitted on `sh_tenant` as one
+  # maintained column and why `VigletResourceCounter.count(tenant, resource)` could read it. An API
+  # call is a FLOW: the billing question is calls *per period*, and a level has no period to be
+  # asked about. A cumulative column would grow forever and resetting it monthly is a scheduled job
+  # nobody designed; so the period is part of the key, and the row is the bucket.
+  #
+  # A DAY, not an hour and not a month. A month is the billing unit, but a month-keyed row cannot
+  # answer "how much so far" without the meter carrying a second, finer number; a day sums to a
+  # month, and an hour would multiply the rows by 24 to answer a question nobody has asked.
+  # `period_key` is the ISO date in UTC (`2026-08-14`) as text rather than a DATE, because it is a
+  # bucket label that is compared for equality and ordered lexically — both of which text does
+  # identically on all three engines, where DATE arithmetic is where the dialects start to differ.
+  #
+  # A TABLE, not a heap counter, and that is the whole reason this could not reuse SH3's limiter.
+  # `ShCdaRateLimiter` already counts calls and its own javadoc says why it cannot be the meter:
+  # its buckets live in one JVM's heap, so a multi-node deployment gets N x the budget and a restart
+  # loses the count. Acceptable for a burst guard; disqualifying for anything a bill is computed
+  # from. So the figure survives a restart here, and the per-node accumulation in front of it flushes
+  # ADDITIVELY (`calls = calls + :delta`) — which is exactly what a level could not do and a flow
+  # can: two nodes adding 100 each leave 200, whichever order they arrive in.
+  #
+  # `surface` rather than a single total, because "what counts as a call" is a pricing decision and
+  # not a metering one. Recording `cda` / `agent` / `console` separately lets the plan decide later
+  # which of them it charges for, without a migration and without having thrown the answer away.
+  #
+  # NOT `tenant_id`/`@TenantId`-scoped, deliberately — same as `sh_tenant` itself. This is the
+  # global usage catalog an operator exports across every tenant, so the tenant is an ordinary
+  # addressed column (`tenant_name`) rather than the discriminator.
+  #
+  # The unique constraint is what makes the flush idempotent: a node that loses the insert race
+  # re-reads and adds instead. Declared here AND as @Table(uniqueConstraints) on the entity, per
+  # SH729 — the unit suite builds H2 from entity metadata with Liquibase off, so a constraint that
+  # lives only here is a constraint no test in `mvn test` has ever seen.
+  #
+  # Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on
+  # PostgreSQL (QUOTE_ALL_OBJECTS does not propagate through `include`, so it is re-declared here).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh45-create-sh-tenant-api-call
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_tenant_api_call
+      changes:
+        - createTable:
+            tableName: sh_tenant_api_call
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_tenant_api_call
+              - column:
+                  name: tenant_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              # ISO-8601 UTC date, e.g. 2026-08-14.
+              - column:
+                  name: period_key
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              # cda | agent | console — the vocabulary is ShTenantApiCallMeter's constants.
+              - column:
+                  name: surface
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              # BIGINT, not INT: a busy delivery surface passes 2^31 calls in a period an operator
+              # would still call ordinary, and this is the number a bill is computed from.
+              - column:
+                  name: calls
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+  # One row per (tenant, period, surface) — the flush depends on it. Without it a lost insert race
+  # leaves two rows for one bucket, and every read of the meter is then a sum that looks like a
+  # count and is quietly wrong in the tenant's favour.
+  - changeSet:
+      id: sh45-unique-sh-tenant-api-call-bucket
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: UK_sh_tenant_api_call_bucket
+      changes:
+        - addUniqueConstraint:
+            tableName: sh_tenant_api_call
+            columnNames: tenant_name, period_key, surface
+            constraintName: UK_sh_tenant_api_call_bucket

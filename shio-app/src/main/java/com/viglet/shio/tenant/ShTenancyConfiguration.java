@@ -10,8 +10,10 @@ package com.viglet.shio.tenant;
 
 import java.util.Set;
 
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 
 import com.viglet.core.tenancy.VigletTenantContext;
 import com.viglet.core.tenancy.VigletTenantProvisioner;
@@ -89,5 +91,29 @@ public class ShTenancyConfiguration {
                 log.warn("Tenant '{}' created but provisioning failed: {}", tenantId, e.getMessage());
             }
         };
+    }
+
+    /**
+     * SH45's API-call meter, mounted over the API surfaces.
+     *
+     * <p>{@code LOWEST_PRECEDENCE - 30} is the precedence {@code ShAgentWebConfig} already uses for
+     * the cost header and the incident recorder, and here it is load-bearing rather than
+     * conventional: it puts the filter <b>inside</b> the Spring Security chain, where
+     * {@link ShTenantFilter} has resolved the tenant and has not yet run the clear it always does on
+     * the way out. Mounted outside, the meter would read an empty tenant on every request and file
+     * nothing — a meter reading zero, which is the SH751 failure exactly.</p>
+     *
+     * <p>The patterns are the three API surfaces: {@code /api/*} covers CDA, agent and console (the
+     * filter tells them apart by prefix), and {@code /graphql} + {@code /mcp} are the two that live
+     * outside {@code /api}.</p>
+     */
+    @Bean
+    FilterRegistrationBean<ShTenantApiCallFilter> shTenantApiCallFilter(ShTenantApiCallMeter meter) {
+        FilterRegistrationBean<ShTenantApiCallFilter> registration =
+                new FilterRegistrationBean<>(new ShTenantApiCallFilter(meter));
+        registration.addUrlPatterns("/api/*", "/graphql", "/mcp");
+        registration.setName("shTenantApiCallFilter");
+        registration.setOrder(Ordered.LOWEST_PRECEDENCE - 30);
+        return registration;
     }
 }

@@ -22,12 +22,15 @@ import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.model.tenant.ShTenantRole;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.property.ShAppProperties;
+import com.viglet.shio.tenant.ShBillingExportService;
+import com.viglet.shio.tenant.ShTenantApiCallMeter;
 import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.tenant.ShTenantFilter;
 import com.viglet.shio.tenant.ShTenantMembershipService;
 import com.viglet.shio.tenant.ShTenantProvisioningService;
 import com.viglet.shio.tenant.ShTenantTeardownService;
 import com.viglet.shio.tenant.ShTenantTeardownService.ShTenantTeardownReport;
+import com.viglet.shio.tenant.ShTenantUsage;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -63,34 +66,64 @@ public class ShTenantAPI {
     private final ShTenantProvisioningService shTenantProvisioningService;
     private final ShTenantTeardownService shTenantTeardownService;
     private final ShTenantMembershipService shTenantMembershipService;
+    private final ShBillingExportService shBillingExportService;
+    private final ShTenantApiCallMeter shTenantApiCallMeter;
 
     public ShTenantAPI(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository,
                        ShTenantProvisioningService shTenantProvisioningService,
                        ShTenantTeardownService shTenantTeardownService,
-                       ShTenantMembershipService shTenantMembershipService) {
+                       ShTenantMembershipService shTenantMembershipService,
+                       ShBillingExportService shBillingExportService,
+                       ShTenantApiCallMeter shTenantApiCallMeter) {
         this.shAppProperties = shAppProperties;
         this.shTenantRepository = shTenantRepository;
         this.shTenantProvisioningService = shTenantProvisioningService;
         this.shTenantTeardownService = shTenantTeardownService;
         this.shTenantMembershipService = shTenantMembershipService;
+        this.shBillingExportService = shBillingExportService;
+        this.shTenantApiCallMeter = shTenantApiCallMeter;
     }
 
     @GetMapping("/current")
     public Map<String, Object> current() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String tenantId;
-        if (!shAppProperties.isMultiTenant()) {
-            tenantId = ShTenantContext.DEFAULT_TENANT;
-        } else if (authentication != null && authentication.isAuthenticated()) {
-            String resolved = ShTenantContext.getTenantId();
-            tenantId = (resolved != null && !resolved.isBlank()) ? resolved : authentication.getName();
-        } else {
-            tenantId = ShTenantContext.DEFAULT_TENANT;
-        }
         return Map.of(
-                "tenantId", tenantId,
+                "tenantId", currentTenant(),
                 "multiTenant", shAppProperties.isMultiTenant()
         );
+    }
+
+    /**
+     * What the current tenant used, per day and per surface (SH45).
+     *
+     * <p>Scoped to the caller's own tenant on purpose: this is the read a curator makes to see
+     * their own consumption, and every-tenant usage is a platform-operator question that goes out
+     * through the {@code ShBillingExporter} hook rather than through a route any authenticated user
+     * can reach.</p>
+     *
+     * <p>{@code from}/{@code to} are inclusive UTC days, ISO-8601. Defaults: today, both ends —
+     * "what have I used so far" is the question that does not need parameters.</p>
+     */
+    @GetMapping("/usage")
+    public List<ShTenantUsage> usage(
+            @RequestParam(name = "from", required = false) String from,
+            @RequestParam(name = "to", required = false) String to) {
+        String today = shTenantApiCallMeter.currentPeriod();
+        return shBillingExportService.usageFor(currentTenant(),
+                from == null || from.isBlank() ? today : from,
+                to == null || to.isBlank() ? today : to);
+    }
+
+    /** The request's tenant, with the same fallbacks {@code GET /current} reports. */
+    private String currentTenant() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (!shAppProperties.isMultiTenant()) {
+            return ShTenantContext.DEFAULT_TENANT;
+        }
+        if (authentication != null && authentication.isAuthenticated()) {
+            String resolved = ShTenantContext.getTenantId();
+            return (resolved != null && !resolved.isBlank()) ? resolved : authentication.getName();
+        }
+        return ShTenantContext.DEFAULT_TENANT;
     }
 
     @GetMapping

@@ -572,33 +572,6 @@ asserted at the level the agent surface is.
 
 ## VI. Market positioning
 
-### VI.5 Counting a tenant's bytes is the undesigned half (SH45)
-
-The storage half shipped as SH746: `sh_tenant.storage_bytes` is maintained and
-reconciled from the tenant's own directory, so the quota kernel reads bytes in O(1).
-What remains is API-call metering and the billing-export hooks, and the first is **not
-the shape just solved**.
-
-Storage is a **level** — how much is held right now — which is what
-`VigletResourceCounter.count(tenant, resource)` models and why it fit. An API call is a
-**flow**: the question is calls *per period*, and a level counter cannot express one. A
-cumulative column grows forever, and resetting it monthly is a scheduled job nobody has
-designed.
-
-Shio already counts calls and it cannot be the meter. `ShCdaRateLimiter` is a per-token
-bucket, and its own javadoc says why: buckets live **in this JVM's heap**, so a
-multi-node deployment gets `N ×` the budget, and a restart loses the count. Acceptable
-for a burst guard, which is what it is; disqualifying for anything a bill is computed
-from.
-
-So this half is bigger than the storage half was, and blocked on the same upstream
-question as SH110's ceiling: the shared SPI models levels, and both a delta-aware check
-and a windowed counter are changes to Viglet's kernel rather than to Shio.
-
-Two things to settle before any of it: what counts as a call (CDA only, or the agent and
-console surfaces too), and whether the meter must survive a restart — which decides
-between a table and anything cheaper.
-
 ## VII. Content portability
 
 > ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.

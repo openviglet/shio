@@ -92,7 +92,16 @@ class ShOffThreadTenantLintTest {
             the other way round: the sweep now ITERATES the tenants and runs one pass under \
             each, through runAs rather than by binding the context itself, because the \
             timer's thread is reused. Still declared rather than detected, because what makes \
-            it correct is the iteration and this lint can only see the boundary.""");
+            it correct is the iteration and this lint can only see the boundary.""",
+
+            "tenant/ShTenantApiCallMeter.java",
+            """
+            SH45's flush names its tenant in the row it writes, so there is nothing for the \
+            context to carry. The accumulator's key IS (tenant, period, surface), captured on \
+            the request thread where the tenant was still bound, and sh_tenant_api_call is \
+            deliberately not @TenantId-scoped — it is the global usage catalog, like sh_tenant \
+            itself. Binding the context on the timer's thread would change nothing about which \
+            row is written and would add the reuse hazard ShTenantHandoff exists to close.""");
 
     @Test
     @DisplayName("SH612: every thread boundary either carries the tenant or is declared")
