@@ -127,7 +127,19 @@ class ShSilentCatchInventoryTest {
             // had drifted to. Not an incident, for SH103's reason one surface over: the operator
             // asked for this and is reading its result, so the finding has a reader already. It
             // errs low, which is the safe direction for a meter that gates writes.
-            "api", 60,
+            // 63 since SH751, all three in `ShFileStorageService` and all three the same rule:
+            // storage succeeding while accounting fails must not be reported to the caller as a
+            // failed upload. Two guard the call that moves SH45's meter (`recordDelta`, and the
+            // by-name zeroing in `deleteTenant`); the third is `sizeOf`, where a file that cannot
+            // be sized contributes nothing to a delta instead of aborting the write.
+            //
+            // The degradation is real and it is exactly what `reconcile` exists for — the bytes
+            // are on disk either way, and the recount is one subtree away. Not an incident, for
+            // SH103's reason: nothing the tenant asked for failed, and a diagnostics window that
+            // fills with accounting notes is one nobody reads. Two of the three log at WARN
+            // naming SH751; `sizeOf` does not, because it is asked about files that are routinely
+            // absent (the "before" of a first write) and that is not a condition.
+            "api", 63,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

@@ -36,7 +36,10 @@ class ShFileStorageServiceTest {
     void setUp() {
         ShFileSourceProperties props = new ShFileSourceProperties();
         props.setPath(tempDir.toAbsolutePath().toString());
-        storage = new ShFileStorageService(props);
+        // No meter: this exercises the storage layer, and storage has to work when nobody is
+        // counting. That the bytes DO move SH45's meter is asserted in ShTenantStorageMeterTest,
+        // where there is a database for it to move (SH751).
+        storage = new ShFileStorageService(props, null);
     }
 
     // With no tenant bound on the thread (plain unit test), the storage roots at the

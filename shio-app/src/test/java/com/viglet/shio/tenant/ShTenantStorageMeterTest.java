@@ -10,6 +10,7 @@ package com.viglet.shio.tenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -96,6 +97,51 @@ class ShTenantStorageMeterTest {
                         + "this the meter would have no way back to the truth")
                 .isEqualTo(storage.bytesOnDiskFor(TENANT));
         assertThat(meter.bytesFor(TENANT)).isEqualTo(reconciled);
+    }
+
+    @Test
+    @DisplayName("SH751: storing and removing bytes moves the meter, and a reconcile then changes nothing")
+    void theBytesThemselvesMoveTheMeter() throws Exception {
+        // The defect SH751 records: `record` shipped, `reconcile` shipped, the counter wiring
+        // shipped, and NOTHING in production called the one method that makes the figure
+        // maintained. Nothing failed, because a counter nobody increments is indistinguishable
+        // from a tenant storing nothing — which is why the assertion is here, at the boundary the
+        // bytes actually cross, rather than on the method that was already covered.
+        meter.reconcile(TENANT);
+        long before = meter.bytesFor(TENANT);
+
+        storage.store("ut-sh751", "probe.bin", new ByteArrayInputStream(new byte[2048]));
+
+        assertThat(meter.bytesFor(TENANT))
+                .as("SH751: an upload adds its bytes to the kept figure. Before this the meter read "
+                        + "whatever the last reconcile left, and nothing schedules one — so on an "
+                        + "install that never reconciled, zero, for ever, however much was stored")
+                .isEqualTo(before + 2048);
+
+        // A replace of the same name adds only the difference, which is the case counting "the
+        // size written" would get wrong on every overwrite.
+        storage.store("ut-sh751", "probe.bin", new ByteArrayInputStream(new byte[3072]));
+        assertThat(meter.bytesFor(TENANT))
+                .as("SH751: a replace moves the meter by the DIFFERENCE, not by the new size")
+                .isEqualTo(before + 3072);
+
+        storage.copy("ut-sh751", "ut-sh751-copy");
+        assertThat(meter.bytesFor(TENANT))
+                .as("SH751: the copy SH749 added is the fourth mover of bytes, and the reason the "
+                        + "call belongs in the storage layer rather than in each service above it")
+                .isEqualTo(before + 6144);
+
+        storage.delete("ut-sh751-copy");
+        storage.delete("ut-sh751");
+
+        assertThat(meter.bytesFor(TENANT))
+                .as("SH751: cleanup gives the bytes back")
+                .isEqualTo(before);
+        assertThat(meter.reconcile(TENANT))
+                .as("SH751: the acceptance test §XII.29 names — a reconcile after a mixed run of "
+                        + "stores, replaces, copies and deletes changes nothing. A maintained "
+                        + "figure that the recount disagrees with is drift wearing the word 'kept'")
+                .isEqualTo(before);
     }
 
     @Test

@@ -312,6 +312,28 @@ scheduled** — what cadence that runs at is an operator's decision, and a job n
 cost this task did not measure. `record` clamps at zero, because a total below empty is the one
 reading that cannot be true.
 
+**What moves it is `ShFileStorageService`, not the services above it (SH751).** `store`, `copy`,
+`delete` and `deleteTenant` are where bytes are actually written and removed, and upload, replace,
+the SH749 copy, the cleanup listener and tenant teardown are all callers of those four. Putting the
+call in each caller is what SH751 records failing: three sites were supposed to remember, none did,
+and a fourth arrived with SH749 while the rule was still unwritten. The meter is reached through an
+`ObjectProvider` because the dependency is a genuine cycle — `reconcile` calls
+`bytesOnDiskFor` on the storage service — and Spring refuses a constructor cycle outright.
+
+Two rules keep the figure honest, and both have an assertion in `ShTenantStorageMeterTest`:
+
+- **A delta is recorded exactly when `bytesOnDiskFor` would have counted it** — under
+  `<root>/<tenant>`, never the pre-SH47 flat layout `resolve` can still hand back. Meter a legacy
+  write and every reconcile moves the figure; a correction that always corrects reads exactly like
+  the drift it exists to remove.
+- **Deltas are differences, measured before and after.** `store` uses `REPLACE_EXISTING`, so a
+  replace of the same name adds only the difference; counting "the size written" would overstate on
+  every overwrite. `delete` measures before removing, because afterwards there is nothing to ask.
+
+The acceptance test is the one §XII.29 named: **a reconcile after a mixed run of stores, replaces,
+copies and deletes changes nothing.** Recording never throws — storage succeeding and accounting
+failing must not be reported as a failed upload.
+
 **There is no `checkCanStore` yet, and that is deliberate.** `VigletQuotaService.check(resource)`
 compares the *current* count against the limit, which is exact for sites and posts because each
 write adds one. Bytes do not: a single 1 GB upload under a 512 MB plan passes that test whenever the

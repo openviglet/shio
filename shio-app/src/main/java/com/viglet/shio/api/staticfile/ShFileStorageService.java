@@ -17,10 +17,12 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Locale;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.property.ShFileSourceProperties;
 import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.tenant.ShTenantStorageMeter;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +44,21 @@ import lombok.extern.slf4j.Slf4j;
  * the single guard against {@code ../} path-traversal coming from a file name
  * or id.</p>
  *
+ * <h2>It also moves SH45's storage meter (SH751)</h2>
+ *
+ * <p>Every byte this instance stores passes through {@link #store}, {@link #copy},
+ * {@link #delete} or {@link #deleteTenant} — upload, replace, the SH749 copy, the cleanup
+ * listener and tenant teardown are all callers of those four. So the delta is recorded
+ * <b>here</b>, where the write happens, rather than in each service above: SH751 exists because
+ * three of those call sites were supposed to remember and none did, and a fourth arrived with
+ * SH749 while the rule was still unwritten.</p>
+ *
+ * <p>The rule that keeps the meter honest is that <b>a delta is recorded exactly when
+ * {@link #bytesOnDiskFor} would have counted it</b> — under {@code <root>/<tenant>}, never the
+ * pre-SH47 flat layout. That is not a detail: {@code reconcile} recounts from the tenant subtree,
+ * so metering a legacy write would make every reconcile move the figure, and a correction that
+ * always corrects is indistinguishable from drift.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
@@ -51,8 +68,19 @@ public class ShFileStorageService {
 
     private final ShFileSourceProperties properties;
 
-    public ShFileStorageService(ShFileSourceProperties properties) {
+    /**
+     * SH45's meter, reached through a provider because the dependency is a <b>cycle</b>:
+     * {@code ShTenantStorageMeter.reconcile} calls {@link #bytesOnDiskFor} on this class. Spring
+     * refuses a constructor cycle outright, and the two directions are genuinely different — this
+     * one is "bytes moved", that one is "recount from disk" — so the lazy edge is the honest way
+     * to say which is the derived relationship.
+     */
+    private final ObjectProvider<ShTenantStorageMeter> storageMeter;
+
+    public ShFileStorageService(ShFileSourceProperties properties,
+                                ObjectProvider<ShTenantStorageMeter> storageMeter) {
         this.properties = properties;
+        this.storageMeter = storageMeter;
     }
 
     /** The on-disk root directory for stored binaries. */
@@ -68,11 +96,18 @@ public class ShFileStorageService {
      * asked per upload. SH47's per-tenant directory is what makes it answerable at all.</p>
      */
     public long bytesOnDiskFor(String tenant) {
-        Path root = rootDir().resolve(sanitizeTenant(tenant));
-        if (!Files.isDirectory(root)) {
+        return sumBytes(rootDir().resolve(sanitizeTenant(tenant)));
+    }
+
+    /**
+     * Bytes held under {@code dir}, or {@code 0} when it holds none — the one reading both the
+     * recount and every {@link #record} delta are computed from, so the two cannot disagree.
+     */
+    private long sumBytes(Path dir) {
+        if (!Files.isDirectory(dir)) {
             return 0L;
         }
-        try (java.util.stream.Stream<Path> walk = Files.walk(root)) {
+        try (java.util.stream.Stream<Path> walk = Files.walk(dir)) {
             return walk.filter(Files::isRegularFile).mapToLong(file -> {
                 try {
                     return Files.size(file);
@@ -84,8 +119,54 @@ public class ShFileStorageService {
                 }
             }).sum();
         } catch (IOException e) {
-            throw new UncheckedIOException("cannot walk storage for tenant " + tenant, e);
+            throw new UncheckedIOException("cannot walk storage under " + dir, e);
         }
+    }
+
+    /** The size of one file, or {@code 0} when it is absent or unreadable. */
+    private static long sizeOf(Path file) {
+        try {
+            return Files.isRegularFile(file) ? Files.size(file) : 0L;
+        } catch (IOException unreadable) {
+            return 0L;
+        }
+    }
+
+    /**
+     * Move SH45's meter by {@code delta}, but only for a path the recount would have counted
+     * (SH751).
+     *
+     * <p>The guard is the whole contract: {@code reconcile} sums {@code <root>/<tenant>}, so a
+     * write that {@link #resolve} sent to the pre-SH47 flat layout must not be metered. Meter it
+     * and every reconcile would move the figure — a correction that always corrects, which reads
+     * exactly like the drift it exists to remove.</p>
+     *
+     * <p>Never throws. Storage succeeding and accounting failing must not be reported to the
+     * caller as a failed upload; the meter has {@code reconcile} for its own repair, and the
+     * bytes are on disk either way.</p>
+     */
+    private void recordDelta(Path target, long delta) {
+        if (delta == 0 || !target.startsWith(tenantRoot())) {
+            return;
+        }
+        try {
+            ShTenantStorageMeter meter = meter();
+            if (meter != null) {
+                meter.record(tenantId(), delta);
+            }
+        } catch (RuntimeException e) {
+            log.warn("SH751: stored the bytes but could not move the meter by {}: {}",
+                    delta, e.getMessage());
+        }
+    }
+
+    /**
+     * The meter, or {@code null} where there is none — a plain unit test of the storage layer
+     * constructs this class without one, and storage is a subsystem that has to work when nobody
+     * is counting.
+     */
+    private ShTenantStorageMeter meter() {
+        return storageMeter == null ? null : storageMeter.getIfAvailable();
     }
 
     /** The current tenant's storage sub-directory, {@code <root>/<tenant>}. */
@@ -188,9 +269,14 @@ public class ShFileStorageService {
      */
     public Path store(String fileId, String fileName, InputStream content) {
         Path target = resolve(fileId, fileName);
+        // Before and after, not "the size written": REPLACE_EXISTING means a replace of the same
+        // name adds only the difference, and SH751's acceptance test is that a reconcile after a
+        // mixed run changes nothing. Counting the new size on a replace would fail it every time.
+        long before = sizeOf(target);
         try {
             Files.createDirectories(target.getParent());
             Files.copy(content, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            recordDelta(target, sizeOf(target) - before);
             return target;
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to store file " + fileName + " for " + fileId, e);
@@ -239,6 +325,7 @@ public class ShFileStorageService {
         if (!target.startsWith(tenantRoot)) {
             throw new IllegalArgumentException("Resolved path escapes file_source root");
         }
+        long before = sumBytes(target);
         try (java.util.stream.Stream<Path> walk = Files.walk(source)) {
             Files.createDirectories(target);
             long written = 0L;
@@ -251,6 +338,10 @@ public class ShFileStorageService {
                 Files.copy(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 written += Files.size(to);
             }
+            // The delta is what the directory GAINED, which is not `written` when a name was
+            // overwritten. The return value stays "bytes written" — that is what SH749's caller
+            // reports — and the two are the same number for the fresh id a copy normally targets.
+            recordDelta(target, sumBytes(target) - before);
             return written;
         } catch (IOException e) {
             throw new UncheckedIOException(
@@ -269,8 +360,14 @@ public class ShFileStorageService {
             return;
         }
         Path root = rootDir();
-        deleteDirRecursive(tenantRoot().resolve(fileId).normalize(), root);
+        Path owned = tenantRoot().resolve(fileId).normalize();
+        // Measured before the removal, because afterwards there is nothing left to ask. Only the
+        // tenant-scoped directory: the pre-SH47 flat one below was never counted by the recount,
+        // so subtracting it would drive the meter under what the disk actually holds.
+        long freed = sumBytes(owned);
+        deleteDirRecursive(owned, root);
         deleteDirRecursive(root.resolve(fileId).normalize(), root);
+        recordDelta(owned, -freed);
     }
 
     /**
@@ -282,7 +379,23 @@ public class ShFileStorageService {
             return;
         }
         Path root = rootDir();
+        // Zeroed by name rather than through recordDelta: teardown names the tenant it is purging
+        // and is not necessarily running as it. The record is a no-op once the catalog row is gone,
+        // so this only matters when the row outlives the bytes — a purge that keeps the tenant —
+        // and that is exactly the case where a meter still claiming the freed bytes would refuse
+        // uploads nobody made.
+        long freed = bytesOnDiskFor(tenantId);
         deleteDirRecursive(root.resolve(sanitizeTenant(tenantId)).normalize(), root);
+        if (freed > 0) {
+            try {
+                ShTenantStorageMeter meter = meter();
+                if (meter != null) {
+                    meter.record(tenantId, -freed);
+                }
+            } catch (RuntimeException e) {
+                log.warn("SH751: purged {} but could not zero its meter: {}", tenantId, e.getMessage());
+            }
+        }
     }
 
     /** Recursively delete {@code dir} when it is a directory under {@code root}; never throws. */

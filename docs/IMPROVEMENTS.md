@@ -278,32 +278,6 @@ nothing. **Do not refuse on size** — a ceiling invented here is a second quota
 and the failure it causes (a legitimate section copy refused on a generous plan) is
 worse than the one it prevents.
 
-### XII.29 The storage meter is never moved (SH751)
-
-`ShTenantStorageMeter` keeps a per-tenant byte total on `sh_tenant`,
-`ShVigletResourceCounter` reads it for `STORAGE`, and `reconcile` recounts from disk.
-All three shipped. `record(tenant, delta)` — the method that makes it a *maintained*
-figure — is called by **nothing in production**: not `ShStaticFileService.upload`, not
-`replace`, not `ShStaticFileCleanupListener`. Its only caller is its own unit test.
-
-So the meter reads whatever the last reconcile left, and nothing schedules one —
-deliberately, per its own javadoc. On any install that has never reconciled that is
-**zero**, for ever, however many bytes are stored. `currentLimits()` reports the storage
-bound honestly and the count beside it is fiction, which is worse than the absent
-`checkCanStore` the same class explains at length.
-
-Found while shipping SH749, and the same shape as that defect: a mechanism complete
-everywhere except at the one line that connects it, with every surface reporting
-success. Nothing failed, because a counter nobody increments is indistinguishable from a
-tenant storing nothing.
-
-Three call sites and one decision. Upload adds the stored size; `replace` adds the
-difference; the cleanup listener subtracts what it frees — and the copy SH749 added is a
-fourth, which is the argument for putting the call in `ShFileStorageService` (where the
-bytes are actually written and removed) rather than in each caller. The decision is
-whether a delta belongs to the storage layer or to the services above it; the test to
-write either way is that a reconcile after a mixed run changes nothing.
-
 ### XII.30 The widget catalog is seeded once per context and unique by assumption (SH753)
 
 Running `clean verify -DskipITs=false` is green. Running the same `verify` **without**
