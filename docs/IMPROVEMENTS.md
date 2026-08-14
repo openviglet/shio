@@ -678,30 +678,6 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.1 folder.copy has no live coverage (SH748)
-
-SH747's coverage matrix went red on the same run that shipped `folder.copy`, which is
-the instrument working: a mutating op arrived and no live suite had ever called it. The
-choice it forces — write the scenario, or declare the gap with a reason — was made
-rather than defaulted, and the entry in `UNEXERCISED.ops` says which and why.
-
-Why declared: no instance was running, and a live scenario written blind is an assertion
-about something nobody observed. That is the failure this tier exists to prevent, and
-the file already records three cases where the instance contradicted a draft —
-`folder.move` alone got its `to` wrong twice.
-
-What the scenario is, when somebody has an instance. `mcp-chaos.conformance.mjs` already
-seeds `/a` and `/a/b` and drives the move's cycle guard, so this is a sibling of a test
-that exists: copy `/a` into `/a/b/a` and require a refusal naming the subtree; copy `/a`
-to a free chain and require the copy there with its posts; then read one and require it
-to be a **draft**, because the publish-gate hole SH244 found is a state a MockMvc proof
-and a live one can disagree about the moment anything caches. The occupied-target
-refusal is worth the third call: its fix differs from the move's, and a wire test is
-what proves the slug a caller branches on is the one sent.
-
-Until then the proof is `ShAgentFolderCopyTest` against a real database, which is what
-the other seven declared ops have.
-
 ### XXIV.2 The gate nobody ran, and the ledger that stayed empty (SH755)
 
 `gh run list` on 2026-08-14: eight consecutive `Suites` runs, every one a failure, the

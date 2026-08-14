@@ -174,14 +174,14 @@ const UNEXERCISED = {
     // trashing a whole site on an instance somebody else may be using. `site.restore` joins the
     // list for the ordinary reason the other two restores are on it: nothing drives it yet.
     //
-    // `folder.copy` (SH244) is the first entry this list gained from the matrix doing its job
-    // rather than from an audit: the op shipped, this assertion went red in the same run, and the
-    // choice it forces was made rather than defaulted. It is DECLARED and not covered because the
-    // scenario it wants is a real one — copy a section into its own subtree, then copy it out —
-    // and writing a live scenario against no running instance is asserting what you did not
-    // observe, which is the one thing this tier exists to stop. Filed as SH748; until then the
-    // proof is ShAgentFolderCopyTest against a real database, which is what the other seven have.
-    "folder.copy", "folder.delete", "folder.restore",
+    // `folder.copy` was the first entry this list ever gained from the matrix doing its job rather
+    // than from an audit — the op shipped with SH244 and this assertion went red in the same run —
+    // and it came off with SH748, which is the shape the whole tier is for: it was DECLARED while
+    // nothing was running, because a live scenario written blind asserts what nobody observed, and
+    // it was COVERED once an instance existed to answer. Three of its strings were measured before
+    // they were asserted, and the pair of refusals turned out to carry different slugs and
+    // different fixes, which is what made the third call worth making.
+    "folder.delete", "folder.restore",
     "post.move", "post.restore", "post.unpublish", "site.delete", "site.restore",
   ],
   verbs: [

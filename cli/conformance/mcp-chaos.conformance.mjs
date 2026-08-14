@@ -138,6 +138,83 @@ describe("SH712: the vocabulary driven out of order", () => {
       + "about the cycle guard — that distinction is why this asserts the message (SH718).");
   });
 
+  test("a folder cannot be copied into its own subtree, and the refusal is not the move's", async () => {
+    // SH748. `folder.copy` shipped with SH244 and SH747's matrix went red in the same run: a
+    // mutating op had arrived that no live suite called. It was declared rather than covered
+    // because nothing was running, and a live scenario written blind asserts what nobody observed.
+    // Every string below was measured against an instance before it was asserted.
+    const answer = await mcp.call("shio_write", {
+      ops: [{ op: "folder.copy", address: `folder:${site}/a`, to: `folder:${site}/a/b/a` }],
+    });
+
+    assert.ok(refused(answer), `SH748: a cycle-creating copy was accepted: ${textOf(answer)}`);
+    assert.match(textOf(answer), /copied into itself or into its own subtree|recurse into the copies/i,
+      "SH748: refused for the wrong reason. `copy` and `move` share a shape and a caller who learns "
+      + "one gets the other wrong, so a copy rejected by the MOVE's guard — or because a name was "
+      + "taken — would prove nothing about this one (SH718's distinction, one verb over).");
+  });
+
+  test("a copy onto an occupied chain is refused, and differently from the cycle", async () => {
+    // The third call §XXIV.1 argued was worth making, and the instance agreed: this answers a
+    // different `type` slug with a different `fix` from the cycle above. A wire test is what proves
+    // the slug a caller branches on is the one actually sent.
+    const answer = await mcp.call("shio_write", {
+      ops: [{ op: "folder.copy", address: `folder:${site}/a`, to: `folder:${site}/a/b` }],
+    });
+
+    assert.ok(refused(answer), `SH748: a copy onto an occupied chain was accepted: ${textOf(answer)}`);
+    assert.match(textOf(answer), /already taken|two folders answering to one name chain/i,
+      "SH748: the occupied refusal has to be its own. The console numbers a clone and this op does "
+      + "not, precisely because a caller that cannot read the result has to know the address of "
+      + "what it made — so 'pick a free chain' is the instruction, and it is not the cycle's.");
+  });
+
+  test("a copy to a free chain lands, carries its posts, and every copy is a draft", async () => {
+    // The control the two refusals need: a guard suite with no success case passes by refusing
+    // everything. It is also where the publish gate is asked — SH244's hole is a state a MockMvc
+    // proof and a live one can disagree about the moment anything caches.
+    const seeded = await mcp.call("shio_write", {
+      ops: [
+        {
+          op: "post.upsert", address: `post:${site}/inside`, type: "Page", folder: "/a",
+          data: { title: "Inside", content: "The row the copy has to bring with it." },
+        },
+      ],
+    });
+    assert.ok(!refused(seeded), `SH748: the fixture post did not land: ${textOf(seeded)}`);
+    const published = await mcp.call("shio_publish", { address: [`post:${site}/inside`] });
+    assert.ok(!refused(published), `SH748: the fixture post did not publish: ${textOf(published)}`);
+
+    const copied = await mcp.call("shio_write", {
+      ops: [{ op: "folder.copy", address: `folder:${site}/a`, to: `folder:${site}/a-copy` }],
+    });
+    assert.ok(!refused(copied), `SH748: a copy to a free chain was refused: ${textOf(copied)}`);
+    assert.match(textOf(copied), /post\(s\)|every copy a draft/i,
+      "SH748: the result has to say what came with it. `folder.copy` that reported only the folder "
+      + "would be SH749's defect wearing a different hat — a copy whose rows arrived and whose "
+      + "bytes did not, with every surface reporting success.");
+
+    const inside = await mcp.call("shio_find", { folder: `folder:${site}/a-copy` });
+    assert.match(textOf(inside), /state=DRAFT/,
+      "SH748: the copy of a PUBLISHED post must not itself be published. That is the publish gate "
+      + "SH244 found a hole in, and it is the one assertion here a unit proof and a live instance "
+      + "can disagree about the moment anything caches.");
+
+    // The vacuity guard, and it is not ceremony: the assertion below is a NEGATIVE one, and a
+    // negative match passes perfectly against a format that never emits the token — a renamed
+    // marker, a changed projection, a find that returned nothing. So the source is read through
+    // the same tool first, and it has to carry `published`, or the next line is measuring nothing.
+    const source = await mcp.call("shio_find", { folder: `folder:${site}/a` });
+    assert.match(textOf(source), /\bpublished\b/,
+      "SH748: the source row does not report `published`, so this format cannot distinguish a "
+      + "published copy from a draft one and the assertion below is vacuous. Measured: the source "
+      + "reads `state=DRAFT published`.");
+    assert.doesNotMatch(textOf(inside), /\bpublished\b/,
+      "SH748: measured — the source row reads `state=DRAFT published` and the copy reads "
+      + "`state=DRAFT` alone. Asserting only the state would pass on a copy that WAS published, "
+      + "because a published post carries a draft too.");
+  });
+
   test("a confirm token stops covering the deletions it was issued for", async () => {
     // The token is a digest of what the plan actually deletes. Replaying one after the set changed
     // is the case P7 exists for: a human approved a specific removal, not a category of them.
