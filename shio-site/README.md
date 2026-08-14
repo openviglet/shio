@@ -149,6 +149,20 @@ ask for cannot reach the page. The one claim worth re-reading was the guardrails
 SH717 and SH726 both changed what a refusal *says* — neither sentence is quoted here, which is the
 same property that saved Block N.
 
+Block Q closed on 2026-08-12 and Block I on 2026-08-04, and neither changed a claim here — but
+both are recorded **ten days late**, which is the finding rather than the verdict. Their sweeps
+were never run: no closure paragraph, no `block drop`, and two headings standing over nothing in
+`docs/ROADMAP.md` while `stats` printed `0` beside each. What saved them is that the docs half was
+already green — every Block I and Block Q cluster in `COVERAGE.md` reads ✅ — so the omission cost
+two stale headings rather than a wrong page.
+
+Checked rather than assumed, and the check is cheap because both blocks ended in internals: Block
+Q's last four (SH692–SH695) are `verify`/`judge` reading regions and splitting kept markup, and
+Block I's (SH408–SH412) are projection lints and memory-note decay. Nothing there is quotable, and
+the `/replicate` copy names the four phases — clone, propose, convert, diff — which are still the
+four commands. The lesson is the one Block S taught two paragraphs up in a different way: a block
+completes when `stats` says so, and nothing was asking `stats`.
+
 Block J closed on 2026-08-12 and changed no claim here, but unlike the two below it that was
 not free — it was checked, and the check found the drift somewhere else. The site names
 twelve MCP tools including `shio_marketplace` and thirty-one CLI verbs including

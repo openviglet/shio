@@ -13,21 +13,15 @@
 
 - Block L
 
-## Block I — Content as files (local-first authoring)
-
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH746 ✅, SH106 ✅, viglet-quota-spi) **The storage meter landed, so what blocks the ceiling is a delta-aware check in the shared quota SPI** — SH746 counts the bytes; the ceiling needs check(resource, delta) upstream, since the current call compares a total and one upload can exceed it. → §XII.5
 - 📋 **SH750** (deps: SH244 ✅, SH110, viglet-quota-spi) **One write that creates N posts asks the post quota once, so a bulk copy overshoots the plan by N-1** — checkCanCreatePost compares a total against the limit, which is exact only for a write that adds one; SH110 names the same missing SPI for bytes. → §XII.28
 - 📋 **SH751** (deps: SH45, SH746 ✅) **Nothing calls ShTenantStorageMeter.record, so the storage meter reads zero until somebody reconciles** — The meter, its counter wiring and its reconcile all shipped; the calls that move it on upload and on cleanup were never written. → §XII.29
 
-## Block Q — Replication (an existing site becomes an authorable Shio site)
-
 ## Block F — Market positioning
 
 - 💭 **SH45** (deps: SH22 ✅) **Nothing meters API calls, and there are no billing-export hooks** — A call is a flow and the counter SPI models levels; the existing per-token bucket is in-heap and per-node, so it cannot be what a bill is computed from. → §VI.5
-
-## Block S — The public site (shio.viglet.org)
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 

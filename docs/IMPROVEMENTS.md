@@ -754,3 +754,10 @@ what proves the slug a caller branches on is the one sent.
 
 Until then the proof is `ShAgentFolderCopyTest` against a real database, which is what
 the other seven declared ops have.
+
+## XXV Realignment of what already shipped (Block N)
+
+Where the rationale for Block N lives. The block is a standing category rather than a
+project: it receives findings about work that already shipped, so it empties and reopens
+rather than finishing, and each reopening is one finding whose repair is not itself a
+feature.
