@@ -278,30 +278,6 @@ nothing. **Do not refuse on size** — a ceiling invented here is a second quota
 and the failure it causes (a legitimate section copy refused on a generous plan) is
 worse than the one it prevents.
 
-### XII.31 The meter counts the agent and cannot be read by it (SH754)
-
-SH45 landed the meter with one route out for a human caller — `GET /api/v2/tenant/usage`
-— and one for an external billing system, the `ShBillingExporter` SPI. Neither is
-reachable by the party the numbers are mostly about.
-
-P1 orders every capability MCP → files/CLI → REST → console, and this arrived at REST
-only. That is the ordinary shape of the violation the product is named after, but the
-case is sharper than most: the meter's largest single surface key is `agent`, so the
-caller that cannot read the figure is the one generating it. An agent asked to work
-inside a budget has no way to ask what it has already spent, which makes the budget
-advice rather than a bound.
-
-What this is not: a quota. Enforcing a ceiling on calls is SH110's blocked question and
-needs `check(resource, delta)` in Viglet's kernel. Reading a number Shio already holds
-needs nothing from anybody.
-
-The likely shape is a read on the agent surface next to `/agent/diagnostics`, which is
-already the place an agent goes to find out what it did, and an `MCP` resource rather
-than a tool — usage is state to look at, not an act to perform. Both should answer for
-the current tenant only, the way the REST route does, and both should say what is
-*pending* as well as what is written, or the answer reads as zero for the first minute
-of every window and an agent will learn to distrust it.
-
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened

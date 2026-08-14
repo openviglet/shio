@@ -111,6 +111,22 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   that exists: `clone → propose → convert` is a CLI path and the eleven tools are the content
   surface. The module driver stays — faster, and it localises a failure — but it is not evidence
   about the wire.
+- **`shio://usage` is what the caller has spent, and the meter had counted it without telling it
+  (SH754)** — SH45 published the API-call meter at `GET /api/v2/tenant/usage` and through the
+  `ShBillingExporter` SPI: a human route and a billing route. The meter's own surface keys name the
+  gap — `agent` is one of the three it counts — so the caller generating the largest share of the
+  number was the one that could not read it, and an agent told to work inside a budget with no way
+  to query its spend has been given advice rather than a bound. A **resource** on SH596's
+  judgement: a read with no arguments is state to look at, not an act to perform, and `tools/list`
+  is paid every turn. The twin is `GET /agent/context?include=usage` rather than a new route,
+  following `shio://ops` — a new capability does not get its own endpoint by default. Both call
+  `ShAgentUsageService`, so identical bytes is a property of the construction rather than of
+  review. **Written *and* pending are both stated**: the meter flushes on an interval, so a
+  document reporting only durable counts answers zero for the first minute of every window, and an
+  agent that reads zero right after doing work stops believing the number. The section is opt-in
+  and, unlike `manifest` and `ops`, for a second reason of its own — it changes on *every* call,
+  so letting it into the digest would make SH116's conditional read never match. Manifest flag:
+  `usageMeter`, classified `MCP_RESOURCE` in `ShAgentP1ConformanceTest`.
 - **Every resource declares its HTTP twin, and a build guard checks the route exists (SH346)** —
   `ShMcpResource.httpTwin()`, asserted against the live handler mappings by
   `ShMcpResourceHttpTwinLintTest`. Publishing a document over MCP alone is a P1 break;

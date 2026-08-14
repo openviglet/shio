@@ -253,6 +253,13 @@ class ShAgentP1ConformanceTest {
                 + "rather than a twelfth tool"));
         byFeature.put("durableIncidents", mcp("shio_changes", "the same feed, and the row survives a "
                 + "restart (SH144)"));
+        // SH754 — the meter counts an `agent` surface and published the total to a human route and
+        // a billing SPI, so the caller generating most of the number was the one that could not
+        // read it. Same category as diagnostics and for the same two reasons: a read with no
+        // arguments, and tools/list is paid every turn.
+        byFeature.put("usageMeter", mcpResource("shio://usage", "calls per surface with what is "
+                + "written and what is still pending, plus stored bytes; also the context pack's "
+                + "include=usage section, so an HTTP-only agent reads the same bytes"));
         // SH342 — `when` on post.publish. Note what this exposed about the rot check itself: the
         // exception named `/post-unified/{id}/schedule` as what would resolve it, and the fix took a
         // different shape (an argument on a tool that already existed), so nothing failed and the

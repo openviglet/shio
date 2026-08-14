@@ -186,6 +186,11 @@ public class ShAgentManifestService {
         features.put("routeCheck", true);
         features.put("renderDigest", true);
         features.put("diagnostics", true);
+        // SH754: whether this instance can say what the caller has spent. Worth a flag for the
+        // reason durableIncidents below is — it changes what a *question* means: without it, "how
+        // much of my budget is left" has no answer here and a plan is something the agent has to
+        // be told rather than something it can read.
+        features.put("usageMeter", true);
         // SH144: the incident record survives a restart, and rides the SH88 cursor. Worth its
         // own flag because it changes what a *question* means, not just what an endpoint
         // returns: with it false, "was anything failing while I was away" is unanswerable and

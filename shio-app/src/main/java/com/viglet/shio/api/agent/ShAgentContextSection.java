@@ -57,17 +57,46 @@ public enum ShAgentContextSection {
      * on the same footing as the manifest section SH346 measured and rejected. Like the manifest it
      * is attached after the digest is taken, so asking for it does not invalidate a cached pack.</p>
      */
-    OPS;
+    OPS,
+    /**
+     * SH754 — what this tenant has spent today, per surface, the same bytes {@code shio://usage}
+     * serves.
+     *
+     * <p>SH45's meter counts an agent's calls under the {@code agent} surface key and published
+     * the total only at {@code GET /api/v2/tenant/usage}, so the caller generating the largest
+     * share of the number was the one that could not read it. A budget nobody can query is advice
+     * rather than a bound.</p>
+     *
+     * <p><b>Asked for by name, and this one has a second reason.</b> Like {@link #MANIFEST} and
+     * {@link #OPS} it is not content — so it must not move the digest — but unlike them it
+     * <em>changes on every call</em>, this one included. Defaulting it on would make the pack a
+     * document that never repeats, which is precisely what SH116's conditional read exists to
+     * avoid.</p>
+     */
+    USAGE;
 
     /**
      * What a bare {@code /agent/context} returns, and what {@code include=all} means.
      *
-     * <p>Everything except {@link #MANIFEST} and {@link #OPS} — see their notes. "All the sections
-     * of the context pack" and "the context pack plus a different document" are different requests,
-     * and only the first one should be reachable without saying so.</p>
+     * <p>Everything except {@link #MANIFEST}, {@link #OPS} and {@link #USAGE} — see their notes.
+     * "All the sections of the context pack" and "the context pack plus a different document" are
+     * different requests, and only the first one should be reachable without saying so.</p>
      */
     private static Set<ShAgentContextSection> defaults() {
-        return EnumSet.complementOf(EnumSet.of(MANIFEST, OPS));
+        return EnumSet.complementOf(EnumSet.of(MANIFEST, OPS, USAGE));
+    }
+
+    /**
+     * Whether a bare {@code /agent/context} carries this section — the one place "opt-in" is
+     * decided.
+     *
+     * <p>Exposed because {@code omitted} needs the same answer, and the two had drifted: SH754
+     * added {@link #USAGE} to {@link #defaults()} and not to the loop that builds {@code omitted},
+     * so a default pack reported a section as withheld that no caller had asked for. Two lists of
+     * the same fact is one list too many.</p>
+     */
+    public static boolean isDefault(ShAgentContextSection section) {
+        return defaults().contains(section);
     }
 
     /** Lower-case names, in declaration order — the {@code allowed} set of the 400. */

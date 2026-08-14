@@ -76,7 +76,15 @@ public record ShAgentContext(
         String ops,
         String digest,
         Budget budget,
-        List<String> omitted) {
+        List<String> omitted,
+        /**
+         * SH754 — this tenant's spend today, per surface, written and pending, the same bytes
+         * {@code shio://usage} serves. <b>Absent unless {@code include=usage} names it</b>, and
+         * attached after the digest for a reason the other two opt-in sections only share by
+         * accident: this one changes on <em>every</em> call, so letting it into the digest would
+         * make a conditional read never match.
+         */
+        String usage) {
 
     /**
      * The sections {@code include=} removed (SH608), or {@code null} when the pack is whole.
@@ -106,7 +114,7 @@ public record ShAgentContext(
                           List<Type> model, List<Node> sitemap, List<String> conventions,
                           ShAgentManifest capabilities, String ops, String digest, Budget budget) {
         this(protocol, manifest, instance, sites, model, sitemap, conventions, capabilities, ops,
-                digest, budget, null);
+                digest, budget, null, null);
     }
 
     /** Every caller from before SH157, which is every one that does not ask for capabilities. */
@@ -120,19 +128,25 @@ public record ShAgentContext(
     /** The same pack carrying capabilities — the one thing SH157 adds to this shape. */
     public ShAgentContext withCapabilities(ShAgentManifest value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, value, ops, digest, budget, omitted);
+                conventions, value, ops, digest, budget, omitted, usage);
     }
 
     /** The same pack, saying which sections `include=` removed (SH608). */
     public ShAgentContext withOmitted(List<String> value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, capabilities, ops, digest, budget, value);
+                conventions, capabilities, ops, digest, budget, value, usage);
     }
 
     /** The same pack carrying the write vocabulary (SH346). */
     public ShAgentContext withOps(String value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, capabilities, value, digest, budget, omitted);
+                conventions, capabilities, value, digest, budget, omitted, usage);
+    }
+
+    /** The same pack carrying this tenant's spend (SH754). */
+    public ShAgentContext withUsage(String value) {
+        return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
+                conventions, capabilities, ops, digest, budget, omitted, value);
     }
 
     /**

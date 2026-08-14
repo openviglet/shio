@@ -83,6 +83,7 @@ public class ShAgentContextService {
     private final ShAgentMemoryService memoryService;
     private final ShAgentManifestService shAgentManifestService;
     private final ShTemplateEngine shTemplateEngine;
+    private final ShAgentUsageService shAgentUsageService;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -92,7 +93,9 @@ public class ShAgentContextService {
                                 ShAgentSiteAccess siteAccess,
                                 ShAgentMemoryService memoryService,
                                 ShAgentManifestService shAgentManifestService,
-                                ShTemplateEngine shTemplateEngine) {
+                                ShTemplateEngine shTemplateEngine,
+                                ShAgentUsageService shAgentUsageService) {
+        this.shAgentUsageService = shAgentUsageService;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -194,10 +197,16 @@ public class ShAgentContextService {
         ShAgentContext withOps = sections.contains(ShAgentContextSection.OPS)
                 ? digested.withOps(ShAgentOps.terse())
                 : digested;
+        // SH754 — this tenant's spend, on the same terms and with one extra reason of its own: it
+        // changes on every call, so a digest that covered it would make SH116's conditional read
+        // never match. Byte-identical to shio://usage, because both call the one service.
+        ShAgentContext withUsage = sections.contains(ShAgentContextSection.USAGE)
+                ? withOps.withUsage(shAgentUsageService.terse())
+                : withOps;
         // SH608 — attached last, and after the digest, for the reason `budget` is: this describes
         // the REQUEST, not the content, so a caller narrowing the pack must not get a different
         // entity tag for the same instance state.
-        return withOps.withOmitted(omitted(sections));
+        return withUsage.withOmitted(omitted(sections));
     }
 
     /**
@@ -220,11 +229,13 @@ public class ShAgentContextService {
     private static List<String> omitted(Set<ShAgentContextSection> sections) {
         List<String> dropped = new ArrayList<>();
         for (ShAgentContextSection section : ShAgentContextSection.values()) {
-            // MANIFEST and OPS are opt-IN — absent by default and not part of the pack a caller
-            // asked for. Reporting them as omitted would tell every default request that two
-            // sections were withheld, which is the opposite of what this field is for.
-            if (section == ShAgentContextSection.MANIFEST
-                    || section == ShAgentContextSection.OPS) {
+            // MANIFEST, OPS and USAGE are opt-IN — absent by default and not part of the pack a
+            // caller asked for. Reporting them as omitted would tell every default request that
+            // three sections were withheld, which is the opposite of what this field is for.
+            // Keyed off `defaults()` rather than a list repeated here, so the next opt-in section
+            // cannot arrive correct in one place and wrong in this one — which is exactly how
+            // SH754 landed, adding USAGE to the enum's exclusions and not to this loop's.
+            if (!ShAgentContextSection.isDefault(section)) {
                 continue;
             }
             if (!sections.contains(section)) {

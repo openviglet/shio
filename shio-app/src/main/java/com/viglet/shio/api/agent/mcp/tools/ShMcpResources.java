@@ -17,6 +17,7 @@ import com.viglet.shio.api.agent.ShAgentContextService;
 import com.viglet.shio.api.agent.ShAgentContextTerse;
 import com.viglet.shio.api.agent.ShAgentManifestService;
 import com.viglet.shio.api.agent.ShAgentOps;
+import com.viglet.shio.api.agent.ShAgentUsageService;
 import com.viglet.shio.api.agent.diagnostics.ShAgentDiagnosticsService;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
@@ -205,6 +206,40 @@ public class ShMcpResources {
                         + "response is gone and this is where its cause still is.",
                 TEXT, "/api/v2/agent/diagnostics",
                 uri -> ShAgentVerifyTerse.diagnostics(diagnosticsService.diagnostics(null)));
+    }
+
+    /**
+     * What this tenant has spent (SH754).
+     *
+     * <h2>The meter counted the agent and the agent could not read it</h2>
+     *
+     * <p>SH45 published the API-call meter at {@code GET /api/v2/tenant/usage} and through the
+     * {@code ShBillingExporter} SPI — a human route and a billing route. The meter's own surface
+     * keys name the gap: {@code agent} is one of the three it counts, so the caller generating the
+     * largest share of the number was the one with no way to ask for it. An agent told to work
+     * inside a budget and unable to query its spend has been given advice, not a bound.</p>
+     *
+     * <h2>A resource, and terse</h2>
+     *
+     * <p>Same judgement as {@code shio://diagnostics} (SH596): a read with no arguments, which is
+     * state to look at rather than an act to perform, and {@code tools/list} is paid every turn
+     * (P3) while a resource is one row on {@code resources/list}. The twin is a projection on the
+     * context pack rather than a new endpoint, following {@code shio://ops} — a new capability does
+     * not get a new route by default.</p>
+     *
+     * <p><b>Written and pending, both stated.</b> The meter flushes on an interval, so a document
+     * reporting only what is durable would answer zero for the first minute of every window, and an
+     * agent that reads zero right after doing work stops believing the number.</p>
+     */
+    @Bean
+    ShMcpResource shMcpUsageResource(ShAgentUsageService usageService) {
+        return resource("shio://usage", "Shio usage meter",
+                "What this tenant has spent today: API calls per surface (cda, agent, console), "
+                        + "each with what is durably counted and what is still pending a flush, "
+                        + "plus stored bytes and the plan. Read it to know what a budget has left "
+                        + "rather than to guess.",
+                TEXT, "/api/v2/agent/context?include=usage",
+                uri -> usageService.terse());
     }
 
     @Bean

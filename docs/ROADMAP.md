@@ -17,7 +17,6 @@
 
 - 💭 **SH110** (deps: SH746 ✅, SH106 ✅, viglet-quota-spi) **The storage meter landed, so what blocks the ceiling is a delta-aware check in the shared quota SPI** — SH746 counts the bytes; the ceiling needs check(resource, delta) upstream, since the current call compares a total and one upload can exceed it. → §XII.5
 - 📋 **SH750** (deps: SH244 ✅, SH110, viglet-quota-spi) **One write that creates N posts asks the post quota once, so a bulk copy overshoots the plan by N-1** — checkCanCreatePost compares a total against the limit, which is exact only for a write that adds one; SH110 names the same missing SPI for bytes. → §XII.28
-- 📋 **SH754** (deps: SH45 ✅) **The SH45 usage read is REST-only, so the agent whose calls it counts cannot read its own spend** — P1 lands every capability MCP first; the meter answers only at GET /api/v2/tenant/usage, which no MCP tool or agent route reaches. → §XII.31
 
 ## Block F — Market positioning
 

@@ -27,6 +27,11 @@
       "mimeType" : "text/plain",
       "name" : "Shio write vocabulary",
       "uri" : "shio://ops"
+    }, {
+      "description" : "#string",
+      "mimeType" : "text/plain",
+      "name" : "Shio usage meter",
+      "uri" : "shio://usage"
     } ]
   }
 }

@@ -65,6 +65,11 @@ public final class ShAgentContextTerse {
             // one document whose whole purpose is that there is only one.
             out.append(pack.ops());
         }
+        if (pack.usage() != null) {
+            // Verbatim (SH754), byte-identical to shio://usage for the same reason the ops block
+            // is: one document, one spelling, whichever surface asked for it.
+            out.append(pack.usage());
+        }
         out.append(ShTerse.line("digest").word(pack.digest()).build());
         ShAgentContext.Budget budget = pack.budget();
         if (budget != null) {
