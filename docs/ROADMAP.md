@@ -11,7 +11,6 @@
 
 ## Priority
 
-- Block O
 - Block L
 
 ## Block I — Content as files (local-first authoring)
@@ -19,10 +18,10 @@
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH746 ✅, SH106 ✅, viglet-quota-spi) **The storage meter landed, so what blocks the ceiling is a delta-aware check in the shared quota SPI** — SH746 counts the bytes; the ceiling needs check(resource, delta) upstream, since the current call compares a total and one upload can exceed it. → §XII.5
+- 📋 **SH749** (deps: SH244 ✅, SH38 ✅) **Copying a folder duplicates a File post's row and not its bytes, so every asset in the copy 404s** — Bytes live at file_source/&lt;post id&gt;/ and a copy gets a fresh id, so both surfaces report success and produce a section whose images are gone. → §XII.27
+- 📋 **SH750** (deps: SH244 ✅, SH110, viglet-quota-spi) **One write that creates N posts asks the post quota once, so a bulk copy overshoots the plan by N-1** — checkCanCreatePost compares a total against the limit, which is exact only for a write that adds one; SH110 names the same missing SPI for bytes. → §XII.28
 
 ## Block O — The human half (the console the curator uses)
-
-- 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
@@ -31,6 +30,10 @@
 - 💭 **SH45** (deps: SH22 ✅) **Nothing meters API calls, and there are no billing-export hooks** — A call is a flow and the counter SPI models levels; the existing per-token bucket is in-heap and per-node, so it cannot be what a bill is computed from. → §VI.5
 
 ## Block S — The public site (shio.viglet.org)
+
+## Block V — The vocabulary proved live (integration tests against a running instance)
+
+- 📋 **SH748** (deps: SH244 ✅, SH712 ✅) **folder.copy has no live coverage, and the matrix said so on the run that shipped it** — It was declared uncovered rather than covered, because writing a live scenario against no running instance asserts what nobody observed. → §XXIV.1
 
 ## Non-goals (do NOT add as tasks)
 

@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -212,7 +213,7 @@ public class ShObjectWriteService {
                 // children, so a destination inside the source makes the walk descend into
                 // the copies it is still making, and it never returns.
                 shFolderWriteService.checkCopyable(id, dest);
-                copies.add(copyFolder(folder, dest));
+                copies.add(copyFolder(folder, dest, freeFolderName(folder.getName(), dest), false));
             } else if (dest instanceof ShFolder destFolder) {
                 copyPost(id, destFolder);
             }
@@ -243,11 +244,87 @@ public class ShObjectWriteService {
         }
     }
 
-    private ShFolder copyFolder(ShFolder source, ShObject dest) {
+    /**
+     * Duplicates one folder under {@code dest} at a name the <b>caller</b> chose (SH244).
+     *
+     * <h2>Why the agent path needs a named copy and the console does not</h2>
+     *
+     * <p>{@link #copyTo} numbers its copies through {@link #freeFolderName} — right for a
+     * curator, who clicks "clone" and then reads what appeared. An agent cannot read: it has to
+     * know the address of what it just made in order to write the next op against it, and a
+     * server-chosen {@code "archive (2)"} is a second round trip to find out (P2) and a name the
+     * caller never asked for (P5). So the op supplies the whole name chain and an occupied
+     * target is refused rather than numbered.</p>
+     *
+     * <p>Only the <b>top</b> folder is named. Everything beneath it keeps its own name, because
+     * the copy's children are being created under a parent that is itself brand new — nothing
+     * there can collide, and renaming a subtree the caller did not address would be the
+     * surprise P7 forbids.</p>
+     *
+     * <p>This is the one copy implementation and both surfaces reach it, which is SH245's rule:
+     * a second copy of a content verb is where the careless version grows. It is also why the
+     * cycle guard is asked here and not by each caller.</p>
+     *
+     * <h2>{@code asDrafts}, and why the agent path is the caller that asks for it</h2>
+     *
+     * <p>A copy otherwise reproduces each of a post's state rows as it found them, which is
+     * {@link #copyTo}'s documented behaviour and correct there: a curator who clones a live page
+     * gets a live clone, at a URL {@link #freeNaming} has already made unique, and can see what
+     * happened. Handed to an agent, the same rule is a <b>hole in SH107's publish gate</b> — a
+     * credential without {@code mayPublish} could put a whole section live by copying it, which is
+     * the one thing "the agent path is never a privilege escalation" (SH201) names outright. So
+     * the op passes {@code true} and gets one DRAFT row per post; the console keeps what it had.
+     * A post that exists <em>only</em> as {@code PUBLISHED} — SH38's uploaded asset, or an exchange
+     * import — is copied as a draft rather than skipped, since dropping it would make a folder copy
+     * silently lose content.</p>
+     *
+     * @return the new folder, or {@code empty} when {@code sourceFolderId} is not a live folder
+     */
+    @Transactional
+    public Optional<ShFolder> copyFolderAs(String sourceFolderId, ShObject dest, String name,
+                                           boolean asDrafts) {
+        if (dest == null || !(live(sourceFolderId) instanceof ShFolder source)) {
+            return Optional.empty();
+        }
+        shFolderWriteService.checkCopyable(sourceFolderId, dest);
+        String chosen = safe(name).isBlank() ? freeFolderName(source.getName(), dest) : name;
+        return Optional.of(copyFolder(source, dest, chosen, asDrafts));
+    }
+
+    /**
+     * How much a folder copy would duplicate, without duplicating it — what a {@code dryRun}
+     * reports (SH244).
+     *
+     * <p>It lives beside the copy rather than in the caller for {@link #checkCopyable}'s reason:
+     * a second walk of the subtree is how a plan comes to describe a run that does something
+     * else. The numbers are the <em>logical</em> objects — a post whose DRAFT and PUBLISHED rows
+     * both copy is one post — because that is what the caller is going to see afterwards.</p>
+     */
+    @Transactional(readOnly = true)
+    public CopyScope scopeOf(String folderId) {
+        if (!(live(folderId) instanceof ShFolder folder)) {
+            return new CopyScope(0, 0);
+        }
+        return scopeOf(folder, new CopyScope(1, 0));
+    }
+
+    private CopyScope scopeOf(ShFolder folder, CopyScope soFar) {
+        CopyScope scope = new CopyScope(soFar.folders(), soFar.posts()
+                + dedupById(shPostUnifiedRepository.findByShFolderAndStateIn(folder, ALL_STATES)).size());
+        for (ShFolder child : shFolderRepository.findByParentFolder(folder)) {
+            scope = scopeOf(child, new CopyScope(scope.folders() + 1, scope.posts()));
+        }
+        return scope;
+    }
+
+    /** What a copy is about to duplicate: folders including the one addressed, and posts. */
+    public record CopyScope(int folders, int posts) {
+    }
+
+    private ShFolder copyFolder(ShFolder source, ShObject dest, String name, boolean asDrafts) {
         // SH202 one level up: a folder is addressed by its name chain (SH79), so two
         // siblings of the same name make `folder:<site>/a/b` resolve to whichever the walk
         // reaches first — the post case's defect with the addressing scheme swapped.
-        String name = freeFolderName(source.getName(), dest);
         ShFolder copy = new ShFolder();
         copy.setName(name);
         copy.setFurl(ShURLFormatter.format(name));
@@ -257,15 +334,21 @@ public class ShObjectWriteService {
         ShFolder saved = shFolderRepository.save(copy);
 
         for (ShPostUnified row : dedupById(shPostUnifiedRepository.findByShFolderAndStateIn(source, ALL_STATES))) {
-            copyPost(row.getId(), saved);
+            copyPost(row.getId(), saved, asDrafts);
         }
         for (ShFolder child : shFolderRepository.findByParentFolder(source)) {
-            copyFolder(child, saved);
+            // The child's own name, unnumbered: `saved` was created a line ago and holds
+            // nothing, so `freeFolderName` could only ever return the name it was given.
+            copyFolder(child, saved, safe(child.getName()), asDrafts);
         }
         return saved;
     }
 
     private void copyPost(String postId, ShFolder destFolder) {
+        copyPost(postId, destFolder, false);
+    }
+
+    private void copyPost(String postId, ShFolder destFolder, boolean asDrafts) {
         List<ShPostUnified> sources = shPostUnifiedRepository.findById(postId);
         if (sources.isEmpty()) {
             return;
@@ -275,10 +358,15 @@ public class ShObjectWriteService {
         // rows of the same post, and letting them be numbered independently would produce a
         // copy whose published URL is not the one its draft claims.
         Naming naming = freeNaming(sources.get(0).getTitle(), destFolder);
-        for (ShPostUnified source : sources) {
+        // SH244 — one row, DRAFT, when the caller asked for drafts. The DRAFT is preferred and
+        // the PUBLISHED row stands in only when there is no draft behind it (an uploaded asset,
+        // an exchange import): skipping it instead would make a folder copy lose content, and
+        // reproducing it as PUBLISHED is the publish-gate hole the flag exists to close.
+        List<ShPostUnified> rows = asDrafts ? List.of(preferredRow(sources)) : sources;
+        for (ShPostUnified source : rows) {
             ShPostUnified copy = new ShPostUnified();
             copy.setId(newId);
-            copy.setState(source.getState());
+            copy.setState(asDrafts ? ShPostState.DRAFT : source.getState());
             copy.setShPostType(source.getShPostType());
             copy.setShFolder(destFolder);
             copy.setShSite(ShFolderSite.of(destFolder));
@@ -295,6 +383,14 @@ public class ShObjectWriteService {
 
     /** What a copy will be called, and where it will answer. */
     private record Naming(String title, String furl) {
+    }
+
+    /** The DRAFT row of a post if it has one — the editable one, which is what a copy is. */
+    private static ShPostUnified preferredRow(List<ShPostUnified> rows) {
+        return rows.stream()
+                .filter(row -> row.getState() == ShPostState.DRAFT)
+                .findFirst()
+                .orElse(rows.get(0));
     }
 
     /**

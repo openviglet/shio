@@ -256,6 +256,51 @@ a 512 MB plan passes it whenever the tenant is at zero. Shio deliberately shippe
 to this repository, which is worth stating because it decides who can do the work rather
 than merely how much is left.
 
+### XII.27 A folder copy leaves its assets behind (SH749)
+
+`ShObjectWriteService.copyPost` gives every copy a fresh UUID, which is right for a post
+and wrong for a `File`: SH38 stores the bytes at `store/file_source/<post id>/<name>`,
+so the copy's row points at a directory nobody wrote. The console's clone has done this
+since it existed and `folder.copy` (SH244) inherits it, which is what makes it worth
+filing now — an agent duplicating a section is the first caller likely to copy a folder
+of assets at all, and the one least able to notice, since every surface reports success.
+
+The symptom is a replica's own worst case: `verify` passes (the reference resolves — the
+post is there), the page renders, and the images 404 at delivery. SH470 and SH501 both
+spent a task on `File` posts being judged by rules written for content posts; this is
+the same family, one write along.
+
+Three shapes, and the choice is the task. **Copy the bytes** — honest, and it silently
+doubles storage on a gesture nobody thinks of as an upload, which is SH45's meter's
+problem the moment it exists. **Share them**: point the copy at the source's directory,
+cheap and wrong the first time either is purged, since `ShStaticFileCleanupListener`
+frees a directory on `DELETE`. **Refuse**: a copy naming a subtree with assets in it is
+teachable, and a refusal that names the count is better than a section that looks
+complete. Whatever it is, the assertion is the one this needs either way: a copied
+`File` answers 200.
+
+### XII.28 A bulk write asks a per-one quota (SH750)
+
+`VigletQuotaService.check(resource)` compares the tenant's current count against the
+plan's limit and throws 402. That is exact for every write the check was built for — a
+post create adds precisely one — and `folder.copy` (SH244) is the first write on this
+surface that adds an unbounded number in one call. A tenant one post below its ceiling
+can copy a section of fifty and be fifty over it, with no refusal anywhere.
+
+This is SH110's finding on a different resource, and the two should be read together:
+that one says the storage ceiling is blocked on `check(resource, delta)` in the shared
+kernel, and so is this. What is new is that the gap now has a *content* path into it
+rather than only an upload path, which is the half a Shio-side change could not have
+reached.
+
+The op asks once today rather than not at all, which is better than the console's none
+and is deliberately not dressed up as a guarantee — the code says so where it is called.
+Two things not to do while waiting for the SPI. **Do not loop the check**: it reads a
+count the copy has not written yet, so N calls answer one question N times and refuse
+nothing. **Do not refuse on size** — a ceiling invented here is a second quota model,
+and the failure it causes (a legitimate section copy refused on a generous plan) is
+worse than the one it prevents.
+
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
@@ -474,28 +519,6 @@ asserted at the level the agent surface is.
 > SH164/SH239 precedent, that a test asserting something about the whole instance has to boot
 > its own database.
 
-### XVI.4 Duplicating content is console-only (SH244)
-
-Copy lives at `PUT /api/v2/object/copyto/{dest}` and nowhere else: no `batch` op, no MCP verb,
-no CLI path. That is law P1's "no feature whose only interface is the console".
-
-For a **post** this is close to harmless, worth saying rather than overstating the gap: an agent
-duplicates a page by reading it and upserting the fields at a new address, which loses nothing,
-because a copy of a post is just its field values somewhere else. The honest gap is the
-**folder**. A folder copy buys the whole subtree in one call, and reproducing that over the
-agent surface means walking the tree and emitting an upsert per post — the discovery-and-write
-loop Block H exists to remove, in the one case where the server can do it in one traversal.
-
-If it lands it is a `folder.copy` op on the batch surface, not a new endpoint, and it composes:
-SH202's naming and SH203's cycle guard already live on the shared writers, so the op is an
-address pair and a call. Two things it must inherit — the copy is **draft** (`copyPost` sets
-`published(false)`, and a batch that published a hundred pages would need SH107's gate for a
-reason nobody intended) and it is **not** destructive, so it needs no SH108 confirm.
-
-It stays 💭 because the demand is unproven: no blueprint, no CLI command and no recorded session
-has wanted it. Filed so the next one need not rediscover that the capability is reachable but
-expensive.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
@@ -696,3 +719,35 @@ it out of order.
 
 Non-goals bind here as everywhere: the instance runs no browser, and none of this
 becomes a third contract.
+
+## XXIV The vocabulary proved live (Block V)
+
+Where the rationale for Block V lives: what a running instance has been asked, and what
+it has not. The tier exists because a MockMvc proof and a wire answer can disagree —
+over a schema the client had to guess, a refusal slug it has to branch on, or a cache
+nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
+rather than counting, the verbs no live suite has ever called.
+
+### XXIV.1 folder.copy has no live coverage (SH748)
+
+SH747's coverage matrix went red on the same run that shipped `folder.copy`, which is
+the instrument working: a mutating op arrived and no live suite had ever called it. The
+choice it forces — write the scenario, or declare the gap with a reason — was made
+rather than defaulted, and the entry in `UNEXERCISED.ops` says which and why.
+
+Why declared: no instance was running, and a live scenario written blind is an assertion
+about something nobody observed. That is the failure this tier exists to prevent, and
+the file already records three cases where the instance contradicted a draft —
+`folder.move` alone got its `to` wrong twice.
+
+What the scenario is, when somebody has an instance. `mcp-chaos.conformance.mjs` already
+seeds `/a` and `/a/b` and drives the move's cycle guard, so this is a sibling of a test
+that exists: copy `/a` into `/a/b/a` and require a refusal naming the subtree; copy `/a`
+to a free chain and require the copy there with its posts; then read one and require it
+to be a **draft**, because the publish-gate hole SH244 found is a state a MockMvc proof
+and a live one can disagree about the moment anything caches. The occupied-target
+refusal is worth the third call: its fix differs from the move's, and a wire test is
+what proves the slug a caller branches on is the one sent.
+
+Until then the proof is `ShAgentFolderCopyTest` against a real database, which is what
+the other seven declared ops have.

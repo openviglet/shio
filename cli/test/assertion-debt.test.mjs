@@ -340,7 +340,10 @@ const REVEALED = {
   "SH196"  : "ShAgentSafetyTest.java",
   "SH198"  : "content-commands.test.mjs",
   "SH199"  : "content-commands.test.mjs",
-  "SH203"  : "ShObjectCopyNamingTest.java",
+  // SH203 was here, credited to ShObjectCopyNamingTest, and SH244 paid it: `folder.copy` drives a
+  // destination inside the source's own subtree and requires `folder-copy-cycle`, so the guard
+  // SH203 installed on `ShFolderWriteService.checkCopyable` — the one both surfaces share — now
+  // fails a build if it is removed. A different entry point from the console's, and the same code.
   "SH214"  : "content-commands.test.mjs",
   "SH236"  : "ShPostTypeRenameTest.java",
   "SH288"  : "ShAgentP1ConformanceTest.java",

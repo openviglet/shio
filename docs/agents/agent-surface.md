@@ -181,7 +181,7 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
 
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `site.delete`, `site.restore`,
-  `folder.upsert`, `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`,
+  `folder.upsert`, `folder.move`, `folder.copy`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`,
   `folder.delete`, `post.delete`) in one transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
   SH108's `confirm` from its own dry run. **`?verify=true` returns the run's own proof
   (SH157)** — the SH99 lint over exactly the addresses it touched, which removes the closing
@@ -293,6 +293,32 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   navigates *down* from the site root, a curator could pick a child of the folder being
   dragged, which succeeds and detaches the subtree from the root. `checkMovable` is how a
   `dryRun` reports those refusals without writing.
+  **`folder.copy` (SH244) is the last content verb the console had to itself** — copy lived at
+  `PUT /api/v2/object/copyto/{dest}` and nowhere else. For a **post** that was close to harmless:
+  an agent duplicates a page by reading it and upserting the fields elsewhere, and a copy of a post
+  *is* its field values somewhere else — which is why there is no `post.copy` and a second name on
+  `tools/list` forever was refused on SH733's grounds. The gap is the **folder**: a folder copy buys
+  the whole subtree in one call, and reproducing that here means walking the tree and emitting an
+  upsert per post, the discovery-and-write loop Block H exists to remove, in the one case the
+  server can do in one traversal. `to` is **the copy's own whole name chain**, exactly as it is for
+  a move, so its last segment is what the copy is called — the console numbers a clone
+  (`"archive (2)"`), which is right for somebody who can look at the result and wrong for a caller
+  that must write the next op against the address. **Occupied is refused, never numbered**
+  (`copy-target-occupied`, its own slug because a copy's fix is to pick another name while a move's
+  is to clear the destination), and it **may cross sites** where `folder.move` refuses to: a copy
+  detaches nothing, both sites go through the SH2 allow-list, and `cross-site-move`'s own fix used
+  to send the caller round a per-post loop and now names this op. Not destructive, so no `confirm`
+  — the same argument `folder.move` makes about being pushed back to the unsafe pair.
+  **Every copied post lands as one DRAFT row, and §XVI.4's reason for that was wrong.** It said
+  `copyPost` sets `published(false)` — it does, and it also reproduced each state row *as it found
+  it*, so a copy of a live page came out `PUBLISHED` with the flag off. On the console that is a
+  documented decision (`ShObjectCopyNamingTest` pins it: both rows, one name). On this surface it
+  is a **hole in SH107's publish gate** — a credential without `mayPublish` could put a section live
+  by copying it, which is SH201 by name — so `ShObjectWriteService#copyFolderAs` takes an
+  `asDrafts` flag and the console keeps what it had. A post that exists *only* as `PUBLISHED`
+  (SH38's uploaded asset, an exchange import) is copied **as a draft** rather than skipped: dropping
+  it would make a folder copy silently lose content. The naming (SH202) and the cycle guard (SH203)
+  are the shared writer's, so the two surfaces cannot disagree about them.
 - `POST /agent/plan` / `POST /agent/apply` — a declarative desired-state content
   document; `plan` never writes, and `changed:0` is the content drift guard. `prune`
   deletes undeclared **posts and folders** inside the declared folders' subtrees (SH135),

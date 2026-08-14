@@ -214,10 +214,40 @@ class ShAgentOpsReachTest {
         // SH647 measured and much worse than the 19% that made SH346 reject the manifest. The
         // comparison has moved further in the direction that already settled it, so the answer is
         // the same and is now better supported than when it was made.
+        //
+        // SH244 raises this from 720 to 770, measured at 740, and it is the first raise here bought
+        // by an OP rather than by prose — which is the distinction the test below exists to make and
+        // the only kind of growth SH647 called "the surface doing its job".
+        //
+        // WHAT BOUGHT THE 44 TOKENS. `folder.copy` — duplicating a section, which was the last
+        // content verb only the console could perform. The trim came first, as this file has
+        // required since SH222: the first draft ended "occupied is refused, NEVER NUMBERED. Copies
+        // are drafts, and this one may cross sites" at 48, and what came out was the clause the
+        // refusal itself teaches (`copy-target-occupied` says the console numbers and this does
+        // not). What stayed is the pair a caller cannot infer: the copies are drafts, and this op
+        // crosses sites where its neighbour `folder.move` refuses to.
+        //
+        // WHY AN OP THIS TIME, WHEN SH733's ANSWER WAS A KEY. SH413's rule is that a MODIFIER of an
+        // existing op rides it, and a copy modifies nothing — there is no op it could ride. It was
+        // weighed against a `post.copy` beside it and that one was refused on exactly SH733's
+        // grounds: a post is duplicated losslessly by a read plus an upsert, so a second name would
+        // be paid by every caller forever for a job the vocabulary already does. One op, for the
+        // case the server can do in one traversal and an agent cannot.
+        //
+        // AND THE DECOMPOSITION SAYS SO, which is the point of having it. Per-op prose went 36.3 ->
+        // 36.3 (548 over 15 ops): this op is average-sized, so nothing about the shape got fatter
+        // and the whole 44 is one more op. Had the same 44 arrived as prose the average would read
+        // 39 and the answer would have been a trim, not this.
+        //
+        // AND THE SURFACE CHOICE, RE-RUN. 740 against a manifest of 2650 is 28%, against the 24%
+        // SH647 measured and the 19% that made SH346 reject folding this into the manifest. Still
+        // moving in the direction that settled it, so the answer stands. The number to watch is not
+        // this ceiling but that percentage: it is asserted at 30 below, and at 28 the vocabulary has
+        // room for roughly one more op of this size before the surface choice genuinely re-opens.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
-                .isLessThan(720);
+                .isLessThan(770);
     }
 
     @Test

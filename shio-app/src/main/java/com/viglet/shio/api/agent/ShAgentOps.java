@@ -133,6 +133,11 @@ public final class ShAgentOps {
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
                     "Rename or relocate a section. `to` is the whole new name chain, so its last "
                             + "segment is the new name. No post's URL changes."),
+            new OpSpec(ShAgentBatchService.FOLDER_COPY,
+                    List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
+                    "Duplicate a section and everything under it, as drafts. `to` is the copy's "
+                            + "own name chain; occupied is refused. Unlike a move, it may cross "
+                            + "sites."),
             new OpSpec(ShAgentBatchService.FOLDER_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Trash a folder and everything beneath it. Needs `confirm` from its own dry "

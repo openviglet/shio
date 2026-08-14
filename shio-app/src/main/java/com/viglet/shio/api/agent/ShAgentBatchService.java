@@ -51,6 +51,7 @@ import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
 import com.viglet.shio.api.folder.ShFolderWriteService;
+import com.viglet.shio.api.object.ShObjectWriteService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -112,6 +113,40 @@ public class ShAgentBatchService {
 
     public static final String FOLDER_UPSERT = "folder.upsert";
     public static final String FOLDER_MOVE = "folder.move";
+
+    /**
+     * SH244 — duplicating a section, which was the one content verb only the console could do.
+     *
+     * <h2>Why the folder and not the post</h2>
+     *
+     * <p>Copy lived at {@code PUT /api/v2/object/copyto/{dest}} and nowhere else. For a
+     * <b>post</b> that is close to harmless and worth saying rather than overstating: an agent
+     * duplicates a page by reading it and upserting the fields at a new address, and a copy of a
+     * post <em>is</em> its field values somewhere else. The gap is the <b>folder</b> — a folder
+     * copy buys the whole subtree in one call, and reproducing it over this surface means walking
+     * the tree and emitting an upsert per post, which is the discovery-and-write loop Block H
+     * exists to remove, in the one case where the server can do it in one traversal.</p>
+     *
+     * <p>So one op and not two. The vocabulary is paid by every caller that reads it (P3), and
+     * {@code post.copy} would be a name on {@code tools/list} forever for a job two ops already
+     * do losslessly.</p>
+     *
+     * <h2>Not destructive, and that is a decision rather than an omission</h2>
+     *
+     * <p>It creates and never overwrites — an occupied target is refused — so it is not in
+     * {@link #DESTRUCTIVE_OPS} and needs no SH108 confirm, for {@code folder.move}'s reason:
+     * making the safe verb demand a token is how callers get pushed back to the unsafe pair.</p>
+     *
+     * <p>Every copied post lands as a <b>draft</b>, and §XVI.4 said so for a reason that turned out
+     * not to be true: {@code copyPost} does set {@code published(false)}, but it also reproduced
+     * each state row <em>as it found it</em>, so a copy of a live page came out {@code PUBLISHED}
+     * with the flag off. The first assertion written here is what said so. It matters more on this
+     * surface than on the console's, which is why the writer takes a flag rather than changing:
+     * a credential without SH107's {@code mayPublish} could otherwise put a whole section live by
+     * copying it, and "the agent path is never a privilege escalation" (SH201) is exactly that
+     * case.</p>
+     */
+    public static final String FOLDER_COPY = "folder.copy";
     public static final String FOLDER_DELETE = "folder.delete";
     public static final String POST_UPSERT = "post.upsert";
     public static final String POST_MOVE = "post.move";
@@ -201,8 +236,8 @@ public class ShAgentBatchService {
 
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
-            SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT,
-            POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
+            SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
+            POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
             FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION);
 
     /**
@@ -233,6 +268,8 @@ public class ShAgentBatchService {
     private final ShFolderWriteService shFolderWriteService;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShSiteWriteService shSiteWriteService;
+    /** SH244 — the one copy implementation, which the console's `/copyto` also calls (SH245). */
+    private final ShObjectWriteService shObjectWriteService;
     private final ShContentAclService shContentAclService;
     private final ShTenantQuotaService shTenantQuotaService;
     /** SH734 — what one credential may write across a window; off unless an operator sets it. */
@@ -255,6 +292,7 @@ public class ShAgentBatchService {
                                ShFolderWriteService shFolderWriteService,
                                ShPostUnifiedWriteService shPostUnifiedWriteService,
                                ShSiteWriteService shSiteWriteService,
+                               ShObjectWriteService shObjectWriteService,
                                ShContentAclService shContentAclService,
                                ShTenantQuotaService shTenantQuotaService,
                                ShAgentSessionBudget shAgentSessionBudget,
@@ -273,6 +311,7 @@ public class ShAgentBatchService {
         this.shFolderWriteService = shFolderWriteService;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shSiteWriteService = shSiteWriteService;
+        this.shObjectWriteService = shObjectWriteService;
         this.shContentAclService = shContentAclService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.shAgentSessionBudget = shAgentSessionBudget;
@@ -670,6 +709,7 @@ public class ShAgentBatchService {
             case SITE_RESTORE -> siteRestore(op, session);
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_MOVE -> folderMove(op, session);
+            case FOLDER_COPY -> folderCopy(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
             case POST_MOVE -> postMove(op, session);
@@ -1387,6 +1427,106 @@ public class ShAgentBatchService {
             throw new MissingOpFieldException("to", op.op(), from, "folder:Blog/archive/2025",
                     "A folder move needs its new address in `to` — the full name chain, "
                             + "since that is what addresses a folder (SH79).");
+        }
+        ShAddress target = raw.contains(":") ? ShAddress.parse(raw)
+                : ShAddress.folder(from.site(), raw);
+        if (target.kind() != ShAddress.Kind.FOLDER) {
+            throw new WrongAddressKindException(op.op(), target, ShAddress.Kind.FOLDER);
+        }
+        return target;
+    }
+
+    /**
+     * Duplicates a section and everything under it, at an address the caller names (SH244).
+     *
+     * <h2>{@code to} is the copy's whole name chain, exactly as it is for a move</h2>
+     *
+     * <p>Not "the folder to copy into". A folder is addressed by its name chain (SH79), so the
+     * chain is what says both where the copy lands and what it is called — one field, and the
+     * caller knows the address of the thing it just made without a second read (P2). The console
+     * numbers its copies instead ({@code "archive (2)"}), which is right for somebody who can
+     * look at the result and wrong for a caller that must write the next op against it.</p>
+     *
+     * <p><b>An occupied target is refused rather than numbered</b>, for the same reason. Numbering
+     * is how a re-run of a batch quietly produces a third copy nobody asked for, and a refusal
+     * naming the address is the only answer that stays true whichever way the caller meant it.</p>
+     *
+     * <h2>Crossing sites is allowed here, and refused for a move</h2>
+     *
+     * <p>{@code folder.move} refuses it because re-parenting across a boundary takes the original
+     * with it — separate trees, separate ACLs, separate tenants — and its own teaching error tells
+     * the caller to rebuild the structure and move the posts across <em>one at a time</em>. That
+     * advice is what this op replaces: a copy detaches nothing, the source is untouched, and both
+     * sites are checked against the SH2 allow-list on the way in, so the objection a move has does
+     * not exist here. It is also the case a whole section can least afford to do by hand.</p>
+     *
+     * <h2>What it inherits, and the one bound it cannot state exactly</h2>
+     *
+     * <p>The naming ({@code SH202}) and the cycle guard ({@code SH203}) are the shared writer's,
+     * so the console and this op cannot disagree about them, and the copies are drafts. The tenant
+     * quota is asked <b>once</b>: {@code checkCanCreatePost} compares the current count against
+     * the plan's limit, which is exact for a write that adds one and approximate for one that adds
+     * N. Asking once is strictly better than the console's none and it is not a guarantee — a
+     * delta-aware check needs {@code check(resource, delta)} in the shared kernel, which is the
+     * same missing SPI {@code ShTenantQuotaService} records for storage.</p>
+     */
+    private Change folderCopy(ShAgentBatch.Op op, Session session) {
+        ShAddress from = writeAddress(op, ShAddress.Kind.FOLDER);
+        ShSite site = requireSite(from.site(), session);
+        ShAddress to = folderCopyTarget(op, from);
+        ShSite destSite = to.site().equalsIgnoreCase(from.site())
+                ? site
+                : requireSite(to.site(), session);
+
+        ShFolder source = findFolder(site, from.path()).orElseThrow(() ->
+                new ShAddressResolver.UnresolvedAddressException(from, List.of()));
+
+        List<String> target = segments(to.path());
+        if (target.isEmpty() || findFolder(destSite, to.path()).isPresent()) {
+            // The empty chain is the site root, which already exists — so it is occupied in the
+            // only sense that matters, and the refusal that names the address is the honest one.
+            throw new CopyTargetOccupiedException(from, to);
+        }
+        String newName = target.get(target.size() - 1);
+        String parentPath = "/" + String.join("/", target.subList(0, target.size() - 1));
+        // A copy never creates the branch it lands on, for folder.move's reason: a typo in the
+        // path is reported instead of quietly building a new section of the tree.
+        ShFolder destParent = findFolder(destSite, parentPath).orElseThrow(() ->
+                new ShAddressResolver.UnresolvedAddressException(
+                        ShAddress.folder(destSite.getName(), parentPath), List.of()));
+
+        ShObjectWriteService.CopyScope scope = shObjectWriteService.scopeOf(source.getId());
+        String detail = scope.folders() + " folder(s) and " + scope.posts()
+                + " post(s), every copy a draft";
+
+        if (session.dryRun) {
+            // The plan reports the refusals a real run would make, or the plan lied (SH82).
+            shFolderWriteService.checkCopyable(source.getId(), destParent);
+            session.planFolder(destSite, to.path());
+            return session.change(op, to, Change.CREATE, detail, null);
+        }
+        shContentAclService.requireWrite(source.getId());
+        shContentAclService.requireWrite(destParent.getId());
+        if (scope.posts() > 0) {
+            shTenantQuotaService.checkCanCreatePost();
+        }
+        ShFolder copy = shObjectWriteService.copyFolderAs(source.getId(), destParent, newName, true)
+                .orElseThrow(() -> new ShAddressResolver.UnresolvedAddressException(from, List.of()));
+        return session.change(op, to, Change.CREATE, detail, copy.getId());
+    }
+
+    /**
+     * Where a folder copy is going. A full {@code folder:} address or a bare path, defaulting the
+     * site to the source's — which is {@code folderMoveTarget}'s shape, deliberately: two verbs
+     * that read the same field differently is how a caller learns one and gets the other wrong.
+     */
+    private ShAddress folderCopyTarget(ShAgentBatch.Op op, ShAddress from) {
+        String raw = op.to() == null ? null : op.to().trim();
+        if (raw == null || raw.isBlank()) {
+            throw new MissingOpFieldException("to", op.op(), from, "folder:Blog/archive/2026",
+                    "A folder copy needs the copy's own address in `to` — the full name chain, "
+                            + "since that is what addresses a folder (SH79). Its last segment is "
+                            + "what the copy is called.");
         }
         ShAddress target = raw.contains(":") ? ShAddress.parse(raw)
                 : ShAddress.folder(from.site(), raw);
@@ -2929,6 +3069,33 @@ public class ShAgentBatchService {
         }
     }
 
+    /**
+     * A 409: something already lives at the address a copy would land on (SH244).
+     *
+     * <p>Its own refusal rather than {@link MoveTargetOccupiedException} because the two have
+     * different fixes and P6 is about the fix landing, not about a status code. A move's advice is
+     * to get the occupant out of the way, since a move has one destination; a copy's is to pick a
+     * different name, because the caller chose the name and the source is still where it was. The
+     * detail also says what a copy will <b>not</b> do — number the name — since that is exactly
+     * what the console does with the same gesture, and a caller who has seen {@code "archive (2)"}
+     * appear has every reason to expect it here.</p>
+     */
+    public static class CopyTargetOccupiedException extends ShTeachingException {
+
+        public CopyTargetOccupiedException(ShAddress from, ShAddress to) {
+            super(ShProblem.of("copy-target-occupied", HttpStatus.CONFLICT,
+                            "'" + to + "' is already taken")
+                    .withDetail("Copying '" + from + "' there would leave two folders answering "
+                            + "to one name chain, and an address resolves to whichever the walk "
+                            + "reaches first. The console numbers a clone; this op does not, "
+                            + "because a caller that cannot read the result has to know the "
+                            + "address of what it made.")
+                    .withFix("Give `to` a free name chain. The last segment is what the copy is "
+                            + "called, so changing only that renames it in place.")
+                    .withExample(to + "-2"));
+        }
+    }
+
     /** A 400: a move that would cross a site boundary. */
     public static class CrossSiteMoveException extends ShTeachingException {
 
@@ -2942,10 +3109,14 @@ public class ShAgentBatchService {
                             + "multi-tenancy — separate tenants, so re-parenting across one "
                             + "silently is not something this op will do.")
                     .withFix(to.kind() == ShAddress.Kind.FOLDER
-                            ? "Recreate the structure in the destination site with "
-                                    + "folder.upsert and move the posts across one at a time, "
-                                    + "then delete the original — visible steps instead of one "
-                                    + "invisible one."
+                            // SH244 — this used to say "recreate the structure with folder.upsert
+                            // and move the posts across one at a time", which was the honest advice
+                            // while a section could only be duplicated from the console. It is now
+                            // one op, and a fix naming the harder route is a fix that costs the
+                            // caller a loop it does not have to run (P6).
+                            ? "folder.copy the section into the destination site, then "
+                                    + "folder.delete the original — two visible steps instead of "
+                                    + "one invisible one."
                             : "post.upsert the content into the destination site, then "
                                     + "post.delete the original — two visible steps instead of one "
                                     + "invisible one.")
