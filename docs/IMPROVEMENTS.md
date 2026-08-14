@@ -765,6 +765,57 @@ and nothing else did. These are not defects in the feature; the feature works. T
 defects in its *reach*, and they are filed separately because the fix is almost never in
 the code the original task wrote.
 
+### XXII.1 A classifier that cannot see half the repository (SH738)
+
+SH672 built the right instrument for the right reason: a non-vacuity floor may fire when
+the *reader* breaks, never when the *corpus* is right, and a floor over a corpus meant
+to empty is a second deadline nobody declared. It classifies each floor by what it
+counts, tolerates absolute bounds over corpora that only grow, and holds the rest as a
+named list.
+
+Then SH737 happened anyway, in the shape SH672 describes almost exactly — a floor over
+`IMPROVEMENTS.md`'s section count, wrong at 50, lowered to 10, wrong again at 10 when
+block completions pruned the file to exactly that. The classifier did not miss it. The
+classifier **could not see it**, for two independent reasons:
+
+- **Tree.** `suites()` reads one flat directory, `cli/test/*.test.mjs`. The whole of
+  `shio-app/src/test/java/**` is outside the walk, and that is where the governed-docs
+  readers with the longest history live.
+- **Shape.** `FLOOR` matches `assert.ok(x.length > N)`, a `node:test` idiom. The Java half
+  writes `assertThat(x).hasSizeGreaterThan(N)` and `.isGreaterThan(N)`, which that regex
+  cannot express at all.
+
+So the population it reports is honest about the tree it walks and silent about the tree
+it does not, which is the reporting-zero-forever shape SH613 names. Measured now: the
+Java suites hold exactly one remaining floor over a governed file, and it is over the
+ledger and therefore honest. The deliverable is not that number — it is that nothing
+would have told us, and the next one lands unseen.
+
+### XXII.2 The front door's numbers are the ones nothing derives (SH739)
+
+`README.md` is the first thing a reader meets and it carries hard counts: **12** MCP
+tools with the `shio_*` list spelled out, **31** CLI verbs, and the six surfaces. All
+three are correct right now — and the only reason anybody knows that is that a
+block-completion sweep re-derived them by hand from `tools/list` and the `COMMANDS`
+registry, which is a check that happens when somebody remembers to run it.
+
+The instrument for exactly this already exists and points elsewhere.
+`cli/conformance/docs-vocabulary.conformance.mjs` holds every `shio` verb, REST path,
+`shio_*` tool and `shio.*` key written in **docs-shio** against what the product
+declares, so a renamed verb fails a build instead of misleading a reader. The
+repository's own front page is outside it. `roadkeep export --readme` is not wired here
+either, so nothing derives these and nothing fails when they rot.
+
+That asymmetry is the finding: the published documentation is guarded and the README is
+not, which inverts how many people read each. The counts are also the kind that drift
+silently — a tool is added for a feature and the surface table is edited by whoever
+remembers, which is how the published docs came to list `shio_blueprint` and
+`shio_forget`, two tools the product decided against and never shipped.
+
+Per SH338 the deliverable is the reader, not the numbers: extend the conformance check
+to the root README, or derive the rows outright. The numbers are already right; the
+point is that the next ones will not be.
+
 ## XXIII The vocabulary proved live (integration tests against a running instance)
 
 Shio's whole product claim is a vocabulary an external agent drives: thirteen MCP tools

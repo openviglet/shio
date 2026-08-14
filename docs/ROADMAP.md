@@ -26,6 +26,11 @@
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
 - 💭 **SH736** (deps: —) **The CLI's help total had no headroom, so any addition anywhere fails the gate** — SH394's ceiling sat at 9900 of 9900, which makes the next feature pay for every verb before it. → §XIII.26
 
+## Block N — Realignment of what already shipped
+
+- 📋 **SH738** (deps: —) **The floor classifier cannot see the Java half of the repository, where the floor that actually broke lived** — SH672 walks only cli/test/*.test.mjs for the assert.ok(x.length > N) shape, so SH737's AssertJ floor over IMPROVEMENTS survived it at 50 and again at 10. → §XXII.1
+- 📋 **SH739** (deps: —) **The README's tool and verb counts are hand-typed, and the one instrument that checks such counts does not read it** — 12 MCP tools and 31 CLI verbs are right today only because a block sweep re-derived them by hand; docs-vocabulary checks the docs-shio pages, never the front door. → §XXII.2
+
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
