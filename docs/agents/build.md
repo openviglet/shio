@@ -843,6 +843,28 @@ was extended — 277 more files, five of which read a shrinking corpus, and **on
 which counts the ledger and is therefore the honest kind. So the population it now reports is the
 whole repository rather than the half somebody happened to write the reader in.
 
+### A budget needs room under it, or it refuses instead of measuring (SH736, SH743)
+
+A ceiling set at its own total does not size the next addition — it rejects it, whatever it is, and
+the cheapest way to pass becomes deleting somebody else's payload, which is a non-goal by name. Two
+gates now assert headroom rather than hoping for it:
+
+| Gate | Rule |
+|---|---|
+| `cli-help-budget.test.mjs` (SH736) | `cli.help.all` keeps **4%** free; the trim that bought it took 9950 → 9475 |
+| `ShAgentResponseBudgetTest` (SH743) | every `response.*` key keeps **4%** free, or is declared in `AT_THE_WALL` with the reason it cannot be trimmed |
+
+The response side was measured at 13 keys, two of them at the wall — `manifest` 2636/2650 and
+`manifest.check` 385/390, 99.5% and 98.7% — and nothing reported it. SH230 found them by reading
+printed numbers while measuring something else, and `agent-surface.md` records an earlier round
+closing at "one token of headroom" as though that were a result.
+
+Both are **declared lists, never a slack factor**, for the reason every ledger here uses. And the
+two exemptions are real rather than lazy: `format=json` is *defined* as the full manifest, so
+trimming it is a P2 decision, and `include=features,limits` is already the smallest reading there
+is. A third key arriving at its wall fails the build; an exemption that stops being tight also
+fails, so the list shrinks rather than accumulates.
+
 ### A new ledger of what is knowingly wrong is a row, not a reader (SH741)
 
 `known-debt.test.mjs` is the one reader over this repository's ledgers of accepted wrongness, and

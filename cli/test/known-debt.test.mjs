@@ -140,6 +140,25 @@ const LEDGERS = [
     ownerIsSubject: true,
   },
   {
+    // The seventh, joined on the day it was written (SH743) rather than several blocks later,
+    // which is the whole point of SH741 having asserted the count.
+    name: "response budgets AT_THE_WALL",
+    path: "shio-app/src/test/java/com/viglet/shio/api/agent/benchmark/ShAgentResponseBudgetTest.java",
+    holds: "response budgets accepted with no headroom, and why each cannot be trimmed",
+    since: "SH743",
+    async entries(text) {
+      const from = text.indexOf("AT_THE_WALL = Map.of(");
+      const to = text.indexOf(");", from);
+      assert.ok(from >= 0 && to > from, "the response budget test no longer declares AT_THE_WALL");
+      // The keys are the budget names, each on its own line before its reason.
+      return [...text.slice(from, to).matchAll(/^\s{12}"([\w.]+)",$/gm)]
+        .map(([, key]) => ({ owner: null, what: key, unsigned: false }));
+    },
+    // A budget name is the subject and no task owns it — the same declaration the TOLERATED and
+    // assertion-debt rows make, and for the same reason.
+    ownerIsSubject: true,
+  },
+  {
     name: "verify-baseline.json",
     path: "shio/verify-baseline.json",
     holds: "accepted verify findings, per project",
@@ -216,7 +235,7 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
   // The number is asserted, not merely printed, so inventing a *sixth* ledger without joining it
   // here fails the run. SH499 is the case: it reached for this shape unprompted, and the failing
   // count is what turned "a new debt file exists somewhere" into a one-line edit.
-  assert.equal(ledgers.length, 6, "a new ledger is a row in LEDGERS, not a seventh reader");
+  assert.equal(ledgers.length, 7, "a new ledger is a row in LEDGERS, not an eighth reader");
   // Not vacuous: if every reader came back empty the join would pass forever, which is the
   // lint-that-reports-zero failure every instrument in this repository is warned about.
   assert.ok(

@@ -417,6 +417,7 @@
 - **SH231** — An instance's own notes now project to shio/.memory.yaml on a pull — beside content/, since they describe the installation and not any site. They are reported and never applied by a push unless --adopt-memory is passed, which keeps SH161's refusal while removing the hole it left: the least reproducible thing in the system had no export path at all.
 - **SH736** — The help total is 9475 of a 9950 ceiling, and the gate now asserts 4% headroom under it, so raising the ceiling to meet the total fails instead of charging the next task for every verb.
 - **SH230** — format=terse now cuts each endpoint purpose to its lead sentence and keeps the example verbatim, taking the manifest from 2395 to 1890 where the two candidates aimed at examples were worth 3.6%.
+- **SH743** — Every response budget must keep 4% free or be declared in AT_THE_WALL with the reason it cannot be trimmed, and that list is the seventh row in the known-debt registry.
 
 ## Block N — Realignment of what already shipped (SH74)
 

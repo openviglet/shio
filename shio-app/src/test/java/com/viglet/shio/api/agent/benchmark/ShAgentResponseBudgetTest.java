@@ -11,7 +11,6 @@ package com.viglet.shio.api.agent.benchmark;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
-import java.io.IOException;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -137,7 +136,7 @@ class ShAgentResponseBudgetTest {
     private String postTypeName;
 
     @BeforeAll
-    void setup() throws IOException {
+    void setup() throws Exception {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .addFilters(new ShEstTokensHeaderFilter())
                 .build();
@@ -148,6 +147,7 @@ class ShAgentResponseBudgetTest {
             budgets.load(in);
         }
         seed();
+        measureEverything();
     }
 
     private void seed() {
@@ -215,8 +215,15 @@ class ShAgentResponseBudgetTest {
      * "context grew by 40" is a different diagnosis from "everything grew by 40", and
      * one assertion per response would report only the first.
      */
-    @Test
-    void everyCanonicalResponseStaysWithinItsBudget() throws Exception {
+    /**
+     * Every canonical response, measured once (SH743).
+     *
+     * <p>Moved out of the assertion it used to live in because there are now three readers of
+     * {@code measured} and JUnit does not order test methods: a headroom check that ran first
+     * would read an empty map and pass, which is the report-zero-forever shape every instrument
+     * in this repository is warned about.</p>
+     */
+    private void measureEverything() throws Exception {
         measure("manifest", get("/api/v2/agent/manifest"));
         // SH174's two cheaper reads of the same document. They are budgeted separately rather
         // than folded into `manifest` because their whole purpose is to be a fraction of it —
@@ -238,6 +245,13 @@ class ShAgentResponseBudgetTest {
                 .param("site", siteName).param("format", "terse"));
         measure("memory", get("/api/v2/agent/memory").param("site", siteName));
         measureTypeRow();
+    }
+
+    @Test
+    void everyCanonicalResponseStaysWithinItsBudget() {
+        assertThat(measured)
+                .as("nothing was measured, so every assertion in this class agrees with anything")
+                .isNotEmpty();
 
         assertThat(breaches)
                 .as("A response got more expensive. Design law P3: a token regression is a "
@@ -246,6 +260,92 @@ class ShAgentResponseBudgetTest {
                         + "and say why in the commit message — a ceiling moved without a "
                         + "reason is the whole mechanism defeated.%n%nMeasured:%n%s",
                         report())
+                .isEmpty();
+    }
+
+    /**
+     * Budgets knowingly accepted with no room under them, and why each is (SH743).
+     *
+     * <p>Empty is the healthy state. An entry is a ceiling somebody decided may sit at its wall,
+     * and it has to say why — because the failure it produces looks exactly like an ordinary
+     * regression, and the caller who meets it is whichever task happens to add the next line.</p>
+     */
+    private static final Map<String, String> AT_THE_WALL = Map.of(
+            "manifest",
+            "format=json is DEFINED as the full document, so trimming it is a discoverability "
+                    + "decision (P2) rather than a tidy-up. The cheap readings are budgeted "
+                    + "separately and have room: manifest.terse took 21% in SH230",
+            "manifest.check",
+            "include=features,limits is already the smallest reading of the manifest — 385 tokens "
+                    + "against the full 2636 — so there is no leaner shape to reach for; its "
+                    + "ceiling is a wall because the payload is close to irreducible");
+
+    /** Below this fraction of its ceiling free, a budget refuses the next line rather than sizing it. */
+    private static final double REQUIRED_HEADROOM = 0.04;
+
+    @Test
+    void everyBudgetHasRoomUnderIt() {
+        // SH743 — the half SH736 added for the CLI help gate, on the surface it was found on.
+        //
+        // A ceiling at its total does not measure the next addition, it refuses it, and the
+        // cheapest way to pass is to delete something else's payload — the "optimize a benchmark
+        // by degrading correctness" non-goal by name. Measured when this landed: two of thirteen
+        // keys were at 99.5% and 98.7% and nothing said so. SH230 found them by reading the
+        // printed numbers while measuring something else, and agent-surface.md records an earlier
+        // round closing at "one token of headroom" as though that were a result.
+        //
+        // A named list rather than a global slack factor, for the reason every ledger here uses:
+        // a ceiling lets one task pay and the next spend it.
+        List<String> tight = new ArrayList<>();
+        measured.forEach((name, estimated) -> {
+            String ceiling = budgets.getProperty(PREFIX + name);
+            if (ceiling == null) {
+                return;
+            }
+            int limit = Integer.parseInt(ceiling.trim());
+            int required = (int) Math.round(limit * REQUIRED_HEADROOM);
+            if (limit - estimated < required && !AT_THE_WALL.containsKey(name)) {
+                tight.add(String.format(java.util.Locale.ROOT,
+                        "%s = %d of %d (%.1f%% used, needs %d free)",
+                        name, estimated, limit, (estimated * 100.0) / limit, required));
+            }
+        });
+
+        assertThat(tight)
+                .as("""
+                        A budget with no room under it is not measuring the next addition, it is \
+                        refusing it — and whoever adds the next line pays for every line before \
+                        theirs (SH736 for the CLI help, SH743 here). Trim the payload so the \
+                        ceiling means something again, or add the key to AT_THE_WALL with the \
+                        reason it cannot be trimmed, in a diff somebody reviews.%n%nMeasured:%n%s""",
+                        report())
+                .isEmpty();
+    }
+
+    @Test
+    void theAcceptedWallsAreStillWalls() {
+        // The staleness check every declared list here earns (SH741): an entry that is no longer
+        // tight is an exemption excusing nothing, and it hides the next one. Cheap, and the only
+        // thing that makes the list above shrink rather than accumulate.
+        List<String> loosened = new ArrayList<>();
+        AT_THE_WALL.forEach((name, why) -> {
+            Integer estimated = measured.get(name);
+            String ceiling = budgets.getProperty(PREFIX + name);
+            if (estimated == null || ceiling == null) {
+                loosened.add(name + " is declared at the wall but nothing measures it any more");
+                return;
+            }
+            int limit = Integer.parseInt(ceiling.trim());
+            if (limit - estimated >= (int) Math.round(limit * REQUIRED_HEADROOM)) {
+                loosened.add(name + " now has room (" + estimated + " of " + limit + ")");
+            }
+            assertThat(why).as("%s is accepted without a reason anybody can weigh", name)
+                    .hasSizeGreaterThan(40);
+        });
+
+        assertThat(loosened)
+                .as("An accepted wall that is no longer a wall is a line to delete: it excuses "
+                        + "nothing and it hides the next budget that needs the exemption (SH743).")
                 .isEmpty();
     }
 
