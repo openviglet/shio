@@ -9,6 +9,7 @@
 package com.viglet.shio.onstartup;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -87,6 +88,18 @@ public class ShOnStartup implements ApplicationRunner {
 		List<String> widgets = shWidgetOnStartup.createDefaultRows();
 		if (!widgets.isEmpty()) {
 			log.info("Widget catalog: created {}", widgets);
+		}
+
+		// SH753 — every resolver assumes the catalogue is unique by name and nothing enforces it.
+		// The readers are all tolerant now (findFirstByName), which fixed the crash and would have
+		// made the duplication invisible: picking the first row never mentions there were five. One
+		// grouping over a closed sixteen-row catalogue, once per boot, is what keeps it visible.
+		Map<String, Long> duplicated = shWidgetOnStartup.duplicateNames();
+		if (!duplicated.isEmpty()) {
+			log.warn("SH753: the widget catalog holds duplicate names {} — every resolver picks the "
+					+ "first row, so a field may be backed by a widget nobody chose. De-duplicating "
+					+ "means repointing the post-type attributes on the losing rows, which is a "
+					+ "migration rather than something this seed may do.", duplicated);
 		}
 
 		if (!shConfigVarRepository.existsByPathAndName(shConfigProperties.getSystem(),

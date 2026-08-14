@@ -18,6 +18,9 @@ package com.viglet.shio.onstartup.widget;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -147,5 +150,38 @@ public class ShWidgetOnStartup {
 	/** The catalogue keys this build expects to exist — read by the SH325 guard test. */
 	public static List<String> expectedNames() {
 		return specs().stream().map(Spec::name).toList();
+	}
+
+	/**
+	 * Names the catalogue holds more than once, with how many rows each has (SH753).
+	 *
+	 * <h2>Why a report and not a refusal</h2>
+	 *
+	 * <p>"Unique by name" is what every resolver assumes and <b>nothing enforces</b>: there is no
+	 * unique index, and the catalogue is a shared global row set an import, a
+	 * {@code POST /api/v2/widget} or a cascading write can add to. SH753 is what that costs — a
+	 * catalogue with five rows named {@code Text} took every upload down, because the reader in the
+	 * File post-type path was the throwing one.</p>
+	 *
+	 * <p>The read is now the tolerant one everywhere, which fixes the crash and would have made the
+	 * duplication <em>invisible</em>: a resolver that quietly picks the first row is a resolver that
+	 * never mentions there were five. So the state is reported instead — once per boot, over a
+	 * closed catalogue of sixteen rows, which is a cost nobody will notice and the only thing that
+	 * turns "why is this widget wrong" into a line somebody can read.</p>
+	 *
+	 * <p><b>Not a unique index, and that is a decision.</b> An instance that already carries
+	 * duplicates would fail the migration on upgrade, so the index needs a de-duplication step
+	 * ahead of it — and de-duplicating means choosing which row the {@code ShPostTypeAttr}s
+	 * pointing at the losers should be repointed to. That is a migration, not a seed, and SH289's
+	 * rule is that this class is additive only.</p>
+	 *
+	 * @return name to row count, only for names with more than one row; empty when the catalogue is
+	 *         what everything assumes it is
+	 */
+	public Map<String, Long> duplicateNames() {
+		Map<String, Long> byName = shWidgetRepository.findAll().stream()
+				.collect(Collectors.groupingBy(ShWidget::getName, TreeMap::new, Collectors.counting()));
+		byName.values().removeIf(count -> count <= 1);
+		return byName;
 	}
 }

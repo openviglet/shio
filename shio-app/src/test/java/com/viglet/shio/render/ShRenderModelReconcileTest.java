@@ -339,7 +339,9 @@ class ShRenderModelReconcileTest {
      * finder is both proven and the thing this test should agree with.</p>
      */
     private ShWidget widget(String name) {
-        ShWidget found = shWidgetRepository.findByName(name);
+        // findFirstByName since SH753 deleted the throwing twin — and this test should agree with
+        // what production resolves through, which is now the only resolver there is.
+        ShWidget found = shWidgetRepository.findFirstByName(name);
         assertThat(found).as("widget '%s' is not seeded; seeded are %s", name,
                 shWidgetRepository.findAll().stream().map(ShWidget::getName).sorted().toList())
                 .isNotNull();

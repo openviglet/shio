@@ -115,6 +115,44 @@ class ShWidgetSeedTest {
     }
 
     @Test
+    @DisplayName("SH753: a duplicated name is reported by name and count, not resolved in silence")
+    void duplicatesAreReported() {
+        // The state SH753 met on a live suite — five rows named `Text` — and could not diagnose,
+        // because the only thing that noticed was an IncorrectResultSizeDataAccessException thrown
+        // out of an upload several layers from the catalogue. Nothing enforces uniqueness here: no
+        // unique index, and an import, POST /api/v2/widget or a cascading write can all add a row.
+        assertThat(shWidgetOnStartup.duplicateNames())
+                .as("SH753: a freshly seeded catalogue is what every resolver assumes it is")
+                .isEmpty();
+
+        ShWidget twin = new ShWidget();
+        twin.setName(ShSystemWidget.TEXT);
+        twin.setDescription("SH753 probe");
+        twin.setType("TEXT,TEXTAREA");
+        new TransactionTemplate(transactionManager)
+                .executeWithoutResult(status -> shWidgetRepository.save(twin));
+        try {
+            assertThat(shWidgetOnStartup.duplicateNames())
+                    .as("SH753: making every reader tolerant fixed the crash and would have made "
+                            + "the duplication invisible — a resolver that picks the first row "
+                            + "never mentions there were two. The report is what keeps it visible")
+                    .containsEntry(ShSystemWidget.TEXT, 2L);
+
+            assertThat(shWidgetRepository.findFirstByName(ShSystemWidget.TEXT))
+                    .as("SH753: and resolving still answers rather than throwing, which is the "
+                            + "half that took every upload down when it was findByName")
+                    .isNotNull();
+        } finally {
+            new TransactionTemplate(transactionManager)
+                    .executeWithoutResult(status -> shWidgetRepository.delete(twin.getId()));
+        }
+
+        assertThat(shWidgetOnStartup.duplicateNames())
+                .as("the probe is removed, so this class leaves the catalogue as it found it")
+                .isEmpty();
+    }
+
+    @Test
     @DisplayName("SH325: an unseeded widget is a teaching 409, not a 500")
     void anUnseededWidgetTeaches() {
         // The branch is nearly unreachable now, which is precisely the state SH189 warns about:

@@ -182,6 +182,28 @@ says which name to look for.
 `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the
 orphan-removal replace — otherwise an update would cascade-delete the shared widget catalog.
 
+### Resolving a widget: `findFirstByName` is the only way (SH753)
+
+The catalog is **assumed** unique by name and **nothing enforces it** — no unique index, and it is
+a shared global row set that an import, `POST /api/v2/widget` or a cascading write can add to. So
+`ShWidgetRepository.findByName`, the derived single-result finder, threw
+`IncorrectResultSizeDataAccessException` on live data: a suite run met a catalog holding five rows
+named `Text`, and because the surviving caller was `ShStaticFileService.attrOf` — which resolves
+the File post type on **every upload** — the whole upload path went down.
+
+**The method is deleted, not documented.** Three of its four call sites had already been moved to
+`findFirstByName`, each with a comment saying why; the fourth never got the memo. A rule the
+compiler enforces beats one a comment asks for, so there is now exactly one resolver.
+
+**Tolerant readers would have made the duplication invisible**, which is the other half:
+`ShWidgetOnStartup.duplicateNames()` groups the catalog and `ShOnStartup` logs a WARN naming each
+duplicated name and its count. One grouping over a closed sixteen-row catalog, once per boot.
+
+**Not a unique index, deliberately.** An instance that already carries duplicates would fail the
+migration, so the index needs a de-duplication step ahead of it — and de-duplicating means choosing
+which row the `ShPostTypeAttr`s on the losers get repointed to. That is a migration, not a seed,
+and the seeder is additive-only by SH289's rule.
+
 
 ## What a model change would cost, before it is made (SH523)
 

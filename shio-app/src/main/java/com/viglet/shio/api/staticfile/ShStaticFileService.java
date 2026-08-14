@@ -891,7 +891,11 @@ public class ShStaticFileService {
     }
 
     private ShPostTypeAttr attrOf(FileField field, ShPostType postType) {
-        ShWidget widget = shWidgetRepository.findByName(field.widget());
+        // findFirstByName, the only resolver there is now (SH753). This line used to call the
+        // derived single-result form, which throws IncorrectResultSizeDataAccessException on a
+        // second row — and it runs on EVERY upload, resolving the File post type, so a catalog
+        // that had picked up duplicate `Text` rows took uploads down rather than degrading.
+        ShWidget widget = shWidgetRepository.findFirstByName(field.widget());
         if (widget == null) {
             throw new IllegalStateException(
                     field.widget() + " widget is not seeded; cannot model the File post type");

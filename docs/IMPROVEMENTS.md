@@ -278,32 +278,6 @@ nothing. **Do not refuse on size** — a ceiling invented here is a second quota
 and the failure it causes (a legitimate section copy refused on a generous plan) is
 worse than the one it prevents.
 
-### XII.30 The widget catalog is seeded once per context and unique by assumption (SH753)
-
-Running `clean verify -DskipITs=false` is green. Running the same `verify` **without**
-`clean`, minutes earlier and on the same tree, failed three tests in
-`ShCopyKeepsAssetsTest` with `IncorrectResultSizeDataAccessException: 5 results` out of
-`shWidgetRepository.findByName("Text")`, thrown from `ShStaticFileService.attrOf` while
-an upload resolved the File post type.
-
-Five rows for one widget name is the finding, and `clean` is not the explanation — it is
-only what changed. The test datasource is `jdbc:h2:mem:shio-test;DB_CLOSE_DELAY=-1`, one
-database shared by every Spring context in the JVM, and the widget catalog is seeded at
-startup per context; the suite starts 66. `ddl-auto=create-drop` is what normally hides
-that, and it is a per-context act on a database that outlives any one of them.
-
-So `findByName` returning a single row is an **assumption**, held up by ordering that
-nothing declares. `ShWidgetSeedTest` proves the catalog is created; nothing proves it is
-created once. SH289 already records the other end of the same table — a cascading
-`REMOVE` reaching the shared catalog and surfacing as `Widget 'Text' is not seeded`
-several steps from its cause.
-
-The deliverable is the instrument first (SH338): an assertion that the seeded catalog
-holds one row per name, at the boundary an upload crosses. What it argues for — a unique
-index on `sh_widget.name`, a seeder that is idempotent by query rather than by luck, or
-a per-context database — is the second question and this task should answer it with the
-number in hand.
-
 ### XII.31 The meter counts the agent and cannot be read by it (SH754)
 
 SH45 landed the meter with one route out for a human caller — `GET /api/v2/tenant/usage`
