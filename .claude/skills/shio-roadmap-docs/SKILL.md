@@ -329,18 +329,33 @@ the block genuinely added a section:
 
 | What | Where |
 |---|---|
-| MCP tool count and the `shio_*` list | `## What is Shio?` surface table |
-| CLI verb count (`26 verbs: …`) | same table |
-| The six surfaces themselves | same table — a new surface is a new row |
-| `## Packages` | a block that published or renamed a package |
-| `## The ten design laws` | only if a law's *instrument* changed |
-| `## Quick start` / `## Build from source` | a block that changed a command |
+| What | Where | Derived? |
+|---|---|---|
+| MCP tool count and the `shio_*` list | `## What is Shio?` surface table | ✅ `readme-surface.test.mjs` |
+| CLI verb count (`NN verbs: …`) | same table | ✅ same |
+| The six surfaces themselves | same table — a new surface is a new row | ❌ read it |
+| `## Packages` | a block that published or renamed a package | ❌ read it |
+| `## The ten design laws` | only if a law's *instrument* changed | ❌ read it |
+| `## Quick start` / `## Build from source` | a block that changed a command | ❌ read it |
 
-There are **no roadkeep markers in this README** — `export --readme` is not wired
-here, so these are ordinary edits and nothing derives them. That is also why they
-rot: nothing fails when they do. If a count in that table can be derived from a
-test or a manifest, wiring that is a better deliverable than fixing the number
-(SH338: the instrument is the deliverable).
+**Do not re-derive the ✅ rows by hand, and do not file a task to "wire" them
+(SH739).** `cli/test/readme-surface.test.mjs` has done it since SH499 and runs on
+every `pnpm test`: it holds the `shio_*` list against the tools the server
+registers **in both directions**, the stated tool count against the registry size,
+the stated verb count against `COMMANDS` in `cli/src/index.mjs`, and the site's
+list against the README's. If those numbers are wrong, `pnpm test` is already red
+and you will not need this checklist to find out.
+
+This section used to claim the opposite — that no instrument derived those rows and
+that nothing went red when they drifted — and it cost a whole sweep: an agent
+hand-counted twelve tools and thirty-one verbs, concluded they were correct only by
+luck, and filed a task to build a guard that had just run green in the same command.
+That is why the column exists rather than a sentence. The ❌ rows are genuinely
+unguarded and are what your reading time is for.
+
+There are still **no roadkeep markers in this README** — `export --readme` is not
+wired here — so every row above is an ordinary edit. That is about *who writes
+them*, not about whether anything checks them.
 
 **4. Commit — two repos, two commits, and the block drop goes with the code.**
 

@@ -98,6 +98,38 @@ describe("SH499: the README's surface table is derived from the product, not rem
     );
   });
 
+  test("SH739: the sweep checklist points at this guard instead of calling the counts underived", () => {
+    // The assertion that would have caught it, at the boundary it crossed — and the boundary is a
+    // process document, not code. `shio-roadmap-docs` is what an agent reads *while* running a
+    // block-completion sweep, and its README section used to say "nothing derives them… nothing
+    // fails when they do" and then advise wiring a test if one could be. Both false since SH499,
+    // and the advice is an invitation to rebuild this file. It was taken: a sweep hand-counted the
+    // tools and verbs, judged them right by luck, and filed a task to build what had just run green
+    // in the same command. A wrong sentence in a checklist costs exactly as much as a wrong number
+    // in the README, and until now only one of the two could fail.
+    //
+    // The phrase check below is SH613's hazard by construction: a scan over prose cannot tell a
+    // rule from a sentence about the rule, so the corrected section must PARAPHRASE the claim it
+    // is correcting rather than quote it. That is not a hypothetical — the first version of this
+    // pair failed on the very paragraph explaining the fix, which is the third time in this
+    // session that writing carefully about a rule broke the check for it.
+    const checklist = readFileSync(join(ROOT, ".claude/skills/shio-roadmap-docs/SKILL.md"), "utf8");
+
+    assert.ok(
+      checklist.includes("readme-surface.test.mjs"),
+      "SH739: the block-completion checklist no longer names this guard, so the next sweep is told "
+        + "the README's counts are underived and will re-derive them by hand — or file a task to "
+        + "build this file a second time. If this file was renamed, rename it there too.",
+    );
+    for (const claim of ["nothing derives them", "nothing fails when they do"]) {
+      assert.ok(
+        !checklist.includes(claim),
+        `SH739: the checklist claims "${claim}" of the README's surface table. It is derived, by `
+          + "the three assertions above, on every `pnpm test`.",
+      );
+    }
+  });
+
   test("the public site and the README name the same tools", () => {
     const site = namesIn(siteContent);
     const tools = mcpTools();

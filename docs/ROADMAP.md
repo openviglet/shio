@@ -28,8 +28,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH739** (deps: —) **The README's tool and verb counts are hand-typed, and the one instrument that checks such counts does not read it** — 12 MCP tools and 31 CLI verbs are right today only because a block sweep re-derived them by hand; docs-vocabulary checks the docs-shio pages, never the front door. → §XXII.2
-
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4

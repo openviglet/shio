@@ -759,30 +759,10 @@ and nothing else did. These are not defects in the feature; the feature works. T
 defects in its *reach*, and they are filed separately because the fix is almost never in
 the code the original task wrote.
 
-### XXII.2 The front door's numbers are the ones nothing derives (SH739)
-
-`README.md` is the first thing a reader meets and it carries hard counts: **12** MCP
-tools with the `shio_*` list spelled out, **31** CLI verbs, and the six surfaces. All
-three are correct right now — and the only reason anybody knows that is that a
-block-completion sweep re-derived them by hand from `tools/list` and the `COMMANDS`
-registry, which is a check that happens when somebody remembers to run it.
-
-The instrument for exactly this already exists and points elsewhere.
-`cli/conformance/docs-vocabulary.conformance.mjs` holds every `shio` verb, REST path,
-`shio_*` tool and `shio.*` key written in **docs-shio** against what the product
-declares, so a renamed verb fails a build instead of misleading a reader. The
-repository's own front page is outside it. `roadkeep export --readme` is not wired here
-either, so nothing derives these and nothing fails when they rot.
-
-That asymmetry is the finding: the published documentation is guarded and the README is
-not, which inverts how many people read each. The counts are also the kind that drift
-silently — a tool is added for a feature and the surface table is edited by whoever
-remembers, which is how the published docs came to list `shio_blueprint` and
-`shio_forget`, two tools the product decided against and never shipped.
-
-Per SH338 the deliverable is the reader, not the numbers: extend the conformance check
-to the root README, or derive the rows outright. The numbers are already right; the
-point is that the next ones will not be.
+Its last two entries widened that: an instrument can ship complete against its brief and
+be blind to half the repository (SH738), and a *process document* can send a reader past
+an instrument that already exists (SH739). Nothing is left open here →
+[CHANGELOG.md](CHANGELOG.md) Block N.
 
 ## XXIII The vocabulary proved live (integration tests against a running instance)
 
