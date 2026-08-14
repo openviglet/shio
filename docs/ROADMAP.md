@@ -23,6 +23,7 @@
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
+- 📋 **SH744** (deps: —) **A site furl is deduplicated on import and unchecked on create, and delivery resolves it to one row** — Two writers of one verb disagree: create takes the slug as given, import appends a short id, and findByFurl returns whichever row the database picks. → §XVI.82
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

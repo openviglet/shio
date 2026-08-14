@@ -487,6 +487,32 @@ It stays 💭 because the demand is unproven: no blueprint, no CLI command and n
 has wanted it. Filed so the next one need not rediscover that the capability is reachable but
 expensive.
 
+### XVI.82 Two writers decide a site's address, and they disagree (SH744)
+
+SH245's lint found no content-repository write left in a controller, and printed the
+three services that write content outside the writer anyway. Two are fine on reading — a
+DRAFT row copies its own published row's furl, which SH81 says is one post in two
+states, and the asset replace records its own audit. The third is not.
+
+`ShSiteImportService.uniqueFurl` asks whether a site furl is taken and appends a short
+id when it is. `ShSiteWriteService.create` does neither: it takes `payload.getFurl()`,
+or the name's slug, and saves it. So the address a new site gets depends on which door
+it came in through, and the class javadoc records the consequence as a fact rather than
+a defect — **furl is not unique**.
+
+It reaches delivery. `ShSiteRepository.findByFurl` returns **one** `ShSite`, and
+`ShPageRenderService` and `ShSiteAssetDelivery` both resolve through it, so two sites at
+one furl means the database chooses which answers. That is the SH278/SH279 shape this
+project has paid for twice: invisible on H2, wrong on another engine, and reachable
+through the console.
+
+The product also disagrees with itself. SH648 **refuses** a site restore when a live
+site took the sleeping one's furl, on SH243's reasoning that an address is a promise —
+while the create that causes the collision is unchecked.
+
+The fix is one writer for the verb, as SH245 says. What needs deciding is which rule
+wins: import's silent suffix or a teaching refusal like the restore's.
+
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
