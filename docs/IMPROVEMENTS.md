@@ -659,6 +659,29 @@ altitudes, which is why they are one block rather than a footnote on the last on
 The block's rule is SH338's: the count is fixed before the page is written. A page added
 under a summary that cannot count it is a page the next scan will not know exists.
 
+### XXI.14 The gate for shipped work is not itself gated (SH747)
+
+`COVERAGE.md` opens by stating its own contract: every shipped block or feature cluster
+maps to a page with an anchor, or to an explicit "deliberately internal" row, because
+**an absent row is indistinguishable from a forgotten one**. Nothing checks it.
+
+Measured, in one session: six shipped tasks reached no verdict — SH47, SH46 and SH746 in
+Block F, SH691, SH245 and SH744 in Block O. Both misses were found by reading the ledger
+against the matrix by hand, twice, after the commits had landed.
+`docs-coverage.conformance.mjs` already reads the file, but it checks the summary is a
+projection of the tables (SH653), not that the tables cover what shipped.
+
+The rule that would have caught all six is cheap: **every `SH<n>` in the ledger appears
+somewhere in `COVERAGE.md`.** That is stricter than the stated contract, which is per
+*cluster* — but it is the rule the block-completion sweeps have actually been applying,
+and a cluster row that names its ids is the only version a reader can verify.
+Retirements are excluded: the matrix maps shipped work, and a 🗑 line has no surface.
+
+The awkward part is where it lives. The check needs both repositories at once, and the
+docs root is `SHIO_DOCS_DIR` — so it belongs beside `docs-coverage.conformance.mjs` in
+`cli/conformance/`, which already fails clearly when the documentation is not where it
+expects.
+
 ## XXII Realignment of what already shipped
 
 Block N's family. It holds the cases where a capability shipped complete against its own
