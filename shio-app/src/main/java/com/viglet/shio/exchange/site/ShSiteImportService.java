@@ -43,6 +43,7 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.url.ShSiteFurlNaming;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -87,6 +88,8 @@ public class ShSiteImportService {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ObjectMapper objectMapper;
     private final ShAgentMemoryService shAgentMemoryService;
+    /** SH744 — the one writer of a site's address, shared with ShSiteWriteService. */
+    private final ShSiteFurlNaming shSiteFurlNaming;
 
     public ShSiteImportService(ShExchangePackageCodec codec,
                                ShPostTypeAdminService shPostTypeAdminService,
@@ -95,7 +98,8 @@ public class ShSiteImportService {
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShPostTypeRepository shPostTypeRepository,
                                ObjectMapper objectMapper,
-                               ShAgentMemoryService shAgentMemoryService) {
+                               ShAgentMemoryService shAgentMemoryService,
+                               ShSiteFurlNaming shSiteFurlNaming) {
         this.codec = codec;
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shSiteRepository = shSiteRepository;
@@ -104,6 +108,7 @@ public class ShSiteImportService {
         this.shPostTypeRepository = shPostTypeRepository;
         this.objectMapper = objectMapper;
         this.shAgentMemoryService = shAgentMemoryService;
+        this.shSiteFurlNaming = shSiteFurlNaming;
     }
 
     /**
@@ -355,9 +360,18 @@ public class ShSiteImportService {
         return shSiteRepository.findByName(name) == null ? name : name + " (" + shortId() + ")";
     }
 
+    /**
+     * SH744 — one writer, and the import is the <em>derive</em> case.
+     *
+     * <p>This used to be the only half of the pair that checked anything, and it disagreed with
+     * {@code ShSiteWriteService.create}, which checked nothing. Both now ask
+     * {@link com.viglet.shio.url.ShSiteFurlNaming}. An import stays on the deriving side because it
+     * is a clone (SH68): the exported furl is a starting point rather than a promise this instance
+     * made, so it is numbered rather than refused and a package cannot fail halfway through on one
+     * name. The suffix is {@code -2} now instead of a random short id — a human can predict it.</p>
+     */
     private String uniqueFurl(String furl, String name) {
-        String base = hasText(furl) ? furl : slug(name);
-        return shSiteRepository.findByFurl(base) == null ? base : base + "-" + shortId();
+        return shSiteFurlNaming.freeFurl(hasText(furl) ? furl : null, name);
     }
 
     private static String newId() {

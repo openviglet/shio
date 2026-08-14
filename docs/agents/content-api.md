@@ -81,6 +81,21 @@ repositories by name, because "any `*Repository`" finds 23 admin-surface writes 
 defect; and the population is **0**, so a synthetic case reproducing SH200's shape is what proves
 the regex still matches.
 
+**A site's address has one writer too (SH744).** There were three, and only one checked anything:
+the exchange import suffixed a taken furl with a random short id, `createBlank` saved whatever it
+was given, and `create`'s SH71 bootstrap path handed the payload to the import — so a furl a curator
+*typed* came back silently numbered. `ShSiteFurlNaming` now owns it, and the rule is the posts'
+(SH81/SH651) rather than a new one: a **declared** address is identity and is refused when taken
+(`site-furl-conflict`, 409), a **derived** one has no claim and is numbered `-2`, `-3`. An import
+stays on the deriving side because a clone's exported furl is a starting point, not a promise this
+instance made — so a package cannot fail halfway through on one name.
+
+The check sits in `create` **before** the bootstrap branch, which is the part worth remembering:
+there are two ways out of that method, the rule belongs to the verb rather than to one arm, and
+putting it in `createBlank` alone left the console path — the one a curator uses — unguarded.
+It mattered: `ShSiteRepository.findByFurl` returns **one** row and both `ShPageRenderService` and
+`ShSiteAssetDelivery` resolve through it, so duplicates meant the database chose which site answered.
+
 **Both ends are authorized (SH201).** These two used to check `requireWrite(destId)` and nothing
 else, so write on any single folder was enough to relocate content *out of* a subtree the caller
 could not write — a removal, from the owner's point of view — or to copy content they had never

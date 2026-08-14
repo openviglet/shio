@@ -8,7 +8,6 @@
  */
 package com.viglet.shio.api.site;
 
-import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.history.ShContentAuditService;
+import com.viglet.shio.url.ShSiteFurlNaming;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.api.folder.ShFolderWriteService;
@@ -50,22 +50,36 @@ public class ShSiteWriteService {
     /** SH454 — deleting a subtree is the folder writer's verb, and there is one of it (SH245). */
     private final ShFolderWriteService shFolderWriteService;
     private final ShContentAuditService shContentAuditService;
+    /** SH744 — the one writer of a site's address, shared with the exchange import. */
+    private final ShSiteFurlNaming shSiteFurlNaming;
 
     public ShSiteWriteService(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
                               ShBootstrapSiteProvider bootstrapSiteProvider,
                               ObjectMapper objectMapper,
                               ShFolderWriteService shFolderWriteService,
-                              ShContentAuditService shContentAuditService) {
+                              ShContentAuditService shContentAuditService,
+                              ShSiteFurlNaming shSiteFurlNaming) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.bootstrapSiteProvider = bootstrapSiteProvider;
         this.objectMapper = objectMapper;
         this.shFolderWriteService = shFolderWriteService;
         this.shContentAuditService = shContentAuditService;
+        this.shSiteFurlNaming = shSiteFurlNaming;
     }
 
     @Transactional
     public ShSite create(ShSite payload, String owner) {
+        // SH744 — before the branch, because there are two ways out of this method and the rule
+        // belongs to the verb rather than to one arm of it. The bootstrap path hands the payload to
+        // ShSiteImportService, which DERIVES a free address (right for a clone, where the export's
+        // furl is a starting point) — so a declared furl put through it came back silently numbered
+        // and the caller's own link pointed at nothing. Asked here, both paths obey one rule:
+        // a declared address is identity and is refused when taken (SH81/SH651); a derived one is
+        // numbered by whichever path builds it.
+        if (hasText(payload.getFurl())) {
+            shSiteFurlNaming.requireFree(payload.getFurl());
+        }
         // SH71: clone the bundled bootstrap-site starter (post-types, folders, sample
         // pages) so a new site isn't blank. Best-effort — falls through to a plain
         // site + empty root folder if the template is absent or fails to clone.
@@ -154,7 +168,15 @@ public class ShSiteWriteService {
         // later would make `shio site rm --scratch` a way to bulk-delete a site somebody chose to
         // keep; the guarantee it rests on is that the declaration preceded the content.
         site.setScratch(payload.isScratch() ? Boolean.TRUE : null);
-        site.setFurl(hasText(payload.getFurl()) ? payload.getFurl() : slugify(payload.getName()));
+        // SH744 — two writers used to decide this and only one checked. The rule is SH81/SH651's,
+        // one level up: a DECLARED address is identity and is refused when taken rather than
+        // renumbered, and a DERIVED one has no claim and is numbered until free.
+        if (hasText(payload.getFurl())) {
+            shSiteFurlNaming.requireFree(payload.getFurl());
+            site.setFurl(payload.getFurl());
+        } else {
+            site.setFurl(shSiteFurlNaming.freeFurl(null, payload.getName()));
+        }
         site.setOwner(owner);
         site.setDate(Instant.now());
         // tenant_id is populated by Hibernate's @TenantId from ShTenantContext on insert.
@@ -634,14 +656,4 @@ public class ShSiteWriteService {
         return value != null && !value.isBlank();
     }
 
-    private static String slugify(String value) {
-        if (value == null) {
-            return null;
-        }
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
-        return normalized.toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-)|(-$)", "");
-    }
 }
