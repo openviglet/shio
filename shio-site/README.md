@@ -136,12 +136,14 @@ against and never shipped. The reason the site survived a block the docs did not
 one that saved it from SH541: `site-content.ts` lists the tools as an array the copy iterates,
 so a drifted entry is a visible wrong row rather than a number in a sentence nobody re-derives.
 
-Block N closed on 2026-08-11 and three times more on 2026-08-14 — four sweeps for one block, which
-is worth recording because "a closed block stays closed" is an assumption the sweep can be built on
-and should not be. It is a property of *this* block rather than bad luck: "realignment of what
-already shipped" is a category that receives findings forever, not a project that finishes, and
-each finding empties it again. Filed against the tool as `RK1180`: a standing block and a project
-block empty for different reasons and only one of them is finished. No closure changed a claim here, and the second is the best
+Block N closed on 2026-08-11 and repeatedly on 2026-08-14, and no closure changed a claim here.
+The repetition is worth recording once rather than counting: "a closed block stays closed" is an
+assumption the sweep can be built on and should not be, and this is a property of *that* block
+rather than bad luck — "realignment of what already shipped" is a category that receives findings
+forever, not a project that finishes, so each new finding empties it again. Filed against the tool
+as `RK1180`: a standing block and a project block empty for different reasons and only one of them
+is finished. Deliberately not a running tally, because a number here would need an edit per sweep
+for no reader's benefit. No closure changed a claim here, and the second is the best
 evidence for why. It shipped `SHIO_ADMIN_PASSWORD` (SH706), the one thing in the block a
 marketing page would plausibly quote, and the copy that could have been wrong — `PLUGIN_INSTALL`
 in `site-content.ts` — writes `SHIO_PASSWORD=...` as a placeholder rather than a credential. The
