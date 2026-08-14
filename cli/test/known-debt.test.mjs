@@ -118,6 +118,28 @@ const LEDGERS = [
     },
   },
   {
+    // The sixth, and the one this file named in advance and then did not catch (SH741). SH672
+    // built `TOLERATED` in the shape assertion-debt uses and said so in its header — accepted
+    // exemptions, a written reason beside each — and never joined here, so the count above read
+    // five while six existed. Its entries name a *floor* rather than a task, which is why the
+    // staleness check below is its own test: the shipped/open owner checks have nothing to bite on.
+    name: "floor-kind TOLERATED",
+    path: "cli/test/floor-kind.test.mjs",
+    holds: "absolute floors over a shrinking corpus, each with its reason",
+    since: "SH672",
+    async entries(text) {
+      const from = text.indexOf("const TOLERATED = new Map([");
+      const to = text.indexOf("]);", from);
+      assert.ok(from >= 0 && to > from, "floor-kind no longer declares TOLERATED as a Map");
+      return [...text.slice(from, to).matchAll(/\[\s*"([^"]+)"/g)]
+        .map(([, key]) => ({ owner: null, what: key, unsigned: false }));
+    },
+    // A floor key is the subject and no task owns it, so "owned by a shipped task" and "names an
+    // owner" would both fire on every row. Declared rather than worked around, the way the
+    // assertion-debt row declares `ownerIsSubject`.
+    ownerIsSubject: true,
+  },
+  {
     name: "verify-baseline.json",
     path: "shio/verify-baseline.json",
     holds: "accepted verify findings, per project",
@@ -194,7 +216,7 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
   // The number is asserted, not merely printed, so inventing a *sixth* ledger without joining it
   // here fails the run. SH499 is the case: it reached for this shape unprompted, and the failing
   // count is what turned "a new debt file exists somewhere" into a one-line edit.
-  assert.equal(ledgers.length, 5, "a new ledger is a row in LEDGERS, not a sixth reader");
+  assert.equal(ledgers.length, 6, "a new ledger is a row in LEDGERS, not a seventh reader");
   // Not vacuous: if every reader came back empty the join would pass forever, which is the
   // lint-that-reports-zero failure every instrument in this repository is warned about.
   assert.ok(
@@ -271,4 +293,40 @@ test("SH594: an owner that is neither shipped nor open is a dangling reference",
     an owner in neither file names nothing: the task was retired or renumbered and the debt stayed.
 
 ${dangling.map((row) => `      ${row}`).join("\n")}`);
+});
+
+test("SH741: no tolerated floor exempts a floor that is no longer there", async () => {
+  // The check the other five get by way of their owner and this one cannot: a `TOLERATED` entry
+  // names a floor, not a task, so "owned by a shipped id" has nothing to bite on. The equivalent
+  // question is whether the floor it excuses still exists.
+  //
+  // Not hypothetical. SH740 changed `floor-kind.test.mjs` to strip comments where it had read raw,
+  // which could have removed a floor written inside one and left its exemption standing forever.
+  // All four survived — and answering that took a throwaway script, because nothing in the suite
+  // could say so. An exemption for a floor that is gone is the quietest kind of stale debt: it
+  // never fires, so it never asks to be re-read.
+  const [ledgers, floorKind] = await Promise.all([
+    readLedgers(),
+    readFile(join(ROOT, "cli/test/floor-kind.test.mjs"), "utf8"),
+  ]);
+  const tolerated = ledgers.find((ledger) => ledger.name === "floor-kind TOLERATED");
+  assert.ok(tolerated, "the TOLERATED row left LEDGERS, which is the defect SH741 closed");
+  assert.ok(tolerated.entries.length > 0, "the reader parsed no entry, so it agrees with anything");
+
+  // `suites()` is the same walk the lint uses, not a second implementation of it — SH583's rule,
+  // and why SH741 moved the mechanism into support/floors.mjs rather than re-grepping here. The
+  // ledger stayed in floor-kind.test.mjs; only the scan is shared.
+  const { floorsIn, suites } = await import("./support/floors.mjs");
+  const live = new Set();
+  for (const [file, body] of suites()) {
+    for (const floor of floorsIn(body)) live.add(`${file}:${floor.subject}>${floor.bound}`);
+  }
+
+  const stale = tolerated.entries.map((entry) => entry.what).filter((key) => !live.has(key));
+  assert.deepEqual(stale, [], `
+    a tolerated key names a floor that no longer exists — it was deleted, renamed, or its bound
+    moved — so the exemption now excuses nothing and hides the next one. Delete the line.
+    (floor-kind.test.mjs currently declares ${floorKind.split("\n").length} lines.)
+
+${stale.map((row) => `      ${row}`).join("\n")}`);
 });

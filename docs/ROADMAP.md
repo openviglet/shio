@@ -28,8 +28,6 @@
 
 ## Block N — Realignment of what already shipped
 
-- 📋 **SH741** (deps: —) **The tolerated-floor list is the sixth ledger the registry warned about, and it never joined** — SH672 took assertion-debt's named-list shape without its staleness guard, so a tolerance whose floor is gone persists and only a throwaway script can tell. → §XXII.4
-
 ## Block O — The human half (the console the curator uses)
 
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4

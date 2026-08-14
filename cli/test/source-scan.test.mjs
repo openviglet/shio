@@ -130,7 +130,10 @@ describe("SH740: a JS scan over source or documentation declares what it reads",
     const unbacked = [];
     for (const [name, raw] of scanners()) {
       const declared = DECLARATION.exec(raw);
-      if (declared?.[1] === "code" && !/support\/source-text\.mjs/.test(raw)) unbacked.push(name);
+      // The path is relative to the importer, so a module that already lives in `support/` writes
+      // `./source-text.mjs`. Matching the file name rather than the folder keeps the rule about
+      // *which stripper* rather than about where the caller happens to sit (SH741).
+      if (declared?.[1] === "code" && !/\bsource-text\.mjs\b/.test(raw)) unbacked.push(name);
     }
     assert.deepEqual(
       unbacked,
@@ -159,9 +162,14 @@ describe("SH740: a JS scan over source or documentation declares what it reads",
   test("the walk is not vacuous, and finds the scans that produced this rule", () => {
     // A moved tree or a tightened pattern turns the instrument off and reports the same green.
     // Named files rather than a count, because a count is a number somebody relaxes rather than
-    // investigates — and these three are the ones that were actually tripped.
+    // investigates — and these are the scans that were actually tripped by this defect.
+    //
+    // `floors.mjs` rather than `floor-kind.test.mjs`, and the difference is the point: SH741 moved
+    // the scan into support/ and left the ledger behind, so the *test* file no longer reads
+    // anything and correctly left this population. A named list catches that on the next run; a
+    // count would have shrunk by one and said nothing.
     assert.deepEqual(
-      ["assertion-debt.test.mjs", "floor-kind.test.mjs", "readme-surface.test.mjs"]
+      ["assertion-debt.test.mjs", "floors.mjs", "readme-surface.test.mjs"]
         .filter((name) => !scanners().has(name)),
       [],
       "the walk lost a scan that has been bitten by this defect, so a green run means nothing",

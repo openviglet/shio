@@ -508,6 +508,7 @@
 - **SH738** — The classifier now walks the Java suites too and knows AssertJ's spelling of a bound, so the half of the repository SH737 happened in is inside the population it reports.
 - **SH739** — The sweep checklist now names readme-surface.test.mjs and marks which rows it derives, and that pointer is asserted, so renaming the guard fails the document that sends people to it.
 - **SH740** — support/source-text.mjs is the one stripper and source-scan.test.mjs the lint: fourteen scans declare code, prose or both, and Markdown gets unquoted() so a quoted claim is not read as a claim.
+- **SH741** — TOLERATED is the sixth row in LEDGERS and the count is asserted at six, with a staleness check asking whether the floor each exemption excuses still exists, over the scan the lint itself uses.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

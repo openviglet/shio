@@ -843,6 +843,27 @@ was extended — 277 more files, five of which read a shrinking corpus, and **on
 which counts the ledger and is therefore the honest kind. So the population it now reports is the
 whole repository rather than the half somebody happened to write the reader in.
 
+### A new ledger of what is knowingly wrong is a row, not a reader (SH741)
+
+`known-debt.test.mjs` is the one reader over this repository's ledgers of accepted wrongness, and
+its `LEDGERS` count is **asserted** so that inventing another without joining fails the run. There
+are six: `open-findings.json`, `red-suites.json`, `assertion-debt`'s `DEBT`,
+`docs-open-findings.json`, `verify-baseline.json`, and `floor-kind`'s `TOLERATED`.
+
+The sixth is the case the assertion was written for and did not catch. SH672 built `TOLERATED` in
+assertion-debt's shape and said so in its own header, and never joined — so for several blocks the
+count read five while six existed, and `TOLERATED` had none of the checks the other five get. What
+that cost is specific: an exemption whose floor was deleted or renamed stays forever, excusing
+nothing, and never fires so never asks to be re-read. SH740 changed how that file reads sources
+(comments stripped, where it had read raw), which could have killed entries silently; answering
+"did it" needed a throwaway script.
+
+A `TOLERATED` key names a floor rather than a task, so the owner-based checks declare
+`ownerIsSubject` and a separate assertion asks the equivalent question: **does the floor this
+excuses still exist?** It shares `cli/test/support/floors.mjs` with the lint rather than
+re-grepping, which is SH583's rule — two implementations of "what is a floor" would agree only by
+accident.
+
 ### A JS scan over this repository declares what it reads (SH740)
 
 SH613 gave the Java suites `@ShSourceScan` + one shared `ShSourceText`, because a textual guard

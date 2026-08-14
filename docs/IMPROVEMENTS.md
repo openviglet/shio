@@ -759,35 +759,11 @@ and nothing else did. These are not defects in the feature; the feature works. T
 defects in its *reach*, and they are filed separately because the fix is almost never in
 the code the original task wrote.
 
-Its last three entries widened that beyond features: an instrument can ship complete
-against its brief and be blind to half the repository (SH738), a *process document* can
-send a reader past an instrument that already exists (SH739), and a rule established in
-one language can simply stop at the boundary of another (SH740). Nothing is left open
-here → [CHANGELOG.md](CHANGELOG.md) Block N.
-
-### XXII.4 The sixth ledger, named in advance (SH741)
-
-`known-debt.test.mjs` holds a registry of this project's ledgers of what is knowingly
-wrong — five of them, each with a reader — and asserts the count so that inventing a
-sixth without joining it fails the run. Its comment names the case it was built from:
-SH499 reached for the shape unprompted, and the failing count turned "a new debt file
-exists somewhere" into a one-line edit.
-
-`floor-kind.test.mjs` then did exactly that and was not caught. Its `TOLERATED` map is a
-ledger by every property the registry cares about: entries that are
-knowingly-wrong-but-accepted, a written reason beside each, and a header saying it takes
-the shape assertion-debt already uses "and for its reason". It is not a row in
-`LEDGERS`, and the count still reads five.
-
-What that costs is the guard the registry exists to give. `TOLERATED` has no staleness
-check: the only assertion over it is that each reason is longer than twenty characters,
-so an entry whose floor was deleted or renamed survives as an exemption for a floor that
-is not there. SH740 changed how that file reads its sources — comments stripped, where
-before it read raw — which could have silently killed entries, and answering "did it"
-needed a throwaway script. All four are live; nothing in the suite says so.
-
-The fix is the row, plus the two checks the other five get: no entry naming a subject
-that no longer exists, and no entry owned by a task that has already shipped.
+Its recent entries widened that beyond features: an instrument blind to half the
+repository (SH738), a *process document* routing a reader past an instrument that exists
+(SH739), a rule stopping at a language boundary (SH740), and a ledger that took a shape
+without the guard that makes the shape safe (SH741). Nothing is left open here →
+[CHANGELOG.md](CHANGELOG.md) Block N.
 
 ## XXIII The vocabulary proved live (integration tests against a running instance)
 
