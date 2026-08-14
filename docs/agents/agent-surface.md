@@ -1581,6 +1581,21 @@ saying them twice would be the inventory this replaces at the cost the budget re
 after: manifest 2635/2650, **terse 2399/2400 — one token of headroom**, which is recorded in
 `token-budgets.properties` because this ceiling is now a wall for any new manifest line.
 
+**SH230 took that wall down on the terse side: 2395 → 1890, and the ceiling to 2050.** `format=terse`
+now cuts each endpoint's purpose to its **lead sentence**; the example stays verbatim. That split is
+the whole finding. `ShAgentManifestTerse` held both "verbatim" under one rule whose stated reason was
+that the caller *runs* it — true of the example, never true of the purpose, which is read. Holding
+them to one rule is why terse was worth 1.1× on this document where the same encoding is worth a
+third to a half everywhere else, and why SH230's own two candidates both aimed at the smaller half:
+measured across the 28 entries, **purpose is 4001 characters and example is 1079**, so eliding the
+13 derivable examples would have saved 3.6% against this 21%.
+
+The lead is found by scanning to the first terminator that ends a word **and is at least 20
+characters in**, because the usual next-word-is-capitalised heuristic is wrong here — half these
+sentences are followed by `include=…` or `format=…`, lower case by nature. The guard errs toward
+keeping the whole purpose: a genuinely short first sentence is not recognised and nothing is cut,
+which loses a saving rather than publishing half a sentence as the purpose.
+
 **The trim overshot and an instrument caught it within the hour.** Dropping the MCP line took the
 eleven tool names out of what a reader can reach from one call — that line is the *only* place they
 are published — and SH598's reachability walk failed with all eleven in its NOT-NAMED list. It came

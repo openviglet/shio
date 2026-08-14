@@ -24,11 +24,16 @@ import com.viglet.shio.api.agent.dto.ShAgentManifest;
  * sentence and a runnable example per row, twenty-nine rows. JSON pays for the five key names
  * on every one of them; the terse form states the shape once in the verb.</p>
  *
- * <p>{@code purpose} and {@code example} are kept <b>verbatim</b>, and that is deliberate. The
- * example is a string the caller is meant to run, so abbreviating it would hand an agent a call
- * the instance would then reject — the same rule {@link ShAgentContextTerse} follows for widget
- * names. What this encoding removes is the structural repetition around them, which is most of
- * the document and none of its meaning.</p>
+ * <p>{@code example} is kept <b>verbatim</b>, and that is deliberate: it is a string the caller is
+ * meant to run, so abbreviating it would hand an agent a call the instance would then reject — the
+ * same rule {@link ShAgentContextTerse} follows for widget names.</p>
+ *
+ * <p><b>{@code purpose} is cut to its lead sentence (SH230), and until then this paragraph said
+ * "verbatim" of both.</b> The reason given was runnability, which is an argument about the example
+ * and was never one about the purpose — a sentence is read, not executed. Holding them to one rule
+ * cost the document 21%: measured, purpose is 4001 characters across the index and example is
+ * 1079, so the encoding was protecting the smaller half and compacting nothing that mattered.
+ * See {@link #lead(String)}.</p>
  *
  * <p>{@code features} is the section that compresses hardest and matters most: a map of
  * ~20 booleans becomes two lines, the present ones and the absent ones, because
@@ -83,12 +88,61 @@ public final class ShAgentManifestTerse {
                     .word(endpoint.method())
                     .word(endpoint.path())
                     .attr("auth", endpoint.auth())
-                    .attr("purpose", endpoint.purpose())
+                    .attr("purpose", lead(endpoint.purpose()))
                     .attr("example", endpoint.example())
                     .build());
         }
         return out.toString();
     }
+
+    /**
+     * An endpoint's purpose reduced to its lead sentence — the terse half of SH230.
+     *
+     * <p>SH174 measured {@code format=terse} at 2088 against 2343 full: <b>11%</b>, where the same
+     * encoding is worth a third to a half everywhere else. SH230 asked why, and the answer is that
+     * the manifest is not rows — its weight is prose, and the terse encoding only ever removed the
+     * structure around it.</p>
+     *
+     * <p>Measured over the twenty-eight entries: <b>purpose is 4001 characters and example is
+     * 1079</b>. So the two repairs SH230 proposed both aimed at the smaller half — eliding the
+     * thirteen derivable examples saves 334 characters, about 3.6% of the document. Truncating each
+     * purpose to its first sentence saves <b>2010, about 21%</b>, and takes terse from 1.1x to a
+     * ratio worth asking for.</p>
+     *
+     * <p>Why this is safe where abbreviating the example is not, and the distinction the class
+     * javadoc used to blur: the example is <b>run</b>, so cutting it hands an agent a call the
+     * instance rejects. The purpose is <b>read</b>, and its lead sentence is what the endpoint IS —
+     * the tail is parameter guidance ({@code include=}, {@code format=}) that a caller who has
+     * already chosen the endpoint asks for in full. {@code terse} is opt-in and its whole contract
+     * is that it compacts; a caller who wants every word asks for {@code json}.</p>
+     */
+    static String lead(String purpose) {
+        if (purpose == null) {
+            return null;
+        }
+        // Scanned by index rather than matched by regex, because the lead is CUMULATIVE from the
+        // start: a `find()` loop returns each following segment, so the second iteration would
+        // answer "a draft." where the sentence is "Ask for e.g. a draft."
+        for (int at = 0; at < purpose.length(); at++) {
+            char here = purpose.charAt(at);
+            if (here != '.' && here != '?' && here != '!') {
+                continue;
+            }
+            boolean endsAWord = at + 1 == purpose.length()
+                    || Character.isWhitespace(purpose.charAt(at + 1));
+            // The shortest real purpose in the index is 30 characters, so a stop before MIN_LEAD
+            // is an abbreviation's — `e.g.`, `i.e.`, `cf.` — rather than an end. A capital-letter
+            // test would be the usual heuristic and is wrong here: half these sentences are
+            // followed by `include=…` or `format=…`, which are lower case by nature.
+            if (endsAWord && at + 1 >= MIN_LEAD) {
+                return purpose.substring(0, at + 1);
+            }
+        }
+        return purpose;
+    }
+
+    /** Below this, a full stop is punctuation inside a sentence rather than the end of one. */
+    private static final int MIN_LEAD = 20;
 
     /**
      * What {@code include=} removed (SH600), <b>first</b> and on one line.

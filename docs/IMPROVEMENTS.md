@@ -260,38 +260,6 @@ SH45's meter and not a counter anybody can add beside it.
 > baseline getting leaner, and what it left behind is mostly the shape of that argument
 > getting harder: the calls that remain are real work.
 
-### XIII.10 The manifest's weight is prose, and terse barely touches it (SH230)
-
-SH174 measured it:
-
-| Reading of `/agent/manifest` | `X-Shio-Est-Tokens` |
-|---|---|
-| full JSON | **2343** |
-| `format=terse` | 2088 (**1.1×**) |
-| `include=features,limits` | 298 (**7.9×**) |
-
-Everywhere else the terse encoding is worth a third to a half, because everywhere else
-the payload is *rows* and JSON's cost is the key names repeated per row. The manifest is
-not rows: twenty-nine endpoint entries whose weight is a purpose sentence and a runnable
-example, both verbatim on purpose — an abbreviated example is a call the instance would
-reject.
-
-So the index is the target, and `include` only helps a caller that already knows what it
-wants. Two candidates, both with a real objection:
-
-- **Elide a derivable example.** Most entries' examples are `METHOD {apiBase}{path}` with no
-  parameters. Against it: `ShAgentManifestTest` asserts every indexed endpoint carries a
-  runnable example, because a missing example is what sends an agent guessing, and a rule the
-  reader must reconstruct is not obviously better than the bytes.
-- **Put the index behind its own `include`, defaulted off.** Honest about what the document is
-  for — a capability check — and it moves the cost to the session that wants the index. Against
-  it: a *first* session is exactly when the index is worth having, and it would then pay two
-  calls instead of one, which is the opposite of SH157.
-
-A third: the index is the most cacheable document on the surface and never changes
-between builds, so a separate `/agent/endpoints` with a long-lived tag would make the
-manifest small permanently — at the cost of one more endpoint.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.

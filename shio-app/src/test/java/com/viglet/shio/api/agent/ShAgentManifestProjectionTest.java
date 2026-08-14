@@ -147,6 +147,52 @@ class ShAgentManifestProjectionTest {
         assertThat(tokens(terse)).isLessThan(tokens(json));
     }
 
+    @Test
+    @DisplayName("SH230: terse cuts an endpoint's purpose to its lead sentence, and never its example")
+    void terseCutsThePurposeAndKeepsTheExample() throws Exception {
+        String body = manifest("?format=terse").getResponse().getContentAsString();
+
+        // The assertion that would have caught it. SH174 shipped terse at 1.1x where the same
+        // encoding is worth a third elsewhere, because `purpose` and `example` were both held
+        // verbatim under one rule whose stated reason — the caller RUNS it — is true only of the
+        // example. `/agent/context` is the clearest case: its lead sentence is what the endpoint
+        // is, and the tail is `include=`/`format=` guidance a caller reads once it has chosen.
+        assertThat(body)
+                .as("the lead sentence survives, because it is what the endpoint IS")
+                .contains("Start here: content model + sitemap by path + conventions in one call.")
+                .as("and the parameter guidance after it does not — that is the 21% terse was "
+                        + "leaving on the table (SH230)")
+                .doesNotContain("include=manifest adds this instance's capabilities");
+
+        // The other half, and the one that must not move: an abbreviated example is a call the
+        // instance would reject, which is why SH174's rule was right about it.
+        assertThat(body)
+                .as("every example stays runnable and whole")
+                .contains("GET /api/v2/agent/context?format=terse&include=all,manifest");
+    }
+
+    @Test
+    @DisplayName("SH230: a one-sentence purpose is not stripped of its stop, and an abbreviation does not cut it")
+    void theLeadSentenceRuleIsNotNaive() {
+        assertThat(ShAgentManifestTerse.lead("Read posts by address (drafts preferred)."))
+                .as("one sentence comes back whole")
+                .isEqualTo("Read posts by address (drafts preferred).");
+        assertThat(ShAgentManifestTerse.lead("Write N addressed ops in one call. Then the keys."))
+                .isEqualTo("Write N addressed ops in one call.");
+        assertThat(ShAgentManifestTerse.lead("Ask for e.g. a published draft. Then more."))
+                .as("an abbreviation's stop is not a sentence end — cutting at `e.g.` would leave "
+                        + "a fragment that reads as the whole purpose")
+                .isEqualTo("Ask for e.g. a published draft.");
+        assertThat(ShAgentManifestTerse.lead("No terminator at all"))
+                .isEqualTo("No terminator at all");
+
+        // The guard has a cost and it is the safe one: a genuinely short first sentence is not
+        // recognised, so the whole purpose survives. Losing a saving is recoverable; cutting a
+        // sentence in half and calling it the purpose is what an agent would then act on.
+        assertThat(ShAgentManifestTerse.lead("Short. And then a much longer second sentence."))
+                .isEqualTo("Short. And then a much longer second sentence.");
+    }
+
     /**
      * The failure SH174 names second, and the reason it is worth a test: before this, the
      * endpoint accepted {@code ?format=terse} and returned full JSON without comment, while its
