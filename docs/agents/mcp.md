@@ -113,7 +113,7 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   about the wire.
 - **`shio://usage` is what the caller has spent, and the meter had counted it without telling it
   (SH754)** — SH45 published the API-call meter at `GET /api/v2/tenant/usage` and through the
-  `ShBillingExporter` SPI: a human route and a billing route. The meter's own surface keys name the
+  `ShBillingExporter` SPI: a curator's route and a billing route. The meter's own surface keys name the
   gap — `agent` is one of the three it counts — so the caller generating the largest share of the
   number was the one that could not read it, and an agent told to work inside a budget with no way
   to query its spend has been given advice rather than a bound. A **resource** on SH596's

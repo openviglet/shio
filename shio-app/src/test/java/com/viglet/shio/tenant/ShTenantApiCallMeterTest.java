@@ -114,10 +114,14 @@ class ShTenantApiCallMeterTest {
         meter.flush();
 
         assertThat(meter.persistedCalls(TENANT, "2026-01-03", ShTenantApiCallMeter.CONSOLE))
+                // `see SH3` rather than a bare id (SH731): this closes SH45's flush, and the rate
+                // limiter is cited for contrast — a bare `(SH3)` would read as a claim to have
+                // closed it and take it off the assertion-debt ledger it belongs on.
                 .as("SH45: addition commutes and a read-modify-write does not. This is the whole "
-                        + "reason a flow CAN be metered from many nodes where SH3's level could not: "
-                        + "100 from one node and 100 from another leave 200 in either order, and the "
-                        + "second flush of the same bucket must not overwrite the first")
+                        + "reason a flow CAN be metered from many nodes where an in-heap bucket "
+                        + "could not (see SH3): 100 from one node and 100 from another leave 200 "
+                        + "in either order, and the second flush of the same bucket must not "
+                        + "overwrite the first")
                 .isEqualTo(3);
     }
 

@@ -18,11 +18,11 @@
 - 💭 **SH110** (deps: SH746 ✅, SH106 ✅, viglet-quota-spi) **The storage meter landed, so what blocks the ceiling is a delta-aware check in the shared quota SPI** — SH746 counts the bytes; the ceiling needs check(resource, delta) upstream, since the current call compares a total and one upload can exceed it. → §XII.5
 - 📋 **SH750** (deps: SH244 ✅, SH110, viglet-quota-spi) **One write that creates N posts asks the post quota once, so a bulk copy overshoots the plan by N-1** — checkCanCreatePost compares a total against the limit, which is exact only for a write that adds one; SH110 names the same missing SPI for bytes. → §XII.28
 
-## Block F — Market positioning
-
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
 - 📋 **SH748** (deps: SH244 ✅, SH712 ✅) **folder.copy has no live coverage, and the matrix said so on the run that shipped it** — It was declared uncovered rather than covered, because writing a live scenario against no running instance asserts what nobody observed. → §XXIV.1
+- 📋 **SH755** (deps: SH579 ✅) **Two of the three gates have been red on CI since 2026-08-13 and red-suites.json is empty** — SH579 says a red gate blocks the next commit or is a declared exception; eight pushes took neither door, so the rule held only where somebody chose to look. → §XXIV.2
+- 📋 **SH756** (deps: SH755) **A marketplace install fails one run in N, and the exception drops the cause that would name why** — InstallFailedException carries FileSystemException.getMessage(), which is two paths and no reason, so a move that lost a race reads exactly like one that found the target taken. → §XXIV.3
 
 ## Non-goals (do NOT add as tasks)
 

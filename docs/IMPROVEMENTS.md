@@ -702,6 +702,62 @@ what proves the slug a caller branches on is the one sent.
 Until then the proof is `ShAgentFolderCopyTest` against a real database, which is what
 the other seven declared ops have.
 
+### XXIV.2 The gate nobody ran, and the ledger that stayed empty (SH755)
+
+`gh run list` on 2026-08-14: eight consecutive `Suites` runs, every one a failure, the
+oldest on 2026-08-13. At `98f554d4` the jobs read `mvnw clean test` **success**, `pnpm
+test` **failure**, `pnpm conformance` **failure**. `red-suites.json` carried no
+exceptions the whole time.
+
+So the state SH579 was written to make impossible is the state the project was in, and
+it was reached the way that rule predicts: by nobody running the other two gates. A
+local `clean test` was green throughout, which is the reassurance that makes the other
+two skippable.
+
+What is red, on a clean instance: five of 119 conformance tests. **SH747/SH653** — 510
+shipped ids unnamed in `COVERAGE.md` against a recorded 505, and that matrix lives in
+the docs repo, so a ship here and a page there are two commits nobody ties together.
+**SH722** reports its own defect has *stopped reproducing* and asks to be deleted.
+**SH719** expects a `duplicate-url` slug the refusal no longer sends. **SH723** is a
+row-cap assertion on the change feed.
+
+The `pnpm test` half was repaired while finding this. That it took a hunt for something
+else to notice is the finding, not the fixes.
+
+The deliverable is the instrument before the repairs (SH338): what would have failed
+here is a check that the *declared* red matches the *actual* red, and nothing compares
+them.
+
+### XXIV.3 The move that failed once and would not say why (SH756)
+
+On 2026-08-14 `ShMarketplaceInstallerTest.anInstalledPackageIsNotReportedAsBuiltIn` went
+red on one `clean test` and green on the next, same tree, minutes apart. The whole of
+what it said was:
+
+```
+InstallFailedException: …\shio-marketplace-1005…\shio-blueprint-newsroom
+  -> …\junit-7770…\shio-blueprint-newsroom
+```
+
+Two paths and nothing else, because `ShMarketplaceInstaller.install` catches
+`IOException` and passes `failed.getMessage()` — and a `FileSystemException`'s message
+*is* the two paths. The one fact that would decide this is the one the constructor
+throws away: whether the destination already existed, whether a handle was open, whether
+`ATOMIC_MOVE` is unsupported across those two directories.
+
+So this is P6 turned inward. Errors are instructions, and the audience for this one is
+whoever is holding a red gate at the moment they can least afford a guess — SH354
+records the same shape costing a run nobody could ever diagnose.
+
+Two things, and the order is the point. **Carry the cause**: the exception class, and
+the `FileSystemException` `reason` where there is one. Only then ask what the flake is —
+`Files.move(ATOMIC_MOVE)` into a JUnit `@TempDir` on Windows has candidates, an indexer
+holding the freshly-unpacked tree among them, and 24 stale `junit-*` directories were
+sitting in `%TEMP%` when it fired.
+
+Filed rather than fixed on the spot because a fix chosen from one sighting with no
+reason string is a guess with a commit message.
+
 ## XXV Realignment of what already shipped (Block N)
 
 Where the rationale for Block N lives. The block is a standing category rather than a
