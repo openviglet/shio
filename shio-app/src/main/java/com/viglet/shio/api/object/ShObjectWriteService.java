@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.folder.ShFolderWriteService;
+import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.object.ShLiveObject;
@@ -58,18 +59,22 @@ public class ShObjectWriteService {
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShFolderWriteService shFolderWriteService;
     private final ShFurlNaming shFurlNaming;
+    /** SH749 — a copy's bytes, which are keyed by the post id and so do not come along on their own. */
+    private final ShFileStorageService shFileStorageService;
 
     public ShObjectWriteService(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShPostUnifiedWriteService shPostUnifiedWriteService,
                                 ShFolderWriteService shFolderWriteService,
-                                ShFurlNaming shFurlNaming) {
+                                ShFurlNaming shFurlNaming,
+                                ShFileStorageService shFileStorageService) {
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shFolderWriteService = shFolderWriteService;
         this.shFurlNaming = shFurlNaming;
+        this.shFileStorageService = shFileStorageService;
     }
 
     /**
@@ -379,6 +384,11 @@ public class ShObjectWriteService {
             copy.setPublished(false);
             shPostUnifiedRepository.save(copy);
         }
+        // SH749 — the row is keyed by a fresh UUID and so is the storage, so a copy without this
+        // line is a `File` post pointing at a directory nobody wrote: every surface reports
+        // success and the bytes 404 at delivery. A no-op for a post that stores nothing, which is
+        // why it is asked of the storage rather than of the post-type.
+        shFileStorageService.copy(postId, newId);
     }
 
     /** What a copy will be called, and where it will answer. */

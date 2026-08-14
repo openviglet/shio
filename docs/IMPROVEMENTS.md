@@ -256,29 +256,6 @@ a 512 MB plan passes it whenever the tenant is at zero. Shio deliberately shippe
 to this repository, which is worth stating because it decides who can do the work rather
 than merely how much is left.
 
-### XII.27 A folder copy leaves its assets behind (SH749)
-
-`ShObjectWriteService.copyPost` gives every copy a fresh UUID, which is right for a post
-and wrong for a `File`: SH38 stores the bytes at `store/file_source/<post id>/<name>`,
-so the copy's row points at a directory nobody wrote. The console's clone has done this
-since it existed and `folder.copy` (SH244) inherits it, which is what makes it worth
-filing now — an agent duplicating a section is the first caller likely to copy a folder
-of assets at all, and the one least able to notice, since every surface reports success.
-
-The symptom is a replica's own worst case: `verify` passes (the reference resolves — the
-post is there), the page renders, and the images 404 at delivery. SH470 and SH501 both
-spent a task on `File` posts being judged by rules written for content posts; this is
-the same family, one write along.
-
-Three shapes, and the choice is the task. **Copy the bytes** — honest, and it silently
-doubles storage on a gesture nobody thinks of as an upload, which is SH45's meter's
-problem the moment it exists. **Share them**: point the copy at the source's directory,
-cheap and wrong the first time either is purged, since `ShStaticFileCleanupListener`
-frees a directory on `DELETE`. **Refuse**: a copy naming a subtree with assets in it is
-teachable, and a refusal that names the count is better than a section that looks
-complete. Whatever it is, the assertion is the one this needs either way: a copied
-`File` answers 200.
-
 ### XII.28 A bulk write asks a per-one quota (SH750)
 
 `VigletQuotaService.check(resource)` compares the tenant's current count against the
@@ -300,6 +277,32 @@ count the copy has not written yet, so N calls answer one question N times and r
 nothing. **Do not refuse on size** — a ceiling invented here is a second quota model,
 and the failure it causes (a legitimate section copy refused on a generous plan) is
 worse than the one it prevents.
+
+### XII.29 The storage meter is never moved (SH751)
+
+`ShTenantStorageMeter` keeps a per-tenant byte total on `sh_tenant`,
+`ShVigletResourceCounter` reads it for `STORAGE`, and `reconcile` recounts from disk.
+All three shipped. `record(tenant, delta)` — the method that makes it a *maintained*
+figure — is called by **nothing in production**: not `ShStaticFileService.upload`, not
+`replace`, not `ShStaticFileCleanupListener`. Its only caller is its own unit test.
+
+So the meter reads whatever the last reconcile left, and nothing schedules one —
+deliberately, per its own javadoc. On any install that has never reconciled that is
+**zero**, for ever, however many bytes are stored. `currentLimits()` reports the storage
+bound honestly and the count beside it is fiction, which is worse than the absent
+`checkCanStore` the same class explains at length.
+
+Found while shipping SH749, and the same shape as that defect: a mechanism complete
+everywhere except at the one line that connects it, with every surface reporting
+success. Nothing failed, because a counter nobody increments is indistinguishable from a
+tenant storing nothing.
+
+Three call sites and one decision. Upload adds the stored size; `replace` adds the
+difference; the cleanup listener subtracts what it frees — and the copy SH749 added is a
+fourth, which is the argument for putting the call in `ShFileStorageService` (where the
+bytes are actually written and removed) rather than in each caller. The decision is
+whether a delta belongs to the storage layer or to the services above it; the test to
+write either way is that a reconcile after a mixed run changes nothing.
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 

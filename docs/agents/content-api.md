@@ -127,6 +127,22 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   inside the source makes the walk descend into the copies it is still making, and it never
   returns. Both refusals now live on `ShFolderWriteService` (`checkMovable` / `checkCopyable`),
   the one place that knows what a subtree is.
+  **A copy carries its bytes, and until SH749 it did not.** A copied post gets a fresh UUID and
+  SH38 keys storage on exactly that id, so a copied `File` post pointed at a directory nobody had
+  written: the row is there, the reference resolves, `verify` passes, the page renders — and the
+  asset **404s at delivery**. Every surface reported success, which is what made it survive since
+  the clone button existed; SH244's `folder.copy` is what made it reachable at scale, because an
+  agent duplicating a section is the first caller likely to copy a folder of assets and the one
+  least able to notice. `ShFileStorageService#copy` duplicates the source id's whole directory,
+  and it is asked **of the storage, not of the post-type**: "does this id have a directory" is the
+  same question one syscall cheaper and cannot disagree with the layout, so an ordinary post is a
+  no-op. **Copied, not shared** — pointing the copy at the source's directory is cheaper and wrong
+  the first time either is purged, since `ShStaticFileCleanupListener` frees a directory on
+  `DELETE`, so one asset's purge would blank every copy of it. `ShCopyKeepsAssetsTest` asserts the
+  reader's own question (a copied `File` answers **200**) rather than a file being on disk, and it
+  covers both surfaces because both share the writer. What the copy still does **not** do is move
+  the SH45 storage meter — neither does an upload (nothing calls `ShTenantStorageMeter.record`),
+  which is SH751.
 - `PUT /api/v2/object/moveto/{destFolderId}` — Move objects (body: `[id1, id2]`).
   **A move relocates and changes nothing else (SH139):** it keeps the post's `furl`
   (it used to re-slug it from the title, silently changing a published page's live

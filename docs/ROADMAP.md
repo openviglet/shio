@@ -18,8 +18,8 @@
 ## Block L — Agent safety & human-in-the-loop
 
 - 💭 **SH110** (deps: SH746 ✅, SH106 ✅, viglet-quota-spi) **The storage meter landed, so what blocks the ceiling is a delta-aware check in the shared quota SPI** — SH746 counts the bytes; the ceiling needs check(resource, delta) upstream, since the current call compares a total and one upload can exceed it. → §XII.5
-- 📋 **SH749** (deps: SH244 ✅, SH38 ✅) **Copying a folder duplicates a File post's row and not its bytes, so every asset in the copy 404s** — Bytes live at file_source/&lt;post id&gt;/ and a copy gets a fresh id, so both surfaces report success and produce a section whose images are gone. → §XII.27
 - 📋 **SH750** (deps: SH244 ✅, SH110, viglet-quota-spi) **One write that creates N posts asks the post quota once, so a bulk copy overshoots the plan by N-1** — checkCanCreatePost compares a total against the limit, which is exact only for a write that adds one; SH110 names the same missing SPI for bytes. → §XII.28
+- 📋 **SH751** (deps: SH45, SH746 ✅) **Nothing calls ShTenantStorageMeter.record, so the storage meter reads zero until somebody reconciles** — The meter, its counter wiring and its reconcile all shipped; the calls that move it on upload and on cleanup were never written. → §XII.29
 
 ## Block O — The human half (the console the curator uses)
 

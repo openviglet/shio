@@ -203,6 +203,62 @@ public class ShFileStorageService {
     }
 
     /**
+     * Duplicate every byte stored under {@code fromFileId} into {@code toFileId} (SH749).
+     *
+     * <h2>Why the whole directory, and why no post-type check</h2>
+     *
+     * <p>A copy of a post gets a fresh UUID, and this subsystem is keyed by that id — so before
+     * this method a copied {@code File} post pointed at a directory nobody had written, and its
+     * bytes 404'd while every surface reported success. The caller does not ask "is this a
+     * {@code File} post": it asks whether the source id <em>has</em> a directory, which is the same
+     * question one syscall cheaper and cannot disagree with the storage layout. An ordinary post
+     * has none and this is a no-op.</p>
+     *
+     * <p>The whole directory rather than the name in {@code data.FILE}: what a copy owes is the
+     * bytes that are there, and reading the name out of JSON would copy what the row <em>claims</em>
+     * instead. It writes to the tenant path only — {@link #dirOf} may hand back a pre-SH47 flat
+     * source, and a new write goes where new writes go.</p>
+     *
+     * <p><b>Copied, not shared.</b> Pointing the copy at the source's directory is cheaper and
+     * wrong the first time either is purged: {@code ShStaticFileCleanupListener} frees a directory
+     * on {@code DELETE}, so deleting one asset would blank the other. Bytes are what a copy is.</p>
+     *
+     * @return how many bytes were written; {@code 0} when the source stores nothing
+     */
+    public long copy(String fromFileId, String toFileId) {
+        if (fromFileId == null || fromFileId.isBlank() || toFileId == null || toFileId.isBlank()
+                || fromFileId.equals(toFileId)) {
+            return 0L;
+        }
+        Path source = dirOf(fromFileId);
+        if (!Files.isDirectory(source)) {
+            return 0L;
+        }
+        Path tenantRoot = tenantRoot();
+        Path target = tenantRoot.resolve(toFileId).normalize();
+        if (!target.startsWith(tenantRoot)) {
+            throw new IllegalArgumentException("Resolved path escapes file_source root");
+        }
+        try (java.util.stream.Stream<Path> walk = Files.walk(source)) {
+            Files.createDirectories(target);
+            long written = 0L;
+            for (Path from : walk.filter(Files::isRegularFile).toList()) {
+                Path to = target.resolve(source.relativize(from).toString()).normalize();
+                if (!to.startsWith(target)) {
+                    continue;
+                }
+                Files.createDirectories(to.getParent());
+                Files.copy(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                written += Files.size(to);
+            }
+            return written;
+        } catch (IOException e) {
+            throw new UncheckedIOException(
+                    "Failed to copy stored bytes " + fromFileId + " -> " + toFileId, e);
+        }
+    }
+
+    /**
      * Best-effort recursive removal of a file id's directory. Never throws — a
      * missing directory (e.g. a non-file post being deleted) is a no-op. Removes
      * both the current tenant's {@code <root>/<tenant>/<fileId>} directory and any
