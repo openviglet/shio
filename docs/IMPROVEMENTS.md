@@ -304,6 +304,56 @@ bytes are actually written and removed) rather than in each caller. The decision
 whether a delta belongs to the storage layer or to the services above it; the test to
 write either way is that a reconcile after a mixed run changes nothing.
 
+### XII.30 The widget catalog is seeded once per context and unique by assumption (SH753)
+
+Running `clean verify -DskipITs=false` is green. Running the same `verify` **without**
+`clean`, minutes earlier and on the same tree, failed three tests in
+`ShCopyKeepsAssetsTest` with `IncorrectResultSizeDataAccessException: 5 results` out of
+`shWidgetRepository.findByName("Text")`, thrown from `ShStaticFileService.attrOf` while
+an upload resolved the File post type.
+
+Five rows for one widget name is the finding, and `clean` is not the explanation — it is
+only what changed. The test datasource is `jdbc:h2:mem:shio-test;DB_CLOSE_DELAY=-1`, one
+database shared by every Spring context in the JVM, and the widget catalog is seeded at
+startup per context; the suite starts 66. `ddl-auto=create-drop` is what normally hides
+that, and it is a per-context act on a database that outlives any one of them.
+
+So `findByName` returning a single row is an **assumption**, held up by ordering that
+nothing declares. `ShWidgetSeedTest` proves the catalog is created; nothing proves it is
+created once. SH289 already records the other end of the same table — a cascading
+`REMOVE` reaching the shared catalog and surfacing as `Widget 'Text' is not seeded`
+several steps from its cause.
+
+The deliverable is the instrument first (SH338): an assertion that the seeded catalog
+holds one row per name, at the boundary an upload crosses. What it argues for — a unique
+index on `sh_widget.name`, a seeder that is idempotent by query rather than by luck, or
+a per-context database — is the second question and this task should answer it with the
+number in hand.
+
+### XII.31 The meter counts the agent and cannot be read by it (SH754)
+
+SH45 landed the meter with one route out for a human caller — `GET /api/v2/tenant/usage`
+— and one for an external billing system, the `ShBillingExporter` SPI. Neither is
+reachable by the party the numbers are mostly about.
+
+P1 orders every capability MCP → files/CLI → REST → console, and this arrived at REST
+only. That is the ordinary shape of the violation the product is named after, but the
+case is sharper than most: the meter's largest single surface key is `agent`, so the
+caller that cannot read the figure is the one generating it. An agent asked to work
+inside a budget has no way to ask what it has already spent, which makes the budget
+advice rather than a bound.
+
+What this is not: a quota. Enforcing a ceiling on calls is SH110's blocked question and
+needs `check(resource, delta)` in Viglet's kernel. Reading a number Shio already holds
+needs nothing from anybody.
+
+The likely shape is a read on the agent surface next to `/agent/diagnostics`, which is
+already the place an agent goes to find out what it did, and an `MCP` resource rather
+than a tool — usage is state to look at, not an act to perform. Both should answer for
+the current tenant only, the way the REST route does, and both should say what is
+*pending* as well as what is written, or the answer reads as zero for the first minute
+of every window and an agent will learn to distrust it.
+
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
