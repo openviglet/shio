@@ -55,6 +55,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param notes   what this view holds back and why — the lag rule, the scope, and
  *                whether any row's object is gone. Stated rather than implied, for the
  *                same reason SH103's window states its bound
+ * @param budget  SH723 — what this page cost and what it was allowed to cost. Absent only
+ *                on the pre-SH723 constructors kept for older callers
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -62,12 +64,54 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public record ShAgentChanges(int found, boolean window, String since, String cursor,
                              boolean more, List<Change> changes, List<Incident> incidents,
-                             List<String> notes) {
+                             List<String> notes, Budget budget) {
 
     /** Before SH144 folded incidents in — kept so existing callers read unchanged. */
     public ShAgentChanges(int found, boolean window, String since, String cursor, boolean more,
                           List<Change> changes, List<String> notes) {
-        this(found, window, since, cursor, more, changes, null, notes);
+        this(found, window, since, cursor, more, changes, null, notes, null);
+    }
+
+    /** Before SH723 gave the feed a token ceiling. */
+    public ShAgentChanges(int found, boolean window, String since, String cursor, boolean more,
+                          List<Change> changes, List<Incident> incidents, List<String> notes) {
+        this(found, window, since, cursor, more, changes, incidents, notes, null);
+    }
+
+    /**
+     * What this page cost, and what it was allowed to cost (SH723).
+     *
+     * <h2>Why the feed needed one and a row cap was not one</h2>
+     *
+     * <p>{@code limit} bounds <em>rows</em>, and a row's cost is not a constant a caller can
+     * reason about: SH714 measured a change row at 38–44 estimated tokens against a
+     * {@code find} row's 20–23, so the documented maximum of 500 returned about 20,000
+     * estimated tokens in one response — the largest payload on the surface, and the only one
+     * with no ceiling. P3 says tokens are a measured budget; this is that measurement, and the
+     * ceiling it is measured against.</p>
+     *
+     * <h2>Which end is cut, and why it differs by mode</h2>
+     *
+     * <p><b>With {@code since}</b> the response is a delta, oldest first, so the budget cuts
+     * the <em>newest</em> rows: {@code cursor} stops at the last row that fit and {@code more}
+     * is true, which is exactly the resumable shape SH88 already built. Nothing is lost.</p>
+     *
+     * <p><b>Without {@code since}</b> the response is a window — "the most recent N" — so the
+     * budget cuts the <em>oldest</em> rows instead. The window narrows, which is what a window
+     * is for; {@code cursor} still marks the true edge of the feed, so the next call with
+     * {@code since=} is unaffected.</p>
+     *
+     * <p>Either way {@code truncated} says it happened and a note says so in prose, because a
+     * cut that is not visible reads as a clean answer (the SH138 rule).</p>
+     *
+     * @param est       estimated tokens in this response, the 4-chars-per-token heuristic
+     *                  {@link com.viglet.shio.api.agent.ShTokenBudget} uses everywhere, measured
+     *                  over the terse rendering — the one the MCP wire actually pays
+     * @param limit     the ceiling in force; {@code 0} means the caller asked for none
+     * @param truncated rows were held back to stay inside {@code limit}
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Budget(int est, int limit, boolean truncated) {
     }
 
     /**

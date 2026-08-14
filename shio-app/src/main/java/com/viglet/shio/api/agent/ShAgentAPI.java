@@ -634,6 +634,11 @@ public class ShAgentAPI {
      * @param since  a cursor from a previous call
      * @param limit  entries to return
      * @param ids    include object ids (SH121 default: off)
+     * @param budget SH723 — estimated-token ceiling on the page, up to the configured maximum;
+     *               {@code 0} asks for none. {@code limit} bounds <em>rows</em>, and a change
+     *               row's cost is not a constant, so this is the bound that holds: a page cut
+     *               here reports {@code budget.truncated} and, in cursor mode, leaves the
+     *               cursor at the last entry that fit
      * @param ifNoneMatch a tag from a previous read (SH159). This is the poll — "has anything
      *                    happened since I last looked" — and the honest answer is very often
      *                    "no", so a {@code 304} is what makes asking cheap enough to do often.
@@ -653,10 +658,11 @@ public class ShAgentAPI {
             @RequestParam(name = "since", required = false) String since,
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
+            @RequestParam(name = "budget", required = false) Integer budget,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
-        ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids);
+        ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids, budget);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("changes", ShAgentChangesTerse.render(changes), ifNoneMatch)
                 : shAgentBodyEtag.json("changes", changes, ifNoneMatch);

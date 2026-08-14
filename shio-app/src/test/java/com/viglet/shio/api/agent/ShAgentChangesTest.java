@@ -71,6 +71,8 @@ class ShAgentChangesTest {
     @Autowired
     private ShHistoryRepository shHistoryRepository;
     @Autowired
+    private ShAgentProperties shAgentProperties;
+    @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
@@ -363,5 +365,131 @@ class ShAgentChangesTest {
                 .startsWith("changes 3 window")
                 .contains("cursor=" + changes.cursor());
         assertThat(terse).contains("event PUBLISH post:" + siteName + base + "/live");
+    }
+
+    // --- SH723: the token ceiling ---
+
+    /**
+     * The measurement is the point of the whole task, so this is the assertion that has to
+     * hold: {@code est} is not an approximation of the response, it <em>is</em> the response's
+     * terse rendering measured with the same heuristic the instance reports everywhere else.
+     *
+     * <p>If it ever drifts, the budget is charging something the caller does not receive (or
+     * emitting something it never charged), which is the failure mode a ceiling nobody
+     * re-derives would hide.</p>
+     */
+    @Test
+    void theFeedReportsWhatItCostAndTheFigureIsTheResponseItself() {
+        ShAgentChanges changes = shAgentChangesService.changes(siteName, null, 50, false);
+
+        assertThat(changes.budget()).isNotNull();
+        assertThat(changes.budget().est())
+                .isEqualTo(ShTokenBudget.estimate(ShAgentChangesTerse.render(changes)));
+        assertThat(changes.budget().truncated()).isFalse();
+    }
+
+    /** SH673's one-copy rule: the shipped default and the reviewed ceiling are one number. */
+    @Test
+    void theCeilingIsTheOneDeclaredInTokenBudgetsProperties() throws java.io.IOException {
+        java.util.Properties budgets = new java.util.Properties();
+        try (java.io.InputStream in = getClass().getResourceAsStream("/token-budgets.properties")) {
+            budgets.load(in);
+        }
+
+        assertThat(shAgentProperties.getChanges().getMaxBudgetTokens())
+                .as("live.changes.budget in token-budgets.properties is the reviewable copy of "
+                        + "shio.agent.changes.max-budget-tokens; raising one without the other "
+                        + "puts the ceiling back where nobody argues about it")
+                .isEqualTo(Integer.parseInt(budgets.getProperty("live.changes.budget")));
+    }
+
+    /**
+     * The whole reason a row cap was not a token budget: a cut delta must stay resumable, so
+     * the cursor stops at the last row that fit and the rest arrives on the next call. Nothing
+     * is lost, which is what separates this from simply returning fewer rows.
+     */
+    @Test
+    void aBudgetCutsTheDeltaAtTheLastRowThatFitAndTheRestSurvivesTheCursor() {
+        String anchor = new ShAgentChangeCursor(T1.minusSeconds(1), "").toString();
+        ShAgentChanges whole = shAgentChangesService.changes(siteName, anchor, 50, false, 0);
+        assertThat(whole.found()).isGreaterThan(2);
+        assertThat(whole.budget().limit()).isZero();
+
+        // A ceiling that admits the first row and not the whole page.
+        ShAgentChanges cut = shAgentChangesService.changes(siteName, anchor, 50, false,
+                whole.budget().est() / 2);
+
+        assertThat(cut.budget().truncated()).isTrue();
+        assertThat(cut.found()).isLessThan(whole.found());
+        assertThat(cut.more()).isTrue();
+        assertThat(cut.notes()).anyMatch(note -> note.startsWith("budget: this page stops at"));
+
+        ShAgentChanges rest = shAgentChangesService.changes(siteName, cut.cursor(), 50, false, 0);
+        assertThat(descriptions(cut)).doesNotContainAnyElementsOf(descriptions(rest));
+        assertThat(java.util.stream.Stream.concat(descriptions(cut).stream(),
+                        descriptions(rest).stream()).toList())
+                .containsExactlyElementsOf(descriptions(whole));
+    }
+
+    /**
+     * A window is "the most recent N", so the budget takes the <em>old</em> end and the edge of
+     * the feed does not move. Cutting the newest instead would make the cursor walk backwards
+     * on a call that never promised the past.
+     */
+    @Test
+    void aBudgetNarrowsAWindowFromTheOldEndAndLeavesItsEdgeWhereItWas() {
+        ShAgentChanges whole = shAgentChangesService.changes(siteName, null, 50, false, 0);
+
+        ShAgentChanges cut = shAgentChangesService.changes(siteName, null, 50, false,
+                whole.budget().est() / 2);
+
+        assertThat(cut.budget().truncated()).isTrue();
+        assertThat(cut.found()).isLessThan(whole.found());
+        assertThat(cut.cursor()).isEqualTo(whole.cursor());
+        assertThat(descriptions(cut))
+                .isEqualTo(descriptions(whole).subList(whole.found() - cut.found(), whole.found()));
+        assertThat(cut.notes()).anyMatch(note -> note.startsWith("budget: this window"));
+    }
+
+    /**
+     * A budget may make the feed slower to walk; it may never make it unwalkable. A page that
+     * fit nothing would leave the cursor where it was with {@code more} true — the caller polls
+     * the same position for ever — so the first row is charged unconditionally.
+     */
+    @Test
+    void aPageThatFitsNothingStillReturnsOneRowSoTheFeedStaysWalkable() {
+        String anchor = new ShAgentChangeCursor(T1.minusSeconds(1), "").toString();
+
+        ShAgentChanges page = shAgentChangesService.changes(siteName, anchor, 50, false, 1);
+
+        assertThat(page.found()).isEqualTo(1);
+        assertThat(page.budget().truncated()).isTrue();
+        assertThat(page.cursor()).isNotEqualTo(anchor);
+        assertThat(shAgentChangesService.changes(siteName, page.cursor(), 50, false, 1).found())
+                .isEqualTo(1);
+    }
+
+    /** P6 — a parameter that bounds work teaches when it is nonsense (SH320). */
+    @Test
+    void aNegativeBudgetIsRefusedRatherThanClamped() {
+        assertThatThrownBy(() -> shAgentChangesService.changes(siteName, null, 10, false, -1))
+                .isInstanceOf(ShAgentContextService.InvalidBudgetException.class);
+    }
+
+    /**
+     * SH723 — a ceiling a caller cannot see is one it learns by being cut off, so it is on the
+     * feed's own terse header rather than in the manifest's {@code limits}: paid once per feed
+     * read instead of once per session, and visible on the <em>first</em> read.
+     */
+    @Test
+    void theTerseHeaderDeclaresTheCeilingBeforeItCuts() {
+        ShAgentChanges changes = shAgentChangesService.changes(siteName, null, 3, false);
+
+        assertThat(ShAgentChangesTerse.render(changes).lines().findFirst().orElseThrow())
+                .contains("max-tokens=" + shAgentProperties.getChanges().getMaxBudgetTokens());
+        // …and says nothing when the caller opted out, rather than printing a meaningless 0.
+        assertThat(ShAgentChangesTerse.render(
+                shAgentChangesService.changes(siteName, null, 3, false, 0)))
+                .doesNotContain("max-tokens");
     }
 }

@@ -693,6 +693,30 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   never a bare timestamp — audit rows share timestamps, so a timestamp cursor would drop
   the entries that tie (a bare one is a teaching 400, not an interpretation). Both modes
   are ordered **oldest → newest** so the cursor is always the last row.
+  **`limit` is a row cap, and the bound that actually holds is `?budget=` (SH723).** A row's
+  cost is not fixed — SH714 measured a change row at 38–44 estimated tokens against a `find`
+  row's 20–23 — so `limit=500`, the documented maximum, was ~20,000 estimated tokens: the
+  largest payload on the surface, and the only one with no ceiling, while the context pack
+  self-limits at 4,000. The feed now charges each row against `ShTokenBudget` before committing
+  it, defaulting to `shio.agent.changes.max-budget-tokens` (6,000, the copy in
+  `token-budgets.properties` being the reviewable one), with `?budget=0` to opt out and a
+  negative value a teaching 400.
+  **Which end is cut differs by mode, and that is the whole design.** With `since=` the page is
+  a delta, so the budget drops the *newest* rows: the cursor stops at the last row that fit and
+  `more` is true — SH88's resumable shape, nothing lost. Without it the page is a window ("the
+  most recent N"), so the budget drops the *oldest* rows and the cursor stays at the true edge
+  of the feed. Either way `budget.truncated` and a note say so, because a cut that is not
+  visible reads as a clean answer (SH138). **At least one row always survives**: a page that fit
+  nothing would leave the cursor where it was with `more` true, and the caller would poll the
+  same position for ever.
+  **The ceiling is declared on the feed's own terse header (`max-tokens=`), not in the
+  manifest's `limits`.** `maxDigestPages` is in `limits` because it appears in no response;
+  this one appears in every one of its own, so a caller learns it on the first read instead of
+  by being cut off — and it is paid once per feed read rather than once per session. The
+  context pack made the same call for the same reason. `budget.est` is the *terse rendering*
+  measured, which is exactly `header + events + incidents + notes`; `ShAgentChangesTest`
+  asserts that identity, so a budget that charges something the caller never receives fails the
+  build rather than drifting.
   **The feed is commit-ordered, and the guard is a watermark rather than a lag (SH147).**
   SH51 stamps the audit row inside the writer's transaction, so timestamps are a *stamp* order:
   a transaction that stamped earlier can commit after a faster one has been read, and a cursor

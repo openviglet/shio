@@ -42,3 +42,9 @@ public record ShAgentLimits(
          */
         int maxDigestPages) {
 }
+// SH723 considered adding the change feed's token ceiling here and did not. `maxDigestPages`
+// belongs because it appears in no response; the feed's ceiling appears in *every* one of its
+// own — `budget.limit` in JSON, `max-tokens` on the terse header — so a caller learns it on the
+// first read rather than by being cut off, and the manifest is paid for on every session start.
+// The context pack made the same choice for the same reason: it declares its budget in its own
+// payload, not in `limits`.

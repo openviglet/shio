@@ -122,6 +122,28 @@ public class ShAgentProperties {
         private int maxLimit = 500;
 
         /**
+         * The estimated-token ceiling on one page of the feed (SH723).
+         *
+         * <p>{@link #maxLimit} is a <b>row</b> cap, and a row's cost is not fixed: a change
+         * entry carries an actor, an address, a timestamp and a {@code what} sentence somebody
+         * else wrote, which SH714 measured at 38–44 estimated tokens against a {@code find}
+         * row's 20–23. So {@code limit=500} — the documented maximum — was about 20,000
+         * estimated tokens in a single response, on the one surface that had no budget at all
+         * while the context pack, which exists to be the big one, self-limits at 4,000.</p>
+         *
+         * <p>6,000 is chosen so the <em>default</em> call is never cut — 50 rows at the
+         * measured ceiling of 52 is 2,600 — while a caller that asks for 500 gets what fits
+         * and a cursor for the rest. The cursor already existed (SH88), which is what makes
+         * the cut resumable rather than lossy. The same number is asserted from
+         * {@code token-budgets.properties} (<code>live.changes.budget</code>), so raising it
+         * is the reviewable act every other ceiling in that file is.</p>
+         *
+         * <p>A caller may pass {@code ?budget=} up to this value, or {@code 0} for no ceiling
+         * — the same contract the context pack offers, and the same deliberate opt-out.</p>
+         */
+        private int maxBudgetTokens = 6000;
+
+        /**
          * An <b>extra</b> margin, on top of the SH147 watermark, before the feed will report
          * an entry.
          *

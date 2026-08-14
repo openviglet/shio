@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 /**
@@ -66,6 +67,16 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
  * writing to the same database. See {@link ShAuditFeedWatermark} for why a {@code seq}
  * column with gap detection was rejected — it relocates the guess rather than removing it.</p>
  *
+ * <h2>The token ceiling (SH723)</h2>
+ *
+ * <p>{@code limit} is a <b>row</b> cap and a row's cost is not fixed, so the documented maximum
+ * of 500 produced about 20,000 estimated tokens — the largest response on the agent surface, and
+ * the only one with no budget, while the context pack self-limits at 4,000. The feed now carries
+ * one too: rows are charged against {@link ShTokenBudget} before they are committed, the cut is
+ * reported in {@code budget.truncated} and in a note, and in cursor mode the cursor stops at the
+ * last row that fit. See {@link com.viglet.shio.api.agent.dto.ShAgentChanges.Budget} for which
+ * end of the page a cut takes and why the two modes differ.</p>
+ *
  * <h2>Scope</h2>
  *
  * <p>A site-scoped credential sees the trail of the sites it can read, and nothing else.
@@ -77,7 +88,7 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentChangesService {
 
     private final ShHistoryRepository shHistoryRepository;
@@ -110,20 +121,31 @@ public class ShAgentChangesService {
         this.watermark = watermark;
     }
 
+    /** Before SH723 gave the feed a token ceiling — {@code null} takes the configured one. */
+    public ShAgentChanges changes(String site, String since, Integer limit, boolean ids) {
+        return changes(site, since, limit, ids, null);
+    }
+
     /**
      * Reads the feed.
      *
-     * @param site  site name / id / {@code site:} address to scope to; {@code null} for
-     *              every readable site
-     * @param since a cursor from a previous call; {@code null} starts from a window
-     * @param limit entries to return; {@code null} uses the configured default
-     * @param ids   include object ids (SH121 default: off)
+     * @param site   site name / id / {@code site:} address to scope to; {@code null} for
+     *               every readable site
+     * @param since  a cursor from a previous call; {@code null} starts from a window
+     * @param limit  entries to return; {@code null} uses the configured default
+     * @param ids    include object ids (SH121 default: off)
+     * @param budget SH723 — estimated-token ceiling on the page; {@code null} takes the
+     *               configured one, {@code 0} asks for none. See
+     *               {@link ShAgentChanges.Budget} for which end of the page a cut takes,
+     *               and why that differs between the two modes
      */
-    public ShAgentChanges changes(String site, String since, Integer limit, boolean ids) {
+    public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
+                                  Integer budget) {
         ShAgentProperties.Changes config = properties.getChanges();
         int cap = limit == null || limit <= 0
                 ? config.getDefaultLimit()
                 : Math.min(limit, config.getMaxLimit());
+        ShTokenBudget tokens = new ShTokenBudget(resolveBudget(budget, config));
         // SH147 — the oldest write that has stamped and not finished, minus whatever margin an
         // operator configured for a node this registry cannot see. Not `now - lag`: that was a
         // guess about commit duration, and a bulk apply outran it.
@@ -133,36 +155,134 @@ public class ShAgentChangesService {
         ShAgentChangeCursor from = since == null || since.isBlank()
                 ? null
                 : ShAgentChangeCursor.parse(since);
+        boolean window = from == null;
 
         // limit + 1 on the feed so `more` is a fact rather than an inference from a full
         // page — a full page that happens to be the last one would otherwise send the
         // caller back for an empty round trip every time.
-        List<ShHistory> entries = from == null
+        List<ShHistory> entries = window
                 ? newestFirst(scope, ceiling, cap)
                 : afterCursor(scope, ceiling, from, cap + 1);
-        boolean more = from != null && entries.size() > cap;
+        boolean more = !window && entries.size() > cap;
         if (more) {
             entries = entries.subList(0, cap);
         }
-        if (from == null) {
+        if (window) {
             // The window query returns newest first; the response is always oldest first
             // so the cursor is always the last row (see the DTO's "two modes" note).
             entries = new ArrayList<>(entries);
             Collections.reverse(entries);
         }
 
-        List<ShAgentChanges.Change> changes = shape(entries, scope, ids);
-        String cursor = entries.isEmpty()
-                ? (from == null ? new ShAgentChangeCursor(ceiling, "").toString() : from.toString())
-                : new ShAgentChangeCursor(last(entries).getDate(), last(entries).getId()).toString();
+        // SH144 — the incident stream, read over the same range. SH204 — and under the same
+        // scope, which it was not before. Read before the budget gate rather than after,
+        // because SH723 charges it as a *bounded* section: charging it afterwards would let
+        // the gate admit a change row that the later charge then pushes over the ceiling,
+        // which is the ordering mistake the context pack's `chargeBounded` exists to avoid.
+        IncidentRows failures = incidentRows(from, ceiling, cap, scope);
+        for (ShAgentChanges.Incident incident : failures.rows()) {
+            tokens.add(ShAgentChangesTerse.incident(incident));
+        }
 
-        // SH144 — the incident stream, read over the same range and under the same cursor.
-        // SH204 — and under the same scope, which it was not before.
-        Incidents failures = incidents(from, ceiling, cap, cursor, more, scope);
-        return new ShAgentChanges(changes.size(), from == null, since, failures.cursor(),
-                more || failures.more(), changes,
+        List<ShAgentChanges.Change> candidates = shape(entries, scope, ids);
+        Page page = gate(candidates, tokens, window);
+        List<ShAgentChanges.Change> changes = candidates.subList(page.start(), page.end());
+        // The window's cursor is the *edge of the feed*, so it stays the newest row this
+        // range held even when the budget dropped rows off the old end — a window promises
+        // "the most recent N", never the ones before them. The feed's cursor is the last row
+        // that fit, which is what makes a budget cut resumable instead of lossy.
+        List<ShHistory> positioned = window ? entries : entries.subList(page.start(), page.end());
+        String cursor = cursorOf(positioned, window, from, ceiling);
+        // A budget cut in feed mode is exactly the `more` case SH88 already had: rows remain
+        // after this cursor, so say so. In window mode it is not — the rows dropped are older
+        // than the window's own edge, and no `since=` walks backwards to them.
+        boolean cut = page.truncated(candidates.size());
+        boolean changesHaveMore = more || (!window && cut);
+
+        // Built with the ceiling already in place and the estimate still zero: the terse header
+        // quotes `max-tokens` and not `est` precisely so this draft renders byte-identically to
+        // what is finally returned, which is what lets the header be charged before it is known.
+        ShAgentChanges draft = new ShAgentChanges(changes.size(), window, since,
+                cursorWithIncidents(cursor, failures, changesHaveMore),
+                changesHaveMore || failures.more(), changes,
                 failures.rows().isEmpty() ? null : failures.rows(),
-                notes(from == null, scope, config, changes, cap, failures));
+                notes(window, scope, config, changes, cap, failures, cut, candidates.size(),
+                        tokens.limitTokens()),
+                new ShAgentChanges.Budget(0, tokens.limitTokens(), cut));
+        // Charged last because a note is written from what survived the gate, and the header
+        // from the cursor those notes describe. Between them these four charges are exactly
+        // `ShAgentChangesTerse.render(draft)` — which is the invariant SH723's test asserts,
+        // and the reason `est` can be trusted as this response's real cost.
+        for (String note : draft.notes()) {
+            tokens.add(ShAgentChangesTerse.note(note));
+        }
+        tokens.add(ShAgentChangesTerse.header(draft));
+        return withBudget(draft, new ShAgentChanges.Budget(tokens.spentTokens(),
+                tokens.limitTokens(), cut));
+    }
+
+    /**
+     * Which rows of {@code candidates} fit the budget — a half-open range into the page.
+     *
+     * <p><b>At least one row always survives.</b> A page that fit nothing would, in feed mode,
+     * leave the cursor where it was and {@code more} true: the caller would poll the same
+     * position for ever. A budget may make the feed slower to walk; it may never make it
+     * unwalkable, so the first row is charged unconditionally when nothing else fits.</p>
+     *
+     * @param window cut the <em>oldest</em> rows (a window narrows) rather than the newest
+     *               (a delta stops early and resumes)
+     */
+    private static Page gate(List<ShAgentChanges.Change> candidates, ShTokenBudget tokens,
+                             boolean window) {
+        if (candidates.isEmpty()) {
+            return new Page(0, 0);
+        }
+        int kept = 0;
+        for (int i = 0; i < candidates.size(); i++) {
+            // Charged in emission order for a delta and newest-first for a window, so the row
+            // a cut keeps is the one that mode promises.
+            int index = window ? candidates.size() - 1 - i : i;
+            if (!tokens.tryAdd(ShAgentChangesTerse.event(candidates.get(index)))) {
+                break;
+            }
+            kept++;
+        }
+        if (kept == 0) {
+            int index = window ? candidates.size() - 1 : 0;
+            tokens.add(ShAgentChangesTerse.event(candidates.get(index)));
+            kept = 1;
+        }
+        return window
+                ? new Page(candidates.size() - kept, candidates.size())
+                : new Page(0, kept);
+    }
+
+    /** A half-open range of the shaped page that survived the budget (SH723). */
+    private record Page(int start, int end) {
+
+        boolean truncated(int candidates) {
+            return end - start < candidates;
+        }
+    }
+
+    /** {@code null} = the configured ceiling, {@code 0} = none, anything else is clamped. */
+    private static int resolveBudget(Integer budget, ShAgentProperties.Changes config) {
+        int max = config.getMaxBudgetTokens();
+        if (budget == null) {
+            return max;
+        }
+        if (budget < 0) {
+            // The context pack's, deliberately: one wrong budget should read the same wherever
+            // it was sent, and a second exception saying the same thing is a second thing to
+            // keep true (P6).
+            throw new ShAgentContextService.InvalidBudgetException(budget, max);
+        }
+        return budget == 0 ? 0 : Math.min(budget, max);
+    }
+
+    private static ShAgentChanges withBudget(ShAgentChanges draft, ShAgentChanges.Budget budget) {
+        return new ShAgentChanges(draft.found(), draft.window(), draft.since(), draft.cursor(),
+                draft.more(), draft.changes(), draft.incidents(), draft.notes(), budget);
     }
 
     /**
@@ -203,8 +323,8 @@ public class ShAgentChangesService {
      * SH103. The note says so rather than leaving a caller to discover it, because an agent's own
      * 5xx is the incident it most wants and the last one it would think to look elsewhere for.</p>
      */
-    private Incidents incidents(ShAgentChangeCursor from, Instant ceiling, int cap,
-                                String changeCursor, boolean changesHaveMore, Scope scope) {
+    private IncidentRows incidentRows(ShAgentChangeCursor from, Instant ceiling, int cap,
+                                      Scope scope) {
         // null means "no allow-list applies" to the store, which is the one case that reads rows
         // with no site; a list — even a full one — narrows to attributed rows in those sites.
         List<String> siteIds = scope.unrestricted() ? null : scope.siteIds();
@@ -218,14 +338,35 @@ public class ShAgentChangesService {
         List<ShAgentChanges.Incident> shaped = rows.stream()
                 .map(row -> incident(row, scope))
                 .toList();
-        String cursor = changeCursor;
-        if (!rows.isEmpty() && !changesHaveMore) {
-            ShAgentIncident tail = rows.get(rows.size() - 1);
-            String candidate =
-                    new ShAgentChangeCursor(tail.getLastSeen(), tail.getId()).toString();
-            cursor = ShAgentChangeCursor.later(changeCursor, candidate);
+        ShAgentIncident tail = rows.isEmpty() ? null : rows.get(rows.size() - 1);
+        return new IncidentRows(shaped, more,
+                tail == null ? null
+                        : new ShAgentChangeCursor(tail.getLastSeen(), tail.getId()).toString());
+    }
+
+    /**
+     * Folds the incident stream's position into the change stream's, under the rule above.
+     *
+     * <p>SH723 widened what counts as "the audit page is still catching up": a page the token
+     * budget cut has unread rows after it just as surely as one the row cap cut, so the cursor
+     * must not advance past them either. That is why {@code changesHaveMore} is computed from
+     * both and passed in rather than being read off the row count.</p>
+     */
+    private static String cursorWithIncidents(String changeCursor, IncidentRows failures,
+                                              boolean changesHaveMore) {
+        if (failures.tailCursor() == null || changesHaveMore) {
+            return changeCursor;
         }
-        return new Incidents(shaped, cursor, more);
+        return ShAgentChangeCursor.later(changeCursor, failures.tailCursor());
+    }
+
+    private static String cursorOf(List<ShHistory> positioned, boolean window,
+                                   ShAgentChangeCursor from, Instant ceiling) {
+        if (!positioned.isEmpty()) {
+            ShHistory tail = positioned.get(positioned.size() - 1);
+            return new ShAgentChangeCursor(tail.getDate(), tail.getId()).toString();
+        }
+        return window ? new ShAgentChangeCursor(ceiling, "").toString() : from.toString();
     }
 
     private static List<ShAgentIncident> reversed(List<ShAgentIncident> newestFirst) {
@@ -259,7 +400,16 @@ public class ShAgentChangesService {
                 row.getSiteId() == null ? null : scope.names().get(row.getSiteId()));
     }
 
-    private record Incidents(List<ShAgentChanges.Incident> rows, String cursor, boolean more) {
+    /**
+     * The incident page, and the position its last row would advance the cursor to.
+     *
+     * <p>SH723 split this out of the folded {@code Incidents}: the rows have to be read — and
+     * charged against the token budget — <em>before</em> the change rows are gated, while the
+     * cursor can only be folded in <em>after</em>, because whether the change stream still has
+     * more now depends on whether the budget cut it.</p>
+     */
+    private record IncidentRows(List<ShAgentChanges.Incident> rows, boolean more,
+                                String tailCursor) {
     }
 
     // --- querying ---
@@ -411,8 +561,24 @@ public class ShAgentChangesService {
     private List<String> notes(boolean window, Scope scope,
                               ShAgentProperties.Changes config,
                               List<ShAgentChanges.Change> changes, int cap,
-                              Incidents failures) {
+                              IncidentRows failures, boolean cut, int candidates,
+                              int budgetTokens) {
         List<String> notes = new ArrayList<>();
+        // SH723 — the structured marker is `budget.truncated`, but the terse rendering an MCP
+        // caller reads has no such field, and a cut that is not visible reads as a clean answer
+        // (SH138). Said only when it happened, so an uncut feed pays nothing for it (P3).
+        if (cut) {
+            notes.add(window
+                    ? "budget: this window was narrowed to the most recent " + changes.size()
+                            + " of " + candidates + " entries to stay under " + budgetTokens
+                            + " estimated tokens; the older ones are outside the window, not "
+                            + "queued — pass budget=0 for no ceiling, or walk from the cursor "
+                            + "with since= to page forward from here"
+                    : "budget: this page stops at " + changes.size() + " of " + candidates
+                            + " entries to stay under " + budgetTokens + " estimated tokens — "
+                            + "the cursor is at the last entry that fit, so pass since=<cursor> "
+                            + "for the rest");
+        }
         if (!failures.rows().isEmpty()) {
             // SH204 replaced the first of the two facts this used to state. It said incidents carry
             // no site and `site=` does not narrow them; both halves are now false, so the note that
@@ -471,7 +637,4 @@ public class ShAgentChangesService {
         return List.copyOf(notes);
     }
 
-    private static ShHistory last(List<ShHistory> entries) {
-        return entries.get(entries.size() - 1);
-    }
 }

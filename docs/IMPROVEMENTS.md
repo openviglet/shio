@@ -335,29 +335,6 @@ Three shapes, in increasing order of how much they concede:
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
 
-### XIII.25 The feed has a row cap where it needs a token budget (SH723)
-
-Measured by SH714 against a seeded site with more than 500 transitions in it:
-`shio_changes` with `limit=500` — the documented maximum — returns 500 rows and about
-**20,000 estimated tokens** in a single response. `shio_find` at its own maximum returns
-200 rows; on the same fixture that is roughly 4,500. The context pack, which exists to
-be the big one, reports `budget est=3932 limit=4000` and truncates itself to stay there.
-
-So the surface has a token budget in exactly one place, and it is not the place that
-produces the largest payload. P3 says tokens are a measured budget; a **row** cap is not
-one, because a row's cost is not fixed — a change entry carries an actor, an address, a
-timestamp and a `what` sentence somebody else wrote, and this fixture's rows measured 41
-tokens each against a `find` row's 23.
-
-Two things follow, and they are separable. The feed needs a token ceiling with the
-marker the pack already emits, so a caller that asks for 500 gets what fits and a cursor
-for the rest — the cursor already exists (SH88), which makes this cheap. And the ceiling
-belongs in `token-budgets.properties` beside the others, where a raise has to be argued.
-
-The measurement is what makes this fileable rather than arguable, and it is the
-deliverable SH714 shipped. The suite prints both figures on every run, so the gap is
-watched rather than remembered.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
