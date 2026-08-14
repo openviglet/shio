@@ -113,3 +113,9 @@ src/main/resources/js/client-side/build
 # would put ~430 KB of binaries in the tree that nobody can review and that only restate
 # bytes already tracked one directory away.
 /shio-site/public/marketplace/
+
+# Python bytecode. `.claude/hooks/` holds the roadkeep guard hook, so running it leaves
+# `__pycache__/` beside the source — one .pyc reached a commit that way (SH46's). Bytecode
+# restates a file already tracked next to it, cannot be reviewed, and is per-interpreter.
+__pycache__/
+*.pyc
