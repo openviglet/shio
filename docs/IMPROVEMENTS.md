@@ -487,36 +487,6 @@ It stays 💭 because the demand is unproven: no blueprint, no CLI command and n
 has wanted it. Filed so the next one need not rediscover that the capability is reachable but
 expensive.
 
-### XVI.5 Make "one writer per verb" a lint, not an expectation (SH245)
-
-Four times the same defect has been found the same way. Fixing the agent's version of a verb
-meant reading the console's, and the console's was the careless one:
-
-| verb | what the console's copy did | found by |
-|---|---|---|
-| move a post | re-slugged `furl` from the title, changing live URLs | SH139 |
-| move a folder | no cycle guard — re-parenting into its own subtree detached it | SH137 |
-| delete a folder | `deleteAll` on the repository: no trash, no audit, no lifecycle event | SH200 |
-| copy a folder | duplicate URLs, and non-termination on its own subtree | SH202/SH203 |
-
-The rule that would have prevented all four is already written down — a content mutation goes
-through the writer service — and it is enforced nowhere. Every instance was caught by somebody
-happening to read the neighbouring file while fixing something else, which does not scale and
-has already missed three of these for a release each.
-
-This repository has the right instrument for invariants no functional test can watch:
-`ShByteStabilityLintTest`, `ShFolderSiteInvariantTest` and `ShCsrfExemptionLintTest` each fail
-the build because the failure mode is a *future* caller rather than a current request. This is
-the same shape: a controller method that writes content without delegating to the writer that
-owns the verb.
-
-The design work is the exemption hatch, not the check. The precedent is
-`ShFolderSite-exempt: <reason>` — a named comment carrying the argument, so the rare legitimate
-case is *stated* rather than silently permitted. What the lint keys on needs deciding too, and
-the cheap version is likely right: a write mapping on an API class whose body touches a
-`*Repository.save`/`delete` directly. Precision matters less than the build going red the day
-somebody adds the fifth one.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

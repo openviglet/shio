@@ -64,6 +64,23 @@ of hiding them, which is the read side of SH168.
 - There is **no** `/api/v2/post` controller — do not add one.
 
 ### Object Operations
+
+**One writer per content verb, and it is now a lint (SH245).** A content mutation goes through
+`ShObjectWriteService` / `ShFolderWriteService` / `ShPostUnifiedWriteService` — never a repository
+directly from a controller. The rule was written down and enforced nowhere, and the same defect was
+found the same way four times, always because fixing the agent's version of a verb meant reading
+the console's: a post move that re-slugged live URLs (SH139), a folder move with no cycle guard
+(SH137), a folder delete with no trash, audit or lifecycle event (SH200), and a folder copy that
+duplicated URLs and did not terminate (SH202/SH203). Each was caught by somebody happening to read
+the neighbouring file; three had shipped for a release first.
+
+`ShContentWriterOwnershipLintTest` fails the build on a write mapping whose body reaches a content
+repository, with `ShContentWriter-exempt: <reason>` as the hatch — the same named-comment form as
+`ShFolderSite-exempt`. Two things to know before editing it: it keys on the **content**
+repositories by name, because "any `*Repository`" finds 23 admin-surface writes that are not this
+defect; and the population is **0**, so a synthetic case reproducing SH200's shape is what proves
+the regex still matches.
+
 **Both ends are authorized (SH201).** These two used to check `requireWrite(destId)` and nothing
 else, so write on any single folder was enough to relocate content *out of* a subtree the caller
 could not write — a removal, from the owner's point of view — or to copy content they had never

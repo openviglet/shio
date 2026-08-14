@@ -614,6 +614,7 @@
 - **SH704** — The cache became a subscription, so there is no second copy to republish and no alive flag to remember - and it moved somewhere a Node test can drive it, which is where the five assertions live.
 - **SH716** — A crumb is keyed on where it goes rather than on what it says, so a site and its root folder stop colliding - and console:check reads 19 of 19 for the first time.
 - **SH691** — A restore now refuses a title a live post took while it slept, with a teaching 409 naming the folder, so the trash-blind counter stays and the collision is refused where a curator would meet it.
+- **SH245** — ShContentWriterOwnershipLintTest fails on a write mapping reaching a content repository, with a named-comment hatch; keyed on the content repositories because any Repository finds 23 admin writes.
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 
