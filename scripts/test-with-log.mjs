@@ -35,6 +35,8 @@ import { copyFileSync, createWriteStream, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { stamp } from "./gate-stamp.mjs";
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
@@ -156,5 +158,9 @@ export function keepIfRed(code, logPath, io = process) {
 // Only when run, never when read: the test imports this module for `runWithLog`, and a module that
 // launched the whole suite on import would make that test the thing it is testing.
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  process.exit(await runWithLog("pnpm", PNPM_ARGS, LOG));
+  const code = await runWithLog("pnpm", PNPM_ARGS, LOG);
+  // SH755 — leave the outcome where the other gates can read it. After the log and the exit code,
+  // never instead of them: a stamp is bookkeeping and the two above are the contract.
+  stamp(ROOT, "js", code);
+  process.exit(code);
 }

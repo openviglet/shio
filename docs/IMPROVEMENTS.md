@@ -678,32 +678,6 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.2 The gate nobody ran, and the ledger that stayed empty (SH755)
-
-`gh run list` on 2026-08-14: eight consecutive `Suites` runs, every one a failure, the
-oldest on 2026-08-13. At `98f554d4` the jobs read `mvnw clean test` **success**, `pnpm
-test` **failure**, `pnpm conformance` **failure**. `red-suites.json` carried no
-exceptions the whole time.
-
-So the state SH579 was written to make impossible is the state the project was in, and
-it was reached the way that rule predicts: by nobody running the other two gates. A
-local `clean test` was green throughout, which is the reassurance that makes the other
-two skippable.
-
-What is red, on a clean instance: five of 119 conformance tests. **SH747/SH653** — 510
-shipped ids unnamed in `COVERAGE.md` against a recorded 505, and that matrix lives in
-the docs repo, so a ship here and a page there are two commits nobody ties together.
-**SH722** reports its own defect has *stopped reproducing* and asks to be deleted.
-**SH719** expects a `duplicate-url` slug the refusal no longer sends. **SH723** is a
-row-cap assertion on the change feed.
-
-The `pnpm test` half was repaired while finding this. That it took a hunt for something
-else to notice is the finding, not the fixes.
-
-The deliverable is the instrument before the repairs (SH338): what would have failed
-here is a check that the *declared* red matches the *actual* red, and nothing compares
-them.
-
 ### XXIV.3 The move that failed once and would not say why (SH756)
 
 On 2026-08-14 `ShMarketplaceInstallerTest.anInstalledPackageIsNotReportedAsBuiltIn` went
@@ -733,6 +707,31 @@ sitting in `%TEMP%` when it fired.
 
 Filed rather than fixed on the spot because a fix chosen from one sighting with no
 reason string is a guess with a commit message.
+
+### XXIV.4 The five, and why they are not one task (SH757)
+
+Measured on a clean instance at `:2711`, 5 of 119. They look like one red and are four
+different decisions.
+
+**SH747 and SH653** — 510 shipped ids unnamed in `COVERAGE.md` against a recorded 505.
+The matrix lives in **vigletdocs**, so a ship here and a page there are two commits in
+two repositories that nothing ties together, and the ratchet catches the drift a week
+after whoever could explain it moved on. The question is not "name five ids"; it is
+whether a ship can be made to *carry* its documentation obligation.
+
+**SH722** reports that the defect it describes has stopped reproducing and asks in its
+own message to be deleted — "move `shio_context` into the P5 test above and delete this
+one". A test that says so is a decision to take, not a failure to repair, and the
+message warns the collision may have found a tiebreaker rather than gone.
+
+**SH719** pins the slug `duplicate-url` against a refusal that now teaches in full prose
+without it. Either the slug is part of the contract, and the refusal lost it — or the
+assertion was pinning an implementation detail. Cheap to be wrong; not cheap to guess.
+
+**SH723** is a row-cap assertion on the change feed.
+
+Filed together because they are one red, and split in the body because one fix commit
+for four unrelated judgements is how a sweep launders three of them.
 
 ## XXV Realignment of what already shipped (Block N)
 

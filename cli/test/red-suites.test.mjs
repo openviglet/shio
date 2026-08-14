@@ -56,6 +56,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
+import { GATES, stamps } from "../../scripts/gate-stamp.mjs";
+
 // @scans prose reason: red-suites.json is a ledger read as text, and the reasons and dates
 // inside its entries are exactly what this checks (SH740).
 
@@ -179,6 +181,86 @@ test("SH579: every exception declared in red-suites.json is one this rule allows
     "A red suite either blocks the next commit or is a declared, dated exception. These entries "
       + "are neither — see docs/agents/build.md.",
   );
+});
+
+/**
+ * What each gate last answered here, against what the ledger says about it (SH755).
+ *
+ * <h2>The half SH579 could not build</h2>
+ *
+ * <p>The ledger is a <b>claim</b> about which gates are red, and until SH755 nothing compared it
+ * to what a gate had actually said. Both directions were invisible: a red with no entry — the state
+ * of the project for eight consecutive CI runs — and an entry for a gate that has since gone green.
+ * The rule above checks an exception's <em>shape</em>, its date and its task, all of which can be
+ * impeccable about a suite nobody has run.</p>
+ *
+ * <h2>Why this can exist now, when SH579 said it could not</h2>
+ *
+ * <p>SH579's own note says a suite cannot run the suites — it is one of them. True, and it is not
+ * the only way to know: the gate wrappers leave a stamp (`scripts/gate-stamp.mjs`), so the
+ * comparison costs two small file reads rather than a second run of anything.</p>
+ *
+ * <h2>An absent stamp is not a failure, and that is deliberate</h2>
+ *
+ * <p>A fresh clone has none, and CI runs each gate in a job of its own. "Nobody has run this here"
+ * is a true and ordinary state; failing on it would make a first `pnpm test` red for a reason that
+ * is not about the code, and a check that cries wolf on arrival is one nobody keeps. So an absent
+ * stamp is <b>printed</b>, which is the whole of what this can honestly do about a command nobody
+ * typed — and the printing is not decoration: the failure it is here for was found by somebody
+ * reading a green gate and never learning the other two were red.</p>
+ */
+test("SH755: the declared red matches the red the gates actually reported", async () => {
+  const { exceptions } = JSON.parse(await readFile(LEDGER, "utf8"));
+  const root = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+  const recorded = stamps(root);
+  const declared = new Set(exceptions.map((entry) => entry.suite));
+
+  const lines = GATES.map((gate) => {
+    const seen = recorded[gate];
+    if (!seen) {
+      return `  ${gate} — no run recorded in this tree`;
+    }
+    const age = seen.sha ? ` at ${seen.sha.slice(0, 8)}` : "";
+    return `  ${gate} — ${seen.red ? "RED" : "green"}${age}, ${seen.when}`
+      + `${declared.has(gate) ? ", declared" : ""}`;
+  });
+  console.log(`SH755: the gates, as last run here\n${lines.join("\n")}`);
+
+  const undeclared = GATES.filter((gate) => recorded[gate]?.red && !declared.has(gate));
+  const stale = [...declared].filter((gate) => recorded[gate] && !recorded[gate].red);
+
+  assert.deepEqual(undeclared, [],
+    "SH755: this gate answered red here and the ledger says nothing about it. That is the third "
+    + "state SH579 says does not exist, and it is the one the project spent eight CI runs in — "
+    + "every one of them a push over a red nobody had declared. Fix the suite, or declare it in "
+    + "red-suites.json against an open task.");
+
+  assert.deepEqual(stale, [],
+    "SH755: the ledger declares this gate red and it answered GREEN here. An exception outliving "
+    + "its red is how a suite stops being a gate: the next real failure is already excused. Delete "
+    + "the entry — and if it went green for a reason nobody understands, that is a task, not a "
+    + "line in a ledger.");
+});
+
+test("SH755: the comparator fires in both directions, and an absent stamp fires in neither", () => {
+  // Driven against a fabricated world for the reason the rules test below is: the real stamps are
+  // whatever the last run left, so an assertion about them would be a test of this afternoon.
+  const declared = new Set(["conformance"]);
+  const world = {
+    js: { red: true },
+    conformance: { red: false },
+  };
+
+  const undeclared = GATES.filter((gate) => world[gate]?.red && !declared.has(gate));
+  const stale = [...declared].filter((gate) => world[gate] && !world[gate].red);
+
+  assert.deepEqual(undeclared, ["js"],
+    "a red gate with no entry has to be named — that is the whole finding SH755 records");
+  assert.deepEqual(stale, ["conformance"],
+    "and an entry whose gate has gone green has to be named too, or the exception outlives its red");
+  assert.deepEqual(GATES.filter((gate) => world[gate] === undefined), ["java"],
+    "the gate nobody ran here is neither: a fresh clone must not open red about a command it has "
+    + "never been asked to run");
 });
 
 test("SH579: the rules fire — every one of them, on an entry built to break it", () => {

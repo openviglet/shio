@@ -119,3 +119,9 @@ src/main/resources/js/client-side/build
 # restates a file already tracked next to it, cannot be reviewed, and is per-interpreter.
 __pycache__/
 *.pyc
+
+# SH755 — what each gate last answered in THIS working tree, written by the gate wrappers and read
+# by `red-suites.test.mjs` to check the ledger's claim against reality. Untracked on purpose: a
+# stamp is evidence about a command somebody ran here, and a committed one would let a clone
+# inherit a claim about a run it never made — the same shape of lie the ledger already had.
+/.gates/

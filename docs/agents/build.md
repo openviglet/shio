@@ -31,6 +31,35 @@ is obliged to answer is a red nobody reads. **An undeclared red teaches people t
 nothing, and it teaches that whether or not the red is true.** That is the cost, and it is paid
 by every *later* alarm, not by the one being ignored.
 
+### It happened again, and the rule was not the part that failed (SH755)
+
+`gh run list` on 2026-08-14: **eight consecutive `Suites` runs, every one a failure**, the oldest
+on 2026-08-13, with `red-suites.json` empty the whole time. At `98f554d4` the jobs read `mvnw clean
+test` **success**, `pnpm test` **failure**, `pnpm conformance` **failure**.
+
+Nobody disagreed with the rule above. What happened is that the only gate anybody typed was the
+Java one — it needs nothing, it is fast, and **it was green** — and a green gate is the most
+persuasive argument available that the other two can wait. The rule held exactly where somebody
+chose to look.
+
+So the ledger's claim is now compared against what the gates actually said:
+
+- **Each wrapper leaves a stamp.** `pnpm test` and `pnpm conformance` run through
+  `scripts/test-with-log.mjs` and `scripts/conformance-with-log.mjs`, which write
+  `.gates/<key>.json` — exit code, commit, time. Untracked (`/.gates/`), because a stamp is
+  evidence about a command run *here*, and a committed one would let a clone inherit a claim about
+  a run it never made. `pnpm conformance:raw` is the unwrapped command if you need it.
+- **`red-suites.test.mjs` compares both directions** — a gate that answered red with no entry, and
+  an entry for a gate that has since gone green. The second matters as much as the first: an
+  exception outliving its red means the next real failure is already excused.
+- **`ShDeclaredRedTest` reports the same thing inside the Java suite**, which is the point rather
+  than a duplicate. A check that only the skipped gates carry is a check about looking; this one
+  prints all three gates' last outcome in front of the person reading the green one.
+
+**An absent stamp fails nothing.** A fresh clone has none and CI runs each gate in its own job;
+"nobody has run this here" is true rather than wrong, so it is printed. That printing *is* the
+repair — the sentence whose absence cost eight pushes.
+
 ### Declaring one
 
 `red-suites.json` is the only place an exception may live, and it is deliberately hostile:

@@ -20,8 +20,8 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH755** (deps: SH579 ✅) **Two of the three gates have been red on CI since 2026-08-13 and red-suites.json is empty** — SH579 says a red gate blocks the next commit or is a declared exception; eight pushes took neither door, so the rule held only where somebody chose to look. → §XXIV.2
-- 📋 **SH756** (deps: SH755) **A marketplace install fails one run in N, and the exception drops the cause that would name why** — InstallFailedException carries FileSystemException.getMessage(), which is two paths and no reason, so a move that lost a race reads exactly like one that found the target taken. → §XXIV.3
+- 📋 **SH756** (deps: SH755 ✅) **A marketplace install fails one run in N, and the exception drops the cause that would name why** — InstallFailedException carries FileSystemException.getMessage(), which is two paths and no reason, so a move that lost a race reads exactly like one that found the target taken. → §XXIV.3
+- 📋 **SH757** (deps: SH755 ✅) **Five conformance tests are red on a clean instance, and two of them are the matrix in another repo** — SH755 built the comparator that makes the red visible; these are the failures it now holds, and each wants a different decision rather than one sweep. → §XXIV.4
 
 ## Non-goals (do NOT add as tasks)
 
