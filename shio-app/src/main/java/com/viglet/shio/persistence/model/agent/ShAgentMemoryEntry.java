@@ -19,6 +19,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -56,13 +57,21 @@ import lombok.Setter;
  * treat {@code NULL}s as equal — a nullable scope would silently admit duplicate
  * instance-wide notes under the same key.</p>
  *
+ * <p>That index is declared <b>twice</b> — here and in {@code v2026.3.9.yaml} — and it has to be
+ * (SH729). The unit suite runs with Liquibase off and builds H2 from this metadata, so a changelog-only
+ * index is simply absent while the suite runs: the upsert would be idempotent by convention there and
+ * by constraint everywhere else, and no test could tell. {@code ShLiquibaseEntityConstraintLintTest}
+ * is what keeps the pair from drifting apart again.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 @Getter
 @Setter
 @Entity
-@Table(name = "sh_agent_memory")
+@Table(name = "sh_agent_memory",
+        indexes = @Index(name = "ux_sh_agent_memory_key",
+                columnList = "tenant_id, scope, memory_key", unique = true))
 public class ShAgentMemoryEntry implements Serializable {
 
     @Serial

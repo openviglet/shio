@@ -325,32 +325,6 @@ those is what stops the next five raises being found by hand.
 > up (SH235–SH237, SH239, SH240, SH668). Nothing is left open here.
 > Concept spec §10 has the original table.
 
-### XIV.27 A constraint the tests cannot see (SH729)
-
-SH719 added a unique index in `v2026.3.24.yaml` and a test asserting the second insert
-is refused. The test passed **by performing the insert**:
-`src/test/resources/application.properties` sets `spring.liquibase.enabled=false` and
-builds H2 from entity metadata via `ddl-auto=create-drop`, so nothing in the changelog
-exists during `mvn test`. The changeset was correct, the assertion was correct, and
-together they proved nothing.
-
-It was caught only because the assertion had been written to fail first and did not.
-Written after the fix — the ordinary order — it would have been green on arrival, and
-the guard would have shipped switched off, to be discovered on whichever database first
-met a concurrent create.
-
-SH719's repair was to declare the index twice: `@Table(indexes = @Index(..., unique =
-true))` for the suite and Liquibase for every real database. That is the right shape and
-it is now a convention nothing enforces. Any later `addUniqueConstraint`, unique
-`createIndex` or `addNotNullConstraint` can land changelog-only and stay invisible to
-eighteen hundred tests.
-
-So the deliverable is the reader, per SH338: parse the changelogs for constraints the
-entity metadata should also declare, and fail naming the pair that disagree. The
-cross-DB ITs do execute the changelog, but they are opt-in since SH415 and skip without
-Docker, so they are not this backstop — they answer *does the migration apply*, not
-*does the suite know about it*.
-
 ### XIV.28 A citation is not an assertion (SH731)
 
 `assertion-debt.test.mjs` counts an id named in an assertion message as asserted, which

@@ -11,6 +11,7 @@ package com.viglet.shio.api.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import com.viglet.shio.api.agent.dto.ShAgentContext;
 import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.agent.memory.dto.ShAgentNote;
 import com.viglet.shio.api.agent.memory.dto.ShAgentNoteRequest;
+import com.viglet.shio.persistence.model.agent.ShAgentMemoryEntry;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 
@@ -233,6 +235,50 @@ class ShAgentMemoryTest {
         assertThat(after.digest()).isNotEqualTo(before.digest());
 
         shAgentMemoryService.forget(siteName, "digest.probe");
+    }
+
+    @Test
+    void theDatabaseItselfRefusesASecondNoteUnderOneKey() {
+        // SH729 — the assertion that would have caught it, at the boundary it crossed.
+        //
+        // `reStatingAConventionRewritesItRatherThanAddingASecond` above proves the *service*
+        // upserts, and it would pass just as green with no constraint anywhere: it reads, then
+        // writes. What makes the upsert safe under two concurrent sessions is the index, and until
+        // SH729 that index was declared only in `v2026.3.9.yaml` — absent from this suite's H2,
+        // which is built from entity metadata with Liquibase off. So the guarantee the class
+        // javadoc claims was, here, enforced by nothing at all.
+        //
+        // This bypasses the service deliberately and asks the database directly, which is the only
+        // question SH719 got wrong: not "does the changeset say so" but "is it there when the test
+        // runs".
+        String key = "sh729.constraint-probe";
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                entityManager.persist(entry(key, "The first note.")));
+
+        assertThatThrownBy(() -> new TransactionTemplate(transactionManager)
+                .executeWithoutResult(status -> {
+                    entityManager.persist(entry(key, "A second note under the same key."));
+                    entityManager.flush();
+                }))
+                .as("""
+                        a changelog-only constraint is not there while the suite runs, so a test \
+                        asserting the write is refused performs it and passes — which is exactly \
+                        what SH719's uniqueness test did. ShLiquibaseEntityConstraintLintTest is \
+                        the instrument; this is the proof for the one row it found (SH729).""")
+                .hasRootCauseInstanceOf(SQLIntegrityConstraintViolationException.class);
+
+        shAgentMemoryService.forget(null, key);
+    }
+
+    private static ShAgentMemoryEntry entry(String key, String note) {
+        ShAgentMemoryEntry entry = new ShAgentMemoryEntry();
+        entry.setScope(ShAgentMemoryEntry.INSTANCE_SCOPE);
+        entry.setMemoryKey(key);
+        entry.setNote(note);
+        entry.setAuthor("sh729");
+        entry.setCreatedDate(Instant.parse("2026-01-01T00:00:00Z"));
+        entry.setModifiedDate(Instant.parse("2026-01-01T00:00:00Z"));
+        return entry;
     }
 
     private static int indexOfKey(List<ShAgentNote> notes, String key) {

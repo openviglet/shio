@@ -503,6 +503,7 @@
 - **SH706** — SHIO_ADMIN_PASSWORD gives a container a usable admin login on first start, through one service the setup screen now delegates to, and it never overwrites nor fails startup.
 - **SH735** — A failing run is copied to shio-js-test.red.log and a green one is not, so the re-run that checks whether a flake reproduces no longer destroys the only record of it.
 - **SH737** — The vacuity check now asserts the heading scan found every anchor the roadmap points at, a yes/no derived from the roadmap instead of a floor pinned near the count it watches.
+- **SH729** — ShLiquibaseEntityConstraintLintTest parses the changelogs for unique and not-null constraints and fails naming any the entity metadata does not also declare; it found the agent-memory upsert index, which the suite could not see.
 
 ## Block L — Agent safety & human-in-the-loop (SH74)
 

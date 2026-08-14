@@ -46,6 +46,22 @@ falls, the cheapest way to find the line is to cross it on purpose.
    (`type "enum" does not exist`), so the SH26 cross-DB ITs would fail. The lint
    is only a textual guard; the real proof that the changelog applies on
    MariaDB + PostgreSQL is the SH26 Testcontainers ITs (see below).
+4. **A constraint goes in the changeset *and* on the entity — both, every time (SH729).**
+   Unique index, unique constraint, `addNotNullConstraint`: declare it as
+   `@Table(indexes = @Index(..., unique = true))` or
+   `@Table(uniqueConstraints = @UniqueConstraint(...))` or `@Column(nullable = false)`
+   as well. `ShLiquibaseEntityConstraintLintTest` fails the build naming the pair that
+   disagree, so you do not have to remember this — but you do have to know *why*, because
+   the failure it prevents is invisible: **the unit suite runs with
+   `spring.liquibase.enabled=false` and builds H2 from entity metadata**, so a
+   changelog-only constraint simply is not there while the suite runs. SH719 shipped a
+   unique index and a test that a second insert is refused; the test passed **by
+   performing the insert**, and was caught only because it had been written to fail first
+   and did not. The cross-DB ITs do execute the changelog, but they are opt-in since
+   SH415 and skip without Docker — they answer *does the migration apply*, not *does the
+   suite know about it*. The comparison is by column **set**, never by index name:
+   Hibernate invents its own identifier for a `@Column(unique = true)`, and the 2026.2
+   baseline carries generator names like `UK8q73y8bnx7kpktylf71gcco05_INDEX_9`.
 
 ### Cross-DB schema-drift ITs (SH26)
 `ShMariaDbSchemaIT` / `ShPostgresSchemaIT` (extending `ShCrossDatabaseSchemaITBase`,
