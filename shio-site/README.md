@@ -136,10 +136,12 @@ against and never shipped. The reason the site survived a block the docs did not
 one that saved it from SH541: `site-content.ts` lists the tools as an array the copy iterates,
 so a drifted entry is a visible wrong row rather than a number in a sentence nobody re-derives.
 
-Block N closed on 2026-08-11, reopened, and closed again on 2026-08-14 — the same block twice,
-which is worth recording because "a closed block stays closed" is an assumption the sweep can
-be built on and should not be. Neither closure changed a claim here, and the second one is the
-better evidence for why. It shipped `SHIO_ADMIN_PASSWORD` (SH706), the one thing in the block a
+Block N closed on 2026-08-11 and twice more on 2026-08-14 — three sweeps for one block, which is
+worth recording because "a closed block stays closed" is an assumption the sweep can be built on
+and should not be. It is a property of *this* block rather than bad luck: "realignment of what
+already shipped" is a category that receives findings forever, not a project that finishes, and
+each finding empties it again. No closure changed a claim here, and the second is the best
+evidence for why. It shipped `SHIO_ADMIN_PASSWORD` (SH706), the one thing in the block a
 marketing page would plausibly quote, and the copy that could have been wrong — `PLUGIN_INSTALL`
 in `site-content.ts` — writes `SHIO_PASSWORD=...` as a placeholder rather than a credential. The
 same property saved it from SH541: the licence is a **link** to `LICENSE` (`site-content.ts`'s
