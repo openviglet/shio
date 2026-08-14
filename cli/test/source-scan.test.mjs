@@ -200,7 +200,11 @@ describe("SH740: a JS scan over source or documentation declares what it reads",
         "cli/test/readme-surface.test.mjs", "cli/conformance/docs-vocabulary.conformance.mjs"]
         .filter((path) => !scanners().has(path)),
       [],
-      "the walk lost a scan that has been bitten by this defect, so a green run means nothing",
+      "SH742: the walk lost a scan that has been bitten by this defect, so a green run means "
+        + "nothing. `docs-vocabulary.conformance.mjs` is the one that names the rule rather than "
+        + "illustrating it — it reads the published pages, it is the most prose a scan here "
+        + "handles, and the first population rule could not see it because its root is spelled "
+        + "`DOCS` rather than `ROOT`. If it drops out again the rule has gone lexical once more.",
     );
   });
 
