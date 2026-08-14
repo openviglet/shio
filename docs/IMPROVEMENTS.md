@@ -292,23 +292,30 @@ A third: the index is the most cacheable document on the surface and never chang
 between builds, so a separate `/agent/endpoints` with a long-lived tag would make the
 manifest small permanently — at the cost of one more endpoint.
 
-### XIII.11 An instance's own notes travel nowhere (SH231)
+### XIII.26 The CLI's help total had no headroom (SH736)
 
-SH161 made a site's notes ride its export and deliberately left the instance-wide ones
-behind. That reasoning holds for a *site* import — importing another installation's house
-rules alongside somebody's blog is a P7 surprise, and nobody asked for them — and it does
-not hold for the case where those notes matter most: moving a whole instance.
+SH231 added one flag — `push --content --adopt-memory` — and one `pull` line saying the
+file it adopts exists. About 90 estimated tokens, and it failed `cli.help.all`, which
+sat at **9900 of 9900**.
 
-An instance-wide note is the accumulated answer to "how is this deployment driven" — copy is
-authored in files here, this front end owns `/docs/**`, publishing happens on Fridays. It is
-the least reproducible thing in the system and the only one with no export path at all.
+The trim came first and paid 40, both from files that task already touched. The
+remaining 50 raised the ceiling to 9950 — the honest entry, and SH677's comment on the
+previous raise had already noticed the same shape one ceiling over.
 
-The tenant package (`buildTenantPackage`) is the obvious home. The decision is what an import
-does with them, and the options are not equal: merging them into the target's memory is the
-surprise SH161 refused; importing them **scoped to nothing and marked as imported** needs a
-provenance field the note shape does not have; and writing them to a *file* for a human to
-review fits P7 and needs no schema change. That last is probably right, which makes this a CLI
-task rather than a server one.
+**The finding is the headroom, not the fifty tokens.** A gate at exactly its limit does
+not measure the next addition; it refuses it, whatever it is. The next feature to touch
+any of the 31 verbs' help pays for all of them, and the cheapest way to pass is to cut
+another command's documented behaviour — the "optimize a benchmark by degrading
+correctness" non-goal by name, and why SH231 did not.
+
+So: a trim pass with a target. Read the 31 files for the defect the previous raises kept
+finding by hand — help restating a flag listed a few rows below, prose explaining *why*
+a behaviour is useful rather than what it does. `shio.txt` (1233) and `clone.txt` (1146)
+are 24% of the total. Under 9500 leaves the gate measuring again.
+
+Pair it with an instrument (SH338): the recurring defect is mechanical — a help
+paragraph repeating a `--flag` documented in the same file's list — and a lint naming
+those is what stops the next five raises being found by hand.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 

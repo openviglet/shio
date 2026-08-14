@@ -36,6 +36,9 @@ const BOOLEANS = [
   "files", "create-site", "merge-post-types",
   // Instance memory (SH114): read the store, or drop one note from it.
   "list", "forget",
+  // SH231: adopt the exporting installation's house rules on a `push --content`. Off by
+  // default and explicit by construction — that is the whole safety argument (P7).
+  "adopt-memory",
   // Accepted findings (SH142): `--accept` writes the baseline. `--baseline` is NOT here —
   // it is bare (use the default path) or takes one (use that file), and both are useful.
   "accept",

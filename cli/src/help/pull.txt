@@ -10,6 +10,7 @@ With --content (the SH90 projection):
   field reads as a path rather than a UUID. A pull merges three ways (last-synced base,
   server, files): only a field both sides changed is a conflict, and a conflict writes
   nothing and exits non-zero.
+  The instance's own house rules project to shio/.memory.yaml; a push leaves them (SH231).
   --site <name>        Scope to one site
   --ours / --theirs    Resolve a three-way conflict in favour of one side
   --force              Overwrite local files that differ

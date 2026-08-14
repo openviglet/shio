@@ -46,6 +46,7 @@ import {
   readLocal,
   readLocalFolders,
   readLocalNotes,
+  readRemoteInstanceNotes,
   readRemoteNotes,
   projectRemote,
   sidecarFields,
@@ -57,6 +58,7 @@ import {
   writeBase,
   writeDoc,
   writeFolderMarker,
+  writeLocalInstanceNotes,
   writeLocalNotes,
   writeRemoteSidecar,
 } from "../content-store.mjs";
@@ -226,6 +228,8 @@ export async function run(flags, _positionals, ctx) {
     assetConflicts: assets.conflicts ?? [],
     assetsKept: assets.kept ?? [],
     notes: { written: [], deleted: [], conflicts: [] },
+    // SH231 — how many instance-wide notes were projected; 0 when the instance has none.
+    instanceNotes: 0,
   };
   const nextPosts = { ...base.posts };
   // Collected from the documents rather than read back off `nextPosts` (SH148): a base entry is
@@ -426,6 +430,24 @@ export async function run(flags, _positionals, ctx) {
       report.notes.written.push(noteSite);
     }
     nextNotes[noteSite] = Object.fromEntries(keep.map((entry) => [entry.key, entry.note]));
+  }
+
+  // SH231 — the instance-wide notes, which until now travelled nowhere at all. SH161 left them
+  // behind deliberately, and that reasoning holds for a *site* import; it does not hold for
+  // moving a whole instance, which is the case they matter most in and the only one with no
+  // export path. They are projected — never merged, never reconciled, never part of the base —
+  // because they belong to the installation that exported them, and adopting them is a decision
+  // somebody makes rather than a side effect of a pull. `push --content` says so and refuses
+  // until asked (`--adopt-memory`).
+  //
+  // Written on every run rather than diffed: there is no three-way merge to protect here, since
+  // nothing writes this file back, so the server's copy is simply the truth. An empty set writes
+  // nothing rather than an empty file, so a tree pulled from an instance with no house rules
+  // does not carry a stub that reads as "there are none" when it means "we never asked".
+  const instanceNotes = await readRemoteInstanceNotes(agent);
+  if (instanceNotes.length) {
+    if (!dryRun) await writeLocalInstanceNotes(ctx, { notes: instanceNotes });
+    report.instanceNotes = instanceNotes.length;
   }
 
   // The cursor is taken *after* the read, so anything that landed during it is reported
@@ -714,6 +736,14 @@ function render(report, { dir, dryRun, truncated }) {
   // SH407 — the folder pair reads the same way, in the summary as well as on stderr.
   for (const conflict of folders.conflicts ?? []) {
     lines.push(`  ! ${conflict.addresses.join(" and ")} → one file (${conflict.paths.join(", ")})`);
+  }
+  if (report.instanceNotes) {
+    // SH231 — named on its own line rather than folded into a count, because the next thing the
+    // reader has to know is that a push will not apply it. A projection that said only "+1 file"
+    // would leave that to be discovered from the file, or not at all.
+    lines.push(`  + shio/.memory.yaml (${report.instanceNotes} instance-wide note(s) — `
+      + "this deployment's house rules; `push --content` will not apply them without "
+      + "--adopt-memory)");
   }
   if (truncated) {
     lines.push("  (partial projection — the server's post list was truncated)");

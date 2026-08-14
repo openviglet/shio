@@ -20,6 +20,7 @@ import {
   notesSiteOf,
   parseNotes,
   reconcileNotes,
+  serializeInstanceNotes,
   serializeNotes,
 } from "../src/content-notes.mjs";
 
@@ -214,5 +215,30 @@ describe("SH412: absence is a conclusion both sides can reach", () => {
 
     assert.deepEqual(plan.conflicts.map((entry) => entry.key), ["tone"]);
     assert.deepEqual(plan.agreed, {});
+  });
+});
+
+describe("content-notes: the instance-wide file (SH231)", () => {
+  it("its header is the safety argument, not decoration", () => {
+    const text = serializeInstanceNotes({
+      notes: [
+        { key: "publishing", note: "Publishing happens on Fridays." },
+        { key: "authoring", note: "Copy is authored in files here.", author: "ana" },
+      ],
+    });
+
+    // A reader who does not know a push leaves this alone would adopt another installation's
+    // house rules by accident, which is the outcome SH161 refused. So the file says so.
+    assert.match(text, /NOT applied by `shio push --content`/);
+    assert.match(text, /--adopt-memory/);
+    // No `site:` line: an instance-wide note filed under a site is not what it is.
+    assert.doesNotMatch(text, /^site:/m);
+    // Sorted by key, like the site file, so a committed diff shows an edited note (P5).
+    assert.ok(text.indexOf("authoring") < text.indexOf("publishing"));
+    // And it round-trips through the reader the push uses.
+    const parsed = parseNotes("shio/.memory.yaml", text);
+    assert.equal(parsed.site, null);
+    assert.deepEqual(parsed.notes.map((entry) => entry.key), ["authoring", "publishing"]);
+    assert.equal(parsed.notes[0].author, "ana");
   });
 });

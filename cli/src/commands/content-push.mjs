@@ -41,6 +41,7 @@ import {
   readBase,
   readLocal,
   readLocalFolders,
+  readLocalInstanceNotes,
   readLocalNotes,
   readRemote,
   readRemoteNotes,
@@ -350,6 +351,11 @@ export async function run(flags, _positionals, ctx) {
     dir,
     planOnly,
   });
+  // SH231 — the instance-wide notes, reported always and applied only on --adopt-memory.
+  const instanceNotes = await pushInstanceNotes(client, ctx, {
+    adopt: Boolean(flags.adoptMemory),
+    planOnly,
+  });
 
   // SH214 — an acceptance is spent by the push that used it. The event it forgives cannot recur
   // (after this run the new post is on the server and the old one is deleted or declared), so an
@@ -376,6 +382,18 @@ export async function run(flags, _positionals, ctx) {
           : "") +
         "\n",
     );
+  }
+  // SH231 — said whether or not anything was adopted, because the whole point is that the
+  // default is to do nothing with this file, and a run that mentioned it only when it acted
+  // would leave "I edited it and nothing happened" as the way to find out.
+  if (instanceNotes.found) {
+    ctx.stdout.write(instanceNotes.adopted.length
+      ? `  memory: ${instanceNotes.adopted.length} instance-wide note(s) `
+        + `${planOnly ? "would be adopted" : "adopted"} from shio/.memory.yaml `
+        + `(${instanceNotes.adopted.join(", ")})\n`
+      : `  memory: ${instanceNotes.found} instance-wide note(s) in shio/.memory.yaml were NOT `
+        + "applied — they are the exporting installation's house rules, not this one's. "
+        + "Review them, then re-run with --adopt-memory.\n");
   }
 
   if (flags.check) {
@@ -574,6 +592,39 @@ async function pushNotes(client, ctx, { base, sites, dir, planOnly }) {
     agreed[site] = Object.fromEntries(local.map((entry) => [entry.key, entry.note]));
   }
   return { written, forgotten, agreed };
+}
+
+/**
+ * The instance-wide notes, which are reported and not applied unless the operator says so
+ * (SH231).
+ *
+ * <h3>Why this is not `pushNotes` with an empty scope</h3>
+ *
+ * <p>A site's notes are <b>reconciled</b>: three-way merged against the base, with a local
+ * deletion honoured as a forget. These are not, and must not be. They describe the installation
+ * that exported them — "copy is authored in files here", "this deployment publishes on Fridays"
+ * — so the file in this tree is somebody else's house rules until a human agrees to them. That
+ * is SH161's argument, and SH231 does not overturn it; it only stops the notes from being
+ * unreachable in the first place.</p>
+ *
+ * <p>So there is no base, no forget and no conflict: an adopt is a plain idempotent upsert of
+ * what the file says, and without {@code --adopt-memory} nothing is written at all. Reported
+ * either way, because a file the push silently ignores is the SH138 failure — an operator who
+ * edited it would read a clean run as "applied".</p>
+ */
+async function pushInstanceNotes(client, ctx, { adopt, planOnly }) {
+  const local = await readLocalInstanceNotes(ctx);
+  if (local === null || !local.length) return { found: 0, adopted: [] };
+  if (!adopt) return { found: local.length, adopted: [] };
+
+  const adopted = [];
+  for (const entry of local) {
+    // No `scope`, which is what makes it instance-wide — the same shape
+    // `shio remember <key> "<note>"` sends when no --site is given.
+    if (!planOnly) await client.remember({ key: entry.key, note: entry.note });
+    adopted.push(entry.key);
+  }
+  return { found: local.length, adopted };
 }
 
 /**

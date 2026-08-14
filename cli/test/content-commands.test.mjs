@@ -123,6 +123,9 @@ function server({
   sitemapTruncated = false,
   // SH408 — so a test can put two post-type names differing only in case on the instance.
   defs = DEFS,
+  // SH231 — what `GET /agent/memory` reports: `[{ scope, key, note }]`, scope absent =
+  // instance-wide. Empty by default, so every test written before this reads unchanged.
+  serverNotes = [],
 } = {}) {
   const calls = [];
   const uploads = [];
@@ -189,6 +192,15 @@ function server({
       return json(wanted.map((address) => remote[address]).filter(Boolean));
     }
     if (target.includes("/api/v2/post-type")) return json(defs);
+    if (target.includes("/agent/memory")) {
+      // The real endpoint answers a scoped read with that site's notes PLUS the instance-wide
+      // ones, and an unscoped read with everything — which is the shape SH231's two readers
+      // filter in opposite directions, so the fake has to reproduce it or neither is tested.
+      const scope = new URL(target).searchParams.get("site");
+      return json({
+        notes: serverNotes.filter((note) => !scope || !note.scope || note.scope === scope),
+      });
+    }
     if (target.includes("/agent/changes")) {
       return json({ found: 0, window: true, cursor: "2026-07-26T10:00:00Z|abc", more: false, changes: [], notes: [] });
     }
@@ -2231,4 +2243,98 @@ test("SH409: two post types differing only in case are named by the command that
   const files = [...ctx.fs.files.keys()].filter((key) => /[Aa]rticle\.json$/.test(key));
   assert.deepEqual(files, []);
   assert.deepEqual(written.map((def) => def.name), ["Region"]);
+});
+
+// --- SH231: the instance's own notes ---
+
+test("SH231: a pull projects the instance-wide notes, which used to travel nowhere", async () => {
+  // SH161 made a site's notes ride its export and deliberately left these behind. That holds for
+  // a site import — another installation's house rules beside somebody's blog is the P7 surprise
+  // — and not for moving a whole instance, which is the case they matter most in and the only
+  // one with no export path at all.
+  const ctx = ctxWith(server({
+    remote: { "post:Blog/blog/hello": REMOTE_DOC },
+    serverNotes: [
+      { scope: "Blog", key: "voice", note: "Second person, present tense." },
+      { key: "authoring", note: "Copy is authored in files here.", author: "ana" },
+      { key: "publishing", note: "Publishing happens on Fridays." },
+    ],
+  }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  assert.equal(result.instanceNotes, 2, "the two scope-less notes, and not the site's");
+  const file = ctx.fs.files.get("/repo/shio/.memory.yaml");
+  assert.match(file, /key: authoring/);
+  assert.match(file, /key: publishing/);
+  assert.doesNotMatch(file, /voice/, "a site's note belongs in that site's own file (SH161)");
+  // Beside content/, not inside it: this describes the installation, not any site.
+  assert.ok(!ctx.fs.files.has("/repo/shio/content/.memory.yaml"));
+  assert.match(ctx.stdout.text, /instance-wide note\(s\)/);
+});
+
+test("SH231: an instance with no house rules gets no file, rather than an empty one", async () => {
+  const ctx = ctxWith(server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  assert.equal(result.instanceNotes, 0);
+  // An empty file would read as "there are none" when it means "we never asked" (SH138).
+  assert.ok(!ctx.fs.files.has("/repo/shio/.memory.yaml"));
+});
+
+test("SH231: a push reports the file and refuses to apply it — that is SH161's rule kept", async () => {
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nbody: body\nfields:\n  headline: Hello\n---\n<p>First</p>\n`,
+    "/repo/shio/.memory.yaml": "notes:\n  - key: authoring\n    note: Copy is authored in files here.\n",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const remembered = fetchImpl.calls.filter((call) => call.url.includes("/agent/memory")
+    && call.init?.method === "PUT");
+  assert.equal(remembered.length, 0, "nothing was adopted without being asked");
+  // Said out loud even though nothing happened: a file the push silently ignores is the SH138
+  // failure, and "I edited it and nothing happened" is how an operator would otherwise find out.
+  assert.match(ctx.stdout.text, /were NOT applied/);
+  assert.match(ctx.stdout.text, /--adopt-memory/);
+});
+
+test("SH231: --adopt-memory writes them, scope-less, so a moved instance keeps its rules", async () => {
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nbody: body\nfields:\n  headline: Hello\n---\n<p>First</p>\n`,
+    "/repo/shio/.memory.yaml":
+      "notes:\n  - key: authoring\n    note: Copy is authored in files here.\n"
+      + "  - key: publishing\n    note: Publishing happens on Fridays.\n",
+  });
+
+  await contentPush.run({ adoptMemory: true }, [], ctx);
+
+  const remembered = fetchImpl.calls.filter((call) => call.url.includes("/agent/memory")
+    && call.init?.method === "PUT");
+  assert.equal(remembered.length, 2);
+  // No `scope` is what makes it instance-wide — the same shape `shio remember` sends with no
+  // --site. A scope here would file the house rules under a site, which is not what they are.
+  assert.ok(remembered.every((call) => call.body.scope === undefined));
+  assert.deepEqual(remembered.map((call) => call.body.key), ["authoring", "publishing"]);
+  assert.match(ctx.stdout.text, /2 instance-wide note\(s\) adopted/);
+});
+
+test("SH231: --dry-run adopts nothing but says what it would", async () => {
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nbody: body\nfields:\n  headline: Hello\n---\n<p>First</p>\n`,
+    "/repo/shio/.memory.yaml": "notes:\n  - key: authoring\n    note: Copy is authored in files here.\n",
+  });
+
+  await contentPush.run({ adoptMemory: true, dryRun: true }, [], ctx);
+
+  assert.equal(
+    fetchImpl.calls.filter((call) => call.url.includes("/agent/memory")
+      && call.init?.method === "PUT").length,
+    0,
+  );
+  assert.match(ctx.stdout.text, /would be adopted/);
 });

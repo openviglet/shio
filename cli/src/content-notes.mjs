@@ -72,6 +72,47 @@ export function serializeNotes({ site, notes }) {
 }
 
 /**
+ * Where the *instance-wide* notes project to (SH231).
+ *
+ * Beside `content/` rather than inside it, because an instance-wide note is not content: it
+ * describes the **installation** — "copy is authored in files here", "this front end owns
+ * `/docs/**`" — and would be nonsense filed under a site. It is also why `notesSiteOf` cannot
+ * mistake it for a site's: that reader wants exactly two path segments, and this has one.
+ */
+export const INSTANCE_NOTES_PATH = ".memory.yaml";
+
+/**
+ * Serializes the instance-wide notes (SH231).
+ *
+ * <p>SH161 made a site's notes ride its export and deliberately left these behind, which is
+ * right for a site import — another installation's house rules arriving beside somebody's blog
+ * is the surprise P7 exists to prevent — and wrong for the case they matter most in: moving a
+ * whole instance. They were the least reproducible thing in the system and the only thing with
+ * no export path at all.</p>
+ *
+ * <p>Same shape as {@link serializeNotes} minus the `site:` line, and a different header,
+ * because the header is the whole safety argument: this file is written by a pull and is
+ * <b>not</b> applied by a push unless the operator asks in so many words. A reader who does not
+ * know that would push another instance's rules into this one by accident, which is the exact
+ * outcome SH161 refused.</p>
+ */
+export function serializeInstanceNotes({ notes }) {
+  const lines = [
+    "# SH114 instance-wide memory — how THIS deployment is driven, not what any site holds.",
+    "# Written by `shio pull --content`. NOT applied by `shio push --content`: these are the",
+    "# exporting installation's house rules, so adopting them is a decision somebody makes —",
+    "# review this file, then run `shio push --content --adopt-memory` (SH231).",
+    "notes:",
+  ];
+  for (const entry of [...notes].sort((a, b) => a.key.localeCompare(b.key))) {
+    lines.push(`  - key: ${scalar(entry.key)}`);
+    lines.push(`    note: ${scalar(entry.note)}`);
+    if (entry.author) lines.push(`    author: ${scalar(entry.author)}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+/**
  * Parses a notes file.
  *
  * <p>A deliberately small reader for a deliberately small format — the same trade

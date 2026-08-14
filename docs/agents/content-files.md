@@ -26,6 +26,21 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   of the tree deliberately — a UUID in a file is what Block I exists to remove. The table exists
   because SH255's round-trip guard tests values of fields the format **has** and cannot see a field it
   **lacks**.
+- **Two memory files, and the difference between them is a permission (SH161, SH231).** A
+  *site's* notes project to `shio/content/<site>/.memory.yaml` and are reconciled like a field
+  — three-way merged, a local deletion honoured as a forget. The **instance's** notes project
+  to `shio/.memory.yaml`, beside `content/` rather than inside it, and are **not** reconciled:
+  a pull writes the file, and `push --content` reports it and leaves it alone unless the
+  operator passes `--adopt-memory`. That asymmetry is the whole design. An instance-wide note
+  is a house rule of the installation that exported it — "copy is authored in files here",
+  "this deployment publishes on Fridays" — so merging it into a target instance is the surprise
+  SH161 refused; but leaving it with **no export path at all**, which is what SH161 did, made
+  the least reproducible thing in the system the only thing that could not be moved. So it
+  travels as a file and adopting it is a decision somebody makes. The push says so on every run
+  that finds the file and not only when it acts, because a file silently ignored is how an
+  operator learns by editing it and watching nothing happen (SH138). An instance with no house
+  rules gets **no file** rather than an empty one — an empty file reads as "there are none"
+  when it means "we never asked".
 - **The path is the URL, not the folder chain.** A URL is unique per site, so the tree
   cannot collide; the folder travels in frontmatter because SH79 keeps the two namespaces
   apart. A file whose path and `url:` **disagree** is an error — a half-done rename is a

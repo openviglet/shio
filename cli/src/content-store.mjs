@@ -30,11 +30,20 @@ import {
   sidecarsOf,
 } from "./content-files.mjs";
 import { ASSETS_DIR, assetPathFor } from "./content-assets.mjs";
-import { NOTES_FILE, notesPathFor, parseNotes, serializeNotes } from "./content-notes.mjs";
+import {
+  INSTANCE_NOTES_PATH,
+  NOTES_FILE,
+  notesPathFor,
+  parseNotes,
+  serializeInstanceNotes,
+  serializeNotes,
+} from "./content-notes.mjs";
 import { addressOf, baseEntryFor } from "./content-sync.mjs";
 
 /** Where the projection lives, and where the snapshot that tracks it lives. */
 export const CONTENT_DIR = "shio/content";
+/** The projection root itself — what is *about the installation* rather than about a site. */
+export const SHIO_DIR = "shio";
 /** Folder markers (SH149) — a root of their own; see `FOLDERS_SUBDIR` for why. */
 export const FOLDERS_DIR = "shio/folders";
 export const BASE_FILE = "shio/.shio/content-base.json";
@@ -398,6 +407,45 @@ export async function writeLocalNotes(ctx, { site, notes }, { dir = CONTENT_DIR 
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
   await ctx.fs.writeFile(target, serializeNotes({ site, notes }), "utf8");
   return relPath;
+}
+
+/**
+ * The instance-wide notes as the file tree holds them (SH231), or `null` when there is no file.
+ *
+ * <p>Written under {@code SHIO_DIR} rather than {@code CONTENT_DIR}: these describe the
+ * installation, not any site, and a push must be able to find them without knowing which sites
+ * this tree covers.</p>
+ */
+export async function readLocalInstanceNotes(ctx, { dir = SHIO_DIR } = {}) {
+  try {
+    const text = await ctx.fs.readFile(join(ctx.cwd, dir, INSTANCE_NOTES_PATH), "utf8");
+    return parseNotes(`${dir}/${INSTANCE_NOTES_PATH}`, text).notes;
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+/** Writes the instance-wide notes file (SH231). */
+export async function writeLocalInstanceNotes(ctx, { notes }, { dir = SHIO_DIR } = {}) {
+  const target = join(ctx.cwd, dir, INSTANCE_NOTES_PATH);
+  await ctx.fs.mkdir(dirOf(target), { recursive: true });
+  await ctx.fs.writeFile(target, serializeInstanceNotes({ notes }), "utf8");
+  return `${dir}/${INSTANCE_NOTES_PATH}`;
+}
+
+/**
+ * The instance-wide notes as the server holds them (SH231) — the ones with no scope.
+ *
+ * <p>The mirror of {@link readRemoteNotes}, which drops exactly these. Read with no
+ * {@code site}, because a scoped read returns a site's notes plus the instance's and the
+ * separation is the point.</p>
+ */
+export async function readRemoteInstanceNotes(agent) {
+  const memory = await agent.memory({});
+  return (memory?.notes ?? [])
+    .filter((note) => !note.scope)
+    .map((note) => ({ key: note.key, note: note.note, author: note.author ?? null }));
 }
 
 /** Removes a site's notes file; one that is already gone is not an error. */
