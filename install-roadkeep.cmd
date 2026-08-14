@@ -27,6 +27,12 @@ REM
 REM The source is chosen by VERSION, never by position - candidates are asked
 REM `--version` and the highest wins. Set ROADKEEP_SRC to force one.
 REM
+REM Written in Python, and NEITHER this repository nor freewilly is a Python
+REM project - Shio is Java, freewilly is .NET. Python is required by roadkeep
+REM itself: .claude\settings.json already runs its guard hook as `python ...`.
+REM So this adds no runtime that the thing being installed did not already
+REM force, where a Node implementation would have.
+REM
 REM Usage:
 REM   install-roadkeep.cmd            Vendor the newest engine found.
 REM   install-roadkeep.cmd --check    Report only; exit 1 when out of date.
@@ -35,11 +41,12 @@ REM See also update-roadkeep.cmd, which updates the PLUGIN from its marketplace.
 REM Run that first when you want a newer engine than any cache holds, then this.
 REM ============================================================================
 
-where node >nul 2>nul
+where python >nul 2>nul
 if errorlevel 1 (
-    echo [ERROR] `node` is not on PATH. It is required to pick the newest engine.
+    echo [ERROR] `python` is not on PATH. roadkeep is a Python tool - the same
+    echo         interpreter its guard hook in .claude\settings.json already uses.
     exit /b 1
 )
 
-node "%~dp0scripts\install-roadkeep.mjs" %*
+python "%~dp0scripts\install_roadkeep.py" %*
 exit /b %errorlevel%
