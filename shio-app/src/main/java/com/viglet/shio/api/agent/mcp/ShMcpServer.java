@@ -439,6 +439,20 @@ public class ShMcpServer {
         var detail = e.toProblemDetail();
         StringBuilder out = new StringBuilder();
         out.append(detail.getTitle() == null ? "Request failed" : detail.getTitle());
+        // SH757 — the slug, which every REST refusal carries as `type` and no MCP one did. The
+        // prose teaches a model what to do; the slug is what a client BRANCHES on, and MCP is the
+        // only surface a Claude Code plugin user has, so dropping it here left that reader unable
+        // to tell one refusal from another except by matching English. Measured on a live instance:
+        // the text was title/detail/fix/at, and `duplicate-url` — a slug SH719's own ledger entry
+        // names as what the loser is told — appeared nowhere in it.
+        //
+        // The bare slug, not the `https://shio.viglet.com/errors/…` URI the REST body sends: the
+        // prefix is a constant 34 characters repeated on every refusal, and the last segment is the
+        // whole of what anyone compares (P3).
+        String slug = errorSlug(detail.getType());
+        if (slug != null) {
+            out.append("\nType: ").append(slug);
+        }
         if (detail.getDetail() != null) {
             out.append("\n").append(detail.getDetail());
         }
@@ -451,6 +465,27 @@ public class ShMcpServer {
             appendProperty(out, properties, "at", "At");
         }
         return out.toString();
+    }
+
+    /**
+     * The last segment of a problem's {@code type} URI — {@code duplicate-url} out of
+     * {@code https://shio.viglet.com/errors/duplicate-url} (SH757).
+     *
+     * <p>{@code null} where there is nothing to name: {@code ProblemDetail} defaults the type to
+     * {@code about:blank}, which is the absence of a slug rather than a slug called "blank", and
+     * printing it would teach a client to branch on a word that means "no kind".</p>
+     */
+    private static String errorSlug(java.net.URI type) {
+        if (type == null) {
+            return null;
+        }
+        String text = type.toString();
+        if (text.isBlank() || "about:blank".equals(text)) {
+            return null;
+        }
+        int slash = text.lastIndexOf('/');
+        String slug = slash >= 0 && slash + 1 < text.length() ? text.substring(slash + 1) : text;
+        return slug.isBlank() ? null : slug;
     }
 
     private static void appendProperty(StringBuilder out, Map<String, Object> properties,

@@ -301,3 +301,26 @@ was four lines, which is the point of the check.
 **One thing the proof will not do.** `ShAgentProofService` lints *post* addresses, so a
 folder-only apply attaches nothing. A test that declares only folders passes for the wrong
 reason.
+
+## A refusal names its kind, not only its problem (SH757)
+
+Every REST refusal carries `type: https://shio.viglet.com/errors/<slug>`. **No MCP refusal carried
+it** — `ShMcpServer.renderProblem` emitted title, detail, `fix`, `didYouMean`, `allowed`, `example`
+and `at`, and never the type. Measured against a live instance, `folder.copy` into its own subtree
+answered four lines of excellent prose in which the string `folder-copy-cycle` appeared nowhere.
+
+That is heavier than a missing field, for the reason SH596 gives about `shio://diagnostics`: **MCP
+is not one surface among several for a plugin user, it is the only one.** So the reader with no
+HTTP of its own could tell one refusal from another only by matching English — and the conformance
+suite had an assertion saying otherwise (`/duplicate-url/`, from SH719's own ledger entry, which
+names the slug as what the losing racer is told), which is how this was found.
+
+`Type: <slug>` now follows the title. **The bare slug, not the URI**: the
+`https://shio.viglet.com/errors/` prefix is a constant 34 characters on every refusal and the last
+segment is the whole of what anybody compares (P3). `about:blank` — `ProblemDetail`'s default —
+prints nothing, because that is the absence of a kind rather than a kind called blank.
+
+**The wire golden could not have caught this**, and that is worth knowing before trusting it:
+`tools-call-error.json` redacts the text as `#string`, so it pins the *shape* of an error result
+and is blind to everything the model actually reads. What caught it was a live suite asserting a
+string, which is the tier that exists for exactly this gap.

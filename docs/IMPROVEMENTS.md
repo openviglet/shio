@@ -678,30 +678,28 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.4 The five, and why they are not one task (SH757)
+### XXIV.5 The obligation a ship does not carry (SH758)
 
-Measured on a clean instance at `:2711`, 5 of 119. They look like one red and are four
-different decisions.
+SH747's ratchet works: it caught six ids in one session and five in the next. What it
+cannot do is catch them *when they are made*. The matrix is in **vigletdocs** and the
+ship is here, so the sequence is always the same — several tasks ship, the count rises,
+and a conformance run days later hands somebody a list of ids whose reasons have gone
+cold. Naming them then is archaeology.
 
-**SH747 and SH653** — 510 shipped ids unnamed in `COVERAGE.md` against a recorded 505.
-The matrix lives in **vigletdocs**, so a ship here and a page there are two commits in
-two repositories that nothing ties together, and the ratchet catches the drift a week
-after whoever could explain it moved on. The question is not "name five ids"; it is
-whether a ship can be made to *carry* its documentation obligation.
+Two shapes are worth weighing rather than assuming. **Carry it at the ship**: `roadkeep
+ship` knows the id and the outcome, and could emit the cluster sentence to paste, so the
+id arrives with words written by whoever still knows them. **Or measure it here**: the
+ratchet reads `CHANGELOG.md` from this repository and `COVERAGE.md` from another, and
+that asymmetry is the difficulty; a manifest in this tree would make the gate local, at
+the cost of a second place that can drift from the pages.
 
-**SH722** reports that the defect it describes has stopped reproducing and asks in its
-own message to be deleted — "move `shio_context` into the P5 test above and delete this
-one". A test that says so is a decision to take, not a failure to repair, and the
-message warns the collision may have found a tiebreaker rather than gone.
+Neither is obviously right, which is why this is a task rather than a fix. What is clear
+is that the current shape puts the discovery as far as possible from the knowledge: the
+person who can write the sentence is the one who shipped, and the moment they are asked
+is the moment they are furthest from it.
 
-**SH719** pins the slug `duplicate-url` against a refusal that now teaches in full prose
-without it. Either the slug is part of the contract, and the refusal lost it — or the
-assertion was pinning an implementation detail. Cheap to be wrong; not cheap to guess.
-
-**SH723** is a row-cap assertion on the change feed.
-
-Filed together because they are one red, and split in the body because one fix commit
-for four unrelated judgements is how a sweep launders three of them.
+Not urgent, and it should not be made so. A ratchet that fires late still fires — the
+failure this prevents is the silent one, and that is already prevented.
 
 ## XXV Realignment of what already shipped (Block N)
 

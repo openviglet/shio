@@ -20,7 +20,7 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH757** (deps: SH755 ✅) **Five conformance tests are red on a clean instance, and two of them are the matrix in another repo** — SH755 built the comparator that makes the red visible; these are the failures it now holds, and each wants a different decision rather than one sweep. → §XXIV.4
+- 📋 **SH758** (deps: SH757 ✅, SH747 ✅) **A ship here and its page there are two commits in two repositories, and only a ratchet ties them** — COVERAGE.md lives in vigletdocs, so the obligation is discovered by a gate days later rather than carried by the commit that created it. → §XXIV.5
 
 ## Non-goals (do NOT add as tasks)
 

@@ -22,13 +22,19 @@
  *
  * ## The measurement is the deliverable, and it found two things
  *
- * - **SH722** — ten identical `shio_context` calls return **two** distinct packs. One line moves:
- *   a post-type whose two attributes share an `ordinal` sorts them by whatever order the `Set`
- *   iterated. Every other read tool was stable over the same ten. Asserted below, as measured.
- * - **SH723** — `shio_changes` at its documented maximum returns 500 rows and ~19,000 estimated
+ * - **SH722** — ten identical `shio_context` calls returned **two** distinct packs. One line moved:
+ *   a post-type whose two attributes share an `ordinal` sorted them by whatever order the `Set`
+ *   iterated. Every other read tool was stable over the same ten.
+ * - **SH723** — `shio_changes` at its documented maximum returned 500 rows and ~19,000 estimated
  *   tokens in one response, with no ceiling and no truncation marker, while the context pack — the
- *   one that exists to be big — self-limits at 4,000. The surface's only token budget is not on
- *   the response that produces the largest payload.
+ *   one that exists to be big — self-limited at 4,000. The surface's only token budget was not on
+ *   the response that produced the largest payload.
+ *
+ * **Both shipped, and SH757 turned both assertions around.** They were written as pins on a
+ * measured defect, each carrying its own instruction for the day it was fixed, and each was still
+ * pinning the hole after the fix landed — so the gate was red for the repairs rather than for the
+ * damage. `shio_context` moved into the P5 test (with its ordinal collision, which is the half
+ * worth keeping) and the feed's test now holds the ceiling instead of its absence.
  *
  * ## Per row, not per response
  *
@@ -215,33 +221,74 @@ describe("SH714: what every tool costs live, and whether it answers twice the sa
       + "the same number, or only one of them is checked (SH124).");
   });
 
-  test("SH723: the feed's maximum is a row cap, and it is the biggest response on the surface", async () => {
-    // ASSERTED AS MEASURED. When SH723 lands, this response carries a truncation marker and a
-    // ceiling, the assertion below stops holding, and the message says so rather than a comment.
+  test("SH723: the feed charges its rows against a ceiling, and says where it stopped", async () => {
+    // TURNED AROUND BY SH757, on the instruction this test carried while the defect was open:
+    // "the feed now states a budget — which is the fix. Turn this test around."
+    //
+    // What it used to assert was the defect as measured — 500 rows and ~19,000 tokens in one
+    // response, no ceiling, no truncation marker, on the surface's largest payload while the
+    // context pack, the one that exists to be big, self-limited at 4,000. SH723 shipped the
+    // ceiling (default 6000, `?budget=0` opts out), so the assertions now hold the fix rather
+    // than the hole, and asking for 500 is still the right ask: the point is what happens when a
+    // caller requests more than the budget allows.
     const feed = await ask("shio_changes", { site, limit: 500 });
     const rows = rowsIn(feed, "event");
     const est = tokens(feed);
     console.log(`[SH714] shio_changes at its maximum: rows=${rows} est=${est}`);
 
-    assert.equal(rows, 500,
-      `SH714/SH723: the feed returned ${rows} rows for limit=500. If it now caps on tokens `
-      + "rather than rows, SH723 shipped and this test is the wrong way round.");
-    assert.ok(!/^budget est=/m.test(feed),
-      `SH714/SH723: the feed now states a budget — which is the fix. Turn this test around.`);
-    assert.ok(est > need(declared, "live.find.row") * 200,
-      `SH714/SH723: the feed's maximum response (${est} tokens) is no longer larger than the `
-      + "listing's, which was the argument for filing it.");
+    // Against the line the response states, the way the pack above is checked — and then against
+    // the declared number, which is the half the pack does not need: the feed's ceiling is a
+    // configured default, so a silent change to it would otherwise pass both this and the server.
+    const stated = /max-tokens=(\d+)/.exec(feed);
+    assert.ok(stated,
+      `SH714/SH723: the feed answered ${rows} rows and ${est} tokens with no max-tokens= in its `
+      + "header. The ceiling has to be VISIBLE before it cuts, or a caller cannot tell a short "
+      + `window from a truncated one.\n${feed.split("\n").slice(0, 3).join("\n")}`);
+    assert.equal(Number(stated[1]), need(declared, "live.changes.budget"),
+      `SH714/SH723: the feed enforces ${stated[1]} and the file declares `
+      + `${need(declared, "live.changes.budget")}. SH673 is what one copy drifting from the other `
+      + "costs — a gate red for a fortnight over a cost the project had decided to pay.");
+    assert.ok(rows < 500,
+      `SH714/SH723: 500 rows came back for limit=500, so the ceiling did not bind on a response `
+      + `of ${est} tokens. Either the budget stopped applying or this fixture no longer produces `
+      + "enough feed to reach it — and a cap that never cuts is untested rather than generous.");
+    assert.ok(est <= Number(stated[1]) * 1.1,
+      `SH714/SH723: the feed measures ${est} tokens on the wire against the ${stated[1]} it says `
+      + "it enforces. The number an operator logs and the number the budget enforces have to be "
+      + "the same number, or only one of them is checked (SH124).");
   });
 
   // ------------------------------------------------------------------ whether it answers twice the same
 
   test("every read repeated returns byte-identical output", async () => {
     // P5, asked the only way it can be: the same call, ten times, nothing changed in between.
-    // `shio_context` is excluded here and pinned by name in the next test — leaving it in would
-    // make this assertion red for a defect that is already filed, and SH579 has one rule about a
-    // gate that is allowed to be red.
+    //
+    // `shio_context` was excluded here and pinned by a test of its own while SH722 was open. SH722
+    // shipped — `ShUnstableSortLintTest` plus a name tiebreak on all seven sorts it found — so the
+    // exclusion came off and the pinning test went with it (SH757), which is what that test's own
+    // message asked for in as many words.
+    //
+    // **The collision is still seeded**, and that is the half worth keeping. A stability check run
+    // against a type with no repeated ordinal proves the tie never arose, not that it is broken —
+    // so the condition SH722 was about is created here rather than hoped for, exactly as the old
+    // test created it.
+    await admin.putPostTypeDef(COLLIDING_TYPE, {
+      name: COLLIDING_TYPE,
+      namePlural: `${COLLIDING_TYPE}s`,
+      title: "SH722 ordinal collision",
+      description: "Two fields at one ordinal. Seeded by SH714's suite; deleted when it ends.",
+      fields: [
+        { name: "TITLE", label: "Title", ordinal: 1, widget: "Text", isTitle: true, required: true },
+        // Nothing forbids it: the console writes an ordinal per field and never asserts the set is
+        // a permutation, so this is a shape a curator can produce by hand.
+        { name: "ALPHA", label: "Alpha", ordinal: 2, widget: "Text", required: false },
+        { name: "OMEGA", label: "Omega", ordinal: 2, widget: "Text Area", required: false },
+      ],
+    });
+
     const unstable = [];
     for (const [tool, args] of [
+      ["shio_context", { site }],
       ["shio_read", { address: `post:${site}/blog/page-2` }],
       ["shio_find", { q: "Page", site, limit: 50 }],
       ["shio_changes", { site, limit: 50 }],
@@ -259,51 +306,6 @@ describe("SH714: what every tool costs live, and whether it answers twice the sa
       "SH714: a read answered two different things to the same question with nothing changed in "
       + "between. P5 is what makes a digest, an ETag and a cached pack mean anything — an unstable "
       + "serialization breaks all three at once, and it breaks them invisibly.");
-  });
-
-  test("SH722: the context pack is the one read that does not", async () => {
-    // ASSERTED AS MEASURED. Ten identical calls, two distinct packs, one line apart: a post-type
-    // whose attributes share an `ordinal` is sorted by a key that cannot separate them, out of a
-    // Set. When SH722 lands, `seen.size` is 1, this fails, and the tool moves into the test above.
-    //
-    // **The collision is seeded here rather than found.** The first draft of this reproduced against
-    // `PT-FOLDER-INDEX`, a type this developer's instance happened to carry with two attributes at
-    // `ordinal: 2` — which is SH724 exactly, one file later: green because of what the instance had
-    // accumulated, and stable on a clean one for a reason that has nothing to do with the defect.
-    // A suite that measures a condition has to create it.
-    await admin.putPostTypeDef(COLLIDING_TYPE, {
-      name: COLLIDING_TYPE,
-      namePlural: `${COLLIDING_TYPE}s`,
-      title: "SH722 ordinal collision",
-      description: "Two fields at one ordinal. Seeded by SH714's suite; deleted when it ends.",
-      fields: [
-        { name: "TITLE", label: "Title", ordinal: 1, widget: "Text", isTitle: true, required: true },
-        // The collision, and nothing forbids it: the console writes an ordinal per field and never
-        // asserts the set is a permutation, so this is a shape a curator can produce by hand.
-        { name: "ALPHA", label: "Alpha", ordinal: 2, widget: "Text", required: false },
-        { name: "OMEGA", label: "Omega", ordinal: 2, widget: "Text Area", required: false },
-      ],
-    });
-
-    const seen = new Set();
-    for (let i = 0; i < REPEATS; i++) seen.add(await ask("shio_context", { site }));
-    console.log(`[SH714] shio_context: ${seen.size} distinct over ${REPEATS} identical calls`);
-
-    assert.ok(seen.size > 1,
-      `SH714/SH722: the pack was stable over ${REPEATS} calls with ${COLLIDING_TYPE} on the `
-      + "instance. That is the fix — move shio_context into the P5 test above and delete this one. "
-      + "It is also what a tiebreaker on the comparator looks like from out here, so check "
-      + "ShCdaMapper#schemaFields before concluding the collision stopped mattering.");
-
-    const [first, second] = [...seen];
-    const a = first.split("\n");
-    const b = second.split("\n");
-    const at = a.findIndex((line, i) => line !== b[i]);
-    assert.ok(a[at]?.startsWith("type ") && b[at]?.startsWith("type "),
-      `SH714/SH722: the packs differ somewhere other than the model, at line ${at}:\n`
-      + `  A: ${a[at]}\n  B: ${b[at]}\n`
-      + "SH722 is about a field list sorted by a non-unique ordinal. A difference anywhere else is "
-      + "a second instability and needs its own task rather than this one's assertion.");
   });
 
   test("an idempotent write repeated changes nothing, and says so the same way twice", async () => {
