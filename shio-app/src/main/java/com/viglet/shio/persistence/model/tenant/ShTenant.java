@@ -85,6 +85,21 @@ public class ShTenant implements Serializable {
     @Column(name = "plan", length = 50)
     private String plan = "FREE";
 
+    /**
+     * Bytes this tenant is storing, maintained rather than recomputed (SH45).
+     *
+     * <p>The other two metered resources are a {@code count()} on an indexed, {@code @TenantId}-
+     * filtered repository. Storage has no such column: SH399 stamps a file's size as {@code "SIZE"}
+     * inside {@code ShPostUnified.data}, a VARCHAR of JSON, so summing it means loading every File
+     * post — and the alternative, walking {@code <root>/<tenant>}, is disk I/O. Both are O(files) on
+     * a path the quota check runs before every upload, which is why this is kept instead.</p>
+     *
+     * <p>Drift is the price of that, and {@code ShTenantStorageMeter.reconcile} is the answer: SH47
+     * gave every tenant its own directory, so the true figure is always recoverable.</p>
+     */
+    @Column(name = "storage_bytes", nullable = false)
+    private long storageBytes;
+
     @Column(name = "owner", length = 255)
     private String owner;
 

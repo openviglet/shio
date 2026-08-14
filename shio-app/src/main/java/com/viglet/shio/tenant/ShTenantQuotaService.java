@@ -47,8 +47,25 @@ public class ShTenantQuotaService {
         VigletPlanLimits limits = quotaService.currentLimits();
         return new ShTenantPlanLimits(
                 limits.limit(ShVigletResourceCounter.SITES),
-                limits.limit(ShVigletResourceCounter.POSTS));
+                limits.limit(ShVigletResourceCounter.POSTS),
+                limits.limit(ShVigletResourceCounter.STORAGE));
     }
+
+    /*
+     * SH45 — there is deliberately no `checkCanStore` here yet, and the reason is the shared
+     * kernel's signature rather than an oversight.
+     *
+     * `VigletQuotaService.check(resource)` compares the CURRENT count against the limit, which is
+     * exact for sites and posts because each write adds precisely one. Bytes do not: a single
+     * 1 GB upload under a 512 MB plan passes that test whenever the tenant is currently at zero,
+     * so the check would report a guarantee it does not provide — worse than having none, and the
+     * "optimize a benchmark by degrading correctness" non-goal wearing a different hat.
+     *
+     * Enforcing storage needs `check(resource, delta)` in the shared kernel, which is a change to
+     * Viglet's quota SPI and not Shio's to make unilaterally. What ships here is the METER, which
+     * is what SH45's line actually names as missing; `currentLimits()` already reports the storage
+     * bound, so a caller can ask and decide.
+     */
 
     /** Throw 402 when the current tenant's plan has no room for another site. */
     public void checkCanCreateSite() {

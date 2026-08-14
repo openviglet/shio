@@ -39,18 +39,25 @@ public class ShVigletResourceCounter implements VigletResourceCounter {
 
     public static final String SITES = "sites";
     public static final String POSTS = "posts";
+    /** SH45 — bytes, read from the maintained meter rather than counted per check. */
+    public static final String STORAGE = "storage";
 
     /** The bounded FREE plan: 2 sites, 200 posts. */
     private static final VigletPlanLimits FREE = VigletPlanLimits.of(
-            SITES, ShTenantPlanLimits.FREE.maxSites(), POSTS, ShTenantPlanLimits.FREE.maxPosts());
+            SITES, ShTenantPlanLimits.FREE.maxSites(),
+            POSTS, ShTenantPlanLimits.FREE.maxPosts(),
+            STORAGE, ShTenantPlanLimits.FREE.maxStorageBytes());
 
     private final ShSiteRepository shSiteRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShTenantStorageMeter shTenantStorageMeter;
 
     public ShVigletResourceCounter(ShSiteRepository shSiteRepository,
-            ShPostUnifiedRepository shPostUnifiedRepository) {
+            ShPostUnifiedRepository shPostUnifiedRepository,
+            ShTenantStorageMeter shTenantStorageMeter) {
         this.shSiteRepository = shSiteRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shTenantStorageMeter = shTenantStorageMeter;
     }
 
     @Override
@@ -58,6 +65,10 @@ public class ShVigletResourceCounter implements VigletResourceCounter {
         return switch (resourceKey) {
             case SITES -> shSiteRepository.count();
             case POSTS -> shPostUnifiedRepository.count();
+            // SH45 — O(1) by construction. The two above are one indexed count();
+            // this one would be a filesystem walk or a JSON parse per row, which is
+            // why it reads a figure kept up to date instead (IMPROVEMENTS VI.5).
+            case STORAGE -> shTenantStorageMeter.bytesFor(tenantId);
             default -> 0L;
         };
     }

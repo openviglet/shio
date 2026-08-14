@@ -119,7 +119,15 @@ class ShSilentCatchInventoryTest {
             // it concerns: P6 says errors are instructions, and the instruction is in the response
             // body the caller is already reading. What it must not become is a `catch` that swallows
             // the message, which is why it is counted here rather than exempted.
-            "api", 59,
+            //
+            // 60 since SH45: `ShFileStorageService.bytesOnDiskFor` cannot size one file while
+            // recomputing a tenant's storage, logs it at WARN, and counts the rest as zero. A
+            // reconcile is a CORRECTION run on request, and a partial correction beats refusing to
+            // answer — the alternative is that one unreadable file leaves the meter at whatever it
+            // had drifted to. Not an incident, for SH103's reason one surface over: the operator
+            // asked for this and is reading its result, so the finding has a reader already. It
+            // errs low, which is the safe direction for a meter that gates writes.
+            "api", 60,
             "tenant", 4,
             // 4 since SH217, and the two are different judgements filed under one number.
             //

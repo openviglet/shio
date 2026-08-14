@@ -1282,6 +1282,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - 🗑 **SH44** — as designed this is a console-only privileged tenant switch, which the "No feature whose only interface is the console" non-goal forbids, and the principal-derived ShTenantContext resolution already covers the real need.
 - **SH47** — Already delivered: ShFileStorageService roots every lookup at the ShTenantContext tenant with a legacy fallback, and ShStaticFileTenantIsolationIT proves two tenants keep distinct bytes for one file id.
 - **SH46** — The sidebar's Tenants item is now behind discovery.multiTenant, the same flag the header gates the switcher on, so a single-tenant install stops offering a page for tenants it does not have.
+- **SH746** — sh_tenant.storage_bytes is maintained by ShTenantStorageMeter and reconciled from the tenant's own directory, so the quota kernel reads bytes in O(1) instead of walking a file tree per upload.
 
 ## Block E — Console migration (in flight)
 

@@ -60,6 +60,34 @@ public class ShFileStorageService {
         return properties.getRootDir();
     }
 
+    /**
+     * Bytes currently on disk for {@code tenant} — the recount SH45's meter reconciles against.
+     *
+     * <p>Deliberately not on the quota path: this is the O(files) walk the maintained counter
+     * exists to avoid, and it is here so the truth stays recoverable rather than so it can be
+     * asked per upload. SH47's per-tenant directory is what makes it answerable at all.</p>
+     */
+    public long bytesOnDiskFor(String tenant) {
+        Path root = rootDir().resolve(sanitizeTenant(tenant));
+        if (!Files.isDirectory(root)) {
+            return 0L;
+        }
+        try (java.util.stream.Stream<Path> walk = Files.walk(root)) {
+            return walk.filter(Files::isRegularFile).mapToLong(file -> {
+                try {
+                    return Files.size(file);
+                } catch (IOException unreadable) {
+                    // A file that cannot be sized is not a reason to refuse an answer about the
+                    // rest: the reconcile is a correction, and a partial correction beats none.
+                    log.warn("SH45: cannot size {} while reconciling storage", file, unreadable);
+                    return 0L;
+                }
+            }).sum();
+        } catch (IOException e) {
+            throw new UncheckedIOException("cannot walk storage for tenant " + tenant, e);
+        }
+    }
+
     /** The current tenant's storage sub-directory, {@code <root>/<tenant>}. */
     private Path tenantRoot() {
         return rootDir().resolve(sanitizeTenant(tenantId()));

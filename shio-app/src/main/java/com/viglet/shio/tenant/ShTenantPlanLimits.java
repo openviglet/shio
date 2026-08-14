@@ -20,10 +20,10 @@ import java.util.Locale;
  * @author Alexandre Oliveira
  * @since 2026.3
  */
-public record ShTenantPlanLimits(long maxSites, long maxPosts) {
+public record ShTenantPlanLimits(long maxSites, long maxPosts, long maxStorageBytes) {
 
-    public static final ShTenantPlanLimits UNLIMITED = new ShTenantPlanLimits(-1, -1);
-    public static final ShTenantPlanLimits FREE = new ShTenantPlanLimits(2, 200);
+    public static final ShTenantPlanLimits UNLIMITED = new ShTenantPlanLimits(-1, -1, -1);
+    public static final ShTenantPlanLimits FREE = new ShTenantPlanLimits(2, 200, 512L * 1024 * 1024);
 
     /** Resolve the limits for a (free-form) plan id; unknown / paid plans are unlimited. */
     public static ShTenantPlanLimits forPlan(String plan) {

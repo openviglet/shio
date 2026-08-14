@@ -293,3 +293,27 @@ one part that test bypasses. **`ShScheduledSweepTenantIT`** drives `sweep()` its
 confirmed to fail with the fix reverted, and it is an IT because `shio.multi-tenant=true` is what
 makes the discriminator mean anything (and because the alternative was a fifth multi-tenant Spring
 context in the unit suite).
+
+## A tenant's stored bytes are kept, not counted (SH45)
+
+`sh_tenant.storage_bytes` (BIGINT, NOT NULL, default 0 — `v2026.3.25.yaml`) holds what a tenant is
+storing, and `ShTenantStorageMeter` adjusts it as bytes arrive and leave.
+
+**Why it is not a query, which is the whole design.** The other two metered resources are a
+`count()` on an indexed, `@TenantId`-filtered repository. Storage has no such column: SH399 stamps a
+file's size as `"SIZE"` **inside `ShPostUnified.data`, a VARCHAR of JSON**. So both obvious readings
+are O(files) on a path `VigletQuotaService.check` runs before every upload — walking
+`<root>/<tenant>` is disk I/O per check, and summing the JSON means loading and parsing every File
+post, because a `JSON_VALUE`/`->>` predicate is engine-specific and the SH26 cross-DB ITs refuse it.
+
+**The cost is drift, and `reconcile` is what answers for it** rather than a hope: SH47 gave every
+tenant its own directory, so the true figure is one subtree away. It is deliberately **not
+scheduled** — what cadence that runs at is an operator's decision, and a job nobody asked for is a
+cost this task did not measure. `record` clamps at zero, because a total below empty is the one
+reading that cannot be true.
+
+**There is no `checkCanStore` yet, and that is deliberate.** `VigletQuotaService.check(resource)`
+compares the *current* count against the limit, which is exact for sites and posts because each
+write adds one. Bytes do not: a single 1 GB upload under a 512 MB plan passes that test whenever the
+tenant is at zero, so the check would advertise a guarantee it does not give. Enforcing storage
+needs `check(resource, delta)` in Viglet's shared quota SPI, which is not Shio's to change alone.

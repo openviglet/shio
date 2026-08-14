@@ -1,0 +1,52 @@
+databaseChangeLog:
+  # SH45 — the bytes a tenant is storing, counted once and kept, rather than recomputed per upload.
+  #
+  # SH22 named three resources to meter and only two were built: `ShVigletResourceCounter` counts
+  # sites and posts straight from the `@TenantId`-filtered repositories, which is cheap because a
+  # `count()` is one indexed query. Storage has no such column to count. A file's size is stamped
+  # by SH399 as `"SIZE"` inside `ShPostUnified.data` — a VARCHAR holding JSON — so the two obvious
+  # readings are both O(files) on a path `VigletQuotaService.check` runs BEFORE EVERY UPLOAD:
+  # walking `<root>/<tenant>` is disk I/O per check, and summing the JSON means loading and parsing
+  # every File post because a `JSON_VALUE`/`->>` predicate is engine-specific and the SH26 cross-DB
+  # ITs refuse it.
+  #
+  # So the count is maintained: adjusted when bytes are written and when they are removed, and read
+  # in O(1). The cost of that shape is drift, which is why `ShTenantStorageMeter.reconcile` exists
+  # and recomputes from the tenant's own directory — SH47 gave every tenant one, so the truth is
+  # always recoverable. Design: IMPROVEMENTS §VI.5.
+  #
+  # On `sh_tenant` rather than a table of its own: the tenant catalog is already the row every quota
+  # question resolves through, and a second table would be a join on the check path this column
+  # exists to keep cheap. `sh_tenant` is deliberately NOT `@TenantId`-scoped (it is the global
+  # catalog), so the value is addressed by tenant id like every other column here.
+  #
+  # DEFAULT 0 and NOT NULL: a null would have to mean "unknown" and every reader would need a
+  # branch for it, when the honest starting value for an install with no files is zero. An install
+  # that already has files reads zero until the first reconcile, which is the direction to be wrong
+  # in — a meter that starts low lets a write through, where one that starts high refuses uploads
+  # nobody made.
+  #
+  # BIGINT, not INT: 2 GB is an ordinary asset tree, and this is a byte count.
+  #
+  # Type DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on
+  # PostgreSQL (QUOTE_ALL_OBJECTS does not propagate through `include`, so it is re-declared here).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh45-tenant-storage-bytes
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_tenant
+                columnName: storage_bytes
+      changes:
+        - addColumn:
+            tableName: sh_tenant
+            columns:
+              - column:
+                  name: storage_bytes
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
