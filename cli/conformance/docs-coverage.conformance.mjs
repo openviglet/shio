@@ -38,8 +38,9 @@
  */
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 // @scans prose reason: COVERAGE.md is Markdown and its table rows ARE the subject — the
 // summary is derived from them, so nothing here can be stripped away (SH740).
@@ -219,6 +220,71 @@ describe("SH653 conformance: the coverage summary is derived from the coverage t
       derived.total > 20,
       `expected the matrix's rows, found ${derived.total} — an empty read would agree with any `
         + "summary that also said zero",
+    );
+  });
+});
+
+/**
+ * SH747 — the matrix is the gate for shipped work, and nothing checked that shipped work reaches it.
+ *
+ * <p>Six ships in one session got no verdict — SH47/SH46/SH746 in Block F, SH691/SH245/SH744 in
+ * Block O — and both misses were found by reading the ledger against the matrix by hand, after the
+ * commits had landed.</p>
+ *
+ * <p><b>A per-id rule was measured and refused.</b> "Every shipped id is named in COVERAGE.md"
+ * reports 524 of 703, because the matrix's contract is per <i>cluster</i> and most ids are covered
+ * by a row that never names them. A gate opening with 524 findings is one nobody reads.</p>
+ *
+ * <p>What the six had in common is that they were <b>new</b>: a block whose rows already existed
+ * gained a task and the matrix did not move. So this is a ratchet over a corpus meant to shrink —
+ * the shape `ShImprovementsStaleSectionRatchetTest` uses. The number may fall and may not rise.</p>
+ */
+describe("SH747 conformance: a newly shipped id cannot slip past the coverage matrix", () => {
+  /**
+   * Shipped ids the matrix does not name, on 2026-08-14.
+   *
+   * <p>Lower it when you name one. Raising it means a task shipped and the matrix did not move,
+   * which is the whole defect — name the id in its cluster row, or add the 🔒 row saying why there
+   * is no page.</p>
+   */
+  const UNNAMED = 510;
+
+  /** Every id the ledger records as SHIPPED. A `🗑` retirement has no surface to document. */
+  function shippedIds() {
+    // From THIS file, not from DOCS: the docs live in another repository at a path the reader is
+    // told (SHIO_DOCS_DIR), and the ledger is in this one. Deriving one from the other assumed a
+    // sibling layout that is not guaranteed and was wrong on the machine that wrote it.
+    const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+    const ledger = readFileSync(join(root, "docs", "CHANGELOG.md"), "utf8");
+    return [...ledger.matchAll(/^- \*\*(SH\d+)\*\*/gm)].map(([, id]) => id);
+  }
+
+  test("SH747: the count of shipped ids the matrix does not name never rises", () => {
+    const text = matrix();
+    const shipped = shippedIds();
+    // The ids the matrix names, extracted once. A regex per id would need a word boundary so
+    // `SH47` does not match inside `SH470` - and the first version built that pattern through
+    // a shell heredoc that ate a backslash, so every id matched nothing and the count came
+    // back 689 of 689. Set membership cannot be wrong that way.
+    const named = new Set([...text.matchAll(/\bSH\d+\b/g)].map(([id]) => id));
+    const unnamed = shipped.filter((id) => !named.has(id));
+
+    process.stdout.write(
+      `\nSH747: ${shipped.length} shipped id(s), ${unnamed.length} not named in ${MATRIX} `
+        + `(recorded ${UNNAMED})\n`,
+    );
+
+    assert.ok(shipped.length > 400,
+      `the ledger yielded ${shipped.length} shipped ids — a read that came back empty would make `
+        + "every id look named and this ratchet meaningless");
+
+    assert.ok(
+      unnamed.length <= UNNAMED,
+      `${unnamed.length} shipped ids are not named in ${MATRIX}, against a recorded ${UNNAMED}. A `
+        + "task shipped and the matrix did not move, which is the defect SH747 exists for — six "
+        + "went past in one session. Name the id in its cluster row, or add the 🔒 row saying why "
+        + "there is no page, then lower UNNAMED in the same commit.\n  newest unnamed: "
+        + unnamed.slice(-8).join(" "),
     );
   });
 });

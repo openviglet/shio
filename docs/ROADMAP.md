@@ -34,8 +34,6 @@
 
 ## Block U — Documentation the matrix still names
 
-- 📋 **SH747** (deps: —) **The coverage matrix is the gate for shipped work, and nothing checks that a shipped id reaches it** — Six ships across two blocks got no verdict, twice in one session, and the miss was found by reading the ledger against the matrix by hand. → §XXI.14
-
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and
