@@ -117,3 +117,40 @@ than the defect. What is cheap is the habit, which is why it is written here.
 Related and already enforced: `ShBenchmarkIsolationLintTest` covers the other half of
 this hazard — a class reading the whole **instance** from a shared database (SH315,
 widened by SH318). This entry is about one class sharing its fixture with itself.
+
+## An I/O failure that would not say why (SH756)
+
+`ShMarketplaceInstallerTest` went red on one `clean test` and green on the next, minutes apart on
+the same tree. The whole of what it reported was two paths:
+
+```
+InstallFailedException: …\shio-marketplace-1005…\shio-blueprint-newsroom
+  -> …\junit-7770…\shio-blueprint-newsroom
+```
+
+**A `FileSystemException`'s message IS its two paths**, with `": " + reason` appended only when the
+platform supplied one. So a message showing paths alone is a message whose reason was **null**, and
+at that point the exception's *class* is the last remaining fact — `FileAlreadyExistsException` and
+`AtomicMoveNotSupportedException` print identically through `getMessage()` and are different
+diagnoses. The class was the thing being discarded.
+
+**Use `ShIoFailure.describe(e)`, never `e.getMessage()`, when an `IOException` becomes a message
+somebody reads.** It names the class first, then the platform's reason where there is one, then the
+paths — the first two decide and the third is only *where*. `ShIoCauseLintTest` holds every
+`catch (IOException …)` block in the tree to it, with a declared-exemption map for a site that
+means something else.
+
+**The lint found more than the grep did, and then found something about itself.** The hand search
+turned up eight sites in three files; the lint turned up two more nobody had looked at — the image
+transform pipeline, whose message goes into the agent's own diagnostics window, and the marketplace
+catalogue. Its first draft matched the whole file instead of the catch block and reported nine
+findings of which six were false, all from one file where `catch (IOException e)` and
+`catch (RuntimeException e)` share a variable name. That draft carried a comment arguing the
+looseness was acceptable. It was not: a lint wrong two thirds of the time is one somebody relaxes,
+and a relaxed lint is off. It brace-matches the block now.
+
+**What this does not do is explain the flake**, and that is deliberate. One sighting with no reason
+string is not enough to choose a fix from — an indexer holding the freshly unpacked tree, a
+destination left behind by an earlier run (24 stale `junit-*` directories were in `%TEMP%` when it
+fired), or `ATOMIC_MOVE` unsupported across those two directories are all still open. The next
+sighting will name its own class, which is what makes it decidable instead of a guess.

@@ -678,36 +678,6 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.3 The move that failed once and would not say why (SH756)
-
-On 2026-08-14 `ShMarketplaceInstallerTest.anInstalledPackageIsNotReportedAsBuiltIn` went
-red on one `clean test` and green on the next, same tree, minutes apart. The whole of
-what it said was:
-
-```
-InstallFailedException: …\shio-marketplace-1005…\shio-blueprint-newsroom
-  -> …\junit-7770…\shio-blueprint-newsroom
-```
-
-Two paths and nothing else, because `ShMarketplaceInstaller.install` catches
-`IOException` and passes `failed.getMessage()` — and a `FileSystemException`'s message
-*is* the two paths. The one fact that would decide this is the one the constructor
-throws away: whether the destination already existed, whether a handle was open, whether
-`ATOMIC_MOVE` is unsupported across those two directories.
-
-So this is P6 turned inward. Errors are instructions, and the audience for this one is
-whoever is holding a red gate at the moment they can least afford a guess — SH354
-records the same shape costing a run nobody could ever diagnose.
-
-Two things, and the order is the point. **Carry the cause**: the exception class, and
-the `FileSystemException` `reason` where there is one. Only then ask what the flake is —
-`Files.move(ATOMIC_MOVE)` into a JUnit `@TempDir` on Windows has candidates, an indexer
-holding the freshly-unpacked tree among them, and 24 stale `junit-*` directories were
-sitting in `%TEMP%` when it fired.
-
-Filed rather than fixed on the spot because a fix chosen from one sighting with no
-reason string is a guess with a commit message.
-
 ### XXIV.4 The five, and why they are not one task (SH757)
 
 Measured on a clean instance at `:2711`, 5 of 119. They look like one red and are four

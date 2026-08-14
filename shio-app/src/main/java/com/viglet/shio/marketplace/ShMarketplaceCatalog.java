@@ -28,6 +28,7 @@ import com.viglet.shio.blueprint.ShBlueprintCodec;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
 import com.viglet.shio.blueprint.dto.ShBlueprint;
 import com.viglet.shio.marketplace.dto.ShMarketplaceItem;
+import com.viglet.shio.utils.ShIoFailure;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -312,7 +313,7 @@ public class ShMarketplaceCatalog {
             throw new IllegalStateException(url + " was interrupted", interrupted);
         } catch (java.io.IOException unreachable) {
             throw new IllegalStateException(
-                    url + " could not be read: " + unreachable.getMessage(), unreachable);
+                    url + " could not be read: " + ShIoFailure.describe(unreachable), unreachable);
         }
     }
 

@@ -25,6 +25,7 @@ import com.github.jknack.handlebars.context.MapValueResolver;
 import com.github.jknack.handlebars.io.TemplateLoader;
 import com.github.jknack.handlebars.io.TemplateSource;
 import com.viglet.shio.utils.ShStableMap;
+import com.viglet.shio.utils.ShIoFailure;
 
 /**
  * SH183 — the template evaluator, and the three things it deliberately cannot do.
@@ -222,7 +223,7 @@ public class ShTemplateEngine {
         } catch (HandlebarsException e) {
             throw ShTemplateException.of(e);
         } catch (IOException e) {
-            throw new ShTemplateException("Template could not be compiled: " + e.getMessage(),
+            throw new ShTemplateException("Template could not be compiled: " + ShIoFailure.describe(e),
                     null, 0, 0, e);
         }
     }
@@ -246,7 +247,7 @@ public class ShTemplateEngine {
         } catch (HandlebarsException e) {
             throw ShTemplateException.of(e);
         } catch (IOException e) {
-            throw new ShTemplateException("Template could not be rendered: " + e.getMessage(),
+            throw new ShTemplateException("Template could not be rendered: " + ShIoFailure.describe(e),
                     null, 0, 0, e);
         }
     }

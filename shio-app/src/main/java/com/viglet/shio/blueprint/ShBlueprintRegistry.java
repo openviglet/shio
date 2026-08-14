@@ -37,6 +37,7 @@ import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.blueprint.dto.ShBlueprint;
 import com.viglet.shio.blueprint.dto.ShBlueprintManifest;
+import com.viglet.shio.utils.ShIoFailure;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -402,7 +403,7 @@ public class ShBlueprintRegistry {
                 // an editor's backup folder is not a malformed package.
             }
         } catch (IOException unreadable) {
-            throw new UnreadablePathException(properties.getPath(), unreadable.getMessage());
+            throw new UnreadablePathException(properties.getPath(), ShIoFailure.describe(unreadable));
         }
         return manifests;
     }
@@ -642,7 +643,7 @@ public class ShBlueprintRegistry {
             throw new BlueprintFormatException(where, "invalid JSON ("
                     + malformed.getOriginalMessage() + ")");
         } catch (IOException unreadable) {
-            throw new BlueprintFormatException(where, "cannot be read (" + unreadable.getMessage() + ")");
+            throw new BlueprintFormatException(where, "cannot be read (" + ShIoFailure.describe(unreadable) + ")");
         }
     }
 
@@ -653,7 +654,7 @@ public class ShBlueprintRegistry {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8).replace("\r\n", "\n");
         } catch (IOException unreadable) {
             throw new BlueprintFormatException(resource.getDescription(),
-                    "cannot be read (" + unreadable.getMessage() + ")");
+                    "cannot be read (" + ShIoFailure.describe(unreadable) + ")");
         }
     }
 
@@ -696,7 +697,7 @@ public class ShBlueprintRegistry {
             return resource;
         } catch (IOException unresolvable) {
             throw new BlueprintFormatException(blueprint,
-                    "cannot resolve '" + path + "' (" + unresolvable.getMessage() + ")");
+                    "cannot resolve '" + path + "' (" + ShIoFailure.describe(unresolvable) + ")");
         }
     }
 

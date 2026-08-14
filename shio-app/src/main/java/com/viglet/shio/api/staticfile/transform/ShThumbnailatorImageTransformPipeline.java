@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.property.ShImageTransformProperties;
+import com.viglet.shio.utils.ShIoFailure;
 
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.geometry.Positions;
@@ -134,7 +135,7 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
             // just quietly serves a full-size original. That is exactly the class of
             // failure an agent never learns about on its own.
             incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, source.getFilename(),
-                    "transform failed, original served: " + e.getMessage(),
+                    "transform failed, original served: " + ShIoFailure.describe(e),
                     "The image is delivered untransformed (full size, source format). Re-upload "
                             + "it if the source is corrupt, or serve it without transform params.",
                     // SH269: which stage threw. This pipeline decodes, resizes, re-encodes and

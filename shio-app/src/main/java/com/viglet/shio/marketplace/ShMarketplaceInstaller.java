@@ -30,6 +30,7 @@ import com.viglet.shio.blueprint.ShBlueprintRegistry;
 import com.viglet.shio.blueprint.dto.ShBlueprint;
 import com.viglet.shio.blueprint.dto.ShBlueprintManifest;
 import com.viglet.shio.marketplace.dto.ShMarketplaceItem;
+import com.viglet.shio.utils.ShIoFailure;
 
 /**
  * Installing a catalogue item (SH675) — the fetch and the unpacking, and little else.
@@ -135,7 +136,10 @@ public class ShMarketplaceInstaller {
             Files.move(unpacked, destination, StandardCopyOption.ATOMIC_MOVE);
             return settle(item, manifest, destination, root);
         } catch (IOException failed) {
-            throw new InstallFailedException(item.id(), failed.getMessage());
+            // SH756 — the class and the reason, not just the message. A FileSystemException's
+            // message IS the two paths, so this line used to answer "src -> dst" and nothing
+            // else, and a move that found the target taken read exactly like one that lost a race.
+            throw new InstallFailedException(item.id(), ShIoFailure.describe(failed));
         } finally {
             deleteQuietly(staging);
         }
@@ -163,7 +167,7 @@ public class ShMarketplaceInstaller {
         try {
             deleteRecursively(directory);
         } catch (IOException failed) {
-            throw new InstallFailedException(present.name(), failed.getMessage());
+            throw new InstallFailedException(present.name(), ShIoFailure.describe(failed));
         }
         ShBlueprintRegistry.Reload reload = registry.reload();
         return new Installed(present.name(), present.manifest().version(), root.toString(), false,
