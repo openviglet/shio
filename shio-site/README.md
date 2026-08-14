@@ -136,12 +136,17 @@ against and never shipped. The reason the site survived a block the docs did not
 one that saved it from SH541: `site-content.ts` lists the tools as an array the copy iterates,
 so a drifted entry is a visible wrong row rather than a number in a sentence nobody re-derives.
 
-Block N closed on 2026-08-11 and changed no claim here, and the reason is a property of this
-copy rather than luck: the licence is a **link** to `LICENSE` (`site-content.ts`'s `license`
-key), not the string `GPL v3`, so SH541 moving 195 files to Apache 2.0 could not leave it
-wrong. The published documentation spelled it out and was wrong for the whole time after —
-which is the argument for linking a fact instead of quoting it, and SH669 now derives that
-one from `package.json` + `LICENSE` on every conformance run. The block's other half is
+Block N closed on 2026-08-11, reopened, and closed again on 2026-08-14 — the same block twice,
+which is worth recording because "a closed block stays closed" is an assumption the sweep can
+be built on and should not be. Neither closure changed a claim here, and the second one is the
+better evidence for why. It shipped `SHIO_ADMIN_PASSWORD` (SH706), the one thing in the block a
+marketing page would plausibly quote, and the copy that could have been wrong — `PLUGIN_INSTALL`
+in `site-content.ts` — writes `SHIO_PASSWORD=...` as a placeholder rather than a credential. The
+same property saved it from SH541: the licence is a **link** to `LICENSE` (`site-content.ts`'s
+`license` key), not the string `GPL v3`, so moving 195 files to Apache 2.0 could not leave it
+wrong. The published documentation spelled that one out and was wrong for the whole time after —
+which is the argument for linking or eliding a fact instead of quoting it, and SH669 now derives
+the licence from `package.json` + `LICENSE` on every conformance run. The rest of both halves is
 instruments, which the site does not claim.
 
 Block T closed on 2026-08-11 and changed no claim here, and the check that says so is worth
