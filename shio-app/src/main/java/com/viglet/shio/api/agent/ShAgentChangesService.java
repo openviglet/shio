@@ -192,7 +192,7 @@ public class ShAgentChangesService {
         // "the most recent N", never the ones before them. The feed's cursor is the last row
         // that fit, which is what makes a budget cut resumable instead of lossy.
         List<ShHistory> positioned = window ? entries : entries.subList(page.start(), page.end());
-        String cursor = cursorOf(positioned, window, from, ceiling);
+        String cursor = cursorOf(positioned, window, from);
         // A budget cut in feed mode is exactly the `more` case SH88 already had: rows remain
         // after this cursor, so say so. In window mode it is not — the rows dropped are older
         // than the window's own edge, and no `since=` walks backwards to them.
@@ -360,13 +360,41 @@ public class ShAgentChangesService {
         return ShAgentChangeCursor.later(changeCursor, failures.tailCursor());
     }
 
+    /**
+     * The position to hand back, and the one place SH232 changed.
+     *
+     * <h2>Why an empty window's cursor is the start of the trail and not the ceiling</h2>
+     *
+     * <p>SH232 was filed saying the window can never revalidate, because its cursor is the
+     * moving edge of the feed. SH147 had already made that untrue for a window with rows in it
+     * — the cursor is the newest row's position, which does not move until a write happens, so
+     * two polls a second apart are byte-identical and the second is a {@code 304}. Measuring it
+     * left exactly one case: an <b>empty</b> window, whose cursor was
+     * {@link ShAuditFeedWatermark#ceiling()} and therefore {@code now} to the microsecond.</p>
+     *
+     * <p>That is the poll this endpoint exists for — "has anything happened since I got here",
+     * on an instance where the honest answer is usually no — so it was the one read that could
+     * never be free, on the surface most repeated by a session that kept no cursor.</p>
+     *
+     * <p>An empty window means something stronger than "no rows on this page": the query is
+     * {@code (scope, < ceiling)} with a limit of at least one, so an empty result is proof that
+     * <b>no row exists in scope below the ceiling at all</b>. A position at the start of the
+     * trail therefore skips nothing that a position at the ceiling would have skipped, and it
+     * is a constant. The caller's next {@code since=} returns everything written after this
+     * poll — which is what it was asking for — and the poll itself costs a tag.</p>
+     */
     private static String cursorOf(List<ShHistory> positioned, boolean window,
-                                   ShAgentChangeCursor from, Instant ceiling) {
+                                   ShAgentChangeCursor from) {
         if (!positioned.isEmpty()) {
             ShHistory tail = positioned.get(positioned.size() - 1);
             return new ShAgentChangeCursor(tail.getDate(), tail.getId()).toString();
         }
-        return window ? new ShAgentChangeCursor(ceiling, "").toString() : from.toString();
+        if (!window) {
+            // A cursor read that found nothing holds its position, which is already stable —
+            // and must be, or a quiet instance would send the caller back to a window.
+            return from.toString();
+        }
+        return new ShAgentChangeCursor(Instant.EPOCH, "").toString();
     }
 
     private static List<ShAgentIncident> reversed(List<ShAgentIncident> newestFirst) {
@@ -600,6 +628,14 @@ public class ShAgentChangesService {
         if (window) {
             notes.add("window: the most recent " + cap + " entries at most, not a delta — pass "
                     + "since=<cursor> to get everything after this position");
+        }
+        // SH232 — without this, a cursor of 1970-01-01 reads as a bug rather than as the start
+        // of an empty trail. Said only on an empty window, and constant, so the poll it explains
+        // is also the poll it lets revalidate.
+        if (window && changes.isEmpty()) {
+            notes.add("nothing has been recorded in scope yet, so this cursor is the start of "
+                    + "the trail rather than the current instant — which is what makes this poll "
+                    + "byte-identical, and free with If-None-Match, until something is written");
         }
         // SH376 — said only once a foreign write has been seen, so a single-instance feed pays no
         // prose for a case it does not have (P3), and said whatever `lag-millis` is: a margin

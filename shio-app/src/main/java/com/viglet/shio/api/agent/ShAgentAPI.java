@@ -642,12 +642,15 @@ public class ShAgentAPI {
      * @param ifNoneMatch a tag from a previous read (SH159). This is the poll — "has anything
      *                    happened since I last looked" — and the honest answer is very often
      *                    "no", so a {@code 304} is what makes asking cheap enough to do often.
-     *                    <b>It revalidates in cursor mode, not in window mode</b>, and that
-     *                    asymmetry is correct rather than a gap: without {@code since} the
-     *                    response's own cursor is the moving edge of the feed, so two calls a
-     *                    second apart really are different answers. With {@code since} — the
-     *                    way SH88 intends the feed to be walked, carrying the previous
-     *                    cursor back — an unchanged range is byte-identical and free. A
+     *                    <b>It revalidates in both modes now (SH232)</b>: with {@code since},
+     *                    the way SH88 intends the feed to be walked, an unchanged range is
+     *                    byte-identical; and without it, because a window's cursor is the
+     *                    newest row's position, which does not move until somebody writes.
+     *                    SH159 shipped saying the window never could — true then, and made
+     *                    untrue by SH147's watermark for every window that has rows in it.
+     *                    Measuring left one case, the <em>empty</em> window, whose cursor was
+     *                    the ceiling and so was {@code now}; it is the start of the trail
+     *                    instead, which skips nothing an empty range could contain. A
      *                    repeating incident (SH144) raises its count and correctly does not
      *                    match; that is the stream saying it is still happening
      */

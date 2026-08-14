@@ -84,6 +84,7 @@ class ShAgentChangesTest {
     private String otherSiteName;
     private String siteId;
     private String otherSiteId;
+    private String emptySiteName;
     private String postTypeName;
     private String base;
     private String livePostId;
@@ -97,6 +98,8 @@ class ShAgentChangesTest {
             otherSiteName = "changes-other-" + UUID.randomUUID().toString().substring(0, 8);
             siteId = persistSite(siteName);
             otherSiteId = persistSite(otherSiteName);
+            emptySiteName = "changes-empty-" + UUID.randomUUID().toString().substring(0, 8);
+            persistSite(emptySiteName);
 
             ShWidget widget = entityManager
                     .createQuery("select w from ShWidget w where w.name = 'Text'", ShWidget.class)
@@ -474,6 +477,57 @@ class ShAgentChangesTest {
     void aNegativeBudgetIsRefusedRatherThanClamped() {
         assertThatThrownBy(() -> shAgentChangesService.changes(siteName, null, 10, false, -1))
                 .isInstanceOf(ShAgentContextService.InvalidBudgetException.class);
+    }
+
+    // --- SH232: the poll that could never be free ---
+
+    /**
+     * The measurement this task turned on, kept as the assertion.
+     *
+     * <p>SH232 was filed saying the window can never revalidate. Measuring it found SH147 had
+     * already made that untrue wherever the window has rows — the cursor is the newest row's
+     * position, not the ceiling — leaving one case: the <b>empty</b> window, on the endpoint
+     * whose whole job is to be polled for an answer that is usually "nothing".</p>
+     */
+    @Test
+    void twoPollsOfAnUnchangedFeedAreTheSameBytesInEveryMode() {
+        assertThat(render(siteName, null))
+                .as("a window with rows: the cursor is the newest row's position (SH147)")
+                .isEqualTo(render(siteName, null));
+
+        String anchor = new ShAgentChangeCursor(T1.minusSeconds(1), "").toString();
+        assertThat(render(siteName, anchor))
+                .as("cursor mode, the way SH88 intends the feed to be walked (SH159)")
+                .isEqualTo(render(siteName, anchor));
+
+        assertThat(render(emptySiteName, null))
+                .as("SH232: an empty window's cursor was the watermark ceiling, so it moved by "
+                        + "microseconds between two polls and no If-None-Match could ever match")
+                .isEqualTo(render(emptySiteName, null));
+    }
+
+    /**
+     * The cursor an empty window hands back has to be stable <em>and</em> lossless. It is the
+     * start of the trail because an empty window is proof that no row exists in scope below the
+     * ceiling at all — so nothing is skipped that the ceiling would not also have skipped.
+     */
+    @Test
+    void anEmptyWindowsCursorIsTheStartOfTheTrailAndLosesNothingAfterIt() {
+        ShAgentChanges empty = shAgentChangesService.changes(emptySiteName, null, 50, false);
+
+        assertThat(empty.found()).isZero();
+        assertThat(empty.cursor()).startsWith("1970-01-01T00:00:00Z|");
+        assertThat(empty.notes()).anyMatch(note -> note.startsWith("nothing has been recorded"));
+        // The same position over a site that *does* have a trail returns all of it, which is
+        // what "loses nothing" means: the cursor is a floor, not a claim to have read anything.
+        assertThat(descriptions(shAgentChangesService.changes(siteName, empty.cursor(), 50, false)))
+                .containsExactlyElementsOf(descriptions(
+                        shAgentChangesService.changes(siteName, null, 50, false)));
+    }
+
+    private String render(String site, String since) {
+        return ShAgentChangesTerse.render(
+                shAgentChangesService.changes(site, since, 50, false));
     }
 
     /**

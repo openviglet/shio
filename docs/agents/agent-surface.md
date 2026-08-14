@@ -965,9 +965,17 @@ say `Cache-Control: no-cache` (store it, ask first), never a freshness lifetime.
 over the **rendered body** rather than a content digest — those four have no digest of their
 own, and four hand-derived ones would be four things that can quietly disagree with what was
 sent. Hashing the bytes also gets the representation rule for free: a two-field projection
-and a whole document are different bytes. `changes` revalidates in **cursor** mode and not in
-window mode, which is correct — without `since`, its own cursor is the moving edge of the
-feed (SH232).
+and a whole document are different bytes. **`changes` revalidates in *both* modes (SH232)**, and
+the road there is the lesson: SH159 shipped documenting the window as unrevalidatable because its
+cursor was the moving edge of the feed. SH147 then replaced the lag with a watermark and made that
+false for every window that has rows — the cursor became the newest row's position, which does not
+move until somebody writes — and nobody noticed, because a limitation that quietly stops applying
+fails no test. **Measuring it** (two polls, byte-compared, in all three shapes) left exactly one
+case: the **empty** window, whose cursor was the ceiling and so was `now` to the microsecond. It is
+the start of the trail instead — an empty window is proof that no row exists in scope below the
+ceiling, so a floor skips nothing a ceiling would not have skipped — with a note saying so, since
+`cursor=1970-01-01` otherwise reads as a bug. That is the read a session opens with and the one a
+client that kept no cursor repeats, so it is where a `304` is worth the most.
 
 **One rule for an unrecognised parameter value (SH320): a parameter that *selects or bounds work*
 teaches; one that only *adds a section* does not.** So `?format=` and `?digest=` are teaching 400s

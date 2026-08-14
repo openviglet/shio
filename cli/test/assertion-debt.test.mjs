@@ -280,7 +280,7 @@ const DEBT = [
  * judgement no measurement can make. Where it is not, the entry earns a real assertion and the
  * pointer is where to start looking rather than the answer.</p>
  *
- * <p>{@code CLOSE} is the 63 whose mention sits beside an assertion; {@code HEADER} is the 25
+ * <p>{@code CLOSE} is the 62 whose mention sits beside an assertion; {@code HEADER} is the 25
  * named in a class docstring, where the file is about the task and no one assertion carries it.
  * The second group is the more expensive half and it is marked so nobody starts with it by
  * accident.</p>
@@ -324,7 +324,6 @@ const REVEALED = {
   "SH123"  : "ShAgentReadTest.java",
   "SH125"  : "ShAgentJsonLeanTest.java",
   "SH128"  : "ShAgentMoveAndPruneTest.java",
-  "SH147"  : "ShAgentChangesTest.java",
   "SH148"  : "content-commands.test.mjs",
   "SH149"  : "content-commands.test.mjs",
   "SH151"  : "ShAgentBatchTest.java",

@@ -179,9 +179,7 @@ class ShAgentBodyConditionalReadTest {
     /**
      * The poll whose honest answer is usually "nothing", and the one this had to be careful
      * about. It revalidates in <b>cursor</b> mode — the way SH88 intends the feed to be walked,
-     * carrying the previous response's cursor back as {@code since}. It deliberately does not
-     * in window mode, because without {@code since} the response's own cursor <em>is</em> the
-     * moving edge of the feed, so two calls a second apart really are different answers.
+     * carrying the previous response's cursor back as {@code since}.
      *
      * <p>Getting this far turned up a defect worth naming: the lag note used to embed the
      * computed ceiling instant ({@code now - lagMillis}), which made every {@code changes}
@@ -198,6 +196,26 @@ class ShAgentBodyConditionalReadTest {
 
         assertRevalidatesFree(get("/api/v2/agent/changes")
                 .param("site", siteName).param("since", cursor));
+    }
+
+    /**
+     * SH232 — and it revalidates <b>without</b> a cursor too, which SH159 shipped saying it
+     * never would.
+     *
+     * <p>That was true when it was written and stopped being true silently: SH147 replaced the
+     * lag with a watermark, after which a window's cursor is the newest row's position rather
+     * than a computed instant, and does not move until somebody writes. The one case left was
+     * the <em>empty</em> window — this fixture's site has content but no audit trail, so it is
+     * exactly that case — whose cursor was the ceiling and therefore {@code now} to the
+     * microsecond. It is the start of the trail now, which is stable and skips nothing.</p>
+     *
+     * <p>This is the read a session opens with and the read a client that kept no cursor
+     * repeats, so it is the one where a {@code 304} is worth the most.</p>
+     */
+    @Test
+    @DisplayName("SH232: the window poll revalidates too — the read a session opens with")
+    void changesRevalidatesInWindowModeToo() throws Exception {
+        assertRevalidatesFree(get("/api/v2/agent/changes").param("site", siteName));
     }
 
     @Test

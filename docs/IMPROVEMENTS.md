@@ -310,31 +310,6 @@ provenance field the note shape does not have; and writing them to a *file* for 
 review fits P7 and needs no schema change. That last is probably right, which makes this a CLI
 task rather than a server one.
 
-### XIII.12 `/agent/changes` cannot revalidate the way it is most often called (SH232)
-
-After SH159, the change feed answers `304` in cursor mode: an unchanged range is
-byte-identical and free, the SH88 walk as designed. In **window** mode it never will,
-because the response's own cursor is `now - lagMillis` — the moving edge of the feed —
-so two calls a second apart differ.
-
-That is correct, and also the read most repeated by a client that kept no cursor: the
-window is what a session opens with, and "has anything changed since I got here" is
-asked more often than it is answered yes.
-
-Three shapes, in increasing order of how much they concede:
-
-- **Quantise the window cursor** to the second or the configured lag, so consecutive polls
-  inside one tick agree. Cheap, and it makes the cursor less precise than the position it
-  names — the one property SH88 spent a task getting right.
-- **Tag the window response over its `changes` array only**, excluding the cursor. Honest
-  about what the caller is asking (*did anything happen*); a `304` then withholds a cursor —
-  tolerable, since a caller that wanted one should be in cursor mode.
-- **Say nothing and document it**, the current state. Defensible: a client polling the
-  window should keep the cursor it was given, one line in the endpoint's description.
-
-The third is the default and the first is probably wrong. Worth deciding rather than
-leaving to whoever next notices the poll is not free.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
