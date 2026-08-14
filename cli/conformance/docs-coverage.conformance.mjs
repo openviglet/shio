@@ -241,13 +241,13 @@ describe("SH653 conformance: the coverage summary is derived from the coverage t
  */
 describe("SH747 conformance: a newly shipped id cannot slip past the coverage matrix", () => {
   /**
-   * Shipped ids the matrix does not name, on 2026-08-14.
+   * Shipped ids the matrix does not name, on 2026-08-14 (524 when SH747 landed; Block U named six).
    *
    * <p>Lower it when you name one. Raising it means a task shipped and the matrix did not move,
    * which is the whole defect — name the id in its cluster row, or add the 🔒 row saying why there
    * is no page.</p>
    */
-  const UNNAMED = 510;
+  const UNNAMED = 505;
 
   /** Every id the ledger records as SHIPPED. A `🗑` retirement has no surface to document. */
   function shippedIds() {

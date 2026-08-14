@@ -32,8 +32,6 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-## Block U — Documentation the matrix still names
-
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and
