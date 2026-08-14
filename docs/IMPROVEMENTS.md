@@ -548,27 +548,30 @@ expensive.
 
 ### VI.5 Counting a tenant's bytes is the undesigned half (SH45)
 
-Enforcement exists and metering does not, and the reason is not that nobody got to it.
-**Counting storage cheaply is a design problem this task never settled**, and it is what
-SH110's remaining half waits on too.
+The storage half shipped as SH746: `sh_tenant.storage_bytes` is maintained and
+reconciled from the tenant's own directory, so the quota kernel reads bytes in O(1).
+What remains is API-call metering and the billing-export hooks, and the first is **not
+the shape just solved**.
 
-A file's size is stamped by SH399 as `"SIZE"` inside `ShPostUnified.data` — a `String`
-column holding JSON, not a queryable number. So the three candidate shapes are:
+Storage is a **level** — how much is held right now — which is what
+`VigletResourceCounter.count(tenant, resource)` models and why it fit. An API call is a
+**flow**: the question is calls *per period*, and a level counter cannot express one. A
+cumulative column grows forever, and resetting it monthly is a scheduled job nobody has
+designed.
 
-- **Walk `<root>/<tenant>`.** SH47 gives every tenant its own directory, so this is correct and
-  needs no schema. It is also disk I/O proportional to the file count, on a path
-  `VigletQuotaService.check` runs *before every upload*.
-- **Sum `DATA_SIZE` across the tenant's `File` posts.** No disk I/O, but the value is inside a JSON
-  string, so every row must be loaded and parsed — still O(files), and a `JSON_VALUE`/`->>` query
-  that would avoid it is engine-specific, which the SH26 cross-DB ITs and the DB-agnostic changelog
-  rule refuse.
-- **A maintained counter**, incremented on upload and decremented on delete/purge. O(1) at the
-  check, which is the only shape that survives a large tenant — at the cost of drift, so it needs a
-  reconciler and a decision about what happens when the two disagree.
+Shio already counts calls and it cannot be the meter. `ShCdaRateLimiter` is a per-token
+bucket, and its own javadoc says why: buckets live **in this JVM's heap**, so a
+multi-node deployment gets `N ×` the budget, and a restart loses the count. Acceptable
+for a burst guard, which is what it is; disqualifying for anything a bill is computed
+from.
 
-The third is almost certainly right and is the most work. What must not happen is the
-first shipped because it is the shortest diff: a quota check that walks a filesystem is
-a per-upload cost nobody measured, which is the shape P3 exists to refuse.
+So this half is bigger than the storage half was, and blocked on the same upstream
+question as SH110's ceiling: the shared SPI models levels, and both a delta-aware check
+and a windowed counter are changes to Viglet's kernel rather than to Shio.
+
+Two things to settle before any of it: what counts as a call (CDA only, or the agent and
+console surfaces too), and whether the meter must survive a restart — which decides
+between a table and anything cheaper.
 
 ## VII. Content portability
 

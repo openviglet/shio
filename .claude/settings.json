@@ -45,19 +45,7 @@
       "mcp__roadkeep"
     ],
     "deny": [],
-    "ask": [],
-    "additionalDirectories": [
-      "D:\\Git\\viglet\\shio",
-      "D:\\Git\\viglet\\shio\\latest",
-      "D:\\Git\\viglet\\turing\\latest",
-      "D:\\Git\\viglet\\turing\\2026.3",
-      "D:\\Git\\viglet\\vigletdocs\\vigletdocs.github.io",
-      "D:\\Git\\viglet\\openviglet.github.io",
-      "D:\\Git\\viglet\\viglet-design-system",
-      "D:\\Dev\\bin",
-      "D:\\tmp",
-      "C:\\Users\\alexa\\AppData\\Local\\Temp\\claude"
-    ]
+    "ask": []
   },
   "enableAllProjectMcpServers": true,
   "enabledPlugins": {

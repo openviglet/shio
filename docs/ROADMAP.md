@@ -28,7 +28,7 @@
 
 ## Block F — Market positioning
 
-- 📋 **SH45** (deps: SH22 ✅) **Nothing meters API calls, and there are no billing-export hooks** — Storage shipped as SH746, with the counter SPI and plan limits carrying it; API-call metering and the export half are what remain. → §VI.5
+- 💭 **SH45** (deps: SH22 ✅) **Nothing meters API calls, and there are no billing-export hooks** — A call is a flow and the counter SPI models levels; the existing per-token bucket is in-heap and per-node, so it cannot be what a bill is computed from. → §VI.5
 
 ## Block S — The public site (shio.viglet.org)
 
