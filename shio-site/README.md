@@ -123,6 +123,16 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
+**Block F closed on 2026-08-14** with SH45 — API calls metered as a flow, one bucket per
+tenant per UTC day per surface, with a `ShBillingExporter` hook for a closed day. It
+changes no claim on these pages: the site sells the agent surface and the delivery layer,
+and a tenant's invoice is neither.
+
+**Block V closed the same day**, on SH759. Nineteen tasks of proving the vocabulary
+against a running instance rather than against a mock — which is the block a marketing
+page can least honestly quote, since what it bought is confidence that the claims already
+here are true. Nothing to add; that is the point of recording it.
+
 Block O closed on 2026-08-14 and changed no claim here, and the reason is worth one line because
 the block's last task is the kind that usually does move copy. SH244 gave `folder.copy` to the
 agent surface, so P1's own sentence on this site — *"a console-only feature is incomplete"* — has

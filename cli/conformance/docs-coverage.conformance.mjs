@@ -252,7 +252,7 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
    * which is the whole defect — name the id in its cluster row, or add the 🔒 row saying why there
    * is no page.</p>
    */
-  const UNNAMED = 505;
+  const UNNAMED = 490;
 
   /** Every id the ledger records as SHIPPED. A `🗑` retirement has no surface to document. */
   function shippedIds() {
