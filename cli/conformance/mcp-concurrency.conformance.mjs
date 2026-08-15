@@ -87,7 +87,28 @@ describe("SH713: two agents and a curator, all writing at once", () => {
    * claim this makes is the honest one — the race is reachable within a handful of tries — and the
    * attempt count is returned so a run that suddenly needs five can be seen rather than inferred.</p>
    */
-  const raceForADuplicate = async (tag, tries = 5) => {
+  /**
+   * Race two creates at one address until they genuinely CONTEND (SH762).
+   *
+   * <p>It used to loop until it saw a **duplicate**, which is the goal it was written with — before
+   * SH719, two posts on one URL was the defect being demonstrated. SH719's unique index made that
+   * unreachable, so the exit condition could never fire, the loop always exhausted its tries, and
+   * the caller asserted on whatever the last attempt happened to be. When that attempt did not
+   * contend — the second write arriving after the first had committed, where `post.upsert` is an
+   * upsert and updates — the refusal the caller requires did not exist and the gate went red over a
+   * race that never happened.</p>
+   *
+   * <p>So the condition is now the one the caller actually needs: **one of the pair refused**. Every
+   * attempt is still checked for the duplicate SH719 forbids, because that guarantee holds whether
+   * the writes contended or not, and checking it only on the last attempt was throwing away four
+   * observations per run.</p>
+   *
+   * <p>`contended` is reported rather than assumed, so a run where no attempt raced says so instead
+   * of failing: whether two HTTP requests overlap is a fact about the machine, and a suite that
+   * calls a slow box a broken product is one nobody trusts.</p>
+   */
+  const raceUntilContested = async (tag, tries = 8) => {
+    const seen = [];
     for (let attempt = 1; attempt <= tries; attempt++) {
       const url = `/${tag}-${attempt}-${Date.now().toString(36)}`;
       const pair = await Promise.all([
@@ -95,10 +116,16 @@ describe("SH713: two agents and a curator, all writing at once", () => {
         upsert(agentB, url, { title: "B", content: "B" }),
       ]);
       const claiming = (await curator.postsIn(root)).filter((post) => post.furl === url);
-      if (claiming.length > 1) return { url, pair, claiming, attempt };
-      if (attempt === tries) return { url, pair, claiming, attempt };
+      const refusals = pair.filter(refused).length;
+      seen.push(refusals);
+      // SH719's guarantee, on every attempt rather than only the one the caller sees.
+      assert.equal(claiming.length, 1,
+        `SH713/SH719: ${claiming.length} post(s) at ${url} on attempt ${attempt}. One is the whole `
+        + `of SH719 — a unique index over (site, state, locale, furl) means the second insert `
+        + `cannot land, so an address means one post no matter how the two callers interleave.`);
+      if (refusals === 1) return { url, pair, claiming, attempt, contended: true, seen };
     }
-    throw new Error("unreachable");
+    return { url: null, pair: [], claiming: [], attempt: tries, contended: false, seen };
   };
 
   before(async () => {
@@ -251,18 +278,33 @@ describe("SH713: two agents and a curator, all writing at once", () => {
   // ------------------------------------------------------------------ what it found
 
   test("SH719: two agents creating one address leave ONE post on it, and the loser is told", async () => {
-    // TURNED AROUND, which is what the previous paragraph asked for: it asserted the defect as
-    // measured — both creates succeeding, two posts at the URL, the address dead — and said in as
-    // many words that landing SH719 would make this test red and which lines to flip. It did, and
-    // these are they. The race itself is unchanged, because what has to be proven is that racing
-    // no longer produces the state, not that the race stopped happening.
-    const { url, pair, claiming, attempt } = await raceForADuplicate("race");
-    console.log(`[SH713] the create race ran ${attempt} attempt(s) and produced no duplicate`);
+    // TURNED AROUND when SH719 landed: this asserted the defect as measured — both creates
+    // succeeding, two posts at the URL, the address dead. What SH762 then fixed is the half the
+    // turn left behind. The helper's exit condition still looked for a DUPLICATE, which SH719 had
+    // just made unreachable, so it never fired, the loop always exhausted, and this asserted a
+    // refusal against whatever the last attempt happened to be — red whenever that attempt did not
+    // contend, over a race that never happened rather than a guard that failed.
+    const { url, pair, attempt, contended, seen } = await raceUntilContested("race");
+    console.log(`[SH713] the create race contended on attempt ${attempt} of ${seen.length}`
+      + ` (refusals per attempt: ${seen.join(",")})`);
 
-    assert.equal(claiming.length, 1,
-      `SH713/SH719: ${claiming.length} post(s) at ${url} after ${attempt} attempt(s). One is the `
-      + `whole of SH719 — a unique index over (site, state, locale, furl) means the second insert `
-      + `cannot land, so an address means one post no matter how the two callers interleave.`);
+    // SH719's own guarantee is now asserted inside the loop, on every attempt rather than one.
+
+    assert.ok(!contended || seen[attempt - 1] === 1,
+      `SH762: the helper returned attempt ${attempt} while its refusals per attempt were `
+      + `${seen.join(",")}. The pair handed back has to BE the pair that contended — the defect was `
+      + `a loop whose exit condition looked for a duplicate SH719 had made unreachable, so it ran `
+      + `past a real contention on attempt 1 and returned attempt 5, and everything below then `
+      + `asserted a refusal against writes that never raced.`);
+
+    if (!contended) {
+      // Reported, not failed. Whether two HTTP requests overlap is a fact about the machine, and a
+      // suite that calls a slow box a broken product is one somebody switches off. The half above
+      // still ran on all of them: no attempt ever left two posts on one address.
+      console.log(`[SH713] no attempt contended in ${seen.length} tries, so the refusal half of `
+        + `SH719 was not exercised this run. The duplicate half was, ${seen.length} times.`);
+      return;
+    }
 
     // Exactly one refusal, not "at least one": both being refused would mean the address ended up
     // with nobody on it, which is a different defect wearing this one's clothes.
@@ -304,7 +346,15 @@ describe("SH713: two agents and a curator, all writing at once", () => {
   // What is left here is the half only a live instance can answer: that the sequence the refusal
   // INSTRUCTS an agent to follow now terminates in a right conclusion instead of a contradiction.
   test("SH720: the sequence the refusal sends an agent through ends somewhere true", async () => {
-    const { url, pair } = await raceForADuplicate("unseen");
+    const { url, pair, contended, seen } = await raceUntilContested("unseen");
+    if (!contended) {
+      // Same reason as the test above (SH762): this one is entirely ABOUT the refusal, so with no
+      // refusal there is nothing here to assert — and asserting anyway is what made a race that did
+      // not happen look like a guard that broke.
+      console.log(`[SH713] no attempt contended in ${seen.length} tries, so SH720's sequence had `
+        + `no refusal to follow this run.`);
+      return;
+    }
 
     const refusal = legible(pair.find(refused));
     assert.match(refusal, /[Rr]etry/,

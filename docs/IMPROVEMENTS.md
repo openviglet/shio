@@ -678,33 +678,6 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.9 A race test that needs the race to happen (SH762)
-
-`mcp-concurrency.conformance.mjs` fires two creates at one address and requires exactly
-one to be refused — what SH719's unique index guarantees *when the two contend*. On
-2026-08-15 it answered `0 of the two creates were refused`: the first created, the
-second **updated**, because it arrived after the first had committed and `post.upsert`
-is an upsert. Re-run on the same build minutes later: green.
-
-The retry is there and is not enough. `raceForADuplicate` tries several times and prints
-how many — the passing run said *"ran 5 attempt(s) and produced no duplicate"* and
-passed anyway, so the loop gives up and the assertion is made regardless of whether the
-condition it needs was reached. Both runs agree the race did not happen; only one called
-it a failure.
-
-The assertion and its precondition are not separated. What the suite can honestly claim
-has two halves: **if** the writes collided, exactly one is refused and told to retry —
-and **that a collision is reachable**, which is a property of the fixture, not the
-product.
-
-Two shapes, and the choice wants measuring. Report the unreached precondition as a skip
-with its attempt count, which stays honest and loses coverage on a slow machine; or make
-the collision deterministic by holding both requests until released, which proves more
-and costs a test-only seam on a write path.
-
-Not attributed to any change here: red once, green once, on one build — and one sighting
-each way is not a diagnosis (SH756's rule).
-
 ## XXV Realignment of what already shipped (Block N)
 
 Where the rationale for Block N lives. The block is a standing category rather than a

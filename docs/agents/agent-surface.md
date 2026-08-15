@@ -2314,3 +2314,32 @@ and requires the number to move — and it is also the first live read of any MC
 
 This is SH751's shape one subsystem over: complete everywhere except the line that connects it,
 with every surface reporting success.
+
+## A race test that was discarding the race it found (SH762)
+
+`mcp-concurrency.conformance.mjs` went red once and green minutes later on one build, saying
+`0 of the two creates were refused`. The obvious reading — a slow machine failing to make two
+requests overlap — was wrong, and the measurement is what said so.
+
+The helper was called `raceForADuplicate` and it looped **until it saw a duplicate**: two posts on
+one URL, which is the defect SH719 was demonstrating *before* SH719 fixed it. The unique index made
+that unreachable, so the exit condition could never fire. The loop ran all five attempts every time
+and the caller asserted a refusal against **whatever the last attempt happened to be** — discarding
+a genuine contention on attempt 1 and then failing on attempt 5.
+
+**Measured after the fix: contention on attempt 1, three runs out of three.** Racing was never the
+rare part; stopping when it happened was the missing part.
+
+So the exit condition is now the one the caller needs — **one of the pair refused** — and the helper
+is `raceUntilContested`. Two consequences worth keeping:
+
+- **SH719's guarantee is asserted on every attempt**, not just the one returned. That check ("one
+  post at this address, whatever the interleaving") holds whether the writes contended or not, and
+  checking it only on the last attempt was throwing away four observations per run.
+- **An uncontended run reports and does not fail.** Whether two HTTP requests overlap is a fact
+  about the machine, and a suite that calls a slow box a broken product is one somebody switches
+  off. The duplicate half still ran on all attempts, and the log says which half was exercised.
+
+The general shape, which is the reusable part: **a test whose assertion has a precondition it does
+not control must separate the two.** Asserting anyway is how a condition that never arose reads as a
+guarantee that broke.
