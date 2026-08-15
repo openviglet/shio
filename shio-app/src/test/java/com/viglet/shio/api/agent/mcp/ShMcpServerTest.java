@@ -414,6 +414,35 @@ class ShMcpServerTest {
         assertThat(error.get("data").toString()).contains("new-site");
     }
 
+    @Test
+    @DisplayName("SH757: a refusal names its kind, so a client can branch without matching English")
+    void aRefusalCarriesItsSlug() {
+        // The defect, at the boundary it crossed. Every REST refusal carries
+        // `type: https://shio.viglet.com/errors/<slug>` and no MCP one did: renderProblem emitted
+        // title, detail, fix, didYouMean, allowed, example and `at`, and never the type. Measured
+        // live, `folder.copy` into its own subtree answered four lines of good prose in which
+        // `folder-copy-cycle` appeared nowhere — so the reader whose ONLY surface is MCP (the
+        // Claude Code plugin wires an .mcp.json and nothing else) could tell one refusal from
+        // another only by matching sentences.
+        //
+        // The wire golden could not have caught it: `tools-call-error.json` redacts the text as
+        // `#string`, so it pins the SHAPE of an error result and is blind to what the model reads.
+        ObjectNode arguments = objectMapper.createObjectNode();
+        arguments.put("address", "post:no-such-site-sh757/nothing");
+
+        JsonNode refusal = callTool("shio_read", arguments);
+
+        assertThat(refusal.get("isError").asBoolean())
+                .as("SH757: the fixture has to REFUSE, or the assertion below is about a success")
+                .isTrue();
+        assertThat(text(refusal))
+                .as("SH757: an MCP refusal has to name its kind. `Type: <slug>` is the bare last "
+                        + "segment, not the https://shio.viglet.com/errors/ URI — that prefix is a "
+                        + "constant 34 characters on every refusal and the segment is the whole of "
+                        + "what anybody compares (P3).")
+                .containsPattern("(?m)^Type: [a-z0-9-]+$");
+    }
+
     private JsonNode callTool(String name, ObjectNode arguments) {
         ObjectNode params = objectMapper.createObjectNode();
         params.put("name", name);

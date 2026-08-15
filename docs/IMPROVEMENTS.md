@@ -701,6 +701,30 @@ is the moment they are furthest from it.
 Not urgent, and it should not be made so. A ratchet that fires late still fires — the
 failure this prevents is the silent one, and that is already prevented.
 
+### XXIV.6 A window that reopens only if the clock happens to tick (SH759)
+
+`ShAgentSessionBudgetTest.theWindowReopens` sets the session window to **one
+nanosecond** and spends twice, on the argument that a window already elapsed by the
+second call proves the reset without a sleep. The comment is right about the intent and
+wrong about the mechanism.
+
+`ShAgentSessionBudget.spend` keeps the window when `resetsAt.isAfter(now)`. The first
+call sets `resetsAt = now + 1ns`. If the second call's `Instant.now()` returns the
+**same** instant — which it does whenever the clock's granularity is coarser than the
+gap, and on Windows it is by orders of magnitude — then `resetsAt` is still 1ns ahead,
+the window is kept, and the second spend is refused. Green on runs where the tick lands
+between the two calls; red when it does not. Seen once on 2026-08-14, after many green
+runs on the same tree.
+
+Unlike SH756 this one is not a mystery: the mechanism is readable in ten lines, and the
+fix follows from it. `spend` reads the wall clock directly, so the test has nothing to
+inject — a `Clock` on the service is what turns "an hour has passed" into an assertion
+rather than a hope, and it is the shape `ShTenantApiCallMeter` already takes.
+
+Worth filing rather than nudging the duration: a longer window makes the failure rarer
+without making it impossible, which is the change that turns a diagnosable flake into an
+undiagnosable one. SH250's rule is that a flake is worse than a break.
+
 ## XXV Realignment of what already shipped (Block N)
 
 Where the rationale for Block N lives. The block is a standing category rather than a

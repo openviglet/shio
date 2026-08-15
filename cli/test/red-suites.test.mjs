@@ -215,7 +215,21 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
   const recorded = stamps(root);
   const declared = new Set(exceptions.map((entry) => entry.suite));
 
+  // The gate this test is running INSIDE, which it therefore cannot judge. `js` writes its stamp
+  // when the run ends, so the only one on disk here is the PREVIOUS run's — and reading it would
+  // make one red `pnpm test` fail the next one for a failure that has already been fixed, then
+  // pass on the third. That is a one-run lag that reads as "still broken", which is how an
+  // instrument teaches people to re-run it twice and believe neither answer.
+  //
+  // Nothing is lost: `ShDeclaredRedTest` reads the js stamp from inside the Java gate, and it is
+  // the one that caught this. Each comparator judges the other two, which is the same rule the
+  // Java side already states for its own row.
+  const SELF = "js";
+
   const lines = GATES.map((gate) => {
+    if (gate === SELF) {
+      return `  ${gate} — this suite, running now (its stamp is written when it ends)`;
+    }
     const seen = recorded[gate];
     if (!seen) {
       return `  ${gate} — no run recorded in this tree`;
@@ -226,8 +240,10 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
   });
   console.log(`SH755: the gates, as last run here\n${lines.join("\n")}`);
 
-  const undeclared = GATES.filter((gate) => recorded[gate]?.red && !declared.has(gate));
-  const stale = [...declared].filter((gate) => recorded[gate] && !recorded[gate].red);
+  const judged = GATES.filter((gate) => gate !== SELF);
+  const undeclared = judged.filter((gate) => recorded[gate]?.red && !declared.has(gate));
+  const stale = [...declared].filter((gate) =>
+    gate !== SELF && recorded[gate] && !recorded[gate].red);
 
   assert.deepEqual(undeclared, [],
     "SH755: this gate answered red here and the ledger says nothing about it. That is the third "
@@ -247,20 +263,26 @@ test("SH755: the comparator fires in both directions, and an absent stamp fires 
   // whatever the last run left, so an assertion about them would be a test of this afternoon.
   const declared = new Set(["conformance"]);
   const world = {
+    java: { red: true },
     js: { red: true },
     conformance: { red: false },
   };
+  const judged = GATES.filter((gate) => gate !== "js");
 
-  const undeclared = GATES.filter((gate) => world[gate]?.red && !declared.has(gate));
-  const stale = [...declared].filter((gate) => world[gate] && !world[gate].red);
+  const undeclared = judged.filter((gate) => world[gate]?.red && !declared.has(gate));
+  const stale = [...declared].filter((gate) => gate !== "js" && world[gate] && !world[gate].red);
 
-  assert.deepEqual(undeclared, ["js"],
+  assert.deepEqual(undeclared, ["java"],
     "a red gate with no entry has to be named — that is the whole finding SH755 records");
   assert.deepEqual(stale, ["conformance"],
     "and an entry whose gate has gone green has to be named too, or the exception outlives its red");
-  assert.deepEqual(GATES.filter((gate) => world[gate] === undefined), ["java"],
-    "the gate nobody ran here is neither: a fresh clone must not open red about a command it has "
-    + "never been asked to run");
+  assert.ok(!undeclared.includes("js"),
+    "SH755: `js` is the gate this very suite runs inside, and its stamp on disk is the PREVIOUS "
+    + "run's — judging it here makes one red run fail the next one for a failure already fixed. "
+    + "ShDeclaredRedTest reads it from the Java gate, which is where it can be true.");
+  assert.deepEqual(GATES.filter((gate) => world[gate] === undefined), [],
+    "the gate nobody ran here is neither red nor declared: a fresh clone must not open red about "
+    + "a command it has never been asked to run");
 });
 
 test("SH579: the rules fire — every one of them, on an entry built to break it", () => {

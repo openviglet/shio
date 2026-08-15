@@ -21,6 +21,7 @@
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
 - 📋 **SH758** (deps: SH757 ✅, SH747 ✅) **A ship here and its page there are two commits in two repositories, and only a ratchet ties them** — COVERAGE.md lives in vigletdocs, so the obligation is discovered by a gate days later rather than carried by the commit that created it. → §XXIV.5
+- 📋 **SH759** (deps: SH734 ✅) **theWindowReopens asks a 1ns window to elapse between two Instant.now() calls, and sometimes it has not** — The reset is observed only if the clock ticks between two adjacent reads, and Windows granularity is coarser than that gap, so the guard reads as a permanent ban. → §XXIV.6
 
 ## Non-goals (do NOT add as tasks)
 
