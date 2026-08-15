@@ -12,7 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,10 +43,47 @@ class ShAgentSessionBudgetTest {
     private ShAgentProperties properties;
     private ShAgentSessionBudget budget;
 
+    /**
+     * The instant the guard reads, moved by the tests rather than waited on (SH759).
+     *
+     * <p>A window closing is a fact about time, and the only honest way to assert it is to move
+     * time. The previous shape set the window to one nanosecond and hoped the machine's clock
+     * ticked between two adjacent reads — which it does most runs and did not on 2026-08-14.</p>
+     */
+    private final AtomicReference<Instant> now =
+            new AtomicReference<>(Instant.parse("2026-08-14T12:00:00Z"));
+
+    /**
+     * A clock that reads {@link #now}, so a test moves time instead of waiting for it.
+     *
+     * <p>Not {@code Clock.fixed}, which is final and fixed in both senses — the point is that this
+     * one moves. Three methods because {@link Clock} is abstract; only {@code instant} matters here
+     * and the other two are the contract.</p>
+     */
+    private Clock movingClock() {
+        return new Clock() {
+            @Override
+            public ZoneId getZone() {
+                return ZoneOffset.UTC;
+            }
+
+            @Override
+            public Clock withZone(ZoneId zone) {
+                return this;
+            }
+
+            @Override
+            public Instant instant() {
+                return now.get();
+            }
+        };
+    }
+
     @BeforeEach
     void setUp() {
         properties = new ShAgentProperties();
-        budget = new ShAgentSessionBudget(properties);
+        now.set(Instant.parse("2026-08-14T12:00:00Z"));
+        budget = new ShAgentSessionBudget(properties, movingClock());
     }
 
     @Test
@@ -106,13 +148,26 @@ class ShAgentSessionBudgetTest {
     @DisplayName("SH734: a spent window reopens when it resets")
     void theWindowReopens() {
         properties.getBatch().setMaxSessionOps(1);
-        // A window that has already elapsed by the time the second call reads it, so the reset is
-        // observed without the test waiting an hour — the behaviour, not a sleep.
-        properties.getBatch().setSessionWindow(Duration.ofNanos(1));
+        properties.getBatch().setSessionWindow(Duration.ofHours(1));
 
         budget.spend(1);
+        assertThatThrownBy(() -> budget.spend(1))
+                .as("SH759: the precondition. Without this the test below could pass against a "
+                        + "guard that never charged anything, which is the way a reopening test "
+                        + "most easily becomes vacuous")
+                .isInstanceOf(ShAgentSessionBudget.SessionBudgetException.class);
+
+        // SH759 — the window is MOVED past, not waited out and not shrunk to a nanosecond. The
+        // previous shape set the window to 1ns and spent twice, on the argument that a window
+        // already elapsed needs no sleep; but `Instant.now()` returns the same instant twice
+        // whenever the clock's granularity is coarser than the gap, so the reset was observed only
+        // when a tick happened to land between two adjacent reads. Green most runs, red once.
+        now.updateAndGet(instant -> instant.plus(Duration.ofHours(1)).plusSeconds(1));
+
         assertThatCode(() -> budget.spend(1))
-                .as("a fixed window ends; the guard is a runaway brake, not a permanent ban")
+                .as("SH759: a fixed window ends; the guard is a runaway brake, not a permanent ban "
+                        + "— and this now asserts the hour passing rather than hoping a machine "
+                        + "was slow enough to notice a nanosecond")
                 .doesNotThrowAnyException();
     }
 

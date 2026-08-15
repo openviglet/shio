@@ -154,3 +154,33 @@ string is not enough to choose a fix from — an indexer holding the freshly unp
 destination left behind by an earlier run (24 stale `junit-*` directories were in `%TEMP%` when it
 fired), or `ATOMIC_MOVE` unsupported across those two directories are all still open. The next
 sighting will name its own class, which is what makes it decidable instead of a guess.
+
+## A window that reopened only if the clock happened to tick (SH759)
+
+`ShAgentSessionBudgetTest.theWindowReopens` set the session window to **one nanosecond** and spent
+twice, on the argument that a window already elapsed by the second call proves the reset without a
+sleep. The intent was right and the mechanism was not.
+
+`spend` keeps the window while `resetsAt.isAfter(now)`. The first call sets `resetsAt = now + 1ns`.
+If the second call's `Instant.now()` returns the **same** instant — which it does whenever the
+clock's granularity is coarser than the gap, and on Windows it is by orders of magnitude — the
+window is kept and the second spend is refused. Green on runs where a tick landed between two
+adjacent reads; red on 2026-08-14 after many green runs on the same tree.
+
+**A window closing is a fact about time, so the test moves time.** `ShAgentSessionBudget` takes a
+`Clock` — the same shape `ShTenantApiCallMeter` uses, a public constructor for Spring and a
+package-private one for a test — and `theWindowReopens` advances an hour instead of hoping the
+machine was slow enough to notice a nanosecond. It also asserts the refusal **before** advancing:
+without that, the test would pass against a guard that never charged anything, which is how a
+reopening test most easily goes vacuous.
+
+**Nudging the duration would have been worse than leaving it.** A longer window makes the failure
+rarer without making it impossible, which turns a diagnosable flake into an undiagnosable one —
+SH250's rule is that a flake is worse than a break.
+
+**No lint, and the survey is the reason.** SH338 says the instrument that finds every *other* break
+lands before the fixes, so the tree was searched for the same smell: a sub-millisecond `Duration`
+standing in for elapsed time. The population was **one** — this test. An instrument over a
+population that is about to be zero, keyed on a guess at how somebody might write the mistake next
+time, is speculation with a build cost; the survey is recorded here instead, which is what makes it
+checkable if the answer ever changes.

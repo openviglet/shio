@@ -18,10 +18,6 @@
 - 💭 **SH110** (deps: SH746 ✅, SH106 ✅, viglet-quota-spi) **The storage meter landed, so what blocks the ceiling is a delta-aware check in the shared quota SPI** — SH746 counts the bytes; the ceiling needs check(resource, delta) upstream, since the current call compares a total and one upload can exceed it. → §XII.5
 - 📋 **SH750** (deps: SH244 ✅, SH110, viglet-quota-spi) **One write that creates N posts asks the post quota once, so a bulk copy overshoots the plan by N-1** — checkCanCreatePost compares a total against the limit, which is exact only for a write that adds one; SH110 names the same missing SPI for bytes. → §XII.28
 
-## Block V — The vocabulary proved live (integration tests against a running instance)
-
-- 📋 **SH759** (deps: SH734 ✅) **theWindowReopens asks a 1ns window to elapse between two Instant.now() calls, and sometimes it has not** — The reset is observed only if the clock ticks between two adjacent reads, and Windows granularity is coarser than that gap, so the guard reads as a permanent ban. → §XXIV.6
-
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and

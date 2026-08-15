@@ -8,12 +8,14 @@
  */
 package com.viglet.shio.api.agent;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.error.ShProblem;
@@ -72,8 +74,31 @@ public class ShAgentSessionBudget {
     private final ShAgentProperties properties;
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
 
+    /**
+     * The clock this guard reads (SH759).
+     *
+     * <p>Injectable because <b>a window closing is a fact about time</b>, and a test that cannot
+     * move time can only ask the machine to be slow enough. {@code theWindowReopens} used to set
+     * the window to one nanosecond and spend twice, on the argument that a window already elapsed
+     * needs no sleep — but the second {@code Instant.now()} returns the <em>same</em> instant
+     * whenever the clock's granularity is coarser than the gap, which on Windows it is by orders
+     * of magnitude. So the reset was observed only when a tick happened to land between two
+     * adjacent reads: green most runs, red on 2026-08-14, and a flake is worse than a break
+     * (SH250).</p>
+     *
+     * <p>Same shape {@code ShTenantApiCallMeter} takes, and for the same reason: the default
+     * constructor is the one Spring uses and the package-private one is what a test drives.</p>
+     */
+    private final Clock clock;
+
+    @Autowired
     public ShAgentSessionBudget(ShAgentProperties properties) {
+        this(properties, Clock.systemUTC());
+    }
+
+    ShAgentSessionBudget(ShAgentProperties properties, Clock clock) {
         this.properties = properties;
+        this.clock = clock;
     }
 
     /**
@@ -89,7 +114,7 @@ public class ShAgentSessionBudget {
             return;
         }
         Duration length = properties.getBatch().getSessionWindow();
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         String caller = caller();
         evictExpired(now);
 
