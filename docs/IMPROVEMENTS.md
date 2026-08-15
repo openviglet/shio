@@ -678,6 +678,53 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
+### XXIV.7 The fourth population the matrix cannot count (SH760)
+
+`live-coverage.test.mjs` holds three populations by name — MCP **tools**, batch **ops**,
+CLI **verbs** — and reports which a running instance has been asked. Grepping
+`cli/conformance/` for `resources/read` or `shio://` returns **nothing**: not one of the
+eight registered `ShMcpResource` beans has ever been read from a live instance.
+
+The uncovered surface is the ordinary half. The instrument's blind spot is the other,
+and it is the shape SH596 recorded one level up: *a classification can only be as honest
+as its categories allow*. Here the matrix cannot ask about resources at all, so it
+reports full coverage of three populations while a fourth sits at zero — and reads as
+reassurance.
+
+It matters more than a fourth list sounds. `mcp.md` says MCP is not one surface among
+several for a plugin user, it is **the only one**, and three of the eight exist for that
+reader: `shio://ops` is the write vocabulary, `shio://diagnostics` the failure report,
+`shio://usage` the spend. Each was argued as the route an MCP-only client would
+otherwise not have, and none has been proved to answer over the wire.
+
+The instrument first (SH338): a `resources` population beside the other three, held as a
+declared list so a resource arriving with no live coverage is a diff somebody reads.
+What that list then demands is the second question, and the honest expectation is that
+it opens at eight of eight.
+
+### XXIV.8 A meter proved everywhere except where it runs (SH761)
+
+SH45's meter is covered by unit tests that call `record` and `flush` directly. What no
+test drives is the path that makes it a meter: a **real request** arriving, being
+classified by surface, and counted against the tenant the security chain resolved.
+
+That path has a precondition a MockMvc proof cannot reproduce. The filter is mounted at
+`LOWEST_PRECEDENCE - 30` precisely so it runs *inside* the Spring Security chain, where
+`ShTenantFilter` has resolved the tenant and has not yet run the clear it always does on
+the way out. Mounted anywhere else it reads an empty tenant and files nothing — a meter
+returning zero, which is indistinguishable from an instance nobody used.
+
+**SH751 is what this gap costs, one subsystem over.** There, `record`, `reconcile` and
+the counter wiring all shipped and nothing in production ever called `record`; every
+surface reported success and the figure stayed at zero for as long as anybody looked.
+
+The scenario is small and the fixture exists. Drive a few calls over the three surfaces
+against a scratch site, flush, and require the counts to move by what was sent — then
+read them back through `shio://usage` and `?include=usage`, which is the same document
+and is SH760's population. What makes it worth a live run rather than a wider unit test
+is that the tenant, the chain order and the flush are things only a real instance
+arranges.
+
 ## XXV Realignment of what already shipped (Block N)
 
 Where the rationale for Block N lives. The block is a standing category rather than a
