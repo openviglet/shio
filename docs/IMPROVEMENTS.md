@@ -678,29 +678,6 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.5 The obligation a ship does not carry (SH758)
-
-SH747's ratchet works: it caught six ids in one session and five in the next. What it
-cannot do is catch them *when they are made*. The matrix is in **vigletdocs** and the
-ship is here, so the sequence is always the same — several tasks ship, the count rises,
-and a conformance run days later hands somebody a list of ids whose reasons have gone
-cold. Naming them then is archaeology.
-
-Two shapes are worth weighing rather than assuming. **Carry it at the ship**: `roadkeep
-ship` knows the id and the outcome, and could emit the cluster sentence to paste, so the
-id arrives with words written by whoever still knows them. **Or measure it here**: the
-ratchet reads `CHANGELOG.md` from this repository and `COVERAGE.md` from another, and
-that asymmetry is the difficulty; a manifest in this tree would make the gate local, at
-the cost of a second place that can drift from the pages.
-
-Neither is obviously right, which is why this is a task rather than a fix. What is clear
-is that the current shape puts the discovery as far as possible from the knowledge: the
-person who can write the sentence is the one who shipped, and the moment they are asked
-is the moment they are furthest from it.
-
-Not urgent, and it should not be made so. A ratchet that fires late still fires — the
-failure this prevents is the silent one, and that is already prevented.
-
 ### XXIV.6 A window that reopens only if the clock happens to tick (SH759)
 
 `ShAgentSessionBudgetTest.theWindowReopens` sets the session window to **one

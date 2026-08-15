@@ -42,6 +42,8 @@ import { dirname, join } from "node:path";
 import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { namedIn } from "../../scripts/coverage-mirror.mjs";
+
 // @scans prose reason: COVERAGE.md is Markdown and its table rows ARE the subject — the
 // summary is derived from them, so nothing here can be stripped away (SH740).
 
@@ -49,6 +51,9 @@ const DOCS = process.env.SHIO_DOCS_DIR
   ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
 
 const MATRIX = "COVERAGE.md";
+
+/** This repository, where SH758's mirror of the matrix lives. */
+const SHIO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** The verdicts a status cell may carry, in the order the summary reports them. */
 const STATUSES = ["✅", "🧩", "⚠️", "🔴"];
@@ -258,6 +263,25 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
     const ledger = readFileSync(join(root, "docs", "CHANGELOG.md"), "utf8");
     return [...ledger.matchAll(/^- \*\*(SH\d+)\*\*/gm)].map(([, id]) => id);
   }
+
+  test("SH758: the mirror in the Shio tree still agrees with the matrix it was taken from", () => {
+    // The mirror exists so `pnpm test` can ask, minutes after a ship, what COVERAGE.md does not
+    // name yet — the matrix is in another repository, so without a copy that question can only be
+    // asked from here, days later, by somebody who has forgotten why.
+    //
+    // A copy of a fact is the shape SH673 says drifts, so this is what stops it: the copy is
+    // generated, never edited, and THIS suite — the one reading the real file — holds the two in
+    // agreement. A mirror somebody hand-edited, or left stale across a matrix change, fails here.
+    const held = JSON.parse(readFileSync(join(SHIO_ROOT, "docs", "coverage-named.json"), "utf8"));
+    const named = namedIn(matrix());
+
+    assert.deepEqual(held.named, named,
+      "SH758: docs/coverage-named.json and COVERAGE.md name different sets. The mirror is "
+      + "generated and never edited — regenerate it in the same commit that changes the matrix: "
+      + "SHIO_DOCS_DIR=<path>/docs-shio pnpm run coverage:mirror. "
+      + "Two copies of one fact only stay honest while something compares them, and this is that "
+      + "something.");
+  });
 
   test("SH747: the count of shipped ids the matrix does not name never rises", () => {
     const text = matrix();

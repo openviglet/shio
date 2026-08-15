@@ -33,6 +33,7 @@
     "lint": "pnpm -r run lint",
     "test": "node scripts/test-with-log.mjs",
     "test:raw": "pnpm --filter @viglet/shio-client --filter @viglet/shio-model --filter @viglet/shio-sections --filter @viglet/create-shio-app --filter @viglet/shio --filter @viglet/shio-claude-plugin --filter shio-react --filter shio-site run test",
+    "coverage:mirror": "node scripts/coverage-mirror.mjs",
     "conformance": "node scripts/conformance-with-log.mjs",
     "conformance:raw": "pnpm --filter @viglet/shio run conformance",
     "conformance:docs": "pnpm --filter @viglet/shio run conformance:docs",
