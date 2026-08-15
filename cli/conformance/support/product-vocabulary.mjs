@@ -195,6 +195,24 @@ export function mcpTools(dir = join(JAVA_MAIN, "com", "viglet", "shio", "api", "
 }
 
 /**
+ * The MCP resource URIs this build registers (SH760).
+ *
+ * <p>Read from the beans rather than listed, for `mcpTools`' reason: a hand-typed vocabulary is
+ * the thing that rots. A **template** is kept as its declared prefix — `shio://schema/` — because
+ * that is what `ShMcpResource#matches` keys on and therefore what a caller must get right; the
+ * variable after it is the caller's own, and a population that expanded it would be counting
+ * post-types rather than resources.</p>
+ */
+export function mcpResources(dir = join(JAVA_MAIN, "com", "viglet", "shio", "api", "agent", "mcp")) {
+  const uris = new Set();
+  for (const file of javaFiles(dir)) {
+    for (const [, uri] of readFileSync(file, "utf8").matchAll(/"(shio:\/\/[^"]*)"/g)) uris.add(uri);
+  }
+  if (!uris.size) throw new Error(`SH760: no MCP resource URIs found under ${dir}`);
+  return uris;
+}
+
+/**
  * The field names a `@ConfigurationProperties` class declares.
  *
  * <p>Cut-then-split rather than one regex: a type is `[\w.<>,\s]` and a name is `\w`, so the two

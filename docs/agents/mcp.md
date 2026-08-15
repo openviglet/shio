@@ -324,3 +324,31 @@ prints nothing, because that is the absence of a kind rather than a kind called 
 `tools-call-error.json` redacts the text as `#string`, so it pins the *shape* of an error result
 and is blind to everything the model actually reads. What caught it was a live suite asserting a
 string, which is the tier that exists for exactly this gap.
+
+## The population nobody could ask about (SH760)
+
+`cli/test/live-coverage.test.mjs` reports which of the agent's vocabulary a **running instance** has
+ever been asked, and it held three populations: MCP tools, batch ops, CLI verbs. **Resources were
+not one of them**, so the matrix reported full coverage of three while a fourth sat at zero — and
+that reads as reassurance.
+
+Measured when the population was added: **0 of 8**. Not one `ShMcpResource` had ever been fetched
+over the wire. Three of them exist *specifically* for the reader with no other route —
+`shio://ops` is the write vocabulary (SH332), `shio://diagnostics` the failure report (SH596),
+`shio://usage` the spend (SH754) — and each was argued into being in prose without once being read
+from an instance.
+
+**This is SH596's lesson one level down**: a classification can only be as honest as its categories
+allow. There, `Reach` had no way to say "a resource delivers this", so a neighbouring capability was
+recorded and the check came back green over the gap. Here the matrix had no way to *ask*.
+
+Mechanics: `mcpResources()` reads the URIs from the beans (never a typed list, for `mcpTools`'
+reason), `mcp.readResource(uri)` is the one greppable call shape, and a **template** is held by the
+prefix `ShMcpResource#matches` keys on — reading `shio://schema/Page` covers `shio://schema/`.
+`UNEXERCISED.resources` opens at all eight, so a resource arriving with no live coverage is a diff
+somebody reads rather than a percentage that absorbs it.
+
+**The vacuity guard matters more here than for the other three**, because this population opens at
+zero: a reader that had stopped matching would print the same finding it shipped to report. So it is
+driven against a sample where the answer is known — a fetched URI counts, a URI named in prose does
+not, and one template is not credited by another being read.

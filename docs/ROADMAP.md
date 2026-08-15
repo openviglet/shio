@@ -20,8 +20,7 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH760** (deps: SH707 ✅, SH596 ✅) **No live suite has ever read an MCP resource, and the coverage matrix has no population to say so** — It counts tools, ops and verbs; resources are a fourth delivery category since SH596, so eight of them are uncovered in a way nothing can report. → §XXIV.7
-- 📋 **SH761** (deps: SH45 ✅, SH754 ✅, SH760) **Nothing proves the API-call meter records anything on a running instance** — Its filter only counts inside the security chain on a real request, which is the one condition a MockMvc proof cannot create, and SH751 is what that gap costs. → §XXIV.8
+- 📋 **SH761** (deps: SH45 ✅, SH754 ✅, SH760 ✅) **Nothing proves the API-call meter records anything on a running instance** — Its filter only counts inside the security chain on a real request, which is the one condition a MockMvc proof cannot create, and SH751 is what that gap costs. → §XXIV.8
 
 ## Non-goals (do NOT add as tasks)
 

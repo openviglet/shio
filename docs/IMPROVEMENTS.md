@@ -678,30 +678,6 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.7 The fourth population the matrix cannot count (SH760)
-
-`live-coverage.test.mjs` holds three populations by name — MCP **tools**, batch **ops**,
-CLI **verbs** — and reports which a running instance has been asked. Grepping
-`cli/conformance/` for `resources/read` or `shio://` returns **nothing**: not one of the
-eight registered `ShMcpResource` beans has ever been read from a live instance.
-
-The uncovered surface is the ordinary half. The instrument's blind spot is the other,
-and it is the shape SH596 recorded one level up: *a classification can only be as honest
-as its categories allow*. Here the matrix cannot ask about resources at all, so it
-reports full coverage of three populations while a fourth sits at zero — and reads as
-reassurance.
-
-It matters more than a fourth list sounds. `mcp.md` says MCP is not one surface among
-several for a plugin user, it is **the only one**, and three of the eight exist for that
-reader: `shio://ops` is the write vocabulary, `shio://diagnostics` the failure report,
-`shio://usage` the spend. Each was argued as the route an MCP-only client would
-otherwise not have, and none has been proved to answer over the wire.
-
-The instrument first (SH338): a `resources` population beside the other three, held as a
-declared list so a resource arriving with no live coverage is a diff somebody reads.
-What that list then demands is the second question, and the honest expectation is that
-it opens at eight of eight.
-
 ### XXIV.8 A meter proved everywhere except where it runs (SH761)
 
 SH45's meter is covered by unit tests that call `record` and `flush` directly. What no

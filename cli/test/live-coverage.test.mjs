@@ -42,7 +42,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { cliVerbs, mcpTools } from "../conformance/support/product-vocabulary.mjs";
+import { cliVerbs, mcpResources, mcpTools } from "../conformance/support/product-vocabulary.mjs";
 import { code } from "./support/source-text.mjs";
 
 // @scans code reason: it reads the conformance suites to find which verbs are exercised, and a
@@ -94,6 +94,28 @@ function batchOps() {
  */
 function toolsCalled() {
   return new Set([...SOURCE.matchAll(/\bcall\(\s*["'`]([a-z_]+)["'`]/g)].map((m) => m[1]));
+}
+
+/**
+ * Resources reached through `readResource("…")` (SH760).
+ *
+ * <p>The same rule the two readers around it apply: <b>call syntax with a literal argument</b>. A
+ * `shio://…` in prose is what a comment does, and every one of the eight was argued for in prose
+ * before this asked whether any had been fetched.</p>
+ *
+ * <p>Templates are matched by their declared prefix, because that is what `ShMcpResource#matches`
+ * keys on — a scenario reading `shio://schema/Page` has exercised `shio://schema/`, and asking it
+ * to name the literal prefix would be asking it to fetch a URI the server refuses.</p>
+ */
+function resourcesCalled(declared) {
+  const asked = [...SOURCE.matchAll(/\breadResource\(\s*[`"']([^`"']+)[`"']/g)].map((m) => m[1]);
+  const covered = new Set();
+  for (const uri of asked) {
+    for (const known of declared) {
+      if (uri === known || (known.endsWith("/") && uri.startsWith(known))) covered.add(known);
+    }
+  }
+  return covered;
 }
 
 /** Ops reached as `op: "…"` inside an ops array handed to the batch surface. */
@@ -184,6 +206,22 @@ const UNEXERCISED = {
     "folder.delete", "folder.restore",
     "post.move", "post.restore", "post.unpublish", "site.delete", "site.restore",
   ],
+  /**
+   * The MCP resources no live suite has ever read (SH760).
+   *
+   * <p>It opens at **eight of eight**, which is the finding rather than an oversight: the
+   * population did not exist, so nothing had ever asked. Three of these were argued into being
+   * precisely as the route an MCP-only client would otherwise not have — `shio://ops` is the write
+   * vocabulary (SH332), `shio://diagnostics` the failure report (SH596), `shio://usage` the spend
+   * (SH754) — and each was reasoned about in prose without once being fetched over the wire.</p>
+   *
+   * <p>`shio://schema/` and `shio://blueprint/` are templates, held by the prefix
+   * `ShMcpResource#matches` keys on: reading `shio://schema/Page` covers the entry.</p>
+   */
+  resources: [
+    "shio://blueprint/", "shio://blueprints", "shio://context", "shio://diagnostics",
+    "shio://manifest", "shio://ops", "shio://schema/", "shio://usage",
+  ],
   verbs: [
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is
     // more useful than the count:
@@ -199,10 +237,15 @@ const UNEXERCISED = {
 };
 
 test("SH707: the live tier's coverage of the agent vocabulary is the declared list", () => {
+  const resources = mcpResources();
   const populations = {
     tools: { all: mcpTools(), called: toolsCalled() },
     ops: { all: batchOps(), called: opsCalled() },
     verbs: { all: cliVerbs(), called: verbsCalled() },
+    // SH760 — the fourth. It was absent, and the absence was the finding: the matrix reported full
+    // coverage of three populations while a fourth sat at zero, which reads as reassurance. Same
+    // shape SH596 recorded one level up — a classification can only be as honest as its categories.
+    resources: { all: resources, called: resourcesCalled(resources) },
   };
 
   const missing = {};
@@ -217,12 +260,48 @@ test("SH707: the live tier's coverage of the agent vocabulary is the declared li
     tools: [...UNEXERCISED.tools].sort(),
     ops: [...UNEXERCISED.ops].sort(),
     verbs: [...UNEXERCISED.verbs].sort(),
+    resources: [...UNEXERCISED.resources].sort(),
   },
   "SH707: the set of verbs no live suite has ever called is not the declared one. If you covered "
   + "one, delete it from UNEXERCISED in the same commit — an entry claiming a gap that is closed "
   + "sends the next person to write a suite that exists. If you ADDED a verb, it arrived with no "
   + "live coverage: either write the scenario, or say in the diff why a MockMvc proof is enough "
   + "for this one. A percentage would have absorbed both silently, which is why this is a list.");
+});
+
+test("SH760: the resource reader credits a call and not a mention, and a template by its prefix", () => {
+  // The vacuity guard this population needs more than the other three do, because it opens at
+  // ZERO: an empty answer from a reader that has stopped matching is indistinguishable from the
+  // true finding, and the true finding is what this shipped to report. So the reader is driven
+  // against a sample where the right answer is known.
+  const declared = new Set([
+    "shio://manifest", "shio://ops", "shio://schema/", "shio://blueprint/",
+  ]);
+  // Single-quoted, so the sample can hold the backtick form a real call site may use without
+  // this file needing to escape it — the escaping is exactly what went wrong writing this test.
+  const sample = [
+    '// A comment naming shio://ops and a sentence about shio://manifest, neither fetched.',
+    'const pack = await mcp.readResource("shio://manifest");',
+    'const one = await mcp.readResource(`shio://schema/Page`);',
+  ].join("\n");
+
+  // The same expression `resourcesCalled` uses. Stated here rather than shared, so the sample
+  // proves the RULE and loosening the reader has to be done in two places on purpose — the trade
+  // the tools guard above already takes, for the same reason.
+  const asked = [...sample.matchAll(/\breadResource\(\s*[`"']([^`"']+)[`"']/g)].map((m) => m[1]);
+  const covered = new Set();
+  for (const uri of asked) {
+    for (const known of declared) {
+      if (uri === known || (known.endsWith("/") && uri.startsWith(known))) covered.add(known);
+    }
+  }
+
+  assert.deepEqual([...covered].sort(), ["shio://manifest", "shio://schema/"],
+    "SH760: a fetched URI counts and a mentioned one does not — `shio://ops` appears in that "
+    + "sample as prose and is covered by neither. That distinction is the whole reason this "
+    + "population is worth having: all eight were argued for in prose before any was fetched.");
+  assert.ok(!covered.has("shio://blueprint/"),
+    "SH760: a template nobody read must not be credited by another template being read");
 });
 
 test("SH707: exercised means called, not mentioned", () => {

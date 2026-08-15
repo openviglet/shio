@@ -134,6 +134,10 @@ export async function openMcp({ baseUrl, user, password }) {
     request,
     /** One tool, by the name an agent has to get right, with the arguments it declares. */
     call: (name, args = {}) => request("tools/call", { name, arguments: args }),
+    // SH760 — a named method rather than a bare `request("resources/read", …)`, for the
+    // reason `call` is one: the live-coverage reader keys on a CALL SITE with a literal
+    // argument, and a population it cannot see is a population nobody covers.
+    readResource: (uri) => request("resources/read", { uri }),
     stderr: () => errors,
     async close() {
       child.stdin.end();
