@@ -38,6 +38,26 @@ public final class ShTenantContext {
         DELEGATE.clear();
     }
 
+    /**
+     * The current tenant, or the reserved default when nothing is bound (SH761).
+     *
+     * <p>{@link #getTenantId()} answers {@code null} when unset and that contract is right: a
+     * <em>reader</em> asking "who is this" must be able to tell "nobody" from "the default". But
+     * on a single-tenant install — {@code shio.multi-tenant=false}, which is the default —
+     * {@code ShTenantFilter} is a no-op and nothing is ever bound, so <b>every</b> request answers
+     * null there while the data it touches is filed under {@code shio}.</p>
+     *
+     * <p>That asymmetry cost SH761: the usage document's reader already defaulted this way and the
+     * meter's writer did not, so a live instance reported {@code tenant=shio} with every count at
+     * zero after five agent calls — a mechanism complete everywhere except at the one line that
+     * attributes it, with every surface reporting success. Named here rather than repeated at each
+     * call site, because it was the third copy that disagreed.</p>
+     */
+    public static String currentOrDefault() {
+        String resolved = getTenantId();
+        return resolved != null && !resolved.isBlank() ? resolved : DEFAULT_TENANT;
+    }
+
     /** The shared kernel for callers needing {@code resolveCurrentTenant}/system-mode/{@code runAs}. */
     public static VigletTenantContext context() {
         return DELEGATE;

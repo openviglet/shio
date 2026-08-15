@@ -80,7 +80,12 @@ public class ShTenantApiCallFilter extends OncePerRequestFilter {
             }
             String surface = surfaceOf(path(request));
             if (surface != null) {
-                meter.record(ShTenantContext.getTenantId(), surface);
+                // currentOrDefault, not getTenantId (SH761). On a single-tenant install — the
+                // DEFAULT — ShTenantFilter is a no-op and nothing is ever bound, so the raw read
+                // answered null on every request and the meter dropped all of them. Measured on a
+                // live instance: five agent calls, every count zero, and the document naming the
+                // very tenant it had counted nothing for.
+                meter.record(ShTenantContext.currentOrDefault(), surface);
             }
         } catch (RuntimeException e) {
             logger.warn("SH45: could not meter a call: " + e.getMessage());

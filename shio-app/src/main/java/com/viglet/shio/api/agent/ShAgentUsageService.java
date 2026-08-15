@@ -67,7 +67,9 @@ public class ShAgentUsageService {
      * whose spend it is even where there is only one answer.
      */
     private static String tenant() {
-        String resolved = ShTenantContext.getTenantId();
-        return resolved != null && !resolved.isBlank() ? resolved : ShTenantContext.DEFAULT_TENANT;
+        // SH761 — the shared helper rather than a third private copy of this fallback. The copies
+        // were what let the reader and the writer disagree: this one defaulted and the meter's
+        // filter did not, so the document named a tenant it had counted nothing for.
+        return ShTenantContext.currentOrDefault();
     }
 }

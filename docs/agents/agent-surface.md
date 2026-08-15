@@ -2279,3 +2279,38 @@ or **moves** is still unexercised, which is where SH202, SH203 and SH243 each fo
 
 **Not covered:** the suite asserts that a tool answers and that its answer is about the content
 seeded, not that every field of every projection is right. A response schema per tool is SH712's.
+
+## The meter counted nothing on every default install (SH761)
+
+SH45's meter had unit tests calling `record` and `flush` directly, and they passed. The first live
+run said this, after five agent calls against a clean instance:
+
+```
+shio-usage tenant=shio period=2026-08-15
+calls agent written=0 pending=0
+```
+
+**Zero, while naming the very tenant it had counted nothing for.** `shio.multi-tenant` is `false` by
+default, so `ShTenantFilter` is a no-op and nothing is ever bound to `ShTenantContext`. The reading
+side already fell back to the reserved `shio` tenant; the writing side read `getTenantId()` raw, got
+`null`, and `ShTenantApiCallMeter.record` dropped every call — correctly, by its own rule that an
+unattributable call must not be billed to anybody.
+
+**The asymmetry was the defect, and the third copy of the fallback is what let it happen.**
+`ShTenantContext.currentOrDefault()` is now the one place that decides, and the filter and
+`ShAgentUsageService` both use it. `getTenantId()` keeps answering `null` when unset, which is right
+for a reader that must tell "nobody" from "the default".
+
+**The trade, said out loud:** in multi-tenant mode a counted request with nothing bound is now
+attributed to the reserved tenant rather than dropped. That state is reachable only if the tenancy
+gate let a request through without resolving one — which would be a defect elsewhere — and
+attributing it to `shio` makes it visible where dropping it made it silent.
+
+**Why only a live suite could find it.** The filter runs at `LOWEST_PRECEDENCE - 30`, *inside* the
+Spring Security chain, so the tenant, the chain order and the flush are all things a running
+instance arranges and MockMvc does not. `metering.conformance.mjs` reads the document, sends calls,
+and requires the number to move — and it is also the first live read of any MCP resource
+(`shio://usage`), which SH760's population had just opened at zero of eight.
+
+This is SH751's shape one subsystem over: complete everywhere except the line that connects it,
+with every surface reporting success.

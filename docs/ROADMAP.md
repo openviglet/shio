@@ -20,7 +20,7 @@
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 
-- 📋 **SH761** (deps: SH45 ✅, SH754 ✅, SH760 ✅) **Nothing proves the API-call meter records anything on a running instance** — Its filter only counts inside the security chain on a real request, which is the one condition a MockMvc proof cannot create, and SH751 is what that gap costs. → §XXIV.8
+- 📋 **SH762** (deps: SH719 ✅, SH713 ✅) **SH719's race test asserts a refusal that only exists when the two writes actually collide** — Its own line says the run produced no duplicate, and it then requires one of the pair to be refused, so a race that did not happen reads as a broken guard. → §XXIV.9
 
 ## Non-goals (do NOT add as tasks)
 

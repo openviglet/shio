@@ -219,8 +219,11 @@ const UNEXERCISED = {
    * `ShMcpResource#matches` keys on: reading `shio://schema/Page` covers the entry.</p>
    */
   resources: [
+    // `shio://usage` came off with SH761, and it is the right first one: the suite that reads it
+    // is the suite proving the meter counts, so the resource is fetched because something needed
+    // its answer rather than to lower a number. Seven left.
     "shio://blueprint/", "shio://blueprints", "shio://context", "shio://diagnostics",
-    "shio://manifest", "shio://ops", "shio://schema/", "shio://usage",
+    "shio://manifest", "shio://ops", "shio://schema/",
   ],
   verbs: [
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is

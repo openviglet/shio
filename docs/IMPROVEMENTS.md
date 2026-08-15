@@ -678,28 +678,32 @@ over a schema the client had to guess, a refusal slug it has to branch on, or a 
 nothing in a Spring test can have. SH707's matrix is what keeps that honest by naming,
 rather than counting, the verbs no live suite has ever called.
 
-### XXIV.8 A meter proved everywhere except where it runs (SH761)
+### XXIV.9 A race test that needs the race to happen (SH762)
 
-SH45's meter is covered by unit tests that call `record` and `flush` directly. What no
-test drives is the path that makes it a meter: a **real request** arriving, being
-classified by surface, and counted against the tenant the security chain resolved.
+`mcp-concurrency.conformance.mjs` fires two creates at one address and requires exactly
+one to be refused — what SH719's unique index guarantees *when the two contend*. On
+2026-08-15 it answered `0 of the two creates were refused`: the first created, the
+second **updated**, because it arrived after the first had committed and `post.upsert`
+is an upsert. Re-run on the same build minutes later: green.
 
-That path has a precondition a MockMvc proof cannot reproduce. The filter is mounted at
-`LOWEST_PRECEDENCE - 30` precisely so it runs *inside* the Spring Security chain, where
-`ShTenantFilter` has resolved the tenant and has not yet run the clear it always does on
-the way out. Mounted anywhere else it reads an empty tenant and files nothing — a meter
-returning zero, which is indistinguishable from an instance nobody used.
+The retry is there and is not enough. `raceForADuplicate` tries several times and prints
+how many — the passing run said *"ran 5 attempt(s) and produced no duplicate"* and
+passed anyway, so the loop gives up and the assertion is made regardless of whether the
+condition it needs was reached. Both runs agree the race did not happen; only one called
+it a failure.
 
-**SH751 is what this gap costs, one subsystem over.** There, `record`, `reconcile` and
-the counter wiring all shipped and nothing in production ever called `record`; every
-surface reported success and the figure stayed at zero for as long as anybody looked.
+The assertion and its precondition are not separated. What the suite can honestly claim
+has two halves: **if** the writes collided, exactly one is refused and told to retry —
+and **that a collision is reachable**, which is a property of the fixture, not the
+product.
 
-The scenario is small and the fixture exists. Drive a few calls over the three surfaces
-against a scratch site, flush, and require the counts to move by what was sent — then
-read them back through `shio://usage` and `?include=usage`, which is the same document
-and is SH760's population. What makes it worth a live run rather than a wider unit test
-is that the tenant, the chain order and the flush are things only a real instance
-arranges.
+Two shapes, and the choice wants measuring. Report the unreached precondition as a skip
+with its attempt count, which stays honest and loses coverage on a slow machine; or make
+the collision deterministic by holding both requests until released, which proves more
+and costs a test-only seam on a write path.
+
+Not attributed to any change here: red once, green once, on one build — and one sighting
+each way is not a diagnosis (SH756's rule).
 
 ## XXV Realignment of what already shipped (Block N)
 
