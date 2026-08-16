@@ -84,4 +84,22 @@ public class ShTenantQuotaService {
     public void checkCanCreatePost() {
         quotaService.check(ShVigletResourceCounter.POSTS);
     }
+
+    /**
+     * Throw 402 when the current tenant's plan has no room for {@code count} more posts (SH750).
+     *
+     * <p>{@code folder.copy} (SH244) is the first write on this surface that adds an unbounded
+     * number in one call, and it could only ask the per-one question: a tenant one post below its
+     * ceiling could copy a section of fifty and land fifty over it, refused nowhere. Asking once
+     * was better than the console's none and was never a guarantee, and the code said so.</p>
+     *
+     * <p>Two things §XII.28 ruled out while the SPI was missing, both still wrong now that it is
+     * not. <b>Looping the check</b> reads a count the copy has not written yet, so N calls answer
+     * one question N times and refuse nothing. <b>Refusing on size</b> invents a second quota model
+     * here, and the failure that causes — a legitimate section copy refused on a generous plan — is
+     * worse than the one it prevents. The delta is the third answer and the only exact one.</p>
+     */
+    public void checkCanCreatePosts(long count) {
+        quotaService.check(ShVigletResourceCounter.POSTS, count);
+    }
 }

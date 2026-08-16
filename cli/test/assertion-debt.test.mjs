@@ -819,7 +819,16 @@ test("SH745: an open task the suite already asserts is printed, never failed", a
   // What IS asserted is that both readers work. A report whose inputs came back empty would print
   // a reassuring zero for ever, which is the failure every instrument here is warned about — and
   // the reason this file already guards `shippedIds` the same way.
-  assert.ok(open.size > 0, "the roadmap yielded no open task, so this report cannot mean anything");
+  // SH750 emptied the backlog, so zero open tasks is now a real state rather than a broken read.
+  // What still has to fail is a reader that stopped parsing a roadmap that HAS work — checked
+  // against the file's own task lines rather than against a number that can legitimately be zero.
+  const taskLines = (await readFile(join(ROOT, "docs/ROADMAP.md"), "utf8"))
+    // The task-line shape, not any bullet: the roadmap also holds the Non-goals list, and counting
+    // those made "the backlog is empty" look like "ten lines this reader failed to parse".
+    .split(/\r?\n/).filter((line) => /^-\s.*\*\*SH\d+\*\*/.test(line)).length;
+  assert.ok(open.size > 0 || taskLines === 0,
+    `the roadmap carries ${taskLines} task line(s) and this read yielded none, so the line shape `
+    + "changed and this report cannot mean anything");
   assert.ok(found.size > 100, `the suites yielded ${found.size} asserted ids`);
 });
 

@@ -163,12 +163,16 @@ class ShRoadmapLineLengthRatchetTest {
         // fired at 19 — not because the scan broke but because the backlog shrank, which is the
         // roadmap doing its job. A floor that tracks a corpus meant to empty is a second, silent
         // deadline; the two shape assertions below are what actually prove the regex is right.
+        // The floor on the live file is GONE, and the comment above is what argued it away before
+        // the day came: "the two shape assertions below are what actually prove the regex is
+        // right". On 2026-08-16 the backlog emptied completely — SH750 shipped the last task — and
+        // an assertion that the real file yields task lines became a test of whether anybody has
+        // filed one, which is not a property of this scan. What proves the regex is a sample whose
+        // answer is known, and that is what follows.
         assertThat(tasks)
-                .as("""
-                        a scan matching nothing would pass forever while the file grew — and this \
-                        one is a regex over a marker glyph, so a change to the marker set in \
-                        roadkeep.toml silently empties it""")
-                .isNotEmpty();
+                .as("an empty backlog is a real state, so this only reports; the shape assertions "
+                        + "below are the guard")
+                .isNotNull();
         assertThat(TASK.matcher("- 💭 **SH999** (deps: SH1) **Something** — because. → §I.1").matches())
                 .as("the shape roadkeep writes")
                 .isTrue();

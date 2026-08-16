@@ -87,9 +87,23 @@ function blocksIn(markdown) {
 test("SH752: every block heading in the roadmap stands over at least one open task", async () => {
   const blocks = blocksIn(await readFile(ROADMAP, "utf8"));
 
-  assert.ok(blocks.length > 0,
-    "SH752: no block heading was found at all, which means the file was reshaped and this test is "
-    + "measuring nothing — the failure mode SH696 names (SH674).");
+  // An empty roadmap is a REACHABLE state, and on 2026-08-16 it was reached: SH750 shipped the
+  // last open task and `block drop L` took the last heading with it. This used to read "no
+  // headings means the file was reshaped", which was true only while every backlog had work in
+  // it — the shape SH672 names, an absolute floor over a corpus meant to empty.
+  //
+  // The discriminator is the pair, not either half: a RESHAPED file still carries task lines and
+  // has stopped yielding headings, where a finished backlog has neither.
+  const orphaned = (await readFile(ROADMAP, "utf8")).split(/\r?\n/)
+    .filter((line) => TASK_LINE.test(line));
+  assert.ok(blocks.length > 0 || orphaned.length === 0,
+    `SH752: ${orphaned.length} task line(s) and no block heading, which means the file was `
+    + "reshaped and this test is measuring nothing — the failure mode SH696 names (SH674).");
+  if (blocks.length === 0) {
+    console.log("SH752: the roadmap holds no open task and no block heading — a finished backlog, "
+      + "which is a state this reader can now tell apart from a broken one.");
+    return;
+  }
 
   const empty = blocks.filter((block) => block.tasks === 0).map((block) => block.heading);
   console.log(`SH752: ${blocks.length} block heading(s), `

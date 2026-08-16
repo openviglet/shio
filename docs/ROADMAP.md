@@ -11,12 +11,6 @@
 
 ## Priority
 
-- Block L
-
-## Block L — Agent safety & human-in-the-loop
-
-- 📋 **SH750** (deps: SH244 ✅, SH110 ✅, viglet-quota-spi) **One write that creates N posts asks the post quota once, so a bulk copy overshoots the plan by N-1** — checkCanCreatePost compares a total against the limit, which is exact only for a write that adds one; SH110 names the same missing SPI for bytes. → §XII.28
-
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and

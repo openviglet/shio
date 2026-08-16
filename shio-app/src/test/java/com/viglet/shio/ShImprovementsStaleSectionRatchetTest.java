@@ -178,10 +178,14 @@ class ShImprovementsStaleSectionRatchetTest {
         // IMPROVEMENTS is permanent, because triaging it away is the whole point of the file. What
         // is permanent is that an open task's `→ §` pointer must resolve, so the expectation comes
         // from the roadmap and moves with it.
-        assertThat(pointedAt)
-                .as("the roadmap always carries open tasks, and each names the anchor its rationale "
-                        + "lives at — if this were empty the check below would be vacuous too")
-                .isNotEmpty();
+        // This used to read "the roadmap ALWAYS carries open tasks", and on 2026-08-16 it stopped
+        // being true: SH750 shipped the last one and the backlog emptied completely. An empty
+        // `pointedAt` is now two different states — a finished backlog, or a pointer regex that has
+        // stopped matching — and they are told apart by whether the file still has task lines.
+        assertThat(pointedAt.isEmpty() ? roadmapTaskLines() : 0)
+                .as("the roadmap carries task lines and none yielded a `→ §` anchor, so the pointer "
+                        + "scan has stopped matching and the check below is vacuous")
+                .isZero();
 
         assertThat(anchors)
                 .as("""
@@ -191,6 +195,21 @@ class ShImprovementsStaleSectionRatchetTest {
                         a floor was tried at 50 and at 10 and was wrong at both (SH737).""")
                 .isNotEmpty()
                 .containsAll(pointedAt);
+    }
+
+    /**
+     * How many task lines the roadmap holds — what tells a finished backlog from a broken scan.
+     *
+     * <p>The task shape, not any bullet: the file also carries the Non-goals list, and counting
+     * those would report ten lines nobody failed to parse.</p>
+     */
+    private static int roadmapTaskLines() {
+        Matcher tasks = Pattern.compile("(?m)^-\\s.*\\*\\*SH\\d+\\*\\*").matcher(read(ROADMAP));
+        int found = 0;
+        while (tasks.find()) {
+            found++;
+        }
+        return found;
     }
 
     private static Set<String> shippedIds() {

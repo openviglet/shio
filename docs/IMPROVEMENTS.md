@@ -231,28 +231,6 @@ giving the two writes the role the blueprint reload already had.
 > form to carry forward is symmetrical — **the two surfaces enforce the same ACL, and whichever
 > is stricter is the correct one.** SH222–SH226 are the places that edge points at next.
 
-### XII.28 A bulk write asks a per-one quota (SH750)
-
-`VigletQuotaService.check(resource)` compares the tenant's current count against the
-plan's limit and throws 402. That is exact for every write the check was built for — a
-post create adds precisely one — and `folder.copy` (SH244) is the first write on this
-surface that adds an unbounded number in one call. A tenant one post below its ceiling
-can copy a section of fifty and be fifty over it, with no refusal anywhere.
-
-This is SH110's finding on a different resource, and the two should be read together:
-that one says the storage ceiling is blocked on `check(resource, delta)` in the shared
-kernel, and so is this. What is new is that the gap now has a *content* path into it
-rather than only an upload path, which is the half a Shio-side change could not have
-reached.
-
-The op asks once today rather than not at all, which is better than the console's none
-and is deliberately not dressed up as a guarantee — the code says so where it is called.
-Two things not to do while waiting for the SPI. **Do not loop the check**: it reads a
-count the copy has not written yet, so N calls answer one question N times and refuse
-nothing. **Do not refuse on size** — a ceiling invented here is a second quota model,
-and the failure it causes (a legitimate section copy refused on a generous plan) is
-worse than the one it prevents.
-
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened

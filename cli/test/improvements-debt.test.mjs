@@ -469,6 +469,13 @@ describe("SH356: IMPROVEMENTS.md is rationale for unshipped work, and stays that
     assert.ok(open.size >= pointed.size,
       `the roadmap points at ${pointed.size} section(s) with only ${open.size} open id(s), so the `
         + "id scan and the pointer scan disagree about the same file");
-    assert.ok(open.size > 0, "no open id read from the roadmap — the line shape changed");
+    // Zero open ids is legitimate since SH750 emptied the backlog; a CHANGED line shape is not,
+    // and the two are told apart by whether the file still has task lines to parse.
+    // The task-line shape, not any bullet — the Non-goals list is bullets too, and counting those
+    // made an empty backlog read as ten lines this reader had failed to parse.
+    const taskLines = roadmap.split(/\r?\n/)
+      .filter((line) => /^-\s.*\*\*SH\d+\*\*/.test(line)).length;
+    assert.ok(open.size > 0 || taskLines === 0,
+      `the roadmap carries ${taskLines} task line(s) and none parsed — the line shape changed`);
   });
 });

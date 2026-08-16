@@ -117,6 +117,33 @@ class ShTenantQuotaIT {
     }
 
     @Test
+    void aBulkWriteIsChargedForEveryPostItCreates() {
+        // SH750's case, as §XII.28 states it: a tenant one post below its ceiling copies a section
+        // of fifty and lands fifty over it. The per-one check could not see that — it asked whether
+        // the tenant was already full, and one below the ceiling never is.
+        catalogTenant("bulkco", "FREE");
+        long max = ShTenantPlanLimits.FREE.maxPosts();
+
+        asTenant("bulkco", () -> {
+            assertThatCode(() -> quotaService.checkCanCreatePost())
+                    .as("SH750: the per-one path is untouched — a tenant holding nothing may write")
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> quotaService.checkCanCreatePosts(max))
+                    .as("SH750: a bulk write that exactly fills the plan is allowed, or the "
+                            + "ceiling refuses the last legitimate copy")
+                    .doesNotThrowAnyException();
+
+            assertThatThrownBy(() -> quotaService.checkCanCreatePosts(max + 1))
+                    .as("SH750: one copy larger than the whole plan, against a tenant holding "
+                            + "nothing. Looping the per-one check would have passed this every "
+                            + "time, because it reads a count the copy has not written yet.")
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("cannot take");
+            return null;
+        });
+    }
+
+    @Test
     void paidPlanIsUnlimited() {
         catalogTenant("paidco", "PRO");
         asTenant("paidco", () -> {

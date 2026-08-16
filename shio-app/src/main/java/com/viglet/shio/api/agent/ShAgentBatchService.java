@@ -1464,11 +1464,11 @@ public class ShAgentBatchService {
      *
      * <p>The naming ({@code SH202}) and the cycle guard ({@code SH203}) are the shared writer's,
      * so the console and this op cannot disagree about them, and the copies are drafts. The tenant
-     * quota is asked <b>once</b>: {@code checkCanCreatePost} compares the current count against
-     * the plan's limit, which is exact for a write that adds one and approximate for one that adds
-     * N. Asking once is strictly better than the console's none and it is not a guarantee — a
-     * delta-aware check needs {@code check(resource, delta)} in the shared kernel, which is the
-     * same missing SPI {@code ShTenantQuotaService} records for storage.</p>
+     * quota is <b>exact</b> since SH750: this asked the per-one question while the shared kernel
+     * had only that to offer, so a tenant one post below its ceiling could copy a section of fifty
+     * and land fifty over it. {@code viglet-core} 2026.3.11 added {@code check(resource, delta)},
+     * so the op now charges {@code scope.posts()} — the number it is about to create, which it has
+     * already walked for the detail line.</p>
      */
     private Change folderCopy(ShAgentBatch.Op op, Session session) {
         ShAddress from = writeAddress(op, ShAddress.Kind.FOLDER);
@@ -1507,9 +1507,11 @@ public class ShAgentBatchService {
         }
         shContentAclService.requireWrite(source.getId());
         shContentAclService.requireWrite(destParent.getId());
-        if (scope.posts() > 0) {
-            shTenantQuotaService.checkCanCreatePost();
-        }
+        // SH750 — charged for what this copy actually creates, not for one. `scope.posts()` is
+        // already walked for the detail line above, so the exact number is in hand and the delta
+        // check makes it answerable; looping the per-one check would have asked one question N
+        // times against a count the copy has not written yet, and refused nothing.
+        shTenantQuotaService.checkCanCreatePosts(scope.posts());
         ShFolder copy = shObjectWriteService.copyFolderAs(source.getId(), destParent, newName, true)
                 .orElseThrow(() -> new ShAddressResolver.UnresolvedAddressException(from, List.of()));
         return session.change(op, to, Change.CREATE, detail, copy.getId());
