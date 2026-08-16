@@ -1,5 +1,7 @@
 import { SiteNav } from "@/components/sections/site-nav";
 import { Hero } from "@/components/sections/hero";
+import { Paths } from "@/components/sections/paths";
+import { UseCases } from "@/components/sections/use-cases";
 import { Roles } from "@/components/sections/roles";
 import { Laws } from "@/components/sections/laws";
 import { Pillars } from "@/components/sections/pillars";
@@ -21,15 +23,26 @@ import { SiteFooter } from "@/components/sections/site-footer";
 /**
  * The landing page — the marketing front door.
  *
- * The section order is an argument, not a feature list. Turing's equivalent
- * opens on a live search box because a visitor can type a query and judge the
- * answer; here the hook is a session, because what is being sold is how cheaply
- * an agent operates the product.
+ * The section order is an argument, not a feature list, and the argument was
+ * wrong in its first two screenfuls. It opened on an agent session and led with
+ * "your agent builds the site, you approve it" — true of one way to use the
+ * product, and read by everybody else as *you cannot use this by hand*. Nothing
+ * about the product said that; the page did. A visitor who wants an ordinary
+ * CMS was being turned away by the headline of a CMS that would have suited
+ * them.
  *
- * hook (a session) → who does what → the contract → the map → then one section
- * per law, in the order an agent meets them: discover (P2/P3) → author (P4/P5) →
- * the surface (P1/P10) → fail (P6) → prove (P9) → what stops it (P7) → skip
- * steps (P8) → replicate → deliver → why not the alternative → run it → convert.
+ * So the hook is now two sessions under one switch — the same page built by a
+ * person and by an agent — and the section immediately below it is the four
+ * ways in, followed by six deployments of which only three involve an agent.
+ * The depth sections that follow are unchanged and still ordered by law,
+ * because once a reader knows which door is theirs, the argument about protocol
+ * quality is the interesting part rather than the disqualifying one.
+ *
+ * hook (two sessions) → the four ways in → who runs it → the three seats → the
+ * contract → the map → then one section per law, in the order an agent meets
+ * them: discover (P2/P3) → author (P4/P5) → the surface (P1/P10) → fail (P6) →
+ * prove (P9) → what stops it (P7) → skip steps (P8) → replicate → deliver → why
+ * not the alternative → run it → convert.
  */
 export function LandingPage() {
   return (
@@ -37,6 +50,8 @@ export function LandingPage() {
       <SiteNav />
       <main className="flex-1">
         <Hero />
+        <Paths />
+        <UseCases />
         <Roles />
         <Laws />
         <Pillars />

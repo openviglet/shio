@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { LandingPage } from "@/pages/landing";
 import { ClaudeCodePage } from "@/pages/claude-code";
+import { ConsolePage } from "@/pages/console";
 import { ComparePage } from "@/pages/compare";
 import { ReplicatePage } from "@/pages/replicate";
 import { CuratorPage } from "@/pages/curator";
@@ -19,6 +20,7 @@ import { FEATURE_DETAILS, FEATURE_SLUGS } from "@/lib/feature-content";
  */
 export const ROUTES: Record<string, () => React.JSX.Element> = {
   "/": LandingPage,
+  "/console": ConsolePage,
   "/claude-code": ClaudeCodePage,
   "/compare": ComparePage,
   "/replicate": ReplicatePage,

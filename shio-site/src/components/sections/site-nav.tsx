@@ -14,30 +14,44 @@ import { cn } from "@/lib/utils";
 
 // Hrefs are root-anchored ("/#…") so they keep working from any future page —
 // the browser navigates home and scrolls to the section.
-const NAV_LINKS = [
-  { label: "The ten laws", href: "/#laws" },
-  { label: "Docs", href: LINKS.docs },
-];
+const NAV_LINKS = [{ label: "Docs", href: LINKS.docs }];
 
+/**
+ * The groups are the four ways in, plus the pages that are about the product
+ * rather than about a path. They used to be "for the agent" and "for the
+ * curator", which sorted two thirds of the site under a role most visitors do
+ * not have yet — and put the console, the thing a first-time reader is looking
+ * for, in the same drawer as a page about what stops an agent write.
+ */
 const NAV_GROUPS = [
   {
-    label: "For the agent",
+    label: "Ways to use it",
     items: [
-      { label: "Drive it from Claude Code", href: "/claude-code" },
+      { label: "In the console, by hand", href: "/console" },
+      { label: "With a coding agent", href: "/claude-code" },
+      { label: "As files in your repository", href: "/features/content-as-files" },
+      { label: "Through the delivery API", href: "/features/delivery" },
+      { label: "All four, side by side", href: "/#paths" },
+    ],
+  },
+  {
+    label: "The product",
+    items: [
+      { label: "What the console does", href: "/console#capabilities" },
+      { label: "What stops an agent write", href: "/curator" },
       { label: "One call, and its price", href: "/#one-call" },
-      { label: "Content as files", href: "/#files" },
       { label: "MCP + CLI surface", href: "/#surface" },
       { label: "Errors that instruct", href: "/#errors" },
       { label: "Proof without a screenshot", href: "/#verify" },
       { label: "Rendering and design tokens", href: "/features/rendering" },
-      { label: "Delivery and the SDKs", href: "/features/delivery" },
+      { label: "Replicate an existing site", href: "/replicate" },
     ],
   },
   {
-    label: "For the curator",
+    label: "Decide",
     items: [
-      { label: "What stops the agent", href: "/curator" },
-      { label: "Replicate a site", href: "/replicate" },
+      { label: "Who runs it, and how", href: "/#use-cases" },
+      { label: "The ten design laws", href: "/#laws" },
       { label: "Compare", href: "/compare" },
       { label: "Self-host", href: "/#self-host" },
     ],
@@ -97,13 +111,19 @@ export function SiteNav() {
               {item.label}
             </a>
           ))}
-          {/* The headline claim gets a pill of its own rather than a dropdown row. */}
+          {/*
+            The differentiator gets a pill of its own rather than a dropdown row.
+            It used to read "Claude Code first", which was the site's whole
+            positioning problem in two words: true of the build order, and read
+            as a prerequisite. It now says what it is — a plugin you can install
+            — and the console sits above it in the first group.
+          */}
           <a
             href="/claude-code"
             className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-sm font-bold whitespace-nowrap text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
           >
             <Terminal className="size-3.5" />
-            Claude Code first
+            Claude Code plugin
           </a>
           {NAV_GROUPS.map((group) => (
             <DropdownMenu key={group.label}>

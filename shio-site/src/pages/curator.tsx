@@ -165,8 +165,8 @@ export function CuratorPage() {
                   </div>
                   <div className="rounded-lg border border-dashed border-border p-3">
                     <p className="text-sm text-muted-foreground">
-                      A CMS whose primary operator is a coding agent. The curator
-                      approves. The delivery API delivers.
+                      An open-source headless CMS with four ways in: the console, an
+                      agent, files in a repository, and the delivery API.
                     </p>
                   </div>
                   <div className="rounded-lg border border-dashed border-border p-3">
@@ -229,7 +229,7 @@ export function CuratorPage() {
           <Container>
             <SectionHeader
               eyebrow="In plain words"
-              title="Three jobs, and only one of them is yours"
+              title="Three seats, and you can hold all of them"
               description="If you take one thing from this page, take this — it is the whole product, and it is the answer to “so what does the CMS actually do now”."
             />
 
@@ -253,8 +253,13 @@ export function CuratorPage() {
             </div>
 
             <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
-              A reader who only ever sees the first of those three concludes,
-              correctly, that nobody is minding the site. The second one is this page.
+              The first seat is the one that is never empty, and this page is what it
+              is holding. The second can stay empty forever &mdash;{" "}
+              <a href="/console" className="font-semibold text-primary underline-offset-4 hover:underline">
+                an instance with no agent attached
+              </a>{" "}
+              is an ordinary CMS, with the same review queue, the same previews and the
+              same publish act described above.
             </p>
           </Container>
         </section>

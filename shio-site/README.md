@@ -44,13 +44,36 @@ The prerender patches the `<head>` with `replaceOrThrow` for the same reason: if
 the template drifts, the build fails rather than shipping a page carrying
 another route's `<title>`.
 
+## What the site argues
+
+The page opens on **two sessions under one switch** — a person building a page in
+the console, and an agent building the same page — and the section below it is the
+**four ways in** (`PATHS`): the console, an agent, files in a repository, the
+delivery API. Then six deployments (`USE_CASES`), of which only three involve an
+agent.
+
+That ordering is a correction, and it is the one rule to keep in mind when editing
+any copy here. The site used to lead with *"the CMS whose operator is Claude Code
+— your agent builds the site, you approve it."* Every sentence of that was true of
+one path and the composition of them said something false: that the product cannot
+be used by hand. Law **P1 is a build order** — a capability lands MCP → files/CLI →
+REST → console so that nothing ends up reachable only by a mouse — and it has never
+been a statement about who may operate the CMS. A person can create the site,
+model, write, publish and run the team without an agent existing anywhere;
+[`/console`](src/pages/console.tsx) is the page that says so, including the four
+capabilities that genuinely live on the CLI.
+
+`scripts/site-claims.test.mjs` holds what can be checked of that: the four paths in
+order with the console first, a use case that involves no agent, and the console
+page naming its own limits.
+
 ## Content
 
 **All page copy lives in [`src/lib/site-content.ts`](src/lib/site-content.ts)** —
-the ten design laws, the hero transcript, the MCP tool list, the CLI verbs, the
-token measurements, the guardrails, the comparison matrix and the links. The
-components in [`src/components/sections/`](src/components/sections/) only render
-it.
+the ten design laws, the two hero sessions, the four paths and six use cases, the
+MCP tool list, the CLI verbs, the token measurements, the console capability and
+limit lists, the guardrails, the comparison matrix and the links. The components in
+[`src/components/sections/`](src/components/sections/) only render it.
 
 Two rules for editing that file:
 
@@ -66,7 +89,7 @@ Two rules for editing that file:
 ## The Markdown twins
 
 Every route also emits `<path>.md` — `/` → `/index.md`, everything else appends
-`.md`. Across the ten routes that is ~64 KB of Markdown against ~465 KB of HTML,
+`.md`. Across the eleven routes that is ~78 KB of Markdown against ~593 KB of HTML,
 and the prerender prints the ratio on every build.
 
 The twin is **converted from the same render**, not written separately: the copy
@@ -79,6 +102,14 @@ therefore the one piece with a test (`pnpm --filter shio-site test`).
 Two things to know when writing a page:
 
 - The nav and the footer never reach a twin — only `<main>` is converted.
+- **A `hidden` element is dropped too**, which is why the landing twin carries the
+  console session and not the agent one: they are tab panels, and the inactive one
+  is hidden. That is the right trade rather than an oversight — an agent reading the
+  twin does not need a scripted demo of itself, and the substance of the agent path
+  is in the sections below, which the twin carries in full.
+- A `<pre>` whose lines are separate `<span class="block">` elements — the session
+  panels, which colour each line — gets one Markdown line per span. Joining them ran
+  a whole file tree onto one line.
 - **`data-md-skip` on an element drops it from the twin**, children included.
   The call to action carries it: it converts a reader and costs an agent forty
   identical words on ten pages.
@@ -112,7 +143,12 @@ for that repository.
 
 ## Backlog
 
-Nothing. Block S closed on 2026-08-13, and it closed by **retirement** rather than by
+The positioning rewrite above is the newest change and it has no roadkeep id yet:
+it was written in an environment where the engine is not installed, so the entry
+belongs under **Block F — Market positioning**, which is the block that exists for
+exactly this and is currently empty.
+
+Nothing else. Block S closed on 2026-08-13, and it closed by **retirement** rather than by
 shipping: SH540 — the public read-only demo instance that would have turned the hero's
 scripted session into a live one — was judged infrastructure and demo work rather than
 product, so it left the backlog and the hero keeps its script. A block emptied by a
