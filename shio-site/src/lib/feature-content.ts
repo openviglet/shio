@@ -119,7 +119,7 @@ folder: folder:acme/
 bodyField: content
 ---
 
-Shio is a CMS whose primary operator is a coding agent.`,
+An open-source headless CMS with four ways in.`,
       },
       law: "P4",
     },

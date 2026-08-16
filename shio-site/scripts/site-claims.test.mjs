@@ -96,6 +96,83 @@ test("SH532: every route is declared in both places, because the build enforces 
   }
 });
 
+/**
+ * The positioning claim, which is the one this site got wrong for longer than any
+ * factual one and could not see: every sentence on the page was true of the agent
+ * path, and the composition of them said the product cannot be used without an
+ * agent. Nothing here can check tone — but it can check that the structures the
+ * correction rests on are still present, which is the difference between a fix and
+ * a fix that survives the next edit.
+ */
+const listOf = (block, key) => [...block.matchAll(new RegExp(`${key}:\\s*"([^"]+)"`, "g"))].map(([, v]) => v);
+const blockBetween = (source, from, to) =>
+  source.slice(source.indexOf(from), to ? source.indexOf(to) : undefined);
+
+test("the four ways in are declared, and the console is the first of them", () => {
+  const paths = blockBetween(SITE_CONTENT, "export const PATHS", "export interface UseCase");
+  const ids = listOf(paths, "id");
+
+  assert.deepEqual(
+    ids,
+    ["console", "agent", "files", "api"],
+    "four doors onto one content engine, console first — the ordering is the argument, "
+      + "because a reader decides whether the product is for them in the first screenful",
+  );
+
+  // Each one states what it costs to start. A path with no prerequisite named is
+  // how "you will also need the CLI" becomes something a reader discovers later.
+  assert.equal(listOf(paths, "needs").length, 4, "every path names its honest prerequisite");
+});
+
+test("a use case that involves no agent at all is always on the page", () => {
+  const cases = blockBetween(SITE_CONTENT, "export const USE_CASES", "/* ── The three roles");
+  const tagged = [...cases.matchAll(/paths:\s*\[([^\]]+)\]/g)].map(([, list]) =>
+    [...list.matchAll(/"([^"]+)"/g)].map(([, id]) => id),
+  );
+
+  assert.ok(tagged.length >= 4, `the page shows several deployment shapes; found ${tagged.length}`);
+  assert.ok(
+    tagged.some((paths) => !paths.includes("agent")),
+    "at least one scenario has to be the team that never attaches an agent — it is the case "
+      + "the old page argued its own reader out of, and the reason this file exists",
+  );
+
+  // Every tag resolves to a path. `use-cases.tsx` falls back to printing the raw id,
+  // so a renamed path would ship a chip reading `api` rather than a wrong-looking one.
+  const known = new Set(
+    listOf(blockBetween(SITE_CONTENT, "export const PATHS", "export interface UseCase"), "id"),
+  );
+  for (const paths of tagged) {
+    for (const id of paths) {
+      assert.ok(known.has(id), `use case tagged with unknown path '${id}'`);
+    }
+  }
+});
+
+test("the console page names what the console cannot do", () => {
+  // A page that only claimed the good half would be the same mistake pointed the
+  // other way. The four command-line capabilities are listed on the page itself,
+  // and the FAQ answer that says "four things" is counted against this list.
+  const limits = blockBetween(SITE_CONTENT, "export const CONSOLE_LIMITS", "/** What actually changes");
+  const titles = listOf(limits, "title");
+  assert.equal(
+    titles.length,
+    4,
+    `the console page promises four command-line capabilities; found ${titles.length}. `
+      + "If that number moved, the objection copy on /compare says 'four things' and has to move with it",
+  );
+
+  const capabilities = blockBetween(
+    SITE_CONTENT,
+    "export const CONSOLE_CAPABILITIES",
+    "export const CONSOLE_LIMITS",
+  );
+  assert.ok(
+    listOf(capabilities, "title").length >= 5,
+    "and the capability list is a walk of the console directory, not a slogan",
+  );
+});
+
 test("SH537: every prerendered route also gets its Markdown twin", () => {
   // SH537's actual claim, which the route test above does not make: each route emits `<path>.md`
   // beside its HTML, so a reader — or an agent — can fetch the page as text. Asserted on the

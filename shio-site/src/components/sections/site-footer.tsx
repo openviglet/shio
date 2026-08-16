@@ -3,23 +3,25 @@ import { LINKS } from "@/lib/site-content";
 
 const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
   {
-    heading: "For the agent",
+    heading: "Ways to use it",
     links: [
-      { label: "Drive it from Claude Code", href: "/claude-code" },
-      { label: "The ten laws", href: "/#laws" },
-      { label: "One call, and its price", href: "/#one-call" },
-      { label: "Content as files", href: "/#files" },
-      { label: "MCP + CLI surface", href: "/#surface" },
-      { label: "Errors that instruct", href: "/#errors" },
-      { label: "Proof without a screenshot", href: "/#verify" },
-      { label: "Rendering and design tokens", href: "/features/rendering" },
-      { label: "Delivery and the SDKs", href: "/features/delivery" },
+      { label: "In the console, by hand", href: "/console" },
+      { label: "With a coding agent", href: "/claude-code" },
+      { label: "As files in your repository", href: "/features/content-as-files" },
+      { label: "Through the delivery API", href: "/features/delivery" },
+      { label: "All four, side by side", href: "/#paths" },
+      { label: "Who runs it, and how", href: "/#use-cases" },
     ],
   },
   {
-    heading: "For the curator",
+    heading: "The product",
     links: [
-      { label: "What stops the agent", href: "/curator" },
+      { label: "What the console does", href: "/console#capabilities" },
+      { label: "What stops an agent write", href: "/curator" },
+      { label: "The ten laws", href: "/#laws" },
+      { label: "One call, and its price", href: "/#one-call" },
+      { label: "MCP + CLI surface", href: "/#surface" },
+      { label: "Rendering and design tokens", href: "/features/rendering" },
       { label: "Blueprints", href: "/#blueprints" },
       { label: "Replicate a site", href: "/replicate" },
       { label: "Compare", href: "/compare" },
@@ -47,9 +49,9 @@ export function SiteFooter() {
           <div>
             <Logo className="text-[#f6ece8]" />
             <p className="mt-3 max-w-xs text-sm leading-relaxed">
-              A CMS whose primary operator is a coding agent. The curator approves, the
-              delivery API delivers, and every design decision is judged in agent
-              cycles and tokens.
+              An open-source headless CMS with four ways in &mdash; a full console, a
+              coding agent, files in your repository, and the delivery API. Same
+              content, same drafts, same publish button.
             </p>
           </div>
           {COLUMNS.map((col) => (

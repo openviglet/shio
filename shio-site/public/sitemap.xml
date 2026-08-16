@@ -6,6 +6,11 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://shio.viglet.org/console</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://shio.viglet.org/claude-code</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
