@@ -47,6 +47,9 @@ public class ShPostTypeAdminMapper {
                 postType.getWorkflowPublishEntity(),
                 postType.getSystem() == 1,
                 postType.isManaged(),
+                // SH768 — delivered as `true` or omitted, never `false`: a reader asks "is this
+                // debris", and a key saying "no" on 20 of 22 types is 20 rows of nothing (P3).
+                postType.isScratch() ? Boolean.TRUE : null,
                 attrDefs(postType.getShPostTypeAttrs(), true));
     }
 

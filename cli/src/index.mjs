@@ -111,6 +111,7 @@ const COMMANDS = {
   annotations: () => import("./commands/annotations.mjs"),
   judge: () => import("./commands/judge.mjs"),
   site: () => import("./commands/site.mjs"),
+  "post-type": () => import("./commands/post-type.mjs"),
   clone: () => import("./commands/clone.mjs"),
   propose: () => import("./commands/propose.mjs"),
   convert: () => import("./commands/convert.mjs"),

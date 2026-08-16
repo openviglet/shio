@@ -1,0 +1,14 @@
+shio post-type — the content model, and a sweep for the types nobody meant to keep
+
+  shio post-type                 List types, marking system, managed and SCRATCH
+  shio post-type rm --scratch    Delete every type flagged scratch
+
+  --scratch            Required by rm. Acts only on types flagged at creation; no --all
+  --dry-run            Print what would be deleted, delete nothing
+  --json               As JSON
+
+SCRATCH marks a fixture rather than a convention, set with "scratch": true on the PUT
+that creates the type and never afterwards. A type holding posts refuses, and is named.
+
+Examples:
+  shio post-type rm --scratch --dry-run

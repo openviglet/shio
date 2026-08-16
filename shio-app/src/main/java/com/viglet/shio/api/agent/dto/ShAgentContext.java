@@ -191,11 +191,25 @@ public record ShAgentContext(
      * @param managed  owned by the repository (SH66): edit the code, not the console
      * @param posts   how many posts of this type exist, so an agent can tell the
      *                model's load-bearing types from its unused ones
+     * @param scratch declared disposable by whoever created it (SH768) — a fixture, not a
+     *                convention. This is the field the whole flag exists for: the pack is the one
+     *                call P2 promises replaces a session and the model is most of its payload, so
+     *                two types left behind by a conformance run read as <i>this instance has a
+     *                convention I should follow</i>, and deciding otherwise costs a second call and
+     *                knowledge that was nowhere in the pack. Omitted when false, per
+     *                {@code NON_DEFAULT}: a reader asks which types are debris, and 20 rows saying
+     *                "not debris" are 20 rows of nothing (P3).
      * @param fields  the field list, {@code Tab} containers already dropped
      */
     @JsonInclude(Include.NON_DEFAULT)
     public record Type(String name, String title, boolean system, boolean managed,
-                       long posts, List<ShCdaSchemaField> fields) {
+                       long posts, boolean scratch, List<ShCdaSchemaField> fields) {
+
+        /** The six-field form: every caller before SH768 made a type declarable as disposable. */
+        public Type(String name, String title, boolean system, boolean managed, long posts,
+                    List<ShCdaSchemaField> fields) {
+            this(name, title, system, managed, posts, false, fields);
+        }
     }
 
     /**

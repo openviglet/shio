@@ -141,7 +141,23 @@ and it nulls `postTypeLayout` and `searchablePostTypes` on the way past.
   is **refused with 409** (`ShManagedPostTypeException`) against a managed type rather than
   racing the repository that owns the model.
 
-It is a UX guard, not an ACL — any caller may claim either. Console-authenticated (HTTP Basic
+It is a UX guard, not an ACL — any caller may claim either.
+
+**`scratch` is the other boxed flag on the same record and its omitted case means the opposite
+(SH768).** A write may declare the type **disposable** — a fixture, not a convention — and
+*absent means kept*: scratch is never a default, because guessing wrong lets a sweep delete a
+model somebody meant. **Honoured on create only.** An update claiming it changes nothing, which
+is SH591's guarantee for a scratch site and holds for the same reason: a flag a later write
+could raise would make a real type sweepable after the fact. Delivered as `true` or omitted,
+never `false` (P3 — 20 rows saying "not debris" are 20 rows of nothing), excluded from the CLI's
+canonical `normalizeDef` so it never reads as drift, surfaced as `SCRATCH` in `shio context`'s
+model and in `agents.md`'s notes column, and swept by **`shio post-type rm --scratch`** — which,
+like `site rm`, has no `--all` and never touches an undeclared type. It exists because two
+conformance fixtures (`ShioConfRendermsgmgaup2qjcArticle`, `ShioConfRendermsgmgrcoqdq2Article`)
+outlived their runs and read as conventions in every cold context pack; a teardown cannot cover
+the run that dies mid-way, which is precisely the run that leaves debris.
+
+Console-authenticated (HTTP Basic
 or a session). **CSRF is required of session-bearing callers and waived for stateless ones**
 (`ShStatelessRequestMatcher`, keyed on the session cookie), which is what lets the CLI and the
 browser share the path safely — do not widen that back to a blanket exemption.

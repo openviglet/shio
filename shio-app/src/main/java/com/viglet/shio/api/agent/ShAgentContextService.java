@@ -286,6 +286,7 @@ public class ShAgentContextService {
                 type.getSystem() == 1,
                 type.isManaged(),
                 postsByType.getOrDefault(type.getId(), 0L),
+                type.isScratch(),
                 schema.fields());
     }
 

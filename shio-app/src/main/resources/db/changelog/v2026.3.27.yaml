@@ -1,0 +1,41 @@
+databaseChangeLog:
+  # SH768 — `ShPostType.scratch`: a post-type that was never meant to be kept.
+  #
+  # `shio pull` on a working instance wrote 22 post-types and two of them were debris —
+  # ShioConfRendermsgmgaup2qjcArticle and ShioConfRendermsgmgrcoqdq2Article, named by the generated
+  # run ids of two conformance runs. They are ordinary non-system types, so they sat in the model
+  # beside `Page` and the seven `Section*` types with nothing marking them as scratch.
+  #
+  # The cost is paid on every cold start, by every reader. `shio context` is the one call P2
+  # promises replaces a session and the model is most of its payload, so two invented types with a
+  # field named `TEXT` read as *this instance has a convention I should follow*. Deciding they are
+  # junk takes a second call and knowledge that is nowhere in the pack.
+  #
+  # A flag rather than a teardown, for the reason §XVII.109 gives: a run that dies mid-way still
+  # leaves its types, so the sweep has to be possible after the fact and not only inside a passing
+  # run's `after`. And a column rather than a naming convention, which is SH591's argument for the
+  # same flag on ShSite: a convention is a claim anybody can make about anybody's type after the
+  # fact, and this one has to be a claim its creator made at creation.
+  #
+  # Nullable forever and read as false when absent, so every type that existed before this is what
+  # it always was: kept. Not a tenant discriminator, so no ShTenantBackfillRunner entry. The
+  # lower-case `boolean` is the portable spelling every other flag column here uses, and the
+  # upper-case one is a forbidden token per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL (it does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh768-post-type-scratch
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShPostType
+                columnName: scratch
+      changes:
+        - addColumn:
+            tableName: ShPostType
+            columns:
+              - column:
+                  name: scratch
+                  type: boolean

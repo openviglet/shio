@@ -103,6 +103,13 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
       namePlural: `${postType}s`,
       title: "SH448 Article",
       description: "Seeded by the conformance suite; deleted when it ends.",
+      // SH768 — and when it does NOT end, which is the case this flag exists for. Two of these
+      // survived on a working instance (`ShioConfRendermsgmgaup2qjcArticle`,
+      // `ShioConfRendermsgmgrcoqdq2Article`) and read as conventions in every cold `shio context`,
+      // because a run that dies mid-way never reaches its own teardown. Declared at creation, which
+      // is the only moment the server accepts it, and swept afterwards by `shio post-type rm
+      // --scratch` rather than only by a passing run's `after`.
+      scratch: true,
       fields: [
         { name: "TITLE", label: "Title", description: "Title", ordinal: 1,
           widget: "Text", isTitle: true, required: true },

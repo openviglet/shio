@@ -1223,6 +1223,7 @@
 - **SH692** — mixed asks the served page's regions instead of copying authorable's rule, so a replica still serving chrome still claims the source's chrome — and one serving none does not.
 - **SH693** — The kept markup is split at the accepted blocks instead of glued, so the layout emits content, the sections, then contentAfter — the source's footer renders below them and its wrapper wraps them.
 - **SH764** — Dirty is scoped to paths that compile and the build's commit is diffed against HEAD before the clock, so a roadkeep edit no longer cancels the run; the rule is a directory, not `*.md`, because seven READMEs ship inside the jar.
+- **SH768** — A post-type can be declared disposable at creation and never after, is marked SCRATCH in the context pack and agents.md, and `shio post-type rm --scratch` sweeps it — which a teardown cannot, because the run that dies is the one that leaves debris.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

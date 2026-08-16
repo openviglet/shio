@@ -651,32 +651,6 @@ or refuses it naming the form it wants — P6's shape, and the batch already doe
 this for `folder`. And `verify` extends SH374's rule to every relation, `sections`
 first, because an unresolvable one is the same defect wherever it sits.
 
-### XVII.109 The fixtures that outlive the run (SH768)
-
-`shio pull` on a working instance writes 22 post-types, and two of them are debris:
-
-    ShioConfRendermsgmgaup2qjcArticle   TITLE, TEXT
-    ShioConfRendermsgmgrcoqdq2Article   TITLE, TEXT
-
-Both are conformance artefacts, named by generated run ids. They are ordinary non-system
-types, so they sit in the model beside `Page` and the seven `Section*` types with
-nothing marking them as scratch.
-
-The cost is paid on every cold start, by every reader. `shio context` is the one call P2
-promises replaces a session, and the model is most of its payload; two invented types
-with a field named `TEXT` read as *this instance has a convention I should follow*.
-Deciding they are junk takes a second call and knowing what a conformance run leaves
-behind — knowledge that is nowhere in the pack.
-
-The mechanism already exists for content: SH591 gave sites a **disposable** flag and
-`site rm --scratch` sweeps them in one confirmation. Post-types have no equivalent, so a
-suite that needs a throwaway type has no way to say so and no way to clean up.
-
-Either the suite deletes what it created, or a type can be declared scratch the way a
-site can. The second is better and it is the smaller change: a run that dies mid-way
-still leaves its types, and a flag makes the sweep possible after the fact rather than
-only in a passing run's teardown.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

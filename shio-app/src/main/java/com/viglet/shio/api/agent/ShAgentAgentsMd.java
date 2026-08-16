@@ -164,6 +164,12 @@ public final class ShAgentAgentsMd {
         if (type.managed()) {
             notes.add("managed by code — edit `shio/post-types/`, run `shio push`");
         }
+        // SH768 — first, and in those words. This note is the whole point of the flag: a reader
+        // meeting `ShioConfRendermsgmgaup2qjcArticle  TITLE, TEXT` in the model has no way to tell
+        // a fixture from a decision somebody made, and reads it as a convention to follow.
+        if (type.scratch()) {
+            notes.add("SCRATCH — a fixture, not a convention; `shio post-type rm --scratch` sweeps it");
+        }
         return notes.isEmpty() ? "—" : String.join("; ", notes);
     }
 

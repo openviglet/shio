@@ -54,7 +54,22 @@ public record ShPostTypeDef(
         String workflowPublishEntity,
         boolean system,
         Boolean managed,
+        Boolean scratch,
         List<ShPostTypeAttrDef> fields) {
+
+    /** The seven-field form: every caller before SH768 made a type declarable as disposable. */
+    public ShPostTypeDef(
+            String name,
+            String title,
+            String namePlural,
+            String description,
+            String workflowPublishEntity,
+            boolean system,
+            Boolean managed,
+            List<ShPostTypeAttrDef> fields) {
+        this(name, title, namePlural, description, workflowPublishEntity, system, managed, null,
+                fields);
+    }
 
     /**
      * Whether this write claims code ownership — absent means yes, preserving the
@@ -62,5 +77,20 @@ public record ShPostTypeDef(
      */
     public boolean claimsCodeOwnership() {
         return managed == null || managed;
+    }
+
+    /**
+     * Whether this write declares the type disposable (SH768).
+     *
+     * <p>Unlike {@link #claimsCodeOwnership()}, absent means <b>no</b>. Scratch is never a default:
+     * a caller that did not say the word gets a type that is kept, because the failure mode of
+     * guessing wrong here is a sweep deleting a model somebody meant.</p>
+     *
+     * <p>Honoured on <b>create</b> only — see {@code ShPostTypeAdminService#upsert}. The declaration
+     * has to be one its creator made at creation, or the flag becomes a way to make a real type
+     * sweepable after the fact.</p>
+     */
+    public boolean declaresScratch() {
+        return Boolean.TRUE.equals(scratch);
     }
 }

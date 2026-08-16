@@ -15,7 +15,6 @@
 - 📋 **SH765** (deps: SH687 ✅) **The regions reader names a region's markup origin and never the theme painting it, the half a curator asks about** — It answers verbatim or sections per region, so a page carrying two stylesheets cannot say which region each one paints. → §XVII.106
 - 📋 **SH766** (deps: SH685 ✅) **A mixed page's title is never editable, because the layout annotates it only when there is no verbatim markup** — annotations answers 0/5 on the home page, and the template puts the only sh-field title inside an unless content branch a mixed page never takes. → §XVII.107
 - 📋 **SH767** (deps: —) **A sections list holding valid addresses stores, resolves to nothing, renders empty, and verify calls the site ok** — The relation wants a site-relative path, so post:VigR2/sections/vb-top was kept verbatim and the page served with no sections at all and no finding anywhere. → §XVII.108
-- 📋 **SH768** (deps: —) **A conformance run leaves its throwaway post-types in the model, where every cold start reads them as conventions** — The instance carries ShioConfRendermsgmgaup2qjc and ShioConfRendermsgmgrcoqdq2, two of 22 types, and a reader cannot tell a fixture from a decision somebody made. → §XVII.109
 
 ## Priority
 

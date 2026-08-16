@@ -131,6 +131,68 @@ class ShPostTypeAdminServiceTest {
         assertThat(created.system()).isFalse();
     }
 
+    /**
+     * SH768 — the assertion that would have caught it, at the boundary it crossed.
+     *
+     * <p>Two conformance fixtures — {@code ShioConfRendermsgmgaup2qjcArticle} and
+     * {@code ShioConfRendermsgmgrcoqdq2Article} — sat in a working instance's model as two of 22
+     * types with nothing marking them as debris, so every cold {@code shio context} presented them
+     * as conventions to follow. The write path is where the declaration has to be made and where it
+     * has to stop being accepted, which is what these two assertions pin.</p>
+     */
+    @Test
+    void aTypeIsDeclaredDisposableAtCreationAndNeverAfterwards() {
+        String name = "PT-SCRATCH-" + UUID.randomUUID();
+
+        ShPostTypeDef created = service.upsert(name, new ShPostTypeDef(
+                name, "Fixture", "Fixtures", null, null, false, null, true,
+                List.of(field("title", "Text", 0, true, null, List.of()))));
+        assertThat(created.scratch())
+                .as("SH768: a creator that said the word gets a type the sweep can reach")
+                .isTrue();
+        assertThat(service.get(name).orElseThrow().scratch())
+                .as("and it is delivered on the next read, which is where a reader meets it")
+                .isTrue();
+
+        // The guarantee, and the whole reason this is a column and not a naming convention: a later
+        // write cannot raise the flag, or `post-type rm --scratch` becomes a way to sweep a model
+        // somebody meant. SH591 makes exactly this promise for a scratch site.
+        String kept = "PT-KEPT-" + UUID.randomUUID();
+        service.upsert(kept, new ShPostTypeDef(kept, "Real", "Reals", null, null, false, null,
+                List.of(field("title", "Text", 0, true, null, List.of()))));
+        ShPostTypeDef reclaimed = service.upsert(kept, new ShPostTypeDef(
+                kept, "Real", "Reals", null, null, false, null, true,
+                List.of(field("title", "Text", 0, true, null, List.of()))));
+        assertThat(reclaimed.scratch())
+                .as("SH768: an update claiming scratch on a kept type changes nothing — the "
+                        + "declaration has to be one its creator made before there was anything "
+                        + "written against it")
+                .isNull();
+    }
+
+    /**
+     * SH768 — and absent is <b>kept</b>, which is the opposite default to SH66's {@code managed}.
+     *
+     * <p>Worth its own assertion because the two boxed flags on this record read alike and mean
+     * opposite things when omitted: a write with no {@code managed} claim owns the type, and a write
+     * with no {@code scratch} claim is emphatically not disposable. Guessing the other way would let
+     * the sweep reach a model nobody declared.</p>
+     */
+    @Test
+    void aTypeNobodyCalledDisposableIsKept() {
+        String name = "PT-DEFAULT-" + UUID.randomUUID();
+
+        ShPostTypeDef created = service.upsert(name, new ShPostTypeDef(
+                name, "Ordinary", "Ordinaries", null, null, false, null,
+                List.of(field("title", "Text", 0, true, null, List.of()))));
+
+        assertThat(created.scratch())
+                .as("SH768: scratch is never a default — the failure mode of guessing wrong is a "
+                        + "sweep deleting a model somebody meant")
+                .isNull();
+        assertThat(created.declaresScratch()).isFalse();
+    }
+
     @Test
     void aHandEditIsRefusedAgainstACodeOwnedType() {
         String name = "PT-HAND-" + UUID.randomUUID();

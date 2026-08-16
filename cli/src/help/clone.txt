@@ -26,14 +26,10 @@ rests on: read the inventory before anything else happens.
   --ignore-robots          Crawl anyway; recorded in the inventory
   --delay <seconds>        Wait between requests (default: the site's own Crawl-delay)
   --timeout <ms>           Per-page timeout with --render (default 30000)
-  --no-progress            Write only what was asked for. By default the crawl reports where
-                           it is, to two files beside the inventory:
-                             shio/.shio/clone-status.json    where it is now — one small Read,
-                                                             the same size however long it runs;
-                                                             startedAt/updatedAt tells a slow
-                                                             page from a wedged one
-                             shio/.shio/clone-progress.jsonl one line per page or asset, with
-                                                             what it cost — grep it for failures
+  --no-progress            Write only what was asked for. By default the crawl also writes
+                           shio/.shio/clone-status.json (where it is now; fixed size, with
+                           startedAt/updatedAt) and clone-progress.jsonl (one line per page
+                           or asset, with what it cost)
   --out <file>             Inventory path (default shio/.shio/source-inventory.json)
   --json                   The inventory on stdout instead of the report
   --url <url>              The site to capture, when no positional is given. The ONE command

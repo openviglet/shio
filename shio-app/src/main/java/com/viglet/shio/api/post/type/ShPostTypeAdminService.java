@@ -134,6 +134,13 @@ public class ShPostTypeAdminService {
         postType.setDescription(def.description());
         postType.setWorkflowPublishEntity(def.workflowPublishEntity());
         postType.setManaged(codeOwned);
+        // SH768 — declared disposable at creation and never afterwards, which is SH591's guarantee
+        // for a scratch site and holds for the same reason: a flag a later write could raise would
+        // be a way to make a real post-type sweepable in bulk, and the sweep must not become that.
+        // So an update leaves the column exactly as the create left it, whatever this def claims.
+        if (existing == null) {
+            postType.setScratch(def.declaresScratch() ? Boolean.TRUE : null);
+        }
         if (existing != null) {
             postType.setModifier(currentUser());
             postType.setModifiedDate(Instant.now());
