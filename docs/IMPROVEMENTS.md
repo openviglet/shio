@@ -535,33 +535,34 @@ listing, or six languages. They surface here because a real site has all three.
 
 ### XVII.104 The writer shipped ahead of the model (SH763)
 
-A clean replication of `www.viglet.org` at `4b20d8e0` — 12 pages captured, 31
-candidates, 23 accepted — ends here:
+A clean replication of `www.viglet.org` at `4b20d8e0` — 12 pages, 31 candidates, 23
+accepted — ends here:
 
     shio: 'Page' does not declare a field named 'contentAfter'
       at: ops[28]
       allowed: title, content, description, sections
 
-SH693 split the kept markup so the source's footer renders below the sections. It landed
-in `cli/src/convert.mjs`: the field is written at line 1103 and the generated layout
-emits `{{#if contentAfter}}` at line 575. **`contentAfter` appears nowhere in
-`shio-app/src`.** `GET /render/post-types/drift` answers `[]`, so no reconcile adds it,
-and the agent context confirms `Page` still declares `title, description, content,
-sections`.
+SH693 split the kept markup so the source's footer renders below the sections, and it
+landed in `cli/src/convert.mjs` alone: written at 1103, emitted by the generated
+template at 575, **absent from `shio-app/src`**. `drift` answers `[]`. Pushing the field
+by hand let the same capture produce 42 objects and exit 0, so the field is the whole of
+the blockage.
 
-So replication is broken end to end. Last round the same source produced 42 objects and
-four routes serving 200; this one writes 18 assets and refuses.
+**Declaring `contentAfter` on `Page` unblocks it and is the wrong shape.** It encodes
+position rather than meaning, so a curator meets a box called *Content After* that says
+nothing about what it holds. It admits exactly **one** split — kept markup between two
+accepted blocks needs content, section, content, section, content — and this capture
+survived only because the accepted blocks were contiguous. It is replication-only, so
+every hand-authored page carries a field that is always empty. And it contradicts
+§XVII.100: a region list of length two with hardcoded roles is the degenerate case of
+what that definition asks for.
 
-The assertion that would have caught it is one step further out than the ones that
-shipped. `convert.test.mjs:1017` asserts `page.data.contentAfter` on the document
-`convert` *produces*, and `:1029` asserts the template puts it after the sections loop.
-Both are true. Neither sends the document to an instance, so SH168 — the guard that
-refuses a `data` key the post-type does not declare, and whose whole point is that it
-has no exceptions — was never consulted.
+The shape that removes a field instead of adding one is **verbatim markup as a section
+type** — one `html` field, living in `sections` like everything else. Order comes from
+the list, N splits work, the regions reader already speaks it, and a curator can move or
+replace a raw block, which is the mixed→authorable path mixed mode exists to offer.
 
-Two things follow. The field belongs on `Page` alongside `content`. And the chain wants
-one assertion that converts against a live instance, which is what `pnpm conformance` is
-for.
+The gate that should have caught this is SH764's, not a missing one.
 
 ### XVII.105 The guard that a roadmap edit trips (SH764)
 
@@ -648,6 +649,60 @@ way to reach the post — which is what the console is for, and is worth decidin
 than inheriting.
 
 The assertion that closes this, per SH527: a mixed page reports its title as editable.
+
+### XVII.108 The relation that takes an address and means nothing by it (SH767)
+
+`Page.sections` is stored as site-relative paths — a converted page reads `sections:
+["/sections/b59589bb5"]`. Writing the same relation as the address form the rest of the
+protocol uses:
+
+    "sections": ["post:VigR2/sections/vb-top", …]
+
+is accepted, `changed: true`, and stored **verbatim**. The renderer resolves none of the
+three, the page serves with no sections, and `shio verify --site VigR2` answers `ok — 0
+error(s), 2 warning(s) over 70 object(s)`.
+
+Three surfaces have to agree for that to be quiet. SH79 makes `post:<site>/<url>` the
+currency and says writes take `post:` and `folder:`; the batch validated every other
+field on the op and this one not at all; and `verify` has a dangling-relation rule —
+SH374 grades a dangling `translationOf` as an error unscoped and a warning scoped —
+which does not reach `sections`.
+
+The failure mode is the expensive kind: **it looks authored.** The post exists, its
+state is PUBLISHED, the route answers 200, the digest lists the layout's own landmarks,
+and the only symptom is that a curator opens the page and the content is missing.
+Nothing in the loop closes.
+
+Two fixes and they are independent. The write resolves an address in a relation field,
+or refuses it naming the form it wants — P6's shape, and the batch already does exactly
+this for `folder`. And `verify` extends SH374's rule to every relation, `sections`
+first, because an unresolvable one is the same defect wherever it sits.
+
+### XVII.109 The fixtures that outlive the run (SH768)
+
+`shio pull` on a working instance writes 22 post-types, and two of them are debris:
+
+    ShioConfRendermsgmgaup2qjcArticle   TITLE, TEXT
+    ShioConfRendermsgmgrcoqdq2Article   TITLE, TEXT
+
+Both are conformance artefacts, named by generated run ids. They are ordinary non-system
+types, so they sit in the model beside `Page` and the seven `Section*` types with
+nothing marking them as scratch.
+
+The cost is paid on every cold start, by every reader. `shio context` is the one call P2
+promises replaces a session, and the model is most of its payload; two invented types
+with a field named `TEXT` read as *this instance has a convention I should follow*.
+Deciding they are junk takes a second call and knowing what a conformance run leaves
+behind — knowledge that is nowhere in the pack.
+
+The mechanism already exists for content: SH591 gave sites a **disposable** flag and
+`site rm --scratch` sweeps them in one confirmation. Post-types have no equivalent, so a
+suite that needs a throwaway type has no way to say so and no way to clean up.
+
+Either the suite deletes what it created, or a type can be declared scratch the way a
+site can. The second is better and it is the smaller change: a run that dies mid-way
+still leaves its types, and a flag makes the sweep possible after the fact rather than
+only in a passing run's teardown.
 
 ## XIX The public site (Block S)
 
