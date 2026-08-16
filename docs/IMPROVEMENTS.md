@@ -621,6 +621,63 @@ or refuses it naming the form it wants — P6's shape, and the batch already doe
 this for `folder`. And `verify` extends SH374's rule to every relation, `sections`
 first, because an unresolvable one is the same defect wherever it sits.
 
+### XVII.110 The claim that a later task made false (SH769)
+
+Two of these turned up in one session, and only one of them had an instrument.
+
+The first was caught: `improvements-debt.test.mjs` failed on `§XVII.100`, an anchor
+SH763's rationale cited and SH692 removed when it shipped. Written by `roadkeep section
+amend`, which validated the prose and never asked whether the anchor it names exists —
+so a docs-only commit turned the JS gate red, and the gate that found it is one the next
+person only reaches by running the suite.
+
+The second was not caught at all, and was found by reading.
+`docs/agents/agent-surface.md` said, of the regions reader:
+
+    `styled by` — naming the theme in force per region, and warning when two are — is
+    deliberately not here: it needs class-to-stylesheet provenance, which `definedIn`
+    does not keep.
+
+SH694 kept the provenance and shipped the warning. The sentence sat **four lines above**
+the section documenting that, and it had been false since SH694 landed. A reader
+deciding whether to build the feature would have believed it.
+
+The shapes differ and the defect is one: prose asserting a capability is absent, over a
+ledger that says it shipped. A dangling anchor is decidable and already is; this is the
+wider version, and it is the more expensive one, because a stale "not here" reads as a
+decision rather than as rot.
+
+What is decidable: prose naming an id or a capability in the negative, checked against
+the changelog. Not every sentence — the ones that say *not here*, *does not*, *is
+deliberately not*, beside a task id the ledger holds. SH338's rule applies: the
+instrument lands before the fixes, because a grep finds the one nobody read.
+
+### XVII.111 The stamp that outlived its commit (SH770)
+
+SH755 compares what the ledger declares against what each gate last answered *here*, by
+reading the stamp `scripts/gate-stamp.mjs` leaves in `.gates/`. The comparison is
+between a claim and a measurement, and nothing checks the measurement is about this
+tree.
+
+Measured at the start of this session: `.gates/conformance.json` held `red: true` at
+`sha 4b20d8e0`, and HEAD was `42d02432` — two commits later. The gate failed the Java
+suite over a red recorded against code that had since changed twice. Here it happened to
+be right, because the defect SH763 names was still open. That is luck, not a property of
+the check.
+
+Both directions are wrong and the second is worse. A **stale red** blocks a commit over
+a failure that may already be fixed, which teaches people to re-run until it clears. A
+**stale green** is the one that matters: a gate that passed three commits ago reads as
+"this tree is green", which is the sentence SH755 exists to stop somebody believing —
+one level up from where it stopped them.
+
+The stamp already carries `sha` and SH755 already prints it, so the fact is there and
+only the comparison is missing. What is decidable cheaply: whether the stamp's commit is
+HEAD, and failing that whether anything that compiles differs between them — the
+predicate SH764 just built, in `compiles()`. A stamp older than the tree is not a
+colour; it is a run nobody has done, and the honest report is the one an absent stamp
+already gets.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

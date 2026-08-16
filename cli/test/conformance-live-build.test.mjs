@@ -243,7 +243,16 @@ describe("SH764: the staleness gate is about the JVM, not about the working tree
   }
 });
 
-/** HEAD as the gate itself reads it — the same three facts, asked of the repo under test. */
+/**
+ * HEAD as the gate itself reads it — the same three facts, asked of the repo under test.
+ *
+ * <p>`dirty` is computed with {@link compiles}, and it has to be: this copy read the whole porcelain
+ * and SH764 narrowed the real one to paths that compile, so on a tree carrying only documentation
+ * edits the two disagreed — the test took its dirty branch and expected a refusal the gate correctly
+ * no longer makes. Caught by the suite on a tree dirty with exactly the roadmap files this task is
+ * about, which is the case the whole change exists for. A second copy of a predicate is the drift
+ * SH245 is about, so this composes the exported one rather than restating it.</p>
+ */
 async function liveHead() {
   const { execFile } = await import("node:child_process");
   const { promisify } = await import("node:util");
@@ -254,5 +263,5 @@ async function liveHead() {
   const [sha, iso] = stdout.trim().split(/\s+/);
   const { stdout: status } = await run("git", ["-C", repo, "status", "--porcelain", "-uno"], { timeout: 10_000 });
 
-  return { sha, iso, at: Date.parse(iso), dirty: status.trim().length > 0 };
+  return { sha, iso, at: Date.parse(iso), dirty: changedPaths(status).some(compiles) };
 }
