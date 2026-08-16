@@ -1,16 +1,18 @@
 # Viglet Shio
 
-> A headless CMS whose primary operator is a coding agent. The agent builds the site
-> (MCP tools, content as files, blueprints); the human curates (React console, Universal
-> Editor, preview links); the Content Delivery API delivers (REST/GraphQL + TypeScript
-> SDKs). Open source, self-hosted. Shio hosts no model and no prompts — it is the
-> substrate an external agent drives.
+> An open-source, self-hosted headless CMS with four ways in, over one content engine:
+> a full React console that needs no agent at all (sites, content types, media,
+> publishing, users); an MCP + CLI surface built for coding agents; the content
+> projected to files for a repository workflow; and REST/GraphQL delivery with
+> TypeScript SDKs. Same posts, same drafts, same publish act behind all four.
+> Agent-first is the order a capability is built in (law P1), not a condition of use.
+> Shio hosts no model and no prompts — it is the substrate an external agent drives.
 
 ## Read the Markdown, not the HTML
 
 Every route on this site is also published as Markdown at `<path>.md` — the same content,
-converted from the same render, with the navigation and the footer left out. Across the ten
-routes that is about 64 KB of Markdown against 465 KB of HTML.
+converted from the same render, with the navigation and the footer left out. Across the
+eleven routes that is about 78 KB of Markdown against 592 KB of HTML.
 
 - `/` → https://shio.viglet.org/index.md
 - any other route → append `.md`, e.g. https://shio.viglet.org/features/rendering.md
@@ -19,7 +21,11 @@ routes that is about 64 KB of Markdown against 465 KB of HTML.
 
 ## Pages on this site
 
-- [/](https://shio.viglet.org/): what Shio is, one section per design law
+- [/](https://shio.viglet.org/): what Shio is — the four ways in, six deployment shapes,
+  then one section per design law
+- [/console](https://shio.viglet.org/console): the traditional path — everything the
+  React console does on its own, the four capabilities that live on the CLI instead, and
+  what changes if an agent is attached later
 - [/claude-code](https://shio.viglet.org/claude-code): install the plugin or the bare MCP
   bridge, the three calls a session opens with, and the AGENT token scope
 - [/compare](https://shio.viglet.org/compare): agent-operability against Contentful,
@@ -61,7 +67,7 @@ this server sends nothing unprompted.
 
 `shio_context` · `shio_find` · `shio_read` · `shio_write` · `shio_apply` ·
 `shio_publish` · `shio_assets` · `shio_changes` · `shio_verify` · `shio_digest` ·
-`shio_remember`
+`shio_remember` · `shio_marketplace`
 
 ## MCP resources
 
@@ -107,6 +113,8 @@ this server sends nothing unprompted.
 A feature that breaks one is wrong even if it was requested.
 
 - P1 Agent-first design order — every capability lands MCP → files/CLI → REST → console.
+  It orders how a capability ships, never who may operate the CMS: the console is a full
+  CMS on its own, and an instance with no agent token issued is an ordinary headless CMS.
 - P2 One call replaces a session — discovery is a product feature, not a docs problem.
 - P3 Tokens are a measured budget — a token regression fails the build.
 - P4 Files beat APIs for authoring — Edit, Write and Grep are the cheapest tools.

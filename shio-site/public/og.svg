@@ -27,18 +27,34 @@
   </g>
   <text x="192" y="140" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="30" font-weight="800" fill="#f6ece8">Viglet Shio</text>
 
-  <!-- Headline -->
-  <text x="80" y="300" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="#f6ece8">The CMS whose operator</text>
-  <text x="80" y="378" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="url(#headline)">is Claude Code.</text>
+  <!-- Headline. It said "The CMS whose operator is Claude Code / Your agent builds
+       the site. You approve it." — true of one way to use the product, and read by
+       everyone else as a prerequisite. The card is the first thing most people ever
+       see of Shio, so it is the last place that sentence could be left standing. -->
+  <text x="80" y="300" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="#f6ece8">A complete CMS.</text>
+  <text x="80" y="378" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="url(#headline)">Agent-ready, not agent-only.</text>
 
-  <text x="80" y="436" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="27" font-weight="500" fill="#c9b6ae">Your agent builds the site. You approve it.</text>
+  <text x="80" y="436" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="27" font-weight="500" fill="#c9b6ae">Console, agent, files or API &#8212; four ways in, one content engine.</text>
 
-  <!-- The command, in a terminal pill -->
-  <g transform="translate(80, 480)">
-    <rect x="0" y="0" width="770" height="62" rx="12" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5" />
-    <text x="24" y="40" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="22" fill="#ff8a6b">$</text>
-    <text x="50" y="40" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="22" fill="#ede2dd">claude mcp add shio -- npx @viglet/shio mcp</text>
+  <!-- The four doors, as pills. -->
+  <g transform="translate(80, 480)" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="21">
+    <g>
+      <rect x="0" y="0" width="196" height="56" rx="12" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5" />
+      <text x="22" y="36" fill="#ede2dd">React console</text>
+    </g>
+    <g transform="translate(212, 0)">
+      <rect x="0" y="0" width="160" height="56" rx="12" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5" />
+      <text x="22" y="36" fill="#ede2dd">MCP + CLI</text>
+    </g>
+    <g transform="translate(388, 0)">
+      <rect x="0" y="0" width="196" height="56" rx="12" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5" />
+      <text x="22" y="36" fill="#ede2dd">content files</text>
+    </g>
+    <g transform="translate(600, 0)">
+      <rect x="0" y="0" width="212" height="56" rx="12" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5" />
+      <text x="22" y="36" fill="#ede2dd">REST + GraphQL</text>
+    </g>
   </g>
 
-  <text x="80" y="588" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="19" fill="#8d7b74">shio.viglet.org &#183; open source &#183; self-hosted &#183; MCP-native</text>
+  <text x="80" y="588" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="19" fill="#8d7b74">shio.viglet.org &#183; open source &#183; self-hosted &#183; headless &#183; MCP-native</text>
 </svg>

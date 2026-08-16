@@ -254,7 +254,7 @@ function writeBlocks(node, out, depth) {
       // Trimmed by index, not by /^\n+|\n+$/: an anchored repeated group over a
       // run of newlines backtracks super-linearly, and a code block is the one
       // place a long run of them is ordinary.
-      const code = trimNewlines(rawText(node));
+      const code = trimNewlines(preText(node));
       if (code) out.push(`\`\`\`\n${code}\n\`\`\``);
       return;
     }
@@ -305,6 +305,37 @@ function rawText(node) {
   if (node.text !== undefined) return node.text;
   if (skipped(node)) return "";
   return node.children.map(rawText).join("");
+}
+
+/**
+ * The raw text of a `<pre>`, with one line per line-shaped child.
+ *
+ * A code block on this site comes in two markups. `CodeBlock` puts one string
+ * with real newlines inside `<code>`, and concatenating its children is right.
+ * The session panels instead emit one `<span class="block">` per line — because
+ * each line is coloured independently — and those spans carry no newline at
+ * all: concatenating them ran a six-line file tree into one unreadable line in
+ * the Markdown twin, which is the failure this whole converter exists to avoid.
+ *
+ * So a child that renders as its own line contributes one. Detected from the
+ * class rather than from the tag, because the tag is `span` in both cases and
+ * only the class says which one is a line.
+ */
+function preText(node) {
+  const parts = [];
+  const walk = (n) => {
+    if (n.text !== undefined) {
+      parts.push(n.text);
+      return;
+    }
+    if (skipped(n)) return;
+    const isLine = (n.attrs?.class ?? "").split(/\s+/).includes("block");
+    if (isLine && parts.length && !parts.at(-1).endsWith("\n")) parts.push("\n");
+    n.children.forEach(walk);
+    if (isLine) parts.push("\n");
+  };
+  node.children.forEach(walk);
+  return parts.join("");
 }
 
 /**

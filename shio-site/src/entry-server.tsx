@@ -21,9 +21,15 @@ export interface PrerenderRoute {
 export const routes: PrerenderRoute[] = [
   {
     path: "/",
-    title: "Viglet Shio — the CMS whose operator is Claude Code",
+    title: "Viglet Shio — a complete CMS your agent can drive too",
     description:
-      "An open-source, self-hosted headless CMS designed for a coding agent: MCP-native, one call replaces a discovery session, content lives as files, every 4xx carries the fix, and every write lands as a draft a curator approves.",
+      "An open-source, self-hosted headless CMS with four ways in: a full React console needing no agent at all, an MCP and CLI surface for coding agents, content projected to files for a repository workflow, and REST plus GraphQL delivery with TypeScript SDKs. Same content, same drafts, same publish button.",
+  },
+  {
+    path: "/console",
+    title: "Shio without an agent — the CMS in the browser | Viglet Shio",
+    description:
+      "The traditional path, in full: create a site, build the content model with fifteen field widgets, write pages in a form, upload media, preview and edit on the rendered page, publish or schedule, and manage users, roles and tokens — all in the console. Plus the four things that genuinely live on the command line, and what changes if you attach an agent later.",
   },
   {
     path: "/claude-code",

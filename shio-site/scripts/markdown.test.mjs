@@ -50,6 +50,17 @@ test("a code block survives verbatim, newlines and all", () => {
   assert.match(out, /```\nshio pull --content\nshio push --content\n```/);
 });
 
+test("a code block whose lines are separate spans keeps one line per span", () => {
+  // The session panels colour each line on its own, so they emit one
+  // `<span class="block">` per line and no newline characters at all. Joining
+  // the children ran a whole artefact — a file tree, a diff — into a single
+  // line in the twin, which reads as mangled rather than as missing.
+  const out = md(
+    '<pre><code><span class="block">acme</span><span class="block whitespace-pre">  └─ Home</span></code></pre>'
+  );
+  assert.match(out, /```\nacme\n {2}└─ Home\n```/);
+});
+
 test("a link keeps its href, and an in-page anchor keeps only its text", () => {
   assert.match(md('<p><a href="/curator">For the curator</a></p>'), /\[For the curator\]\(\/curator\)/);
   assert.match(md('<p><a href="#laws">The ten laws</a></p>'), /^The ten laws$/m);

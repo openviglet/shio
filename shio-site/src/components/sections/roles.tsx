@@ -3,24 +3,25 @@ import { Card } from "@/components/ui/card";
 import { ROLES } from "@/lib/site-content";
 
 /**
- * The positioning statement, as three cards. Everything else on the page is a
- * consequence of this split, so it sits directly under the hero — a reader who
- * only ever sees "the agent writes the site" concludes, correctly, that nobody
- * is minding it.
+ * Three seats — and the sentence under the cards is the part that matters, not
+ * the cards. The earlier version of this section read "the agent builds, the
+ * curator approves", which describes one arrangement as though it were the only
+ * one and quietly demotes the person to a reviewer. A person can hold every
+ * seat; the agent's can stay empty forever.
  */
 export function Roles() {
   return (
     <section id="roles" className="py-20">
       <Container>
         <SectionHeader
-          eyebrow="Three roles"
+          eyebrow="Three seats"
           title={
             <>
-              The agent builds. The curator approves.{" "}
+              The person creates and decides. The agent builds, if there is one.{" "}
               <span className="text-primary">The API delivers.</span>
             </>
           }
-          description="Not one operator with a chat box bolted on — three, each with the surface it is actually good at."
+          description="Three seats over one content engine, each with the surface it is actually good at — and any of them can be empty."
         />
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -53,6 +54,13 @@ export function Roles() {
             </Card>
           ))}
         </div>
+
+        <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
+          One person can hold all three. Most instances start that way: somebody
+          creates the site, writes the pages and points a front end at them, and no
+          agent is ever issued a token. The seats describe what a surface is{" "}
+          <em>for</em> &mdash; not a staffing requirement.
+        </p>
       </Container>
     </section>
   );

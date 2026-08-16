@@ -2,7 +2,9 @@ import {
   Boxes,
   Bot,
   Braces,
+  Building2,
   ClipboardCheck,
+  Code2,
   Eye,
   FileCode2,
   FileStack,
@@ -11,13 +13,17 @@ import {
   GitCompareArrows,
   Layers,
   Lock,
+  Megaphone,
+  MousePointerClick,
   Radar,
+  RefreshCw,
   Route,
   ScrollText,
   ShieldCheck,
   Sparkles,
   TerminalSquare,
   Undo2,
+  UsersRound,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -49,8 +55,8 @@ export const LAWS: Law[] = [
     id: "P1",
     title: "Agent-first design order",
     gloss:
-      "Every capability lands MCP → files/CLI → REST → console. A console-only feature is incomplete.",
-    anchor: "#surface",
+      "Every capability lands MCP → files/CLI → REST → console. A console-only feature is incomplete — and the order is about what may not be skipped on the way to shipping, never about who is allowed to operate the CMS.",
+    anchor: "#paths",
   },
   {
     id: "P2",
@@ -195,7 +201,7 @@ export const TRANSCRIPT: TranscriptStep[] = [
         " status: DRAFT",
         " ---",
         "+",
-        "+Shio is a CMS whose primary operator is a coding agent.",
+        "+An open-source headless CMS with four ways in.",
       ],
     },
   },
@@ -249,6 +255,262 @@ export const TRANSCRIPT: TranscriptStep[] = [
   },
 ];
 
+/* ── The same page, built by hand ────────────────────────────────────────── */
+
+export interface ConsoleStep {
+  /** What the person does, in the words the console itself uses. */
+  action: string;
+  /** Where in the console it happens. */
+  screen: string;
+  /** One line of what they get back. */
+  result: string;
+  /** What the screen shows afterwards. */
+  artefact: { label: string; lines: string[] };
+}
+
+/**
+ * The counterpart to `TRANSCRIPT`, and the reason both are on the page: they
+ * end at the same draft. The site used to open on the agent session alone,
+ * which reads as a CMS you cannot use without one — an impression the product
+ * does not deserve and the console disproves in six clicks.
+ *
+ * Every screen named here is a route in the console (`shio-react/src/app/`),
+ * under the same rule as the rest of this file: a claim is about a real surface.
+ */
+export const CONSOLE_SESSION: ConsoleStep[] = [
+  {
+    action: "Create the site",
+    screen: "Content › Sites › New",
+    result: "a site, its root folder and its home page — nothing else required",
+    artefact: {
+      label: "Content › Sites",
+      lines: [
+        "acme                    just now",
+        "  ├─ (root folder)",
+        "  └─ Home               DRAFT",
+        "",
+        "or: Import a .zip export of a site you already have",
+      ],
+    },
+  },
+  {
+    action: "Shape the model, or keep the one that shipped",
+    screen: "Content › Post types",
+    result: "fields, each drawn by one of fifteen widgets — no schema file to write",
+    artefact: {
+      label: "Post type › Page",
+      lines: [
+        "title          Text          required  ·  Title",
+        "summary        Text Area               ·  Summary",
+        "content        HTML Editor",
+        "hero           File",
+        "related        Relator",
+      ],
+    },
+  },
+  {
+    action: "Write the launch page",
+    screen: "Content › acme › New › Page",
+    result: "a form built from the type — the same fields, drawn from the same model",
+    artefact: {
+      label: "New Page",
+      lines: [
+        "Title    │ Launching Shio 2026.3",
+        "Summary  │ What changed, and why.",
+        "Content  │ [ rich text ]",
+        "URL      │ /launch",
+      ],
+    },
+  },
+  {
+    action: "Save it",
+    screen: "the sticky save bar",
+    result: "status DRAFT — the live site is unchanged, exactly as for an agent write",
+    artefact: {
+      label: "what the instance now holds",
+      lines: [
+        "post:acme/launch        DRAFT",
+        "",
+        "0 published. The live site is unchanged.",
+      ],
+    },
+  },
+  {
+    action: "Look at it, and fix the headline where you can see it",
+    screen: "Preview  ·  Universal Editor",
+    result: "the real rendered page, and the field edited on the page itself",
+    artefact: {
+      label: "/preview/acme/launch",
+      lines: [
+        "▸ the rendered page, from an expiring,",
+        "  single-post token",
+        "",
+        "▸ click the headline, type, save —",
+        "  it is the draft's title field",
+      ],
+    },
+  },
+  {
+    action: "Publish it, or schedule it",
+    screen: "Publish",
+    result: "an immutable snapshot beside the draft — or a date, and a sweep that fires it",
+    artefact: {
+      label: "post:acme/launch",
+      lines: [
+        "PUBLISHED   2026-03-01 09:30",
+        "DRAFT       editable, diffable against it",
+        "",
+        "Activity: published by you, just now",
+      ],
+    },
+  },
+];
+
+/* ── The four ways in ────────────────────────────────────────────────────── */
+
+export interface UsePath {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  /** The short form, for the tags on a use case. */
+  tag: string;
+  /** Who arrives on this path. */
+  audience: string;
+  /** What it takes to start — the honest prerequisite. */
+  needs: string;
+  body: string;
+  surface: string[];
+  start: { label: string; href: string };
+}
+
+/**
+ * The page's opening argument, and the correction that made this file worth
+ * rewriting: agent-first is the order capabilities are *built* in (law P1), not
+ * a condition of using the product. A visitor who wants an ordinary CMS is not
+ * in the wrong place, and a page that implies otherwise loses them in one
+ * paragraph.
+ *
+ * These are not tiers and not a migration path — they are four doors onto one
+ * content engine. The same posts, the same drafts, the same publish act.
+ */
+export const PATHS: UsePath[] = [
+  {
+    id: "console",
+    icon: MousePointerClick,
+    label: "By hand, in the console",
+    tag: "console",
+    audience: "editors, marketers, anyone who has used a CMS before",
+    needs: "a browser and a login",
+    body:
+      "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team. No agent, no terminal, no YAML — a CMS behaving the way a CMS is expected to behave.",
+    surface: ["React console", "Universal Editor", "Preview links"],
+    start: { label: "Shio without an agent", href: "/console" },
+  },
+  {
+    id: "agent",
+    icon: Bot,
+    label: "With a coding agent",
+    tag: "agent",
+    audience: "anyone who already works with Claude Code or another MCP client",
+    needs: "one command to attach it",
+    body:
+      "Discovery in one call, content authored as files, blueprints applied as units, a render digest instead of a screenshot. The agent writes drafts and cannot publish them — which is what makes handing it write access reasonable.",
+    surface: ["MCP", "shio CLI", "/api/v2/agent"],
+    start: { label: "Drive it from Claude Code", href: "/claude-code" },
+  },
+  {
+    id: "files",
+    icon: FolderTree,
+    label: "As files, in your repository",
+    tag: "files",
+    audience: "teams who would rather review content in a pull request",
+    needs: "the CLI and a repo",
+    body:
+      "Pull the whole site to disk as front-mattered Markdown, edit it with the editor you already use, push it back through a three-way merge — and put shio apply --check in CI so drift fails a build instead of surprising somebody.",
+    surface: ["shio pull / push", "shio apply --check", "Git"],
+    start: { label: "How the projection works", href: "/features/content-as-files" },
+  },
+  {
+    id: "api",
+    icon: Braces,
+    label: "Through the delivery API",
+    tag: "API",
+    audience: "front-end and platform engineers",
+    needs: "a token",
+    body:
+      "Headless in the ordinary sense: REST and GraphQL, a TypeScript client with zero runtime dependencies, a React SDK, a generated Next.js starter, and a bridge that makes your own front end inline-editable.",
+    surface: ["REST", "GraphQL", "@viglet/shio-client"],
+    start: { label: "Delivery and the SDKs", href: "/features/delivery" },
+  },
+];
+
+/* ── Who actually uses it, and how ───────────────────────────────────────── */
+
+export interface UseCase {
+  icon: LucideIcon;
+  title: string;
+  who: string;
+  body: string;
+  /** Ids from PATHS — which doors this scenario actually walks through. */
+  paths: string[];
+}
+
+/**
+ * Six shapes a real deployment takes, ordered so the first one uses no agent at
+ * all. That ordering is the point: it is the case the product supports fully
+ * and the one the old version of this page accidentally denied.
+ */
+export const USE_CASES: UseCase[] = [
+  {
+    icon: Megaphone,
+    title: "A team that just wants a CMS",
+    who: "a marketing or comms team, no agent anywhere in sight",
+    body:
+      "Someone creates the site, defines the types, and the team writes pages in a form and publishes them. Everything an editor touches is the console. The agent surface sits there unused, costing nothing — and the day somebody wants it, no content has to move.",
+    paths: ["console"],
+  },
+  {
+    icon: Code2,
+    title: "A front end you wrote, content someone else owns",
+    who: "an engineering team with a Next.js app and non-technical editors",
+    body:
+      "The delivery API feeds your application and the console is where the copy lives. Add the editor bridge and your own pages become inline-editable, so a reviewer fixes a headline on the real page rather than hunting for a field in a form.",
+    paths: ["api", "console"],
+  },
+  {
+    icon: Bot,
+    title: "An agent does the first build; people keep it",
+    who: "a small team with a large site to stand up",
+    body:
+      "The agent applies a blueprint, writes forty pages and proves them against the lint — all as drafts. Then it stops being interesting: the people who maintain the site work in the console, and the agent comes back only for the next bulk job.",
+    paths: ["agent", "console"],
+  },
+  {
+    icon: GitCompareArrows,
+    title: "Content reviewed like code",
+    who: "a docs or product team already living in pull requests",
+    body:
+      "The site projects to Markdown in your repository, changes arrive as a diff a reviewer can read, and CI runs the drift check and the content lint before a merge. Publishing stays a separate, deliberate act on the instance.",
+    paths: ["files", "console"],
+  },
+  {
+    icon: RefreshCw,
+    title: "An old site that has to become an editable one",
+    who: "an agency, or whoever inherited the site nobody can change",
+    body:
+      "Capture the existing site under robots.txt, review what the crawl proposes, convert it into drafts, and prove by arithmetic that nothing was lost. What you get at the end is content in a model — not a screenshot with a CMS behind it.",
+    paths: ["agent", "console"],
+  },
+  {
+    icon: Building2,
+    title: "Many sites, one instance",
+    who: "a platform team serving several brands or clients",
+    body:
+      "Tenant isolation reaches every surface, including the agent's. Scoped API tokens, roles and groups, webhooks on publish, and an activity log that says who changed what — whether the who was a person or a credential you issued.",
+    paths: ["console", "api", "agent"],
+  },
+];
+
 /* ── The three roles ─────────────────────────────────────────────────────── */
 
 export interface Role {
@@ -259,29 +521,36 @@ export interface Role {
   surface: string[];
 }
 
+/**
+ * Three seats, and the sentence that has to travel with them: **any of them can
+ * be empty, and one person can hold all three.** The person's seat is first
+ * because it is the only one that is never optional — an instance with no agent
+ * is an ordinary CMS, and an instance with no person is not a product anyone
+ * should ship.
+ */
 export const ROLES: Role[] = [
   {
-    icon: Bot,
-    actor: "The agent",
-    verb: "builds",
+    icon: UsersRound,
+    actor: "The person",
+    verb: "creates, and decides",
     description:
-      "Discovers the model in one call, authors content as files, applies a blueprint, renders a preview and proves the result — without a browser, a cookie or a click.",
-    surface: ["MCP", "shio CLI", "/api/v2/agent"],
-  },
-  {
-    icon: ClipboardCheck,
-    actor: "The curator",
-    verb: "approves",
-    description:
-      "Approves, corrects and tweaks. Everything the agent wrote arrives as a draft with attribution on it, in a queue, with a preview link that opens the real page.",
+      "Sites, content models, folders, pages, media, publishing, scheduling, the rest of the team — all of it in the console, and none of it needing an agent to have happened first. When there is an agent, this seat also holds the approve button.",
     surface: ["React console", "Universal Editor", "Preview links"],
   },
   {
+    icon: Bot,
+    actor: "The agent",
+    verb: "builds — if you want one",
+    description:
+      "Discovers the model in one call, authors content as files, applies a blueprint, renders a preview and proves the result — without a browser, a cookie or a click. Its writes are drafts, and its credential cannot publish them.",
+    surface: ["MCP", "shio CLI", "/api/v2/agent"],
+  },
+  {
     icon: Route,
-    actor: "The CDA",
+    actor: "The delivery API",
     verb: "delivers",
     description:
-      "A framework-agnostic delivery API — REST and GraphQL — with TypeScript SDKs, a React SDK and a Next.js starter that is generated rather than copied.",
+      "A framework-agnostic delivery API — REST and GraphQL — with TypeScript SDKs, a React SDK and a Next.js starter that is generated rather than copied. It serves whatever the other two seats agreed on.",
     surface: ["REST", "GraphQL", "@viglet/shio-client"],
   },
 ];
@@ -363,8 +632,8 @@ status: DRAFT
 folder: folder:acme/
 ---
 
-Shio is a CMS whose primary operator is a coding agent.
-The curator approves. The delivery API delivers.`;
+An open-source headless CMS with four ways in: the console,
+an agent, files in a repository, and the delivery API.`;
 
 /* ── P6: an error that is an instruction ─────────────────────────────────── */
 
@@ -712,6 +981,126 @@ export const LIFECYCLE = [
   },
 ];
 
+/* ── /console — the CMS, with nothing attached to it ─────────────────────── */
+
+export interface CapabilityGroup {
+  icon: LucideIcon;
+  title: string;
+  items: string[];
+}
+
+/**
+ * What the console does on its own. Each line is a screen in
+ * `shio-react/src/app/console/` — this list is a walk of that directory rather
+ * than a wish, because the failure it prevents is the one this page exists to
+ * correct: a claim about the human half that nobody checked against the human
+ * half.
+ */
+export const CONSOLE_CAPABILITIES: CapabilityGroup[] = [
+  {
+    icon: FolderTree,
+    title: "Content",
+    items: [
+      "Sites, created from scratch or imported from a .zip export",
+      "Folders, and a tree you move and copy things around in",
+      "Posts of any type, with search across the instance",
+      "A trash that restores — deleting and purging are separate acts",
+    ],
+  },
+  {
+    icon: Layers,
+    title: "The content model",
+    items: [
+      "Post types built in the browser: add a field, pick a widget, order them",
+      "Fifteen widgets — text, rich text, date, select, file, relator, tabs, code",
+      "Relations between posts, and a content browser to pick them",
+      "The types the instance ships with, if you would rather not start empty",
+    ],
+  },
+  {
+    icon: Eye,
+    title: "Publishing",
+    items: [
+      "Draft, preview, publish, schedule, unpublish",
+      "Preview links that open the real rendered page from an expiring token",
+      "Inline editing on that page through the Universal Editor",
+      "A review queue and an activity log — who changed what, and when",
+    ],
+  },
+  {
+    icon: FileStack,
+    title: "Media and files",
+    items: [
+      "A media library for the binaries a page references",
+      "Static files served beside the site",
+      "The file widget, so a field is a picker rather than a URL to paste",
+    ],
+  },
+  {
+    icon: UsersRound,
+    title: "People and access",
+    items: [
+      "Users, groups and roles",
+      "External authentication providers, and email configuration",
+      "API tokens, scoped per job — read, preview, write, agent",
+      "Tenants, when one instance serves several brands or clients",
+    ],
+  },
+  {
+    icon: Braces,
+    title: "Delivery and integration",
+    items: [
+      "A GraphQL explorer against your own content",
+      "Webhooks per site, so a publish can tell your build about it",
+      "The package marketplace, with the dry run shown before anything installs",
+    ],
+  },
+];
+
+/**
+ * And the honest other half. Naming these is what makes the list above worth
+ * reading: three capabilities genuinely live on the command line, because they
+ * need a shell or a browser the instance deliberately does not run.
+ */
+export const CONSOLE_LIMITS = [
+  {
+    title: "Capturing a site that already exists",
+    body: "shio clone walks an origin under robots.txt and writes an inventory. It needs a crawler, and the instance does not run one.",
+  },
+  {
+    title: "Applying a blueprint to a site",
+    body: "The console browses and installs packages, with the dry run shown first. Applying one to a site is shio apply --blueprint, or shio_apply over MCP.",
+  },
+  {
+    title: "Screenshots and the browser audit",
+    body: "shio audit and shio snapshot drive a real browser. That stays in the CLI, where the shell already is — the instance running Chromium per request is a different operational thing entirely.",
+  },
+  {
+    title: "The file projection and the CI drift check",
+    body: "Pulling the site to disk and failing a build on drift is what the CLI is for. Nothing about it is required to run the CMS.",
+  },
+];
+
+/** What actually changes on the day someone attaches an agent to an instance in use. */
+export const AGENT_LATER = [
+  {
+    title: "Nothing moves",
+    body: "The agent reads the same posts, the same types and the same folders the console writes. There is no second store, no export step and no parallel model — law P10 forbids a third contract, and this is what that buys.",
+  },
+  {
+    title: "Its writes look like drafts, because they are",
+    body: "An agent write lands in DRAFT with attribution on it. Whether a credential may publish at all is a property of the token, so the console's publish button stays the only way anything reaches a reader.",
+  },
+  {
+    title: "You get a queue, not a surprise",
+    body: "Changes arrive in the review queue with a preview link each and the verify warnings restated as open questions. The queue is console-authenticated, and an agent token cannot reach the approve call.",
+  },
+  {
+    title: "And you can turn it off",
+    body: "Do not issue an AGENT token, and nothing on that surface can write. The capability is additive in the literal sense: the CMS you were running is the CMS you keep.",
+  },
+];
+
 /* ── /replicate — capture, propose, convert, prove ───────────────────────── */
 
 export interface Phase {
@@ -1025,12 +1414,16 @@ export interface Objection {
 
 export const OBJECTIONS: Objection[] = [
   {
+    q: "Do I have to use an agent?",
+    a: "No, and nothing is withheld if you never attach one. A person creates the site, defines the content model, writes and publishes the pages, uploads the media and manages the team — in a React console, with a visual editor that edits the rendered page. Agent-first is the order a capability is *built* in (law P1): MCP, then files and the CLI, then REST, then the console. It is a rule about what may not be skipped on the way to shipping something, not a condition on who is allowed to operate it.",
+  },
+  {
     q: "Everyone has an MCP server now. Isn't that the same thing?",
     a: "An MCP server is a transport. Put one over an API designed for a browser and the agent gets that API's protocol quality — the same UUID plumbing, the same 400 with no instruction, the same discovery session. The difference this page is about is what the protocol guarantees underneath, which is why every row above is a property you can test rather than a feature you can be told about.",
   },
   {
-    q: "Do I have to use an agent?",
-    a: "No. There is a React console a curator works in, a delivery API with TypeScript SDKs, a Next.js starter and a visual editor that edits the rendered page. The agent-first ordering means every capability reaches the agent first — not that it reaches nobody else.",
+    q: "Our editors will never open a terminal. Is the console a second-class citizen?",
+    a: "It is the surface the product is judged on by everyone who is not an agent, and it carries the whole ordinary job: sites, folders, post types with fifteen field widgets, a media library, search, a trash that restores, publishing and scheduling, users, groups, roles and tokens. Four things genuinely live on the command line — capturing an existing site, applying a blueprint, the browser audit and the file projection — and each is named on the console page rather than left for you to discover.",
   },
   {
     q: "Java and Spring, in 2026?",

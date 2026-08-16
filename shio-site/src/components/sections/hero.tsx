@@ -1,14 +1,13 @@
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/brand";
-import { CopyCommand } from "@/components/copy-command";
-import { AgentTranscript } from "@/components/agent-transcript";
+import { HeroSessions } from "@/components/hero-sessions";
 import { LINKS } from "@/lib/site-content";
 
 const PROMISES = [
+  "A full console — no agent required",
   "Drafts by default — nothing publishes itself",
-  "Self-hosted, your database",
-  "No model, no prompts, no keys in the CMS",
+  "Self-hosted, your database, open source",
 ];
 
 export function Hero() {
@@ -22,33 +21,30 @@ export function Hero() {
         <div className="min-w-0">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs font-semibold text-[#d3bcb3]">
             <span className="size-1.5 rounded-full bg-[#7dd3a0] shadow-[0_0_8px] shadow-[#7dd3a0]" />
-            Open source &middot; Self-hosted &middot; MCP-native
+            Open source &middot; Self-hosted &middot; Headless &middot; MCP-native
           </span>
 
           <h1 className="text-4xl font-extrabold leading-[1.06] tracking-tight sm:text-5xl lg:text-[3.4rem]">
-            The CMS whose operator is{" "}
-            <span className="text-gradient">Claude Code</span>.
+            A complete CMS.{" "}
+            <span className="text-gradient">Your agent can drive it too.</span>
           </h1>
 
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#c9b6ae]">
-            Your agent builds the site. You approve it. Shio is a headless CMS
-            designed backwards from that sentence &mdash; one call replaces a discovery
-            session, content lives as files an agent can <code className="font-mono text-[#ffb08a]">Grep</code>,
-            and every write lands as a draft with your name on the approve button.
+            Write the pages yourself in the console, hand the work to Claude Code,
+            keep the content as files in your repository, or read it all through
+            REST and GraphQL. Four ways in, one content engine &mdash; and the same
+            drafts, previews and publish button behind every one of them.
           </p>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#a89189]">
-            Judged in agent cycles and tokens, not in clicks. Shio hosts no model and
-            no prompts &mdash; it is the substrate your agent drives.
+            The agent path is what makes Shio unusual, not what makes it usable. Never
+            attach one and nothing is withheld: it is an ordinary headless CMS, and it
+            hosts no model, no prompts and no provider keys.
           </p>
 
-          <div className="mt-7">
-            <CopyCommand command="claude mcp add shio -- npx @viglet/shio mcp" />
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <a href={LINKS.docs}>
-                Get started <ArrowRight className="size-4" />
+              <a href="#paths">
+                Find your way in <ArrowRight className="size-4" />
               </a>
             </Button>
             <Button
@@ -57,7 +53,15 @@ export function Hero() {
               variant="outline"
               className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
-              <a href="#laws">The ten laws</a>
+              <a href="/console">Use it without an agent</a>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="ghost"
+              className="text-[#c9b6ae] hover:bg-white/10 hover:text-white"
+            >
+              <a href={LINKS.docs}>Docs</a>
             </Button>
           </div>
 
@@ -72,10 +76,7 @@ export function Hero() {
         </div>
 
         <div className="min-w-0">
-          <AgentTranscript />
-          <p className="mt-3 text-center font-mono text-xs text-[#8d7b74]">
-            One session. One page. Six calls, and you still decide.
-          </p>
+          <HeroSessions />
         </div>
       </Container>
     </section>
