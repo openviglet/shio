@@ -92,27 +92,59 @@ function render(digest) {
  * <p>Runs of one tag with the same provenance are collapsed to `section×9  3-11`, which is the shape
  * the task asked for. Collapsed only where they are **contiguous**: nine sections split by a footer
  * are three rows, and merging them would hide the very thing this is here to show.</p>
+ *
+ * <h2>SH765 — and the column that says who paints it</h2>
+ *
+ * <p>`verbatim` and `sections` name where a region's <b>markup</b> came from, and neither names the
+ * stylesheet in force over it. On a mixed page both are loaded — the Shio theme unconditionally and
+ * the captured one under `{{#if content}}` — so every mixed page carries two sheets and the reader
+ * could not say which region each one painted. That is the question a curator actually arrives with,
+ * and it is the one that opened this whole line: <em>the authorable part has none of the site's
+ * formatting</em>. The answer on the `www.viglet.org` replica is that regions 4–11 are painted by
+ * one sheet and 1–3 and 12 by the other, which is SH510 behaving as designed and also the defect as
+ * experienced — and nothing in the output stated it, so the finding had to be assembled by hand from
+ * the layout template.</p>
+ *
+ * <p>No new fact is computed here: SH694 put `styledBy` on the wire and this dropped it on the
+ * floor. Sheets are named `style[1]`, `style[2]` by position, which is SH694's decision and worth
+ * not re-litigating — a rendered page does not say which block is the captured theme, and a label
+ * the reader cannot check is what SH689 spent a task removing. Two rows whose sheet sets are
+ * <b>disjoint</b> is the fact, and that reads off positional names perfectly well.</p>
  */
 function regionLines(regions) {
   if (!regions.length) return [];
+  // Absence is not a claim (SH694): when no region names a sheet the caller supplied no sheet map,
+  // and a column of `—` down the page would read as "nothing styles any of this", which is a
+  // stronger statement than the data supports.
+  const painted = regions.some((region) => (region.styledBy ?? []).length);
   const lines = ["regions (document order):"];
   for (const run of runsOf(regions)) {
     const span = run.from === run.to ? `${run.from}` : `${run.from}-${run.to}`;
     const label = run.count === 1 ? run.tag : `${run.tag}×${run.count}`;
     lines.push(
       `  ${label.padEnd(12)}${span.padEnd(7)}${run.markup.padEnd(10)}`
-        + `${run.unstyled ? `${run.unstyled} unstyled` : "0 unstyled"}`,
+        + `${run.unstyled ? `${run.unstyled} unstyled` : "0 unstyled"}`
+        + `${painted ? `  ${run.styledBy.length ? run.styledBy.join("+") : "no sheet"}` : ""}`,
     );
   }
   return lines;
 }
 
-/** Contiguous regions sharing a tag and a provenance, in order. */
+/**
+ * Contiguous regions sharing a tag, a provenance **and a painter**, in order.
+ *
+ * <p>SH765 added the third, and it is load-bearing rather than tidy: two adjacent sections painted
+ * by different sheets are the two-visual-languages finding, and collapsing them into one row would
+ * hide exactly what the column was added to show — the same argument the contiguity rule already
+ * makes for `markup`.</p>
+ */
 function runsOf(regions) {
   const runs = [];
   for (const region of regions) {
+    const styledBy = region.styledBy ?? [];
     const last = runs[runs.length - 1];
-    if (last && last.tag === region.tag && last.markup === region.markup) {
+    if (last && last.tag === region.tag && last.markup === region.markup
+      && last.styledBy.join("+") === styledBy.join("+")) {
       last.to = region.order;
       last.count += 1;
       last.unstyled += region.unstyled ?? 0;
@@ -121,6 +153,7 @@ function runsOf(regions) {
     runs.push({
       tag: region.tag,
       markup: region.markup,
+      styledBy,
       from: region.order,
       to: region.order,
       count: 1,

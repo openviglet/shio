@@ -2199,9 +2199,10 @@ section" is a question about ancestry, and answering it by counting tags is how 
 a region to whichever marker it happened to follow. `ShAgentRenderService.markersOf` already parses
 the same rendered page with Jsoup, so this adds no dependency and no second dialect.
 
-`styled by` — naming the theme in force per region, and warning when two are — is deliberately not
-here: it needs class-to-stylesheet provenance, which `definedIn` does not keep. That is the second
-defect, and it is filed rather than guessed at.
+`styled by` — naming the theme in force per region, and warning when two are — was deliberately not
+part of SH687: it needs class-to-stylesheet provenance, which `definedIn` did not keep. That was the
+second defect, filed rather than guessed at, and it is the section below (SH694 kept the provenance,
+SH765 printed it).
 
 ## The theme in force, per region (SH694)
 
@@ -2222,6 +2223,28 @@ reader cannot check is what SH689 spent a task removing.
 
 `verify` reads that field and warns `two-themes`. The split is the one `page-unstyled` already uses —
 a digest describes, the gate judges — and it is what makes the warning able to fail a run.
+
+**And SH765 is that field reaching the reader.** SH694 put `styledBy` on the wire and `shio digest`
+dropped it, so the printed table still named a region's *markup* origin and never the stylesheet in
+force over it — the finding had to be reassembled by hand from the layout template, which is where
+this whole line started. The table now carries it as a fourth column, and the run key grew a third
+component to match: contiguous regions collapse only when they share a tag, a provenance **and a
+painter**, because two adjacent sections painted by different sheets are the two-visual-languages
+finding and a row that merged across them would hide it. Measured on the replica's home page:
+
+```
+regions (document order):
+  header      1      verbatim  4 unstyled  style[2]
+  nav         2      verbatim  0 unstyled  style[2]
+  section×8   4-11   sections  0 unstyled  style[1]
+  footer      12     verbatim  4 unstyled  style[2]
+```
+
+The chrome and the sections share no sheet, which is the answer to *"the authorable part has none of
+the site's formatting"* — SH510 behaving as designed, and also the defect as experienced. When no
+region names a sheet the column is **omitted** rather than filled with dashes: an empty `styledBy`
+means the caller supplied no sheet map, and a dash down the page would assert that nothing styles any
+of it (SH694's absence-is-not-a-claim rule, one reader along).
 
 **The finding is disjointness, not "two sheets exist".** Almost every real page carries a reset and a
 theme; a rule that fired on those would be the next thing nobody reads. It fires when the chrome's

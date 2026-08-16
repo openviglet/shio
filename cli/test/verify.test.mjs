@@ -332,6 +332,57 @@ test("SH687: a run is only collapsed while it is contiguous", async () => {
   );
 });
 
+/**
+ * SH765 — the column that says who paints each region, over the shape that produced the finding.
+ *
+ * The assertion that would have caught it (SH527): the replica's own table, where `verbatim` and
+ * `sections` were printed and the stylesheet in force over each was not. A mixed page carries two
+ * sheets — the Shio theme unconditionally, the captured one under `{{#if content}}` — and until this
+ * column the reader could not say which one painted the chrome and which the sections, so *"the
+ * authorable part has none of the site's formatting"* had to be assembled by hand from the layout.
+ */
+test("SH765: each region names the sheet that paints it, and disjoint sets do not collapse", async () => {
+  const ctx = ctxWith(scriptedFetch({
+    ...DIGEST,
+    regions: [
+      { tag: "header", order: 1, markup: "verbatim", unstyled: 0, styledBy: ["style[2]"] },
+      { tag: "nav", order: 2, markup: "verbatim", unstyled: 0, styledBy: ["style[2]"] },
+      { tag: "section", order: 3, markup: "sections", unstyled: 0, styledBy: ["style[1]"] },
+      { tag: "section", order: 4, markup: "sections", unstyled: 0, styledBy: ["style[1]"] },
+      { tag: "footer", order: 5, markup: "verbatim", unstyled: 4, styledBy: ["style[2]"] },
+    ],
+  }));
+
+  await digest.run({}, ["post:VigletOrg/"], ctx);
+
+  assert.match(ctx.stdout.text, /section×2\s+3-4\s+sections\s+0 unstyled\s+style\[1\]/);
+  assert.match(ctx.stdout.text, /footer\s+5\s+verbatim\s+4 unstyled\s+style\[2\]/);
+  // The whole finding in one read: the chrome and the sections share no stylesheet. Two rows whose
+  // sets are disjoint is what says it, which is why the run key had to grow the third component.
+  const painted = ctx.stdout.text.split("\n")
+    .filter((line) => /^\s{2}(header|nav|section|footer)/.test(line))
+    .map((line) => line.trim().split(/\s{2,}/).pop());
+  assert.deepEqual(painted, ["style[2]", "style[2]", "style[1]", "style[2]"],
+    "SH765: the chrome (header, nav, footer) is painted by one sheet and the sections by another, "
+      + "and the two sets are disjoint — which is the two-visual-languages finding, in one read. "
+      + "A run key that ignored the sheet would merge across it and hide exactly that");
+});
+
+test("SH765: a page whose sheets nothing reports keeps the column off", async () => {
+  // Absence is not a claim (SH694). Every region here has no `styledBy`, which means the caller
+  // supplied no sheet map — printing `—` down the page would assert that nothing styles any of it.
+  const ctx = ctxWith(scriptedFetch({
+    ...DIGEST,
+    regions: [{ tag: "section", order: 1, markup: "sections", unstyled: 0 }],
+  }));
+
+  await digest.run({}, ["post:VigletOrg/"], ctx);
+
+  const row = ctx.stdout.text.split("\n").find((line) => /^\s{2}section/.test(line));
+  assert.equal(row.trim().split(/\s{2,}/).pop(), "0 unstyled",
+    "SH765: the row ends at the unstyled count — no invented painter, and no empty column");
+});
+
 test("SH687: a digest with no regions prints no heading for them", async () => {
   // P3, and the shape every other block here follows: a content digest has no page and therefore no
   // regions, and a section title over an empty list is bytes that say nothing.

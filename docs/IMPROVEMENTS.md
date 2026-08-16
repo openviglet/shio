@@ -564,36 +564,6 @@ block, which is the mixed→authorable path mixed mode exists to offer.
 
 The gate that should have caught this is SH764's, not a missing one.
 
-### XVII.106 Markup origin is not the same question as who paints it (SH765)
-
-SH687 shipped and it works. `shio digest post:VigR2/` now answers:
-
-    regions (document order):
-      header      1      verbatim  4 unstyled
-      nav         2      verbatim  0 unstyled
-      section     3      verbatim  1 unstyled
-      section×8   4-11   sections  0 unstyled
-      footer      12     verbatim  4 unstyled
-
-That is order, and it settles SH693 in one read — the footer is at 12, below the
-sections, where the fix put it.
-
-The column that did not ship is **styled by**. `verbatim` and `sections` name where a
-region's *markup* came from; neither names the stylesheet in force over it. On a mixed
-page both are loaded — `<style>{{theme.css}}</style>` unconditionally and the captured
-theme under `{{#if content}}` — so every mixed page carries two, and the reader cannot
-say which region each one paints.
-
-That is the question a curator actually arrives with, and it was the one that opened
-this whole line: *the authorable part has none of the site's formatting*. The answer is
-that regions 4–11 are painted by the Shio theme and 1–3 and 12 by the captured one,
-which is SH510 behaving as designed and also the defect as experienced. Nothing in the
-output states it, so the finding still has to be assembled by hand from the layout
-template.
-
-One column, from facts the renderer already holds. SH692 defines the rule it feeds:
-exactly one theme in force per region.
-
 ### XVII.107 The page whose own fields no branch annotates (SH766)
 
 With SH685's blindness removed the reader answers for every post, and the first row is
