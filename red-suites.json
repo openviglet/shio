@@ -1,5 +1,14 @@
 {
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
-  "exceptions": []
+  "exceptions": [
+    {
+      "suite": "conformance",
+      "test": "replication — capture www.viglet.org, convert it into the instance, gate the replica",
+      "task": "SH763",
+      "declared": "2026-08-16",
+      "expires": "2026-08-23",
+      "why": "The replication scenario dies at ops[28] with \"'Page' does not declare a field named 'contentAfter'\". SH693 shipped the writer and the generated template without the model, so `shio convert` emits a field no post-type declares and every conversion against a real instance is refused at the batch. It is one known defect with one known cause, filed as SH763 and diagnosed down to the two lines of cli/src/convert.mjs that write it — not an unexplained red. Safe to commit over because the failure is entirely in the conversion write path: nothing else in the suite reaches it, and the Java and JS gates are green, so a regression anywhere else still stops the build. It goes away with SH763 and this entry is deleted in that commit."
+    }
+  ]
 }

@@ -553,43 +553,16 @@ position rather than meaning, so a curator meets a box called *Content After* th
 nothing about what it holds. It admits exactly **one** split — kept markup between two
 accepted blocks needs content, section, content, section, content — and this capture
 survived only because the accepted blocks were contiguous. It is replication-only, so
-every hand-authored page carries a field that is always empty. And it contradicts
-§XVII.100: a region list of length two with hardcoded roles is the degenerate case of
-what that definition asks for.
+every hand-authored page carries a field that is always empty. And it contradicts SH692:
+a region list of length two with hardcoded roles is the degenerate case of what that
+definition asks for.
 
 The shape that removes a field instead of adding one is **verbatim markup as a section
-type** — one `html` field, living in `sections` like everything else. Order comes from
-the list, N splits work, the regions reader already speaks it, and a curator can move or
-replace a raw block, which is the mixed→authorable path mixed mode exists to offer.
+type** — one `html` field, living in `sections`. Order comes from the list, N splits
+work, the regions reader already speaks it, and a curator can move or replace a raw
+block, which is the mixed→authorable path mixed mode exists to offer.
 
 The gate that should have caught this is SH764's, not a missing one.
-
-### XVII.105 The guard that a roadmap edit trips (SH764)
-
-`pnpm conformance` refuses to run the replication suite when the instance may not be
-running the code under test. The check is right and the net is too wide:
-
-    the instance at localhost:2710 is older than the code under test — it was
-    built at 2026-08-16T21:06:45Z (commit 4b20d8e), before HEAD was committed —
-    and the working tree has tracked changes
-
-Measured at that moment: the instance reports `commit 4b20d8e`, `git rev-parse HEAD` is
-`4b20d8e0`, and `git status --short` holds exactly two entries — `docs/ROADMAP.md` and
-`docs/IMPROVEMENTS.md`, both written by roadkeep minutes earlier. The JVM was built from
-the commit under test. Nothing in the tree could have changed it.
-
-Two triggers fire independently, and both are cheap to narrow. **Timestamp ordering**
-compares `builtAt` against the commit time, so a build taken two minutes before a merge
-commit reads as stale even where the tree is identical. **Tracked changes** is a
-whole-tree predicate, so it counts files that cannot reach a JVM: `docs/**`, `*.md`, the
-roadmap's three governed files.
-
-The consequence is a rule collision this project already carries. Findings are filed as
-roadkeep tasks, and a red suite is a stop — so the act of recording a finding disables
-the gate that would confirm it, and the way past is to commit first and verify after,
-which is the order the gate exists to prevent.
-
-Scope the predicate to paths that compile, and compare content rather than clock.
 
 ### XVII.106 Markup origin is not the same question as who paints it (SH765)
 

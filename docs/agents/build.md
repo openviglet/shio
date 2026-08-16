@@ -205,6 +205,19 @@ Three rules it exists under, and each is the reason a defect shipped:
   `cli/test/conformance-live-build.test.mjs` proves the gate against a `node:http` stub, which is
   the one part of this suite that runs *without* an instance because the case worth asserting is
   the one no real instance volunteers.
+  **And then the net was too wide, in a way that collided with another rule (SH764).** Both
+  triggers fired on a tree that could not have changed the JVM: the instance was built from the
+  exact commit under test and the only tracked changes were `docs/ROADMAP.md` and
+  `docs/IMPROVEMENTS.md`, written by roadkeep minutes earlier. Since findings are filed as roadkeep
+  tasks and a red suite is a stop, *recording a finding disabled the gate that would confirm it* —
+  and the only way past was to commit first and verify after, which is the order the gate exists to
+  prevent. So dirty is scoped to **paths that compile** (`compiles()` — the `docs/` tree and
+  root-level markdown are inert, everything else counts, because a false green here is the failure
+  this gate exists to prevent and a false red is merely loud), and the **clock is the last resort
+  rather than the second**: the build's own commit is diffed against HEAD over those paths first,
+  so a merge commit that moved only documentation no longer reads as a stale JVM. Note the rule is
+  a directory and not an extension — seven `README.md` files ship *inside the jar* as blueprint
+  carried files, so `*.md` would have exempted a packaged resource.
 - **Nothing is injected.** Real sockets, real `fetch`, real npm — SH438, SH442 and SH446 all
   passed under SH422 precisely because it substitutes those three.
 - **Every assertion names the task it would have caught**, so the file reads as the record of

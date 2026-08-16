@@ -32,7 +32,7 @@ import { after, before, describe, test } from "node:test";
 
 import { createServer } from "node:http";
 
-import { requireInstance, staleReason } from "../conformance/support/instance.mjs";
+import { changedPaths, compiles, requireInstance, staleReason } from "../conformance/support/instance.mjs";
 
 /** A minimal instance: it answers the identity probe with whatever manifest the test sets. */
 let server;
@@ -139,7 +139,12 @@ describe("SH500: the four commit × tree combinations, over a HEAD the test cont
   });
 
   test("a matching commit on a dirty tree falls back to the clock, and says so", () => {
-    assert.match(staleReason(atHead, dirty), /tracked changes, so a commit that matches HEAD/);
+    // SH764 reworded this: `dirty` now means dirty *under paths that compile*, and the message says
+    // so — a reader who has just edited only docs must not read it as being about their edit.
+    assert.match(
+      staleReason(atHead, dirty),
+      /tracked changes under paths that compile, so a commit that matches HEAD/,
+    );
   });
 
   test("a matching commit on a dirty tree still passes when the build is the newer of the two", () => {
@@ -164,6 +169,78 @@ describe("SH500: the four commit × tree combinations, over a HEAD the test cont
       /before HEAD was committed/,
     );
   });
+});
+
+/**
+ * SH764 — the gate that a roadmap edit trips, and the two narrowings that stop it.
+ *
+ * The assertion that would have caught it, at the boundary it crossed (SH527): `staleReason` told
+ * a run to stop because two files under `docs/` had been edited, on an instance built from the
+ * exact commit under test. Findings are filed as roadkeep tasks and a red suite is a stop, so
+ * recording a finding disabled the gate that would have confirmed it.
+ */
+describe("SH764: the staleness gate is about the JVM, not about the working tree", () => {
+  const head = { sha: "4b04b20e", iso: "2026-08-16T21:09:00Z", at: Date.parse("2026-08-16T21:09:00Z"), dirty: false };
+
+  /** The incident, to the field: same commit, built three minutes earlier, two docs files edited. */
+  const atHead = { commit: "4b04b20", builtAt: "2026-08-16T21:06:45Z" };
+
+  test("a tree dirty only under docs/ is not a fact about the running classes", () => {
+    // `dirty` is now computed over compiling paths, so roadkeep's two files never set it. This is
+    // the run that was cancelled: instance at HEAD, docs/ROADMAP.md and docs/IMPROVEMENTS.md open.
+    assert.equal(gitDirty("M  docs/ROADMAP.md\nM  docs/IMPROVEMENTS.md\n"), false);
+    assert.equal(staleReason(atHead, { ...head, dirty: false }), null);
+  });
+
+  test("a tree dirty under a path that compiles still falls back to the clock", () => {
+    assert.equal(gitDirty("M  shio-app/src/main/java/com/viglet/shio/render/ShRenderModel.java\n"), true);
+    assert.match(staleReason(atHead, { ...head, dirty: true }), /paths that compile/);
+  });
+
+  test("the build's commit is diffed against HEAD before the clock is consulted", () => {
+    // A merge commit that moved only documentation: the build predates it and the classes are
+    // identical, which `builtAt >= head.at` calls stale and a content comparison does not.
+    const older = { commit: "0ldbu1d", builtAt: "2026-08-16T21:06:45Z" };
+    assert.match(staleReason(older, head), /before HEAD was committed/);
+    assert.equal(staleReason(older, { ...head, unchangedSince: true }), null);
+  });
+
+  test("unchanged-since cannot excuse a tree that is dirty where it compiles", () => {
+    assert.match(
+      staleReason({ commit: "0ldbu1d", builtAt: "2026-08-16T21:06:45Z" },
+        { ...head, unchangedSince: true, dirty: true }),
+      /before HEAD was committed/,
+    );
+  });
+
+  test("a packaged README is not documentation — the false green an extension rule would open", () => {
+    // Seven of these ship inside the jar as blueprint carried files (ShBlueprintCarriedFilesTest).
+    // `*.md` is the obvious spelling of this rule and it would exempt a compiled-in resource.
+    assert.equal(compiles("shio-app/src/main/resources/blueprints/blog/files/README.md"), true);
+    assert.equal(compiles("shio-app/src/main/resources/js/server-side/README.md"), true);
+    assert.equal(compiles("docs/ROADMAP.md"), false);
+    assert.equal(compiles("docs/agents/build.md"), false);
+    assert.equal(compiles("README.md"), false, "root markdown is documentation");
+    assert.equal(compiles("agents.md"), false);
+    assert.equal(compiles("shio-app/src/main/java/com/viglet/shio/ShioApplication.java"), true);
+    assert.equal(compiles("cli/src/convert.mjs"), true, "unknown is compiling — the safe direction");
+  });
+
+  test("porcelain is parsed the way git writes it: renames, quotes and both sides", () => {
+    assert.deepEqual(changedPaths("M  docs/ROADMAP.md\n?? scratch\n"), ["docs/ROADMAP.md", "scratch"]);
+    assert.deepEqual(
+      changedPaths('R  docs/OLD.md -> shio-app/src/main/java/Sh.java\n'),
+      ["docs/OLD.md", "shio-app/src/main/java/Sh.java"],
+      "a rename yields both sides — moving a .java out of a module changes what compiles too",
+    );
+    assert.deepEqual(changedPaths('M  "docs/a b.md"\n'), ["docs/a b.md"]);
+    assert.deepEqual(changedPaths(""), []);
+  });
+
+  /** `gitDirty`'s decision without the subprocess: the parse and the predicate, composed. */
+  function gitDirty(porcelain) {
+    return changedPaths(porcelain).some(compiles);
+  }
 });
 
 /** HEAD as the gate itself reads it — the same three facts, asked of the repo under test. */

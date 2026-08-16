@@ -144,15 +144,97 @@ function allowsStale(env) {
  *
  * An instance that reports **no** `builtAt` and no matching commit is stale by definition — both
  * fields ship with this assertion.
+ *
+ * <h2>SH764 — and then the net was too wide in two directions at once</h2>
+ *
+ * Both surviving triggers fired on a tree that could not possibly have changed the JVM. Measured:
+ * the instance reported `commit 4b4b20e`, `git rev-parse HEAD` was `4b04b20e0`, and the only two
+ * tracked changes were `docs/ROADMAP.md` and `docs/IMPROVEMENTS.md`, both written by roadkeep
+ * minutes earlier. The gate cancelled the run.
+ *
+ * That is not a nuisance, it is a **rule collision**: findings are filed as roadkeep tasks and a red
+ * suite is a stop (SH579), so the act of recording a finding disabled the gate that would confirm
+ * it — and the only way past was to commit first and verify after, which is precisely the order the
+ * gate exists to prevent. So both triggers are narrowed, and neither is loosened:
+ *
+ * - **Dirty is scoped to paths that compile** ({@link compiles}), so a docs edit is not a fact about
+ *   the JVM. Conservative by construction: a path is inert only when it is provably inert.
+ * - **The clock is the last resort, not the second one.** `builtAt` vs. the commit *time* fails on a
+ *   build taken two minutes before a merge commit even where the two trees are byte-identical, which
+ *   is a question about clocks and not about code. So the build's own commit is diffed against HEAD
+ *   over the compiling paths first: no difference means the running classes are the classes under
+ *   test, whatever the timestamps say.
  */
 async function requireLiveBuild(baseUrl, manifest, env) {
   if (allowsStale(env)) return;
   const head = await gitHead();
   if (!head) return; // No working tree to compare against — nothing to be stale *relative to*.
 
-  const because = staleReason(manifest, head);
+  // SH764 — asked here rather than inside `staleReason` so that function stays pure and the four
+  // commit × tree combinations remain assertable over a HEAD the test controls.
+  const unchangedSince = await compiledPathsUnchanged(manifest?.commit);
+
+  const because = staleReason(manifest, { ...head, unchangedSince });
   if (because) {
     throw new Error(stale(baseUrl, head, because));
+  }
+}
+
+/**
+ * Can a change to this path reach the running JVM? (SH764)
+ *
+ * <h3>Why this is a deny-list and a short one</h3>
+ *
+ * The two ways to be wrong are not symmetric. Too wide is the defect above — a false red, loud and
+ * self-correcting. Too narrow is a **false green**: the gate silently stops noticing the one thing
+ * it exists to notice, and every red run after it reads as a defect in a fix that already shipped.
+ * So a path counts as compiling unless it is provably inert, and the list of provably-inert things
+ * stays exactly as long as the evidence for it.
+ *
+ * <h3>The rule is a directory, not an extension — and that distinction is load-bearing</h3>
+ *
+ * `*.md` reads as the obvious spelling of "documentation" and it is wrong here: <b>seven markdown
+ * files ship inside the jar</b> — `shio-app/src/main/resources/blueprints/&#42;/files/README.md` and
+ * `js/server-side/README.md` — as blueprint carried files, asserted by
+ * `ShBlueprintCarriedFilesTest`. An extension rule would exempt a packaged resource from the
+ * staleness gate, which is the false green in its purest form. So: the `docs/` tree, and markdown
+ * at the repository root (`README.md`, `agents.md`, `CLAUDE.md`). Nothing that lives under a
+ * module.
+ *
+ * @param path a repository-relative path, as `git status --porcelain` and `git diff --name-only`
+ *             both spell it (forward slashes on every platform)
+ * @returns true when a change to it could have produced different classes
+ */
+export function compiles(path) {
+  const at = String(path ?? "").trim().replace(/^"|"$/g, "");
+  if (!at) return false;
+  if (at === "docs" || at.startsWith("docs/")) return false;
+  // Root-level markdown only: no slash before the extension, so a packaged README is untouched.
+  if (/^[^/]+\.md$/i.test(at)) return false;
+  return true;
+}
+
+/**
+ * Are the compiling paths identical between the build's commit and HEAD? (SH764)
+ *
+ * <p>This is the "content rather than clock" half. A `null` means the question could not be asked —
+ * no commit reported, or a commit this clone does not have — and the caller then falls back to the
+ * timestamp, which is the behaviour every release before this one had.</p>
+ *
+ * @param commit the abbreviated commit the running artifact was built from, per `git.properties`
+ * @returns true / false / null for unknown
+ */
+async function compiledPathsUnchanged(commit) {
+  const from = String(commit ?? "").trim();
+  if (!/^[0-9a-f]{7,40}$/i.test(from)) return null;
+  const repo = fileURLToPath(new URL("../../..", import.meta.url));
+  try {
+    const { stdout } = await run("git", ["-C", repo, "diff", "--name-only", from, "HEAD"], {
+      timeout: 10_000,
+    });
+    return !stdout.split("\n").map((line) => line.trim()).filter(Boolean).some(compiles);
+  } catch {
+    return null; // A commit we do not have says nothing either way.
   }
 }
 
@@ -166,6 +248,12 @@ export function staleReason(manifest, head) {
   const atHead = commitMatchesHead(manifest?.commit, head);
   if (atHead && !head.dirty) return null;
 
+  // SH764 — content before clock. The build's commit is not HEAD (or the tree is dirty), but every
+  // path that could produce a class is identical between the two, so the running classes ARE the
+  // classes under test. A merge commit that moved only documentation is the ordinary case here, and
+  // judging it on `builtAt` cancelled the suite over two minutes of wall clock.
+  if (head.unchangedSince && !head.dirty) return null;
+
   const builtAt = manifest?.builtAt ? Date.parse(manifest.builtAt) : Number.NaN;
   if (Number.isNaN(builtAt)) {
     return "it reports no build identity at all, so it predates SH460";
@@ -175,8 +263,8 @@ export function staleReason(manifest, head) {
   const commit = manifest.commit ? ` (commit ${manifest.commit})` : "";
   const built = `it was built at ${manifest.builtAt}${commit}, before HEAD was committed`;
   return atHead
-    ? `${built} — and the working tree has tracked changes, so a commit that matches HEAD`
-      + ` no longer says what compiled`
+    ? `${built} — and the working tree has tracked changes under paths that compile, so a commit`
+      + ` that matches HEAD no longer says what compiled`
     : built;
 }
 
@@ -211,23 +299,50 @@ async function gitHead() {
   }
 }
 
-/** Tracked changes only — see `requireLiveBuild` for why untracked files do not count. */
+/**
+ * Tracked changes **to paths that compile** — see `requireLiveBuild` for both halves of why.
+ *
+ * <p>Untracked files do not count (SH500) and neither does documentation (SH764): the question is
+ * whether the working tree could have produced classes other than the ones the instance is running,
+ * and a roadmap line cannot.</p>
+ */
 async function gitDirty(repo) {
   try {
     const { stdout } = await run("git", ["-C", repo, "status", "--porcelain", "-uno"], {
       timeout: 10_000,
     });
-    return stdout.trim().length > 0;
+    return changedPaths(stdout).some(compiles);
   } catch {
     return false; // Unaskable is not dirty: the commit comparison is the stronger signal anyway.
   }
+}
+
+/**
+ * The paths out of `git status --porcelain` output (SH764).
+ *
+ * <p>Exported because the parsing is the part that can be quietly wrong: a rename is
+ * `R  old -> new` and a path with a space is quoted, and either one mis-read turns a real code
+ * change into a path that matches nothing — the false green {@link compiles} is written to avoid.
+ * A rename yields <b>both</b> sides, since moving a `.java` out of a module changes what compiles
+ * just as much as moving one in.</p>
+ */
+export function changedPaths(porcelain) {
+  return String(porcelain ?? "")
+    .split("\n")
+    .map((line) => line.replace(/\r$/, ""))
+    .filter((line) => line.trim().length > 0)
+    // `XY ` — two status columns and a space, fixed width, before the path.
+    .flatMap((line) => (line.length > 3 ? line.slice(3) : line.trim()).split(" -> "))
+    .map((path) => path.trim().replace(/^"|"$/g, ""))
+    .filter(Boolean);
 }
 
 function stale(baseUrl, head, because) {
   return (
     `shio conformance: the instance at ${baseUrl} is older than the code under test —\n`
     + `${because}.\n\n`
-    + `  HEAD  ${head.sha}  ${head.iso}${head.dirty ? "  (tracked changes)" : ""}\n\n`
+    + `  HEAD  ${head.sha}  ${head.iso}`
+    + `${head.dirty ? "  (tracked changes under paths that compile)" : ""}\n\n`
     + `This suite asserts two things at once — that the code is right, and that this\n`
     + `instance is running it — so a red run against a stale JVM reads as a defect in a\n`
     + `fix that already shipped. Rebuild and restart before drawing any conclusion:\n\n`
