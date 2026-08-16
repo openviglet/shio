@@ -9,6 +9,7 @@
 package com.viglet.shio.tenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.function.Supplier;
@@ -83,6 +84,34 @@ class ShTenantQuotaIT {
             assertThatThrownBy(() -> quotaService.checkCanCreateSite())
                     .isInstanceOf(ResponseStatusException.class)
                     .hasMessageContaining("Plan limit");
+            return null;
+        });
+    }
+
+    @Test
+    void aSingleUploadLargerThanTheWholePlanIsRefused() {
+        // SH110's defect, stated as the number that made it one. FREE bounds storage; the tenant is
+        // at ZERO, so the old `count >= max` check passed for ANY size of write — a single upload
+        // bigger than the entire plan was admitted, and the ceiling was a guarantee nobody had.
+        catalogTenant("bigco", "FREE");
+        long max = ShTenantPlanLimits.FREE.maxStorageBytes();
+
+        asTenant("bigco", () -> {
+            assertThatCode(() -> quotaService.checkCanStore(max / 2))
+                    .as("SH110: a write that fits has to be allowed, or the ceiling is a wall")
+                    .doesNotThrowAnyException();
+
+            assertThatThrownBy(() -> quotaService.checkCanStore(max + 1))
+                    .as("SH110: one upload larger than the whole plan, against a tenant holding "
+                            + "nothing. This is the case the count-only check could not express: it "
+                            + "asked whether the tenant was ALREADY full, and a tenant at zero "
+                            + "never is, whatever arrives next.")
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("cannot take");
+
+            assertThatCode(() -> quotaService.checkCanStore(-1))
+                    .as("SH110: a replace that shrinks frees bytes, so it must not be refused")
+                    .doesNotThrowAnyException();
             return null;
         });
     }

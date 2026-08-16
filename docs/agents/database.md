@@ -337,8 +337,27 @@ failing must not be reported as a failed upload.
 **There is no `checkCanStore` yet, and that is deliberate.** `VigletQuotaService.check(resource)`
 compares the *current* count against the limit, which is exact for sites and posts because each
 write adds one. Bytes do not: a single 1 GB upload under a 512 MB plan passes that test whenever the
-tenant is at zero, so the check would advertise a guarantee it does not give. Enforcing storage
-needs `check(resource, delta)` in Viglet's shared quota SPI, which is not Shio's to change alone.
+tenant is at zero, so the check would advertise a guarantee it does not give.
+
+**That is no longer true, and SH110 is what changed it.** `viglet-core` 2026.3.11 adds
+`VigletQuotaService.check(resource, delta)` — "does what I am about to write fit", where the old
+form asked "is this tenant already full". The algebra is worth noting rather than trusting:
+`count + 1 > max` is the same predicate as `count >= max`, so the one-argument forms are the new
+one at `delta = 1` and delegate to it rather than keeping a copy. No existing caller's behaviour
+moved, and `VigletQuotaServiceTest` asserts that equivalence across the boundary.
+
+`ShTenantQuotaService.checkCanStore(bytes)` is the Shio-side entry point, called on **both** write
+paths and before either commits anything:
+
+- **upload** charges `file.getSize()`, before the post row and before the bytes — a 402 raised after
+  either leaves the tenant holding something they were just told they could not have.
+- **replace** charges the **difference** (`new - stored`), because replacing a 900 MB video with a
+  1 MB one frees 899 MB and charging the new size would refuse a write that makes the tenant
+  smaller. A negative delta is a no-op in the shared check.
+
+The overflow guard in the kernel is deliberate: `held + delta > max` wraps to negative on a delta
+near `Long.MAX_VALUE` and would **admit** the write it exists to refuse, so the comparison is
+`delta > max - held` instead.
 
 ## A tenant's API calls are a flow, so they get a table (SH45)
 

@@ -283,6 +283,17 @@ public class ShFileStorageService {
         }
     }
 
+    /**
+     * How many bytes are stored under {@code fileId} as {@code fileName}, or {@code 0} (SH110).
+     *
+     * <p>What a <em>replace</em> needs, and the reason it cannot just ask the quota about the new
+     * file's size: replacing a 900 MB video with a 1 MB one frees 899 MB, and charging the plan for
+     * the new size would refuse a write that makes the tenant smaller.</p>
+     */
+    public long storedBytes(String fileId, String fileName) {
+        return sizeOf(resolve(fileId, fileName));
+    }
+
     /** Whether bytes named {@code fileName} exist for {@code fileId}. */
     public boolean exists(String fileId, String fileName) {
         return Files.isRegularFile(resolve(fileId, fileName));

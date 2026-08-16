@@ -51,21 +51,29 @@ public class ShTenantQuotaService {
                 limits.limit(ShVigletResourceCounter.STORAGE));
     }
 
-    /*
-     * SH45 — there is deliberately no `checkCanStore` here yet, and the reason is the shared
-     * kernel's signature rather than an oversight.
+    /**
+     * Throw 402 when the current tenant's plan has no room for {@code bytes} more (SH110).
      *
-     * `VigletQuotaService.check(resource)` compares the CURRENT count against the limit, which is
-     * exact for sites and posts because each write adds precisely one. Bytes do not: a single
-     * 1 GB upload under a 512 MB plan passes that test whenever the tenant is currently at zero,
-     * so the check would report a guarantee it does not provide — worse than having none, and the
-     * "optimize a benchmark by degrading correctness" non-goal wearing a different hat.
+     * <h2>What had to change upstream before this could exist</h2>
      *
-     * Enforcing storage needs `check(resource, delta)` in the shared kernel, which is a change to
-     * Viglet's quota SPI and not Shio's to make unilaterally. What ships here is the METER, which
-     * is what SH45's line actually names as missing; `currentLimits()` already reports the storage
-     * bound, so a caller can ask and decide.
+     * <p>SH45 deliberately shipped no {@code checkCanStore}, and the reason was the shared kernel's
+     * signature rather than an oversight: {@code VigletQuotaService.check(resource)} compared the
+     * <em>current</em> count against the limit, which is exact for sites and posts because each
+     * write adds precisely one. Bytes do not. A single 1 GB upload under a 512 MB plan passed that
+     * test whenever the tenant was at zero, so the check would have advertised a guarantee it did
+     * not give — worse than having none.</p>
+     *
+     * <p>{@code viglet-core} 2026.3.11 adds {@code check(resource, delta)}, so the question can be
+     * asked properly: not "is this tenant already full" but "does what I am about to write fit".
+     * The one-argument form is that method at {@code delta = 1}, which is why nothing else moved.</p>
+     *
+     * <p>Called <b>before</b> the bytes are written and before the post row is created, because a
+     * refusal after either leaves the tenant holding something they were told they could not have.
+     * The meter SH751 wired is what makes the current figure O(1) to read here.</p>
      */
+    public void checkCanStore(long bytes) {
+        quotaService.check(ShVigletResourceCounter.STORAGE, bytes);
+    }
 
     /** Throw 402 when the current tenant's plan has no room for another site. */
     public void checkCanCreateSite() {

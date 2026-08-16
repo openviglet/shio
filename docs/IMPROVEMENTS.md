@@ -231,31 +231,6 @@ giving the two writes the role the blueprint reload already had.
 > form to carry forward is symmetrical — **the two surfaces enforce the same ACL, and whichever
 > is stricter is the correct one.** SH222–SH226 are the places that edge points at next.
 
-### XII.5 Agent budget guards (SH110)
-
-A **storage** ceiling per tenant. A runaway agent should hit a ceiling and report it,
-not a bill.
-
-Narrowed twice, both times by measuring the blocker instead of trusting it. SH734 took
-the first two thirds: this read "per-session call/write/storage ceilings" and two had
-stopped waiting on anything — `BatchTooLargeException` caps ops per batch, and
-`VigletQuotaService` is already called from the agent write path (`checkCanCreateSite`,
-`checkCanCreatePost`), so a tenant at its plan limit is refused on this surface today.
-The session window went to SH734, which needed no metering.
-
-**SH746 took the third: bytes are counted.** `sh_tenant.storage_bytes` is maintained and
-read in O(1), with `reconcile` recovering the truth from the tenant's own directory.
-What this task was waiting for therefore exists.
-
-What is left is only the **ceiling**, and the blocker moved outside Shio.
-`VigletQuotaService.check(resource)` compares the *current* count against the limit,
-which is exact where each write adds one and wrong for bytes: a single 1 GB upload under
-a 512 MB plan passes it whenever the tenant is at zero. Shio deliberately shipped no
-`checkCanStore` rather than advertise that as a guarantee. Enforcing storage needs
-`check(resource, delta)` in **Viglet's shared quota SPI** — a change to the kernel, not
-to this repository, which is worth stating because it decides who can do the work rather
-than merely how much is left.
-
 ### XII.28 A bulk write asks a per-one quota (SH750)
 
 `VigletQuotaService.check(resource)` compares the tenant's current count against the

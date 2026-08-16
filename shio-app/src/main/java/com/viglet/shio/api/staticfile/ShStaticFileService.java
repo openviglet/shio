@@ -42,6 +42,7 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
+import com.viglet.shio.tenant.ShTenantQuotaService;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.widget.ShSystemWidget;
@@ -80,6 +81,7 @@ public class ShStaticFileService {
     private final ObjectMapper objectMapper;
     /** SH210 — a replaced asset is a content change, so it reaches the feed and the queue. */
     private final ShContentAuditService shContentAuditService;
+    private final ShTenantQuotaService shTenantQuotaService;
     /** Self-reference so upload() bootstraps the File post type through the
      *  transactional proxy instead of a bare {@code this} call (S6809). */
     private final ObjectProvider<ShStaticFileService> self;
@@ -121,6 +123,7 @@ public class ShStaticFileService {
                                ShImageDimensionReader dimensionReader,
                                ObjectMapper objectMapper,
                                ShContentAuditService shContentAuditService,
+                               ShTenantQuotaService shTenantQuotaService,
                                ObjectProvider<ShStaticFileService> self) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -131,6 +134,7 @@ public class ShStaticFileService {
         this.dimensionReader = dimensionReader;
         this.objectMapper = objectMapper;
         this.shContentAuditService = shContentAuditService;
+        this.shTenantQuotaService = shTenantQuotaService;
         this.self = self;
     }
 
@@ -147,6 +151,11 @@ public class ShStaticFileService {
     @Transactional
     public ShPostUnified upload(MultipartFile file, String folderId, String owner) {
         String fileName = ShFileStorageService.sanitizeFileName(file.getOriginalFilename());
+
+        // SH110 — before the post row and before the bytes. A 402 raised after either would leave
+        // the tenant holding something they were just told they could not have, and the row is the
+        // half that survives a rolled-back write on disk.
+        shTenantQuotaService.checkCanStore(file.getSize());
 
         ShPostType fileType = self.getObject().resolveOrCreateFilePostType();
 
@@ -250,6 +259,10 @@ public class ShStaticFileService {
                 .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
 
         String fileName = fileNameOf(post);
+        // SH110 — the DIFFERENCE, not the new size: replacing a 900 MB video with a 1 MB one frees
+        // 899 MB, and charging the plan for the new size would refuse a write that makes the tenant
+        // smaller. A negative delta is a no-op in the shared check.
+        shTenantQuotaService.checkCanStore(file.getSize() - storage.storedBytes(post.getId(), fileName));
         try (InputStream bytes = file.getInputStream()) {
             storage.store(post.getId(), fileName, bytes);
         } catch (IOException e) {
