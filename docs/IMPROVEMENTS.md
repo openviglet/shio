@@ -533,6 +533,122 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.104 The writer shipped ahead of the model (SH763)
+
+A clean replication of `www.viglet.org` at `4b20d8e0` — 12 pages captured, 31
+candidates, 23 accepted — ends here:
+
+    shio: 'Page' does not declare a field named 'contentAfter'
+      at: ops[28]
+      allowed: title, content, description, sections
+
+SH693 split the kept markup so the source's footer renders below the sections. It landed
+in `cli/src/convert.mjs`: the field is written at line 1103 and the generated layout
+emits `{{#if contentAfter}}` at line 575. **`contentAfter` appears nowhere in
+`shio-app/src`.** `GET /render/post-types/drift` answers `[]`, so no reconcile adds it,
+and the agent context confirms `Page` still declares `title, description, content,
+sections`.
+
+So replication is broken end to end. Last round the same source produced 42 objects and
+four routes serving 200; this one writes 18 assets and refuses.
+
+The assertion that would have caught it is one step further out than the ones that
+shipped. `convert.test.mjs:1017` asserts `page.data.contentAfter` on the document
+`convert` *produces*, and `:1029` asserts the template puts it after the sections loop.
+Both are true. Neither sends the document to an instance, so SH168 — the guard that
+refuses a `data` key the post-type does not declare, and whose whole point is that it
+has no exceptions — was never consulted.
+
+Two things follow. The field belongs on `Page` alongside `content`. And the chain wants
+one assertion that converts against a live instance, which is what `pnpm conformance` is
+for.
+
+### XVII.105 The guard that a roadmap edit trips (SH764)
+
+`pnpm conformance` refuses to run the replication suite when the instance may not be
+running the code under test. The check is right and the net is too wide:
+
+    the instance at localhost:2710 is older than the code under test — it was
+    built at 2026-08-16T21:06:45Z (commit 4b20d8e), before HEAD was committed —
+    and the working tree has tracked changes
+
+Measured at that moment: the instance reports `commit 4b20d8e`, `git rev-parse HEAD` is
+`4b20d8e0`, and `git status --short` holds exactly two entries — `docs/ROADMAP.md` and
+`docs/IMPROVEMENTS.md`, both written by roadkeep minutes earlier. The JVM was built from
+the commit under test. Nothing in the tree could have changed it.
+
+Two triggers fire independently, and both are cheap to narrow. **Timestamp ordering**
+compares `builtAt` against the commit time, so a build taken two minutes before a merge
+commit reads as stale even where the tree is identical. **Tracked changes** is a
+whole-tree predicate, so it counts files that cannot reach a JVM: `docs/**`, `*.md`, the
+roadmap's three governed files.
+
+The consequence is a rule collision this project already carries. Findings are filed as
+roadkeep tasks, and a red suite is a stop — so the act of recording a finding disables
+the gate that would confirm it, and the way past is to commit first and verify after,
+which is the order the gate exists to prevent.
+
+Scope the predicate to paths that compile, and compare content rather than clock.
+
+### XVII.106 Markup origin is not the same question as who paints it (SH765)
+
+SH687 shipped and it works. `shio digest post:VigR2/` now answers:
+
+    regions (document order):
+      header      1      verbatim  4 unstyled
+      nav         2      verbatim  0 unstyled
+      section     3      verbatim  1 unstyled
+      section×8   4-11   sections  0 unstyled
+      footer      12     verbatim  4 unstyled
+
+That is order, and it settles SH693 in one read — the footer is at 12, below the
+sections, where the fix put it.
+
+The column that did not ship is **styled by**. `verbatim` and `sections` name where a
+region's *markup* came from; neither names the stylesheet in force over it. On a mixed
+page both are loaded — `<style>{{theme.css}}</style>` unconditionally and the captured
+theme under `{{#if content}}` — so every mixed page carries two, and the reader cannot
+say which region each one paints.
+
+That is the question a curator actually arrives with, and it was the one that opened
+this whole line: *the authorable part has none of the site's formatting*. The answer is
+that regions 4–11 are painted by the Shio theme and 1–3 and 12 by the captured one,
+which is SH510 behaving as designed and also the defect as experienced. Nothing in the
+output states it, so the finding still has to be assembled by hand from the layout
+template.
+
+One column, from facts the renderer already holds. SH692 defines the rule it feeds:
+exactly one theme in force per region.
+
+### XVII.107 The page whose own fields no branch annotates (SH766)
+
+With SH685's blindness removed the reader answers for every post, and the first row is
+the page itself:
+
+    9e3f13dd…  (Page)  [page]  0/5
+      missing: content, contentAfter, description, sections, title
+
+Nine posts, `67 of 33 declared field(s) annotated`, **0 unresolved** — the instrument is
+working. The Page is the one subject that carries none.
+
+The mechanism is in the generated layout, and it is one branch:
+
+    {{#unless content}}<div class="shio-container">
+      <h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
+
+`title` is annotated **only where there is no verbatim markup**. Ten of twelve pages
+here are mixed, so `content` is truthy and the branch never runs: on every mixed page
+the page's own title is rendered by the captured `<h1>` and is not editable, while the
+sections around it are. A curator can rewrite a hero's heading and not the page's title.
+
+The other four are a different question and probably a smaller one. `description` never
+appears in the body, `sections` and `content` are containers rather than values, and
+`contentAfter` is markup. What a curator needs from these is not an in-place field but a
+way to reach the post — which is what the console is for, and is worth deciding rather
+than inheriting.
+
+The assertion that closes this, per SH527: a mixed page reports its title as editable.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

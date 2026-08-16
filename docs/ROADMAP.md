@@ -9,6 +9,13 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block Q — Replication (an existing site becomes an authorable Shio site)
+
+- 📋 **SH763** (deps: SH693 ✅) **convert writes contentAfter and no post-type declares it, so every conversion against a real instance is refused** — SH693 shipped the writer and the template and not the model, so Page still allows title, content, description, sections and the batch dies at ops[28]. → §XVII.104
+- 📋 **SH764** (deps: —) **Filing a task makes the conformance gate refuse to run, because any tracked change reads as a stale instance** — Two edited docs files were enough: the JVM was built from this exact commit and the suite still refused, so recording a finding disables the gate that confirms it. → §XVII.105
+- 📋 **SH765** (deps: SH687 ✅) **The regions reader names a region's markup origin and never the theme painting it, the half a curator asks about** — It answers verbatim or sections per region, so a page carrying two stylesheets cannot say which region each one paints. → §XVII.106
+- 📋 **SH766** (deps: SH685 ✅) **A mixed page's title is never editable, because the layout annotates it only when there is no verbatim markup** — annotations answers 0/5 on the home page, and the template puts the only sh-field title inside an unless content branch a mixed page never takes. → §XVII.107
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
