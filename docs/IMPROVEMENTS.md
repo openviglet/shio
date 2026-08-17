@@ -725,14 +725,15 @@ fifty green runs never retired it (SH789).
 The exclusion was right. The reason was right. What was wrong is the part that points at
 somebody else's file, and that is the general shape: an exclusion is checkable — the
 code does it — but the sentence excusing it is prose about another module, as reliable
-as the day it was written and re-read by nobody, since the file carrying it is green.
+as the day it was written, and re-read by nobody because the file is green.
 
 This is SH583 one level up. That rule says two implementations of one idea agree only by
 accident; this says two instruments *dividing* one idea are only complementary by
 accident, and the seam is invisible from both sides.
 
 The deliverable is the grep, before any fix: how many guards exclude a case while naming
-another instrument as the cover, and for each, does that instrument actually cover it.
-SH322's rule. The count is the finding either way — if the answer is one, this is closed
-by saying so, and if it is a dozen, the exclusions were never the cheap option they
-looked like.
+another instrument as the cover, and does that instrument cover it. SH322's rule.
+**Already two** — SH791 left `pnpm lint` out of the Java scan because the JS guard
+covers it, written in the same session as this line and with no more checking than the
+first one had. The count is the finding either way: if it is a dozen, exclusions were
+never as cheap as they looked.
