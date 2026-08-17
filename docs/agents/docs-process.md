@@ -511,6 +511,42 @@ discovers it is impossible only after doing the first half. It now names both co
 P6 is about a fix somebody can perform, and an instruction that cannot be carried out in the
 repository it is printed in fails that in the most expensive way: it looks actionable.
 
+## Work that cannot start yet, and how to say so (SH784)
+
+A task waiting on something **no commit can produce** — an intermittent failure reappearing, an
+upstream release, somebody else's decision — used to be offered by `roadkeep pick` on every
+iteration, and declined by hand each time. The two spellings that looked available were both wrong:
+`⏳` is *in flight*, which is what `pick` ranks first; `retire` is terminal, and deletes the
+rationale.
+
+**The third one already exists, and it is a dep.** `pick`'s own contract says it: *a task blocked
+outside the backlog is never offered, because shipping cannot unblock it.* A dep is not only an id —
+it accepts free text naming work outside the backlog:
+
+```
+roadkeep amend SH778 --deps "a further sighting"
+```
+
+```
+ready 1, blocked 1, outside 1
+```
+
+The task keeps its line, its marker, its section and its id. `pick` stops offering it, and anything
+depending on it is `blocked` rather than ready. Nothing is deleted and nothing is deferred.
+
+### Two things to know before reaching for it
+
+**A dep spends the line's budget.** The rendered line is capped, and `deps:` sits inside that cap, so
+adding one can push a `why` that already fit over the limit — the refusal names the new allowance and
+the overage. Expect to shorten the sentence in the same call.
+
+**It is not the same as pausing.** A deferred store — `deferred = "<path>"` under `[files]` — is a
+real roadkeep feature and this project deliberately declares none. It would move the line *out of*
+`ROADMAP.md`, and both ledger readers require an exception's task to be **on** the roadmap (SH579,
+SH594), so deferring a task would delete the reason for the `red-suites.json` entry tracking its red.
+The dep keeps the line where those readers can see it, which is why it is the cheaper answer here and
+not merely the smaller one.
+
 ## A claim that a capability is absent, over a ledger that says it shipped (SH769)
 
 Two turned up in one session, and only one had an instrument.

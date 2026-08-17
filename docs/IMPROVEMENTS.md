@@ -712,27 +712,3 @@ So this task owns the cure and cannot start until the instrument speaks. It stay
 because the `red-suites.json` entry has to name a task that removes it, and an entry
 whose owner has shipped is the state SH594 fails on. Delete that entry in the same
 commit as the fix.
-
-### XXVI.10 The pause this project cannot spell (SH784)
-
-Found by trying it:
-
-    roadkeep: SH778 cannot be set aside: no deferred store is declared — add
-    `deferred = "<path>"` under [files]
-
-SH778 is waiting for an intermittent failure to reappear so its instrument can name it,
-and SH780 is the cure that waits on SH778. Neither can start. With no deferred store the
-only two spellings are **⏳ in flight**, which `pick` offers on every iteration and a
-reader has to keep declining, and **retire**, which is terminal: the id cannot come
-back, the resolver reads a dep on it as never, and the rationale is deleted.
-
-So the backlog cannot say the true thing, which is *real, owned, and not startable yet*.
-The cost is small and constant: every pick offers work nobody can do, and the reason has
-to be re-derived each time from the section rather than read off the line.
-
-Adopting the store is one key in `roadkeep.toml` and a file with the block headings.
-What needs care is the second half, and SH781 just built the precedent: an exception in
-`red-suites.json` requires its task to be **on the roadmap**, and a deferred line is not
-— so deferring a task would delete the reason for the entry that tracks its red, which
-is the same collision one file over. Both readers now ask the roadmap rather than the
-changelog; a deferred store means teaching them a third state rather than two.
