@@ -1230,6 +1230,7 @@
 - **SH767** — post.upsert resolves a post: address in a relation field to the URL the field stores, the way an op's folder always has, and refuses the three forms no URL in this site can mean.
 - **SH769** — Every standing absence claim is signed with one sentence naming what would falsify it; the broad rule was measured at 38 mostly-true hits and rejected, and the tight one leaves eight.
 - **SH770** — A stamp whose sha is not HEAD is excluded from both directions and reported as what it is — a run against another tree — so neither a stale red nor a stale green is read as this tree's colour.
+- **SH771** — The matrix names the eight ids and conformance is 122 of 122; the ratchet stays the enforcement because SH770 already bounded the interval, and its refusal now names both commits instead of one that cannot exist.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

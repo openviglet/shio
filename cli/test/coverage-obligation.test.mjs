@@ -33,10 +33,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
-// @scans prose reason: it reads CHANGELOG.md and a git diff of it as text — the ledger is
-// prose with one machine-readable line shape, and the ids are what this counts (SH740).
+// @scans both reason: the ledger half is prose — CHANGELOG.md and a git diff of it as text, with
+// one machine-readable line shape, and the ids are what this counts. The SH771 half reads a source
+// file and runs it through the shared stripper first, because the comment explaining the
+// instruction quotes the instruction, and a raw scan read the explanation as the defect.
 
 import { readMirror, shippedSince } from "../../scripts/coverage-mirror.mjs";
+import { code } from "./support/source-text.mjs";
 
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
@@ -116,4 +119,39 @@ test("SH758: the report fires on an id that shipped and is not named", () => {
   assert.deepEqual(["SH902"].filter((id) => !named.has(id)), [],
     "SH758: and one the matrix already names is not owed twice — a report that repeated itself is "
     + "one somebody stops reading, which is the same end as not printing it.");
+});
+/**
+ * SH771 — the refusal has to name a fix somebody can perform.
+ *
+ * <p>SH747's ratchet ended its instruction with *"then lower UNNAMED in the same commit"*, and that
+ * commit does not exist: `COVERAGE.md` is in `vigletdocs` and the ceiling is in this repository. So
+ * the rule this project states everywhere — one task, one commit, with the doc sync in it — is
+ * unsatisfiable for that file by construction, and somebody following the instruction discovers it
+ * only after doing the first half. Three consecutive pushes went over the resulting red, which is
+ * the third state SH579 says does not exist, reached by following the rules rather than skipping
+ * them.</p>
+ *
+ * <p>This is the boundary that defect crossed: what a person reads when the gate refuses. P6 is
+ * about a fix that can be carried out, and an instruction that cannot be carried out in the
+ * repository it is printed in fails that in the most expensive way — it looks actionable.</p>
+ */
+test("SH771: the coverage ratchet's refusal names both repositories, not one commit", () => {
+  // Comments stripped, through the one shared stripper (SH740). Found by writing this: the comment
+  // that explains why the old instruction was wrong QUOTES the old instruction, and a raw scan read
+  // the explanation as the defect it warns about — the same shape SH769 met one file over.
+  const ratchet = code(readFileSync(
+    join(ROOT, "cli", "conformance", "docs-coverage.conformance.mjs"), "utf8"));
+
+  assert.match(ratchet, /two commits, in two repositories/,
+    "SH771: the refusal must say that the fix spans two repositories. Without it the reader is "
+    + "told to do something in this tree that cannot be done in this tree.");
+  assert.match(ratchet, /vigletdocs\/docs-shio/,
+    "and it must name where the matrix actually lives, because the reader is standing in the other "
+    + "repository when they read it");
+  assert.match(ratchet, /coverage:mirror/,
+    "and the command that closes the second half here, which is the step somebody who only edited "
+    + "the matrix would leave undone");
+  assert.doesNotMatch(ratchet, /lower UNNAMED in the same commit/,
+    "SH771: this was the instruction, and it named a commit that cannot exist. Restoring it puts "
+    + "the reader back where three pushes went over a red nobody could clear.");
 });

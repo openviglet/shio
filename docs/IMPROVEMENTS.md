@@ -533,32 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.112 The ratchet a Shio commit cannot satisfy (SH771)
-
-`pnpm conformance` at `950cdaed`, against a clean instance: **121 of 122 pass**. The one
-failure is not a product defect at all.
-
-    493 shipped ids are not named in COVERAGE.md, against a recorded 490.
-
-SH764, SH765 and SH768 shipped and the matrix did not move. SH747's ratchet is right to
-say so, and SH758 already moved the moment of discovery into this tree: the generated
-`docs/coverage-named.json` mirror is what lets the gate here report it minutes after a
-ship rather than at the next docs run.
-
-**What it cannot do is let the fix land in the same commit.** `COVERAGE.md` is in
-`vigletdocs`, a different repository. So the rule the project states everywhere — one
-task, one commit, with the doc sync in it — is unsatisfiable for this file by
-construction: the ship happens here, the naming happens there, and the interval between
-them is red on a gate that blocks the next commit in this tree. Three consecutive pushes
-went over it, which is the third state SH579 says does not exist, reached by following
-the rules rather than by skipping them.
-
-Two halves, and only the first is a chore. Name the three ids and regenerate the mirror.
-Then decide what the gate owes the interval it cannot close: a ship here that raises the
-count could write the obligation where the next commit reads it, making the sweep a
-queued item rather than a red suite — the difference between an instrument that reports
-and one that blocks work it will not let you finish.
-
 ### XVII.113 The stylesheet keyed to the wrong half (SH772)
 
 SH549 put the captured stylesheet on the pages that carry verbatim markup and on no

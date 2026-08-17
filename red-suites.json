@@ -1,14 +1,5 @@
 {
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
-  "exceptions": [
-    {
-      "suite": "conformance",
-      "test": "SH747: the count of shipped ids the matrix does not name never rises",
-      "task": "SH771",
-      "declared": "2026-08-17",
-      "expires": "2026-08-24",
-      "why": "121 of 122 pass against a clean instance at 950cdaed. The one failure is SH747's ratchet: 493 shipped ids are not named in COVERAGE.md against a recorded 490, because SH764, SH765 and SH768 shipped and the matrix did not move. It is not a product defect and it is not fixable from this repository — COVERAGE.md lives in vigletdocs, so no Shio commit can lower the count in the same commit that raises it, which is the interval SH771 is about. Safe to commit over because the check reads a document in another tree and nothing it asserts is about this code: every scenario that drives the instance, including the replication chain SH763 unblocked, is green. It goes away when SH771 names the ids and regenerates the mirror, and this entry is deleted in that commit."
-    }
-  ]
+  "exceptions": []
 }

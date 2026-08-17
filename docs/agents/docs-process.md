@@ -468,6 +468,49 @@ Declaring them rather than auto-classifying is deliberate — deciding which cor
 a judgement about the test, and a heuristic over variable names is the kind of guess this file exists
 to stop.
 
+## The ratchet a Shio commit cannot satisfy (SH771)
+
+`pnpm conformance` against a clean instance: **121 of 122 pass**. The one failure was not a product
+defect at all.
+
+```
+493 shipped ids are not named in COVERAGE.md, against a recorded 490.
+```
+
+SH764, SH765 and SH768 had shipped and the matrix had not moved. SH747's ratchet is right to say so.
+What it could not do is let the fix land in the same commit: **`COVERAGE.md` is in `vigletdocs`**, so
+the rule this project states everywhere — one task, one commit, with the doc sync in it — is
+unsatisfiable for that file by construction. Three consecutive pushes went over the red, which is
+the third state SH579 says does not exist, reached by following the rules rather than by skipping
+them.
+
+### The decision: the ratchet stays, because SH770 already bounded the interval
+
+A conformance run leaves a stamp, and since SH770 a stamp taken against another commit is not read
+as this tree's colour. So the next ship makes a red conformance run **stale** rather than accusing:
+it stops blocking without anybody declaring an exception, and it stops excusing the moment somebody
+runs the gate again. The property SH771 complained about — *an instrument that blocks work it will
+not let you finish* — was removed by a task shipped the same afternoon, from the other end.
+
+The obligation is not lost, because it lives where it can be acted on. SH758's reader runs inside
+`pnpm test`, on **every** commit, and prints the ids the matrix does not name yet. That is the queue
+this task asked for, and it already existed; what was missing was a gate that stopped treating the
+gap as a failure of the commit in front of it.
+
+### What did change: an instruction nobody could follow
+
+The refusal used to end *"then lower UNNAMED in the same commit"*. That commit does not exist — the
+matrix is in one repository and the ceiling is in another — so somebody following the instruction
+discovers it is impossible only after doing the first half. It now names both commits:
+
+```
+1. vigletdocs/docs-shio/COVERAGE.md — name the ids in their cluster rows
+2. here — `pnpm run coverage:mirror`, then lower UNNAMED to the new count
+```
+
+P6 is about a fix somebody can perform, and an instruction that cannot be carried out in the
+repository it is printed in fails that in the most expensive way: it looks actionable.
+
 ## A claim that a capability is absent, over a ledger that says it shipped (SH769)
 
 Two turned up in one session, and only one had an instrument.

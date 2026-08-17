@@ -251,6 +251,26 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
    * <p>Lower it when you name one. Raising it means a task shipped and the matrix did not move,
    * which is the whole defect — name the id in its cluster row, or add the 🔒 row saying why there
    * is no page.</p>
+   *
+   * <h3>What this gate owes the interval it cannot close (SH771)</h3>
+   *
+   * <p>The fix for a raised count lands in <b>another repository</b>. `COVERAGE.md` is in
+   * `vigletdocs`, so the rule this project states everywhere — one task, one commit, with the doc
+   * sync in it — is unsatisfiable here by construction: the ship happens in this tree, the naming
+   * happens in that one, and the interval between them used to be red on a gate blocking the next
+   * commit. Three consecutive pushes went over it, which is the third state SH579 says does not
+   * exist, reached by following the rules rather than by skipping them.</p>
+   *
+   * <p><b>The decision is that the ratchet stays exactly as it is, because SH770 already bounded
+   * the interval.</b> A conformance run leaves a stamp, and a stamp taken against another commit is
+   * no longer read as this tree's colour — so the next ship makes a red conformance run *stale*
+   * rather than accusing. It stops blocking without anybody declaring an exception, and it stops
+   * excusing the moment somebody runs the gate again.</p>
+   *
+   * <p>The obligation is not lost, because it lives where it can be acted on: SH758's reader runs
+   * inside `pnpm test`, on every commit, and prints the ids the matrix does not name yet. That is
+   * the queue this task asked for, and it already existed — what was missing was a gate that
+   * stopped treating the gap as a failure of the commit in front of it.</p>
    */
   const UNNAMED = 490;
 
@@ -306,8 +326,17 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
       unnamed.length <= UNNAMED,
       `${unnamed.length} shipped ids are not named in ${MATRIX}, against a recorded ${UNNAMED}. A `
         + "task shipped and the matrix did not move, which is the defect SH747 exists for — six "
-        + "went past in one session. Name the id in its cluster row, or add the 🔒 row saying why "
-        + "there is no page, then lower UNNAMED in the same commit.\n  newest unnamed: "
+        + "went past in one session. Name each in its cluster row, or add the 🔒 row saying why "
+        + "there is no page.\n"
+        // SH771 — the instruction used to end "then lower UNNAMED in the same commit", and that
+        // commit does not exist: the matrix is in `vigletdocs` and the ceiling is in this file, in
+        // this repository. Naming the two is the difference between a fix somebody can perform and
+        // one they discover is impossible after following the instruction.
+        + "  It takes two commits, in two repositories, and that is not a workaround:\n"
+        + `    1. vigletdocs/docs-shio/${MATRIX} — name the ids in their cluster rows\n`
+        + "    2. here — `pnpm run coverage:mirror`, then lower UNNAMED to the new count\n"
+        + "  `pnpm test` prints what is owed on every commit (SH758), so this is a queue rather "
+        + "than a surprise.\n  newest unnamed: "
         + unnamed.slice(-8).join(" "),
     );
   });
