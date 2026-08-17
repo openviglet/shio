@@ -302,6 +302,41 @@ Unknown either side is **not** stale. A stamp with no `sha` predates the field a
 no git cannot be asked — inventing staleness from an absence is the same mistake in the other
 direction.
 
+### The suite went red about its own logging (SH806)
+
+One run of the Java gate reported **8 errors over 1856 tests**, none of them an assertion. Three
+`@SpringBootTest` classes failed to start and the rest was Spring's failure-threshold cascade:
+
+```
+Logging system failed to initialize using configuration from 'null'
+ERROR in SizeAndTimeBasedRollingPolicy - Timeout while waiting for clean-up job to finish
+```
+
+The next run was green, 1894 of 1894, with the string absent. A re-run "fixing" it is what SH770
+calls being right by luck, and since SH800 the false red is *recorded* — the stamp says `red: true`
+and the comparators then demand a `red-suites.json` entry for a defect nobody can find.
+
+**The cause was not volume in `store/logs/`, which holds ten files.** `logback-spring.xml` includes
+Spring Boot's `file-appender.xml`, whose `LOG_FILE` falls back to `${java.io.tmpdir}/spring.log`, and
+tests never set `logging.file.name` — the test tree's own `application.properties` **shadows**
+production's, where that key lives. So every context in the suite opened a rolling appender **in the
+system temp directory**, and its policy ran a clean-up over that directory looking for archives.
+Measured on this machine: `%TEMP%` holds **309,064 entries**, and `spring.log` had reached 3.2 MB
+with a fortnight of `.gz` beside it. That is the timeout — and the quieter half nobody had noticed is
+that the suite was writing megabytes into a developer's temp folder on every run.
+
+`src/test/resources/logback-test.xml` fixes it outright: logback and Spring Boot both prefer that
+name over `logback-spring.xml`, so the suite logs to a console it discards and writes nothing. A
+property would not have done it — the fallback lives in the XML, not in Spring's property binding.
+
+**Two rounds of verifying-by-breaking were themselves wrong, which is the part to copy.** Deleting
+the config and re-running passed, twice, for two different reasons: a stale `logback-test.xml` sat in
+`target/test-classes/` (SH282's trap, through a resource instead of a class), and the assertion was
+a plain JUnit test — but `logback-spring.xml` is read by **Spring Boot's** logging system, not by
+logback, so without a context logback falls back to its own console default and the check was asking
+about a world the test was not in. It boots a context now, and deleting the config fails with
+`ROOT → FILE → …\Temp\/spring.log`.
+
 ### A byte no rendering shows you (SH804)
 
 An edit wrote a literal **backspace** — one byte — where the two characters of `\b` were meant. The

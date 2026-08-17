@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SH806 — the suite logs to a console it can discard, and to no file at all.
+
+  ## The failure this exists for
+
+  One run of the Java gate reported 8 errors over 1856 tests, none of them an assertion. Three
+  @SpringBootTest classes failed to start and the rest was Spring's failure-threshold cascade:
+
+      Logging system failed to initialize using configuration from 'null'
+      ERROR in SizeAndTimeBasedRollingPolicy - Timeout while waiting for clean-up job to finish
+
+  The next run was green, 1894 of 1894, with the string absent — a false red, which is the shape
+  SH755 says teaches people that red means nothing, and which SH800 made worse by recording it: the
+  stamp said `red: true` and the comparators then demand a red-suites.json entry for a defect nobody
+  can find.
+
+  ## What it actually was
+
+  `logback-spring.xml` includes Spring Boot's `file-appender.xml`, whose LOG_FILE falls back to
+  `${java.io.tmpdir}/spring.log`. Tests never set `logging.file.name` — `src/test/resources/`'s own
+  `application.properties` shadows production's, where that key lives — so **every Spring context in
+  the suite opened a rolling file appender in the system temp directory**, and its rolling policy ran
+  a clean-up job over that directory looking for old archives to delete.
+
+  Measured on this machine: `%TEMP%` holds **309,064 entries**, and `spring.log` had grown to 3.2 MB
+  with a fortnight of gzipped archives beside it. A clean-up scanning that, from dozens of contexts,
+  on a machine already running the suite, is the timeout.
+
+  ## Why a file rather than a property
+
+  `logging.file.name=` in the test properties would leave `logback-spring.xml`'s own LOG_FILE default
+  in place, since that default is expressed in the XML and not in Spring's property binding. Logback
+  and Spring Boot both prefer `logback-test.xml` over `logback-spring.xml`, so this replaces the
+  configuration outright — which is also the honest description of the intent: a suite has nothing to
+  roll, nothing to archive, and no business writing into anybody's temp directory.
+
+  The console half is copied from `logback-spring.xml` deliberately, loggers and pattern included, so
+  what a test prints is unchanged and no assertion about output moves.
+-->
+<configuration>
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<Pattern>
+				%msg%n
+			</Pattern>
+		</encoder>
+	</appender>
+	<logger name="com.viglet.shio.Shio" level="info" additivity="false">
+		<appender-ref ref="CONSOLE" />
+	</logger>
+	<logger name="com.viglet.shio.onstartup.ShOnStartup" level="info" additivity="false">
+		<appender-ref ref="CONSOLE" />
+	</logger>
+
+	<include resource="org/springframework/boot/logging/logback/defaults.xml" />
+	<root level="INFO">
+		<appender-ref ref="CONSOLE" />
+	</root>
+</configuration>

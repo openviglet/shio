@@ -278,6 +278,16 @@ const DEBT = [
   // and twelve read the same). When either ships, this entry comes off — and if it does not, that
   // is the reader saying the process finding was never closed.
   "SH797",
+  // DOES NOT EARN one, for the reason a measurement never does. What SH805 shipped is a *number*
+  // and the elimination it bought: the drain is 50-140ms per file alone, 45ms for the whole suite
+  // alone, and ~5.5s only inside `pnpm test` under workspace concurrency — so it is not a lingering
+  // handle in any file, which was the obvious guess and is now ruled out.
+  //
+  // The assertion that would fit is a timing one, and a timing assertion over a load-dependent
+  // effect is a flake by construction — this very round spent two tasks on a flake nobody could
+  // read. The cure half stays open and will carry the assertion: whatever is still alive at exit
+  // under load is a fact a test can name without measuring a clock.
+  "SH805",
 ].sort(byId);
 
 /**

@@ -712,29 +712,3 @@ nothing to catch and a reason to be repurposed rather than deleted.
 One caution the measuring itself produced. The first figure taken for this was **12.6
 s**, and it was measured while provocation loops ran in the background. Measure the gate
 on an idle machine, or the number describes the machine.
-
-### XXVI.31 A gate that goes red about its own logging (SH806)
-
-One run of `pnpm java` reported **8 errors over 1856 tests**. None was an assertion.
-Three `@SpringBootTest` classes failed to start, each with the same root cause, and the
-rest of the cascade was Spring's own *failure threshold exceeded* skipping the repeats:
-
-    Logging system failed to initialize using configuration from 'null'
-    ERROR in SizeAndTimeBasedRollingPolicy - Timeout while waiting for clean-up job to finish
-
-The next run was green, 1894 of 1894, with the string absent from the log entirely.
-
-It is not volume. `store/logs/` holds **ten files and 128 KB**; the clean-up has almost
-nothing to scan. It is contention — many contexts initialising logback against one
-directory on a machine already busy — and the policy's clean-up is asynchronous with a
-timeout it can miss.
-
-Worth an id rather than a shrug, for the reason SH803 is: **a red that is not about the
-code teaches that red means nothing**, and this one is now recorded by the stamp and
-read by the comparators, which will demand a `red-suites.json` entry against an open
-task for a defect nobody can find. It is also cheap to be wrong about — a re-run "fixes"
-it, which is exactly what SH770 calls being right by luck.
-
-Two directions worth measuring before choosing: whether the test profile needs a rolling
-file appender at all — a suite that logs to a console it discards has no files to roll —
-and whether the clean-up can be told not to run under test.
