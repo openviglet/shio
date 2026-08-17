@@ -692,23 +692,23 @@ reproducible. Filed now because the sighting is the perishable part.
 ### XXVI.6 The cure that waits on a sighting (SH780)
 
 SH778 shipped the evidence half and stopped there on purpose. What it established, by
-measurement rather than by guessing, is what the failure is **not**: not an assertion
-(1499 pass, 1 fail, and the one failure is the file with both its tests green), not an
-unhandled rejection or exception (SH698's handlers print first and printed nothing), and
-not the teardown deadline (`closeFixture` rejects naming the server and its open
-sockets; that message is absent and the test owning the `t.after` reported green).
+measurement rather than guessing, is what the failure is **not**: not an assertion (1499
+pass, 1 fail, and the failure is the file with both its tests green), not an unhandled
+rejection or exception (SH698's handlers print first and printed nothing), and not the
+teardown deadline (`closeFixture` rejects naming the server and its sockets; that
+message is absent and the test owning the `t.after` was green).
 
 What is left is the file's own **process exit**. `node --test` marks a file failed when
 its process exits non-zero whatever its tests said, and `--test-force-exit` is in the
-command the gate runs — a forced exit is exactly where a code appears with no other
-trace. SH778's third instrument prints that code and the active handles.
+command the gate runs. SH778's instrument prints that code and the open handles.
 
-It has not fired. Twelve runs after it landed — six ordinary, six at
-`--test-concurrency=32` — all green, which matches SH698's eighteen. Two sightings in
-roughly fifteen full runs is the observed rate, and it appears under the whole suite
-rather than alone.
+**It has not fired, and the negative result is now a fact rather than a wait.** Two
+sightings in roughly fifteen runs before the instrument landed; **thirty-seven since
+without one** — twelve then, fifteen more, and ten serial. At the earlier rate that run
+of clean results is under one per cent likely, so the rate changed rather than the hunt
+being unlucky. Nothing was aimed at it, so any fix was incidental.
 
-So this task owns the cure and cannot start until the instrument speaks. It stays open
-because the `red-suites.json` entry has to name a task that removes it, and an entry
-whose owner has shipped is the state SH594 fails on. Delete that entry in the same
-commit as the fix.
+Three possibilities remain and nothing yet chooses between them: the defect is gone, its
+trigger left with some other change, or the rate is far below two in fifteen. Do not
+read the `red-suites.json` entry as evidence the flake is live — check its date, and an
+entry that expires unfired is itself the answer.
