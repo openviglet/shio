@@ -1450,3 +1450,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH787** — Fixture ids are reserved above the nine-thousandth and asserted from both ends; six in four files sat 112 tasks from arriving pre-paid, and SH630's hand-kept list folded in.
 - **SH788** — The documented command redirects instead of piping, and two guards refuse the shape — CI was already honest, so the trap was local to the docs that taught it.
 - **SH789** — The comparator that could judge the js gate never checked for a declaration outliving its red; it does now, it fired on the live one, and the licence is deleted.
+- **SH790** — The breach message computes the tell — a line carrying the id is allocation, a sentence spelling it is a wording fix — and gives each its own instruction.

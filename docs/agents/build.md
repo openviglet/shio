@@ -1216,6 +1216,24 @@ SH630's version of this rule — a hardcoded list of one file's fifteen illustra
 direction — was folded in, because two readers of one idea agree only by accident (SH583) and the
 hand-maintained list was the half that rots.
 
+**The guard fired one command after it shipped, and its message named the wrong cause (SH790).**
+SH787's own changelog sentence spelled the boundary in the obvious words. Roadkeep reads an
+id-shaped token in a governed file as an id that is **spent**, so it derived the next task past it —
+and that task was filed inside the range reserved twenty minutes earlier. The guard was right; the
+text said *move the range up before allocating here*, and nobody had allocated anything. Following
+it would have raised the reserve, left the sentence, and derived the next task past the new boundary
+too.
+
+So the message now computes the tell instead of assuming one. A roadmap or ledger **line** carrying
+the id is `ALLOCATED` — raise `RESERVED_FROM` and move the fixtures — and an id that appears only
+inside a **sentence** is `SPELLED`: reword the prose, leave the range alone. Both can fire at once,
+which is what the incident actually looked like.
+
+Two things worth keeping from the repair. Write a range boundary in words (*above the
+nine-thousandth*) and not as a number, in anything roadkeep governs. And **`roadkeep renumber` moves
+the line, not the section heading that repeats the id** — that needs `section-amend --title`, which
+is the second command the incident needed and the one nothing had told anybody about.
+
 ### The other half of a bad slice is the one that stops short (SH786)
 
 SH785 fixed a scan that ran past a declaration's end. The matcher that replaced it counts brackets,

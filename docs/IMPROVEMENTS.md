@@ -714,31 +714,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
 
-### XXVI.15 A guard whose message names the wrong cause sends the reader the wrong way (SH790)
-
-SH787 reserved a range for fixture ids and asserted it from both ends. Its changelog
-sentence said so, in the obvious words, naming the boundary. Roadkeep reads any
-id-shaped token in a governed file as an id that is spent, so it derived the next task's
-number **past** the boundary — and the new task was filed inside the range SH787 had
-reserved twenty minutes earlier. The guard fired, correctly, within one command of
-shipping.
-
-That is the good half. The bad half is what it said: *move the range up before
-allocating here*. Nobody had allocated anything. The cause was a **sentence**, and the
-instruction sends the reader to renumber a range when the fix is to spell the boundary
-in words. Following it would raise the reserve, leave the prose, and derive the next
-task past the new boundary too.
-
-This is P6 turned inward. The project requires a 4xx to carry
-`fix`/`allowed`/`didYouMean`; an assertion message is the same contract with the same
-reader, and this one teaches the wrong lesson. It should distinguish the two ways a
-governed file comes to name a reserved id — a line that carries it, which is allocation,
-and prose that merely spells it, which is a wording fix — because the reader cannot tell
-which from what fires.
-
-The tell is already computable: the guard knows whether any roadmap or ledger *line*
-carries the id, or whether it only appears in a sentence.
-
 ### XXVI.16 A guard that checks one of the three gates its rule names (SH791)
 
 SH788 rewrote the rule in `agents.md` to cover all three gates — the failure it fixes

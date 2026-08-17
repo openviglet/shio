@@ -730,20 +730,86 @@ test("SH787: an id a suite spells is one the ledger knows, or is in the reserved
   );
 });
 
+/**
+ * What to say when a governed file names a reserved id — which depends on *how* it names it.
+ *
+ * <p>SH790. There are two ways in and they need opposite fixes, and the first version of this guard
+ * gave the reader only one of them: <i>move the range up before allocating here</i>. It fired on
+ * the day SH787 shipped, and nobody had allocated anything. SH787's own changelog sentence spelled
+ * the boundary in the obvious words, roadkeep reads an id-shaped token in a governed file as an id
+ * that is spent, and the next task was derived past it — into the range that had just been
+ * reserved. Following the message would have raised the reserve, left the sentence, and derived the
+ * next task past the new boundary too.</p>
+ *
+ * <p>P6 turned inward: a 4xx here must carry `fix`/`allowed`, and an assertion message is the same
+ * contract with the same reader. So the tell is computed rather than guessed — a roadmap or ledger
+ * <b>line</b> carrying the id is allocation, and an id that appears only inside a sentence is a
+ * wording fix.</p>
+ *
+ * @returns the message, or null where nothing was breached
+ */
+function reservedRangeBreach(allocated, spelledOnly) {
+  if (allocated.length === 0 && spelledOnly.length === 0) return null;
+  const parts = [
+    `SH${RESERVED_FROM} and above is reserved for the ids fixtures are written with, so a governed `
+      + "file naming one turns every such fixture into an assertion carrying a real id.",
+  ];
+  if (allocated.length > 0) {
+    parts.push(
+      `ALLOCATED — a line carries ${allocated.join(", ")}. The counter has genuinely reached the `
+        + "reserve: raise RESERVED_FROM, and move the fixtures above it, before this range is "
+        + "somebody's real work. `roadkeep renumber` moves a line, and it does NOT move the "
+        + "section heading that repeats the id — that is `roadkeep section-amend --title`.",
+    );
+  }
+  if (spelledOnly.length > 0) {
+    parts.push(
+      `SPELLED — no line carries ${spelledOnly.join(", ")}; a sentence merely says it. Do not touch `
+        + "the range: reword the prose so the boundary is not an id-shaped token (\"above the "
+        + "nine-thousandth\" rather than the number). Until it is reworded, roadkeep reads that "
+        + "token as spent and derives the next task past it — which is how this fired the first "
+        + "time, one command after the range was reserved.",
+    );
+  }
+  return parts.join("\n");
+}
+
 test("SH787: and the reserved range stays reserved — the ledger never allocates into it", async () => {
   // The other end of the same rule, and the one that makes the first end mean something. Reserving a
   // range is a claim about the future; this is what holds the future to it. If a task ever ships as
   // SH9000+, every fixture in this repository becomes a payment on it at once.
-  const trespass = [...await knownIds()]
-    .filter((id) => Number(id.slice(2)) >= RESERVED_FROM)
-    .sort(byId);
+  const reserved = (ids) => [...ids].filter((id) => Number(id.slice(2)) >= RESERVED_FROM).sort(byId);
+  // "A line carries it" is what `openIds` and `shippedIds` already mean — a roadmap task line and a
+  // ledger entry. Anything else `knownIds` sees is prose: a rationale sentence, a heading, a `why`.
+  const carried = new Set([...reserved(await openIds()), ...reserved(await shippedIds())]);
+  const named = reserved(await knownIds());
+
   assert.deepEqual(
-    trespass,
+    named,
     [],
-    `SH${RESERVED_FROM} and above is reserved for fixtures. A governed file naming one means the `
-      + "counter has reached the range this repository writes test data in, and every such fixture "
-      + "is now an assertion carrying a real id. Move the range up before allocating here.",
+    reservedRangeBreach(named.filter((id) => carried.has(id)), named.filter((id) => !carried.has(id)))
+      ?? "unreachable: the message is only read when this list is not empty",
   );
+});
+
+test("SH790: the breach message names which of the two causes fired, and their fixes differ", () => {
+  // The assertion that would have caught it. Not that a message exists — the old one existed — but
+  // that the two causes produce different instructions, since the defect was one instruction given
+  // for both. The prose case is the one that actually happened and the one the old text denied.
+  const allocated = reservedRangeBreach(["SH9001"], []);
+  const spelled = reservedRangeBreach([], ["SH9000"]);
+
+  assert.match(allocated, /ALLOCATED/, "a line carrying a reserved id is allocation");
+  assert.match(allocated, /raise RESERVED_FROM/, "and its fix is to move the range");
+  assert.doesNotMatch(allocated, /reword/, "which is not a wording problem");
+
+  assert.match(spelled, /SPELLED/, "an id only a sentence spells is not allocation");
+  assert.match(spelled, /reword the prose/, "and its fix is the sentence");
+  assert.doesNotMatch(spelled, /raise RESERVED_FROM/,
+    "and telling this reader to move the range is what SH790 is: it raises the reserve, leaves the "
+      + "sentence, and the next task is derived past the new boundary too");
+
+  assert.equal(reservedRangeBreach([], []), null, "and nothing is said when nothing is breached");
 });
 
 test("SH630: a comment naming an id does not assert it, and an assertion message does", () => {
