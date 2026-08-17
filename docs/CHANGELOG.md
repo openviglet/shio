@@ -1441,3 +1441,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH777** — getRelation's rows carry @index, @first and @last through the data frame SH384's pager already used, so a template can draw a separator, size the first row, or emit a fact once.
 - **SH778 (the evidence half)** — Three causes ruled out by measurement — not an assertion, not an unhandled error, not the teardown deadline — and a third instrument prints the exit code and open handles, since it did not reproduce in twelve runs.
 - **SH779** — The report line that bounds SH772's per-run emission is asserted on the only shape that takes two copies, which doubles as the clearest statement of what SH763's N-split bought.
+- **SH781** — Both readers now let the roadmap decide and the changelog only confirm, so a partial ship keeps the exception its still-open task needs; the second enforcer only surfaced by pointing a real entry at a real partial.

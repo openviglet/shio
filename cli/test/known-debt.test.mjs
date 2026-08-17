@@ -244,14 +244,36 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
   );
 });
 
+/**
+ * SH781 — a half is not a whole, and the ledger could not tell them apart.
+ *
+ * <p>`roadkeep ship --part` records the half that landed and <b>leaves the roadmap line open</b>,
+ * which is how progress reaches the ledger without the work leaving the backlog. This rule read the
+ * changelog alone, so the first half of a task orphaned every entry that named it — and the entry
+ * still had a reason, because the work was still open.</p>
+ *
+ * <p>The two rules were unsatisfiable together, which is the collision SH764 named from the other
+ * side: <i>the act of recording a finding disabled the gate that would confirm it</i>. Here the act
+ * of recording progress disabled the exception that was tracking the rest of it. Hit for real
+ * shipping SH778's evidence half with a `red-suites.json` entry open against it, and worked around
+ * by filing the remainder as its own id — acceptable once, and wrong as a convention, because it
+ * grows the backlog for a bookkeeping reason rather than a product one.</p>
+ *
+ * <p>The fix is the rule's own stated intent, which the implementation had drifted from: an owner
+ * is spent when the changelog holds it <b>and the roadmap does not</b>. Both files were already
+ * read here — `openIds` is three tests down — so this is a comparison that was available and not
+ * being made.</p>
+ */
 test("SH594: no entry is owned by a task that has already shipped", async () => {
-  const [ledgers, shipped] = await Promise.all([readLedgers(), shippedIds()]);
+  const [ledgers, shipped, open] = await Promise.all([readLedgers(), shippedIds(), openIds()]);
 
   const orphans = [];
   for (const ledger of ledgers) {
     if (ledger.ownerIsSubject) continue;
     for (const entry of ledger.entries) {
-      if (entry.owner && shipped.has(entry.owner)) {
+      // SH781 — `&& !open.has(...)`: a partially shipped task is in both files, and it is the one
+      // state where an entry naming it is still exactly right.
+      if (entry.owner && shipped.has(entry.owner) && !open.has(entry.owner)) {
         orphans.push(`${ledger.name}: ${entry.what} — owned by ${entry.owner}, which has SHIPPED`);
       }
     }
@@ -267,7 +289,43 @@ test("SH594: no entry is owned by a task that has already shipped", async () => 
     Two honest resolutions, and picking is the point: the finding is still real, so re-file it
     under a NEW open task; or it is gone, so delete the entry. Re-opening a shipped id is neither.
 
+    A task shipped with --part is NOT this state and is not reported here (SH781): its line is
+    still on the roadmap, so the entry naming it still has a reason.
+
 ${orphans.map((row) => `      ${row}`).join("\n")}`);
+});
+
+test("SH781: a partially shipped owner is not an orphan, and a fully shipped one still is", () => {
+  // Driven against a fabricated world for the reason the comparator's twin in red-suites.test.mjs
+  // is: the real ledgers are whatever this afternoon left, so an assertion about them would be a
+  // test of today. The three states are what matter, and only two of them existed before.
+  const shipped = new Set(["SH901", "SH902"]);
+  const open = new Set(["SH902", "SH903"]);
+  const orphan = (owner) => shipped.has(owner) && !open.has(owner);
+
+  assert.equal(orphan("SH901"), true,
+    "shipped and gone from the roadmap: the entry names somebody who has moved on, which is the "
+      + "state SH594 was built for");
+  assert.equal(orphan("SH902"), false,
+    "SH781: shipped as a PART and still on the roadmap. This is the state that made the rules "
+      + "unsatisfiable together — `ship --part` writes a ledger entry to record progress, and "
+      + "reading the changelog alone turned that into an orphaned exception for work that is "
+      + "still open. Hit for real on the evidence half of see SH778, with a red-suites entry "
+      + "against it — spelled as a reference because a bare id here would read to SH527's reader "
+      + "as a claim to have closed that task, which is SH731's trap and would pay off a debt this "
+      + "very file declares.");
+  assert.equal(orphan("SH903"), false,
+    "and an owner that has not shipped at all was never this rule's subject — the dangling case "
+      + "below is what covers an owner in neither file");
+
+  // And the rule as it stood, on the same world: reading the changelog alone cannot tell the half
+  // from the whole, so SH902 orphaned an entry whose work was still open. Kept as the contrast
+  // rather than described, because "it used to be wrong" is the claim this test exists to hold.
+  const orphanBefore = (owner) => shipped.has(owner);
+  assert.equal(orphanBefore("SH902"), true,
+    "SH781: this is what the two rules being unsatisfiable together looked like — recording "
+      + "progress with --part disabled the exception that was tracking the rest of it, which is "
+      + "SH764's collision from the other side");
 });
 
 test("SH594: every entry names an owner, or says it is unsigned", async () => {

@@ -138,7 +138,12 @@ export function problems(entry, { roadmap, changelog, today }) {
   }
 
   const open = new RegExp(`^- .*\\*\\*${entry.task}\\*\\*`, "m").test(roadmap);
-  const shipped = new RegExp(`^- \\*\\*${entry.task}\\b`, "m").test(changelog);
+  // SH781 — the roadmap decides, and the changelog only confirms. `roadkeep ship --part` records
+  // the half that landed and LEAVES THE LINE OPEN, so an id can honestly be in both files: the work
+  // is still open and the entry naming it still has a reason. Reading the changelog alone made
+  // recording progress delete the exception that was tracking the rest of it — the collision SH764
+  // named from the other side, where the act of writing a finding down disabled the gate for it.
+  const shipped = !open && new RegExp(`^- \\*\\*${entry.task}\\b`, "m").test(changelog);
   if (shipped || !open) {
     say(`${entry.task} is ${shipped ? "shipped" : "not an open task"}, so this exception has `
       + "outlived its reason. Delete the entry — in the same commit as the fix, which is the point "

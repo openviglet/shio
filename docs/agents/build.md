@@ -60,6 +60,35 @@ So the ledger's claim is now compared against what the gates actually said:
 "nobody has run this here" is true rather than wrong, so it is printed. That printing *is* the
 repair — the sentence whose absence cost eight pushes.
 
+### A half is not a whole, and two readers said it was (SH781)
+
+`roadkeep ship --part` records the half of a task that landed and **leaves the roadmap line open**,
+so progress reaches the ledger without the work leaving the backlog. Two rules read that state as
+*shipped*:
+
+- **SH594** (`known-debt.test.mjs`) — an entry whose owner has shipped is the worst state a debt
+  ledger has, so it fails. It read the changelog alone.
+- **SH579** (`red-suites.test.mjs`) — an exception must name a task the roadmap lists and the
+  changelog does not. Same reading, its own copy.
+
+Together with `--part` they are unsatisfiable: the first half of a task orphans every entry naming
+it, while the work — and the entry's reason — is still open. That is the collision SH764 named from
+the other side, where *the act of recording a finding disabled the gate that would confirm it*. Here
+the act of recording progress disabled the exception tracking the rest of it.
+
+It was hit for real shipping an evidence half with a `red-suites.json` entry against it, and worked
+around by filing the remainder as its own id — acceptable once, wrong as a convention, because it
+grows the backlog for a bookkeeping reason rather than a product one.
+
+**The fix is the rules' own stated intent**, which both implementations had drifted from: the
+roadmap decides and the changelog only confirms. An owner is spent when the changelog holds it *and
+the roadmap does not*. `known-debt.test.mjs` was already reading both files — `openIds` is three
+tests down — so this was a comparison that was available and not being made.
+
+**Two enforcers, and only the first was reachable by reading.** Fixing SH594 and pointing a real
+entry at a genuinely partial task is what surfaced SH579's separate copy; deducing it from the code
+would have found one and shipped half a fix.
+
 ### The file-level red with green assertions (SH698, SH778)
 
 `cli/test/fixture-traits.test.mjs` fails intermittently at **file** level with every assertion in it
