@@ -1225,6 +1225,7 @@
 - **SH764** — Dirty is scoped to paths that compile and the build's commit is diffed against HEAD before the clock, so a roadkeep edit no longer cancels the run; the rule is a directory, not `*.md`, because seven READMEs ship inside the jar.
 - **SH768** — A post-type can be declared disposable at creation and never after, is marked SCRATCH in the context pack and agents.md, and `shio post-type rm --scratch` sweeps it — which a teardown cannot, because the run that dies is the one that leaves debris.
 - **SH765** — The region table prints a fourth column naming the sheet that paints each region, and a run collapses only when tag, provenance and painter all agree — so the chrome and the sections being disjoint reads in one glance.
+- **SH763** — Verbatim markup is a section type: SectionMarkup declares one html field and lives in Page.sections, so N splits work, contentAfter is gone, and the replication scenario runs green on a clean instance.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

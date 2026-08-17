@@ -43,6 +43,7 @@ export const SECTION_TYPES = {
   logoWall: "SectionLogoWall",
   testimonial: "SectionTestimonial",
   faq: "SectionFaq",
+  markup: "SectionMarkup",
   richText: "SectionRichText",
 } as const;
 
@@ -307,6 +308,47 @@ export const sectionFaq = (): ShPostTypeDef =>
     ],
   });
 
+/**
+ * Markup kept exactly as somebody else's page wrote it, as a section (SH763).
+ *
+ * Why a section type rather than a second field on `Page`. `shio convert` splits a mixed page's
+ * kept markup at the blocks a reviewer accepted, and the previous shape carried the trailing half
+ * in a `Page.contentAfter` field — which no `Page` definition declared, so every conversion against
+ * a real instance was refused at the batch. Declaring it would have been the wrong repair three
+ * times over: it encodes *position* rather than meaning, it admits exactly **one** split (markup
+ * between two accepted blocks needs content, section, content, section, content), and it is
+ * replication-only, so every hand-authored page would carry a field that is always empty.
+ *
+ * As a section the order comes from the list, N splits work, `Page.sections` already speaks it, and
+ * a curator can move or replace a raw block — which is the mixed→authorable path mixed mode exists
+ * to offer, and the one thing a positional field could never give them.
+ *
+ * **One field, and therefore no title field.** The value is a captured page's own bytes: making it
+ * `isTitle` would put a `<footer>` in a `VARCHAR(255)` column, and a second `label` field would have
+ * to be *drawn* — `ShConvertedLayoutRenderTest` requires every declared field to reach the page —
+ * which means injecting a heading into markup this type exists to leave alone. The exemption is
+ * signed in `post-types.test.mjs` rather than inferred, and what a curator reads in the console is
+ * the friendly URL the conversion wrote.
+ */
+export const sectionMarkup = (): ShPostTypeDef =>
+  postType(SECTION_TYPES.markup, {
+    title: "Markup Section",
+    namePlural: "Markup Sections",
+    description:
+      "Markup kept verbatim from a source page, rendered in place among the sections. A conversion "
+      + "writes one per run of markup nobody made authorable.",
+    fields: [
+      // Ace rather than the WYSIWYG editor, for `Page.content`'s reason: this holds a whole block
+      // captured from somebody else's site, so it is code a curator inspects — and the WYSIWYG
+      // would rewrite it on the first save.
+      aceHtml("html", {
+        label: "Markup",
+        required: true,
+        description: "The source's own bytes for this run of the page, rendered as they are.",
+      }),
+    ],
+  });
+
 export const sectionRichText = (): ShPostTypeDef =>
   postType(SECTION_TYPES.richText, {
     title: "Rich Text Section",
@@ -334,6 +376,7 @@ export const sectionPostTypes = (): ShPostTypeDef[] => [
   sectionFeatureGrid(),
   sectionHero(),
   sectionLogoWall(),
+  sectionMarkup(),
   sectionRichText(),
   sectionTestimonial(),
 ];

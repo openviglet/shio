@@ -3130,8 +3130,9 @@ footer at 98%, sections #1–#8 to 99%. It is the cause of the ordering SH687 ma
 **The information was never missing.** `contentFor` already knew where each accepted block stood —
 `cut` is exactly those spans, and it removed them. It then *glued* the remainder into one string, and
 that is where the position was lost. Splitting instead of gluing is the whole change: `content` is
-what stood before the accepted blocks, `contentAfter` is what stood after, and the layout emits
-`content`, the sections, then `contentAfter`.
+what stood before the accepted blocks, and everything after it travels in the page's own `sections`
+list — see *the writer that shipped ahead of the model* below, which is what SH693's second field
+became.
 
 ### The mark goes in before the cut
 
@@ -3147,16 +3148,68 @@ holes before it — the class of bug that reads as *"the footer moved a bit"*.
 - **An empty trailing half writes no key**, because a field holding `""` is a value a curator has to
   notice and delete, and `{{#if}}` already treats absence as "render nothing" (SH465).
 
-### The approximation, stated rather than hidden
+### The approximation SH693 stated, and which SH763 removed
 
-Two parts and not N. Markup that sat *between* two accepted blocks cannot be placed without emitting
-the sections one at a time, which is a different shape of page and of layout; it is grouped into the
-leading part. Chrome is overwhelmingly outside the run of blocks — that is what makes it chrome — so
-this is the cheap two-thirds of the answer.
+SH693 produced **two** parts and not N, because the layout had exactly two fields to put them in, and
+it said so: markup that sat *between* two accepted blocks could not be placed, so it was grouped into
+the leading part. Chrome is overwhelmingly outside the run of blocks — that is what makes it chrome —
+so that was the cheap two-thirds of the answer. The remaining third came free the moment the parts
+stopped landing in fields at all.
 
 Two existing tests changed and neither claim did: SH520's *"the block nobody accepted is still on the
-page, byte for byte"* and SH422's chain assertion both now join the two halves. What they assert is
-that the bytes survive; SH693 is about where they sit.
+page, byte for byte"* and SH422's chain assertion both now join the parts. What they assert is that
+the bytes survive; SH693 is about where they sit.
+
+## The writer that shipped ahead of the model (SH763)
+
+A clean replication of `www.viglet.org` — 12 pages, 31 candidates, 23 accepted — ended here:
+
+```
+shio: 'Page' does not declare a field named 'contentAfter'
+  at: ops[28]
+  allowed: title, content, description, sections
+```
+
+SH693 landed in `cli/src/convert.mjs` alone: the field was written at `contentFields`, emitted by the
+generated template, and **declared by no `Page` in the repository**. Every gate stayed green, because
+every one of them checks this file against itself.
+
+**Declaring `contentAfter` would have been the wrong repair**, three times over. It encodes *position*
+rather than meaning, so a curator meets a box called *Content After* that says nothing about what it
+holds. It admits exactly one split. And it is replication-only, so every hand-authored page carries a
+field that is always empty.
+
+### Verbatim markup is a section type
+
+`SectionMarkup` declares one field, `html`, and lives in `Page.sections` like everything else there:
+
+```
+/sections/b8f8ff577      SectionHero      the block a reviewer accepted
+/sections/markup-home-1  SectionMarkup    the source's own footer, kept
+```
+
+Order comes from the list, so **N splits work** — `splitAroundSections` now emits one mark per cut
+and returns N + 1 parts instead of a leading and a trailing half. The first part is still `content`:
+it is the source's header and nav, it renders above the loop, and it is the condition
+`CAPTURED_STYLE_HTML` reads to decide whether the page needs the captured stylesheet. The rest become
+posts, and a curator can move or replace a raw block from the control they compose the page with —
+the mixed→authorable path a positional field could never offer.
+
+The address is derived rather than hashed — `/sections/markup-<page>-<n>` — because it is the only
+thing a curator has to go on: the type declares no title field, and it cannot. Its content is a
+captured `<footer>`, which does not fit `VARCHAR(255)`, and a `label` field beside it would have to be
+**drawn** on the page (`ShConvertedLayoutRenderTest` requires that of every declared field), which
+means injecting a heading into markup the type exists to leave alone. The exemption is signed in
+`shio-sections/test/post-types.test.mjs`.
+
+### The instrument, which is the part worth keeping
+
+Per SH322, the grep is the deliverable. *"every field a conversion writes is declared by the type it
+names"* in `cli/test/convert.test.mjs` reads the shipped catalogue at
+`shio-app/src/main/resources/post-types/vocabulary/*.json` — the one `ShVocabularyPostTypes`
+provisions from — and checks every `data` key of every post a real conversion produces against it.
+It is not a test of this fix. It is what finds the next field somebody adds to a post here and not to
+the model, before a replication run against a live instance does.
 
 ## A live suite creates what it measures, and a reader says which ones do not (SH728)
 

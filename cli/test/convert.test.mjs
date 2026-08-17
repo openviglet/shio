@@ -15,7 +15,13 @@
  * Network-free: the desired-state document is built by a pure function, and the command's own IO is a
  * scripted `fetch`.
  */
+// @scans prose reason: SH763's check reads the shipped vocabulary catalogue, which is JSON — so it
+// is `JSON.parse` rather than a match, and the subject is a `fields[].name` the parser produced.
+// Declared `prose` rather than `code` because the shared stripper is a JavaScript comment stripper
+// and there is nothing here for it to strip: JSON carries no comments, so the confusion `code`
+// exists to prevent — a sentence about a field read as a field — cannot arise in this subject.
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
 
 import {
@@ -967,7 +973,7 @@ test("SH684: a conversion whose chrome touched no required field says nothing ab
  * it cut those spans out — and then glued the remainder into one string. Splitting instead of gluing
  * is the whole change.</p>
  */
-test("SH693: the source's footer renders below the sections, not above them", async () => {
+test("SH693/SH763: the source's footer renders below the sections, as a section of its own", async () => {
   // The fixture's own shape plus a footer, and the SECOND block is the one accepted: accepting the
   // first would leave nothing before the sections and the assertion would pass for the wrong reason.
   const site = {
@@ -977,25 +983,34 @@ test("SH693: the source's footer renders below the sections, not above them", as
   const ctx = ctxWith({ site, plan: { accepted: [{ block: notes, type: "SectionRichText" }] } });
 
   await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
-  const page = JSON.parse(ctx.written[norm("/repo/conversion.json")])
-    .posts.find((post) => post.type === "Page");
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+  const page = document.posts.find((post) => post.type === "Page");
+  const trailing = page.data.sections.at(-1);
+  const kept = document.posts.find((post) => post.url === trailing);
 
   assert.match(
     page.data.content ?? "",
     /class=hero/,
-    "what stood before the accepted block is the leading half",
+    "what stood before the accepted block is still `content`, above the loop",
   );
+  assert.equal(kept.type, "SectionMarkup",
+    "and what stood after it is the last entry in the page's own list (SH763)");
   assert.match(
-    page.data.contentAfter ?? "",
+    kept.data.html,
     /footer class=bottom/,
-    "the footer stood after it, so it belongs below the sections. This is the assertion the "
-      + "replica's home page would have failed: header at 95%, footer at 98%, sections after both "
-      + "(SH693)",
+    "the footer stood after the accepted block, so it belongs below the sections. This is the "
+      + "assertion the replica's home page would have failed: header at 95%, footer at 98%, "
+      + "sections after both (SH693)",
   );
   assert.doesNotMatch(
     page.data.content ?? "",
     /footer class=bottom/,
     "and it is not in both halves — a remainder emitted twice is the defect wearing the fix's clothes",
+  );
+  assert.ok(
+    !("contentAfter" in page.data),
+    "and no `contentAfter`: the field no `Page` declares, which refused every conversion against a "
+      + "real instance at ops[28] (SH763)",
   );
 });
 
@@ -1009,27 +1024,126 @@ test("SH693: the wrapper's closing tag travels below, so the sections land insid
   const ctx = ctxWith({ site, plan: { accepted: [{ block: notes, type: "SectionRichText" }] } });
 
   await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
-  const page = JSON.parse(ctx.written[norm("/repo/conversion.json")])
-    .posts.find((post) => post.type === "Page");
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+  const page = document.posts.find((post) => post.type === "Page");
+  const kept = document.posts.find((post) => post.url === page.data.sections.at(-1));
 
   assert.match(page.data.content, /^<main>/, "the wrapper opens in the leading half");
   assert.equal(
-    page.data.contentAfter,
+    kept.data.html,
     "</main>",
     "and closes in the trailing one, so every section renders inside the element the source used "
       + "to hold its content (SH693)",
   );
 });
 
-test("SH693: the layout emits the trailing half below the sections", () => {
-  // The other end of the same change: a field nothing renders is a field that lost the markup.
-  const sections = PAGE_BODY_HTML.indexOf("{{/getRelation}}");
-  const after = PAGE_BODY_HTML.indexOf("{{#if contentAfter}}");
+test("SH763: the layout draws a markup section verbatim, in the place the list gives it", () => {
+  // The other end of the same change: a section type nothing renders is a section that lost the
+  // markup — which is what `contentAfter` was, one field earlier.
+  const loop = PAGE_BODY_HTML.indexOf("{{#getRelation sections}}");
+  const raw = PAGE_BODY_HTML.indexOf("{{#if html}}");
 
-  assert.ok(after > sections, `contentAfter must come after the sections loop: ${PAGE_BODY_HTML}`);
+  assert.ok(raw > loop, `the markup branch must sit inside the sections loop: ${PAGE_BODY_HTML}`);
   assert.ok(
-    PAGE_BODY_HTML.indexOf("{{{content}}}") < sections,
-    "and the leading half before it, which is the order the whole task is about",
+    raw < PAGE_BODY_HTML.indexOf("{{/getRelation}}"),
+    "inside it, not after — the order is the list's now, and a branch below the loop would put "
+      + "every run of kept markup back at the bottom of the page (SH763)",
+  );
+  assert.ok(
+    PAGE_BODY_HTML.includes('<div sh-post="{{id}}" sh-field="html">{{{html}}}</div>'),
+    "drawn raw and addressed: `sh-post` binds the block to the markup post and `sh-field` is what "
+      + "lets a curator replace it from the editor rather than only from the console form",
+  );
+  assert.ok(
+    !PAGE_BODY_HTML.includes("contentAfter"),
+    "and the field that refused every conversion is gone from the template too (SH763)",
+  );
+  assert.ok(
+    PAGE_BODY_HTML.indexOf("{{{content}}}") < loop,
+    "the leading half still renders before the loop, which is the order the whole task is about",
+  );
+});
+
+/**
+ * SH763 — the assertion that would have caught it, at the boundary it crossed.
+ *
+ * SH693 shipped the writer and the generated template and **not the model**: `contentAfter` was
+ * written at `convert.mjs`, emitted by the layout, and declared by no `Page` anywhere in the
+ * repository. Every gate was green — `drift` answered `[]`, the CLI suite passed, the Java suite
+ * passed — because every one of them checks this file against itself. The instrument that was
+ * missing is the one that reads the **other side**: a conversion writes a field, and the catalogue
+ * the instance provisions from either declares it or the batch dies at `ops[28]` with
+ * `'Page' does not declare a field named 'contentAfter'`.
+ *
+ * Per SH322: the grep is the deliverable. This is not a test of the SH763 fix — it is the check
+ * that finds the *next* field somebody adds to a post here and not to the model, before a
+ * replication run against a real instance does.
+ */
+const VOCABULARY_CATALOGUE = new URL(
+  "../../shio-app/src/main/resources/post-types/vocabulary/", import.meta.url,
+);
+
+/** Post-type name → every field name it declares, nested ones included. */
+function declaredFields() {
+  const out = new Map();
+  for (const file of readdirSync(VOCABULARY_CATALOGUE)) {
+    if (!file.endsWith(".json")) continue;
+    const def = JSON.parse(readFileSync(new URL(file, VOCABULARY_CATALOGUE), "utf8"));
+    const names = new Set();
+    const walk = (fields) => (fields ?? []).forEach((field) => {
+      if (field.name) names.add(field.name);
+      walk(field.fields);
+    });
+    walk(def.fields);
+    out.set(def.name, names);
+  }
+  return out;
+}
+
+test("SH763: every field a conversion writes is declared by the type it names", async () => {
+  const declared = declaredFields();
+  assert.ok(
+    declared.get("Page")?.size,
+    "the catalogue this reads is the one `ShVocabularyPostTypes` provisions from; an empty parse "
+      + "would make the assertion below pass over nothing, which is the state SH693 shipped in",
+  );
+
+  const site = { "/": MIXED_PAGE.replace("</main>", "</main><footer class=bottom><p>Acme</p></footer>") };
+  const [hero] = await blocksOfPage(ctxWith({ site }));
+  const ctx = ctxWith({ site, plan: { accepted: [{ block: hero, type: "SectionHero" }] } });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+
+  const checked = [];
+  const undeclared = [];
+  for (const post of document.posts) {
+    const fields = declared.get(post.type);
+    // A system type — `PageLayout`, `Theme`, `SiteScripts`, `Redirect`, `File` — is provisioned by
+    // `ShRenderPostTypes` in Java and is not in this catalogue. Skipped rather than failed: its
+    // model is declared on the other side of the same seam, and asserting it here would be this
+    // file's opinion of a file it cannot read.
+    if (!fields) continue;
+    for (const name of Object.keys(post.data ?? {})) {
+      checked.push(`${post.type}.${name}`);
+      if (!fields.has(name)) undeclared.push(`${post.type}.${name} (${post.url})`);
+    }
+  }
+
+  for (const owed of ["Page.sections", "Page.content", "SectionMarkup.html"]) {
+    assert.ok(
+      checked.includes(owed),
+      `the fixture has to exercise the mixed shape and it did not write ${owed}, so this proves `
+        + `nothing: ${checked.join(", ")}`,
+    );
+  }
+  assert.deepEqual(
+    undeclared,
+    [],
+    "Every name here is a field this command writes and the instance's own catalogue does not "
+      + "declare, so the batch refuses the whole document at the op that carries it — which is how "
+      + "`contentAfter` made every conversion against a real instance fail while every gate in the "
+      + "repository stayed green (SH763).",
   );
 });
 
@@ -1047,23 +1161,29 @@ test("SH520: accepting one block keeps every other block on the page, verbatim",
   const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
   const page = document.posts.find((post) => post.type === "Page");
 
+  const trailing = document.posts.find((post) => post.url === page.data.sections.at(-1));
+
   assert.notEqual(hero, notes, "the fixture is two blocks, or this test asserts nothing");
-  assert.deepEqual(page.data.sections, [`${SECTIONS_FOLDER}/${hero}`],
-    "the accepted block is a section, exactly as before");
-  // SH693 amended this from one field to two, and the claim is unchanged: the block nobody accepted
-  // is still on the page, as the source's own bytes with the source's own class attribute — the
-  // remainder, cut out of the captured file rather than re-serialized. What changed is WHERE it
-  // sits. The hero was accepted and stood first, so everything after it is now `contentAfter` and
-  // renders BELOW the sections instead of above them, which is the whole of SH693.
+  assert.deepEqual(
+    page.data.sections,
+    [`${SECTIONS_FOLDER}/${hero}`, `${SECTIONS_FOLDER}/markup-home-1`],
+    "the accepted block is a section, and so is the markup that follows it — SH763's whole shape: "
+      + "the order is the list's, so there is a place for a run of kept markup wherever it stood",
+  );
+  // SH693 amended this from one field to two, and SH763 from two fields to one field and a section.
+  // The claim is unchanged throughout: the block nobody accepted is still on the page, as the
+  // source's own bytes with the source's own class attribute — the remainder, cut out of the
+  // captured file rather than re-serialized. What changed is WHERE it sits. The hero was accepted
+  // and stood first, so everything after it renders BELOW the sections instead of above them.
   assert.equal(
-    `${page.data.content ?? ""}${page.data.contentAfter ?? ""}`,
+    `${page.data.content ?? ""}${trailing.data.html ?? ""}`,
     "<main><section class=notes><h2>Notes</h2><p>Kept exactly as the source wrote it.</p></section></main>",
-    "the two halves are the remainder, and nothing of it was lost in being split",
+    "the two parts are the remainder, and nothing of it was lost in being split",
   );
   assert.equal(
-    page.data.contentAfter,
+    trailing.data.html,
     "<section class=notes><h2>Notes</h2><p>Kept exactly as the source wrote it.</p></section></main>",
-    "and the half below the sections is the markup that FOLLOWED the accepted block in the source — "
+    "and the part below the sections is the markup that FOLLOWED the accepted block in the source — "
       + "which is the ordering the generated layout could not express (SH693)",
   );
   assert.ok(

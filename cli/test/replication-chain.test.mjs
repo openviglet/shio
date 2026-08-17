@@ -344,9 +344,11 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     assert.equal(conversion.site, "Acme");
     assert.deepEqual(
       conversion.posts.map((post) => post.url),
-      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured",
+      [`${SECTIONS_FOLDER}/${hero.id}`, `${SECTIONS_FOLDER}/markup-about-1`,
+        `${SECTIONS_FOLDER}/markup-home-1`, "/", "/about", "/theme/captured",
         "/theme/shio", "/theme/layout"],
-      "the accepted block's id addresses the section, a Page composes it on each source path it "
+      "the accepted block's id addresses the section, the markup each page kept follows it as a "
+        + "SectionMarkup addressed by the page it came from (SH763), a Page composes it on each source path it "
         + "appeared on (SH438), the theme rides the same document, and since SH464 so does the "
         + "layout - a Page with none is a Page the renderer answers 400 for. **Both** themes, and "
         + "that is SH549: every page here kept a block nobody accepted, so every page is mixed and "
@@ -370,7 +372,13 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     const home = conversion.posts.find((post) => post.url === "/");
     assert.equal(home.type, "Page");
     assert.equal(home.folder, "/");
-    assert.deepEqual(home.data.sections, [`${SECTIONS_FOLDER}/${hero.id}`]);
+    // SH763 — the accepted block, and the markup that followed it as a section of its own. The
+    // second entry is what used to be `contentAfter`, a field no `Page` declares and which refused
+    // this very chain at `ops[28]` the moment it ran against a real instance.
+    assert.deepEqual(
+      home.data.sections,
+      [`${SECTIONS_FOLDER}/${hero.id}`, `${SECTIONS_FOLDER}/markup-home-1`],
+    );
     assert.equal(home.data.title, "Home", "the title the capture recorded, which `Page` requires");
 
     // SH520 — the promise `propose` prints in phase two, held against the bytes phase one captured.
@@ -382,11 +390,14 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
       captured0.indexOf('<section class="features">'),
       captured0.indexOf("</section>", captured0.indexOf('<section class="features">')) + 10,
     );
-    // SH693 — the remainder is two fields now, and the claim is the same. It was one string until
-    // the layout could put sections *inside* the kept markup; what changed is that the half which
-    // followed the accepted block travels separately, so it renders below the sections rather than
-    // above them. Joined here because this assertion is about the bytes surviving, not their place.
-    const kept = `${home.data.content ?? ""}${home.data.contentAfter ?? ""}`;
+    // SH693/SH763 — the remainder travels in parts now, and the claim is the same. It was one
+    // string until the layout could put sections *inside* the kept markup; what changed is that
+    // everything after the accepted block travels separately — as `SectionMarkup` posts the page's
+    // own list names — so it renders below the sections rather than above them. Joined here because
+    // this assertion is about the bytes surviving, not about their place.
+    const kept = [home.data.content ?? "", ...conversion.posts
+      .filter((post) => post.type === "SectionMarkup")
+      .map((post) => post.data.html)].join("");
     assert.ok(
       kept.includes(features),
       "the block nobody accepted is on the page, byte for byte — including its class attribute, "

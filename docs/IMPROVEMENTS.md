@@ -533,37 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.104 The writer shipped ahead of the model (SH763)
-
-A clean replication of `www.viglet.org` at `4b20d8e0` — 12 pages, 31 candidates, 23
-accepted — ends here:
-
-    shio: 'Page' does not declare a field named 'contentAfter'
-      at: ops[28]
-      allowed: title, content, description, sections
-
-SH693 split the kept markup so the source's footer renders below the sections, and it
-landed in `cli/src/convert.mjs` alone: written at 1103, emitted by the generated
-template at 575, **absent from `shio-app/src`**. `drift` answers `[]`. Pushing the field
-by hand let the same capture produce 42 objects and exit 0, so the field is the whole of
-the blockage.
-
-**Declaring `contentAfter` on `Page` unblocks it and is the wrong shape.** It encodes
-position rather than meaning, so a curator meets a box called *Content After* that says
-nothing about what it holds. It admits exactly **one** split — kept markup between two
-accepted blocks needs content, section, content, section, content — and this capture
-survived only because the accepted blocks were contiguous. It is replication-only, so
-every hand-authored page carries a field that is always empty. And it contradicts SH692:
-a region list of length two with hardcoded roles is the degenerate case of what that
-definition asks for.
-
-The shape that removes a field instead of adding one is **verbatim markup as a section
-type** — one `html` field, living in `sections`. Order comes from the list, N splits
-work, the regions reader already speaks it, and a curator can move or replace a raw
-block, which is the mixed→authorable path mixed mode exists to offer.
-
-The gate that should have caught this is SH764's, not a missing one.
-
 ### XVII.107 The page whose own fields no branch annotates (SH766)
 
 With SH685's blindness removed the reader answers for every post, and the first row is
@@ -677,6 +646,60 @@ HEAD, and failing that whether anything that compiles differs between them — t
 predicate SH764 just built, in `compiles()`. A stamp older than the tree is not a
 colour; it is a run nobody has done, and the honest report is the one an absent stamp
 already gets.
+
+### XVII.112 The ratchet a Shio commit cannot satisfy (SH771)
+
+`pnpm conformance` at `950cdaed`, against a clean instance: **121 of 122 pass**. The one
+failure is not a product defect at all.
+
+    493 shipped ids are not named in COVERAGE.md, against a recorded 490.
+
+SH764, SH765 and SH768 shipped and the matrix did not move. SH747's ratchet is right to
+say so, and SH758 already moved the moment of discovery into this tree: the generated
+`docs/coverage-named.json` mirror is what lets the gate here report it minutes after a
+ship rather than at the next docs run.
+
+**What it cannot do is let the fix land in the same commit.** `COVERAGE.md` is in
+`vigletdocs`, a different repository. So the rule the project states everywhere — one
+task, one commit, with the doc sync in it — is unsatisfiable for this file by
+construction: the ship happens here, the naming happens there, and the interval between
+them is red on a gate that blocks the next commit in this tree. Three consecutive pushes
+went over it, which is the third state SH579 says does not exist, reached by following
+the rules rather than by skipping them.
+
+Two halves, and only the first is a chore. Name the three ids and regenerate the mirror.
+Then decide what the gate owes the interval it cannot close: a ship here that raises the
+count could write the obligation where the next commit reads it, making the sweep a
+queued item rather than a red suite — the difference between an instrument that reports
+and one that blocks work it will not let you finish.
+
+### XVII.113 The stylesheet keyed to the wrong half (SH772)
+
+SH549 put the captured stylesheet on the pages that carry verbatim markup and on no
+others, per page, through one condition in the head:
+
+    {{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}
+
+`content` was the whole of "this page kept the source's markup" when that shipped. It is
+not any more. SH693 split the kept markup in two and SH763 moved everything after the
+first section into `SectionMarkup` posts, so a page whose **first** block was accepted
+has no leading half at all: no `content`, no captured CSS, and every run of the source's
+own markup rendered with the source's own class names against a stylesheet that never
+arrived.
+
+It is not new — SH693's `contentAfter`-only page had exactly this shape, so the defect
+has been reachable since that landed and nothing reported it. What SH763 changes is the
+frequency: any page a reviewer accepts from the top now takes this branch, and accepting
+the hero is the normal first acceptance.
+
+`buildConversion` already had to be corrected for the same reading — `held` counted only
+pages with a `content` string, so those pages were neither `verbatim` nor `mixed` in the
+run's own report. That fix names the condition the template still cannot express: a page
+carries verbatim markup when it has `content` **or** a markup section, and the head has
+no way to ask the second.
+
+The cheap answer is a flag the writer sets and the template reads. The honest one is
+asking what `{{#if}}` in a head can see at all.
 
 ## XIX The public site (Block S)
 

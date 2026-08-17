@@ -41,6 +41,7 @@ test("the vocabulary is a fixed, ordered set", () => {
       "SectionFeatureGrid",
       "SectionHero",
       "SectionLogoWall",
+      "SectionMarkup",
       "SectionRichText",
       "SectionTestimonial",
     ],
@@ -57,6 +58,7 @@ test("the vocabulary is a fixed, ordered set", () => {
     featureGrid: SECTION_TYPES.featureGrid,
     hero: SECTION_TYPES.hero,
     logoWall: SECTION_TYPES.logoWall,
+    markup: SECTION_TYPES.markup,
     richText: SECTION_TYPES.richText,
     testimonial: SECTION_TYPES.testimonial,
   }));
@@ -98,10 +100,41 @@ test("a MenuItem's target is a Multi Select, because a Content Select would stor
   assert.equal(menuItem().fields.find((field) => field.name === "href").widget, "Text");
 });
 
+/**
+ * The one type whose content cannot be its name, and cannot be given one either (SH763).
+ *
+ * A signed list rather than a rule, for the reason `field-reachability.test.mjs` keeps its
+ * exemptions as lists: "the markup one" is a rule that would silently absorb the next section
+ * somebody forgot to give a title.
+ *
+ * `SectionMarkup` holds a run of a captured page's own bytes. Marking that field `isTitle` would
+ * put a `<footer>` in a `VARCHAR(255)` column, and adding a `label` beside it would not be free
+ * either: `ShConvertedLayoutRenderTest` requires every declared field to be **drawn** on the page,
+ * so a label would mean injecting a heading into markup this type exists to leave alone. What a
+ * curator reads in the console is the friendly URL — `/sections/markup-about-2`, which names the
+ * page the run came from and where in it.
+ */
+const NO_TITLE_FIELD = new Set(["SectionMarkup"]);
+
 test("every section has exactly one title field, so the console shows something useful", () => {
   for (const def of sectionPostTypes()) {
     const titles = def.fields.filter((field) => field.isTitle);
-    assert.equal(titles.length, 1, `${def.name} should have one title field`);
+    assert.equal(
+      titles.length,
+      NO_TITLE_FIELD.has(def.name) ? 0 : 1,
+      `${def.name} should have one title field`,
+    );
+  }
+});
+
+test("SH763: the type with no title field is declared, not inferred", () => {
+  const declared = new Set(sectionPostTypes().map((def) => def.name));
+  for (const name of NO_TITLE_FIELD) {
+    assert.ok(
+      declared.has(name),
+      `${name} is exempted here and no longer declared — an exemption for a type that does not `
+        + `exist is a line nobody will remove, and the next reader will trust it.`,
+    );
   }
 });
 

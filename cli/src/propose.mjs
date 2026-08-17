@@ -174,6 +174,13 @@ export const SECTION_REQUIRED = {
   SectionCta: ["heading"],
   SectionFeatureGrid: ["heading"],
   SectionHero: ["heading"],
+  // SH763 — declared here and deliberately **not** in `SECTION_TYPES` above. That table says what a
+  // *block* maps into, and no block ever maps into `SectionMarkup`: it holds the remainder `convert`
+  // splits out around the blocks a reviewer accepted, so `propose` can neither derive it nor offer
+  // it. It is in this list because `ShConvertedLayoutRenderTest` compares this map to the
+  // blueprints' required fields **in both directions**, and a required field the CLI does not know
+  // about is exactly the drift that check exists to catch.
+  SectionMarkup: ["html"],
   SectionRichText: ["body"],
 };
 

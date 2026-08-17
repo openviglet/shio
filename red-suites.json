@@ -4,11 +4,11 @@
   "exceptions": [
     {
       "suite": "conformance",
-      "test": "replication — capture www.viglet.org, convert it into the instance, gate the replica",
-      "task": "SH763",
-      "declared": "2026-08-16",
-      "expires": "2026-08-23",
-      "why": "The replication scenario dies at ops[28] with \"'Page' does not declare a field named 'contentAfter'\". SH693 shipped the writer and the generated template without the model, so `shio convert` emits a field no post-type declares and every conversion against a real instance is refused at the batch. It is one known defect with one known cause, filed as SH763 and diagnosed down to the two lines of cli/src/convert.mjs that write it — not an unexplained red. Safe to commit over because the failure is entirely in the conversion write path: nothing else in the suite reaches it, and the Java and JS gates are green, so a regression anywhere else still stops the build. It goes away with SH763 and this entry is deleted in that commit."
+      "test": "SH747: the count of shipped ids the matrix does not name never rises",
+      "task": "SH771",
+      "declared": "2026-08-17",
+      "expires": "2026-08-24",
+      "why": "121 of 122 pass against a clean instance at 950cdaed. The one failure is SH747's ratchet: 493 shipped ids are not named in COVERAGE.md against a recorded 490, because SH764, SH765 and SH768 shipped and the matrix did not move. It is not a product defect and it is not fixable from this repository — COVERAGE.md lives in vigletdocs, so no Shio commit can lower the count in the same commit that raises it, which is the interval SH771 is about. Safe to commit over because the check reads a document in another tree and nothing it asserts is about this code: every scenario that drives the instance, including the replication chain SH763 unblocked, is green. It goes away when SH771 names the ids and regenerates the mirror, and this entry is deleted in that commit."
     }
   ]
 }

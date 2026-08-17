@@ -1262,8 +1262,9 @@ renderer over one body of content at a second address. See the section on it bel
 
 ### The section vocabulary — `@viglet/shio-sections` (SH95)
 
-Eight post-types (`Page` + `SectionHero`/`SectionFeatureGrid`/`SectionCta`/`SectionLogoWall`/
-`SectionTestimonial`/`SectionFaq`/`SectionRichText`) authored with `@viglet/shio-model`, and
+Nine post-types (`Page` + `SectionHero`/`SectionFeatureGrid`/`SectionCta`/`SectionLogoWall`/
+`SectionTestimonial`/`SectionFaq`/`SectionRichText`/`SectionMarkup`) authored with
+`@viglet/shio-model`, and
 the matching React components with a `SECTION_COMPONENTS` registry and a `<Sections>`
 dispatcher. This is what makes *"now change the site"* cheap instead of archaeological: one
 vocabulary for the agent, the console and the front end.

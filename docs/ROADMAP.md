@@ -11,11 +11,12 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH763** (deps: SH693 ✅) **convert writes contentAfter and no post-type declares it, so every conversion against a real instance is refused** — SH693 shipped the writer and the template and not the model, so Page still allows title, content, description, sections and the batch dies at ops[28]. → §XVII.104
-- 📋 **SH766** (deps: SH685 ✅, SH763) **A mixed page's title is never editable, because the layout annotates it only when there is no verbatim markup** — The only sh-field title sits in an unless-content branch a mixed page never takes, and SH763 removes that field — so the branch it rewrites is this one. → §XVII.107
+- 📋 **SH766** (deps: SH685 ✅, SH763 ✅) **A mixed page's title is never editable, because the layout annotates it only when there is no verbatim markup** — The only sh-field title sits in an unless-content branch a mixed page never takes, and SH763 removes that field — so the branch it rewrites is this one. → §XVII.107
 - 📋 **SH767** (deps: —) **A sections list holding valid addresses stores, resolves to nothing, renders empty, and verify calls the site ok** — The relation wants a site-relative path, so post:VigR2/sections/vb-top was kept verbatim and the page served with no sections at all and no finding anywhere. → §XVII.108
 - 📋 **SH769** (deps: —) **Docs keep a shipped capability described as deliberately absent, and nothing compares the claim to the ledger** — Two in one session: a rationale cited an anchor SH692 dropped, and agent-surface said styled-by is not here four lines above the SH694 section shipping it. → §XVII.110
 - 📋 **SH770** (deps: —) **A gate stamp is read as this tree's colour whatever commit it was taken at, so a stale red excuses or accuses** — ShDeclaredRedTest judged HEAD 42d02432 against a conformance stamp from 4b20d8e0; it prints the sha and asserts as though the two were the same tree. → §XVII.111
+- 📋 **SH771** (deps: —) **Three tasks shipped and COVERAGE.md never named them, so the conformance gate is red for docs upkeep** — SH747's ratchet counts 493 unnamed against a recorded 490; the matrix lives in vigletdocs, so a Shio commit cannot lower it and every push since is over a red. → §XVII.112
+- 📋 **SH772** (deps: SH763 ✅) **A mixed page whose first block was accepted keeps the source's markup and gets none of the source's CSS** — The head asks {{#if content}} and that page has none — its kept markup is all SectionMarkup, so the captured stylesheet is never referenced and each run renders bare. → §XVII.113
 
 ## Priority
 

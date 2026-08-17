@@ -179,11 +179,21 @@ export function buildConversion({
     .filter((post) => post.data)
     .sort((a, b) => (a.url < b.url ? -1 : 1));
 
-  const pages = composePages(proposal, new Set(sections.map((post) => post.url)), markup);
+  // SH763 — two lists out of one pass: the pages, and the `SectionMarkup` posts their `sections`
+  // now name. Kept apart from `sections` above because those are the blocks a reviewer *accepted*,
+  // and every count and report in this file means that by the word.
+  const { pages, markup: markupPosts } = composePages(
+    proposal, new Set(sections.map((post) => post.url)), markup,
+  );
   // SH576 — the one address the grammar does not spell, written when the source gave us none.
   const frontDoor = homePost(pages, site, home);
   if (frontDoor) pages.unshift(frontDoor.post);
-  const held = pages.filter((page) => typeof page.data.content === "string");
+  const markupUrls = new Set(markupPosts.map((post) => post.url));
+  // A page carries verbatim markup in `content`, in a `SectionMarkup`, or in both — and SH763 made
+  // the second one possible. Reading only `content` would count a page whose kept markup all sits
+  // between accepted blocks as fully authored, which is the number `capturedFor` reads.
+  const held = pages.filter((page) => typeof page.data.content === "string"
+    || (page.data.sections ?? []).some((url) => markupUrls.has(url)));
   // Two counts, because they are two different pages (SH520). `verbatim` is a page nobody accepted
   // anything on — fidelity, whole. `mixed` is a page that kept some blocks and authored others, and
   // it is the shape that used to be silently the first one minus everything it did not accept.
@@ -197,7 +207,7 @@ export function buildConversion({
   // The Redirect post-type has to exist on the target before a `--home` redirect can be written,
   // the same way `Theme` and `SiteScripts` do. A home *page* is a `Page` and needs nothing.
   if (frontDoor?.home.as === "redirect") extras.push("Redirect");
-  const posts = [...sections, ...pages];
+  const posts = [...sections, ...markupPosts, ...pages];
   if (proposal?.theme?.rows?.length) {
     posts.push(themePost(proposal.theme, site));
     extras.push("Theme");
@@ -256,6 +266,11 @@ export function buildConversion({
   const vocabulary = [
     ...(pages.length ? [PAGE_TYPE] : []),
     ...new Set(sections.map((post) => post.type).filter((type) => type in SECTION_TYPES)),
+    // SH763 — named from the posts rather than from `SECTION_TYPES`, because no block maps into it:
+    // `propose` cannot derive a markup section and does not know the name. It has to be here all the
+    // same — a post-type this document writes and does not provision is the refusal SH607 fixed for
+    // the other ten, met one type later.
+    ...(markupPosts.length ? [MARKUP_TYPE] : []),
   ].sort((a, b) => (a < b ? -1 : 1));
   return {
     document: {
@@ -282,6 +297,10 @@ export function buildConversion({
     },
     stale: [],
     sections,
+    // SH763 — reported apart from `sections` for the reason it is built apart: these are runs of the
+    // source's own markup, not blocks anybody made authorable, and a count that merged the two would
+    // read as a conversion having done more than it did.
+    markup: markupPosts,
     pages,
     verbatim,
     mixed,
@@ -557,6 +576,7 @@ export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-lab
 {{#if content}}{{{content}}}{{/if}}
 {{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
 {{#getRelation sections}}
+{{#if html}}<div sh-post="{{id}}" sh-field="html">{{{html}}}</div>{{else}}
 <section class="shio-section" sh-post="{{id}}" data-shio-section="{{type}}" data-shio-align="{{align}}" data-shio-variant="{{variant}}" data-shio-columns="{{columns}}">
 <div class="shio-container shio-stack">
 {{#if heading}}<h2 class="shio-heading" sh-field="heading">{{heading}}</h2>{{/if}}
@@ -571,8 +591,8 @@ export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-lab
 {{#if quotes}}<div class="shio-grid">{{#each quotes}}<blockquote class="shio-card" data-shio-row="quotes">{{#if quote}}<p sh-field="quotes.{{@index}}.quote">{{quote}}</p>{{/if}}{{#if avatar}}<img class="shio-media" sh-field="quotes.{{@index}}.avatar" src="{{file_url avatar}}" alt="{{author}}">{{/if}}{{#if author}}<cite sh-field="quotes.{{@index}}.author">{{author}}</cite>{{/if}}{{#if role}}<span sh-field="quotes.{{@index}}.role">{{role}}</span>{{/if}}</blockquote>{{/each}}</div>{{/if}}
 </div>
 </section>
-{{/getRelation}}
-{{#if contentAfter}}{{{contentAfter}}}{{/if}}`;
+{{/if}}
+{{/getRelation}}`;
 
 /**
  * Which theme the one layout names — the whole of SH510, in one decision.
@@ -1016,9 +1036,10 @@ function trimPath(path) {
 
 function composePages(proposal, sectionUrls, markup = new Map()) {
   const pages = [];
+  const markupPosts = [];
+  const taken = new Set();
   for (const page of proposal?.pages ?? []) {
     const seen = new Set();
-    const sections = [];
     const cut = [];
     let kept = 0;
     (page.blocks ?? []).forEach((id, at) => {
@@ -1031,14 +1052,24 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
       // occurrence it is. First occurrence wins for the *list*: a signature repeated on one page is
       // still one section post with one set of fields, so listing it twice would ask the page to
       // render the same content twice — a decision for the reviewer, not a thing to infer from a
-      // structural collision.
-      cut.push(page.spans?.[at] ?? null);
-      if (seen.has(url)) return;
+      // structural collision. A repeat is therefore a cut with **no url**, and SH763's interleaving
+      // reads that as "join the markup across this hole" rather than as a place to put a section.
+      cut.push({ span: page.spans?.[at] ?? null, url: seen.has(url) ? null : url });
       seen.add(url);
-      sections.push(url);
     });
+    // Document order, which is the order the interleaved markup has to be read in. `page.blocks` is
+    // already in it; sorting says so rather than assuming it, and costs nothing on the shape where
+    // a span is missing — that page falls back to the single-part form either way.
+    if (cut.every((each) => Array.isArray(each.span))) {
+      cut.sort((a, b) => a.span[0] - b.span[0]);
+    }
+    const sections = cut.map((each) => each.url).filter(Boolean);
     const body = contentFor({ html: markup.get(page.path), sections, kept, cut });
     if (!sections.length && body === null) continue;
+    // SH763 — the kept markup, interleaved. `body` is a string when there is one part (a wholly
+    // verbatim page, or a split this could not place), and a list of parts when there are more.
+    const composed = interleave({ body, cut, page, taken });
+    composed.posts.forEach((post) => markupPosts.push(post));
     pages.push({
       url: page.path,
       type: PAGE_TYPE,
@@ -1053,23 +1084,128 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
         // the source declared none, because an empty key is a value and "the source said nothing"
         // is not one.
         ...(page.description ? { description: page.description } : {}),
-        ...(sections.length ? { sections } : {}),
-        // SH693 — one field or two. `contentFor` answers with a string when the page is wholly
-        // verbatim (nothing to compose around) and with `{before, after}` when sections have to land
-        // inside the kept markup. `content` stays the field a fidelity page writes, so nothing that
-        // reads a verbatim replica changes; `contentAfter` is what the footer now travels in.
-        ...contentFields(body),
+        // SH763 — the accepted sections with the kept markup between them, in render order. What
+        // used to be `contentAfter` is a `SectionMarkup` post in this list, so the order is the
+        // list's and N splits work instead of one.
+        ...(composed.sections.length ? { sections: composed.sections } : {}),
+        // `content` keeps its meaning and its place: the markup that stands **before** the first
+        // section, which the layout emits above the loop, and the whole body on a page nobody
+        // accepted anything on. It is what `{{#if content}}` in the head asks to decide whether this
+        // page needs the captured stylesheet, and a fidelity replica is byte-identical to before.
+        ...(composed.content === null ? {} : { content: composed.content }),
       },
     });
   }
-  return pages.sort((a, b) => (a.url < b.url ? -1 : 1));
+  return {
+    pages: pages.sort((a, b) => (a.url < b.url ? -1 : 1)),
+    // Sorted for the reason every other list here is (P5): two conversions of one capture are the
+    // same bytes, whatever order the proposal listed its pages in.
+    markup: markupPosts.sort((a, b) => (a.url < b.url ? -1 : 1)),
+  };
+}
+
+/** The post-type a run of kept markup is written as (SH763). */
+export const MARKUP_TYPE = "SectionMarkup";
+
+/**
+ * The kept markup and the accepted sections, in the order the source had them (SH763).
+ *
+ * <h3>What this replaces</h3>
+ *
+ * <p>SH693 wrote the trailing half into a `Page.contentAfter` field, and **no `Page` declared one** —
+ * so every conversion against a real instance was refused at the batch with `'Page' does not declare
+ * a field named 'contentAfter'`. Declaring it would have been the wrong repair: it encodes position
+ * rather than meaning, and it admits exactly one split, so markup standing *between* two accepted
+ * blocks had nowhere to go and was silently grouped with the rest.</p>
+ *
+ * <p>Here the markup between two sections is a section — one `SectionMarkup` post per run — so the
+ * page's own list carries the order, N splits work, and a curator can move or replace a raw block
+ * from the same control they compose the rest of the page with.</p>
+ *
+ * <h3>The first part is still `content`</h3>
+ *
+ * <p>It is the source's header and nav, it renders above the loop, and it is the condition the head
+ * reads to decide whether this page needs the captured stylesheet. Moving it too would have made a
+ * fidelity replica a different document for no gain.</p>
+ *
+ * @param body a string (one part) or the list `splitAroundSections` produced
+ * @param cut  the accepted blocks in document order, a `null` url meaning a repeat occurrence
+ * @returns `{content, sections, posts}` — the field (`null` for none), the list, and its posts
+ */
+function interleave({ body, cut, page, taken }) {
+  const listed = cut.map((each) => each.url).filter(Boolean);
+  // One part, which is every shape but the interleaved one: a wholly verbatim page (no sections at
+  // all), a page whose blocks were all accepted (`null`), or a split this could not place, which
+  // falls back to the leading half rather than losing the remainder.
+  if (!Array.isArray(body)) {
+    return { content: typeof body === "string" ? body : null, sections: listed, posts: [] };
+  }
+  const posts = [];
+  const sections = [];
+  // `null` rather than `""`, and the leading part is trimmed for emptiness the way SH693's was: a
+  // field holding whitespace is a value a curator has to notice and delete, and `{{#if content}}` —
+  // which decides both the nav branch and the captured stylesheet — reads whitespace as true.
+  let content = null;
+  let buffer = body[0] ?? "";
+  let placed = false;
+  cut.forEach((each, at) => {
+    const next = body[at + 1] ?? "";
+    if (!each.url) {
+      // A repeat occurrence: the section is already in the list, so the markup on either side of the
+      // hole is one run. Joining is what keeps the page's bytes in the order the source wrote them.
+      buffer += next;
+      return;
+    }
+    if (!placed) {
+      content = buffer.trim() ? buffer : null;
+      placed = true;
+    } else if (buffer.trim()) {
+      const post = markupPost(page, posts.length + 1, buffer, taken);
+      posts.push(post);
+      sections.push(post.url);
+    }
+    sections.push(each.url);
+    buffer = next;
+  });
+  if (placed && buffer.trim()) {
+    const post = markupPost(page, posts.length + 1, buffer, taken);
+    posts.push(post);
+    sections.push(post.url);
+  }
+  return { content, sections, posts };
+}
+
+/**
+ * One run of kept markup as a post, addressed by the page it came from (SH763).
+ *
+ * <p>The address is derived rather than hashed so a reviewer reading `/sections/markup-about-2` in
+ * the console knows which page it belongs to and where in it — the one thing a curator needs from a
+ * block that has no title of its own. Two paths can slug to one name (`/a/b` and `/a-b`), and a
+ * collision would be an upsert overwriting the first run with the second: silent content loss. So
+ * the taken set disambiguates, deterministically, in page order (P5).</p>
+ */
+function markupPost(page, index, html, taken) {
+  const slug = String(page.path ?? "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase() || "home";
+  let url = `${SECTIONS_FOLDER}/markup-${slug}-${index}`;
+  for (let n = 2; taken.has(url); n += 1) {
+    url = `${SECTIONS_FOLDER}/markup-${slug}-${index}-${n}`;
+  }
+  taken.add(url);
+  return { url, type: MARKUP_TYPE, folder: SECTIONS_FOLDER, data: { html } };
 }
 
 /**
  * One page's verbatim half: the whole body, the remainder around its sections, or nothing (SH520).
  *
  * @param kept how many of the page's blocks were left in fidelity mode
- * @param cut the spans of the blocks that became sections — `null` for one the proposal cannot place
+ * @param cut the accepted blocks in document order, `{span, url}` — a span is `null` for one the
+ *            proposal cannot place
  */
 function contentFor({ html, sections, kept, cut }) {
   if (!sections.length) return bodyOf(html);
@@ -1079,7 +1215,7 @@ function contentFor({ html, sections, kept, cut }) {
   // A span the proposal does not carry is a block this cannot cut, and cutting the others would
   // leave that one rendered both as markup and as a section. Refusing the remainder is the honest
   // half-answer, and it is exactly what the previous release wrote.
-  if (!cut.length || cut.some((span) => !span)) return null;
+  if (!cut.length || cut.some((each) => !each.span)) return null;
   return splitAroundSections(html, cut);
 }
 
@@ -1087,26 +1223,7 @@ function contentFor({ html, sections, kept, cut }) {
 const SECTIONS_MARK = " shio:sections ";
 
 /**
- * The verbatim halves as `Page` fields (SH693).
- *
- * <p>`content` keeps its meaning — the page's kept markup — so a fidelity replica and every reader
- * of one are untouched. `contentAfter` appears only where there is markup that belongs <b>below</b>
- * the sections, which is the case that used to put the source's footer above all of them. An empty
- * trailing half writes no key: a field holding `""` is a value a curator has to notice and delete,
- * and the layout's `{{#if}}` already treats absence as "render nothing" (SH465).</p>
- */
-function contentFields(body) {
-  if (body === null || body === undefined) return {};
-  if (typeof body === "string") return { content: body };
-  const fields = {};
-  if (body.before?.trim()) fields.content = body.before;
-  if (body.after?.trim()) fields.contentAfter = body.after;
-  return fields;
-}
-
-/**
- * The kept markup as **two** parts: what came before the accepted blocks, and what came after
- * (SH693).
+ * The kept markup as **N + 1** parts, one per gap between the accepted blocks (SH693, SH763).
  *
  * <h3>Concatenation is not composition</h3>
  *
@@ -1118,37 +1235,50 @@ function contentFields(body) {
  *
  * <p>The information was never missing: `cut` is where each accepted block stood, and this function
  * used to remove those spans and glue the remainder into one string. Splitting instead of gluing is
- * the whole change — the layout emits `contentBefore`, the sections, then `contentAfter`.</p>
+ * the whole change.</p>
  *
- * <h3>The approximation, stated</h3>
+ * <h3>The approximation SH693 stated, and which SH763 removed</h3>
  *
- * <p>Two parts and not N. Markup that sat <em>between</em> two accepted blocks cannot be placed
- * without emitting the sections one at a time, which is a different shape of page and of layout; it
- * is grouped into the leading part, and `describeConversion` prints its size when there is any. On
- * the measured page it is a wrapper and whitespace. Chrome is overwhelmingly outside the run of
- * blocks — that is what makes it chrome — so this is the cheap two-thirds of the answer, and the
- * remaining third is a page shape nobody has yet produced.</p>
+ * <p>SH693 produced <b>two</b> parts, because the layout had exactly two fields to put them in, and
+ * said so: markup that sat <em>between</em> two accepted blocks could not be placed. That was the
+ * cheap two-thirds of the answer — chrome is overwhelmingly outside the run of blocks, which is what
+ * makes it chrome — and the remaining third is now free, because the parts no longer land in fields.
+ * A run of markup is a `SectionMarkup` post in the page's own `sections` list, so there is a place
+ * for every gap and one mark per cut is all this has to emit.</p>
  *
- * <h3>Why the mark goes in before the cut</h3>
+ * <h3>Why the marks go in before the cut</h3>
  *
- * <p>The spans address the original bytes. Marking first and shifting them keeps that true; cutting
- * first would leave every offset past the first hole wrong by the size of the holes before it, which
- * is the class of bug that reads as "the footer moved a bit".</p>
+ * <p>The spans address the original bytes, so this walks them in ascending order and rebuilds the
+ * document as it goes — each block's bytes replaced by the mark that stands for it. Cutting first
+ * and marking after would leave every offset past the first hole wrong by the size of the holes
+ * before it, which is the class of bug that reads as "the footer moved a bit".</p>
+ *
+ * @returns the parts, or a single string when the split could not be placed
  */
 function splitAroundSections(html, cut) {
   if (typeof html !== "string") return bodyOf(html);
-  const at = Math.min(...cut.map(([start]) => start));
-  if (!Number.isInteger(at) || at < 0 || at > html.length) return bodyOf(without(html, cut));
-  const marked = html.slice(0, at) + SECTIONS_MARK + html.slice(at);
-  const shifted = cut.map(([start, end]) => [start + SECTIONS_MARK.length, end + SECTIONS_MARK.length]);
-  const body = bodyOf(without(marked, shifted));
-  if (typeof body !== "string" || !body.includes(SECTIONS_MARK)) {
-    // The mark fell outside <body> — a block accepted from the head, which the vocabulary does not
-    // produce. Fall back to the single-part form rather than losing the remainder.
-    return bodyOf(without(html, cut));
+  const spans = cut.map((each) => each.span);
+  let marked = "";
+  let cursor = 0;
+  for (const [start, end] of spans) {
+    // Overlapping, reversed or out-of-range spans are a proposal this cannot cut faithfully. The
+    // fallback is the pre-SH693 answer — the remainder in one part — rather than a page missing it.
+    if (!Number.isInteger(start) || !Number.isInteger(end)
+      || start < cursor || end < start || end > html.length) {
+      return bodyOf(without(html, spans));
+    }
+    marked += html.slice(cursor, start) + SECTIONS_MARK;
+    cursor = end;
   }
-  const [before, after] = body.split(SECTIONS_MARK);
-  return { before, after };
+  marked += html.slice(cursor);
+  const body = bodyOf(marked);
+  const parts = typeof body === "string" ? body.split(SECTIONS_MARK) : [];
+  if (parts.length !== spans.length + 1) {
+    // A mark fell outside <body> — a block accepted from the head, which the vocabulary does not
+    // produce. Fall back to the single-part form rather than losing the remainder.
+    return bodyOf(without(html, spans));
+  }
+  return parts;
 }
 
 /**
@@ -1332,7 +1462,8 @@ function scriptsPost(scripts, site) {
  * content. The preconditions come last because they are the sentence that decides whether the write
  * can work at all (SH436).
  */
-export function describeConversion({ document, sections, pages = [], verbatim = 0, mixed = 0, extras,
+export function describeConversion({ document, sections, markup = [], pages = [], verbatim = 0,
+                                     mixed = 0, extras,
                                      requires = [], dropped = [], kept = [], declined = [],
                                      home = null, unfollowed = null },
                                    options = {}) {
@@ -1360,6 +1491,15 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
     lines.push(
       `  ${mixed} of ${pages.length} page(s) mixed — the accepted blocks as sections, the rest of `
         + "each page kept as the source's own markup",
+    );
+  }
+  // SH763 — the runs of kept markup, counted apart from the sections above. They ARE sections now,
+  // and merging them into that number would read as a conversion having made more of the page
+  // authorable than it did — which is the count a reviewer decides the next round of acceptances on.
+  if (markup.length) {
+    lines.push(
+      `  ${markup.length} run(s) of kept markup written as SectionMarkup — the source's own bytes, `
+        + "in the page's list where they stood, movable and replaceable like any other section",
     );
   }
   // SH510 — which presentation the reviewer is getting, said out loud. Under SH507 it is the mode's

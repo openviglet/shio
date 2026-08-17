@@ -118,6 +118,11 @@ export interface RichTextData {
   body?: string;
 }
 
+/** SH763 — one field, because the section *is* the markup. */
+export interface MarkupData {
+  html?: string;
+}
+
 /** Default asset resolution: pass URLs and paths through, stream anything else by id. */
 export const defaultResolveAsset = (value: string): string =>
   /^(https?:)?\/\//.test(value) || value.startsWith("/")

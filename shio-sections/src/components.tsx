@@ -27,6 +27,7 @@ import {
   type FeatureGridData,
   type HeroData,
   type LogoWallData,
+  type MarkupData,
   type RichTextData,
   type SectionProps,
   type TestimonialData,
@@ -189,6 +190,29 @@ export function RichText({ data, className, postId }: SectionProps<RichTextData>
 }
 
 /**
+ * Markup the conversion kept as the source wrote it (SH763).
+ *
+ * The one component that draws no structure of its own, and that is the type's whole point: it
+ * holds a run of somebody else's page, so a heading level or a landmark added here would be markup
+ * the source did not have. It gets **no** `shio-section` class for the same reason — that class is
+ * the vocabulary's spacing, and applying it to captured markup would move the source's own layout.
+ *
+ * The wrapper exists at all so the block is addressable: `editable("html")` is what lets a curator
+ * replace a raw block from the editor rather than only from the console form, and `editableSection`
+ * is what tells the bridge which post it writes back to.
+ */
+export function Markup({ data, className, postId }: SectionProps<MarkupData>): JSX.Element {
+  return (
+    <div
+      className={cx("shio-markup", className)}
+      {...editable("html")}
+      {...editableSection(postId, "SectionMarkup")}
+      dangerouslySetInnerHTML={html(str(data.html) ?? "")}
+    />
+  );
+}
+
+/**
  * Post-type name → component.
  *
  * This map is the whole reason the vocabulary is worth having: the front end never asks
@@ -202,5 +226,6 @@ export const SECTION_COMPONENTS: Record<string, (props: SectionProps<never>) => 
   [SECTION_TYPES.logoWall]: LogoWall as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.testimonial]: Testimonial as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.faq]: Faq as (props: SectionProps<never>) => JSX.Element,
+  [SECTION_TYPES.markup]: Markup as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.richText]: RichText as (props: SectionProps<never>) => JSX.Element,
 };

@@ -180,8 +180,8 @@ class ShVocabularyPostTypesTest {
         assertThat(shVocabularyPostTypes.names())
                 .as("the catalogue is the SH95 vocabulary, sorted so two instances print one list")
                 .containsExactly("Menu", "MenuItem", "Page", "SectionCta", "SectionFaq",
-                        "SectionFeatureGrid", "SectionHero", "SectionLogoWall", "SectionRichText",
-                        "SectionTestimonial");
+                        "SectionFeatureGrid", "SectionHero", "SectionLogoWall", "SectionMarkup",
+                        "SectionRichText", "SectionTestimonial");
     }
 
     private static ShAgentBatch.Op op(String name, String address, String type, String folder,

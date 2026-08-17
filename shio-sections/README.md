@@ -25,7 +25,7 @@ npm install react
 
 ## The vocabulary
 
-Seven sections, plus the page and menu types that hold them:
+Eight sections, plus the page and menu types that hold them:
 
 | Post-type | Factory | React component | For |
 |---|---|---|---|
@@ -36,6 +36,7 @@ Seven sections, plus the page and menu types that hold them:
 | `SectionTestimonial` | `sectionTestimonial()` | `<Testimonial>` | Quote, author, portrait |
 | `SectionFaq` | `sectionFaq()` | `<Faq>` | Question / answer rows |
 | `SectionRichText` | `sectionRichText()` | `<RichText>` | Free-form HTML body |
+| `SectionMarkup` | `sectionMarkup()` | `<Markup>` | Markup kept verbatim from a captured page (SH763) |
 | `Page` | `page()` | `<Sections>` | The ordered list of sections |
 | `Menu` / `MenuItem` | `menu()` / `menuItem()` | — | Navigation |
 
