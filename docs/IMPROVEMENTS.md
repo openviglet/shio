@@ -713,30 +713,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Do
 read the `red-suites.json` entry as evidence the flake is live — check its date, and an
 entry that expires unfired is itself the answer.
 
-### XXVI.12 A synthetic id inside an assertion is indistinguishable from a real one (SH787)
-
-SH527's walk reads every suite file and treats an id inside an assertion message as that
-task's assertion. SH630 taught it that a comment is not an assertion; SH731 taught it
-that `see SHnnn` is a citation and not a claim. Both are about the *sentence around* the
-id.
-
-Neither covers the case SH786 hit. Its fixture is a synthetic declaration, and the
-natural way to write one is with plausible ids — `"SH1"`, `"SH2"`, `"SH3"`. Those are
-real tasks. The walk credited SH3, and the suite went red saying somebody had paid a
-debt off.
-
-The red was luck. SH3 happened to be *on* the debt list, so crediting it changed the
-answer. Two outcomes are silent: an id already asserted gains a second creditor and
-nothing moves, and an id about to ship arrives **pre-paid** — so the rule that a defect
-closes with an assertion carrying its id is satisfied by a fixture with nothing to do
-with it. That is the expensive case, and the one the rule exists to prevent.
-
-`assertion-debt.test.mjs` already writes its own fixtures in the `SH9xxx` range for
-exactly this reason, in a comment, once. That is a convention nobody outside that file
-can be expected to know — the same shape as the trailing-comment rule before SH740 made
-it one reader. The lint is cheap: an id in a fixture literal that the ledger also knows
-is either a payment or a mistake, and the writer should have to say which.
-
 ### XXVI.13 The gate that lies about its exit code is the JS one too (SH788)
 
 SH354 established the rule for the backend suite: tee the run, never pipe it straight

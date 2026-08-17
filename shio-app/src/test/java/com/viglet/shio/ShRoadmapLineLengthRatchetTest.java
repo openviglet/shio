@@ -173,7 +173,7 @@ class ShRoadmapLineLengthRatchetTest {
                 .as("an empty backlog is a real state, so this only reports; the shape assertions "
                         + "below are the guard")
                 .isNotNull();
-        assertThat(TASK.matcher("- 💭 **SH999** (deps: SH1) **Something** — because. → §I.1").matches())
+        assertThat(TASK.matcher("- 💭 **SH9501** (deps: SH1) **Something** — because. → §I.1").matches())
                 .as("the shape roadkeep writes")
                 .isTrue();
         assertThat(TASK.matcher("> ✅ **SH183 has shipped** → CHANGELOG.md").matches())

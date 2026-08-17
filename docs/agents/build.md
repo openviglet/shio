@@ -1148,6 +1148,29 @@ assertion that holds the debt is over `[...DEBT, ...REVEALED_IDS]`. Reading only
 SH594's question with two thirds of its subject missing, which is the same defect as reading too much
 and merely looks more careful.
 
+### Fixture ids live at SH9000+, and the range is reserved from both ends (SH787)
+
+`assertion-debt`'s walk credits any `SH<n>` on a code line in a suite file. `"SH3"` in a fixture
+array and `SH3` in an assertion message are the same eight characters, and **no reader can separate
+them** — so the separation is reserved rather than detected.
+
+**Write every fixture id at `SH9000` or above.** Two assertions hold it: a suite may only spell an id
+the ledger knows or one in the reserve, and a governed file may never name an id in the reserve. The
+second is what makes the first mean anything — reserving a range is a claim about the future.
+
+The measurement is why this is a rule and not advice. SH786's fixture used `"SH3"`, and that went
+red immediately because SH3 was *on* the debt list. Scanning for the general case then found **six
+fixture ids in the SH9xx range across four files** — `red-suites`, `coverage-obligation`,
+`known-debt` and a Java ratchet — all chosen when they were "far past anything real" and propagated
+by copying, with the comment in one of them citing another as precedent. The ledger's highest id was
+**SH788**. `SH900` was a hundred and twelve tasks away, and on the day it shipped it would have
+arrived **pre-paid** by a fixture: asserted, off the debt list, and nothing anywhere saying so. No
+care at the moment of writing SH900 would have caught that.
+
+SH630's version of this rule — a hardcoded list of one file's fifteen illustrations, checked in one
+direction — was folded in, because two readers of one idea agree only by accident (SH583) and the
+hand-maintained list was the half that rots.
+
 ### The other half of a bad slice is the one that stops short (SH786)
 
 SH785 fixed a scan that ran past a declaration's end. The matcher that replaced it counts brackets,

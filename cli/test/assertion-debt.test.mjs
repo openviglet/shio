@@ -671,6 +671,81 @@ test("SH527: the reader is not vacuous — it reads real suites and a real ledge
   );
 });
 
+/**
+ * The range fixture ids live in, above anything this project will allocate.
+ *
+ * <p>SH787 — a synthetic id and a real one are the same characters, and this walk credits either.
+ * So the separation cannot be detected; it has to be <b>reserved</b>, and then enforced from both
+ * ends: nothing ships here, and a suite spelling an id the ledger does not know must be here.</p>
+ */
+const RESERVED_FROM = 9000;
+
+/** Every id any governed file names — shipped, open, retired, or merely cited in a rationale. */
+async function knownIds() {
+  const ids = new Set();
+  for (const file of ["docs/ROADMAP.md", "docs/CHANGELOG.md", "docs/IMPROVEMENTS.md"]) {
+    const text = await readFile(join(ROOT, file), "utf8");
+    for (const [, id] of text.matchAll(/\b(SH\d+)\b/g)) ids.add(id);
+  }
+  return ids;
+}
+
+/**
+ * SH787 — the assertion that would have caught a fixture id being a real task's id.
+ *
+ * <h2>Why it is a reserved range and not a detector</h2>
+ *
+ * <p>`"SH3"` in a fixture array and `SH3` in an assertion message are the same eight characters on a
+ * code line, which is all {@link assertedIn} can see. There is no reader that separates them, so the
+ * rule has to be one a writer can follow and a lint can check: <b>a suite spells an id the ledger
+ * knows, or an id at or above {@link RESERVED_FROM}.</b></p>
+ *
+ * <h2>What the measurement found, which is worse than the case that prompted it</h2>
+ *
+ * <p>SH786's fixture used `"SH3"` and this suite went red — that one was caught. The measurement
+ * then found <b>six fixture ids in the SH9xx range</b>, across four files, chosen when they were
+ * "far past anything real" and propagated by copying. The ledger's highest id was <b>SH788</b>. So
+ * `SH900` was a hundred and twelve tasks away from shipping, and on the day it shipped it would have
+ * arrived <b>pre-paid</b> by a fixture in `red-suites.test.mjs` — asserted, off the debt list, and
+ * nothing anywhere would have said so. That is the silent case, it was scheduled, and no amount of
+ * care at the moment of writing SH900 would have found it.</p>
+ */
+test("SH787: an id a suite spells is one the ledger knows, or is in the reserved fixture range", async () => {
+  const known = await knownIds();
+  const { by } = await assertedIds();
+  const strays = [...by.keys()]
+    .filter((id) => !known.has(id) && Number(id.slice(2)) < RESERVED_FROM)
+    .sort(byId)
+    .map((id) => `${id} (in ${[...new Set(by.get(id))].join(", ")})`);
+
+  assert.deepEqual(
+    strays,
+    [],
+    `an id below SH${RESERVED_FROM} that the ledger has never heard of is one of two things, and `
+      + "both are defects.\n"
+      + "A **fixture id**: move it into the reserved range. It is not safe where it is — it is only "
+      + "safe UNTIL the counter reaches it, and then it silently pays that task's debt.\n"
+      + "A **typo**: fix it. It credits nothing today, and credits the wrong task the moment the "
+      + "digits happen to land on a real id.",
+  );
+});
+
+test("SH787: and the reserved range stays reserved — the ledger never allocates into it", async () => {
+  // The other end of the same rule, and the one that makes the first end mean something. Reserving a
+  // range is a claim about the future; this is what holds the future to it. If a task ever ships as
+  // SH9000+, every fixture in this repository becomes a payment on it at once.
+  const trespass = [...await knownIds()]
+    .filter((id) => Number(id.slice(2)) >= RESERVED_FROM)
+    .sort(byId);
+  assert.deepEqual(
+    trespass,
+    [],
+    `SH${RESERVED_FROM} and above is reserved for fixtures. A governed file naming one means the `
+      + "counter has reached the range this repository writes test data in, and every such fixture "
+      + "is now an assertion carrying a real id. Move the range up before allocating here.",
+  );
+});
+
 test("SH630: a comment naming an id does not assert it, and an assertion message does", () => {
   // The assertion that would have caught it. SH356's ratchet shipped with a header explaining why
   // it holds one outcome and deliberately does not assert a cross-file rule, naming three other
@@ -697,23 +772,15 @@ test("SH630: a comment naming an id does not assert it, and an assertion message
     + "rule that lost those would report the whole ledger as debt and read as a stricter one");
 });
 
-test("SH630: the example ids here are not real tasks, and that is not fussiness", async () => {
-  // The first version of these tests used SH333 as a plausible-looking example and paid that
-  // task's debt off — this file asserts nothing whatever about SH333. The header two hundred lines
-  // up says the same about itself: a reader that reads itself has to be careful what it says out
-  // loud. Four digits starting at 9 are past anything the ledger will reach for a long time, and
-  // this checks rather than trusts that.
-  const shipped = await shippedIds();
-  for (const id of ["SH9101", "SH9102", "SH9103", "SH9104", "SH9105", "SH9106", "SH9107",
-    // SH731's illustrations. Five of these are credited by this very file, and SH9109/SH9111/
-    // SH9113 are the ones the citation rule blanks — so if any became real, this file would both
-    // pay three debts by example and hide three more.
-    "SH9108", "SH9109", "SH9110", "SH9111", "SH9112", "SH9113", "SH9114", "SH9115"]) {
-    assert.ok(!shipped.has(id),
-      `${id} is used above as an illustration and is a real shipped task, so this file now pays `
-      + "its debt by example — which is the exact defect SH630 fixed");
-  }
-});
+// SH630's own version of the rule above lived here: a hardcoded list of this file's fifteen
+// illustrations, asserted not to be shipped. SH787 folded it in rather than leaving two readers of
+// one idea (SH583) — the general lint covers every suite instead of this file, and both directions
+// instead of one, so the list was a subset that also had to be maintained by hand. What it was
+// protecting is worth keeping in words: the first version of these tests used SH333 as a
+// plausible-looking example and paid that task's debt off, and this file asserts nothing whatever
+// about SH333. SH731's illustrations make it sharper still — SH9109/SH9111/SH9113 are the ones the
+// citation rule blanks, so had they become real this file would pay three debts by example and hide
+// three more in the same breath.
 
 test("SH630: a regex literal holding a quote cannot derail the scan", () => {
   // Not hypothetical, and the reason this rule holds no cross-line state. The first implementation

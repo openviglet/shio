@@ -335,14 +335,14 @@ test("SH579: the rules fire — every one of them, on an entry built to break it
   // open when this is written is shipped a task later, and a rules test that went red for *that*
   // would be one more red nobody can act on. The real files are the previous test's subject.
   const where = {
-    roadmap: "- 📋 **SH901** (deps: SH900 ✅) **Still open** — the entry an exception may name.\n",
-    changelog: "- **SH902** — already shipped, so an exception naming it has outlived its reason.\n",
+    roadmap: "- 📋 **SH9301** (deps: SH9300 ✅) **Still open** — the entry an exception may name.\n",
+    changelog: "- **SH9302** — already shipped, so an exception naming it has outlived its reason.\n",
     today: "2026-08-10",
   };
   const ok = {
     suite: "conformance",
     test: "capture over a socket → convert into the instance → pull it back → gate it",
-    task: "SH901",
+    task: "SH9301",
     declared: "2026-08-07",
     expires: "2026-08-14",
     why: "x".repeat(MIN_WHY),
@@ -367,8 +367,8 @@ test("SH579: the rules fire — every one of them, on an entry built to break it
   fires({ why: "flaky" }, "the next person's only way to judge");
   fires({ declared: "2026-07-01", expires: "2026-07-08" }, "expired on 2026-07-08");
   // The two halves of "tied to open work", which fail identically and for opposite reasons.
-  fires({ task: "SH999" }, "not an open task");
-  fires({ task: "SH902" }, "SH902 is shipped");
+  fires({ task: "SH9399" }, "not an open task");
+  fires({ task: "SH9302" }, "SH9302 is shipped");
 });
 
 /**

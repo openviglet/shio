@@ -106,17 +106,17 @@ test("SH758: the report fires on an id that shipped and is not named", () => {
   // nothing shipped since, "no ids owing" is indistinguishable from a filter that never finds any.
   // Driven against a fabricated world, for the reason the red-suite comparator's twin is — the real
   // one is whatever this afternoon left, and an assertion about that is a test of today.
-  // Ids far past anything real, the way red-suites.test.mjs picks SH901/SH902: a bare
+  // Ids far past anything real, the way red-suites.test.mjs picks SH9401/SH9402: a bare
   // `(SHnnn)` in a suite reads to SH527's debt reader as a claim to have closed that
   // task, and the first draft of this used SH1–SH4 and paid off two real debts by
   // accident. Same trap SH731 named, met from the other side.
-  const named = new Set(["SH901", "SH902"]);
-  const since = ["SH902", "SH903", "SH904"];
+  const named = new Set(["SH9401", "SH9402"]);
+  const since = ["SH9402", "SH9403", "SH9404"];
 
-  assert.deepEqual(since.filter((id) => !named.has(id)), ["SH903", "SH904"],
+  assert.deepEqual(since.filter((id) => !named.has(id)), ["SH9403", "SH9404"],
     "SH758: an id that entered the ledger since the mirror and is absent from the matrix is the "
     + "whole finding. A filter that came back empty here would print good news on every ship.");
-  assert.deepEqual(["SH902"].filter((id) => !named.has(id)), [],
+  assert.deepEqual(["SH9402"].filter((id) => !named.has(id)), [],
     "SH758: and one the matrix already names is not owed twice — a report that repeated itself is "
     + "one somebody stops reading, which is the same end as not printing it.");
 });

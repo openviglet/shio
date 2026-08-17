@@ -431,14 +431,14 @@ test("SH781: a partially shipped owner is not an orphan, and a fully shipped one
   // Driven against a fabricated world for the reason the comparator's twin in red-suites.test.mjs
   // is: the real ledgers are whatever this afternoon left, so an assertion about them would be a
   // test of today. The three states are what matter, and only two of them existed before.
-  const shipped = new Set(["SH901", "SH902"]);
-  const open = new Set(["SH902", "SH903"]);
+  const shipped = new Set(["SH9211", "SH9212"]);
+  const open = new Set(["SH9212", "SH9213"]);
   const orphan = (owner) => shipped.has(owner) && !open.has(owner);
 
-  assert.equal(orphan("SH901"), true,
+  assert.equal(orphan("SH9211"), true,
     "shipped and gone from the roadmap: the entry names somebody who has moved on, which is the "
       + "state SH594 was built for");
-  assert.equal(orphan("SH902"), false,
+  assert.equal(orphan("SH9212"), false,
     "SH781: shipped as a PART and still on the roadmap. This is the state that made the rules "
       + "unsatisfiable together — `ship --part` writes a ledger entry to record progress, and "
       + "reading the changelog alone turned that into an orphaned exception for work that is "
@@ -446,15 +446,15 @@ test("SH781: a partially shipped owner is not an orphan, and a fully shipped one
       + "against it — spelled as a reference because a bare id here would read to SH527's reader "
       + "as a claim to have closed that task, which is SH731's trap and would pay off a debt this "
       + "very file declares.");
-  assert.equal(orphan("SH903"), false,
+  assert.equal(orphan("SH9213"), false,
     "and an owner that has not shipped at all was never this rule's subject — the dangling case "
       + "below is what covers an owner in neither file");
 
   // And the rule as it stood, on the same world: reading the changelog alone cannot tell the half
-  // from the whole, so SH902 orphaned an entry whose work was still open. Kept as the contrast
+  // from the whole, so SH9212 orphaned an entry whose work was still open. Kept as the contrast
   // rather than described, because "it used to be wrong" is the claim this test exists to hold.
   const orphanBefore = (owner) => shipped.has(owner);
-  assert.equal(orphanBefore("SH902"), true,
+  assert.equal(orphanBefore("SH9212"), true,
     "SH781: this is what the two rules being unsatisfiable together looked like — recording "
       + "progress with --part disabled the exception that was tracking the rest of it, which is "
       + "SH764's collision from the other side");
