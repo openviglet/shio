@@ -533,37 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.110 The claim that a later task made false (SH769)
-
-Two of these turned up in one session, and only one of them had an instrument.
-
-The first was caught: `improvements-debt.test.mjs` failed on `§XVII.100`, an anchor
-SH763's rationale cited and SH692 removed when it shipped. Written by `roadkeep section
-amend`, which validated the prose and never asked whether the anchor it names exists —
-so a docs-only commit turned the JS gate red, and the gate that found it is one the next
-person only reaches by running the suite.
-
-The second was not caught at all, and was found by reading.
-`docs/agents/agent-surface.md` said, of the regions reader:
-
-    `styled by` — naming the theme in force per region, and warning when two are — is
-    deliberately not here: it needs class-to-stylesheet provenance, which `definedIn`
-    does not keep.
-
-SH694 kept the provenance and shipped the warning. The sentence sat **four lines above**
-the section documenting that, and it had been false since SH694 landed. A reader
-deciding whether to build the feature would have believed it.
-
-The shapes differ and the defect is one: prose asserting a capability is absent, over a
-ledger that says it shipped. A dangling anchor is decidable and already is; this is the
-wider version, and it is the more expensive one, because a stale "not here" reads as a
-decision rather than as rot.
-
-What is decidable: prose naming an id or a capability in the negative, checked against
-the changelog. Not every sentence — the ones that say *not here*, *does not*, *is
-deliberately not*, beside a task id the ledger holds. SH338's rule applies: the
-instrument lands before the fixes, because a grep finds the one nobody read.
-
 ### XVII.111 The stamp that outlived its commit (SH770)
 
 SH755 compares what the ledger declares against what each gate last answered *here*, by

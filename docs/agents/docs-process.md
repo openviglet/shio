@@ -468,6 +468,56 @@ Declaring them rather than auto-classifying is deliberate — deciding which cor
 a judgement about the test, and a heuristic over variable names is the kind of guess this file exists
 to stop.
 
+## A claim that a capability is absent, over a ledger that says it shipped (SH769)
+
+Two turned up in one session, and only one had an instrument.
+
+The first was caught: `improvements-debt.test.mjs` failed on an anchor a rationale cited and a ship
+had removed — written by `roadkeep section amend`, which validates the prose and never resolves the
+anchors it names. That half is the tool's, and is filed there as **RK1227**.
+
+The second was not caught at all, and was found by reading. `docs/agents/agent-surface.md` said, of
+the regions reader, that `styled by` *"is deliberately not here: it needs class-to-stylesheet
+provenance, which `definedIn` does not keep."* SH694 kept the provenance and shipped the warning.
+The sentence sat **four lines above** the section documenting that, and had been false since SH694
+landed. A reader deciding whether to build the feature would have believed it.
+
+### The obvious rule was measured first, and is noise
+
+*An absence claim naming a shipped id is stale* sounds decidable. Measured over `docs/agents/**`,
+`agents.md` and `docs/specs/**`: **98 sentences assert an absence, 38 of them beside a shipped id**,
+and almost every one is true — *"there is no submissions subsystem"*, *"`{{#if_eq}}` does not
+exist"*. A check reporting those is read once and then ignored, which is the failure SH551 and SH142
+both name.
+
+Narrowing to the phrasing that claims something about *this product, now* — `is deliberately not
+here`, `is not part of`, `is not yet`, `is not available` — leaves **eight**. That is a population
+somebody can sign.
+
+One more narrowing came from writing the check: a phrase inside backticks or quotation marks is
+being **named**, not asserted. This very section named two of them and quoted the sentence that cost
+the task, and the scan read the page about the rule as two breaches of it — SH740's distinction, one
+level up, and the reason its own scanners strip comments before matching. Stripping quotations also
+removed two entries that had been signed by hand: both were quotations of an earlier argument rather
+than claims these documents make.
+
+### So it is a signed list, and the signature is the instrument
+
+`cli/test/absent-claims.test.mjs` holds each claim with **one sentence naming what would make it
+false**. A new claim fails until somebody writes that sentence, and writing it is the check. A claim
+whose prose changed re-keys and has to be re-read by whoever changed it. A signed claim whose
+sentence is gone fails too — an exemption for something that no longer exists is a line nobody
+removes and the next reader trusts (SH142).
+
+**What it cannot do is said in the file.** It cannot catch the *ship* that falsifies a standing
+claim, which is the half that cost SH769: the ledger entry for SH694 does not contain the phrase
+`styled by`, and the sentence's own reasoning was about a Java method's behaviour. Nothing short of
+reading finds that. What changed is that the reading now has a list of ten to start from, and a
+written reason beside each to check it against.
+
+The guard is not vacuous, and that was proved rather than assumed: re-introducing the exact sentence
+that cost the task makes the test fail, naming it.
+
 ## The obligation a ship does not carry, and where it is now asked (SH758)
 
 `COVERAGE.md` lives in **vigletdocs**; the ship lives here. SH747's ratchet works — six ids in one

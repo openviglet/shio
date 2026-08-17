@@ -1228,6 +1228,7 @@
 - **SH763** — Verbatim markup is a section type: SectionMarkup declares one html field and lives in Page.sections, so N splits work, contentAfter is gone, and the replication scenario runs green on a clean instance.
 - **SH766** — Drawing the title and declaring it are two decisions: a hidden branch declares it on the pages the unless-content branch excludes, so a mixed page's own title is editable and the source's heading is untouched.
 - **SH767** — post.upsert resolves a post: address in a relation field to the URL the field stores, the way an op's folder always has, and refuses the three forms no URL in this site can mean.
+- **SH769** — Every standing absence claim is signed with one sentence naming what would falsify it; the broad rule was measured at 38 mostly-true hits and rejected, and the tight one leaves eight.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
