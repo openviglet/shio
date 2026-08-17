@@ -712,3 +712,80 @@ So this task owns the cure and cannot start until the instrument speaks. It stay
 because the `red-suites.json` entry has to name a task that removes it, and an entry
 whose owner has shipped is the state SH594 fails on. Delete that entry in the same
 commit as the fix.
+
+### XXVI.8 The escape that belongs to the wrong layer (SH782)
+
+Written and shipped in one afternoon, caught only by probing the check afterwards:
+
+    const named = (name) => new RegExp(`\b${name}\b`).test(prose);
+
+Inside a template literal `\b` is the **backspace** escape, U+0008 — so the pattern
+became a control character either side of the name and matched nothing. The check
+reported *0 of 8 section types documented* against pages that named all eight: a false
+red, and it could as easily have been a false green in a rule phrased the other way.
+
+`\d`, `\w` and `\s` are worse in one respect. JavaScript leaves an unknown escape as the
+bare character, so `` `\d` `` is the letter `d` — a pattern that still matches
+something, just not what was written, with nothing anywhere to say so.
+
+**The population is small and the existing members are all correct**, which is what
+makes this worth a lint rather than a fix: roughly fifteen `new RegExp(\`…\`)` sites
+across the CLI, its conformance suite and its scripts, and every one written before this
+week spells `\\b`, `\\s`, `\\d`. One newcomer got it wrong. So the guard opens at zero
+and exists to catch the next.
+
+Decidable and cheap: between the backticks of a template literal handed to `new RegExp`,
+a single backslash before `bdwsBDWS` is a string escape where a regex escape was meant.
+The escape hatch is the same as everywhere else here — a signed exemption naming the
+reason, for the case where U+0008 really is the subject.
+
+### XXVI.9 The lock that reads as a build failure (SH783)
+
+Hit four times in one session, always the same way:
+
+    Failed to clean project: Failed to delete
+    D:\...\shio-app\target\viglet-shio.jar
+
+Every time the cause was a `java -jar` instance started for a conformance run and still
+holding the file. Nothing in the output says so. What it looks like is a broken build,
+and the reflex it teaches is to re-run — which works, because by then the instance has
+usually been stopped for an unrelated reason, so the lesson never lands.
+
+It is already written down, in the two memories a session may or may not have loaded,
+and that is exactly the shape this project keeps converting into an instrument: a fact
+carried in somebody's head, costing a wasted run each time it is not.
+
+Decidable from inside the repository. On Windows the holder is findable, but the cheaper
+and more portable check is the question the developer actually needs answered: **is
+anything listening on the ports this project's instances use** (2710 for the dev
+instance, 2711 for the clean one the conformance sequence starts). A preflight that
+fails with *"an instance is running on 2711 and is holding target/viglet-shio.jar — stop
+it before clean"* turns a re-run into a sentence.
+
+Worth pairing with the other half of the same trap, which cost a false red earlier in
+the same session: `clean` failing means the *build did not run*, so a green summary
+above it describes the previous tree.
+
+### XXVI.10 The pause this project cannot spell (SH784)
+
+Found by trying it:
+
+    roadkeep: SH778 cannot be set aside: no deferred store is declared — add
+    `deferred = "<path>"` under [files]
+
+SH778 is waiting for an intermittent failure to reappear so its instrument can name it,
+and SH780 is the cure that waits on SH778. Neither can start. With no deferred store the
+only two spellings are **⏳ in flight**, which `pick` offers on every iteration and a
+reader has to keep declining, and **retire**, which is terminal: the id cannot come
+back, the resolver reads a dep on it as never, and the rationale is deleted.
+
+So the backlog cannot say the true thing, which is *real, owned, and not startable yet*.
+The cost is small and constant: every pick offers work nobody can do, and the reason has
+to be re-derived each time from the section rather than read off the line.
+
+Adopting the store is one key in `roadkeep.toml` and a file with the block headings.
+What needs care is the second half, and SH781 just built the precedent: an exception in
+`red-suites.json` requires its task to be **on the roadmap**, and a deferred line is not
+— so deferring a task would delete the reason for the entry that tracks its red, which
+is the same collision one file over. Both readers now ask the roadmap rather than the
+changelog; a deferred store means teaching them a third state rather than two.
