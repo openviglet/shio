@@ -266,6 +266,18 @@ const DEBT = [
   // curator had already replaced landing on the new one — would earn a probe, and needs a post with
   // a File field and two selections raced against a route delay.
   "SH703",
+  // DOES NOT EARN one, and it is the rarest reason on this list: the assertion that would have
+  // caught SH797 already existed, already worked, and is what found it. SH747's ratchet went red on
+  // the twelfth unnamed id exactly as designed. Nothing about the check was wrong — the gate holding
+  // it needs another repository checked out and had not been run for twelve commits, which is a fact
+  // about when instruments are executed rather than about what they assert.
+  //
+  // So an assertion naming SH797 would have to assert that somebody ran a gate, and the honest
+  // versions of that are filed rather than faked: SH798 (the docs gate leaves no stamp, so running
+  // it is invisible to the comparators) and SH799 (the local queue is unbounded, so one unnamed id
+  // and twelve read the same). When either ships, this entry comes off — and if it does not, that
+  // is the reader saying the process finding was never closed.
+  "SH797",
 ].sort(byId);
 
 /**
