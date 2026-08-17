@@ -25,6 +25,8 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
+## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -637,3 +639,152 @@ Where the rationale for Block N lives. The block is a standing category rather t
 project: it receives findings about work that already shipped, so it empties and reopens
 rather than finishing, and each reopening is one finding whose repair is not itself a
 feature.
+
+## XXVI What the replication round left behind (Block W)
+
+Block Q closed with SH774 after a round that changed what a replica *is* to a curator:
+kept markup became content they can move rather than a field they cannot reach.
+
+What it left behind is of three kinds, and none of them is a feature.
+
+**A sweep.** A closed block owes its reader-facing surfaces one pass, and this one
+changed the thing those pages describe.
+
+**Corpus gaps the round exposed by needing them.** Every question asked of the section
+vocabulary's own render cost went unanswered because the benchmark's pages compose no
+sections — so the shape the product is *about* is the one shape nothing measures.
+
+**Capability limits found by hitting them.** A template cannot ask an aggregate question
+about a relation, which decided SH772's design rather than being noticed in the
+abstract.
+
+The block exists because these were found *while* doing the work and would otherwise
+evaporate with the commit that revealed them — the cheapest findings the project ever
+gets, and the ones with no reporter but the person who tripped over them.
+
+### XXVI.1 The sweep a closed block owes (SH775)
+
+Block Q closed with SH774, and the block-completion rule says its reader-facing surfaces
+are brought up to date in one pass: `docs-shio`, `shio-site` and `README.md`.
+
+What changed for a **reader** is not small. Before this round a mixed replica was a page
+with the source's markup in one field and some sections appended below it. After it,
+every run of kept markup is a `SectionMarkup` post in the page's own list — so a curator
+can move it, replace it or delete it from the same control they compose the rest of the
+page with. That is the mixed→authorable path the mode exists to offer, and it is the
+first time it has been true.
+
+The pages that describe the old shape: the replication page's account of fidelity versus
+authorable mode, and anything naming `content` as where kept markup lives. The
+vocabulary is one type longer, which the sections table states. `COVERAGE.md` already
+names all eight ids (SH771), so the matrix is current and this is the prose behind it.
+
+Two smaller claims to check while there: the Universal Editor's reach over a replica now
+includes a mixed page's own title (SH766) and a raw block (SH763), and the vocabulary's
+count appears in more than one place.
+
+Worth doing as one commit rather than per page. The sweep's value is that a reader meets
+one description, and a page-at-a-time pass is how two of them come to disagree.
+
+### XXVI.2 The corpus that cannot answer the question the product is about (SH776)
+
+SH774 was filed asking for a measurement — what a section-resolving pass costs on the
+render sweep — and the measurement could not be taken. `ShRenderSweepBenchmarkTest`
+seeds pages holding `{"TITLE": …, "TEXT": …}` and nothing else. **No page in the corpus
+composes a section**, so anything gated on `sections` being present costs exactly zero
+there, and a green number would have meant nothing at all.
+
+That is the shape this project keeps catching in other instruments — a check that passes
+over an empty population — and here it sits under the one law that is supposed to be
+enforced by numbers. P3 makes cost a measured budget; `render.digest.first-page-queries`
+is 21 and `render.sweep.per-page-queries` is 7, and both describe a page shape the SH95
+vocabulary does not produce.
+
+The gap is exactly the product's own subject. A converted page is a `Page` with a
+`sections` list, resolved by `getRelation` one URL at a time through `ShFurlSpellings`'
+four candidate spellings. Nobody has ever counted what that costs per section, so nobody
+knows whether an eight-section page is 8 queries or 32 — and SH774 had to reason from
+the repository's method list instead of from a number.
+
+What is owed is a page in the corpus that composes sections, and a ceiling beside the
+ones already there. The answer may well be that it is fine; the defect is that it is
+unknown while being asserted about.
+
+### XXVI.3 The relation with no data frame (SH777)
+
+Found by needing it. SH772 had to emit the captured stylesheet once for a page whose
+kept markup is all in sections, and the natural spelling — fire on the first row that
+carries markup — turned out to be unavailable:
+
+    for (Map<String, Object> row : rows) {
+        out.append(options.fn(row));
+    }
+
+`options.fn(row)` passes a plain context. Handlebars' `@index`, `@first` and `@last`
+come from a **data frame**, which nothing here creates, so inside `{{#getRelation
+sections}}` there is no way to ask which row this is or how many there are. SH772
+shipped a per-row emission and stated the bound instead, which is the honest answer from
+a template that cannot count.
+
+It is not only that task's problem. A section list is the vocabulary's central shape,
+and every ordinary thing a designer does with one needs the index: a separator between
+rows and not after the last, a first row that renders larger, `aria-setsize`, a numbered
+list that survives a reorder. Today each needs a field on every section carrying its own
+position — a value that goes stale the moment somebody moves one.
+
+`{{#each}}` has the frame because Handlebars builds it, and the same is available to a
+custom block helper. The cost is one object per row, and the question worth settling
+first is whether `{{#navigation}}`, `{{#search}}`, `{{#translations}}` and `{{#menu}}`
+gain it in the same pass — four helpers with the same shape and the same silence.
+
+### XXVI.4 The one red nobody could read (SH778)
+
+Seen once, on 2026-08-17, running `node --test "test/*.test.mjs"`:
+
+    ✖ test\fixture-traits.test.mjs (859.7731ms)
+      'test failed'
+
+Run alone, the same file passes nine of nine in 162 ms. The next full run was green too.
+So there is one sighting, no named assertion, and a suite that has been green either
+side of it.
+
+This is the shape SH354 spent a task on from the other end — a red that leaves no record
+of *which* test failed — and it is worth a task rather than a shrug for the reason that
+one names: it has happened before, *"one run in six, never reproduced, undiagnosable"*,
+and a flake nobody writes down is re-discovered from scratch every time somebody sees
+it.
+
+The file serves a captured fixture over a socket (`SH528`), which is the ingredient a
+flake usually has: a port, a server that must be up before the first request, and a
+teardown that must not outlive the run. SH698 fixed a conformance teardown of exactly
+that kind — naming the server, the deadline and the open sockets instead of hanging —
+and this file has no equivalent.
+
+What is owed first is not a fix but evidence: a failure here has to say which assertion,
+on which trait, with the port and the server's state. Then the fix, if it is still
+reproducible. Filed now because the sighting is the perishable part.
+
+### XXVI.5 The warning that is the whole bound (SH779)
+
+SH772 emits the captured stylesheet once per run of kept markup on a page that has no
+`content`, and bounded it by argument rather than by mechanism: the typical count is
+one, because such a page's accepted blocks start at the top and a capture's accepted
+blocks are contiguous. The bound is honest and it is not enforced — so the promise
+beside it carries the risk:
+
+> `describeConversion` names any page it writes in that shape, because a megabyte repeated
+> is a payload regression and a reviewer should hear it from the command that caused it.
+
+That line has no test. Every other claim SH772 makes is asserted — the head's two arms,
+the guard that keeps the sheet off an authorable page, the count of copies on the
+fixture — and this one, which is what turns an unbounded worst case into a reviewed one,
+is a `lines.push` nothing exercises.
+
+The failure mode is quiet in the way this project keeps finding: the conversion still
+runs, the pages are still correct, and the only thing missing is the sentence that would
+have made somebody move an acceptance. A reviewer reading a report with no warning
+concludes there is nothing to hear.
+
+Cheap to close: `buildConversion` already produces the shape in a unit fixture — a page
+whose `<body>` begins with an accepted block and which keeps two runs — and
+`describeConversion` is a pure function over its output.
