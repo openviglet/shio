@@ -13,7 +13,6 @@
 
 - ⏳ **SH778** (deps: —) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the same suite was green, so the evidence is a line in a log. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
-- 📋 **SH783** (deps: —) **A running instance makes clean fail with a delete error that reads as a broken build, not a held file** — Four times in one session: the jar is open, Maven says Failed to delete, and the run has to be repeated after somebody remembers what holds it. → §XXVI.9
 - 📋 **SH784** (deps: —) **Work blocked on something no commit can produce has no spelling but in-flight, so pick offers it every time** — roadkeep refuses to set a line aside because no deferred store is declared, leaving retire — which is terminal and deletes the rationale — as the only alternative. → §XXVI.10
 
 ## Priority

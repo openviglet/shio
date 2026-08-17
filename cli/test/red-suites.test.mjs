@@ -371,6 +371,40 @@ test("SH579: the rules fire — every one of them, on an entry built to break it
   fires({ task: "SH902" }, "SH902 is shipped");
 });
 
+/**
+ * SH783 — the trap that only existed in somebody's notes.
+ *
+ * <p>A running instance holds `target/viglet-shio.jar`, so `clean` fails with a delete error that
+ * reads as a broken build. Hit four times in one session, and the reflex it teaches is to re-run —
+ * which usually works, because the instance has since been stopped for an unrelated reason, so the
+ * lesson never lands and the next person pays again.</p>
+ *
+ * <p>The preflight that would have named the holder was refused on proportionality: nothing in this
+ * repository starts the instance, and the build declares no `exec` or `antrun` plugin, so the check
+ * would mean a plugin execution on every build for every developer and for CI, where no instance
+ * ever runs. What is left is to put the fact where a session already looks — which is SH282's
+ * precedent, and is only worth anything if it stays there.</p>
+ *
+ * <p>Asserting that a document says a thing is thin on its own and is the right weight here: the
+ * defect is a person reading an error and concluding the wrong thing, so the fix IS the sentence,
+ * and the failure mode is somebody tidying it away. `field-reachability.test.mjs` holds a rule the
+ * same way — see SH638 — for the same reason.</p>
+ */
+test("SH783: the build doc says a locked jar is an instance, and that a failed clean ran nothing", async () => {
+  const build = await readFile(BUILD_DOC, "utf8");
+
+  assert.match(build, /Failed to delete/,
+    "SH783: the message a reader actually meets has to be in the file, or they cannot find the "
+      + "explanation by searching for what they are looking at");
+  assert.match(build, /file lock, not a build problem/,
+    "and the sentence that redirects them: Maven says the project could not be cleaned, and the "
+      + "cause is a `java -jar` instance holding the jar open");
+  assert.match(build, /did not run at all/,
+    "SH783's expensive half: a clean that fails means the build never ran, so a green `Tests run:` "
+      + "line above the error describes the PREVIOUS tree. That cost a false read in the session "
+      + "that filed this.");
+});
+
 test("SH579: the ledger and the doc that explains it can each find the other", async () => {
   const { note, doc } = JSON.parse(await readFile(LEDGER, "utf8"));
   const build = await readFile(BUILD_DOC, "utf8");

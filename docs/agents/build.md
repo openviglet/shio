@@ -287,6 +287,42 @@ job builds the jar from the commit under test and boots it, which is the only wa
 can run at all. That is the JS half of what SH241/SH284's rationale asked for; the Maven build's
 own push-versus-pull-request question is still SH241's.
 
+## A running instance makes `clean` fail, and it does not look like that (SH783)
+
+```
+Failed to clean project: Failed to delete .../shio-app/target/viglet-shio.jar
+```
+
+**That is a file lock, not a build problem.** A `java -jar` instance — the one the conformance
+sequence needs, on 2710 or 2711 — holds `target/viglet-shio.jar` open, and Windows will not let
+Maven delete it. Nothing in the output says so.
+
+Hit four times in one session. What it looks like is a broken build, and the reflex it teaches is to
+re-run — which usually works, because by then the instance has been stopped for an unrelated reason,
+so the lesson never lands and the next person pays again.
+
+**Stop the instance before any `./mvnw … clean`.** That is the whole rule.
+
+### The second half, which is the expensive one
+
+**A `clean` that fails means the build did not run at all.** Everything above it in the log is the
+*previous* run — so a `Tests run: … Failures: 0` line scrolled past on the way to the error is a
+green summary of a tree that is no longer there. Read `BUILD FAILURE` before reading any count. This
+cost a false read in the same session that filed it.
+
+### Why there is no preflight, which was the first idea
+
+A `pre-clean` check that named the holder was the obvious repair and is refused on proportionality:
+nothing in this repository starts the instance — it is always a hand-typed `java -jar` — and the
+build declares no `exec` or `antrun` plugin, so the check would mean adding a plugin execution to
+**every** build, for every developer and for CI, where no instance ever runs. A cross-cutting build
+change to improve one local error message is a worse trade than a sentence in the file a session
+already reads before building.
+
+So this is written here rather than kept in somebody's notes, which is the same reason SH282's
+*"Nothing to compile"* trap is in `agents.md`: a fact that decides what you do next is worth nothing
+if it is only in the memory of whoever met it last.
+
 ## Build & Deploy
 
 ### JavaScript workspace (pnpm)

@@ -713,33 +713,6 @@ because the `red-suites.json` entry has to name a task that removes it, and an e
 whose owner has shipped is the state SH594 fails on. Delete that entry in the same
 commit as the fix.
 
-### XXVI.9 The lock that reads as a build failure (SH783)
-
-Hit four times in one session, always the same way:
-
-    Failed to clean project: Failed to delete
-    D:\...\shio-app\target\viglet-shio.jar
-
-Every time the cause was a `java -jar` instance started for a conformance run and still
-holding the file. Nothing in the output says so. What it looks like is a broken build,
-and the reflex it teaches is to re-run — which works, because by then the instance has
-usually been stopped for an unrelated reason, so the lesson never lands.
-
-It is already written down, in the two memories a session may or may not have loaded,
-and that is exactly the shape this project keeps converting into an instrument: a fact
-carried in somebody's head, costing a wasted run each time it is not.
-
-Decidable from inside the repository. On Windows the holder is findable, but the cheaper
-and more portable check is the question the developer actually needs answered: **is
-anything listening on the ports this project's instances use** (2710 for the dev
-instance, 2711 for the clean one the conformance sequence starts). A preflight that
-fails with *"an instance is running on 2711 and is holding target/viglet-shio.jar — stop
-it before clean"* turns a re-run into a sentence.
-
-Worth pairing with the other half of the same trap, which cost a false red earlier in
-the same session: `clean` failing means the *build did not run*, so a green summary
-above it describes the previous tree.
-
 ### XXVI.10 The pause this project cannot spell (SH784)
 
 Found by trying it:
