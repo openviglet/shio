@@ -11,8 +11,7 @@
 
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
-- ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
-- 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
+- 📋 **SH780** (deps: SH778 ✅) **libuv aborts the fixture-traits process on a handle already closing, and an abort skips the exit instrument** — The race is `t.after(() => source.close())` against `--test-force-exit`; the cure is a teardown that cannot double-close, and it is now reproducible on demand. → §XXVI.6
 - 📋 **SH803** (deps: —) **Two gate runs at once corrupt the shared log and stamp a red that never happened** — A second `pnpm java` while one was running gave 3 errors over 1092 tests and an unreadable log; alone it was 1894 green, and the stamp had recorded the collision as the gate's colour. → §XXVI.28
 - 📋 **SH804** (deps: —) **A control character in source is invisible to every reader, and one sat inside a regex reading as an escape** — An edit wrote a literal backspace where `\b` was meant; the assertion failed with actual and expected rendering identically, and nothing looks for such a byte. → §XXVI.29
 

@@ -662,57 +662,32 @@ The block exists because these were found *while* doing the work and would other
 evaporate with the commit that revealed them — the cheapest findings the project ever
 gets, and the ones with no reporter but the person who tripped over them.
 
-### XXVI.4 The one red nobody could read (SH778)
+### XXVI.6 The cure, now that the flake can be summoned (SH780)
 
-Seen once, on 2026-08-17, running `node --test "test/*.test.mjs"`:
+SH778 waited eighty runs for a third sighting and then stopped waiting. Forty full runs
+at `--test-concurrency=16` produced one on the **first**; a second loop at the same
+concurrency reproduced it on its first too; thirty at `24` produced none. The cost of
+provoking it was four minutes.
 
-    ✖ test\fixture-traits.test.mjs (859.7731ms)
-      'test failed'
+The kept run names the cause in a line that is not a test result at all:
 
-Run alone, the same file passes nine of nine in 162 ms. The next full run was green too.
-So there is one sighting, no named assertion, and a suite that has been green either
-side of it.
+    Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94
 
-This is the shape SH354 spent a task on from the other end — a red that leaves no record
-of *which* test failed — and it is worth a task rather than a shrug for the reason that
-one names: it has happened before, *"one run in six, never reproduced, undiagnosable"*,
-and a flake nobody writes down is re-discovered from scratch every time somebody sees
-it.
+libuv aborts the process — a native assertion inside Node's event loop (libuv 1.52.1) on
+a Windows async handle closed while already closing. The file's `t.after(() =>
+source.close())` tears the captured fixture server down while `--test-force-exit` forces
+the process out, and the two race.
 
-The file serves a captured fixture over a socket (`SH528`), which is the ingredient a
-flake usually has: a port, a server that must be up before the first request, and a
-teardown that must not outlive the run. SH698 fixed a conformance teardown of exactly
-that kind — naming the server, the deadline and the open sockets instead of hanging —
-and this file has no equivalent.
+That also settles why the third instrument never fired in some hundred and twenty runs,
+which had started to read as evidence against the exit hypothesis: **an abort does not
+run `process.on("exit")` handlers**. It was unreachable by construction on the one path
+it was written for, so its silence said nothing. An instrument that cannot fire reports
+zero for the same reason a scan matching nothing does.
 
-What is owed first is not a fix but evidence: a failure here has to say which assertion,
-on which trait, with the port and the server's state. Then the fix, if it is still
-reproducible. Filed now because the sighting is the perishable part.
-
-### XXVI.6 The cure that waits on a sighting (SH780)
-
-SH778 shipped the evidence half and stopped there on purpose. What it established, by
-measurement rather than guessing, is what the failure is **not**: not an assertion (the
-file fails with both its tests green), not an unhandled rejection (SH698's handlers
-print first and printed nothing), and not the teardown deadline (`closeFixture` rejects
-naming the server and its sockets; that message is absent and the test owning it was
-green).
-
-What is left is the file's own **process exit**. `node --test` marks a file failed when
-its process exits non-zero whatever its tests said, and `--test-force-exit` is in the
-command the gate runs. SH778's instrument prints that code and the open handles.
-
-**It has not fired, and the negative result is a fact rather than a wait.** Two
-sightings in roughly fifteen runs before the instrument landed; **around fifty since
-without one**. At the earlier rate that run of clean results is far under one per cent
-likely, so the rate changed rather than the hunt being unlucky. Nothing was aimed at it,
-so any fix was incidental.
-
-Three possibilities remain and nothing chooses between them: the defect is gone, its
-trigger left with some other change, or the rate is far below two in fifteen. The
-`red-suites.json` entry is no longer evidence either way — **SH789 deleted it**, on the
-grounds that an exception licenses a red and there was none. A third sighting now meets
-SH579's rule from the top, with a diagnosis attached.
+What is owed now is the cure, and it is ordinary: a teardown that cannot double-close —
+close once, idempotently, and let the forced exit find nothing left to close. What is
+owed beside it is the reproduction recipe kept somewhere runnable, because the next
+flake of this shape will be diagnosed by summoning it rather than by waiting for it.
 
 ### XXVI.28 A false red is worse than an absent stamp (SH803)
 

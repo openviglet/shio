@@ -172,12 +172,37 @@ instrument: `process.on("exit")` prints the code and the active handles when it 
 not change the outcome; it makes the next sighting say which cause it was.
 
 **It did not reproduce in twelve runs after that** — six ordinary, six at `--test-concurrency=32` —
-which is why the instrument shipped and the cure did not. SH698 saw the same: eighteen consecutive
-runs, no reproduction. A flake that will not appear on demand is diagnosed by what the failing run
-keeps, and that is now three things instead of one.
+which is why the instrument shipped and the cure did not, and it went on not reproducing for about
+**eighty** more.
 
-Until it names itself it is a declared entry in `red-suites.json` against SH778, which is the honest
-state: re-running until it clears is what SH770 calls being right by luck.
+**Then it was provoked rather than waited for, and the fourth candidate was wrong too.** Forty full
+runs at `--test-concurrency=16` produced a sighting on the first, and a second loop at the same
+concurrency reproduced it again on its first run; thirty at `24` produced none. Waiting had cost
+eighty runs and a `red-suites.json` entry. Repetition at the right concurrency cost four minutes.
+
+The kept run names it in one line nobody had seen, because it is not a test failure at all:
+
+```
+✔ SH528: the fixture exhibits every trait that broke a real replica (128.0571ms)
+✔ SH528: the two fixtures stay in step (9.5499ms)
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94
+✖ test\fixture-traits.test.mjs (571.5735ms)
+```
+
+**libuv aborts the process.** Not an assertion, not a rejection, not the deadline — a native
+assertion inside Node's own event loop (libuv 1.52.1, Node 26.3.1) on a Windows async handle being
+closed while already closing. The file's `t.after(() => source.close())` tears down the captured
+fixture server while `--test-force-exit` is forcing the process down, and the two races.
+
+That also explains **why the third instrument never fired in some hundred and twenty runs**, which
+had begun to read as evidence the exit was not the cause: an abort does not run `process.on("exit")`
+handlers. The instrument was unreachable by construction on the one path it was written for. A
+negative result from an instrument that cannot fire is not a negative result — it is the same
+zero-reporting failure this repository warns every scan about, arriving through the runtime.
+
+**The lesson is the method, not the handle.** SH698 concluded that a flake which will not appear on
+demand is diagnosed by what a failing run keeps. True, and incomplete: *make it appear*. Both
+sightings came from the first run of a loop at a concurrency the ordinary gate does not use.
 
 ### A stamp taken against another commit is not a colour (SH770)
 
