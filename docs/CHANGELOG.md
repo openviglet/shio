@@ -1445,3 +1445,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH782** — A lint reads every template-built regex and refuses a backslash the string eats; it opened at two rather than nought, one of them a negative assertion passing for the wrong reason.
 - **SH783** — The build doc says a locked jar is an instance and that a failed clean ran nothing, asserted so it stays; the preflight was refused because no seam for one exists without a plugin on every build.
 - 🗑 **SH784** — abandoned: The premise was false: pick already skips work blocked outside the backlog, and a dep naming it — amend SH778 --deps "a further sighting" — moved that task to outside without a deferred store, which would have taken the line off the roadmap the ledger readers require it to be on.
+- **SH785** — The reader matches the declaration's bracket instead of searching for one, reads both debt lists, and prints 120 — the instrument's own figure; a repeated entry is now a failure.

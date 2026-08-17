@@ -1122,6 +1122,32 @@ excuses still exist?** It shares `cli/test/support/floors.mjs` with the lint rat
 re-grepping, which is SH583's rule — two implementations of "what is a floor" would agree only by
 accident.
 
+### A ledger's slice matches its bracket, and the same entry twice is how you find out (SH785)
+
+Three of the seven rows above do not parse a JSON file — they slice a declaration out of a **source**
+file, from `const X = [` to the next `];`. `DEBT` closes with `].sort(byId);`. So that search ran
+three hundred lines past the end, swallowed `REVEALED` whole, and the row printed **144** for a list
+of **120** — while `assertion-debt.test.mjs`, forty lines earlier in the same log, printed 120.
+Two numbers for one list, in one run, for three blocks.
+
+Nothing failed, and that is the shape worth remembering. The guard beside the slice —
+`assertion-debt no longer declares DEBT as an array` — asserted `to > from`, and a scan looking for
+*a* terminator always finds one: every source file below has a `];` somewhere. An overrun on a debt
+ledger also fails in the safe-looking direction, reporting **more** debt than exists.
+
+Two changes. `enclosedBy(text, "const DEBT = [")` **matches** the opening bracket instead of
+searching for a string that closes it, and all three rows use it. And the assertion that would have
+caught it is not about brackets at all: **no ledger may report the same entry twice**. A ledger holds
+each thing once, so a duplicate can only be the reader's own overrun — whatever it swallowed past the
+end is another list of the same kind of thing. Twenty-four of the 144 were an id already counted, and
+the pre-fix scan reproduces all twenty-four.
+
+The row also reads **both** of assertion-debt's declarations now. SH642 split one number into two
+named lists — work with nothing behind it, and work whose test exists without naming the id — and the
+assertion that holds the debt is over `[...DEBT, ...REVEALED_IDS]`. Reading only `DEBT` answers
+SH594's question with two thirds of its subject missing, which is the same defect as reading too much
+and merely looks more careful.
+
 ### A JS scan over this repository declares what it reads (SH740)
 
 SH613 gave the Java suites `@ShSourceScan` + one shared `ShSourceText`, because a textual guard

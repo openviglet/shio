@@ -55,6 +55,36 @@ import { test } from "node:test";
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
 /**
+ * The text a declaration encloses, found by matching its bracket rather than by searching for one.
+ *
+ * <p>SH785 — three rows here sliced a declaration by hand, from {@code const X = [} to the next
+ * {@code "];"}. {@code DEBT} closes with {@code ].sort(byId);}, so that search ran three hundred
+ * lines past the end, swallowed the next declaration whole, and reported 144 entries for a list of
+ * 120. The guard beside it passed, because a scan that looks for <em>a</em> terminator always finds
+ * one somewhere later in the file — which is what makes this a class rather than an instance.</p>
+ *
+ * @param text the file
+ * @param open the declaration's opening text, ending in its bracket — e.g. {@code const DEBT = [}
+ * @returns what the bracket encloses, exclusive of the brackets themselves
+ */
+function enclosedBy(text, open) {
+  const from = text.indexOf(open);
+  assert.ok(from >= 0, `the declaration \`${open}\` is no longer there to read`);
+  const bracket = open.at(-1);
+  const close = { "[": "]", "(": ")", "{": "}" }[bracket];
+  assert.ok(close, `\`${open}\` does not end in a bracket, so nothing can be matched to it`);
+  let depth = 0;
+  for (let at = from + open.length - 1; at < text.length; at += 1) {
+    if (text[at] === bracket) depth += 1;
+    else if (text[at] === close) {
+      depth -= 1;
+      if (depth === 0) return text.slice(from + open.length, at);
+    }
+  }
+  assert.fail(`\`${open}\` is never closed — the declaration this row reads is malformed`);
+}
+
+/**
  * The four, each with how to read it and what an entry's *owner* is.
  *
  * <p>A table rather than four bespoke readers, because the point of this file is that the four are
@@ -92,15 +122,21 @@ const LEDGERS = [
     holds: "shipped ids carrying no assertion",
     since: "SH527",
     async entries(text) {
-      // Its own declaration, read the way that file reads itself: the array between the markers.
-      const from = text.indexOf("const DEBT = [");
-      const to = text.indexOf("];", from);
-      assert.ok(from >= 0 && to > from, "assertion-debt no longer declares DEBT as an array");
+      // Its own declaration, read the way that file reads itself: the arrays between the markers.
+      // SH785 — matched, not searched for: `DEBT` closes `].sort(byId);` and the old search for
+      // `];` ran on to the next one three hundred lines later.
+      //
+      // Both declarations, because both are carried. SH642 split one number into two lists — work
+      // with nothing standing behind it, and work whose test exists without naming the id — and the
+      // assertion that holds the debt is over `[...DEBT, ...REVEALED_IDS]`. Reading one of them
+      // would answer this file's question with two thirds of its subject missing, which is the same
+      // defect as reading too much and only looks more careful.
+      const ids = ["const DEBT = [", "const REVEALED = {"]
+        .flatMap((open) => [...enclosedBy(text, open).matchAll(/"(SH\d+)"/g)].map(([, id]) => id));
       // Every entry IS its own owner here — the debt is "this shipped id has no assertion" — so the
       // shipped check below would fire on all of them. That is the one ledger where a shipped owner
       // is the normal state rather than the defect, which is why it declares `ownerIsSubject`.
-      return [...text.slice(from, to).matchAll(/"(SH\d+)"/g)]
-        .map(([, id]) => ({ owner: id, what: `${id} carries no assertion` }));
+      return ids.map((id) => ({ owner: id, what: `${id} carries no assertion` }));
     },
     ownerIsSubject: true,
   },
@@ -128,10 +164,9 @@ const LEDGERS = [
     holds: "absolute floors over a shrinking corpus, each with its reason",
     since: "SH672",
     async entries(text) {
-      const from = text.indexOf("const TOLERATED = new Map([");
-      const to = text.indexOf("]);", from);
-      assert.ok(from >= 0 && to > from, "floor-kind no longer declares TOLERATED as a Map");
-      return [...text.slice(from, to).matchAll(/\[\s*"([^"]+)"/g)]
+      // SH785 — matched rather than searched for, like the DEBT row above and for its reason.
+      const slice = enclosedBy(text, "const TOLERATED = new Map([");
+      return [...slice.matchAll(/\[\s*"([^"]+)"/g)]
         .map(([, key]) => ({ owner: null, what: key, unsigned: false }));
     },
     // A floor key is the subject and no task owns it, so "owned by a shipped task" and "names an
@@ -147,11 +182,10 @@ const LEDGERS = [
     holds: "response budgets accepted with no headroom, and why each cannot be trimmed",
     since: "SH743",
     async entries(text) {
-      const from = text.indexOf("AT_THE_WALL = Map.of(");
-      const to = text.indexOf(");", from);
-      assert.ok(from >= 0 && to > from, "the response budget test no longer declares AT_THE_WALL");
+      // SH785 — matched rather than searched for, like the two rows above and for their reason.
+      const slice = enclosedBy(text, "AT_THE_WALL = Map.of(");
       // The keys are the budget names, each on its own line before its reason.
-      return [...text.slice(from, to).matchAll(/^\s{12}"([\w.]+)",$/gm)]
+      return [...slice.matchAll(/^\s{12}"([\w.]+)",$/gm)]
         .map(([, key]) => ({ owner: null, what: key, unsigned: false }));
     },
     // A budget name is the subject and no task owns it — the same declaration the TOLERATED and
@@ -242,6 +276,34 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
     ledgers.some((ledger) => ledger.entries.length > 0),
     "no ledger yielded an entry — a reader that parses nothing agrees with everything",
   );
+});
+
+/**
+ * SH785 — the assertion that would have caught the count this file printed for three blocks.
+ *
+ * <p>A row that slices a declaration out of a source file and overruns it does not fail: it reports
+ * a larger number, and a larger number on a debt ledger reads as debt. What it cannot avoid is
+ * reading the *same* entry twice, because whatever it swallowed past the end is another list of the
+ * same kind of thing. Twenty-four of the DEBT row's 144 were an id it had already counted.</p>
+ *
+ * <p>Asserted per ledger rather than over the total, so the failure names which reader overran.</p>
+ */
+test("SH785: no ledger reports the same entry twice, which is what an overrunning scan does", async () => {
+  for (const ledger of await readLedgers()) {
+    const seen = new Set();
+    const twice = ledger.entries.map((entry) => entry.what)
+      .filter((what) => seen.size === seen.add(what).size);
+    assert.deepEqual(
+      twice,
+      [],
+      `${ledger.name} yielded ${ledger.entries.length} entries and ${twice.length} of them repeat `
+        + "one it had already read.\nA ledger holds each thing once, so a duplicate is this reader's "
+        + "own fault: its slice of the declaration ran past the end and swallowed the next one. "
+        + "Read it with `enclosedBy`, which matches the bracket instead of searching for a string "
+        + "that closes it — a search for `];` finds the first one ANYWHERE below, and every source "
+        + "file has one.",
+    );
+  }
 });
 
 /**
