@@ -712,29 +712,3 @@ Three possibilities remain and nothing yet chooses between them: the defect is g
 trigger left with some other change, or the rate is far below two in fifteen. Do not
 read the `red-suites.json` entry as evidence the flake is live — check its date, and an
 entry that expires unfired is itself the answer.
-
-### XXVI.11 The matcher that replaced the overrun can under-run, and nothing would say so (SH786)
-
-SH785 replaced a scan that searched for `];` with `enclosedBy`, which matches the
-opening bracket. That is right about the failure it was built for and honest about only
-half the problem.
-
-`enclosedBy` walks characters and counts brackets. It does not know a string from a
-comment. Every declaration it reads today balances — the three rows are green — but the
-entries beside them are prose, and prose is where an unbalanced bracket lives: `// the ]
-case`, `"a key with ["`. One of those inside `DEBT` closes the slice early, the row
-reports fewer ids than are declared, and the ledger under-reports what this repository
-knowingly carries.
-
-What makes it worth an id is that the assertion SH785 shipped **cannot see it**. That
-assertion is *no ledger reports the same entry twice*, and it works because an overrun
-swallows a neighbouring list of the same kind of thing. A truncation swallows nothing.
-It yields a strict prefix of the right answer: no duplicate, no dangling owner, every
-existing check green, and a smaller number — which on a debt ledger is the direction
-nobody questions.
-
-Two candidate cures, and the measurement decides. Strip strings and comments first,
-which `cli/test/support/` already does for the SH740 scans and would be one reader
-rather than a second idea of what a comment is. Or assert each row's count against the
-declaration's own entry count. The second is cheaper and narrower; the first is the rule
-this repository already has.

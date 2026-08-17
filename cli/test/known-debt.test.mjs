@@ -48,9 +48,11 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
+import { masked } from "./support/source-text.mjs";
 
-// @scans prose reason: the governed ledgers are Markdown; the declared-debt entries this reads
-// back are prose by construction (SH740).
+// @scans both reason: the governed ledgers are Markdown and the declared-debt entries this reads
+// back are prose by construction — but three rows slice a declaration out of a *source* file, and
+// there the brackets in somebody's explanation are not the brackets being matched (SH740, SH786).
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -63,6 +65,13 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
  * 120. The guard beside it passed, because a scan that looks for <em>a</em> terminator always finds
  * one somewhere later in the file — which is what makes this a class rather than an instance.</p>
  *
+ * <p>SH786 — and it counts brackets on {@link masked}, not on the file. Every bracket in these
+ * declarations is either the structure being matched or a character in somebody's explanation of an
+ * entry, and only the first kind may move the depth. That is not a precaution: `AT_THE_WALL`'s
+ * reasons hold eleven pairs of parentheses inside Java strings, and the count came out right because
+ * all eleven happen to balance. The mask is the same length as the file, so an offset found in it
+ * addresses the original — which is the whole reason {@link code} could not be used here.</p>
+ *
  * @param text the file
  * @param open the declaration's opening text, ending in its bracket — e.g. {@code const DEBT = [}
  * @returns what the bracket encloses, exclusive of the brackets themselves
@@ -73,10 +82,11 @@ function enclosedBy(text, open) {
   const bracket = open.at(-1);
   const close = { "[": "]", "(": ")", "{": "}" }[bracket];
   assert.ok(close, `\`${open}\` does not end in a bracket, so nothing can be matched to it`);
+  const structure = masked(text);
   let depth = 0;
-  for (let at = from + open.length - 1; at < text.length; at += 1) {
-    if (text[at] === bracket) depth += 1;
-    else if (text[at] === close) {
+  for (let at = from + open.length - 1; at < structure.length; at += 1) {
+    if (structure[at] === bracket) depth += 1;
+    else if (structure[at] === close) {
       depth -= 1;
       if (depth === 0) return text.slice(from + open.length, at);
     }
@@ -288,6 +298,66 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
  *
  * <p>Asserted per ledger rather than over the total, so the failure names which reader overran.</p>
  */
+/**
+ * SH786 — the assertion for the half SH785 could not see.
+ *
+ * <p>SH785 caught the scan that ran <em>past</em> the end, and it caught it by noticing duplicates:
+ * an overrun swallows a neighbouring list of the same kind of thing. A scan that stops <em>short</em>
+ * swallows nothing. It returns a strict prefix — no duplicate, no dangling owner, every other check
+ * green, and a smaller number, which on a debt ledger is the direction nobody questions.</p>
+ *
+ * <p>So this asserts the property directly, on a declaration built to break it, and then asserts the
+ * mask is load-bearing on the real files rather than decorative.</p>
+ */
+test("SH786: a bracket in a comment or a string does not end a declaration early", () => {
+  // The ids are in the SH9xxx range nothing ships into, which assertion-debt's own fixtures use for
+  // the same reason: a real id spelled inside an assertion message IS a payment to that reader, and
+  // a fixture written with `"SH3"` credits SH3 and drops it off the debt list. Which it did.
+  const declaration = [
+    "const DEBT = [",
+    '  "SH9201",',
+    "  // the ] case: a reason may close a bracket it never opened",
+    '  "SH9202",  // and ] again, after code on the same line',
+    '  "SH9203", // a key like "with a ] inside" is a string, not structure',
+    "].sort(byId);",
+    "",
+    "const NEXT = [",
+    '  "SH9299",',
+    "];",
+  ].join("\n");
+
+  const ids = [...enclosedBy(declaration, "const DEBT = [").matchAll(/"(SH\d+)"/g)]
+    .map(([, id]) => id);
+  assert.deepEqual(
+    ids,
+    ["SH9201", "SH9202", "SH9203"],
+    "three unbalanced `]` characters sit in this declaration's prose, and none of them is its end.\n"
+      + "Stopping short is the bracket count reading somebody's explanation as structure, and the "
+      + "ledger then silently under-reports. Running past — an `SH9299` here — is the SH785 overrun.",
+  );
+});
+
+test("SH786: the mask is load-bearing on the real declarations, not a precaution", async () => {
+  // Not vacuous, the way every instrument in this repository is required to be: if the files this
+  // reads had no bracket inside any string or comment, the test above would be asserting a property
+  // of a fixture and nothing else. The measurement that justified the fix is re-taken here, so the
+  // day it stops being true this says so instead of quietly guarding nothing.
+  const budgets = await readFile(
+    join(ROOT, "shio-app/src/test/java/com/viglet/shio/api/agent/benchmark/ShAgentResponseBudgetTest.java"),
+    "utf8",
+  );
+  const from = budgets.indexOf("AT_THE_WALL = Map.of(");
+  const span = budgets.slice(from, budgets.indexOf("\n    );", from));
+  const hidden = [...span].filter((c) => c === "(" || c === ")").length
+    - [...masked(span)].filter((c) => c === "(" || c === ")").length;
+  assert.ok(
+    hidden > 0,
+    `AT_THE_WALL's prose holds no bracket the mask has to hide (${hidden}), so this row's scan would `
+      + "read the same either way and SH786 is guarding nothing here. Either the reasons changed or "
+      + "the mask stopped working — and the second is the one that matters.",
+  );
+});
+
 test("SH785: no ledger reports the same entry twice, which is what an overrunning scan does", async () => {
   for (const ledger of await readLedgers()) {
     const seen = new Set();

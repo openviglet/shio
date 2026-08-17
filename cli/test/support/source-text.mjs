@@ -58,6 +58,49 @@ export function code(body) {
   return body.split("\n").filter((line) => !isProse(line)).join("\n");
 }
 
+/**
+ * Source with comment lines and quoted spans blanked out, **same length as the input**.
+ *
+ * <p>SH786 — the third stripper, and the one a reader needs when it is looking for a <i>position</i>
+ * rather than for text. {@link code} deletes whole lines, so an offset into its result means nothing
+ * in the original; a scan that must slice the file at what it found cannot use it.</p>
+ *
+ * <p>The measured need: `known-debt.test.mjs` finds where a declaration ends by matching its
+ * bracket, and the prose inside those declarations is full of brackets. `AT_THE_WALL`'s reasons
+ * carry **eleven** pairs of parentheses inside Java strings. They balance, so the scan lands on the
+ * right character — by luck, eleven times, and one `(` in a new reason moves it.</p>
+ *
+ * <p>Per line and stateless, which is SH630's rule and the reason this is not a tokenizer: a regex
+ * literal containing a quote made a proper scanner misread every line below it. So an escaped quote
+ * inside a string ends the span early here, and that is the conservative direction — a *shorter*
+ * blanked span can only leave a real bracket visible, never hide one.</p>
+ *
+ * <h2>It blanks a trailing comment where {@link code} deliberately keeps one</h2>
+ *
+ * <p>That is not a disagreement about what a comment is, which SH740 exists to prevent. It is the
+ * two functions having opposite conservative directions, because they are asked different
+ * questions. {@link code} looks for a <b>claim</b>, so keeping a trailing comment errs towards
+ * crediting a payment rather than inventing a debt. This one looks for <b>structure</b>, and a
+ * bracket in a trailing comment is not structure — counting it truncates the span and under-reports
+ * whatever the caller was measuring. Blanking the strings first is what makes it safe: a `//` inside
+ * a string is already gone by the time this looks for one.</p>
+ *
+ * <p>Measured at 0 occurrences across the four declarations that use this today. It is here because
+ * it is what the function <i>means</i>, not because something is currently broken by its absence.</p>
+ */
+export function masked(body) {
+  const blank = (span) => " ".repeat(span.length);
+  return body
+    .split("\n")
+    .map((line) => {
+      if (isProse(line)) return blank(line);
+      const noStrings = line.replace(/"[^"\n]*"/g, blank);
+      const comment = noStrings.indexOf("//");
+      return comment < 0 ? noStrings : noStrings.slice(0, comment) + blank(noStrings.slice(comment));
+    })
+    .join("\n");
+}
+
 /** A Markdown fence, at the start of a line — three backticks or three tildes. */
 const FENCE = /^\s*(```|~~~)/;
 

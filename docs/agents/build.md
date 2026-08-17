@@ -1148,6 +1148,34 @@ assertion that holds the debt is over `[...DEBT, ...REVEALED_IDS]`. Reading only
 SH594's question with two thirds of its subject missing, which is the same defect as reading too much
 and merely looks more careful.
 
+### The other half of a bad slice is the one that stops short (SH786)
+
+SH785 fixed a scan that ran past a declaration's end. The matcher that replaced it counts brackets,
+and it counted them on the raw file — so every bracket in somebody's *explanation* of an entry moved
+the depth too. **The measurement is the finding here**: `AT_THE_WALL`'s reasons carry **eleven pairs
+of parentheses inside Java strings**, and the row's count was right because all eleven happen to
+balance. Eleven-for-eleven, and one `(` in a new reason moves the end of the declaration.
+
+`enclosedBy` now counts on `masked(text)` — comment lines and quoted spans blanked, same length, so
+an offset found in the mask addresses the original. `code()` could not be used for this: it deletes
+lines, and an offset into its result means nothing in the file.
+
+**`masked()` blanks a trailing comment where `code()` deliberately keeps one**, which is not a second
+opinion about what a comment is — SH740 exists to prevent that — but the two having opposite
+conservative directions because they are asked different questions. `code()` looks for a **claim**,
+so keeping a trailing comment errs towards crediting a payment rather than inventing a debt.
+`masked()` looks for **structure**, and a bracket in a trailing comment is not structure. Blanking
+the strings first is what makes it safe: a `//` inside a string is already gone.
+
+The assertion carrying the id is a declaration built to break it — three unbalanced `]` in prose,
+and a second list after it so a stop-short and a run-past are distinguishable in one check. Unmasked
+it yields one id; masked, three. A second test re-takes the eleven-parenthesis measurement on the
+real file, so the day the mask stops being load-bearing it says so rather than guarding nothing.
+
+**Write fixture ids in the `SH9xxx` range.** This one first used `"SH3"`, and `assertion-debt` read
+that as an assertion carrying SH3, credited it, and went red saying somebody had paid a debt off. A
+real id inside an assertion message *is* a payment to that reader.
+
 ### A JS scan over this repository declares what it reads (SH740)
 
 SH613 gave the Java suites `@ShSourceScan` + one shared `ShSourceText`, because a textual guard
@@ -1159,9 +1187,10 @@ SH322, then twice in one session while fixing that.
 lint. A scan declares `// @scans code`, `prose` or `both`; `code` is held to using the shared
 stripper, and `prose`/`both` need a written `reason:` because an accident cannot explain itself.
 
-Two strippers, not one, and that is the part that is **not** a port of the Java rule. `code()`
+Three strippers, not one, and that is the part that is **not** a port of the Java rule. `code()`
 drops whole-line comments, line-oriented and stateless so a regex literal cannot derail it
-(SH630). `unquoted()` is for Markdown, where prose is the whole document and "strip the comments"
+(SH630). `masked()` blanks the same spans **in place** — same length as the input — for a reader
+that needs a *position* rather than text (SH786, below). `unquoted()` is for Markdown, where prose is the whole document and "strip the comments"
 means nothing: it drops fenced blocks, inline code spans and quoted phrases, because when a
 document is asked *do you claim X*, a phrase it has put in quotation marks is a quotation. That is
 what lets the sweep checklist quote the two false sentences it replaced instead of paraphrasing
