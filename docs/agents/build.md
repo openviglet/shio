@@ -204,6 +204,43 @@ zero-reporting failure this repository warns every scan about, arriving through 
 demand is diagnosed by what a failing run keeps. True, and incomplete: *make it appear*. Both
 sightings came from the first run of a loop at a concurrency the ordinary gate does not use.
 
+**The cure was the flag, and two better-sounding ones were measured and rejected first (SH780).**
+
+`closeIdleConnections()` on the fixture server — the keep-alive sockets `fetch` leaves behind — read
+as the obvious candidate and **did not fix it**: the abort came back on run 20 of the next loop.
+Reaching one step further to `closeAllConnections()` turned SH698's own deadline test red, because
+that test *holds* a socket on purpose to prove the deadline fires. Destroying it made the instrument
+unreachable — this defect's own shape, met a second time inside its fix.
+
+So the measurement asked whether the other half of the race — `--test-force-exit` — is needed at all.
+**The suite exits on its own**, and without the flag the abort does not reproduce:
+
+| | `pnpm test`, wall | abort at `--test-concurrency=16` |
+|---|---|---|
+| with `--test-force-exit` | **15.5 s** | ~3 sightings in ~160 runs |
+| without it | **28.1 s** | none in 80 |
+
+**The flag stays, and that is a trade rather than a preference.** Dropping it costs **12.6 seconds
+on every run of the gate that runs most often** — an 81% increase — to remove a failure whose real
+cost has just fallen through the floor: it is diagnosed. A sighting used to mean an unreadable red
+and two tasks; it now means recognising the `UV_HANDLE_CLOSING` line above. Twelve seconds a run,
+forever, is the more expensive of the two.
+
+What the flag is actually buying is **twelve seconds of loop drain that nobody has explained** — that
+is the thing worth removing, and then the flag can go with no cost at all.
+
+Two candidates were measured and rejected on the way, both of which sound better than the answer.
+`closeIdleConnections()` on the fixture server — the keep-alive sockets `fetch` leaves — **did not
+fix it**: the abort came back on run 20 of the next loop. Reaching one step further to
+`closeAllConnections()` turned SH698's own deadline test red, because that test *holds* a socket on
+purpose to prove the deadline fires; destroying it made the instrument unreachable, which is this
+defect's own shape met a second time inside its fix.
+
+`closeFixture` is idempotent regardless (SH780): the second call joins the first rather than handing
+libuv a handle that is already closing. That is **not** what removes the flake — the flag is still
+forcing the exit — but closing twice is a thing a teardown should survive, and the old behaviour
+answered the second caller with `ERR_SERVER_NOT_RUNNING`.
+
 ### A stamp taken against another commit is not a colour (SH770)
 
 The comparison above is between a **claim** and a **measurement**, and nothing asked whether the

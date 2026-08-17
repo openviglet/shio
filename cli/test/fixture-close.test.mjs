@@ -53,6 +53,31 @@ test("SH698: an ordinary teardown closes well inside the deadline", async () => 
     + "was right after all and a lingering socket is the cause.");
 });
 
+/**
+ * SH780 — closing twice is one close, and the second call joins the first.
+ *
+ * <p>The flake this belongs to was libuv aborting on an async handle already closing, under
+ * `--test-force-exit`. The flag is gone (measured: the suite exits on its own, and the abort does
+ * not reproduce without it), which removes the race — and closing twice is still a thing a teardown
+ * should survive rather than a thing nothing happens to do today. Two `close()` calls used to be two
+ * `server.close()` calls, and the second one's callback fires with `ERR_SERVER_NOT_RUNNING`.</p>
+ */
+test("SH780: closing a fixture twice resolves twice and closes once", async () => {
+  const source = await serveFixture();
+  await fetch(`${source.origin}/`);
+
+  const first = source.close();
+  const second = source.close();
+  assert.strictEqual(first, second,
+    "SH780: the second call joins the in-flight close rather than starting another — a second "
+      + "`server.close()` is what hands libuv a handle that is already closing");
+
+  await assert.doesNotReject(() => Promise.all([first, second]),
+    "and neither caller sees ERR_SERVER_NOT_RUNNING, which is what the second close used to answer");
+  await assert.doesNotReject(() => source.close(),
+    "including a third, after the first has settled: idempotent means idempotent");
+});
+
 test("SH698: a held socket makes the deadline fire, and the reason names the state", async (t) => {
   const { server, port } = await listening();
 

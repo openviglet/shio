@@ -227,6 +227,15 @@ export async function serveFixture() {
 export const CLOSE_DEADLINE_MS = 2000;
 
 /**
+ * Where a server's in-flight close is remembered, so a second call joins it (SH780).
+ *
+ * <p>A symbol rather than a module-level `WeakSet`, so the state travels with the server a caller
+ * holds — the conformance harness and the trait suite each make their own, and a shared registry
+ * would be one more thing to reason about at teardown, which is where this defect lives.</p>
+ */
+const CLOSING = Symbol("shio.fixture.closing");
+
+/**
  * Close the fixture, and say what happened if it will not (SH698).
  *
  * <h2>Why a deadline at all</h2>
@@ -249,7 +258,33 @@ export const CLOSE_DEADLINE_MS = 2000;
  * @returns resolves when closed; rejects, naming the state, when the deadline passes
  */
 export function closeFixture(server, deadlineMs = CLOSE_DEADLINE_MS) {
-  return new Promise((resolve, reject) => {
+  // SH780 — close once, and leave nothing for the forced exit to trip over.
+  //
+  // The failure this fixes is not a test failure at all. Under `--test-force-exit` the process was
+  // aborting inside libuv — `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), src\win\async.c`
+  // — after every assertion in the file had passed, so `node --test` marked the FILE red with no
+  // sub-test to name. An abort also skips `process.on("exit")`, which is why SH778's instrument
+  // stayed silent through some hundred and twenty runs and read as evidence against its own
+  // hypothesis.
+  //
+  // Two things left work pending for that exit to race. `fetch` keeps its connections alive, so
+  // `server.close()` waits on **idle keep-alive sockets** that no test is using any more; and
+  // nothing stopped this being called twice, so a second close could arrive on a handle already
+  // closing. Both are addressed here rather than by dropping `--test-force-exit`, which is what
+  // holds the gate to a bounded run.
+  if (server[CLOSING]) {
+    return server[CLOSING];
+  }
+  // **Idle only, never all.** `closeAllConnections()` also destroys a socket somebody is holding on
+  // purpose — and SH698's deadline test holds one, to prove the deadline fires and names the state.
+  // Reaching for it made that test go red, which is this defect's own shape a second time: an
+  // instrument that can no longer fire. An idle keep-alive socket is by definition one no test is
+  // using, so closing those removes the wait without removing the thing being waited for.
+  //
+  // Node 18.2+. Optional-called because this module is also imported by the conformance harness,
+  // and a fixture helper that throws on an older runtime would turn a teardown into the failure.
+  server.closeIdleConnections?.();
+  const closing = new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       // `getConnections` is the only thing that can say *why* it is still waiting, and it is worth
       // the extra tick: "2 sockets open" and "0 sockets open" point at completely different bugs.
@@ -272,6 +307,8 @@ export function closeFixture(server, deadlineMs = CLOSE_DEADLINE_MS) {
       else resolve();
     });
   });
+  server[CLOSING] = closing;
+  return closing;
 }
 
 function send(res, status, type, body) {
