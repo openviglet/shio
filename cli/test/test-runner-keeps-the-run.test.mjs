@@ -140,9 +140,11 @@ test("SH645: the runner is what `pnpm test` runs, over the packages the gate has
 
   assert.match(
     pkg.scripts.test,
-    /scripts\/test-with-log\.mjs/,
+    /scripts\/run-gate\.mjs js/,
     "SH645: `pnpm test` must route through the runner. Restoring the bare `pnpm --filter …` here "
-      + "is how the capture is lost again, and it would look like a simplification",
+      + "is how the capture is lost again, and it would look like a simplification.\n"
+      + "SH802 moved that runner from `test-with-log.mjs` to `run-gate.mjs`, which drives all four "
+      + "gates from one table — the rule is the routing, never the filename",
   );
   // The filter list is duplicated between the runner and `test:raw`, deliberately (changing which
   // packages are tested is a decision). Duplicated and unchecked is how the two drift, so the check

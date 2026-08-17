@@ -35,31 +35,18 @@ import { copyFileSync, createWriteStream, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { stamp } from "./gate-stamp.mjs";
+import { GATE_RUNS } from "./gates.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
- * Where the run is kept. One fixed name rather than a timestamp, for the reason the markup cache
- * takes the same decision: the interesting comparison is against the *previous* run, and a
- * directory that grows a file per invocation is one nobody prunes and everybody greps twice.
+ * The JS gate's arguments, kept here as a re-export because they moved (SH802).
+ *
+ * <p>They live in `gates.mjs` now, beside the other three gates' — the whole point of that table.
+ * This alias stays because `test-runner-keeps-the-run.test.mjs` drives the runner through them and
+ * asserts they match `test:raw`, and moving a test's import is churn that proves nothing.</p>
  */
-const LOG = join(ROOT, "shio-js-test.log");
-
-/**
- * The workspace filter, in one place. Duplicated from `package.json`'s `test` script when this
- * shipped, because that is the list the gate has always run — changing which packages are tested is
- * a decision, and doing it as a side effect of adding a log would be exactly the kind of quiet
- * scope change this repository keeps finding.
- */
-const PACKAGES = [
-  "@viglet/shio-client", "@viglet/shio-model", "@viglet/shio-sections",
-  "@viglet/create-shio-app", "@viglet/shio", "@viglet/shio-claude-plugin",
-  "shio-react", "shio-site",
-];
-
-export const PNPM_ARGS = ["--reporter", "append-only",
-  ...PACKAGES.flatMap((name) => ["--filter", name]), "run", "test"];
+export const PNPM_ARGS = GATE_RUNS.js.args;
 
 /**
  * Runs a command, keeping every byte, and resolves with the exit code it should be given.
@@ -159,12 +146,7 @@ export function keepIfRed(code, logPath, io = process) {
   }
 }
 
-// Only when run, never when read: the test imports this module for `runWithLog`, and a module that
-// launched the whole suite on import would make that test the thing it is testing.
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const code = await runWithLog("pnpm", PNPM_ARGS, LOG);
-  // SH755 — leave the outcome where the other gates can read it. After the log and the exit code,
-  // never instead of them: a stamp is bookkeeping and the two above are the contract.
-  stamp(ROOT, "js", code);
-  process.exit(code);
-}
+// SH802 — the main block moved to `run-gate.mjs`, which drives every gate from one table. What is
+// left here is the runner itself: the two properties this file exists for — the output is kept, and
+// the exit code is not swallowed — plus the red-run copy that keeps a failure from being erased by
+// the re-run somebody makes to see whether it reproduces (SH735).

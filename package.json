@@ -31,13 +31,13 @@
     "dev:site": "pnpm --filter shio-site run dev",
     "typecheck": "pnpm --filter @viglet/shio-client --filter @viglet/shio-react-sdk --filter @viglet/shio-sections --filter shio-site run typecheck",
     "lint": "pnpm -r run lint",
-    "test": "node scripts/test-with-log.mjs",
+    "test": "node scripts/run-gate.mjs js",
     "test:raw": "pnpm --filter @viglet/shio-client --filter @viglet/shio-model --filter @viglet/shio-sections --filter @viglet/create-shio-app --filter @viglet/shio --filter @viglet/shio-claude-plugin --filter shio-react --filter shio-site run test",
     "coverage:mirror": "node scripts/coverage-mirror.mjs",
-    "java": "node scripts/java-with-log.mjs",
-    "conformance": "node scripts/conformance-with-log.mjs",
+    "java": "node scripts/run-gate.mjs java",
+    "conformance": "node scripts/run-gate.mjs conformance",
     "conformance:raw": "pnpm --filter @viglet/shio run conformance",
-    "conformance:docs": "node scripts/conformance-docs-with-log.mjs",
+    "conformance:docs": "node scripts/run-gate.mjs docs",
     "clean": "rimraf \"**/node_modules\" \"**/dist\" \"**/build\""
   },
   "devDependencies": {

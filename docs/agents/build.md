@@ -51,9 +51,11 @@ chose to look.
 
 So the ledger's claim is now compared against what the gates actually said:
 
-- **Each wrapper leaves a stamp.** All four gates run through one in `scripts/` —
-  `test-with-log`, `conformance-with-log`, `conformance-docs-with-log` (SH798) and `java-with-log`
-  (SH800) — which write `.gates/<key>.json`: exit code, commit, time. Untracked (`/.gates/`),
+- **Every gate leaves a stamp, from one table.** `scripts/gates.mjs` holds a row per gate — command,
+  args, log, label, and the prose saying why that gate is wrapped — and `scripts/run-gate.mjs <key>`
+  runs any of them, keeping the output and stamping the outcome (SH802; it replaced four wrappers
+  that differed in three constants, one of which had been announcing every gate as `JS suites` since
+  the second was written). They write `.gates/<key>.json`: exit code, commit, time. Untracked (`/.gates/`),
   because a stamp is evidence about a command run *here*, and a committed one would let a clone
   inherit a claim about a run it never made. `pnpm conformance:raw` and a bare `./mvnw` are the
   unwrapped commands if you need them, and they leave no stamp. All four are deliberately the same

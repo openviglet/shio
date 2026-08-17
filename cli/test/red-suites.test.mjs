@@ -57,6 +57,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import { GATES, isStale, stamps } from "../../scripts/gate-stamp.mjs";
+import { GATE_RUNS } from "../../scripts/gates.mjs";
 
 // @scans prose reason: red-suites.json is a ledger read as text, and the reasons and dates
 // inside its entries are exactly what this checks (SH740).
@@ -320,23 +321,30 @@ test("SH770: a stamp from another commit is not this tree's colour, in either di
  * correct (a suite cannot know whether the tests after it passed) and it is why the fastest gate,
  * the one somebody actually types, is the one neither comparator judges.</p>
  */
-test("SH798: every gate has a wrapper that stamps it, with no exception left", async () => {
+test("SH798: every gate has a row that runs it, with no exception left", async () => {
   const scripts = await readFile(new URL("../../scripts/gate-stamp.mjs", import.meta.url), "utf8");
-  const wrappers = (await Promise.all(
-    ["test-with-log", "conformance-with-log", "conformance-docs-with-log", "java-with-log"]
-      .map((name) => readFile(new URL(`../../scripts/${name}.mjs`, import.meta.url), "utf8")),
-  )).join("\n");
+  const runner = await readFile(new URL("../../scripts/run-gate.mjs", import.meta.url), "utf8");
 
-  const unstamped = GATES
-    .filter((gate) => !new RegExp(`stamp\\(\\s*ROOT\\s*,\\s*"${gate}"`).test(wrappers));
+  // SH802 — four wrappers became one runner over a table, so the question changed shape and not
+  // substance: a gate with no row cannot be run through the thing that stamps, which is the same
+  // silence as a gate with no wrapper.
+  const rowless = GATES.filter((gate) => !Object.hasOwn(GATE_RUNS, gate));
   assert.deepEqual(
-    unstamped,
+    rowless,
     [],
-    "a gate is declared in GATES and no wrapper writes its stamp, so both comparators will report "
-      + "it as `no run recorded in this tree` forever — which is indistinguishable from nobody "
-      + "having run it, and is how the docs gate carried twelve commits of debt unremarked.\n"
-      + "Add a wrapper beside the other four and point package.json at it.",
+    "a gate is declared in GATES and has no row in `gates.mjs`, so nothing can run it through the "
+      + "runner that stamps — and both comparators will report it as `no run recorded in this "
+      + "tree` forever, which is indistinguishable from nobody having run it. That is how the docs "
+      + "gate carried twelve commits of debt unremarked.\nAdd the row.",
   );
+  assert.deepEqual(
+    Object.keys(GATE_RUNS).filter((key) => !GATES.includes(key)),
+    [],
+    "and the other way: a row nothing declares as a gate stamps a key no comparator reads",
+  );
+  assert.match(runner, /stamp\(ROOT, key, code\)/,
+    "the runner stamps under the key it was given — a runner that hardcoded one would stamp every "
+      + "gate as that one, which is this table's failure mode rather than the wrappers'");
 
   // SH800 — this used to end `and java is named as the one that cannot`, with a note that SH800
   // would say what happens to that exclusion. It says: the exclusion was never about stamping, it

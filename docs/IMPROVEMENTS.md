@@ -714,31 +714,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
 
-### XXVI.27 Four files that differ in three constants (SH802)
-
-`test-with-log`, `conformance-with-log`, `conformance-docs-with-log` and `java-with-log`
-are the same twenty lines four times: resolve the root, name a log, run a command
-through `runWithLog`, stamp a key, exit with the code. What differs is a command, a
-filename and a string.
-
-The duplication is not theoretical and it had already produced a defect. `runWithLog`
-hardcoded its completion line as `JS suites green` / `JS suites FAILED`, so the
-conformance and docs gates had been announcing themselves as the JS suites since the
-second wrapper was written — nobody noticed, because the sentence is only read by
-somebody already reading a failure. SH800 found it while adding the fourth and fixed it
-with a `label` option, which is the cheap half.
-
-Each wrapper's header is genuinely different, and that is the argument against a naive
-merge: they record why *that* gate is wrapped, and SH798's and SH800's headers carry the
-measurements that chose the mechanism. A table of four rows plus one runner keeps the
-code single and loses those, unless the reasons move somewhere a reader will still find
-them.
-
-So the shape is the question, not whether. This repository already answers it once, in
-`known-debt.test.mjs`: **a table of rows, each carrying its own prose**, rather than
-four readers. That is the same problem one layer down, and the same answer probably
-fits.
-
 ### XXVI.28 A false red is worse than an absent stamp (SH803)
 
 Each wrapper writes one fixed log — deliberately, since the useful comparison is the
