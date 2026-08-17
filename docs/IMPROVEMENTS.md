@@ -737,3 +737,26 @@ documents the raw `./mvnw … > shio-test.log 2>&1`, and a gate whose recording 
 remembering a different command records nothing on the runs that matter. So the
 measurement comes first — whether the exit code can be stamped from outside the JVM
 without changing the command a person is told to type.
+
+### XXVI.26 A reserved range protects a literal, not a prefix (SH801)
+
+SH787 reserved everything from the nine-thousandth id up for fixtures, asserted from
+both ends, because a synthetic id and a real one are the same characters and no reader
+can separate them. That works for an id somebody types.
+
+It does not work for one built at runtime. SH799 needed a list of N synthetic ids and
+generated them by interpolation, splitting the digits so that the **static prefix left
+in the file was three characters ending in a nine** — itself a real, shipped task. The
+walk reads source rather than runtime values, found that prefix, and credited a task
+this file asserts nothing whatever about. It went red on the first run, which is the
+good case; the quiet one is a prefix that happens to be an id nobody is watching.
+
+Putting the whole number inside the interpolation is the correct spelling and it is not
+obvious — the difference is one character and the wrong one reads better. This is
+SH782's family with ids instead of regexes: a literal built by interpolation is not the
+literal its author meant, and the layer that reads it never sees the value.
+
+The instrument is narrow and cheap. In a suite file, a template literal whose static
+prefix is itself a well-formed id is either a mistake or wants saying out loud, and
+`regex-escape.test.mjs` already extracts template literals for SH782 — the extraction
+exists and only the predicate is new.
