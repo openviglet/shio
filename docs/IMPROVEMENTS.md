@@ -533,32 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.111 The stamp that outlived its commit (SH770)
-
-SH755 compares what the ledger declares against what each gate last answered *here*, by
-reading the stamp `scripts/gate-stamp.mjs` leaves in `.gates/`. The comparison is
-between a claim and a measurement, and nothing checks the measurement is about this
-tree.
-
-Measured at the start of this session: `.gates/conformance.json` held `red: true` at
-`sha 4b20d8e0`, and HEAD was `42d02432` — two commits later. The gate failed the Java
-suite over a red recorded against code that had since changed twice. Here it happened to
-be right, because the defect SH763 names was still open. That is luck, not a property of
-the check.
-
-Both directions are wrong and the second is worse. A **stale red** blocks a commit over
-a failure that may already be fixed, which teaches people to re-run until it clears. A
-**stale green** is the one that matters: a gate that passed three commits ago reads as
-"this tree is green", which is the sentence SH755 exists to stop somebody believing —
-one level up from where it stopped them.
-
-The stamp already carries `sha` and SH755 already prints it, so the fact is there and
-only the comparison is missing. What is decidable cheaply: whether the stamp's commit is
-HEAD, and failing that whether anything that compiles differs between them — the
-predicate SH764 just built, in `compiles()`. A stamp older than the tree is not a
-colour; it is a run nobody has done, and the honest report is the one an absent stamp
-already gets.
-
 ### XVII.112 The ratchet a Shio commit cannot satisfy (SH771)
 
 `pnpm conformance` at `950cdaed`, against a clean instance: **121 of 122 pass**. The one

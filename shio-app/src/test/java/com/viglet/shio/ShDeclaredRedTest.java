@@ -77,6 +77,7 @@ class ShDeclaredRedTest {
         Set<String> declared = declaredSuites();
         List<String> report = new ArrayList<>();
         List<String> undeclared = new ArrayList<>();
+        String head = headSha();
 
         for (String gate : GATES) {
             Path stamp = ROOT.resolve(".gates").resolve(gate + ".json");
@@ -93,8 +94,17 @@ class ShDeclaredRedTest {
             String body = Files.readString(stamp, StandardCharsets.UTF_8);
             boolean red = "true".equals(group(STAMP_RED, body));
             String sha = group(STAMP_SHA, body);
-            report.add("  " + gate + " — " + (red ? "RED" : "green")
-                    + (sha == null ? "" : " at " + sha.substring(0, Math.min(8, sha.length())))
+            String at = sha == null ? "" : " at " + sha.substring(0, Math.min(8, sha.length()));
+            // SH770 — a stamp taken against another commit is not this tree's colour. This test
+            // failed over exactly that: `red: true` at 4b20d8e0 while HEAD was 42d02432, two
+            // commits later. It happened to be right, because the defect was still open, and that
+            // is luck rather than a property of a check.
+            if (isStale(sha, head)) {
+                report.add("  " + gate + " — last run" + at + ", " + group(STAMP_WHEN, body)
+                        + " — NOT this tree, so not a colour");
+                continue;
+            }
+            report.add("  " + gate + " — " + (red ? "RED" : "green") + at
                     + ", " + group(STAMP_WHEN, body)
                     + (declared.contains(gate) ? ", declared" : ""));
             if (red && !declared.contains(gate)) {
@@ -149,5 +159,69 @@ class ShDeclaredRedTest {
     private static String group(Pattern pattern, String body) {
         Matcher matcher = pattern.matcher(body);
         return matcher.find() ? matcher.group(1) : null;
+    }
+
+    @Test
+    @DisplayName("SH770: a stamp from another commit is not this tree's colour, in either direction")
+    void aStampFromAnotherCommitIsNotAColour() {
+        // The measurement that filed this: `red: true` at 4b20d8e0 while HEAD was 42d02432. The
+        // suite failed over a red recorded against code that had since changed twice, and was right
+        // by luck — the defect happened to still be open.
+        assertThat(isStale("4b20d8e030fe38ea7c8b4649478ec3b055018d06",
+                "42d0243218f6b1b3c9f0e6a8d5c4b3a29187f6e5"))
+                .as("""
+                        a stale RED blocks a commit over a failure that may already be fixed,                         which teaches people to re-run until it clears. Excluding it is what makes                         the report say "nobody has run this here", which is true.""")
+                .isTrue();
+        assertThat(isStale("4b20d8e0", "4b20d8e0"))
+                .as("and a stamp at HEAD is exactly what a colour is")
+                .isFalse();
+
+        // Both unknowns, and they are the same answer for the same reason: staleness invented from
+        // an absence is the mistake in the other direction.
+        assertThat(isStale(null, "4b20d8e0"))
+                .as("a stamp with no sha predates the field; it cannot be shown to be about "
+                        + "another commit")
+                .isFalse();
+        assertThat(isStale("4b20d8e0", null))
+                .as("and neither can it in a checkout with no git to ask")
+                .isFalse();
+    }
+
+    /**
+     * Was this stamp taken against the tree being judged? (SH770)
+     *
+     * <p><b>Unknown either side is not stale.</b> A stamp with no sha, or a checkout with no git,
+     * cannot be shown to be about another commit, and inventing staleness from an absence is the
+     * same mistake in the other direction.</p>
+     *
+     * <p>The commit alone, and deliberately not SH764's {@code compiles()} predicate. That one
+     * answers <em>could this change have produced different classes</em>, which is the right
+     * question about the JVM and the wrong one here: <b>no gate writes a {@code java} stamp</b> —
+     * this test is the java gate and cannot stamp its own outcome — so every stamp that exists
+     * belongs to {@code js} or {@code conformance}, and both read the whole tree.
+     * {@code pnpm test} reads {@code ROADMAP.md} and {@code CHANGELOG.md}; {@code pnpm conformance}
+     * reads {@code docs/}. A documentation commit really can flip either colour, so there is
+     * nothing provably inert to exempt.</p>
+     */
+    static boolean isStale(String stampSha, String head) {
+        if (stampSha == null || head == null || stampSha.isBlank() || head.isBlank()) {
+            return false;
+        }
+        return !stampSha.trim().equals(head.trim());
+    }
+
+    /** HEAD, or {@code null} where git cannot say — the same tolerance the stamp writer has. */
+    private static String headSha() {
+        try {
+            Process git = new ProcessBuilder("git", "rev-parse", "HEAD")
+                    .directory(ROOT.toFile())
+                    .redirectErrorStream(true)
+                    .start();
+            String out = new String(git.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            return git.waitFor() == 0 ? out.trim() : null;
+        } catch (IOException | InterruptedException cannotAsk) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
     }
 }

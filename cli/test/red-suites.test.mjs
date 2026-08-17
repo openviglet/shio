@@ -56,7 +56,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
-import { GATES, stamps } from "../../scripts/gate-stamp.mjs";
+import { GATES, isStale, stamps } from "../../scripts/gate-stamp.mjs";
 
 // @scans prose reason: red-suites.json is a ledger read as text, and the reasons and dates
 // inside its entries are exactly what this checks (SH740).
@@ -235,15 +235,25 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
       return `  ${gate} — no run recorded in this tree`;
     }
     const age = seen.sha ? ` at ${seen.sha.slice(0, 8)}` : "";
+    // SH770 — a stamp taken against another commit is not this tree's colour, and saying so is the
+    // whole repair: "the last run here was N commits ago" names the run somebody has to do, which
+    // neither a colour nor a silence does.
+    if (seen.stale) {
+      return `  ${gate} — last run${age}, ${seen.when} — NOT this tree, so not a colour`;
+    }
     return `  ${gate} — ${seen.red ? "RED" : "green"}${age}, ${seen.when}`
       + `${declared.has(gate) ? ", declared" : ""}`;
   });
   console.log(`SH755: the gates, as last run here\n${lines.join("\n")}`);
 
+  // SH770 — judged on the runs that are about this tree. A stale stamp is excluded from BOTH
+  // directions, which is what makes it read as an absent one: a stale red must not block a commit
+  // over a failure that may already be fixed, and a stale green must not retire a declaration.
+  const fresh = (gate) => (recorded[gate]?.stale ? undefined : recorded[gate]);
   const judged = GATES.filter((gate) => gate !== SELF);
-  const undeclared = judged.filter((gate) => recorded[gate]?.red && !declared.has(gate));
+  const undeclared = judged.filter((gate) => fresh(gate)?.red && !declared.has(gate));
   const stale = [...declared].filter((gate) =>
-    gate !== SELF && recorded[gate] && !recorded[gate].red);
+    gate !== SELF && fresh(gate) && !fresh(gate).red);
 
   assert.deepEqual(undeclared, [],
     "SH755: this gate answered red here and the ledger says nothing about it. That is the third "
@@ -256,6 +266,36 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
     + "its red is how a suite stops being a gate: the next real failure is already excused. Delete "
     + "the entry — and if it went green for a reason nobody understands, that is a task, not a "
     + "line in a ledger.");
+});
+
+test("SH770: a stamp from another commit is not this tree's colour, in either direction", () => {
+  // The measurement that filed this: `.gates/conformance.json` held `red: true` at 4b20d8e0 while
+  // HEAD was 42d02432, two commits later, and the Java gate failed over it. It was right by luck —
+  // the defect happened to still be open.
+  assert.equal(isStale({ sha: "4b20d8e0" }, "42d02432"), true,
+    "a stale RED blocks a commit over a failure that may already be fixed, which teaches people to "
+    + "re-run until it clears. A stale GREEN is worse: it reads as `this tree is green`, which is "
+    + "the one sentence SH755 exists to stop somebody believing");
+  assert.equal(isStale({ sha: "4b20d8e0" }, "4b20d8e0"), false,
+    "and a stamp at HEAD is exactly what a colour is");
+
+  // Both unknowns, and the same answer for the same reason: staleness invented from an absence is
+  // the mistake in the other direction.
+  assert.equal(isStale({}, "4b20d8e0"), false, "a stamp with no sha predates the field");
+  assert.equal(isStale({ sha: "4b20d8e0" }, null), false, "and a checkout with no git cannot ask");
+
+  // And the half that matters to a reader: a stale stamp is excluded from BOTH lists, which is
+  // what makes it read as the absent one it effectively is.
+  const declared = new Set(["conformance"]);
+  const world = {
+    java: { red: true, stale: true },
+    conformance: { red: false, stale: true },
+  };
+  const fresh = (gate) => (world[gate]?.stale ? undefined : world[gate]);
+  assert.deepEqual(GATES.filter((gate) => fresh(gate)?.red && !declared.has(gate)), [],
+    "a red recorded against another commit does not accuse this one");
+  assert.deepEqual([...declared].filter((gate) => fresh(gate) && !fresh(gate).red), [],
+    "and a green recorded against another commit does not retire a declaration");
 });
 
 test("SH755: the comparator fires in both directions, and an absent stamp fires in neither", () => {

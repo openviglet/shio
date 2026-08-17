@@ -60,6 +60,37 @@ So the ledger's claim is now compared against what the gates actually said:
 "nobody has run this here" is true rather than wrong, so it is printed. That printing *is* the
 repair — the sentence whose absence cost eight pushes.
 
+### A stamp taken against another commit is not a colour (SH770)
+
+The comparison above is between a **claim** and a **measurement**, and nothing asked whether the
+measurement was about this tree. Measured: `ShDeclaredRedTest` failed over `.gates/conformance.json`
+holding `red: true` at `4b20d8e0` while HEAD was `42d02432`, two commits later. It was right, and by
+luck — the defect it blocked over happened to still be open.
+
+Both directions are wrong and the second is worse. A **stale red** blocks a commit over a failure
+that may already be fixed, which teaches people to re-run until it clears. A **stale green** reads
+as *this tree is green*, which is the exact sentence SH755 exists to stop somebody believing.
+
+So a stamp whose `sha` is not HEAD is excluded from both lists and reported instead:
+
+```
+conformance — last run at 950cdaed, 2026-08-17T11:44:57.024Z — NOT this tree, so not a colour
+```
+
+That is a more useful line than either a colour or a silence, because it names the run somebody has
+to do.
+
+**The commit alone, and deliberately not SH764's `compiles()`.** That predicate answers *could this
+change have produced different classes*, which is right about the JVM and wrong here: **no gate
+writes a `java` stamp** — the Java suite is the java gate and cannot stamp its own outcome — so
+every stamp that exists belongs to `js` or `conformance`, and both read the whole tree. `pnpm test`
+reads `ROADMAP.md` and `CHANGELOG.md`; `pnpm conformance` reads `docs/`. A documentation commit
+really can flip either colour, so there is nothing provably inert to exempt.
+
+Unknown either side is **not** stale. A stamp with no `sha` predates the field and a checkout with
+no git cannot be asked — inventing staleness from an absence is the same mistake in the other
+direction.
+
 ### Declaring one
 
 `red-suites.json` is the only place an exception may live, and it is deliberately hostile:

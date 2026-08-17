@@ -76,9 +76,53 @@ export function stamp(root, gate, code) {
   }
 }
 
-/** Every stamp this tree carries, keyed by gate. Absent and unreadable both read as absent. */
+/**
+ * Was this stamp taken against the tree that is being judged? (SH770)
+ *
+ * <h3>The comparison that was missing</h3>
+ *
+ * <p>The readers compared a **claim** — what `red-suites.json` declares — against a
+ * **measurement**, and nothing asked whether the measurement was about this tree. Measured: this
+ * repository ran a Java suite that failed over `.gates/conformance.json` holding `red: true` at
+ * `4b20d8e0` while HEAD was `42d02432`, two commits later. It happened to be right, because the
+ * defect was still open. That is luck, not a property of a check.</p>
+ *
+ * <p>Both directions are wrong and the second is worse. A **stale red** blocks a commit over a
+ * failure that may already be fixed, which teaches people to re-run until it clears. A **stale
+ * green** reads as *this tree is green*, which is the exact sentence SH755 exists to stop somebody
+ * believing — one level up from where it stopped them.</p>
+ *
+ * <h3>Why the commit alone, and not SH764's `compiles()`</h3>
+ *
+ * <p>That predicate answers *could this change have produced different classes*, and it is the
+ * right question for the **JVM**. It is the wrong one here, because **no gate writes a `java`
+ * stamp** — this test is the java gate and cannot stamp its own outcome — so every stamp that
+ * exists belongs to `js` or `conformance`, and both read the whole tree. `pnpm test` reads
+ * `ROADMAP.md` and `CHANGELOG.md`; `pnpm conformance` reads `docs/`. A documentation commit really
+ * can flip either colour, so there is nothing provably inert to exempt and the honest rule is the
+ * simple one.</p>
+ *
+ * <p>Unknown either side is <b>not</b> stale: a stamp with no sha, or a tree with no git, cannot be
+ * shown to be about another commit, and inventing staleness from an absence is the same mistake in
+ * the other direction.</p>
+ */
+export function isStale(record, head) {
+  if (!head || !record?.sha) {
+    return false;
+  }
+  return String(record.sha).trim() !== String(head).trim();
+}
+
+/**
+ * Every stamp this tree carries, keyed by gate. Absent and unreadable both read as absent.
+ *
+ * <p>Each record carries `stale` (SH770). A reader judges on the fresh ones and <b>prints</b> the
+ * stale ones, because "the last run here was two commits ago" is a more useful sentence than either
+ * silence or a colour — it names the run somebody has to do.</p>
+ */
 export function stamps(root) {
   const found = {};
+  const head = headSha(root);
   for (const gate of GATES) {
     const path = join(root, GATES_DIR, `${gate}.json`);
     if (!existsSync(path)) {
@@ -87,7 +131,7 @@ export function stamps(root) {
     try {
       const record = JSON.parse(readFileSync(path, "utf8"));
       if (record && typeof record === "object" && typeof record.red === "boolean") {
-        found[gate] = record;
+        found[gate] = { ...record, stale: isStale(record, head) };
       }
     } catch {
       // A corrupt stamp is no stamp. It cannot be allowed to fail a gate, because the thing it
