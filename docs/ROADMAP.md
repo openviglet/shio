@@ -12,7 +12,6 @@
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
 - ⏳ **SH780** (deps: SH778 ✅) **libuv aborts the fixture-traits process on a handle already closing, and an abort skips the exit instrument** — The race is `t.after(() => source.close())` against `--test-force-exit`; the cure is a teardown that cannot double-close, and it is now reproducible on demand. → §XXVI.6
-- 📋 **SH804** (deps: —) **A control character in source is invisible to every reader, and one sat inside a regex reading as an escape** — An edit wrote a literal backspace where `\b` was meant; the assertion failed with actual and expected rendering identically, and nothing looks for such a byte. → §XXVI.29
 - 📋 **SH805** (deps: —) **Twelve seconds of loop drain nobody has explained is what `--test-force-exit` is actually buying** — The gate runs 15.5s with the flag and 28.1s without; explain the drain and the flag can go, taking the libuv abort with it at no cost. → §XXVI.30
 
 ## Priority

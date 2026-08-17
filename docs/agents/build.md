@@ -97,7 +97,7 @@ Inside a template literal the backslash is the **string's**, not the regex's:
 
 | written | the pattern actually built | how it fails |
 |---|---|---|
-| `` new RegExp(`${x}`) `` | U+0008 either side of `x` | matches nothing — a false red |
+| `` new RegExp(`\b${x}\b`) `` | U+0008 either side of `x` | matches nothing — a false red |
 | `` new RegExp(`${x}\s*:`) `` | `${x}s*:` — the letter `s` | matches the wrong thing — a false green |
 
 Neither is a syntax error. The first shipped this week and made a check report *0 of 8 section types
@@ -160,7 +160,7 @@ would have found one and shipped half a fix.
 green:
 
 ```
-✖ testixture-traits.test.mjs (1052.1779ms)
+✖ test\fixture-traits.test.mjs (1052.1779ms)
   'test failed'
 ```
 
@@ -282,6 +282,39 @@ really can flip either colour, so there is nothing provably inert to exempt.
 Unknown either side is **not** stale. A stamp with no `sha` predates the field and a checkout with
 no git cannot be asked — inventing staleness from an absence is the same mistake in the other
 direction.
+
+### A byte no rendering shows you (SH804)
+
+An edit wrote a literal **backspace** — one byte — where the two characters of `\b` were meant. The
+editor showed nothing; `grep` showed the line as expected; Node's failure output printed
+`expected: /… js\b/` beside `actual: '… js'`, a string that regex plainly contains. An assertion
+failing while both halves render as a match is the least diagnosable shape available, and `od -c` was
+the only thing that answered.
+
+SH782's class, arriving by a route SH782 cannot watch: not through JavaScript at all, but through the
+edit. So the rule is about the **byte** — no source or document may hold a C0 control character other
+than tab, newline and carriage return — which needs no parsing and catches every variant whatever
+introduced it.
+
+**It was not a ratchet over an empty set.** The first run found two live defects, both in this file,
+both invisible for as long as they had been there:
+
+- the SH782 table's *written* column showed `` new RegExp(`${x}`) `` where it meant
+  `` new RegExp(`\b${x}\b`) ``. Both `\b` had been resolved into backspaces, so the row documenting
+  the defect had become an instance of it and read as the **opposite** of its own point;
+- `✖ test\fixture-traits.test.mjs` had lost its `\f` to a form feed and printed as
+  `testixture-traits.test.mjs` — read aloud here several times without anybody asking where the `f`
+  went.
+
+`\0` is the one C0 byte this repository writes on purpose: a composite-key separator that cannot
+occur in the data being joined. Six files use it and each is **named**, so a seventh adoption is a
+diff somebody reads. `public/assets/` is excluded as built vendor output — a rule about what we type
+has no business reading minified third-party bundles.
+
+The lint reads **itself** like any other file, and that is the part worth copying. Its first draft
+skipped itself in the walk *and* shipped with the literal bytes in its own character class — a
+self-exclusion hiding precisely the thing it exists to find. Both declarations are `\u` escapes now
+and both fixtures are built from character codes, so it passes its own rule honestly.
 
 ### A reserved range protects an id you type, not one you compose (SH801)
 
