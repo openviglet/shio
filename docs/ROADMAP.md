@@ -14,6 +14,7 @@
 - ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
 - 📋 **SH801** (deps: —) **An id built by interpolation leaves a shorter real id in the source, which the debt walk credits** — Writing a fixture id with the digits split across a template interpolation left a bare prefix in the file and paid that task's debt; a reserved range cannot protect a composed id. → §XXVI.26
+- 📋 **SH802** (deps: —) **Four gate wrappers differ only in a command, a log name and a key, and one already spoke for another** — Adding the fourth showed the shared runner announcing every gate as `JS suites`, which had been true of three of them since the second wrapper was written. → §XXVI.27
 
 ## Priority
 
