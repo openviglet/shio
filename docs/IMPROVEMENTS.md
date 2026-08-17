@@ -738,3 +738,27 @@ So the shape is the question, not whether. This repository already answers it on
 `known-debt.test.mjs`: **a table of rows, each carrying its own prose**, rather than
 four readers. That is the same problem one layer down, and the same answer probably
 fits.
+
+### XXVI.28 A false red is worse than an absent stamp (SH803)
+
+Each wrapper writes one fixed log — deliberately, since the useful comparison is the
+previous run — and opens it with `"w"`. Two runs at once therefore interleave their
+bytes into one file, and two Maven runs also share `target/`.
+
+Measured, by accident, on the run that shipped SH801: a background `pnpm java` and a
+foreground one overlapped. The foreground reported **3 errors over 1092 tests** where
+the same tree alone reports **1894 green**, and `grep` answered `Binary file
+shio-test.log matches` because the interleaving produced bytes that are not text.
+Neither number is about the code.
+
+Before SH800 that was merely confusing. Now it is recorded: the wrapper stamped `red:
+true` for a failure that never happened, and the other comparator reads that stamp and
+demands a `red-suites.json` entry against an open task. **A false red is worse than an
+absent stamp** — an absent one says nothing, and this one produces a declaration for a
+defect nobody can find, which is the exact shape SH755 says teaches people that red
+means nothing.
+
+The cure is small and the check is smaller: a wrapper refuses to start while another
+holds the lock, saying which gate and since when. Both halves matter — the refusal must
+name the running gate, because the person meeting it is usually the one who forgot they
+had backgrounded it.
