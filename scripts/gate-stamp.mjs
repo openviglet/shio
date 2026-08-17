@@ -30,7 +30,7 @@
  * `grep` those tasks exist to refuse.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -52,6 +52,76 @@ export function headSha(root) {
     return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
   } catch {
     return null;
+  }
+}
+
+/**
+ * Whether a process id is one this machine is still running (SH803).
+ *
+ * <p>Signal `0` is the portable "does this exist" probe: it delivers nothing and throws `ESRCH` when
+ * the target is gone. `EPERM` means it exists and belongs to somebody else, which for this purpose
+ * is alive. A lock whose holder has died must never outlast it — a gate that refuses to run because
+ * of a crash three days ago is worse than the collision it was guarding.</p>
+ */
+export function alive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+/**
+ * Take the lock for one gate, or say who holds it.
+ *
+ * <h2>What this is for</h2>
+ *
+ * <p>SH803 — two runs of the same gate at once corrupt each other. Measured, by accident: a
+ * backgrounded `pnpm java` and a foreground one overlapped, and the foreground reported <b>3 errors
+ * over 1092 tests</b> where the tree alone reports <b>1894 green</b>, while `grep` answered
+ * `Binary file shio-test.log matches` because two writers had interleaved into one fixed-name log.
+ * Neither number was about the code.</p>
+ *
+ * <p>Before SH800 that was merely confusing. Now it is <b>recorded</b>: the wrapper stamped
+ * `red: true` for a failure that never happened, and the comparators read that stamp and demand a
+ * `red-suites.json` entry against an open task. A false red is worse than an absent stamp — absence
+ * says nothing, and this manufactures a declaration for a defect nobody can find.</p>
+ *
+ * <p><b>Per gate, not global.</b> Two `java` runs share `target/` and one log; `java` and `js` share
+ * neither, and this session ran them together for hours. A global lock would refuse the thing people
+ * actually do to save time.</p>
+ *
+ * @returns `{ taken: true, stale }` where `stale` is a dead holder that was cleared, or
+ *          `{ taken: false, holder }` naming who has it and since when
+ */
+export function acquire(root, gate, pid = process.pid, now = null) {
+  const path = join(root, GATES_DIR, `${gate}.lock`);
+  try {
+    mkdirSync(join(root, GATES_DIR), { recursive: true });
+    let stale = null;
+    if (existsSync(path)) {
+      const holder = JSON.parse(readFileSync(path, "utf8"));
+      if (holder?.pid !== pid && alive(holder?.pid)) {
+        return { taken: false, holder };
+      }
+      stale = holder?.pid === pid ? null : holder;
+    }
+    writeFileSync(path, `${JSON.stringify({ gate, pid, since: now }, null, 2)}\n`);
+    return { taken: true, stale };
+  } catch {
+    // Never turn a gate run into a crash about bookkeeping — `stamp` refuses that trade three
+    // functions down and this one is the same bargain: an unwritable lock permits the run.
+    return { taken: true, stale: null };
+  }
+}
+
+/** Give the lock back. Missing is fine: a run that never took one still finishes. */
+export function release(root, gate) {
+  try {
+    rmSync(join(root, GATES_DIR, `${gate}.lock`), { force: true });
+  } catch {
+    // Same bargain as above.
   }
 }
 

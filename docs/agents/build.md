@@ -60,6 +60,17 @@ So the ledger's claim is now compared against what the gates actually said:
   inherit a claim about a run it never made. `pnpm conformance:raw` and a bare `./mvnw` are the
   unwrapped commands if you need them, and they leave no stamp. All four are deliberately the same
   shape: wrappers that differed would be behaviours to remember.
+- **One run of a gate at a time (SH803).** The runner takes `.gates/<key>.lock` and refuses a second
+  run of the same gate, naming the pid and since when — because whoever meets it usually forgot they
+  had backgrounded one. Measured, by accident: an overlapping pair of `pnpm java` reported **3 errors
+  over 1092 tests** where the tree alone reports **1894 green**, and `grep` answered `Binary file
+  shio-test.log matches` because two writers interleaved into one fixed-name log. Since SH800 that is
+  *recorded* — the loser stamped `red: true` for a failure that never happened, and the comparators
+  then demand a `red-suites.json` entry against an open task. **A false red is worse than an absent
+  stamp**: absence says nothing, this manufactures a declaration for a defect nobody can find.
+  Per gate, not global — `java` and `js` share neither a log nor a build directory, and running them
+  together is what people do to save time. A holder that has died is cleared and said so, since a
+  gate refusing to work because of a crash three days ago is worse than the collision it guards.
 - **Each comparator skips its own gate, and only its own (SH800).** `ShDeclaredRedTest` runs inside
   `java` and `red-suites.test.mjs` inside `js`, and a comparator reading its own gate's stamp reads
   the *previous* run's — which fails one red run's successor for a failure already fixed, then

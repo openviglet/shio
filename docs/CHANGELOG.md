@@ -1464,3 +1464,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH801** — A split id leaves a shorter real one in the source, and the lint refuses it; its own fixtures use reserved prefixes because they must contain the hazard to test it.
 - **SH802** — One runner over a table of four rows, each keeping the prose that chose its mechanism, replaces four files that differed in a command, a log name and a label.
 - **SH780 (the diagnosis and an idempotent close)** — closeIdleConnections did not fix it and closeAllConnections broke SH698's deadline test; dropping the flag does fix it and costs 12.6s a run, so the flag stays for now.
+- **SH803** — A second run of one gate is refused naming the pid and since when; the lock is per gate, a dead holder is cleared, and release sits outside the try because exit skips a finally.
