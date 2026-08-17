@@ -60,6 +60,40 @@ So the ledger's claim is now compared against what the gates actually said:
 "nobody has run this here" is true rather than wrong, so it is printed. That printing *is* the
 repair — the sentence whose absence cost eight pushes.
 
+### The escape that belongs to the wrong layer (SH782)
+
+Inside a template literal the backslash is the **string's**, not the regex's:
+
+| written | the pattern actually built | how it fails |
+|---|---|---|
+| `` new RegExp(`${x}`) `` | U+0008 either side of `x` | matches nothing — a false red |
+| `` new RegExp(`${x}\s*:`) `` | `${x}s*:` — the letter `s` | matches the wrong thing — a false green |
+
+Neither is a syntax error. The first shipped this week and made a check report *0 of 8 section types
+documented* against pages naming all eight; the second had been sitting in `theme.test.mjs` behind a
+**negative** assertion, passing for the wrong reason — `s*` accepts nothing, so `--a:` matched by
+luck while `--a : #111` would have slipped past.
+
+`cli/test/regex-escape.test.mjs` reads the bytes between the backticks of every
+`new RegExp(<template>)` and reports a single backslash before `bBdDwWsS`. Today: **34 patterns
+over 202 files, 0 wrong.**
+
+**It opened at two, not zero, which is the point of writing it.** A grep for the call sites found
+fifteen and said they all looked fine; the scanner found the two that were not. That is SH322's rule
+paying off — the grep is the deliverable, and it finds the site nobody read.
+
+**Running it also found two defects in the scanner itself**, both of which would have made it lie:
+
+- A backslash *inside* `${…}` was being collected, so `` `${leaf.replace(/[^\w]/g, …)}` `` — a
+  perfectly correct regex literal in an interpolation — was reported. It read the half it had just
+  decided to skip.
+- Line numbers were computed on the comment-stripped text, so every finding named a line whose
+  content was something else. Comments are now blanked rather than dropped, using the shared
+  stripper's own `isProse` so it stays one opinion about what a comment is (SH740).
+
+Both were found by *running* it against the repository rather than by reading it, which is the only
+way either would have surfaced.
+
 ### A half is not a whole, and two readers said it was (SH781)
 
 `roadkeep ship --part` records the half of a task that landed and **leaves the roadmap line open**,

@@ -713,32 +713,6 @@ because the `red-suites.json` entry has to name a task that removes it, and an e
 whose owner has shipped is the state SH594 fails on. Delete that entry in the same
 commit as the fix.
 
-### XXVI.8 The escape that belongs to the wrong layer (SH782)
-
-Written and shipped in one afternoon, caught only by probing the check afterwards:
-
-    const named = (name) => new RegExp(`\b${name}\b`).test(prose);
-
-Inside a template literal `\b` is the **backspace** escape, U+0008 — so the pattern
-became a control character either side of the name and matched nothing. The check
-reported *0 of 8 section types documented* against pages that named all eight: a false
-red, and it could as easily have been a false green in a rule phrased the other way.
-
-`\d`, `\w` and `\s` are worse in one respect. JavaScript leaves an unknown escape as the
-bare character, so `` `\d` `` is the letter `d` — a pattern that still matches
-something, just not what was written, with nothing anywhere to say so.
-
-**The population is small and the existing members are all correct**, which is what
-makes this worth a lint rather than a fix: roughly fifteen `new RegExp(\`…\`)` sites
-across the CLI, its conformance suite and its scripts, and every one written before this
-week spells `\\b`, `\\s`, `\\d`. One newcomer got it wrong. So the guard opens at zero
-and exists to catch the next.
-
-Decidable and cheap: between the backticks of a template literal handed to `new RegExp`,
-a single backslash before `bdwsBDWS` is a string escape where a regex escape was meant.
-The escape hatch is the same as everywhere else here — a signed exemption naming the
-reason, for the case where U+0008 really is the subject.
-
 ### XXVI.9 The lock that reads as a build failure (SH783)
 
 Hit four times in one session, always the same way:

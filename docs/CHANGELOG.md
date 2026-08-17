@@ -1442,3 +1442,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH778 (the evidence half)** — Three causes ruled out by measurement — not an assertion, not an unhandled error, not the teardown deadline — and a third instrument prints the exit code and open handles, since it did not reproduce in twelve runs.
 - **SH779** — The report line that bounds SH772's per-run emission is asserted on the only shape that takes two copies, which doubles as the clearest statement of what SH763's N-split bought.
 - **SH781** — Both readers now let the roadmap decide and the changelog only confirm, so a partial ship keeps the exception its still-open task needs; the second enforcer only surfaced by pointing a real entry at a real partial.
+- **SH782** — A lint reads every template-built regex and refuses a backslash the string eats; it opened at two rather than nought, one of them a negative assertion passing for the wrong reason.

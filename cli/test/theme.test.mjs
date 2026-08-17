@@ -474,7 +474,10 @@ test("SH424: nothing the theme keeps re-declares a token the theme writes", () =
   for (const row of theme.rows.filter((each) => each.source === "declared")) {
     const property = customPropertyFor(row.path);
     assert.ok(
-      !new RegExp(`${property}\s*:`).test(theme.css),
+      // `\s` and not `\\s`: inside a template literal the single backslash is the STRING's, so
+      // this read `${property}s*:` — matching `--a:` by luck, because `s*` accepts nothing, and
+      // missing `--a : #111` entirely. A negative assertion passing for the wrong reason (SH782).
+      !new RegExp(`${property}\\s*:`).test(theme.css),
       `${property} is a token AND is declared by the kept CSS, which is the SH424 defect`,
     );
   }
