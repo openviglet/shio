@@ -713,3 +713,28 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 `red-suites.json` entry is no longer evidence either way — **SH789 deleted it**, on the
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
+
+### XXVI.22 The queue is printed by the cheap gate and enforced by the dear one (SH797)
+
+Twelve tasks shipped in one session — SH785 to SH796 — and `COVERAGE.md` named none of
+them. The count stands at 502 unnamed against a recorded 490.
+
+Nothing hid it. `pnpm test` printed `SH758: 11 shipped id(s) COVERAGE.md does not name
+yet`, with the ids, on **every run**, and every one of those runs was read for its
+`pass/fail` summary instead. A debt printed among fifteen hundred green lines is a debt
+nobody reads — SH793's lesson at the other end, where the number is published and
+drowned rather than never taken.
+
+The structural half is worth more than the twelve entries. The queue is **printed** by
+`pnpm test`, which runs constantly, and **enforced** by `pnpm conformance:docs`, which
+needs a second repository checked out and is the gate least often run. So the cheap gate
+whispers and the dear gate is the only one that stops you, which is how a dozen
+accumulate rather than one.
+
+Worth noting what worked: the comparators said `conformance — NOT this tree, so not a
+colour` on every Java run, because the stamp was twelve commits old. They were right and
+nobody looked, which is a different failure from being told green.
+
+Two commits in two repositories, as the failure says: name the ids in their cluster rows
+— all twelve are internal instruments, so the 🔒 row is likely — then `pnpm run
+coverage:mirror` here and lower the recorded count.
