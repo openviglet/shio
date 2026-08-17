@@ -55,9 +55,30 @@ class ShTestCommandDocLintTest {
             Path.of("..", "agents.md"),
             Path.of("..", "docs", "agents", "build.md"));
 
-    /** A documented invocation of the suite: a fenced or inline `mvnw … test` line. */
-    private static final Pattern RUNS_THE_SUITE =
-            Pattern.compile("^.*mvnw[^\\n]*\\btest\\b[^\\n]*$", Pattern.MULTILINE);
+    /**
+     * A documented invocation of a gate: a fenced or inline line running one of the three.
+     *
+     * <p>SH791 — this matched {@code mvnw … test} alone, which was fair when the rule it serves was
+     * SH354's and about the Java suite. SH788 generalised the rule to all three gates and measured
+     * the failure on {@code pnpm test}, so a guard reading only Maven lines checked the gate the
+     * incident did <b>not</b> happen to.</p>
+     *
+     * <p>Broadening was measured before it was written, because {@code pnpm test} appears in these
+     * files constantly as prose where {@code mvnw … test} does not — nineteen inline mentions in
+     * `build.md` alone. The measurement that settles it is narrower than "prose or command": a line
+     * can only be judged if it also holds a <b>shell pipe</b>, and across both files the count of
+     * lines naming a gate and holding one is <b>zero</b>. A bare `pnpm test` in a sentence has no
+     * pipe and can never be flagged, so the distinction the guard was going to need turned out not
+     * to be one it has to make.</p>
+     *
+     * <p>The three gates and not {@code pnpm lint}: that is a CI step and the JS-side guard covers
+     * it there, but it is not one of the three commands these documents call gates.</p>
+     */
+    private static final Pattern RUNS_THE_SUITE = Pattern.compile(
+            "^.*(?:mvnw[^\\n]*\\btest\\b|pnpm\\s+(?:test|conformance))[^\\n]*$", Pattern.MULTILINE);
+
+    /** One documented command per gate, so a pattern that stops matching one of them is not silent. */
+    private static final List<String> GATES = List.of("mvnw", "pnpm test", "pnpm conformance");
 
     /** What makes a run readable afterwards: it is teed, or redirected, to a file. */
     private static final Pattern KEEPS_THE_RUN = Pattern.compile("\\|\\s*tee\\s|>\\s*[\\w./-]+\\.log");
@@ -156,6 +177,18 @@ class ShTestCommandDocLintTest {
                 // the defect it was written about. The property that survives both spellings is the
                 // one this guard is actually about: a documented run is kept.
                 .anyMatch(line -> KEEPS_THE_RUN.matcher(line).find());
+
+        // SH791 — and one per gate, because "the scan found something" is satisfied by the Maven
+        // lines alone. That is exactly how this guard came to claim three gates while reading one:
+        // the population was never empty, so nothing ever said the other two had stopped matching.
+        for (String gate : GATES) {
+            assertThat(found)
+                    .as("SH791: no documented command for the `%s` gate reached this scan. The rule "
+                            + "in agents.md names three gates, so a pattern that matches only some "
+                            + "of them is a guard whose subject is smaller than its claim — and it "
+                            + "stays green while being so.", gate)
+                    .anyMatch(line -> line.contains(gate));
+        }
         assertThat(KEEPS_THE_RUN.matcher("… test 2>&1 | tee shio-test.log | grep -E \"x\"").find())
                 .as("the tee spelling")
                 .isTrue();

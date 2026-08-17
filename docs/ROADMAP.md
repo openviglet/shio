@@ -13,7 +13,6 @@
 
 - ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
-- 📋 **SH791** (deps: —) **The pipeline guard reads only `mvnw` lines, while the rule beside it now claims all three gates** — SH788 stated the rule for the JS and conformance gates too, but its scan matches the Java command alone, so a documented `pnpm test | grep` passes. → §XXVI.16
 - 📋 **SH792** (deps: —) **An instrument that excludes a case and names another as covering it is asserting something nobody checks** — SH789 found one such claim half true for months; nothing says how many more of these hand-offs exist or whether the named file still does the job. → §XXVI.17
 
 ## Priority

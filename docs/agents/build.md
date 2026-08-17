@@ -543,6 +543,23 @@ then read the count out of the file it kept:
 grep -E "Tests run:.*Failures.*Errors" shio-test.log | tail -1
 ```
 
+**The guard reads all three gates, since SH791.** `RUNS_THE_SUITE` matched `mvnw … test` alone —
+fair while the rule it served was SH354's, and wrong the moment SH788 generalised that rule to three
+gates on a failure measured against `pnpm test`. It was checking the gate the incident did *not*
+happen to.
+
+Broadening it was measured first, because `pnpm test` appears in these files as prose constantly
+where `mvnw … test` does not — nineteen inline mentions in this file alone. The measurement that
+settles it is narrower than "prose or command": **a line can only be judged if it also holds a shell
+pipe**, and across both files the count of lines naming a gate and holding one is **zero**. A bare
+`pnpm test` in a sentence has no pipe and can never be flagged, so the distinction the guard looked
+like it would need turned out not to be one it has to make.
+
+The non-vacuity check now names **one command per gate**, which is the part worth copying: the old
+anchor asked only whether the scan found *something*, and the Maven lines satisfied that on their
+own — so the guard could claim three gates while reading one and stay green doing it. Reverting the
+pattern now fails with `no documented command for the `pnpm test` gate reached this scan`.
+
 **Two commands rather than one, since SH788.** The one-liner this replaced ended
 `| tee shio-test.log | grep -E "…" | tail -1`, and it was wrong in a way that took a year to
 notice: a pipeline's exit status is its **last** command's, so the shell reported `tail`'s. The
