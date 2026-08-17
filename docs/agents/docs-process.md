@@ -511,6 +511,26 @@ discovers it is impossible only after doing the first half. It now names both co
 P6 is about a fix somebody can perform, and an instruction that cannot be carried out in the
 repository it is printed in fails that in the most expensive way: it looks actionable.
 
+### The queue is printed by the cheap gate and enforced by the dear one (SH797)
+
+Twelve tasks then shipped in one session with the matrix untouched — SH785 to SH796, taking the count
+to **502 against the recorded 490**. Nothing hid it. `pnpm test` printed
+`SH758: 11 shipped id(s) COVERAGE.md does not name yet`, **with the ids**, on every one of those runs,
+and every run was read for its `pass/fail` summary instead.
+
+That is the asymmetry to remember, because it is structural rather than careless. The queue is
+**printed** by `pnpm test`, which runs constantly and cannot fail on it; it is **enforced** by
+`pnpm conformance:docs`, which needs `vigletdocs` checked out and is the gate least often run. So the
+cheap gate whispers and the dear gate is the only thing that stops you — which is how a dozen
+accumulate instead of one. A debt printed among fifteen hundred green lines is a debt nobody reads.
+
+Two things worth copying from the repair. **Name the task doing the naming**: shipping SH797 would
+itself have raised the count by one, one commit after the commit that lowered it, so it went into the
+same row. And **the local comparators were right the whole time** — every Java run reported
+`conformance — NOT this tree, so not a colour`, because the stamp was twelve commits old (SH770).
+Nobody was told green; nobody looked. Run the third gate when a session has been shipping, or at
+minimum read the `SH758:` line the second gate is already printing.
+
 ## Work that cannot start yet, and how to say so (SH784)
 
 A task waiting on something **no commit can produce** — an intermittent failure reappearing, an

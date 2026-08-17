@@ -1457,3 +1457,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH794** — One other unbounded alternation in 32 scanners and it is correct; the rule keys off @scans, since a code scan reads a usage where a prose scan reads a mention.
 - **SH795** — AT_THE_WALL holds shio_apply as the eighth ledger, against a measured threshold — one argument costs about 20 tokens, agreed by three recorded overruns.
 - **SH796** — Both indexes now list all eight by their LEDGERS key and both are asserted against it — the doc had drifted to four while the file's own header said five.
+- **SH797** — The twelve are named in a row of their own, plus this task so shipping it does not raise the count it just lowered; the declared red is gone and all three gates are green.

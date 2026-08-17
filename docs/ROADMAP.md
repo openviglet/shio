@@ -13,7 +13,6 @@
 
 - ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
-- 📋 **SH797** (deps: —) **Twelve tasks shipped without the coverage mirror moving, and the gate that enforces it was never run** — COVERAGE.md misses 502 ids against a recorded 490; pnpm test printed the queue on every run as a green line and only conformance:docs turns it red. → §XXVI.22
 
 ## Priority
 
