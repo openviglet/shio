@@ -735,3 +735,30 @@ Which is why the guard should be about the **byte** rather than the route. No so
 file in this repository has any business holding a C0 control character other than tab,
 newline and carriage return, and a scan for one is a few lines, needs no parsing, and
 catches every future variant regardless of which tool introduced it.
+
+### XXVI.30 What the flag is really paying for (SH805)
+
+SH780 measured the trade and left the flag in place: `pnpm test` takes **15.5 s** with
+`--test-force-exit` and **28.1 s** without, and twelve seconds on every run of the gate
+that runs most often is worse than a failure that is now diagnosed rather than
+unreadable.
+
+That is the right call on those two numbers and it settles nothing, because the second
+number is not a law. It is **twelve seconds of event loop refusing to drain after every
+assertion has finished**, and nobody has said what is holding it. Explain that and both
+problems close at once: the flag goes, the libuv abort goes with it by construction, and
+the gate keeps its speed.
+
+Two candidates are already eliminated. The fixture servers' keep-alive sockets are not
+it — `closeIdleConnections()` changed neither the abort nor the drain — and it is not
+the fixture teardown deadline, whose timer is unref'd precisely so it cannot hold the
+loop.
+
+The measurement is the first deliverable and it is cheap:
+`process.getActiveResourcesInfo()` at exit names what is still alive, and the suite
+already has a place to print it — SH778's exit instrument, which now has nothing to
+catch and a reason to be repurposed rather than deleted.
+
+Worth doing rather than living with, because the cost is paid by every run forever, and
+because a suite that will not exit on its own is a fact about this repository that
+nobody has ever had to explain.
