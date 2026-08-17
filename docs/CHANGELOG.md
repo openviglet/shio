@@ -1452,3 +1452,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH789** — The comparator that could judge the js gate never checked for a declaration outliving its red; it does now, it fired on the live one, and the licence is deleted.
 - **SH790** — The breach message computes the tell — a line carrying the id is allocation, a sentence spelling it is a wording fix — and gives each its own instruction.
 - **SH791** — The scan reads all three gates and the anchor names one command per gate; the false-positive worry was measured away — no documented line holds both a gate and a pipe.
+- **SH792** — Eleven such sentences, classified and asserted exactly; five are live hand-offs and four verify, so the practice was sound and only SH789's claim had rotted.

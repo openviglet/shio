@@ -713,27 +713,3 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 `red-suites.json` entry is no longer evidence either way — **SH789 deleted it**, on the
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
-
-### XXVI.17 A hand-off between two instruments is a claim, and it is the one kind nothing verifies (SH792)
-
-`red-suites.test.mjs` excludes the `js` gate from its own comparison, for a good reason
-it states, and adds: *nothing is lost — `ShDeclaredRedTest` reads the js stamp from
-inside the Java gate.* That sentence was half true. The other file checked one of the
-two directions, so the one exception this repository had was judged by neither, and
-fifty green runs never retired it (SH789).
-
-The exclusion was right. The reason was right. What was wrong is the part that points at
-somebody else's file, and that is the general shape: an exclusion is checkable — the
-code does it — but the sentence excusing it is prose about another module, as reliable
-as the day it was written, and re-read by nobody because the file is green.
-
-This is SH583 one level up. That rule says two implementations of one idea agree only by
-accident; this says two instruments *dividing* one idea are only complementary by
-accident, and the seam is invisible from both sides.
-
-The deliverable is the grep, before any fix: how many guards exclude a case while naming
-another instrument as the cover, and does that instrument cover it. SH322's rule.
-**Already two** — SH791 left `pnpm lint` out of the Java scan because the JS guard
-covers it, written in the same session as this line and with no more checking than the
-first one had. The count is the finding either way: if it is a dozen, exclusions were
-never as cheap as they looked.

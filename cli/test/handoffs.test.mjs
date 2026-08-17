@@ -1,0 +1,237 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0.
+ *
+ * SH792 — a sentence that hands a case to another instrument, and whether that instrument takes it.
+ *
+ * ## The failure this exists for
+ *
+ * `red-suites.test.mjs` excludes the `js` gate from its own comparison, for a good reason it states,
+ * and adds: *nothing is lost — `ShDeclaredRedTest` reads the js stamp from inside the Java gate.*
+ * That sentence was half true. The other file checked one of the two directions, so the repository's
+ * only declared exception was judged by neither, and roughly fifty green runs never retired it
+ * (SH789).
+ *
+ * The exclusion was right and its reason was right. What was wrong is the half that points at
+ * somebody else's file: an exclusion is checkable because the code performs it, but the sentence
+ * excusing it is **prose about another module**, as reliable as the day it was written and re-read
+ * by nobody, because the file carrying it is green.
+ *
+ * This is SH583 one level up. That rule says two implementations of one idea agree only by accident;
+ * this says two instruments *dividing* one idea are complementary only by accident, and the seam is
+ * invisible from both sides.
+ *
+ * ## Why a classified list and not a ban
+ *
+ * Dividing work between two instruments is usually right — `ShAgentCsrfExemptionTest` proving the
+ * effect while `ShCsrfExemptionLintTest` guards the configuration's shape is a better design than
+ * one test doing both badly. The defect is never the division; it is that **nothing re-reads the
+ * claim**. So this holds every such sentence, classified, asserted exactly — the shape
+ * `ShAgentP1ConformanceTest` uses, and for its reason: gaining one must be a reviewable diff with a
+ * verdict attached, rather than a number quietly moving.
+ *
+ * ## What the first run found
+ *
+ * Eleven sentences. Five are live hand-offs and **four of the five verify**; the fifth is SH789's,
+ * already repaired. The rest are other shapes that read the same — a file explaining why it exists
+ * *because* another does not cover something (the healthy direction), a file excluding itself from
+ * its own walk and citing another as precedent for the technique, and one describing an exclusion
+ * that has since been removed.
+ *
+ * So the answer to "were exclusions ever the cheap option they looked like" is: mostly yes, once.
+ * That is worth saying out loud, because the opposite result was the expected one.
+ */
+import assert from "node:assert/strict";
+import { readFile, readdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { join, extname, relative } from "node:path";
+import { test } from "node:test";
+import { isProse } from "./support/source-text.mjs";
+
+// @scans prose reason: the subject IS the prose — a sentence excusing an exclusion by naming
+// another instrument is a claim, and reading it is the whole point (SH740, SH792).
+
+const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+/** How a sentence that names another instrument relates to this one. */
+const Kind = {
+  /** This instrument excludes a case and names another as covering it. The one that can rot. */
+  HANDS_OFF: "hands-off",
+  /** This instrument exists *because* another does not cover the case. Adds coverage, never assumes it. */
+  REVERSE: "reverse",
+  /** A file cutting itself out of its own walk, citing another as precedent for the technique. */
+  SELF: "self-exclusion",
+  /** Describes an exclusion that has since been removed. Kept as history, claims nothing now. */
+  HISTORICAL: "historical",
+};
+
+/**
+ * Every sentence the scan finds, keyed `<file> -> <named instrument>`, with a verdict.
+ *
+ * <p>A `HANDS_OFF` entry must say how its claim was checked. The others say why they are not the
+ * shape, which is the part a reader would otherwise re-derive.</p>
+ */
+const CLAIMS = {
+  "cli/conformance/mcp-budget.conformance.mjs -> ShUnstableSortLintTest": {
+    kind: Kind.HISTORICAL,
+    why: "the exclusion it describes came off with SH757; the sentence is why the collision is "
+      + "still seeded here, not a case being handed anywhere",
+  },
+  "cli/conformance/mcp-refusal.conformance.mjs -> ShTeachingErrorTest": {
+    kind: Kind.REVERSE,
+    why: "the header says the HTTP assertion does NOT cover the transport, and this file is the "
+      + "cover — the healthy direction, where the gap is filled instead of pointed at",
+  },
+  "cli/test/help.test.mjs -> index.mjs": {
+    kind: Kind.HANDS_OFF,
+    why: "`help` is exempt from the flag lint because `index.mjs` answers it before the command "
+      + "runs. Verified: cli/src/index.mjs handles `shio help <command>` itself (SH435), so the "
+      + "exempted case is genuinely unreachable by the lint's subject",
+  },
+  "cli/test/known-debt.test.mjs -> floor-kind.test.mjs": {
+    kind: Kind.SELF,
+    why: "`floor-kind.test.mjs` is the ledger being read, not the cover; the `its own test` the "
+      + "sentence names is three tests down in this same file",
+  },
+  "cli/test/red-suites.test.mjs -> ShDeclaredRedTest": {
+    kind: Kind.HANDS_OFF,
+    why: "the js gate is excluded here and this named the Java comparator as covering it. It did "
+      + "not, in one of the two directions — the defect SH789 found and fixed. Verified now: "
+      + "ShDeclaredRedTest holds both an undeclared-red and an outlived-declaration check",
+  },
+  "cli/test/snapshot.test.mjs -> browser-refusal.test.mjs": {
+    kind: Kind.REVERSE,
+    why: "this test claims to notice something the other's resolution guard cannot, by using the "
+      + "packages rather than resolving them; nothing is excluded here on its account",
+  },
+  "cli/test/source-corpus.test.mjs -> assertion-debt.test.mjs": {
+    kind: Kind.SELF,
+    why: "`INERT_KEYS` is cut from its own walk, citing how assertion-debt cuts its own "
+      + "declaration — a precedent for the technique, not a promise that file covers anything",
+  },
+  "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentCanonicalSlashTest.java -> ShRenderRedirectTest": {
+    kind: Kind.HANDS_OFF,
+    why: "asserts the apply half and says the route half is covered elsewhere. Verified: "
+      + "ShRenderRedirectTest asserts `/docs` 301s to the stored `/docs/`, which is that half",
+  },
+  "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentChangesTest.java -> ShAgentCommitOrderTest": {
+    kind: Kind.HANDS_OFF,
+    why: "does not assert what the watermark holds back and names the other test as doing so. "
+      + "Verified: ShAgentCommitOrderTest injects ShAuditFeedWatermark, holds a position and "
+      + "asserts the feed's ceiling stays below it",
+  },
+  "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentReadTest.java -> assertion-debt.test.mjs": {
+    kind: Kind.SELF,
+    why: "an id is deliberately NOT written here so the debt walk does not credit it (SH641) — an "
+      + "omission to protect another reader, not a case handed to it",
+  },
+  "shio-app/src/test/java/com/viglet/shio/spring/security/ShAgentCsrfExemptionTest.java -> ShCsrfExemptionLintTest": {
+    kind: Kind.HANDS_OFF,
+    why: "proves the effect and says the lint guards the configuration's shape. Verified: "
+      + "ShCsrfExemptionLintTest asserts over the exemption list, refusing a blanket matcher not "
+      + "wrapped in ShStatelessRequestMatcher",
+  },
+};
+
+/**
+ * A sentence saying this instrument is not doing something, or that another is.
+ *
+ * <p>The leading `\b` is load-bearing and was missing on the first run: without it `exempt` matches
+ * inside <b>ShCsrfExemption</b>{@code LintTest}, so every file that merely names that class read as
+ * a hand-off — three of them. A guard for unread claims whose own regex over-matches would have
+ * taught exactly the wrong lesson about how much of this there is.</p>
+ */
+const HANDS_OFF = new RegExp(`\\b(?:${[
+  "nothing is lost", "covered by", "covers it", "is the one that", "does it instead",
+  "belongs (?:here|there|to)", "its own test", "handled (?:by|there)",
+  "that is [A-Za-z0-9.]+'s (?:job|question)", "deliberately (?:not|does not)", "excluded", "exempt",
+  "cannot judge", "does not (?:ask|check|assert|cover|judge)", "leaves .* to", "reads .* from inside",
+].join("|")})`, "i");
+
+/** Another instrument, by the two names this repository gives them. */
+const NAMES_ANOTHER = /\b([A-Z][A-Za-z0-9]*Test|[a-z0-9-]+\.(?:test|conformance)\.mjs|[a-z0-9-]+\.mjs)\b/;
+
+const isSuite = (path) => /\.test\.mjs$|\.conformance\.mjs$|Test\.java$|IT\.java$/.test(path);
+
+async function suiteFiles(dir, out = []) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (["node_modules", "target", ".git", "dist"].includes(entry.name)) continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) await suiteFiles(path, out);
+    else if ([".mjs", ".java"].includes(extname(entry.name)) && isSuite(path)) out.push(path);
+  }
+  return out;
+}
+
+/** Every `<file> -> <named instrument>` a prose line in a suite claims. */
+async function claimsFound() {
+  const found = new Map();
+  const files = [
+    ...await suiteFiles(join(ROOT, "cli")),
+    ...await suiteFiles(join(ROOT, "shio-app/src/test")),
+  ];
+  for (const path of files) {
+    // This file is cut from its own walk, and the irony is the point: it is a `SELF` exclusion of
+    // exactly the kind it catalogues. Unavoidable and stated rather than quiet — the header above
+    // has to name the instruments it is about, in sentences about exclusion, so read raw it reports
+    // half a dozen hand-offs that are really its own documentation. `assertion-debt.test.mjs` and
+    // `source-corpus.test.mjs` cut themselves for the same reason, which is why both are in CLAIMS.
+    if (path.endsWith("handoffs.test.mjs")) continue;
+    const lines = (await readFile(path, "utf8")).split("\n");
+    const self = path.split(/[/\\]/).pop();
+    lines.forEach((line, at) => {
+      if (!isProse(line) || !HANDS_OFF.test(line)) return;
+      // A wrapped sentence puts the name on the next line, which is where SH789's own was.
+      const named = NAMES_ANOTHER.exec(lines.slice(at, at + 3).join(" "));
+      if (!named || named[1] === self) return;
+      const key = `${relative(ROOT, path).replace(/\\/g, "/")} -> ${named[1]}`;
+      if (!found.has(key)) found.set(key, at + 1);
+    });
+  }
+  return found;
+}
+
+test("SH792: every sentence handing a case to another instrument is classified", async () => {
+  const found = await claimsFound();
+  const declared = Object.keys(CLAIMS).sort();
+
+  assert.deepEqual(
+    [...found.keys()].sort(),
+    declared,
+    "a suite says another instrument covers something, and this file does not say whether it "
+      + "does.\nIn `+ actual`: classify it. If it is `hands-off`, GO AND READ the named "
+      + "instrument first — that sentence is prose about another module, and the one time nobody "
+      + "checked, it was wrong for months while both files stayed green (SH789).\nIn `- expected`: "
+      + "the sentence was reworded or deleted, so drop the entry.",
+  );
+});
+
+test("SH792: a hand-off entry says how its claim was checked, in words a reader can re-run", () => {
+  const unchecked = Object.entries(CLAIMS)
+    .filter(([, claim]) => claim.kind === Kind.HANDS_OFF && !/verified/i.test(claim.why))
+    .map(([key]) => key);
+  assert.deepEqual(
+    unchecked,
+    [],
+    "a `hands-off` claim with no `Verified:` in its reason is the original defect written down "
+      + "rather than fixed — the whole finding is that these read as settled while unread.",
+  );
+});
+
+test("SH792: the scan is not vacuous — it finds the claim that was actually false", async () => {
+  // The reader's own proof. SH789's sentence is the one this file exists because of, it is a
+  // *wrapped* one so it exercises the three-line window, and a scan that stopped seeing it would
+  // report a clean repository. Asserted by key rather than by count, because a count is satisfied
+  // by any eleven sentences.
+  const found = await claimsFound();
+  assert.ok(
+    found.has("cli/test/red-suites.test.mjs -> ShDeclaredRedTest"),
+    `the scan found ${found.size} claim(s) and not the one it was written for; either the sentence `
+      + "moved or the window stopped matching, and either way this file is now guarding nothing",
+  );
+  assert.ok(
+    Object.values(CLAIMS).filter((claim) => claim.kind === Kind.HANDS_OFF).length >= 4,
+    "and the classification is not all-one-bucket, which would mean the kinds are decoration",
+  );
+});

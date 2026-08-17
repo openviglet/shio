@@ -190,6 +190,36 @@ Unknown either side is **not** stale. A stamp with no `sha` predates the field a
 no git cannot be asked — inventing staleness from an absence is the same mistake in the other
 direction.
 
+### A hand-off between two instruments is a claim, and it is the one kind nothing verified (SH792)
+
+SH789's defect was not the exclusion and not its reason — both were right. It was the half that
+points at somebody else's file: *nothing is lost, `ShDeclaredRedTest` reads the js stamp from inside
+the Java gate.* An exclusion is checkable because the code performs it. The sentence excusing it is
+**prose about another module**, as reliable as the day it was written and re-read by nobody, because
+the file carrying it is green. SH583 one level up: two instruments *dividing* one idea are
+complementary only by accident, and the seam is invisible from both sides.
+
+`cli/test/handoffs.test.mjs` holds every such sentence, classified and asserted exactly — the
+`ShAgentP1ConformanceTest` shape, so gaining one is a reviewable diff with a verdict rather than a
+number quietly moving. Four kinds, and only the first can rot: `hands-off` (this instrument excludes
+a case and names another as the cover), `reverse` (this one exists *because* another does not cover
+it — the healthy direction, where the gap is filled instead of pointed at), `self-exclusion` (a file
+cut from its own walk, citing another as precedent for the technique), `historical`.
+
+**The count, which was the deliverable (SH322):** eleven sentences, five of them live hand-offs, and
+**four of the five verify** — the fifth is SH789's. So exclusions mostly *were* the cheap option they
+looked like. That is worth stating because the opposite was expected, and a grep that confirms a
+practice is as much of a result as one that condemns it. A `hands-off` entry must carry `Verified:`
+and how, or the second test fails: a claim recorded without being read is the original defect
+written down rather than fixed.
+
+Two things its own first run taught. The regex needed a leading `\b` — without it `exempt` matches
+inside **ShCsrfExemption**`LintTest`, so three files that merely name that class read as hand-offs,
+and a guard for unread claims that over-counts teaches the wrong lesson about how much of this there
+is. And the file is cut from its own walk, which is a `self-exclusion` of exactly the kind it
+catalogues — stated in the code rather than left quiet, because its header has to name the
+instruments it is about, in sentences about exclusion.
+
 ### Two comparators, and the seam between them was open (SH789)
 
 The two directions of the same comparison live in different files, on purpose. `red-suites.test.mjs`
