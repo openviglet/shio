@@ -218,6 +218,71 @@ test("SH782: the reader is not vacuous — it finds the shape it exists to refus
 });
 
 /**
+ * An id whose digits are split across a template interpolation, leaving a shorter id in the source.
+ *
+ * <p>SH801. SH799 needed synthetic ids and wrote them `` `SH9${800 + at}` ``. The values are in the
+ * reserved range and perfectly safe; the <b>source</b> is not, because the static text left in the
+ * file is `SH9` — a real, shipped task — and `assertion-debt`'s walk reads source rather than
+ * runtime values. It credited that task, which the file asserts nothing whatever about.</p>
+ *
+ * <p>SH787 reserved the range for exactly this class and cannot reach it: a reservation protects an
+ * id somebody <b>types</b>, and this one is composed. `` `SH${9800 + at}` `` is the correct spelling
+ * — one character apart, and the wrong one reads better.</p>
+ *
+ * <p>JavaScript only, and that is complete rather than a gap: Java has no template literals, so the
+ * shape cannot occur on that side. It is not that some other instrument covers it.</p>
+ */
+const ID_SPLIT_BY_INTERPOLATION = /SH\d+\$\{/;
+
+test("SH801: an id is not built by splitting its digits across an interpolation", () => {
+  const found = [];
+  let scanned = 0;
+  for (const file of TREES.flatMap((tree) => walk(join(ROOT, tree)))) {
+    scanned += 1;
+    readFileSync(file, "utf8").split("\n").forEach((line, at) => {
+      // The stripper, and this file is why: the comment in `coverage-obligation.test.mjs` that
+      // explains the hazard quotes the broken spelling, so a raw scan reports the sentence
+      // documenting the rule as a breach of it — SH740's trap, met again (SH613's, before that).
+      if (isProse(line)) return;
+      if (ID_SPLIT_BY_INTERPOLATION.test(line)) {
+        found.push(`${file.slice(ROOT.length).replace(/\\/g, "/")}:${at + 1} — ${line.trim()}`);
+      }
+    });
+  }
+
+  console.log(`SH801: ${scanned} file(s) read for an id split across an interpolation`);
+  assert.deepEqual(
+    found,
+    [],
+    "an id's digits are split across a `${…}`, so the text left in this file is a SHORTER id than "
+      + "the one being built — and every reader of this repository's ids reads the source, not the "
+      + "value.\nThat is a payment to whatever task the prefix happens to name: SH799 left the "
+      + "shorter id sitting in the source before its interpolation, and paid its debt (see SH801).\n"
+      + "Put the whole number inside it: `SH${9800 + at}`.",
+  );
+});
+
+test("SH801: the reader is not vacuous — it tells the broken spelling from the fixed one", () => {
+  // Built by concatenation rather than written out, and that is this rule applied to itself: a
+  // fixture spelling the hazard literally would make this file the only thing the check ever
+  // reports — which SH782's header, four hundred lines up, describes as its own oldest problem.
+  // The prefixes are themselves in the reserved range, because this fixture has to leave a split id
+  // in the source to be a fixture at all — and a real one there is a payment (SH787). SH799's own
+  // spelling left a two-digit task's id behind, which is exactly what could not be written here.
+  const broken = "const ids = `SH9123" + "${4 + at}`;";
+  const fixed = "const ids = `SH" + "${91234 + at}`;";
+
+  assert.ok(ID_SPLIT_BY_INTERPOLATION.test(broken),
+    "the spelling that shipped, which is the one this exists to refuse");
+  assert.ok(!ID_SPLIT_BY_INTERPOLATION.test(fixed),
+    "and the correction is silent, or the fix would not clear the check");
+  // SH9123 rather than SH123: a fixture id lives in the reserved range (SH787), and a real one in
+  // an assertion message is a payment to it — which is the whole family this test belongs to.
+  assert.ok(!ID_SPLIT_BY_INTERPOLATION.test("const label = `" + "${gate}-SH9123`;"),
+    "an id AFTER an interpolation leaves the whole id in the source and is not this defect");
+});
+
+/**
  * A pattern that is nothing but alternated bare words — no boundary, no anchor, no adjacent context.
  *
  * <p>SH794. `exempt` written that way matches inside the identifier `ShCsrfExemptionLintTest`, which

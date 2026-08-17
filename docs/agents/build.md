@@ -208,6 +208,28 @@ Unknown either side is **not** stale. A stamp with no `sha` predates the field a
 no git cannot be asked — inventing staleness from an absence is the same mistake in the other
 direction.
 
+### A reserved range protects an id you type, not one you compose (SH801)
+
+SH787 reserved everything from the nine-thousandth id up for fixtures and asserted it from both
+ends. SH799 then needed a list of synthetic ids and wrote them `` `SH9${800 + at}` ``. Every *value*
+is in the reserve and perfectly safe. The **source** is not: the static text left in the file is
+`SH9`, a real shipped task, and `assertion-debt`'s walk reads source rather than runtime values. It
+credited SH9, which that file asserts nothing about.
+
+A reservation protects an id somebody **types**. It cannot reach one that is composed, because the
+thing every reader of this repository's ids actually sees is the literal prefix. Put the whole number
+inside the interpolation — `` `SH${9800 + at}` `` — one character apart, and the wrong one reads
+better.
+
+Guarded in `regex-escape.test.mjs`, which already owns *a literal built by interpolation is not the
+literal its author meant* (SH782, with regexes). **JavaScript only, and that is complete rather than
+a gap**: Java has no template literals, so the shape cannot occur there — not that something else
+covers it.
+
+Its own two fixtures are built by concatenation rather than written out, because a file spelling the
+hazard literally would be the only thing the check ever reports. That is SH782's oldest problem, in
+its own header, met a second time by the rule beneath it.
+
 ### A bare word in a scan is bounded by its neighbours, or by nothing (SH794)
 
 SH792's first run read `exempt` inside **ShCsrfExemption**`LintTest` and reported three innocent

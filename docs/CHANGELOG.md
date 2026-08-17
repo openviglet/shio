@@ -1461,3 +1461,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH798** — The docs gate runs through a wrapper like the other two, so it stamps; it is the fourth key both comparators judge, and a red one with no entry now fails.
 - **SH799** — The queue fails past five, a session's ordinary output, so SH797's backlog would have stopped the sixth ship rather than the twelfth; the bound is asserted either side of itself.
 - **SH800** — A wrapper stamps the java gate, since none of the four in-JVM mechanisms could; each comparator now skips only its own gate, so all four are judged exactly once.
+- **SH801** — A split id leaves a shorter real one in the source, and the lint refuses it; its own fixtures use reserved prefixes because they must contain the hazard to test it.
