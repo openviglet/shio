@@ -9,13 +9,20 @@
 [`red-suites.json`](../../red-suites.json). There is no third state, and "I did not know" was
 the third state for nineteen commits.**
 
-Three suites are gates, and each one is a command a person types:
+Four suites are gates, and each one is a command a person types:
 
 | Key | Command | What it needs |
 |---|---|---|
 | `java` | `./mvnw -pl shio-app -am clean test -Dskip.npm=true` | nothing |
 | `js` | `pnpm test` | `pnpm install` at the root |
 | `conformance` | `pnpm conformance` | a **running instance** built from HEAD |
+| `docs` | `pnpm conformance:docs` | a checkout of `vigletdocs`, via `SHIO_DOCS_DIR` |
+
+The first three are the ones `agents.md` calls the gates, because they are what validates a change.
+`docs` is the fourth **key** — its own job in `suites.yml`, its own trigger, its own red — and it
+joined this table in SH798, which is when it started leaving a stamp. Until then it was the one gate
+you could run without leaving evidence you had, and it carried twelve commits of debt while the
+comparators reported the tree honestly and had nothing to say about it (SH797).
 
 ### What this is for
 
@@ -44,11 +51,13 @@ chose to look.
 
 So the ledger's claim is now compared against what the gates actually said:
 
-- **Each wrapper leaves a stamp.** `pnpm test` and `pnpm conformance` run through
-  `scripts/test-with-log.mjs` and `scripts/conformance-with-log.mjs`, which write
-  `.gates/<key>.json` — exit code, commit, time. Untracked (`/.gates/`), because a stamp is
-  evidence about a command run *here*, and a committed one would let a clone inherit a claim about
-  a run it never made. `pnpm conformance:raw` is the unwrapped command if you need it.
+- **Each wrapper leaves a stamp.** `pnpm test`, `pnpm conformance` and `pnpm conformance:docs` run
+  through `scripts/test-with-log.mjs`, `scripts/conformance-with-log.mjs` and
+  `scripts/conformance-docs-with-log.mjs`, which write `.gates/<key>.json` — exit code, commit,
+  time. Untracked (`/.gates/`), because a stamp is evidence about a command run *here*, and a
+  committed one would let a clone inherit a claim about a run it never made. `pnpm conformance:raw`
+  is the unwrapped command if you need it. The third wrapper is SH798's, and the three are
+  deliberately the same shape: two wrappers that differed would be two behaviours to remember.
 - **`red-suites.test.mjs` compares both directions** — a gate that answered red with no entry, and
   an entry for a gate that has since gone green. The second matters as much as the first: an
   exception outliving its red means the next real failure is already excused.

@@ -33,8 +33,15 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-/** The three keys `red-suites.json` allows, and the only names a stamp may take. */
-export const GATES = ["java", "js", "conformance"];
+/**
+ * The keys `red-suites.json` allows, and the only names a stamp may take.
+ *
+ * <p>`docs` joined as the fourth in SH798. It had been a gate in every sense that matters — its own
+ * job in `suites.yml`, its own trigger, its own input, its own red — and the only one of the four
+ * that could be run without leaving evidence it had been, which is how it carried twelve commits of
+ * debt while the comparators reported the tree honestly and said nothing about it.</p>
+ */
+export const GATES = ["java", "js", "conformance", "docs"];
 
 /** Where stamps live, relative to the repository root. */
 export const GATES_DIR = ".gates";

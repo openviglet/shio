@@ -60,7 +60,10 @@ class ShDeclaredRedTest {
     /** Tests run with {@code shio-app} as the working directory, so the repository is one up. */
     private static final Path ROOT = Path.of("..");
 
-    private static final List<String> GATES = List.of("java", "js", "conformance");
+    // SH798 — `docs` joined as the fourth. It had been a gate in every sense that matters, and the
+    // only one that could be run without leaving a stamp, so this reader had nothing to say about it
+    // while it carried twelve commits of debt (SH797).
+    private static final List<String> GATES = List.of("java", "js", "conformance", "docs");
 
     /** `"suite": "conformance"` — the one field of the ledger this test needs. */
     private static final Pattern DECLARED_SUITE =
@@ -114,7 +117,7 @@ class ShDeclaredRedTest {
 
         // Printed on every run, green or red, and that is the deliverable rather than a courtesy:
         // the defect was a person reading one green gate and never learning about the other two.
-        System.out.println("\n[SH755] the three gates, as last run in this tree\n"
+        System.out.println("\n[SH755] the gates, as last run in this tree\n"
                 + String.join("\n", report)
                 + "\n  (stamps are local and untracked; a gate with no run here is not a failure)\n");
 
@@ -201,7 +204,7 @@ class ShDeclaredRedTest {
         assertThat(GATES)
                 .as("SH755: the gate names are the keys red-suites.json allows and the wrappers "
                         + "write; a name only this file knows would compare nothing")
-                .containsExactlyInAnyOrder("java", "js", "conformance");
+                .containsExactlyInAnyOrder("java", "js", "conformance", "docs");
     }
 
     private static Set<String> declaredSuites() throws IOException {

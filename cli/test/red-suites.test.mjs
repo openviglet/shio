@@ -77,6 +77,9 @@ const SUITES = {
   java: "./mvnw -pl shio-app -am clean test -Dskip.npm=true",
   js: "pnpm test",
   conformance: "pnpm conformance",
+  // SH798 — the fourth, and the one that had been declarable against nothing: it is its own job in
+  // `suites.yml` and its own red, and until it stamped there was no way to declare it here either.
+  docs: "pnpm conformance:docs",
 };
 
 /** An exception is temporary by construction. Fourteen days is the whole of it. */
@@ -311,6 +314,11 @@ test("SH755: the comparator fires in both directions, and an absent stamp fires 
     java: { red: true },
     js: { red: true },
     conformance: { red: false },
+    // SH798 — the fourth gate, green and undeclared, which is the ordinary state and therefore the
+    // one that must move neither list. Adding it here was not optional: the last assertion requires
+    // the fabricated world to cover every gate, so a new one arriving fails this test rather than
+    // being silently unjudged — which is exactly the hole `docs` itself had.
+    docs: { red: false },
   };
   const judged = GATES.filter((gate) => gate !== "js");
 

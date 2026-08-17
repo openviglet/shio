@@ -714,29 +714,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
 
-### XXVI.23 A gate you can run without leaving evidence you ran it (SH798)
-
-`pnpm test` and `pnpm conformance` go through wrappers that write `.gates/<name>.json` —
-the exit code, the commit and the time — which is what `ShDeclaredRedTest` and
-`red-suites.test.mjs` read to answer *what colour is this tree*. `pnpm conformance:docs`
-runs `node --test` directly and writes nothing.
-
-It is not a subset that inherits its parent's answer. It is a **separate job** in
-`suites.yml`, with its own trigger, its own inputs (a checkout of `vigletdocs`) and its
-own way of going red — which it was, for twelve commits, while the full conformance gate
-had not been run at all.
-
-The cost is exact. Running it four times on SH797 left the stamp reading a commit from
-earlier in the day, so the comparators kept reporting `conformance — NOT this tree, so
-not a colour`. That was true of the gate they name and false of the work actually done,
-and the two are indistinguishable from the report.
-
-Which makes this the SH770 problem one row over: that task established that an
-out-of-date stamp must not read as a colour, and this is a gate whose stamp can never be
-up to date because nothing writes it. Wrap it as its own row — `docs` beside `java`,
-`js` and `conformance` — so a green run is recorded and a red one is comparable, and the
-ledger's staleness checks reach the gate that has been carrying the most debt.
-
 ### XXVI.24 A report with no ceiling cannot tell a queue from a backlog (SH799)
 
 SH771 decided the local reader prints rather than fails, and the reasoning holds:
