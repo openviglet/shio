@@ -143,8 +143,9 @@ an earlier command changing what a later one appears to say*:
   one run in six, never reproduced, undiagnosable. And a **pipeline's exit status is
   its last command's**, so the shell reports `grep`'s: `pnpm test` printed `fail 2`
   above `EXIT=0`. Redirect, then read — for all three gates, not just this one:
-  `./mvnw -pl shio-app -am clean test -Dskip.npm=true > shio-test.log 2>&1; echo "EXIT=$?"`
-  then `grep -E "Tests run:.*Failures.*Errors" shio-test.log | tail -1`. On red the
+  `pnpm java` — which is that `./mvnw` line, with the log kept and the outcome stamped where the
+  other gates' comparators can read it (SH800) — then
+  `grep -E "Tests run:.*Failures.*Errors" shio-test.log | tail -1`. On red the
   names are in the log (`grep -E "<<< (FAILURE|ERROR)"`) — read it **before** the next
   `clean`. CI is already honest about this (`set -o pipefail`, asserted by
   `ci-gates.test.mjs`); the trap is local.

@@ -65,6 +65,16 @@ class ShDeclaredRedTest {
     // while it carried twelve commits of debt (SH797).
     private static final List<String> GATES = List.of("java", "js", "conformance", "docs");
 
+    /**
+     * The gate this test runs inside, and therefore the one it cannot judge (SH800).
+     *
+     * <p>Exactly what `red-suites.test.mjs` declares for `js`, and for the same reason: a comparator
+     * reading its own gate's stamp reads the previous run's. The two files exclude one gate each and
+     * judge the other three, so between them every gate is judged once — which is the arrangement
+     * that only became true when `java` started leaving a stamp.</p>
+     */
+    private static final String SELF = "java";
+
     /** `"suite": "conformance"` — the one field of the ledger this test needs. */
     private static final Pattern DECLARED_SUITE =
             Pattern.compile("\"suite\"\\s*:\\s*\"([a-z]+)\"");
@@ -83,15 +93,23 @@ class ShDeclaredRedTest {
         String head = headSha();
 
         for (String gate : GATES) {
+            // SH800 — `java` now HAS a stamp, written by the wrapper `agents.md` documents, and this
+            // test still must not judge it. The stamp on disk is the PREVIOUS run's: judging it here
+            // makes one red run fail the next one for a failure already fixed, then pass on the
+            // third, which is how an instrument teaches people to re-run it twice and believe
+            // neither answer. It is `red-suites.test.mjs`'s reason for excluding `js`, arriving on
+            // this side the moment the stamp existed — and it fired on the first run that had one.
+            //
+            // Nothing is lost, and this time that claim is checked rather than asserted:
+            // `red-suites.test.mjs` judges every gate but its own, so it judges this one, and
+            // SH798's wrapper test holds both exclusions to being exactly the two SELF gates.
+            if (SELF.equals(gate)) {
+                report.add("  " + gate + " — this suite, running now (its stamp is the last run's)");
+                continue;
+            }
             Path stamp = ROOT.resolve(".gates").resolve(gate + ".json");
             if (!Files.isRegularFile(stamp)) {
-                // The java row is a special case and saying "no run recorded" there would be
-                // false in the most confusing available way: this test IS the java gate, and it
-                // cannot stamp its own outcome because a test does not know whether the tests
-                // after it passed. So it says which gate it is rather than pretending ignorance.
-                report.add("  " + gate + ("java".equals(gate)
-                        ? " — this suite, running now (it cannot stamp its own outcome)"
-                        : " — no run recorded in this tree"));
+                report.add("  " + gate + " — no run recorded in this tree");
                 continue;
             }
             String body = Files.readString(stamp, StandardCharsets.UTF_8);

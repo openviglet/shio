@@ -70,7 +70,8 @@ export const PNPM_ARGS = ["--reporter", "append-only",
  * running the suite to test the thing that runs the suite. SH527's rule is the assertion that would
  * have caught the defect at the boundary it crossed, and this is that boundary.</p>
  */
-export function runWithLog(command, args, logPath, { io = process, shell = true } = {}) {
+export function runWithLog(command, args, logPath,
+  { io = process, shell = true, label = "JS suites" } = {}) {
   return new Promise((resolve) => {
     mkdirSync(dirname(logPath), { recursive: true });
     const log = createWriteStream(logPath, { flags: "w" });
@@ -100,9 +101,12 @@ export function runWithLog(command, args, logPath, { io = process, shell = true 
       // Said on both streams, because the whole failure mode is a caller who reads one of them
       // through a filter. A green run says where the log is too: the next red one is somebody
       // else's, and they should not have to find this file to learn the evidence was kept.
+      // SH800 — `label`, because this runner now drives four gates and every one of them announced
+      // itself as the JS suites. A wrapper that names the wrong gate in its own failure line is a
+      // small thing that costs a real minute at the moment somebody is already confused.
       const outcome = code === 0
-        ? `\nJS suites green — full output in ${logPath}\n`
-        : `\nJS suites FAILED (${signal ? `signal ${signal}` : `exit ${code}`}) — the failing `
+        ? `\n${label} green — full output in ${logPath}\n`
+        : `\n${label} FAILED (${signal ? `signal ${signal}` : `exit ${code}`}) — the failing `
           + `test's name is in ${logPath}, which this run kept precisely because the last two `
           + "sightings did not.\n";
       io.stdout.write(outcome);

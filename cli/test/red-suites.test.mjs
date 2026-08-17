@@ -320,13 +320,14 @@ test("SH770: a stamp from another commit is not this tree's colour, in either di
  * correct (a suite cannot know whether the tests after it passed) and it is why the fastest gate,
  * the one somebody actually types, is the one neither comparator judges.</p>
  */
-test("SH798: every gate has a wrapper that stamps it, and java is named as the one that cannot", async () => {
+test("SH798: every gate has a wrapper that stamps it, with no exception left", async () => {
   const scripts = await readFile(new URL("../../scripts/gate-stamp.mjs", import.meta.url), "utf8");
-  const wrappers = (await Promise.all(["test-with-log", "conformance-with-log", "conformance-docs-with-log"]
-    .map((name) => readFile(new URL(`../../scripts/${name}.mjs`, import.meta.url), "utf8")))).join("\n");
+  const wrappers = (await Promise.all(
+    ["test-with-log", "conformance-with-log", "conformance-docs-with-log", "java-with-log"]
+      .map((name) => readFile(new URL(`../../scripts/${name}.mjs`, import.meta.url), "utf8")),
+  )).join("\n");
 
   const unstamped = GATES
-    .filter((gate) => gate !== "java")
     .filter((gate) => !new RegExp(`stamp\\(\\s*ROOT\\s*,\\s*"${gate}"`).test(wrappers));
   assert.deepEqual(
     unstamped,
@@ -334,13 +335,17 @@ test("SH798: every gate has a wrapper that stamps it, and java is named as the o
     "a gate is declared in GATES and no wrapper writes its stamp, so both comparators will report "
       + "it as `no run recorded in this tree` forever — which is indistinguishable from nobody "
       + "having run it, and is how the docs gate carried twelve commits of debt unremarked.\n"
-      + "Add a wrapper beside the other three and point package.json at it.",
+      + "Add a wrapper beside the other four and point package.json at it.",
   );
 
-  assert.ok(
-    GATES.includes("java") && !/stamp\(\s*ROOT\s*,\s*"java"/.test(wrappers),
-    "and `java` is still the one gate no wrapper stamps — if that changed, this exclusion is stale "
-      + "and SH800 is the task that says what should happen to it",
+  // SH800 — this used to end `and java is named as the one that cannot`, with a note that SH800
+  // would say what happens to that exclusion. It says: the exclusion was never about stamping, it
+  // was about a comparator reading its own gate. Now that all four stamp, what remains is one SELF
+  // per comparator — `java` here, `js` there — and every gate is judged by exactly the other one.
+  assert.deepEqual(
+    [...new Set(GATES)].filter((gate) => gate === "java" || gate === "js").sort(),
+    ["java", "js"],
+    "the two SELF gates are the two that host a comparator; a third would need a third reader",
   );
   assert.match(scripts, /export const GATES/, "GATES is read from the shared module, not restated");
 });

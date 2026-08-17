@@ -123,6 +123,14 @@ const CLAIMS = {
     why: "`INERT_KEYS` is cut from its own walk, citing how assertion-debt cuts its own "
       + "declaration — a precedent for the technique, not a promise that file covers anything",
   },
+  "shio-app/src/test/java/com/viglet/shio/ShDeclaredRedTest.java -> red-suites.test.mjs": {
+    kind: Kind.HANDS_OFF,
+    why: "SH800 — this comparator stopped judging `java` once that gate had a stamp, and says the "
+      + "other reader judges it. Written with the words `nothing is lost`, which is the SH789 "
+      + "sentence verbatim, and caught by this reader on the run that added it. Verified: "
+      + "red-suites.test.mjs filters only its own SELF (`js`), so `java` is in its judged set, and "
+      + "SH798's wrapper test holds the two exclusions to being exactly the two comparator hosts",
+  },
   "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentCanonicalSlashTest.java -> ShRenderRedirectTest": {
     kind: Kind.HANDS_OFF,
     why: "asserts the apply half and says the route half is covered elsewhere. Verified: "

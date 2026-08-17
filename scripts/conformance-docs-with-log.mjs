@@ -48,7 +48,7 @@ export const PNPM_ARGS = ["--reporter", "append-only",
   "--filter", "@viglet/shio", "run", "conformance:docs"];
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const code = await runWithLog("pnpm", PNPM_ARGS, LOG);
+  const code = await runWithLog("pnpm", PNPM_ARGS, LOG, { label: "The docs conformance suites" });
   stamp(ROOT, "docs", code);
   process.exit(code);
 }

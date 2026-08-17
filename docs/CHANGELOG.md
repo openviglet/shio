@@ -1460,3 +1460,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH797** — The twelve are named in a row of their own, plus this task so shipping it does not raise the count it just lowered; the declared red is gone and all three gates are green.
 - **SH798** — The docs gate runs through a wrapper like the other two, so it stamps; it is the fourth key both comparators judge, and a red one with no entry now fails.
 - **SH799** — The queue fails past five, a session's ordinary output, so SH797's backlog would have stopped the sixth ship rather than the twelfth; the bound is asserted either side of itself.
+- **SH800** — A wrapper stamps the java gate, since none of the four in-JVM mechanisms could; each comparator now skips only its own gate, so all four are judged exactly once.

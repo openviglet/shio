@@ -51,13 +51,22 @@ chose to look.
 
 So the ledger's claim is now compared against what the gates actually said:
 
-- **Each wrapper leaves a stamp.** `pnpm test`, `pnpm conformance` and `pnpm conformance:docs` run
-  through `scripts/test-with-log.mjs`, `scripts/conformance-with-log.mjs` and
-  `scripts/conformance-docs-with-log.mjs`, which write `.gates/<key>.json` — exit code, commit,
-  time. Untracked (`/.gates/`), because a stamp is evidence about a command run *here*, and a
-  committed one would let a clone inherit a claim about a run it never made. `pnpm conformance:raw`
-  is the unwrapped command if you need it. The third wrapper is SH798's, and the three are
-  deliberately the same shape: two wrappers that differed would be two behaviours to remember.
+- **Each wrapper leaves a stamp.** All four gates run through one in `scripts/` —
+  `test-with-log`, `conformance-with-log`, `conformance-docs-with-log` (SH798) and `java-with-log`
+  (SH800) — which write `.gates/<key>.json`: exit code, commit, time. Untracked (`/.gates/`),
+  because a stamp is evidence about a command run *here*, and a committed one would let a clone
+  inherit a claim about a run it never made. `pnpm conformance:raw` and a bare `./mvnw` are the
+  unwrapped commands if you need them, and they leave no stamp. All four are deliberately the same
+  shape: wrappers that differed would be behaviours to remember.
+- **Each comparator skips its own gate, and only its own (SH800).** `ShDeclaredRedTest` runs inside
+  `java` and `red-suites.test.mjs` inside `js`, and a comparator reading its own gate's stamp reads
+  the *previous* run's — which fails one red run's successor for a failure already fixed, then
+  passes on the third, teaching people to re-run twice and believe neither answer. So each excludes
+  itself and judges the other three, and between them every gate is judged exactly once. That
+  arrangement only became possible when `java` started leaving a stamp; before SH800 it was the one
+  gate outside the comparison entirely, which is the wrong one to lose — SH755's own finding is that
+  eight red CI runs went unread because *the only gate anybody typed was the Java one, and it was
+  green*.
 - **`red-suites.test.mjs` compares both directions** — a gate that answered red with no entry, and
   an entry for a gate that has since gone green. The second matters as much as the first: an
   exception outliving its red means the next real failure is already excused.
