@@ -473,6 +473,56 @@ class ShConvertedLayoutRenderTest {
                 .doesNotContain("shio-nav");
     }
 
+    /**
+     * SH766 — the page whose own title no branch annotated.
+     *
+     * <h2>What the reader measured</h2>
+     *
+     * <p>With SH685's blindness removed, the annotation reader answers for every post on a replica,
+     * and the first row was the page itself: <b>{@code (Page) 0/5}</b>. Nine posts, sixty-seven
+     * annotations over thirty-three declared fields, zero unresolved — the instrument was working,
+     * and the <em>page</em> was the one subject carrying none of its own.</p>
+     *
+     * <p>The cause was one branch. {@code title} was declared only inside
+     * {@code {{#unless content}}}, which a mixed page never takes: ten of twelve pages on that
+     * replica were mixed, so the page's own title was rendered by the captured {@code <h1>} and was
+     * editable by nobody, while every section around it was. A curator could rewrite a hero's
+     * heading and not the page's title.</p>
+     *
+     * <h2>Why the assertion is here and not in the CLI suite</h2>
+     *
+     * <p>Because the defect was invisible to a template assertion: the declaration <em>was</em> in
+     * the template, in a branch, and the branch is chosen per page by data. Only a render decides
+     * which one ran, which is the same argument {@code anAuthorablePageCarriesTheSitesOwnNavigation}
+     * makes one test up — and SH245's rule, that the two halves of a seam are never asserted from
+     * the same side.</p>
+     */
+    @Test
+    @DisplayName("SH766: a mixed page declares its own title, so a curator can edit it")
+    void aMixedPageAnnotatesItsOwnTitle() {
+        String mixed = shPageRenderService.render(siteName, MIXED_URL, ShPostState.DRAFT).html();
+
+        assertThat(mixed)
+                .as("""
+                        the declaration the `{{#unless content}}` branch could never reach. A page \
+                        that keeps the source's markup keeps the source's heading with it, so this \
+                        one draws nothing — it declares, and the visible title stays the one the \
+                        capture recorded. Injecting a second <h1> above somebody else's header to \
+                        make a field reachable is a worse defect than the one it fixes.""")
+                .contains("data-shio-prop=\"title\"");
+        assertThat(mixed)
+                .as("and it is still the source's heading a reader sees: the element carrying the "
+                        + "declaration is hidden, the way SectionTestimonial.quotes is annotated "
+                        + "without being drawn")
+                .doesNotContain("shio-page-title");
+
+        assertThat(shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html())
+                .as("and the composed page is untouched — it has no captured heading, so Shio still "
+                        + "draws the title as well as declaring it. The renderer keeps the authoring "
+                        + "attribute and adds the rendered one beside it, which is why both are here")
+                .contains("<h1 class=\"shio-page-title\" sh-field=\"title\" data-shio-prop=\"title\">");
+    }
+
     @Test
     @DisplayName("SH464: every section field carries data-shio-prop, so the editor has props to bind")
     void everyRenderedFieldIsAnnotatedForTheEditor() {

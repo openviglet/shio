@@ -533,35 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.107 The page whose own fields no branch annotates (SH766)
-
-With SH685's blindness removed the reader answers for every post, and the first row is
-the page itself:
-
-    9e3f13dd…  (Page)  [page]  0/5
-      missing: content, contentAfter, description, sections, title
-
-Nine posts, `67 of 33 declared field(s) annotated`, **0 unresolved** — the instrument is
-working. The Page is the one subject that carries none.
-
-The mechanism is in the generated layout, and it is one branch:
-
-    {{#unless content}}<div class="shio-container">
-      <h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
-
-`title` is annotated **only where there is no verbatim markup**. Ten of twelve pages
-here are mixed, so `content` is truthy and the branch never runs: on every mixed page
-the page's own title is rendered by the captured `<h1>` and is not editable, while the
-sections around it are. A curator can rewrite a hero's heading and not the page's title.
-
-The other four are a different question and probably a smaller one. `description` never
-appears in the body, `sections` and `content` are containers rather than values, and
-`contentAfter` is markup. What a curator needs from these is not an in-place field but a
-way to reach the post — which is what the console is for, and is worth deciding rather
-than inheriting.
-
-The assertion that closes this, per SH527: a mixed page reports its title as editable.
-
 ### XVII.108 The relation that takes an address and means nothing by it (SH767)
 
 `Page.sections` is stored as site-relative paths — a converted page reads `sections:

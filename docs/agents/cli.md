@@ -3160,6 +3160,50 @@ Two existing tests changed and neither claim did: SH520's *"the block nobody acc
 page, byte for byte"* and SH422's chain assertion both now join the parts. What they assert is that
 the bytes survive; SH693 is about where they sit.
 
+## Drawing the title and declaring it are two decisions (SH766)
+
+With SH685's blindness removed the annotation reader answers for every post on a replica, and the
+first row was the page itself:
+
+```
+9e3f13dd…  (Page)  [page]  0/4
+  missing: content, description, sections, title
+```
+
+Nine posts, sixty-seven annotations over thirty-three declared fields, **zero unresolved** — the
+instrument was working, and the *page* was the one subject carrying none of its own.
+
+The cause was one branch. `title` was declared only inside `{{#unless content}}`, which a mixed page
+never takes: ten of twelve pages on that replica were mixed, so the page's own title was rendered by
+the captured `<h1>` and editable by nobody, while every section around it was. **A curator could
+rewrite a hero's heading and not the page's title.**
+
+The conflation was between *drawing* the title and *declaring* it. Shio has to draw it only where
+nothing else does — on a composed page, which has no captured heading — and it has to declare it
+always. So the branch stays and a second one carries the declaration on the pages the first excludes,
+in a `hidden` element:
+
+```
+{{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
+{{#if content}}<div hidden sh-field="title">{{title}}</div>{{/if}}
+```
+
+The visible title on a mixed page stays the source's own. Injecting a second `<h1>` above somebody
+else's header to make a field reachable would be a worse defect than the one it fixes — and the
+shape is not new: `SectionTestimonial.quotes` is annotated without being drawn on the React side, for
+the same reason.
+
+**The assertion is in the JVM, not in the CLI suite**, and that is the point worth keeping. The
+declaration *was* in the template the whole time, in a branch, and which branch runs is decided per
+page by data. A template assertion could only ever have found it present. `ShConvertedLayoutRenderTest`
+renders the mixed fixture through the real engine and asks whether the served page carries
+`data-shio-prop="title"` — which is the half that was false.
+
+The other three fields on that row are a different question and probably a smaller one: `description`
+never appears in the body, and `sections` and `content` are containers rather than values. What a
+curator needs from those is not an in-place field but a way to reach the post, which is the console's
+job.
+
 ## The writer that shipped ahead of the model (SH763)
 
 A clean replication of `www.viglet.org` — 12 pages, 31 candidates, 23 accepted — ended here:

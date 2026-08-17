@@ -1100,6 +1100,27 @@ function declaredFields() {
   return out;
 }
 
+test("SH766: the title is declared on every page shape, and drawn only where nothing else draws it", () => {
+  // The template half. Which branch a page takes is decided by data, so `ShConvertedLayoutRenderTest`
+  // holds the half this cannot: that a real mixed page really emits `data-shio-prop="title"`.
+  const drawn = PAGE_BODY_HTML.indexOf('<h1 class="shio-page-title" sh-field="title">');
+  const declared = PAGE_BODY_HTML.indexOf('{{#if content}}<div hidden sh-field="title">');
+
+  assert.ok(drawn > 0, `the composed page still draws its own title: ${PAGE_BODY_HTML}`);
+  assert.ok(
+    declared > 0,
+    "and the page that kept the source's markup declares it without drawing it — the branch SH766 "
+      + "found empty, where the page's own title was rendered by a captured <h1> and editable by "
+      + `nobody: ${PAGE_BODY_HTML}`,
+  );
+  assert.equal(
+    (PAGE_BODY_HTML.match(/sh-field="title"/g) ?? []).length,
+    2,
+    "two declarations and never both on one page: `{{#unless content}}` and `{{#if content}}` are "
+      + "complementary, so exactly one runs. A third would be a field annotated twice on one page",
+  );
+});
+
 test("SH763: every field a conversion writes is declared by the type it names", async () => {
   const declared = declaredFields();
   assert.ok(

@@ -571,10 +571,26 @@ export const WRAPPER_ROLES = Object.freeze(["shio-container", "shio-stack", "shi
  *
  * <p>Nothing here interpolates, which is what makes the extraction a slice between two backticks
  * rather than a JavaScript parser.</p>
+ *
+ * <h3>Drawing the title and declaring it are two decisions (SH766)</h3>
+ *
+ * <p>`title` used to be annotated in <b>one</b> place: the `{{#unless content}}` branch, which a
+ * mixed page never takes. Measured by SH685's reader on a twelve-page replica, ten of them mixed:
+ * `(Page) 0/5` — the page's own title rendered by the captured `<h1>` and editable by nobody, while
+ * every section around it was. A curator could rewrite a hero's heading and not the page's title.</p>
+ *
+ * <p>The conflation was between <em>drawing</em> the title and <em>declaring</em> it. Shio has to
+ * draw it only where nothing else does — on a composed page, which has no captured heading — and it
+ * has to declare it always. So the branch stays and a second one carries the declaration on the
+ * pages the first excludes, in a `hidden` element: the visible title on a mixed page is the source's
+ * own, and injecting a second `&lt;h1&gt;` above somebody else's header to make a field reachable
+ * would be a worse defect than the one it fixes. The same shape `SectionTestimonial.quotes` already
+ * uses on the React side — annotate without drawing — for the same reason.</p>
  */
 export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-label="Site"><ul>{{#query type="Page" sort="title" limit="50"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}</ul></nav>{{/unless}}
 {{#if content}}{{{content}}}{{/if}}
 {{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
+{{#if content}}<div hidden sh-field="title">{{title}}</div>{{/if}}
 {{#getRelation sections}}
 {{#if html}}<div sh-post="{{id}}" sh-field="html">{{{html}}}</div>{{else}}
 <section class="shio-section" sh-post="{{id}}" data-shio-section="{{type}}" data-shio-align="{{align}}" data-shio-variant="{{variant}}" data-shio-columns="{{columns}}">

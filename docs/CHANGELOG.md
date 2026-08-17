@@ -1226,6 +1226,7 @@
 - **SH768** — A post-type can be declared disposable at creation and never after, is marked SCRATCH in the context pack and agents.md, and `shio post-type rm --scratch` sweeps it — which a teardown cannot, because the run that dies is the one that leaves debris.
 - **SH765** — The region table prints a fourth column naming the sheet that paints each region, and a run collapses only when tag, provenance and painter all agree — so the chrome and the sections being disjoint reads in one glance.
 - **SH763** — Verbatim markup is a section type: SectionMarkup declares one html field and lives in Page.sections, so N splits work, contentAfter is gone, and the replication scenario runs green on a clean instance.
+- **SH766** — Drawing the title and declaring it are two decisions: a hidden branch declares it on the pages the unless-content branch excludes, so a mixed page's own title is editable and the source's heading is untouched.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
