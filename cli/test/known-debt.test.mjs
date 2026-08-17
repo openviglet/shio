@@ -5,26 +5,36 @@
  *
  * SH594 — the ledgers of what is knowingly wrong, and one reader that can answer for all of them.
  *
- * ## The device is sound and it has been invented five times
+ * ## The device is sound and it has now been invented eight times
  *
- * | where | what it holds | since |
+ * <p>The `name` column is the key `LEDGERS` uses, and it is asserted below: this table cannot fall
+ * behind the array again. It did — SH796 found it listing five while the array held eight, because
+ * SH741 made the *count* an assertion and left the index beside it to drift. The three missing were
+ * the three added since.</p>
+ *
+ * | name | what it holds | since |
  * |---|---|---|
- * | `shio/verify-baseline.json` | accepted `verify` findings, per project | SH142 |
- * | `cli/test/assertion-debt.test.mjs` `DEBT` | shipped ids carrying no assertion | SH527 |
- * | `fixtures/source-sites/open-findings.json` | corpus assertions red at HEAD | SH560 |
+ * | `verify-baseline.json` | accepted `verify` findings, per project | SH142 |
+ * | `assertion-debt DEBT` | shipped ids carrying no assertion | SH527 |
+ * | `open-findings.json` | corpus assertions red at HEAD | SH560 |
  * | `red-suites.json` | a suite allowed to be red, with its reason | SH579 |
- * | `cli/conformance/docs-open-findings.json` | published examples red against a live instance | SH499 |
+ * | `docs-open-findings.json` | published examples red against a live instance | SH499 |
+ * | `floor-kind TOLERATED` | absolute floors over a shrinking corpus | SH672 |
+ * | `response budgets AT_THE_WALL` | response ceilings with no headroom, and why | SH743 |
+ * | `per-tool AT_THE_WALL` | MCP tools with no room for another argument | SH795 |
  *
  * <p>The fifth arrived after this file existed and cost one row in `LEDGERS`, which is the whole
  * claim the paragraph below makes. It was invented anyway — SH499 reached for the shape without
  * reading this file — so the device being obvious is confirmed rather than contradicted; what this
- * reader prevents is the fifth being invented *and left unjoined*.</p>
+ * reader prevents is the fifth being invented *and left unjoined*. The sixth was invented and left
+ * unjoined for several blocks (SH741); the seventh and eighth were joined the day they were written,
+ * which is the count assertion working.</p>
  *
  * Each is a **named list rather than a ceiling**, for the same stated reason every time: a ceiling
  * lets one task pay the debt and the next spend it. Each is checked in both directions, so an entry
  * that goes green fails the run. Each was the right call on its own.
  *
- * Together they are four formats, four readers and four places to look, and nothing joined them.
+ * Together they are six formats, eight readers and eight places to look, and nothing joined them.
  *
  * ## What this reader adds, and what it deliberately does not
  *
@@ -304,6 +314,40 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
     ledgers.some((ledger) => ledger.entries.length > 0),
     "no ledger yielded an entry — a reader that parses nothing agrees with everything",
   );
+});
+
+/**
+ * SH796 — the index a reader consults, held to the array a reader does not.
+ *
+ * <p>SH741 asserted the <b>count</b> of `LEDGERS`, so every ledger added since was forced into the
+ * array. Nothing forced any of them into the table at the top of this file, and it drifted to five
+ * of eight — `TOLERATED`, and both `AT_THE_WALL`s, present in the code and absent from the index.</p>
+ *
+ * <p>Which matters here more than it would elsewhere. This file exists so that somebody holding a
+ * new list of accepted wrongness recognises the shape and adds a row instead of writing a ninth
+ * reader. They read the header. A header saying five, when eight exist, is the failure this file was
+ * written to stop, wearing the file's own name.</p>
+ */
+test("SH796: every ledger the array holds is named in both tables a reader consults", async () => {
+  const source = await readFile(fileURLToPath(import.meta.url), "utf8");
+  const indexes = {
+    "this file's own header": source.slice(0, source.indexOf(" */")),
+    // Both, because one drifted to five and the other to four, from the same cause. Guarding the
+    // one nearest the code and trusting the doc would be half a fix — and this session has spent
+    // three tasks on exactly that shape.
+    "docs/agents/build.md": await readFile(join(ROOT, "docs/agents/build.md"), "utf8"),
+  };
+
+  for (const [where, text] of Object.entries(indexes)) {
+    const missing = LEDGERS.map((ledger) => ledger.name).filter((name) => !text.includes(name));
+    assert.deepEqual(
+      missing,
+      [],
+      `a ledger is in LEDGERS and not in ${where}, so the index somebody reads before deciding `
+        + "whether their new list is a row or a ninth reader under-reports what already exists.\n"
+        + "Add the row, using the `name` verbatim — that string is what this check compares.",
+    );
+  }
 });
 
 /**

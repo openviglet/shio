@@ -713,26 +713,3 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 `red-suites.json` entry is no longer evidence either way — **SH789 deleted it**, on the
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
-
-### XXVI.21 The count is asserted and the table beside it is not (SH796)
-
-`known-debt.test.mjs` opens with a table of the ledgers this repository keeps — five
-rows, under a heading that says the device "has been invented five times", and a
-paragraph calling them "four formats, four readers". `LEDGERS` now holds **eight**, and
-forty lines down an assertion says so in as many words.
-
-The code is right and the prose is three rows behind. That is not an accident of care:
-SH741 made the count an **assertion**, so every ledger added since has been forced into
-`LEDGERS` and none was forced into the table. `TOLERATED` (SH672), the response-budget
-`AT_THE_WALL` (SH743) and the per-tool one (SH795) are all in the array and absent from
-the index a reader consults first.
-
-This is SH793 one file over — a number in prose that nothing reproduces — and it is
-worth fixing at the same level: the table is the discoverable half. Somebody deciding
-whether their new exemption file is a ninth reader or a row reads the header, sees five,
-and does not recognise the shape they are about to reinvent, which is the exact failure
-this file was written to stop.
-
-The fix is small and the guard is smaller: assert every `LEDGERS` name appears in the
-file's own header. Then the table cannot fall behind the array, and the heading's count
-stops being a claim about the past worn as a claim about now.

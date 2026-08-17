@@ -351,14 +351,28 @@ nothing served them (`resources/ui/**` is not a served root). A deletion of 330 
 by its diff, and a diff shows what went rather than what stayed. The debt entry said "unasserted";
 the assertion came back red.
 
-### Four ledgers of what is knowingly wrong, and one reader (SH594)
+### The ledgers of what is knowingly wrong, and one reader (SH594)
 
-The device is sound and it has been invented **four** times — `shio/verify-baseline.json`
-(accepted `verify` findings, SH142), `assertion-debt.test.mjs`'s `DEBT` (shipped ids with no
-assertion, SH527), `fixtures/source-sites/open-findings.json` (corpus assertions red at HEAD,
-SH560) and `red-suites.json` (a suite allowed to be red, SH579). Each is a named list rather than
+The device is sound and it has now been invented **eight** times. Each is a named list rather than
 a ceiling, each is checked in both directions, and each was the right call on its own. Together
-they are four formats, four readers and four places to look, and nothing joined them.
+they were six formats, eight readers and eight places to look, and nothing joined them.
+
+| name | what it holds | since |
+|---|---|---|
+| `verify-baseline.json` | accepted `verify` findings, per project | SH142 |
+| `assertion-debt DEBT` | shipped ids carrying no assertion | SH527 |
+| `open-findings.json` | corpus assertions red at HEAD | SH560 |
+| `red-suites.json` | a suite allowed to be red, with its reason | SH579 |
+| `docs-open-findings.json` | published examples red against a live instance | SH499 |
+| `floor-kind TOLERATED` | absolute floors over a shrinking corpus | SH672 |
+| `response budgets AT_THE_WALL` | response ceilings with no headroom, and why | SH743 |
+| `per-tool AT_THE_WALL` | MCP tools with no room for another argument | SH795 |
+
+The `name` column is `LEDGERS`' own key, and **this table is asserted against it** (SH796) — as is
+the identical one in `known-debt.test.mjs`'s header. Both had drifted: SH741 made the *count* an
+assertion, so every ledger added since was forced into the array and none into either index, which
+left the two documents a reader consults first saying four and five while eight existed. A header
+under-reporting the device is the failure this file was written to stop, wearing its own name.
 
 `cli/test/known-debt.test.mjs` does **not** merge them: their scopes are genuinely different, and
 merging would throw away the per-ledger checks that make each honest. It answers the one question
