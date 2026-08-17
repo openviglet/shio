@@ -1437,3 +1437,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
 - **SH775** — docs-shio, the public site and the README say a page is usually mixed and its kept markup is movable content; the matrix drained the four ids that shipped since the last pass.
+- 🗑 **SH776** — abandoned: The premise was false: ShRenderHelperSweepBenchmarkTest has measured a section-composed page since SH312 — five sections is 11 queries against a floor of 6, one lookup per entry — so the corpus does answer it and SH774's inference is now cited to that number rather than re-derived.

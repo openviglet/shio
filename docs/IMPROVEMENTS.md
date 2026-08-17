@@ -662,30 +662,6 @@ The block exists because these were found *while* doing the work and would other
 evaporate with the commit that revealed them — the cheapest findings the project ever
 gets, and the ones with no reporter but the person who tripped over them.
 
-### XXVI.2 The corpus that cannot answer the question the product is about (SH776)
-
-SH774 was filed asking for a measurement — what a section-resolving pass costs on the
-render sweep — and the measurement could not be taken. `ShRenderSweepBenchmarkTest`
-seeds pages holding `{"TITLE": …, "TEXT": …}` and nothing else. **No page in the corpus
-composes a section**, so anything gated on `sections` being present costs exactly zero
-there, and a green number would have meant nothing at all.
-
-That is the shape this project keeps catching in other instruments — a check that passes
-over an empty population — and here it sits under the one law that is supposed to be
-enforced by numbers. P3 makes cost a measured budget; `render.digest.first-page-queries`
-is 21 and `render.sweep.per-page-queries` is 7, and both describe a page shape the SH95
-vocabulary does not produce.
-
-The gap is exactly the product's own subject. A converted page is a `Page` with a
-`sections` list, resolved by `getRelation` one URL at a time through `ShFurlSpellings`'
-four candidate spellings. Nobody has ever counted what that costs per section, so nobody
-knows whether an eight-section page is 8 queries or 32 — and SH774 had to reason from
-the repository's method list instead of from a number.
-
-What is owed is a page in the corpus that composes sections, and a ceiling beside the
-ones already there. The answer may well be that it is fine; the defect is that it is
-unknown while being asserted about.
-
 ### XXVI.3 The relation with no data frame (SH777)
 
 Found by needing it. SH772 had to emit the captured stylesheet once for a page whose

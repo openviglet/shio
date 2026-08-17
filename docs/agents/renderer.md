@@ -1274,7 +1274,13 @@ repair, and it was priced before it was written: `ShPostUnifiedRepository` has *
 lookup** — `findByShSite_IdAndFurlAndState` is per URL, and `ShFurlSpellings` tries up to four
 spellings of each — so the pass costs **one query per section, per render**, against a standalone
 render measured at **21 queries in total** (`render.digest.first-page-queries`). Thirty to a hundred
-and fifty per cent, for a diagnostic banner. The other candidate was a flag on `Page`: the
+and fifty per cent, for a diagnostic banner.
+
+That was an *inference*, and the number already existed (SH776): `ShRenderHelperSweepBenchmarkTest`
+has measured a section-composed page since SH312 — five sections is **11 queries a page against a
+floor of 6**, by id and by URL alike, which is one lookup per entry exactly as reasoned. The
+conclusion was right and its provenance was not, which is a distinction worth keeping: a measured
+number and a plausible one are different kinds of claim. The other candidate was a flag on `Page`: the
 replication-only field SH763 removed, re-added to a shipped type so that a label can be right.
 
 So the banner reads the **composed page**, which costs nothing and is not a proxy for the subject —

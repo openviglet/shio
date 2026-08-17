@@ -891,6 +891,13 @@ public class ShPageRenderService {
      * for a diagnostic banner. The other candidate was a flag on {@code Page}, which is the
      * replication-only field SH763 removed, re-added to a shipped type so a label can be right.</p>
      *
+     * <p><b>That was an inference, and the number already existed</b> (SH776).
+     * {@code ShRenderHelperSweepBenchmarkTest} has measured a section-composed page since SH312:
+     * five sections is <b>11 queries a page against a floor of 6</b>, by id and by URL alike —
+     * one lookup per entry, exactly as reasoned. Cited here rather than re-derived, because a
+     * measured number and a plausible one are different kinds of claim and this file should carry
+     * the first.</p>
+     *
      * <h3>So it reads what was rendered, which is not a proxy for the subject — it IS the subject</h3>
      *
      * <p>The banner describes <em>this render</em>, and the composed page is where the page's own
