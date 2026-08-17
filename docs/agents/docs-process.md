@@ -528,8 +528,25 @@ Two things worth copying from the repair. **Name the task doing the naming**: sh
 itself have raised the count by one, one commit after the commit that lowered it, so it went into the
 same row. And **the local comparators were right the whole time** — every Java run reported
 `conformance — NOT this tree, so not a colour`, because the stamp was twelve commits old (SH770).
-Nobody was told green; nobody looked. Run the third gate when a session has been shipping, or at
-minimum read the `SH758:` line the second gate is already printing.
+Nobody was told green; nobody looked.
+
+### The queue is bounded, so it can stop being one (SH799)
+
+SH771's argument for printing rather than failing is right about **a queue** — one or two ids between
+a ship and the next docs pass — and it says nothing about twelve. So `pnpm test` now fails past
+**five**, which is a session's ordinary output: at that bound SH797's backlog would have stopped the
+sixth ship instead of the twelfth.
+
+A ceiling, where every other ledger here is a named list, and the usual objection does not apply: *a
+ceiling lets one task pay the debt and the next spend it* is about **permanent exemptions**, and an
+entry in this population leaves the moment somebody names the id. Nothing accumulates, so there is
+nothing to spend.
+
+The bound is asserted at both sides of itself with synthetic ids rather than waited for — reaching
+six real ones to discover whether the guard works is the failure it exists to prevent — and the
+number is held against the two facts that chose it: at least one, or it fails the commit that ships
+(what SH771 refused), and under twelve, or it would not have fired during the session that produced
+the incident.
 
 ## Work that cannot start yet, and how to say so (SH784)
 

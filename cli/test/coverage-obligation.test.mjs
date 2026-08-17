@@ -43,6 +43,36 @@ import { code } from "./support/source-text.mjs";
 
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
+/**
+ * How many unnamed ids are a queue, above which they are a backlog (SH799).
+ *
+ * <h2>Why a ceiling here, where this repository usually refuses one</h2>
+ *
+ * <p>Every other ledger in this tree is a <b>named list rather than a ceiling</b>, always for the
+ * same stated reason: a ceiling lets one task pay the debt and the next spend it. That objection is
+ * about <i>permanent exemptions</i>, and it does not apply to this population. An entry here leaves
+ * the moment somebody names the id — nothing accumulates, so there is no debt to spend.</p>
+ *
+ * <h2>Five, and where the number comes from</h2>
+ *
+ * <p>SH771 made this reader print rather than fail, because `COVERAGE.md` is in another repository
+ * and failing the commit in front of you punishes somebody for a gap they cannot close from where
+ * they are standing. That reasoning is exactly right about <b>a queue</b> — one or two ids between a
+ * ship and the next docs pass — and it stops being right at some size, because past that the gap is
+ * no longer the commit in front of you.</p>
+ *
+ * <p>Five is a session's ordinary output. SH797 measured the pathology at <b>twelve</b>, accumulated
+ * across one session while this very line printed the ids on every run and nobody read them; the
+ * only thing that ever objected was the gate needing `vigletdocs` checked out. At five this would
+ * have failed on the sixth ship rather than the twelfth, which is the whole of the improvement.</p>
+ */
+const QUEUE_CEILING = 5;
+
+/** Whether a queue of unnamed ids has stopped being one (SH799). */
+function isBacklog(owing) {
+  return owing.length > QUEUE_CEILING;
+}
+
 /** Every id the ledger records as shipped — the same read SH747's ratchet makes. */
 function shippedIds() {
   const ledger = readFileSync(join(ROOT, "docs", "CHANGELOG.md"), "utf8");
@@ -79,6 +109,53 @@ test("SH758: what shipped since the matrix was refreshed, named while somebody r
     + "  Printed rather than failed on purpose (SH758): SH747's ratchet is the enforcement, and\n"
     + "  this is only the part that asks while the reasons are still fresh.\n",
   );
+
+  // SH799 — printed, and bounded. See QUEUE_CEILING.
+  assert.ok(
+    !isBacklog(owing),
+    `SH799: ${owing.length} shipped ids are waiting to be named, over the ${QUEUE_CEILING} this `
+      + "reader will carry.\n"
+      + "SH758 prints rather than fails because the fix is in another repository, and that argument "
+      + "holds for A QUEUE — one or two ids between a ship and the next docs pass. It stops holding "
+      + "here: this is no longer the commit in front of you owing something, it is a backlog, and "
+      + "the only thing that was ever going to notice is the gate that needs vigletdocs checked "
+      + "out.\nTwo commits, in two repositories:\n"
+      + "  1. vigletdocs/docs-shio/COVERAGE.md — name them in their cluster rows\n"
+      + "  2. here — pnpm run coverage:mirror\n"
+      + `Ids: ${owing.join(" ")}`,
+  );
+});
+
+/**
+ * SH799 — the assertion for the bound, driven rather than waited for.
+ *
+ * <p>The check above only fires when the repository actually owes six ids, which is a state nobody
+ * should have to reach to find out whether the guard works — and the reason SH797 got to twelve is
+ * that the only thing objecting was a gate somewhere else. So the boundary is asserted on both
+ * sides of itself, with synthetic ids in the reserved range (SH787).</p>
+ */
+test("SH799: a queue passes at the ceiling and fails one past it", () => {
+  // `SH${9800 + at}` and not `SH9${800 + at}`: the second leaves the literal `SH9` in this file, and
+  // the debt walk reads source rather than runtime values, so it credited SH9 — a real task this
+  // test asserts nothing about. SH787's hazard in a shape its reserved range does not cover, found
+  // by that walk going red on the first run of this test.
+  const ids = (count) => Array.from({ length: count }, (_, at) => `SH${9800 + at}`);
+
+  assert.equal(isBacklog(ids(0)), false, "nothing owed is not a backlog");
+  assert.equal(isBacklog(ids(QUEUE_CEILING)), false,
+    "and neither is a full queue — SH771's argument holds all the way to the ceiling: the fix is in "
+      + "another repository, so failing a commit for a gap it cannot close punishes the wrong person");
+  assert.equal(isBacklog(ids(QUEUE_CEILING + 1)), true,
+    "one past it is, and that is the whole claim: past this size the gap is not the commit in front "
+      + "of you, it is a backlog nobody is looking at");
+
+  // The number itself, held against the two facts that chose it, so moving it is a reviewed diff
+  // with an argument rather than a quiet loosening.
+  assert.ok(QUEUE_CEILING >= 1,
+    "a ceiling of zero fails the commit that ships an id, which is exactly what SH771 refused");
+  assert.ok(QUEUE_CEILING < 12,
+    "and it must be under twelve, the measured pathology (see SH797) — a ceiling at or above the "
+      + "incident would not have fired during the session that produced it");
 });
 
 test("SH758: the reader is not vacuous — it reads a real ledger, a real mirror and a real diff", () => {

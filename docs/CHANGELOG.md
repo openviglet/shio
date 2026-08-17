@@ -1459,3 +1459,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH796** — Both indexes now list all eight by their LEDGERS key and both are asserted against it — the doc had drifted to four while the file's own header said five.
 - **SH797** — The twelve are named in a row of their own, plus this task so shipping it does not raise the count it just lowered; the declared red is gone and all three gates are green.
 - **SH798** — The docs gate runs through a wrapper like the other two, so it stamps; it is the fourth key both comparators judge, and a red one with no entry now fails.
+- **SH799** — The queue fails past five, a session's ordinary output, so SH797's backlog would have stopped the sixth ship rather than the twelfth; the bound is asserted either side of itself.

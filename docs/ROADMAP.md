@@ -13,7 +13,6 @@
 
 - ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
-- 📋 **SH799** (deps: —) **The coverage queue the cheap gate prints is unbounded, so one unnamed id and twelve read the same** — SH771 made the local reader a report on purpose, since the fix is in another repository — but nothing distinguishes a queue of one from the dozen SH797 found. → §XXVI.24
 - 📋 **SH800** (deps: —) **The java gate leaves no stamp, so it is the one gate neither comparator can judge — and it is the one people run** — Its comparator is inside it and cannot stamp its own outcome; the JS one then finds no stamp to read, so a red java gate is never checked against the ledger. → §XXVI.25
 
 ## Priority
