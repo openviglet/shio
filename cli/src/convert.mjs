@@ -867,8 +867,40 @@ ${PAGE_BODY_HTML}
 export const HEAD_CONVENTIONS_HTML =
   '<meta name="description" content="{{post.summary}}">\n<link rel="canonical" href="{{post.canonical}}">';
 
+/**
+ * The page that carries verbatim markup and no `content` (SH772).
+ *
+ * <h3>What `content` stopped answering</h3>
+ *
+ * <p>`{{#if content}}` was the whole of "this page kept the source's markup" when SH549 shipped. It
+ * is not any more: SH763 moved every run after the first section into `SectionMarkup` posts, so a
+ * page whose `<body>` <b>begins</b> with an accepted block has no leading run at all — no `content`,
+ * no captured stylesheet, and the source's own class names rendered against a sheet that never
+ * arrived. Reproduced before it was fixed: `content` absent, one markup section, `mixed: 1`.</p>
+ *
+ * <h3>What a `{{#if}}` in a head can see, which is the question SH772 asked</h3>
+ *
+ * <p>The page's own fields, and any post it can name by a **literal** address — which is how the
+ * line above resolves the captured theme at all. What it cannot do is ask an <em>aggregate</em>
+ * question about a relation: `getRelation` yields each row as a plain context with <b>no data
+ * frame</b> (`options.fn(row)`), so there is no `@first` or `@index` to fire once on, and
+ * Handlebars has no `any`. That rules out both shapes that would have been cheaper than this one,
+ * and it is why the second branch emits per row rather than once.</p>
+ *
+ * <h3>The bound, stated</h3>
+ *
+ * <p>The typical count is <b>one</b>: this shape means the accepted blocks start at the top, and a
+ * capture's accepted blocks are contiguous (the observation SH763's own rationale rests on), so the
+ * kept markup is the single run after the last of them — one copy, exactly what the first branch
+ * emits today. More than one needs markup <em>between</em> two accepted blocks on a page with no
+ * leading run, and `describeConversion` says so when it writes one, because a megabyte repeated is
+ * a payload regression and a reviewer should hear it from the command that caused it (P9).</p>
+ */
 export const CAPTURED_STYLE_HTML =
-  '{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}';
+  '{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}'
+  + '{{#unless content}}{{#getRelation sections}}{{#if html}}'
+  + '{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}'
+  + '{{/if}}{{/getRelation}}{{/unless}}';
 
 /**
  * The source's own `lang`, when every captured page agreed on one.
@@ -1517,6 +1549,20 @@ export function describeConversion({ document, sections, markup = [], pages = []
       `  ${markup.length} run(s) of kept markup written as SectionMarkup — the source's own bytes, `
         + "in the page's list where they stood, movable and replaceable like any other section",
     );
+    // SH772 — the one shape whose captured stylesheet is emitted per run rather than once, because
+    // a head cannot ask an aggregate question about a relation. Said by the command that produces
+    // it: a megabyte repeated is a payload regression, and a reviewer hearing it here can move an
+    // acceptance rather than discover it as page weight (P9).
+    const markupUrls = new Set(markup.map((post) => post.url));
+    const runs = (page) => (page.data?.sections ?? []).filter((url) => markupUrls.has(url)).length;
+    const repeated = pages.filter((page) => typeof page.data?.content !== "string" && runs(page) > 1);
+    for (const page of repeated) {
+      lines.push(
+        `    ${page.url} begins with an accepted block and keeps ${runs(page)} runs, so the `
+          + "captured stylesheet is referenced once per run. Accept a block later on the page, or "
+          + "leave the first one verbatim, and it goes back to one",
+      );
+    }
   }
   // SH510 — which presentation the reviewer is getting, said out loud. Under SH507 it is the mode's
   // contract rather than an implementation detail, and naming it is also the cheapest statement of

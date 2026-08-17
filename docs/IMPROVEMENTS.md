@@ -533,34 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.113 The stylesheet keyed to the wrong half (SH772)
-
-SH549 put the captured stylesheet on the pages that carry verbatim markup and on no
-others, per page, through one condition in the head:
-
-    {{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}
-
-`content` was the whole of "this page kept the source's markup" when that shipped. It is
-not any more. SH693 split the kept markup in two and SH763 moved everything after the
-first section into `SectionMarkup` posts, so a page whose **first** block was accepted
-has no leading half at all: no `content`, no captured CSS, and every run of the source's
-own markup rendered with the source's own class names against a stylesheet that never
-arrived.
-
-It is not new — SH693's `contentAfter`-only page had exactly this shape, so the defect
-has been reachable since that landed and nothing reported it. What SH763 changes is the
-frequency: any page a reviewer accepts from the top now takes this branch, and accepting
-the hero is the normal first acceptance.
-
-`buildConversion` already had to be corrected for the same reading — `held` counted only
-pages with a `content` string, so those pages were neither `verbatim` nor `mixed` in the
-run's own report. That fix names the condition the template still cannot express: a page
-carries verbatim markup when it has `content` **or** a markup section, and the head has
-no way to ask the second.
-
-The cheap answer is a flag the writer sets and the template reads. The honest one is
-asking what `{{#if}}` in a head can see at all.
-
 ### XVII.114 The declaration three readers agree to need (SH773)
 
 SH767 was filed on a replica where `shio verify --site VigR2` answered `ok` over a page
@@ -586,6 +558,32 @@ clean.
 What is owed is the instrument, not a repair: a shipped vocabulary type whose live copy
 has drifted from the catalogue is a finding, naming the field and the key. The catalogue
 is on the classpath and the live model is one query away.
+
+### XVII.115 The banner keyed to the same wrong half (SH774)
+
+SH772 fixed the head; this is the same reading one surface over, found while fixing it.
+
+`ShPageRenderService.compositionOf` decides the SH559 banner from two model keys:
+`content` present means verbatim, `sections` present means authorable, both means mixed.
+That was exact when it shipped. Since SH763 a page whose `<body>` begins with an
+accepted block has no `content` and every byte of the source's markup in `SectionMarkup`
+posts, so it reports **authorable** — of a page that is mixed.
+
+SH559's own rationale is why this is a task rather than a shrug: *"a label that is wrong
+is worse than no label"*, because it is evidence and it points somewhere. It was written
+about a banner that named a layout; the same sentence convicts this.
+
+The fix is not the head's. A template is evaluated per page with the relation
+resolvable; `compositionOf` runs over the model before anything resolves, and the model
+does not carry the sections' contents — `getRelation` resolves them lazily, inside the
+engine. So the options are a resolution pass for a question only replication asks, or a
+fact the writer states.
+
+Measure first: what that pass costs on the render sweep, since P3 makes the number the
+decider rather than the design argument. If it is free the answer is obvious; if not,
+the flag SH772 rejected has to be re-argued for a banner rather than a stylesheet — a
+much smaller claim, because a wrong banner is a diagnosis and a missing stylesheet is a
+broken page.
 
 ## XIX The public site (Block S)
 

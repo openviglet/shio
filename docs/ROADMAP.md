@@ -11,8 +11,8 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH772** (deps: SH763 ✅) **A mixed page whose first block was accepted keeps the source's markup and gets none of the source's CSS** — The head asks {{#if content}} and that page has none — its kept markup is all SectionMarkup, so the captured stylesheet is never referenced and each run renders bare. → §XVII.113
 - 📋 **SH773** (deps: SH767 ✅) **An instance whose Page.sections lost its references declaration is invisible to the lint, the digest and the write** — Provision never upserts, so a Page made before the vocabulary carried the key keeps a blind field forever and three readers that key on it stay silent. → §XVII.114
+- 📋 **SH774** (deps: SH772 ✅) **The render banner calls a mixed page authorable when its kept markup is all in sections** — compositionOf reads content and sections off the model, and SH763 made content absent on a page that still carries the source's own markup — so the label is wrong, not missing. → §XVII.115
 
 ## Priority
 

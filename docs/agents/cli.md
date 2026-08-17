@@ -3204,6 +3204,58 @@ never appears in the body, and `sections` and `content` are containers rather th
 curator needs from those is not an in-place field but a way to reach the post, which is the console's
 job.
 
+## The stylesheet keyed to the wrong half (SH772)
+
+SH549 put the captured stylesheet on the pages that carry verbatim markup and on no others, per
+page, through one condition in the head:
+
+```
+{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}
+```
+
+`content` was the whole of *"this page kept the source's markup"* when that shipped. It is not any
+more. SH763 moved every run after the first section into `SectionMarkup` posts, so a page whose
+`<body>` **begins** with an accepted block has no leading run at all: no `content`, no captured
+stylesheet, and the source's own class names rendered against a sheet that never arrived.
+
+Reproduced from `buildConversion` before anything was changed — `content` absent, one markup
+section, counted `mixed: 1`. It is not new: SH693's `contentAfter`-only page had the same shape, so
+the defect has been reachable since that landed and nothing reported it.
+
+### What a `{{#if}}` in a head can see, which is the question this task asked
+
+The page's own fields, and any post it can name by a **literal** address — which is how the line
+above resolves the captured theme at all. What it *cannot* do is ask an **aggregate** question about
+a relation: `getRelation` yields each row as a plain context with no data frame (`options.fn(row)`),
+so there is no `@first` or `@index` to fire once on, and Handlebars has no `any`. That measurement
+ruled out both cheaper shapes and is why the second arm emits per row:
+
+```
+{{#unless content}}{{#getRelation sections}}{{#if html}}…{{/if}}{{/getRelation}}{{/unless}}
+```
+
+`{{#if html}}` inside the loop is what keeps the megabyte off an authorable page — a real section
+has no such field — and that is asserted, because it is the regression SH510 spent a task removing.
+
+### The bound, stated rather than hoped for
+
+The typical count is **one**: this shape means the accepted blocks start at the top, and a capture's
+accepted blocks are contiguous — the observation SH763's own rationale rests on — so the kept markup
+is the single run after the last of them. More than one needs markup *between* two accepted blocks
+on a page with no leading run, and `describeConversion` names any page it writes in that shape,
+because a megabyte repeated is a payload regression and a reviewer should hear it from the command
+that caused it (P9).
+
+### The extractor that would have half-tested it
+
+`ShConvertedLayoutRenderTest` slices `CAPTURED_STYLE_HTML` out of `convert.mjs` and renders it in
+the JVM. It took the **first** quoted literal and stopped — correct while the constant was one
+string, and a silent half-test the moment it grew a second branch: the head would have been asserted
+with the `{{#unless content}}` arm missing. It now joins every fragment of the declaration.
+
+The guard is not vacuous, and that was proved rather than assumed: reverting the constant to its
+single arm makes the new test fail, naming the page.
+
 ## The writer that shipped ahead of the model (SH763)
 
 A clean replication of `www.viglet.org` — 12 pages, 31 candidates, 23 accepted — ended here:

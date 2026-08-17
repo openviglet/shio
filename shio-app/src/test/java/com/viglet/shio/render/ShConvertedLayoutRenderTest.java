@@ -145,6 +145,8 @@ class ShConvertedLayoutRenderTest {
     private static final String VERBATIM_URL = "/verbatim";
     /** SH559 — a page that is both, which is the shape the layout's title can least describe. */
     private static final String MIXED_URL = "/mixed";
+    /** SH772 — a mixed page whose kept markup is ALL in sections, so it has no `content`. */
+    private static final String SECTIONED_URL = "/sectioned";
     /** The sentinel the captured theme's CSS carries, so its presence on a page is unambiguous. */
     private static final String CAPTURED_RULE = ".sh549-captured-marker{color:#123456}";
     /**
@@ -329,6 +331,16 @@ class ShConvertedLayoutRenderTest {
             post(site, root, pageType, "Mixed", MIXED_URL,
                     "{\"title\":\"Mixed\",\"content\":\"<section class=\\\"features\\\">"
                             + "<p>Kept</p></section>\",\"sections\":[\"/sections/prose\"]}",
+                    when);
+
+            // SH772 — the shape SH763 made reachable: the page's `<body>` begins with an accepted
+            // block, so there is no leading run and no `content` at all, and every byte of the
+            // source's own markup is in a `SectionMarkup`. Reproduced from `buildConversion` before
+            // the fix: `content` absent, one markup section, counted `mixed: 1`.
+            post(site, sections, postType("SectionMarkup", (byte) 0, when), "Kept", "/sections/kept",
+                    json("html", "<footer class=\"features\"><p>Kept</p></footer>"), when);
+            post(site, root, pageType, "Sectioned", SECTIONED_URL,
+                    "{\"title\":\"Sectioned\",\"sections\":[\"/sections/prose\",\"/sections/kept\"]}",
                     when);
 
             // SH476 — the render half of the round trip: a field holding the characters the source
@@ -1145,6 +1157,58 @@ class ShConvertedLayoutRenderTest {
     }
 
     /**
+     * SH772 — the page that carries verbatim markup and no {@code content}.
+     *
+     * <h2>What {@code content} stopped answering</h2>
+     *
+     * <p>{@code {{#if content}}} was the whole of "this page kept the source's markup" when SH549
+     * shipped. SH763 moved every run after the first section into {@code SectionMarkup} posts, so a
+     * page whose {@code <body>} <b>begins</b> with an accepted block has no leading run at all: no
+     * {@code content}, no captured stylesheet, and the source's own class names rendered against a
+     * sheet that never arrived. Reproduced from {@code buildConversion} before the fix — content
+     * absent, one markup section, {@code mixed: 1}.</p>
+     *
+     * <h2>Why the assertion is a render and not a template check</h2>
+     *
+     * <p>Because the defect is which <em>branch</em> runs, and only data decides that. The head now
+     * carries both arms; a check over the constant could only ever find them present. This is the
+     * same argument {@code aMixedPageAnnotatesItsOwnTitle} makes for SH766, and SH245's rule that
+     * the two halves of a seam are never asserted from the same side.</p>
+     */
+    @Test
+    @DisplayName("SH772: a page whose kept markup is all in sections still gets the captured CSS")
+    void aPageWhoseMarkupIsAllInSectionsStillGetsTheCapturedStylesheet() {
+        String html = shPageRenderService.render(siteName, SECTIONED_URL, ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("""
+                        the stylesheet the kept markup draws against. Without it the source's own                         class names render bare, and every instrument says the page is fine: the                         post exists, the route answers 200, and the markup is all there.""")
+                .contains(CAPTURED_RULE);
+        assertThat(html)
+                .as("and the markup it styles is on the page — or the assertion above would pass "
+                        + "over a page with nothing to style")
+                .contains("class=\"features\"");
+        // `split` takes a regex and the rule carries `{`, which is an illegal repetition — the
+        // literal is quoted rather than counted by hand.
+        assertThat(html.split(Pattern.quote(CAPTURED_RULE), -1))
+                .as("""
+                        once, not once per section. The head cannot ask an aggregate question about                         a relation — `getRelation` yields no data frame, so there is no `@first` to                         fire on — so the second arm emits per markup run, and this page has one.                         `describeConversion` names any page that would take more.""")
+                .hasSize(2);
+    }
+
+    @Test
+    @DisplayName("SH772: a page that composes only real sections is still sent no captured CSS")
+    void anAuthorablePageIsStillNotSentTheCapturedStylesheet() {
+        // The regression the second arm could have caused, and the one SH510 spent a task removing:
+        // `{{#unless content}}` is true on every authorable page too, so the guard that keeps the
+        // megabyte off them is `{{#if html}}` inside the loop — a real section has no such field.
+        assertThat(shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html())
+                .as("a page composing a hero and a rich text carries neither the source's class "
+                        + "names nor a reason to receive a stylesheet defining them")
+                .doesNotContain(CAPTURED_RULE);
+    }
+
+    /**
      * SH555 — the captured stylesheet reaches the browser as CSS, not as escaped text.
      *
      * <h2>One brace between a stylesheet and a browser</h2>
@@ -1275,10 +1339,31 @@ class ShConvertedLayoutRenderTest {
                 .as("CAPTURED_STYLE_HTML is SH549's per-page reference; if it was renamed or "
                         + "interpolated, the contract it pins has no reader left")
                 .isGreaterThanOrEqualTo(0);
-        int open = source.indexOf('\'', start);
-        int close = source.indexOf('\'', open + 1);
-        assertThat(close).as("the string literal is unterminated").isGreaterThan(open);
-        return source.substring(open + 1, close);
+        int end = source.indexOf(';', start);
+        assertThat(end).as("the declaration is unterminated").isGreaterThan(start);
+        // SH772 — every quoted fragment of the expression, joined. This used to take the FIRST
+        // literal and stop, which was right while the constant was one string and became a silent
+        // half-test the moment it grew a second branch: the head would have been asserted with the
+        // `{{#unless content}}` arm missing, and this test's whole job is that the JVM renders what
+        // the CLI writes. Concatenation is the only thing between the quotes, and `+` is not
+        // interpolation — the SH464 rule the constant is single-quoted for still holds.
+        StringBuilder joined = new StringBuilder();
+        int at = start;
+        while (true) {
+            int open = source.indexOf('\'', at);
+            if (open < 0 || open > end) {
+                break;
+            }
+            int close = source.indexOf('\'', open + 1);
+            assertThat(close).as("a string literal is unterminated").isGreaterThan(open);
+            joined.append(source, open + 1, close);
+            at = close + 1;
+        }
+        assertThat(joined.length())
+                .as("the declaration yielded no literal at all, which would make every assertion "
+                        + "about the head pass over an empty string")
+                .isGreaterThan(0);
+        return joined.toString();
     }
 
     /**
