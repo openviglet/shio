@@ -713,29 +713,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Do
 read the `red-suites.json` entry as evidence the flake is live — check its date, and an
 entry that expires unfired is itself the answer.
 
-### XXVI.13 The gate that lies about its exit code is the JS one too (SH788)
-
-SH354 established the rule for the backend suite: tee the run, never pipe it straight
-into `grep`, because the filter that reads the total discards the failure lines and the
-next `clean` deletes the reports. `agents.md` carries it, and it names `./mvnw` only.
-
-The same pipeline is worse on the JS side, and it bit today. `pnpm test 2>&1 | tee
-js-test.log | grep -E "…"` reports **grep's** exit status, not the suite's. The run
-printed `fail 2` and the shell reported `EXIT=0`. Nothing was lost — the log held both
-failing names — but the verdict a reader takes from a green exit code is wrong, and the
-reason a gate has an exit code is so nobody has to read the output to know.
-
-Two things make this worth an id rather than a habit. It is **not** the Maven trap:
-there the danger is losing evidence, here the evidence survives and the verdict is
-wrong, so knowing SH354 does not protect you. And `.github/workflows/suites.yml` runs
-two of the three gates, so the shape is somewhere in CI too — whether it is piped there
-is the first thing to check, and the answer decides whether this is a habit or a live
-hole.
-
-The cure is `pnpm test > log 2>&1; echo "EXIT=$?"` — the verdict from the command, the
-numbers from the log — plus the rule stated once in `agents.md` for all three gates
-rather than for the one that taught it.
-
 ### XXVI.14 An exception with an expiry and a blocked owner is a scheduled red (SH789)
 
 `red-suites.json` holds one exception, for the `fixture-traits` file-level flake. It

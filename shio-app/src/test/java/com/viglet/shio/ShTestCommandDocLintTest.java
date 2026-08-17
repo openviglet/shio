@@ -88,6 +88,53 @@ class ShTestCommandDocLintTest {
                 .isEmpty();
     }
 
+    /**
+     * SH788 — the other thing a pipe costs, and the one SH354's rule does not cover.
+     *
+     * <p>SH354 is about the <em>log</em>: filter a run and you throw away which test failed. This is
+     * about the <em>verdict</em>. A pipeline's exit status is its last command's, so
+     * {@code … clean test | tee x.log | grep -E "…" | tail -1} exits with {@code tail}'s status —
+     * zero, always. The documented command had that shape, and a reader who ran it and saw a clean
+     * exit had been told the suite passed by {@code tail}.</p>
+     *
+     * <p>It is not the same failure and knowing SH354 does not prevent it: there the evidence is
+     * lost and the verdict is honest, here the evidence survives and the verdict is wrong. Measured
+     * on {@code pnpm test}, which printed {@code fail 2} directly above {@code EXIT=0}.</p>
+     *
+     * <p>{@code set -o pipefail} is the escape hatch, because it makes the claim true again — which
+     * is what CI does, asserted from the other side by {@code ci-gates.test.mjs}.</p>
+     */
+    @Test
+    @DisplayName("SH788: a documented command does not take the suite's verdict from a pipeline")
+    void noDocumentedCommandReadsItsVerdictFromAFilter() {
+        List<String> lying = new ArrayList<>();
+        for (Path doc : DOCS) {
+            Matcher matcher = RUNS_THE_SUITE.matcher(read(doc));
+            while (matcher.find()) {
+                String line = matcher.group();
+                // A Markdown table row is not a pipeline, and both files list the gates in one.
+                // Found by the guard's first run, which is the argument for running it before
+                // believing it: the cell `| ./mvnw … clean test | nothing |` has three `|` and no
+                // shell in sight.
+                if (line.strip().startsWith("|")) {
+                    continue;
+                }
+                if (line.contains("|") && !line.contains("||") && !line.contains("pipefail")) {
+                    lying.add(doc.getFileName() + ": " + line.trim());
+                }
+            }
+        }
+
+        assertThat(lying)
+                .as("""
+                        A pipeline exits with its LAST command's status, so a documented run piped \
+                        into `tee`, `grep` or `tail` reports that filter's verdict — green for as \
+                        long as the disk has room. Redirect instead (`> shio-test.log 2>&1`, which \
+                        keeps the run exactly as the tee did) and read the count from the file, or \
+                        put `set -o pipefail` in front of the pipeline.""")
+                .isEmpty();
+    }
+
     @Test
     @DisplayName("the guard is not vacuous: it finds the documented commands it is about")
     void theScanFindsTheCommands() {
@@ -103,7 +150,12 @@ class ShTestCommandDocLintTest {
                 .as("a scan matching nothing would pass forever — the failure every lint here is "
                         + "written against")
                 .isNotEmpty()
-                .anyMatch(line -> line.contains("| grep"));
+                // SH788 — this used to anchor on `anyMatch(line -> line.contains("| grep"))`, which
+                // was fair while the documented command WAS a pipeline. It is not any more, and an
+                // anchor that requires the forbidden shape to exist is a lint holding the docs to
+                // the defect it was written about. The property that survives both spellings is the
+                // one this guard is actually about: a documented run is kept.
+                .anyMatch(line -> KEEPS_THE_RUN.matcher(line).find());
         assertThat(KEEPS_THE_RUN.matcher("… test 2>&1 | tee shio-test.log | grep -E \"x\"").find())
                 .as("the tee spelling")
                 .isTrue();

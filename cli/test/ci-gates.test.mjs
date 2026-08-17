@@ -30,6 +30,38 @@ const WORKFLOWS = join(ROOT, ".github", "workflows");
 
 const read = (name) => readFileSync(join(WORKFLOWS, name), "utf8");
 
+/**
+ * Every `run:` script in a workflow, one entry per step (SH788).
+ *
+ * <p>A hand parse rather than a YAML dependency, because the question is small and the shape is
+ * this repository's own: a `run: |` block scalar whose body is the lines indented past it, or a
+ * one-line `run: <command>`. A step's script is the unit that matters — `set -o pipefail` applies
+ * to the shell that runs one step and to nothing else, so a rule asked file-wide would pass on a
+ * `pipefail` three jobs away.</p>
+ */
+function runBlocks(text) {
+  const lines = text.split("\n");
+  const blocks = [];
+  for (let at = 0; at < lines.length; at += 1) {
+    const inline = /^\s*(?:- )?run: +(?!\|)(.+)$/.exec(lines[at]);
+    if (inline) {
+      blocks.push(inline[1]);
+      continue;
+    }
+    const opens = /^(\s*)(?:- )?run: +\|-?\s*$/.exec(lines[at]);
+    if (!opens) continue;
+    const indent = opens[1].length;
+    const body = [];
+    for (let next = at + 1; next < lines.length; next += 1) {
+      const line = lines[next];
+      if (line.trim() !== "" && line.length - line.trimStart().length <= indent) break;
+      body.push(line);
+    }
+    blocks.push(body.join("\n"));
+  }
+  return blocks;
+}
+
 /** The `on:` block, which is everything before the first top-level key that follows it. */
 function triggers(name) {
   const text = read(name);
@@ -206,6 +238,75 @@ test("SH241: the Java job publishes surefire's own count, not a derived one", ()
       + "`<<< FAILURE!` lines with it, and then a red run says which count and not which test");
   assert.doesNotMatch(suites, /mvnw[^\n]*\s-q\b/,
     "`-q` hides the Results: line, which is the one number that is not a guess (SH283)");
+});
+
+/**
+ * The gate commands, as the test above names them — one list, so the two cannot drift (SH583).
+ *
+ * <p>Deliberately the *commands* and not every line in a workflow. A pipe whose exit code nobody
+ * reads is not a defect: the Java job's summary step pipes `grep` into `tail` to publish a count,
+ * with `|| echo` handling the miss, and demanding `pipefail` there would be noise. The rule is about
+ * a line whose exit code IS the verdict.</p>
+ */
+const GATE_COMMANDS = /\b(mvnw|pnpm (test|conformance|lint))\b/;
+
+/**
+ * SH788 — the assertion for a gate that reports somebody else's exit code.
+ *
+ * <h2>The measurement, and it is the reassuring half</h2>
+ *
+ * <p>This rule was written after `pnpm test 2>&1 | tee js-test.log | grep -E "…"` printed `fail 2`
+ * and the shell reported <b>0</b>, because a pipeline's status is its <i>last</i> command's. The
+ * first thing SH788 asked was whether CI had the same shape. It does not: three of the four jobs
+ * run their gate unpiped, and the Java job — the only one that pipes, into `tee` for SH354 — already
+ * sets `set -o pipefail` on the line above. So this was a local habit, not a live hole.</p>
+ *
+ * <h2>Which is exactly when the instrument is worth writing</h2>
+ *
+ * <p>The `pipefail` in that job is one line with no comment saying what it defends, and SH354's rule
+ * as written is about <i>keeping the log</i>. Someone adding a fourth gate would copy the `tee` —
+ * that part is documented — and has no reason to copy the `set`. Then the job reports `tee`'s exit
+ * code, which is 0 for as long as the disk has room, and a red suite is a green tick.</p>
+ *
+ * <p>Not the same failure as SH354's, which is why knowing that rule does not prevent this one:
+ * there the evidence is lost and the verdict is honest, here the evidence survives and the verdict
+ * is wrong. The second is worse, because nobody goes looking.</p>
+ */
+test("SH788: a gate that pipes its output declares pipefail, or it reports the filter's verdict", () => {
+  const offenders = [];
+  for (const name of readdirSync(WORKFLOWS).filter((f) => f.endsWith(".yml"))) {
+    for (const block of runBlocks(read(name))) {
+      const piped = block.split("\n").filter((line) => {
+        const shell = line.replace(/\|\|/g, " ");
+        return shell.includes("|") && GATE_COMMANDS.test(shell);
+      });
+      if (piped.length && !/set +-[a-z]*o +pipefail|set +-o +pipefail/.test(block)) {
+        offenders.push(`${name}: ${piped[0].trim()}`);
+      }
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    "a pipeline's exit status is its LAST command's, so a gate piped into `tee` or `grep` reports "
+      + "that filter's verdict and not the suite's — green for as long as the disk has room.\n"
+      + "Add `set -o pipefail` as the first line of the step's script. Keep the `tee`: SH354 is a "
+      + "separate rule about not losing which test failed, and it does not imply this one.",
+  );
+});
+
+test("SH788: and the reader is not vacuous — it finds the one piped gate that exists", () => {
+  // A scan that parses no run block agrees with every workflow. The Java job is the case: it pipes
+  // its suite into `tee` and sets `pipefail` above it, so it is both the shape this rule is about
+  // and the proof the parser can see one.
+  const blocks = runBlocks(read("suites.yml"));
+  const piped = blocks.filter((b) => GATE_COMMANDS.test(b) && b.replace(/\|\|/g, " ").includes("|"));
+  assert.ok(
+    piped.length > 0 && piped.every((b) => /pipefail/.test(b)),
+    `the parser found ${blocks.length} run block(s) and ${piped.length} piped gate(s); it should `
+      + "find the Java job piping `clean test` into `tee` with `pipefail` set. Zero means the block "
+      + "reader stopped matching this file's shape, and the rule above is guarding nothing",
+  );
 });
 
 test("SH241: no workflow claims a branch this repository does not develop on", () => {

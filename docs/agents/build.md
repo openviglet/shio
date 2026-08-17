@@ -502,12 +502,25 @@ build log is news** — which is the property SH250's verification depended on a
 The verified command:
 
 ```
-./mvnw -pl shio-app -am clean test -Dskip.npm=true 2>&1 | tee shio-test.log | grep -E "Tests run:.*Failures.*Errors" | tail -1
+./mvnw -pl shio-app -am clean test -Dskip.npm=true > shio-test.log 2>&1; echo "EXIT=$?"
 ```
 
-(One line, deliberately: `ShTestCommandDocLintTest` reads these commands a line at a time, so a
-backslash continuation would hide the `| grep` from the guard and the guard would pass on a command
-it can no longer see — which is how it caught its own author breaking it.)
+then read the count out of the file it kept:
+
+```
+grep -E "Tests run:.*Failures.*Errors" shio-test.log | tail -1
+```
+
+**Two commands rather than one, since SH788.** The one-liner this replaced ended
+`| tee shio-test.log | grep -E "…" | tail -1`, and it was wrong in a way that took a year to
+notice: a pipeline's exit status is its **last** command's, so the shell reported `tail`'s. The
+same shape on `pnpm test` printed `fail 2` above `EXIT=0`. The redirect keeps the run exactly as
+the `tee` did — that is SH354's property and it is unchanged — and the verdict now comes from the
+command that has one. Add `set -o pipefail` first if you want it back on one line.
+
+(One line each, deliberately: `ShTestCommandDocLintTest` reads these commands a line at a time, so
+a backslash continuation would hide the redirect from the guard and the guard would pass on a
+command it can no longer see — which is how it caught its own author breaking it.)
 
 **The `tee` is not decoration.** Without it this pipeline answers "how many" and throws away
 "which": the `<<< FAILURE!` lines and the stack trace go into the pipe, and `target/surefire-reports/`

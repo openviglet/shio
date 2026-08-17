@@ -1448,3 +1448,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH785** — The reader matches the declaration's bracket instead of searching for one, reads both debt lists, and prints 120 — the instrument's own figure; a repeated entry is now a failure.
 - **SH786** — The bracket count runs on a length-preserving mask, so prose cannot end a declaration; AT_THE_WALL's eleven parenthesis pairs were balancing it by luck.
 - **SH787** — Fixture ids are reserved above the nine-thousandth and asserted from both ends; six in four files sat 112 tasks from arriving pre-paid, and SH630's hand-kept list folded in.
+- **SH788** — The documented command redirects instead of piping, and two guards refuse the shape — CI was already honest, so the trap was local to the docs that taught it.

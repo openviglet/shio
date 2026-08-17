@@ -136,14 +136,18 @@ an earlier command changing what a later one appears to say*:
   `-q` suppresses surefire's `Results:` summary — the only authoritative total — and
   that directory *accumulates*, so a targeted `-Dtest=X` run's reports inflate the
   next sum.
-- **Tee the run, never pipe it straight into `grep` (SH354).** The filter that
-  reads the total discards the `<<< FAILURE!` lines in the same breath, and the
-  next `clean` removes `target/surefire-reports/` — so a red run leaves *no record
-  of which test failed*. It has happened: one run in six, never reproduced,
-  undiagnosable. Take the count from the run **and keep the run**:
-  `… clean test -Dskip.npm=true 2>&1 | tee shio-test.log | grep -E "Tests run:.*Failures.*Errors" | tail -1`
-  On red, the names are in `shio-test.log` (`grep -E "<<< (FAILURE|ERROR)"`) —
-  read it **before** the next `clean`.
+- **Never pipe a gate into `grep` — not for the log (SH354), not for the verdict
+  (SH788).** Two different losses, and knowing one does not save you from the other.
+  The filter discards the `<<< FAILURE!` lines and the next `clean` removes
+  `target/surefire-reports/`, so a red run leaves *no record of which test failed* —
+  one run in six, never reproduced, undiagnosable. And a **pipeline's exit status is
+  its last command's**, so the shell reports `grep`'s: `pnpm test` printed `fail 2`
+  above `EXIT=0`. Redirect, then read — for all three gates, not just this one:
+  `./mvnw -pl shio-app -am clean test -Dskip.npm=true > shio-test.log 2>&1; echo "EXIT=$?"`
+  then `grep -E "Tests run:.*Failures.*Errors" shio-test.log | tail -1`. On red the
+  names are in the log (`grep -E "<<< (FAILURE|ERROR)"`) — read it **before** the next
+  `clean`. CI is already honest about this (`set -o pipefail`, asserted by
+  `ci-gates.test.mjs`); the trap is local.
 
 Run the **full** suite, not a single `-Dtest` class. JS workspace: `pnpm install`
 once at the repo root, **Node ≥26**. Detail — Maven/frontend-plugin wiring, Vite,
