@@ -12,7 +12,7 @@
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
 - ⏳ **SH780** (deps: SH778 ✅) **libuv aborts the fixture-traits process on a handle already closing, and an abort skips the exit instrument** — The race is `t.after(() => source.close())` against `--test-force-exit`; the cure is a teardown that cannot double-close, and it is now reproducible on demand. → §XXVI.6
-- 📋 **SH805** (deps: —) **Twelve seconds of loop drain nobody has explained is what `--test-force-exit` is actually buying** — The gate runs 15.5s with the flag and 28.1s without; explain the drain and the flag can go, taking the libuv abort with it at no cost. → §XXVI.30
+- ⏳ **SH805** (deps: —) **The cli process takes seconds to exit after its reporter has finished, and only under workspace load** — Not a lingering handle in any file — 50-140ms alone, 45ms for the whole suite, ~5.5s inside `pnpm test` — so the cure needs what is still alive at exit under load. → §XXVI.30
 - 📋 **SH806** (deps: —) **Logback's rolling clean-up times out under load and takes eight tests down with a context failure** — The Java gate went red with `Timeout while waiting for clean-up job to finish` over ten log files, and was green on the next run — a false red the suite produces about itself. → §XXVI.31
 
 ## Priority

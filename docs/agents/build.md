@@ -237,8 +237,27 @@ cost has just fallen through the floor: it is diagnosed. A sighting used to mean
 and two tasks; it now means recognising the `UV_HANDLE_CLOSING` line above. Twelve seconds a run,
 forever, is the more expensive of the two.
 
-What the flag is actually buying is **twelve seconds of loop drain that nobody has explained** — that
+What the flag is actually buying is **seconds of process teardown that nobody has explained** — that
 is the thing worth removing, and then the flag can go with no cost at all.
+
+**Where those seconds are, measured three ways (SH805).** They are not a lingering handle in any one
+file, which was the obvious guess:
+
+| measured | drain |
+|---|---|
+| each of the 91 cli files run alone | **50–140 ms**, which is process startup and teardown |
+| the whole cli suite alone, files passed explicitly | **45 ms** |
+| the cli suite inside `pnpm test`, eight workspaces at once | **~5.5 s** |
+
+So it is **load-dependent**, and it lands *after* the reporter has finished: inside the gate cli's own
+`duration_ms` grows only ~0.8 s when the flag is dropped, while the gate's wall clock grows ~5.5 s.
+That gap is the cli process taking seconds to exit once it has already said everything it is going to
+say.
+
+A caution that cost a wrong number here: **the first measurement of this was taken while provocation
+loops were running in the background**, and reported 12.6 s. On a quiet machine the same comparison
+is under a second for the cli suite alone. Both figures are real and they answer different questions
+— which is the point. Measure the gate, on an idle machine, or the number describes the machine.
 
 Two candidates were measured and rejected on the way, both of which sound better than the answer.
 `closeIdleConnections()` on the fixture server — the keep-alive sockets `fetch` leaves — **did not

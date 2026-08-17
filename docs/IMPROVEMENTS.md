@@ -689,32 +689,29 @@ close once, idempotently, and let the forced exit find nothing left to close. Wh
 owed beside it is the reproduction recipe kept somewhere runnable, because the next
 flake of this shape will be diagnosed by summoning it rather than by waiting for it.
 
-### XXVI.30 What the flag is really paying for (SH805)
+### XXVI.30 Where the seconds are, and where they are not (SH805)
 
-SH780 measured the trade and left the flag in place: `pnpm test` takes **15.5 s** with
-`--test-force-exit` and **28.1 s** without, and twelve seconds on every run of the gate
-that runs most often is worse than a failure that is now diagnosed rather than
-unreadable.
+SH780 left `--test-force-exit` in place on a measured trade, and the thing it is buying
+is seconds of process teardown nobody has explained. Explain it and both problems close
+at once: the flag goes, the libuv abort goes with it by construction, and the gate keeps
+its speed.
 
-That is the right call on those two numbers and it settles nothing, because the second
-number is not a law. It is **twelve seconds of event loop refusing to drain after every
-assertion has finished**, and nobody has said what is holding it. Explain that and both
-problems close at once: the flag goes, the libuv abort goes with it by construction, and
-the gate keeps its speed.
+The first half is done and it eliminates the obvious answer. **It is not a lingering
+handle in any one file.** Each of the 91 cli files run alone drains 50–140 ms, which is
+startup and teardown; the whole suite run alone, files passed explicitly, drains **45
+ms**. The seconds appear only inside `pnpm test`, with eight workspaces running at once,
+and they land *after* the reporter: cli's own `duration_ms` grows about 0.8 s when the
+flag is dropped, while the gate's wall clock grows about **5.5 s**. That gap is the
+process failing to exit once it has said everything.
 
-Two candidates are already eliminated. The fixture servers' keep-alive sockets are not
-it — `closeIdleConnections()` changed neither the abort nor the drain — and it is not
-the fixture teardown deadline, whose timer is unref'd precisely so it cannot hold the
-loop.
+So the remaining question is narrow: what is still alive in that process, under that
+load, that is not alive when it runs alone. `process.getActiveResourcesInfo()` answers
+it, and SH778's exit instrument is the place to print it from — that hook now has
+nothing to catch and a reason to be repurposed rather than deleted.
 
-The measurement is the first deliverable and it is cheap:
-`process.getActiveResourcesInfo()` at exit names what is still alive, and the suite
-already has a place to print it — SH778's exit instrument, which now has nothing to
-catch and a reason to be repurposed rather than deleted.
-
-Worth doing rather than living with, because the cost is paid by every run forever, and
-because a suite that will not exit on its own is a fact about this repository that
-nobody has ever had to explain.
+One caution the measuring itself produced. The first figure taken for this was **12.6
+s**, and it was measured while provocation loops ran in the background. Measure the gate
+on an idle machine, or the number describes the machine.
 
 ### XXVI.31 A gate that goes red about its own logging (SH806)
 

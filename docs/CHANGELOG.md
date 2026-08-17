@@ -1466,3 +1466,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH780 (the diagnosis and an idempotent close)** — closeIdleConnections did not fix it and closeAllConnections broke SH698's deadline test; dropping the flag does fix it and costs 12.6s a run, so the flag stays for now.
 - **SH803** — A second run of one gate is refused naming the pid and since when; the lock is per gate, a dead holder is cleared, and release sits outside the try because exit skips a finally.
 - **SH804** — A scan over 1482 files refuses every C0 byte but tab, newline and return; it found two live defects in build.md, and reads itself rather than being exempt.
+- **SH805 (the measurement)** — Not a handle in any file: 50-140ms alone, 45ms for the whole suite, ~5.5s only inside pnpm test and only after the reporter finished — and the first 12.6s figure measured a busy machine.
