@@ -128,6 +128,67 @@ class ShDeclaredRedTest {
                 .isEmpty();
     }
 
+    /**
+     * SH789 — the other direction, and the one nothing was checking for the gate that had a
+     * declaration.
+     *
+     * <h2>The hole, which is a seam and not an oversight</h2>
+     *
+     * <p>Two comparators, deliberately: this one and {@code red-suites.test.mjs}. That one holds
+     * both directions but excludes {@code js}, because it <i>is</i> the js gate and reading its own
+     * previous stamp would fail one run for a failure already fixed. It says so, and says nothing
+     * is lost because this file reads the js stamp from inside the Java gate.</p>
+     *
+     * <p>That sentence was half true. This file only ever asked whether a <b>red</b> gate was
+     * undeclared. The reverse — a declaration outliving the red that justified it — existed only on
+     * the side that cannot judge {@code js}. So the repository's only exception, for the js gate,
+     * was judged by neither comparator, and roughly fifty consecutive green runs never retired
+     * it.</p>
+     *
+     * <p>An exception outliving its red is not tidiness. It is a standing licence: the next real
+     * failure of that suite is already excused, and the person who hits it reads a ledger entry
+     * saying this is known. The expiry date is the backstop, and it fires as a <b>red</b> — so the
+     * cost of nobody noticing is a gate that goes red on a calendar day, for the ledger rather than
+     * for the code.</p>
+     */
+    @Test
+    @DisplayName("SH789: no declaration outlives the red it excuses, including the js gate's")
+    void aDeclarationThatWentGreenIsNotAnException() throws IOException {
+        Set<String> declared = declaredSuites();
+        List<String> outlived = new ArrayList<>();
+        String head = headSha();
+
+        for (String gate : GATES) {
+            if (!declared.contains(gate)) {
+                continue;
+            }
+            Path stamp = ROOT.resolve(".gates").resolve(gate + ".json");
+            if (!Files.isRegularFile(stamp)) {
+                continue;
+            }
+            String body = Files.readString(stamp, StandardCharsets.UTF_8);
+            // SH770 again, and it matters more here than above: a stale GREEN must not retire a
+            // declaration any more than a stale red may block a commit. Excluding it in both
+            // directions is what makes a stale stamp read as an absent one.
+            if (isStale(group(STAMP_SHA, body), head)) {
+                continue;
+            }
+            if (!"true".equals(group(STAMP_RED, body))) {
+                outlived.add(gate);
+            }
+        }
+
+        assertThat(outlived)
+                .as("""
+                        SH789: red-suites.json declares this gate red and it answered GREEN in this \
+                        tree, at this commit. An exception outliving its red is how a suite stops \
+                        being a gate — the next real failure is already excused, and the expiry \
+                        date turns that into a red for the ledger rather than for the code. Delete \
+                        the entry. If it went green for a reason nobody understands, that is a \
+                        task, not a line in a ledger.""")
+                .isEmpty();
+    }
+
     @Test
     @DisplayName("SH755: the reader is not vacuous — it knows the ledger and the gate names")
     void theReaderReadsSomethingReal() throws IOException {

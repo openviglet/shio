@@ -13,7 +13,6 @@
 
 - ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
-- 📋 **SH789** (deps: —) **The red-suites exception expires on 2026-08-24 and the only task that removes it is blocked on a sighting** — SH780 needs the flake to recur and it has not in roughly fifty runs, so the JS gate goes red on a date with no unblocked path to green. → §XXVI.14
 - 📋 **SH790** (deps: —) **The reserved-range guard fires on prose naming the boundary, and its message tells you to move the range** — Writing the boundary in a shipped sentence made roadkeep derive the next id past it, and the failure named allocation — the one cause it was not. → §XXVI.15
 - 📋 **SH791** (deps: —) **The pipeline guard reads only `mvnw` lines, while the rule beside it now claims all three gates** — SH788 stated the rule for the JS and conformance gates too, but its scan matches the Java command alone, so a documented `pnpm test | grep` passes. → §XXVI.16
 

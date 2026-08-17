@@ -1,14 +1,6 @@
 {
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
-  "exceptions": [
-    {
-      "suite": "js",
-      "test": "test/fixture-traits.test.mjs — the file, with no sub-test failing",
-      "task": "SH778",
-      "declared": "2026-08-17",
-      "expires": "2026-08-24",
-      "why": "Second sighting, and the first with the counts kept: 1499 pass, 1 fail, and the failure is the FILE rather than any test in it — `✖ test\fixture-traits.test.mjs ... 'test failed'` with all nine of its sub-tests green and none listed. That shape is not an assertion; under `node --test` a file fails with no failing child when something goes wrong after the tests finish, which points at the captured-fixture server the file serves over a socket (SH528) racing `--test-force-exit`, not at any claim the file makes. Safe to commit over because nothing it asserts went red: the traits it checks all passed in the same run, and the two runs either side of this one were green. It is declared rather than re-run because re-running until it clears is what SH770 calls being right by luck, and the sighting is the perishable evidence SH778 exists to collect. It goes away with SH780. SH778 shipped the evidence half and ruled three causes out by measurement — not an assertion, not an unhandled error, not the teardown deadline — leaving the file's own process exit, which its third instrument now prints. That instrument has not fired in twelve runs since, so the cure has no subject yet and owns its own id; this entry is deleted in the commit that fixes it."
-    }
-  ]
+  "emptied": "SH789 — the `fixture-traits` entry was deleted here rather than by SH780, which is what its own text expected. The grounds are different and that is the point: an exception is a licence to commit over a red, and there was no red. Roughly fifty consecutive green `pnpm test` runs, and the two comparators that should have said so were blind to this gate in exactly this direction (that hole is what SH789 fixed). SH778 and SH780 stay open: they are about diagnosing the flake, not about licensing it, and SH778's third instrument now prints the process exit code — so a third sighting arrives with a diagnosis instead of a mystery, and the correct response to it is SH579's rule from the top, not a licence that was already sitting here.",
+  "exceptions": []
 }

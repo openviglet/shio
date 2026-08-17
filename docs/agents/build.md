@@ -190,6 +190,38 @@ Unknown either side is **not** stale. A stamp with no `sha` predates the field a
 no git cannot be asked — inventing staleness from an absence is the same mistake in the other
 direction.
 
+### Two comparators, and the seam between them was open (SH789)
+
+The two directions of the same comparison live in different files, on purpose. `red-suites.test.mjs`
+holds both — a red gate nothing declares, and a declaration whose gate went green — but it excludes
+`js`, because it **is** the js gate and reading its own previous stamp would fail one run for a
+failure already fixed, then pass on the third. It says so, and says nothing is lost because
+`ShDeclaredRedTest` reads the js stamp from inside the Java gate.
+
+That was half true. `ShDeclaredRedTest` only ever asked whether a **red** gate was undeclared. The
+reverse existed only on the side that cannot judge `js` — so **the repository's only exception, for
+the js gate, was judged by neither**, and roughly fifty consecutive green runs never retired it.
+
+The seam is the thing to remember, not the missing branch: when one instrument excludes a case and
+names another as covering it, that claim is a *reference to code somebody else wrote* and is exactly
+as reliable as the day it was written. Both files now hold both directions, with the js exclusion
+still on the JS side and nowhere else.
+
+**A stale green must not retire a declaration** any more than a stale red may block a commit — SH770
+in both directions, which is what makes an out-of-date stamp read as an absent one rather than as
+evidence.
+
+**What it found, on the run that added it.** The `fixture-traits` exception, declared 2026-08-17 and
+expiring 2026-08-24, against two sightings and ~50 green runs since. It was deleted here rather than
+by SH780, which is what its own text expected — on different grounds, and that is the point. An
+exception is a licence to commit over a red, and there was no red. SH778 and SH780 stay open: they
+are about diagnosing the flake, not licensing it, and SH778's third instrument now prints the process
+exit code, so a third sighting arrives with a diagnosis rather than a mystery. The right response to
+that sighting is SH579's rule from the top, not a licence already sitting in the ledger.
+
+Had nobody decided, the expiry would have fired on the 24th — a gate going red **for the ledger
+rather than for the code**, which is the worst available way to learn this.
+
 ### Declaring one
 
 `red-suites.json` is the only place an exception may live, and it is deliberately hostile:

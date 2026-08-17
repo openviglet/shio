@@ -713,28 +713,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Do
 read the `red-suites.json` entry as evidence the flake is live — check its date, and an
 entry that expires unfired is itself the answer.
 
-### XXVI.14 An exception with an expiry and a blocked owner is a scheduled red (SH789)
-
-`red-suites.json` holds one exception, for the `fixture-traits` file-level flake. It
-expires **2026-08-24**, and `red-suites.test.mjs` kills an entry whose date has passed —
-deliberately, so a forgotten exception goes red instead of quiet.
-
-The task that removes it is SH780, and SH780 is blocked on the flake recurring. It has
-not: twelve runs when the entry was written, thirty-seven by the commit that recorded it
-as a fact, and roughly fifty now. So the three states are pinned against each other. On
-the 24th the gate goes red, the entry that explains the red is the thing that went red,
-and neither open task can ship — SH778 is waiting for the same sighting SH780 is.
-
-This is the SH787 shape one turn later: a dated failure that nobody has to be careless
-to hit. It is also not a bug in SH579, which is working exactly as designed; the design
-assumes an exception's owner can act, and this one cannot.
-
-Three ways out, and the choice is the deliverable. Delete the entry and close both tasks
-on the evidence — fifty green runs is a stronger claim than the two sightings that
-opened them. Extend the expiry, which needs a reason better than "not yet". Or keep the
-entry and let SH778 own a standing instrument rather than a wait. What must not happen
-is the date arriving while nobody has decided.
-
 ### XXVI.15 A guard whose message names the wrong cause sends the reader the wrong way (SH790)
 
 SH787 reserved a range for fixture ids and asserted it from both ends. Its changelog
