@@ -1178,6 +1178,27 @@ export const MODES: Mode[] = [
   },
 ];
 
+/**
+ * What a page made of both looks like, which is the ordinary outcome of a per-block
+ * choice and had no copy on this page at all (SH775).
+ *
+ * The modes above are honest about a **block**. A *page* has three shapes, and the third
+ * is the common one: accept the hero and leave the footer, and the page is mixed. Until
+ * SH763 that page's kept markup sat in a field a curator could not reach from the editor,
+ * which made "authorable" quietly conditional on accepting everything.
+ */
+export const MIXED_PAGE = {
+  title: "A page is usually both, and that is the point",
+  body:
+    "The choice is per block, so most pages end up mixed — the hero accepted, the "
+    + "source's header and footer kept. The kept markup is not a leftover: each run of it "
+    + "is a section in the page's own list, in the place it stood, so a curator can move "
+    + "it, replace it with a real section, or delete it — from the same control they "
+    + "compose the rest of the page with. That is how a replica becomes authorable one "
+    + "block at a time instead of all at once, and the page keeps the source's stylesheet "
+    + "for as long as any of its markup is still there.",
+};
+
 /** The bounds, which are the reason the capture is credible rather than a caveat. */
 export const CLONE_BOUNDS = [
   {

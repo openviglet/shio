@@ -58,6 +58,9 @@ import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs
 const DOCS = process.env.SHIO_DOCS_DIR
   ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
 
+/** This repository, for the shipped model SH775 compares the documentation against. */
+const ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+
 /**
  * Names a page may use that this product does not own, and the reason each is not a miss.
  *
@@ -376,6 +379,61 @@ describe("SH499 conformance: the published vocabulary is this product's vocabula
       `SH499/SH697: a page states a number of MCP tools that is not ${size}. A hand-typed count in `
         + "an ungated file is the thing that rots — this one said thirteen for as long as the table "
         + `held two tools that were never built.\n${report(claims)}`,
+    );
+  });
+
+  /**
+   * SH775 — a section type the vocabulary ships and the documentation never names.
+   *
+   * <p>The sweep this closes found the page listing the SH95 vocabulary still naming seven types
+   * after SH763 shipped an eighth. Nothing was wrong with the page when it was written; a type
+   * arrived and the sentence did not move, which is how every hand-kept list in this project has
+   * gone stale — and the reader's only symptom is a capability they never learn exists.</p>
+   *
+   * <p>Decidable, which is why it is a gate rather than a habit: the vocabulary is a fixed set with
+   * a canonical order (`sectionPostTypes`, serialized into the shipped blueprints), and the
+   * documentation either spells a name or it does not. SH322's rule applies — the grep is the
+   * deliverable, because it is what finds the *next* one.</p>
+   *
+   * <p>The blueprint JSON is the source rather than the TypeScript, for the reason
+   * `ShConvertedLayoutRenderTest` reads it too: it is what a running instance provisions, so a name
+   * that reaches an instance and not a page is exactly the gap being measured.</p>
+   */
+  test("SH775: every section type the vocabulary ships is named in the documentation", () => {
+    const catalogue = join(ROOT, "shio-app", "src", "main", "resources", "post-types", "vocabulary");
+    const shipped = readdirSync(catalogue)
+      .filter((file) => file.startsWith("Section") && file.endsWith(".json"))
+      .map((file) => file.slice(0, -".json".length))
+      .sort();
+    const prose = readdirSync(DOCS)
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => readFileSync(join(DOCS, file), "utf8"))
+      .join("\n");
+
+    // A word boundary, not a substring. Found by probing this check rather than by review: a
+    // deliberately broken page spelling `SectionMarkupX` still satisfied `prose.includes(...)`, so
+    // the guard would have passed over the exact staleness it exists to catch. No shipped name is
+    // a prefix of another today, which is precisely why the substring form looked fine.
+    // `\\b` and not `\b`: inside a template literal `\b` is the BACKSPACE escape, so the pattern
+    // becomes U+0008 around the name and matches nothing — which reads as "no type is documented"
+    // and is the same false red as a scan that came back empty. Caught by probing this check.
+    const named = (name) => new RegExp(`\\b${name}\\b`).test(prose);
+
+    assert.ok(shipped.length >= 7,
+      `SH775: the catalogue at ${catalogue} yielded ${shipped.length} section type(s) — a read that `
+        + "came back empty would make the assertion below pass over nothing");
+    process.stdout.write(`
+SH775: ${shipped.length} section type(s) shipped, `
+      + `${shipped.filter(named).length} named in the documentation
+`);
+
+    assert.deepEqual(
+      shipped.filter((name) => !named(name)),
+      [],
+      "SH775: this type is provisioned by a running instance and named nowhere a reader looks. The "
+        + "page listing the vocabulary said seven for as long as it took somebody to notice an "
+        + "eighth had shipped — and a curator's only symptom is a capability they never learn "
+        + "exists. Name it where the vocabulary is listed.",
     );
   });
 

@@ -662,30 +662,6 @@ The block exists because these were found *while* doing the work and would other
 evaporate with the commit that revealed them — the cheapest findings the project ever
 gets, and the ones with no reporter but the person who tripped over them.
 
-### XXVI.1 The sweep a closed block owes (SH775)
-
-Block Q closed with SH774, and the block-completion rule says its reader-facing surfaces
-are brought up to date in one pass: `docs-shio`, `shio-site` and `README.md`.
-
-What changed for a **reader** is not small. Before this round a mixed replica was a page
-with the source's markup in one field and some sections appended below it. After it,
-every run of kept markup is a `SectionMarkup` post in the page's own list — so a curator
-can move it, replace it or delete it from the same control they compose the rest of the
-page with. That is the mixed→authorable path the mode exists to offer, and it is the
-first time it has been true.
-
-The pages that describe the old shape: the replication page's account of fidelity versus
-authorable mode, and anything naming `content` as where kept markup lives. The
-vocabulary is one type longer, which the sections table states. `COVERAGE.md` already
-names all eight ids (SH771), so the matrix is current and this is the prose behind it.
-
-Two smaller claims to check while there: the Universal Editor's reach over a replica now
-includes a mixed page's own title (SH766) and a raw block (SH763), and the vocabulary's
-count appears in more than one place.
-
-Worth doing as one commit rather than per page. The sweep's value is that a reader meets
-one description, and a page-at-a-time pass is how two of them come to disagree.
-
 ### XXVI.2 The corpus that cannot answer the question the product is about (SH776)
 
 SH774 was filed asking for a measurement — what a section-resolving pass costs on the

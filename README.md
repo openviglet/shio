@@ -170,7 +170,10 @@ npx @viglet/shio publish   # explicit, never implicit
 
 `shio clone` captures a live site, `propose` derives a content model from its
 markup, and `convert` turns it into real Shio posts — fidelity mode for a
-pixel-accurate copy, authorable mode for one a curator can edit:
+pixel-accurate copy, authorable mode for one a curator can edit. The choice is
+per block, so most pages end up **mixed**: the blocks you accepted become
+sections, and each run of kept markup becomes a section too — movable and
+replaceable, rather than a field the editor cannot reach.
 
 ```bash
 npx @viglet/shio clone https://example.com --max-pages 50 --render --assets

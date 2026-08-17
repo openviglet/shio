@@ -11,7 +11,6 @@
 
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
-- 📋 **SH775** (deps: —) **Block Q closed and no reader-facing page says a replica's kept markup is now movable content** — Seven tasks changed what a curator can do with a mixed page, and docs-shio, the public site and the README all still describe the shape SH693 left. → §XXVI.1
 - 📋 **SH776** (deps: —) **No benchmark page composes a section, so the render cost of the vocabulary the product is about is unmeasured** — SH774 asked what resolving sections would cost and the sweep could not say: its pages carry a TITLE and a TEXT, so any check gated on sections measures zero there. → §XXVI.2
 - 📋 **SH777** (deps: —) **A template cannot say first, last or index inside a relation, so a per-page fact must be emitted per row** — getRelation calls options.fn(row) with a plain context and no data frame, so Handlebars' @first and @index are absent, as SH772 found looking for somewhere to emit once. → §XXVI.3
 - 📋 **SH778** (deps: —) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the same suite was green, so the evidence is a line in a log. → §XXVI.4

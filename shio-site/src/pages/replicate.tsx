@@ -6,7 +6,7 @@ import { CallToAction } from "@/components/sections/cta";
 import { Container, LawChip, SectionHeader } from "@/components/brand";
 import { CodeBlock } from "@/components/code-block";
 import { Button } from "@/components/ui/button";
-import { CLONE_BOUNDS, MODES, PHASES, PROPOSE_OUTPUT } from "@/lib/site-content";
+import { CLONE_BOUNDS, MIXED_PAGE, MODES, PHASES, PROPOSE_OUTPUT } from "@/lib/site-content";
 import { cn } from "@/lib/utils";
 
 /**
@@ -153,6 +153,11 @@ export function ReplicatePage() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-[#ff6347]/25 bg-[#ff6347]/[0.05] p-5">
+              <h3 className="text-sm font-bold">{MIXED_PAGE.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[#c9b6ae]">{MIXED_PAGE.body}</p>
             </div>
 
             <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-white/10 bg-white/[0.03] p-5">

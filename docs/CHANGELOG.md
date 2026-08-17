@@ -1436,3 +1436,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
+- **SH775** — docs-shio, the public site and the README say a page is usually mixed and its kept markup is movable content; the matrix drained the four ids that shipped since the last pass.
