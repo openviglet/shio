@@ -1463,8 +1463,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH800** — A wrapper stamps the java gate, since none of the four in-JVM mechanisms could; each comparator now skips only its own gate, so all four are judged exactly once.
 - **SH801** — A split id leaves a shorter real one in the source, and the lint refuses it; its own fixtures use reserved prefixes because they must contain the hazard to test it.
 - **SH802** — One runner over a table of four rows, each keeping the prose that chose its mechanism, replaces four files that differed in a command, a log name and a label.
-- **SH780 (the diagnosis and an idempotent close)** — closeIdleConnections did not fix it and closeAllConnections broke SH698's deadline test; dropping the flag does fix it and costs 12.6s a run, so the flag stays for now.
+- **SH780** — `--test-force-exit` is gone, so the abort cannot happen: 120 runs at the provoking concurrency, none — and a paired measurement shows the flag cost nothing it was kept for.
 - **SH803** — A second run of one gate is refused naming the pid and since when; the lock is per gate, a dead holder is cleared, and release sits outside the try because exit skips a finally.
 - **SH804** — A scan over 1482 files refuses every C0 byte but tab, newline and return; it found two live defects in build.md, and reads itself rather than being exempt.
-- **SH805 (the measurement)** — Not a handle in any file: 50-140ms alone, 45ms for the whole suite, ~5.5s only inside pnpm test and only after the reporter finished — and the first 12.6s figure measured a busy machine.
+- **SH805** — There is no drain to remove: beforeExit and exit fire a millisecond apart with only stdio alive, and paired runs put the flag's cost at nothing — the seconds were machine variance.
 - **SH806** — Every context was opening a rolling appender in a temp directory of 309,064 entries; a test logback config removes the file, and the assertion boots a context because a plain one cannot see it.

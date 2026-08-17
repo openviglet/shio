@@ -25,8 +25,6 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
-## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
-
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -661,54 +659,3 @@ abstract.
 The block exists because these were found *while* doing the work and would otherwise
 evaporate with the commit that revealed them — the cheapest findings the project ever
 gets, and the ones with no reporter but the person who tripped over them.
-
-### XXVI.6 The cure, now that the flake can be summoned (SH780)
-
-SH778 waited eighty runs for a third sighting and then stopped waiting. Forty full runs
-at `--test-concurrency=16` produced one on the **first**; a second loop at the same
-concurrency reproduced it on its first too; thirty at `24` produced none. The cost of
-provoking it was four minutes.
-
-The kept run names the cause in a line that is not a test result at all:
-
-    Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94
-
-libuv aborts the process — a native assertion inside Node's event loop (libuv 1.52.1) on
-a Windows async handle closed while already closing. The file's `t.after(() =>
-source.close())` tears the captured fixture server down while `--test-force-exit` forces
-the process out, and the two race.
-
-That also settles why the third instrument never fired in some hundred and twenty runs,
-which had started to read as evidence against the exit hypothesis: **an abort does not
-run `process.on("exit")` handlers**. It was unreachable by construction on the one path
-it was written for, so its silence said nothing. An instrument that cannot fire reports
-zero for the same reason a scan matching nothing does.
-
-What is owed now is the cure, and it is ordinary: a teardown that cannot double-close —
-close once, idempotently, and let the forced exit find nothing left to close. What is
-owed beside it is the reproduction recipe kept somewhere runnable, because the next
-flake of this shape will be diagnosed by summoning it rather than by waiting for it.
-
-### XXVI.30 Where the seconds are, and where they are not (SH805)
-
-SH780 left `--test-force-exit` in place on a measured trade, and the thing it is buying
-is seconds of process teardown nobody has explained. Explain it and both problems close
-at once: the flag goes, the libuv abort goes with it by construction, and the gate keeps
-its speed.
-
-The first half is done and it eliminates the obvious answer. **It is not a lingering
-handle in any one file.** Each of the 91 cli files run alone drains 50–140 ms, which is
-startup and teardown; the whole suite run alone, files passed explicitly, drains **45
-ms**. The seconds appear only inside `pnpm test`, with eight workspaces running at once,
-and they land *after* the reporter: cli's own `duration_ms` grows about 0.8 s when the
-flag is dropped, while the gate's wall clock grows about **5.5 s**. That gap is the
-process failing to exit once it has said everything.
-
-So the remaining question is narrow: what is still alive in that process, under that
-load, that is not alive when it runs alone. `process.getActiveResourcesInfo()` answers
-it, and SH778's exit instrument is the place to print it from — that hook now has
-nothing to catch and a reason to be repurposed rather than deleted.
-
-One caution the measuring itself produced. The first figure taken for this was **12.6
-s**, and it was measured while provocation loops ran in the background. Measure the gate
-on an idle machine, or the number describes the machine.

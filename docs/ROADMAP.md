@@ -9,11 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
-
-- ⏳ **SH780** (deps: SH778 ✅) **libuv aborts the fixture-traits process on a handle already closing, and an abort skips the exit instrument** — The race is `t.after(() => source.close())` against `--test-force-exit`; the cure is a teardown that cannot double-close, and it is now reproducible on demand. → §XXVI.6
-- ⏳ **SH805** (deps: —) **The cli process takes seconds to exit after its reporter has finished, and only under workspace load** — Not a lingering handle in any file — 50-140ms alone, 45ms for the whole suite, ~5.5s inside `pnpm test` — so the cure needs what is still alive at exit under load. → §XXVI.30
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

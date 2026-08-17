@@ -285,8 +285,9 @@ const DEBT = [
   //
   // The assertion that would fit is a timing one, and a timing assertion over a load-dependent
   // effect is a flake by construction — this very round spent two tasks on a flake nobody could
-  // read. The cure half stays open and will carry the assertion: whatever is still alive at exit
-  // under load is a fact a test can name without measuring a clock.
+  // read. There is no cure half to carry one instead: the drain SH805 was filed about does not
+  // exist. `beforeExit` and `exit` fire a millisecond apart with only stdio alive, and paired runs
+  // put the flag's cost at nothing, so what the task delivered is the elimination itself.
   "SH805",
 ].sort(byId);
 

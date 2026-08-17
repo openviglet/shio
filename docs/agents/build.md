@@ -224,40 +224,34 @@ that test *holds* a socket on purpose to prove the deadline fires. Destroying it
 unreachable — this defect's own shape, met a second time inside its fix.
 
 So the measurement asked whether the other half of the race — `--test-force-exit` — is needed at all.
-**The suite exits on its own**, and without the flag the abort does not reproduce:
+**The suite exits on its own, and the flag is gone.** Without it the abort does not reproduce in
+**120 runs** at the concurrency that produced roughly three sightings in ~160.
 
-| | `pnpm test`, wall | abort at `--test-concurrency=16` |
-|---|---|---|
-| with `--test-force-exit` | **15.5 s** | ~3 sightings in ~160 runs |
-| without it | **28.1 s** | none in 80 |
+**Getting to that answer took three measurements and the first two were wrong**, which is the part
+worth keeping. Both said the flag was buying a lot of time — 12.6 s, then ~9.5 s — and on that basis
+SH780 recorded a decision to keep it. Both were taken on a machine that was busy: the first while
+provocation loops ran, the second while other work overlapped. Three identical runs then came back
+**25.8 s, 22.6 s and 16.3 s**, a ten-second spread — larger than the effect being measured.
 
-**The flag stays, and that is a trade rather than a preference.** Dropping it costs **12.6 seconds
-on every run of the gate that runs most often** — an 81% increase — to remove a failure whose real
-cost has just fallen through the floor: it is diagnosed. A sighting used to mean an unreadable red
-and two tasks; it now means recognising the `UV_HANDLE_CLOSING` line above. Twelve seconds a run,
-forever, is the more expensive of the two.
+Measured properly, alternating the two configurations so drift falls on both equally:
 
-What the flag is actually buying is **seconds of process teardown that nobody has explained** — that
-is the thing worth removing, and then the flag can go with no cost at all.
+| | pair 1 | pair 2 | pair 3 | pair 4 | median |
+|---|---|---|---|---|---|
+| with `--test-force-exit` | 12.8 s | 11.8 s | 11.7 s | 11.6 s | **11.7 s** |
+| without it | 11.7 s | 11.9 s | 10.9 s | 12.9 s | **11.8 s** |
 
-**Where those seconds are, measured three ways (SH805).** They are not a lingering handle in any one
-file, which was the obvious guess:
+**There is no cost.** The flag bought nothing, and the trade SH780 recorded was between a real defect
+and a number that does not exist.
 
-| measured | drain |
-|---|---|
-| each of the 91 cli files run alone | **50–140 ms**, which is process startup and teardown |
-| the whole cli suite alone, files passed explicitly | **45 ms** |
-| the cli suite inside `pnpm test`, eight workspaces at once | **~5.5 s** |
+**And there was no drain to explain (SH805, retired).** A probe in the runner — `beforeExit` plus
+`process.getActiveResourcesInfo()` — shows the loop is never held: `beforeExit` fires at 6698 ms and
+`exit` at 6699 ms, one millisecond apart, with only the two stdio pipes alive. Nothing lingers.
+Per-file drain is 50–140 ms and the whole suite alone is 45 ms, both of which are process startup and
+teardown.
 
-So it is **load-dependent**, and it lands *after* the reporter has finished: inside the gate cli's own
-`duration_ms` grows only ~0.8 s when the flag is dropped, while the gate's wall clock grows ~5.5 s.
-That gap is the cli process taking seconds to exit once it has already said everything it is going to
-say.
-
-A caution that cost a wrong number here: **the first measurement of this was taken while provocation
-loops were running in the background**, and reported 12.6 s. On a quiet machine the same comparison
-is under a second for the cli suite alone. Both figures are real and they answer different questions
-— which is the point. Measure the gate, on an idle machine, or the number describes the machine.
+The rule this leaves: **an unpaired timing measurement on a developer machine measures the machine.**
+Alternate the configurations, take medians, and check the spread of identical runs before believing a
+difference — here the spread was twice the claim.
 
 Two candidates were measured and rejected on the way, both of which sound better than the answer.
 `closeIdleConnections()` on the fixture server — the keep-alive sockets `fetch` leaves — **did not
@@ -267,9 +261,9 @@ purpose to prove the deadline fires; destroying it made the instrument unreachab
 defect's own shape met a second time inside its fix.
 
 `closeFixture` is idempotent regardless (SH780): the second call joins the first rather than handing
-libuv a handle that is already closing. That is **not** what removes the flake — the flag is still
-forcing the exit — but closing twice is a thing a teardown should survive, and the old behaviour
-answered the second caller with `ERR_SERVER_NOT_RUNNING`.
+libuv a handle that is already closing. That is **not** what removed the flake — nothing forces the
+exit now — but closing twice is a thing a teardown should survive, and the old behaviour answered the
+second caller with `ERR_SERVER_NOT_RUNNING`.
 
 ### A stamp taken against another commit is not a colour (SH770)
 
