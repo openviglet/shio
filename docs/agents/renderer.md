@@ -1260,6 +1260,36 @@ renderer over one body of content at a second address. See the section on it bel
   and the editor's iframe share it, since three inline copies of one rule is a rule that will be
   right in two of them.
 
+### The banner reads what was rendered, not two model keys (SH774)
+
+SH559 reads the page's composition — `verbatim` / `authorable` / `mixed` — *"from the page's own
+fields, which is the only place the answer is"*. Since SH763 that sentence is false. A page whose
+`<body>` begins with an accepted block has no `content` and every byte of the source's markup in
+`SectionMarkup` posts, so `compositionOf` reported **authorable** of a page that is mixed. SH559's
+own rule convicts it: *a label that is wrong is worse than no label*, because it is evidence and it
+points somewhere.
+
+**The measurement that chose the fix.** Resolving `sections` and asking what they are is the obvious
+repair, and it was priced before it was written: `ShPostUnifiedRepository` has **no bulk furl
+lookup** — `findByShSite_IdAndFurlAndState` is per URL, and `ShFurlSpellings` tries up to four
+spellings of each — so the pass costs **one query per section, per render**, against a standalone
+render measured at **21 queries in total** (`render.digest.first-page-queries`). Thirty to a hundred
+and fifty per cent, for a diagnostic banner. The other candidate was a flag on `Page`: the
+replication-only field SH763 removed, re-added to a shipped type so that a label can be right.
+
+So the banner reads the **composed page**, which costs nothing and is not a proxy for the subject —
+it *is* the subject. The banner describes this render, and the composed page is where the page's own
+fields and its sections have already been brought together. The markup branch of the generated
+layout is the only thing in the vocabulary that draws an `html` field, and the composer turns its
+`sh-field` into `data-shio-prop`, so the annotation is the mark.
+
+The honest limit, stated: a hand-written template that annotates its own `html` field reads the same
+way — and that is a page which genuinely carries markup somebody wrote by hand.
+
+**One more thing changed, and it is the smaller half.** `composer.compose(...)` is now called once
+and read twice rather than being re-composed for the question: producing it twice would be a second
+answer that can differ from the one served.
+
 ### The section vocabulary — `@viglet/shio-sections` (SH95)
 
 Nine post-types (`Page` + `SectionHero`/`SectionFeatureGrid`/`SectionCta`/`SectionLogoWall`/

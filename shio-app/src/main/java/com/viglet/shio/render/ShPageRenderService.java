@@ -242,12 +242,15 @@ public class ShPageRenderService {
         // reporting the second as the first is a wrong diagnosis rather than a missing one.
         Set<String> unpublishedSlots = unresolvedButDrafted(site, slots, regions, state);
 
+        // SH774 — composed once and read twice: the banner asks what this render produced, and
+        // producing it twice would be a second answer that can differ from the one served.
+        String composed = composer.compose(layoutHtml, regions, page.getId(),
+                page.getShPostType() == null ? null : page.getShPostType().getName(),
+                unpublishedSlots, missingTheme);
         return new ShRenderedPage(
                 // SH185: the page's own identity goes onto <body>, so a `sh-field` in a layout
                 // needs no `sh-post` to say what it belongs to.
-                composer.compose(layoutHtml, regions, page.getId(),
-                        page.getShPostType() == null ? null : page.getShPostType().getName(),
-                        unpublishedSlots, missingTheme),
+                composed,
                 site.getName(),
                 page.getFurl(),
                 layout.getTitle(),
@@ -258,7 +261,7 @@ public class ShPageRenderService {
                 // SH559 — from the page's own fields, which is the only place the answer is. The
                 // layout's title used to be the banner's only statement about how a page was made,
                 // and since SH464 one layout serves all three modes, so it named the wrong one.
-                compositionOf(stable));
+                compositionOf(stable, composed));
     }
 
     /**
@@ -854,8 +857,8 @@ public class ShPageRenderService {
      * post type, and most of them are not conversions. A banner that called an {@code Article}
      * "authorable" would be the same defect one type over.</p>
      */
-    private static String compositionOf(Map<String, Object> model) {
-        boolean verbatim = present(model.get("content"));
+    private static String compositionOf(Map<String, Object> model, String html) {
+        boolean verbatim = present(model.get("content")) || keepsMarkupInASection(html);
         boolean composed = present(model.get("sections"));
         if (verbatim && composed) {
             return "mixed";
@@ -864,6 +867,42 @@ public class ShPageRenderService {
             return "verbatim";
         }
         return composed ? "authorable" : null;
+    }
+
+    /**
+     * SH774 — did this page render verbatim markup through a section?
+     *
+     * <h3>What `content` stopped answering, and where the answer moved</h3>
+     *
+     * <p>SH559 read the banner off the page's own fields, *"which is the only place the answer
+     * is"*. Since SH763 that sentence is false: a page whose {@code <body>} begins with an accepted
+     * block has no {@code content} and every byte of the source's markup in {@code SectionMarkup}
+     * posts, so this reported <b>authorable</b> of a page that is mixed. SH559's own rule convicts
+     * that — <i>a label that is wrong is worse than no label</i>, because it is evidence and it
+     * points somewhere.</p>
+     *
+     * <h3>The measurement that chose this over resolving the sections</h3>
+     *
+     * <p>The obvious repair is to resolve {@code sections} and ask what they are. Measured before
+     * writing it: {@code ShPostUnifiedRepository} has <b>no bulk furl lookup</b> —
+     * {@code findByShSite_IdAndFurlAndState} is per URL, and {@code ShFurlSpellings} tries up to
+     * four spellings of each — so the pass costs <b>one query per section, per render</b>, against
+     * a standalone render measured at 21 queries in total. Thirty to a hundred and fifty per cent,
+     * for a diagnostic banner. The other candidate was a flag on {@code Page}, which is the
+     * replication-only field SH763 removed, re-added to a shipped type so a label can be right.</p>
+     *
+     * <h3>So it reads what was rendered, which is not a proxy for the subject — it IS the subject</h3>
+     *
+     * <p>The banner describes <em>this render</em>, and the composed page is where the page's own
+     * fields and its sections have already been brought together, at no cost. The markup branch of
+     * the generated layout is the only thing in the SH95 vocabulary that draws an {@code html}
+     * field, and the composer turns its {@code sh-field} into {@code data-shio-prop} — so the
+     * annotation is the mark. A hand-written template that annotates its own {@code html} field
+     * would read the same way, which is the honest limit and is a page that genuinely carries
+     * markup somebody wrote by hand.</p>
+     */
+    private static boolean keepsMarkupInASection(String html) {
+        return html != null && html.contains("data-shio-prop=\"html\"");
     }
 
     /** A field that holds something — an empty list and a blank string are both absent. */

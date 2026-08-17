@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block Q — Replication (an existing site becomes an authorable Shio site)
-
-- 📋 **SH774** (deps: SH772 ✅) **The render banner calls a mixed page authorable when its kept markup is all in sections** — compositionOf reads content and sections off the model, and SH763 made content absent on a page that still carries the source's own markup — so the label is wrong, not missing. → §XVII.115
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

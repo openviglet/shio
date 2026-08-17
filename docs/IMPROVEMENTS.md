@@ -533,32 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.115 The banner keyed to the same wrong half (SH774)
-
-SH772 fixed the head; this is the same reading one surface over, found while fixing it.
-
-`ShPageRenderService.compositionOf` decides the SH559 banner from two model keys:
-`content` present means verbatim, `sections` present means authorable, both means mixed.
-That was exact when it shipped. Since SH763 a page whose `<body>` begins with an
-accepted block has no `content` and every byte of the source's markup in `SectionMarkup`
-posts, so it reports **authorable** — of a page that is mixed.
-
-SH559's own rationale is why this is a task rather than a shrug: *"a label that is wrong
-is worse than no label"*, because it is evidence and it points somewhere. It was written
-about a banner that named a layout; the same sentence convicts this.
-
-The fix is not the head's. A template is evaluated per page with the relation
-resolvable; `compositionOf` runs over the model before anything resolves, and the model
-does not carry the sections' contents — `getRelation` resolves them lazily, inside the
-engine. So the options are a resolution pass for a question only replication asks, or a
-fact the writer states.
-
-Measure first: what that pass costs on the render sweep, since P3 makes the number the
-decider rather than the design argument. If it is free the answer is obvious; if not,
-the flag SH772 rejected has to be re-argued for a banner rather than a stylesheet — a
-much smaller claim, because a wrong banner is a diagnosis and a missing stylesheet is a
-broken page.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

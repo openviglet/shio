@@ -1289,6 +1289,15 @@ class ShConvertedLayoutRenderTest {
         assertThat(shPageRenderService.render(siteName, MIXED_URL, ShPostState.DRAFT).composition())
                 .as("both fields, which is the shape no single word in a layout title can carry")
                 .isEqualTo("mixed");
+        // SH774 — the same shape with the kept markup in a section rather than in `content`, which
+        // is what SH763 made the normal way to carry it. Read off `content` alone this page answers
+        // "authorable", of a page that is mixed — and SH559's own rule is that a label which is
+        // wrong is worse than no label, because it is evidence and it points somewhere.
+        assertThat(shPageRenderService.render(siteName, SECTIONED_URL, ShPostState.DRAFT)
+                .composition())
+                .as("""
+                        SH774: the page has no `content` at all and every byte of the source's markup in                         a SectionMarkup, so the two model keys SH559 read cannot tell it from an                       authorable page. The composed page can: it is where the fields and the                         sections have already been brought together, and reading it costs nothing                         — resolving the sections instead was measured at one query per section per                         render, against 21 for a whole standalone render.""")
+                .isEqualTo("mixed");
     }
 
     @Test
