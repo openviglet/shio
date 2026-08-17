@@ -692,26 +692,27 @@ reproducible. Filed now because the sighting is the perishable part.
 ### XXVI.6 The cure that waits on a sighting (SH780)
 
 SH778 shipped the evidence half and stopped there on purpose. What it established, by
-measurement rather than guessing, is what the failure is **not**: not an assertion (1499
-pass, 1 fail, and the failure is the file with both its tests green), not an unhandled
-rejection or exception (SH698's handlers print first and printed nothing), and not the
-teardown deadline (`closeFixture` rejects naming the server and its sockets; that
-message is absent and the test owning the `t.after` was green).
+measurement rather than guessing, is what the failure is **not**: not an assertion (the
+file fails with both its tests green), not an unhandled rejection (SH698's handlers
+print first and printed nothing), and not the teardown deadline (`closeFixture` rejects
+naming the server and its sockets; that message is absent and the test owning it was
+green).
 
 What is left is the file's own **process exit**. `node --test` marks a file failed when
 its process exits non-zero whatever its tests said, and `--test-force-exit` is in the
 command the gate runs. SH778's instrument prints that code and the open handles.
 
-**It has not fired, and the negative result is now a fact rather than a wait.** Two
-sightings in roughly fifteen runs before the instrument landed; **thirty-seven since
-without one** — twelve then, fifteen more, and ten serial. At the earlier rate that run
-of clean results is under one per cent likely, so the rate changed rather than the hunt
-being unlucky. Nothing was aimed at it, so any fix was incidental.
+**It has not fired, and the negative result is a fact rather than a wait.** Two
+sightings in roughly fifteen runs before the instrument landed; **around fifty since
+without one**. At the earlier rate that run of clean results is far under one per cent
+likely, so the rate changed rather than the hunt being unlucky. Nothing was aimed at it,
+so any fix was incidental.
 
-Three possibilities remain and nothing yet chooses between them: the defect is gone, its
-trigger left with some other change, or the rate is far below two in fifteen. Do not
-read the `red-suites.json` entry as evidence the flake is live — check its date, and an
-entry that expires unfired is itself the answer.
+Three possibilities remain and nothing chooses between them: the defect is gone, its
+trigger left with some other change, or the rate is far below two in fifteen. The
+`red-suites.json` entry is no longer evidence either way — **SH789 deleted it**, on the
+grounds that an exception licenses a red and there was none. A third sighting now meets
+SH579's rule from the top, with a diagnosis attached.
 
 ### XXVI.15 A guard whose message names the wrong cause sends the reader the wrong way (SH790)
 
@@ -760,3 +761,26 @@ Worth pairing with the non-vacuity anchor while the file is open. That check nam
 `KEEPS_THE_RUN` now rather than a spelling, which is right, but it asserts over the
 whole population — a scan that stopped matching `pnpm` lines entirely would still pass
 on the Maven ones, so the anchor should name one command per gate it claims.
+
+### XXVI.17 A hand-off between two instruments is a claim, and it is the one kind nothing verifies (SH792)
+
+`red-suites.test.mjs` excludes the `js` gate from its own comparison, for a good reason
+it states, and adds: *nothing is lost — `ShDeclaredRedTest` reads the js stamp from
+inside the Java gate.* That sentence was half true. The other file checked one of the
+two directions, so the one exception this repository had was judged by neither, and
+fifty green runs never retired it (SH789).
+
+The exclusion was right. The reason was right. What was wrong is the part that points at
+somebody else's file, and that is the general shape: an exclusion is checkable — the
+code does it — but the sentence excusing it is prose about another module, as reliable
+as the day it was written and re-read by nobody, since the file carrying it is green.
+
+This is SH583 one level up. That rule says two implementations of one idea agree only by
+accident; this says two instruments *dividing* one idea are only complementary by
+accident, and the seam is invisible from both sides.
+
+The deliverable is the grep, before any fix: how many guards exclude a case while naming
+another instrument as the cover, and for each, does that instrument actually cover it.
+SH322's rule. The count is the finding either way — if the answer is one, this is closed
+by saying so, and if it is a dozen, the exclusions were never the cheap option they
+looked like.

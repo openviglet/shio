@@ -15,6 +15,7 @@
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
 - 📋 **SH790** (deps: —) **The reserved-range guard fires on prose naming the boundary, and its message tells you to move the range** — Writing the boundary in a shipped sentence made roadkeep derive the next id past it, and the failure named allocation — the one cause it was not. → §XXVI.15
 - 📋 **SH791** (deps: —) **The pipeline guard reads only `mvnw` lines, while the rule beside it now claims all three gates** — SH788 stated the rule for the JS and conformance gates too, but its scan matches the Java command alone, so a documented `pnpm test | grep` passes. → §XXVI.16
+- 📋 **SH792** (deps: —) **An instrument that excludes a case and names another as covering it is asserting something nobody checks** — SH789 found one such claim half true for months; nothing says how many more of these hand-offs exist or whether the named file still does the job. → §XXVI.17
 
 ## Priority
 
