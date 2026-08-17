@@ -736,3 +736,27 @@ limit that blocks a ship — the SH771 argument still applies to any single comm
 number that fails when the queue has clearly stopped being one, with the same
 both-directions check every other ledger here carries, so the bound falls as the debt is
 paid rather than standing as permanent headroom.
+
+### XXVI.25 Three of four gates are judged, and the missing one is the one anybody runs (SH800)
+
+SH798 made `docs` the fourth key, so `.gates/` now holds `js`, `conformance` and `docs`.
+It will never hold `java`, and both comparators say so in their own words:
+`ShDeclaredRedTest` prints *this suite, running now (it cannot stamp its own outcome)*,
+and `red-suites.test.mjs` finds no file and reports *no run recorded in this tree*.
+
+Each is right on its own. A test cannot know whether the tests after it passed, and an
+absent stamp must not read as a colour. Together they mean **a red java gate is the one
+state the SH579 machinery cannot see** — not declared, not undeclared, simply outside
+the comparison.
+
+That is the wrong gate to lose. It is the fastest, it needs nothing, and it is the one
+somebody types — which SH755 already established, as the reason eight red CI runs went
+unread: *the only gate anybody typed was the Java one, and it was green*. The machinery
+built from that finding covers the two gates that were red and not the one that did the
+convincing.
+
+A wrapper is the obvious shape and it collides with something real: `agents.md`
+documents the raw `./mvnw … > shio-test.log 2>&1`, and a gate whose recording depends on
+remembering a different command records nothing on the runs that matter. So the
+measurement comes first — whether the exit code can be stamped from outside the JVM
+without changing the command a person is told to type.

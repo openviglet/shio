@@ -306,6 +306,45 @@ test("SH770: a stamp from another commit is not this tree's colour, in either di
     "and a green recorded against another commit does not retire a declaration");
 });
 
+/**
+ * SH798 — the assertion that would have caught a gate with no wrapper.
+ *
+ * <p>`docs` was a gate in every sense that matters — its own job in `suites.yml`, its own trigger,
+ * its own input, its own red — and it ran `node --test` directly, so it wrote no stamp. Nothing said
+ * so. It was simply absent from `GATES`, and a comparator cannot miss a gate it has never heard of:
+ * for twelve commits it carried the whole coverage debt while both readers reported the tree
+ * honestly and had nothing to say about it (SH797).</p>
+ *
+ * <p>So the rule is <b>a key in `GATES` has a wrapper that stamps it</b> — and `java` is named here
+ * as the one that cannot, rather than quietly skipped. That exclusion is the subject of SH800: it is
+ * correct (a suite cannot know whether the tests after it passed) and it is why the fastest gate,
+ * the one somebody actually types, is the one neither comparator judges.</p>
+ */
+test("SH798: every gate has a wrapper that stamps it, and java is named as the one that cannot", async () => {
+  const scripts = await readFile(new URL("../../scripts/gate-stamp.mjs", import.meta.url), "utf8");
+  const wrappers = (await Promise.all(["test-with-log", "conformance-with-log", "conformance-docs-with-log"]
+    .map((name) => readFile(new URL(`../../scripts/${name}.mjs`, import.meta.url), "utf8")))).join("\n");
+
+  const unstamped = GATES
+    .filter((gate) => gate !== "java")
+    .filter((gate) => !new RegExp(`stamp\\(\\s*ROOT\\s*,\\s*"${gate}"`).test(wrappers));
+  assert.deepEqual(
+    unstamped,
+    [],
+    "a gate is declared in GATES and no wrapper writes its stamp, so both comparators will report "
+      + "it as `no run recorded in this tree` forever — which is indistinguishable from nobody "
+      + "having run it, and is how the docs gate carried twelve commits of debt unremarked.\n"
+      + "Add a wrapper beside the other three and point package.json at it.",
+  );
+
+  assert.ok(
+    GATES.includes("java") && !/stamp\(\s*ROOT\s*,\s*"java"/.test(wrappers),
+    "and `java` is still the one gate no wrapper stamps — if that changed, this exclusion is stale "
+      + "and SH800 is the task that says what should happen to it",
+  );
+  assert.match(scripts, /export const GATES/, "GATES is read from the shared module, not restated");
+});
+
 test("SH755: the comparator fires in both directions, and an absent stamp fires in neither", () => {
   // Driven against a fabricated world for the reason the rules test below is: the real stamps are
   // whatever the last run left, so an assertion about them would be a test of this afternoon.
