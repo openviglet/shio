@@ -1296,6 +1296,42 @@ way — and that is a page which genuinely carries markup somebody wrote by hand
 and read twice rather than being re-composed for the question: producing it twice would be a second
 answer that can differ from the one served.
 
+### A relation's rows know where they are (SH777)
+
+`{{#getRelation sections}}` called `options.fn(row)` with a plain context. Handlebars' `@index`,
+`@first` and `@last` come from a **data frame**, and this helper created none — so inside the block
+that walks a page's sections a template could not ask which row it was on.
+
+Found by needing it: SH772 had to emit the captured stylesheet **once** for a page whose kept markup
+is all in sections, and the natural spelling — fire on the first row carrying markup — did not
+exist. That task shipped a per-row emission and stated the bound instead.
+
+```handlebars
+{{#getRelation sections}}
+  <section {{#if @first}}class="lead"{{/if}} aria-posinset="{{@index}}">…</section>
+  {{#unless @last}}<hr>{{/unless}}
+{{/getRelation}}
+```
+
+**The same three names SH384 already publishes**, not a second spelling. `emit` has done exactly
+this for a listing since then, for the same reason and with the same comment: a pager drawn once is
+only expressible as `{{#if @last}}…{{/if}}`, and without the frame it repeated per item. SH777 makes
+that idiom shared rather than copied.
+
+What it makes expressible is more than the task that found it: a separator between rows and not
+after the last, a first section that renders larger, `aria-setsize` on a list a screen reader is
+counting, a numbered list that survives a reorder. Each of those is a field on every section today,
+carrying its own position — a value that goes stale the moment a curator moves one.
+
+**The assertion renders rather than reading the helper**, because what is claimed is that a template
+can *ask*: `options.data(…)` being called proves nothing about whether `{{@index}}` resolves, since
+the frame has to survive into the block body and only the engine decides that. Reverting the helper
+to its plain context makes the test fail.
+
+Still without a frame: `{{#navigation}}`, `{{#search}}`, `{{#translations}}` and `{{#menu}}` — four
+helpers with the same shape and the same silence, left alone here because none of them has yet had a
+template need it, and a capability added on speculation is one nobody measured.
+
 ### The section vocabulary — `@viglet/shio-sections` (SH95)
 
 Nine post-types (`Page` + `SectionHero`/`SectionFeatureGrid`/`SectionCta`/`SectionLogoWall`/

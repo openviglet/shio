@@ -11,7 +11,6 @@
 
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
-- 📋 **SH777** (deps: —) **A template cannot say first, last or index inside a relation, so a per-page fact must be emitted per row** — getRelation calls options.fn(row) with a plain context and no data frame, so Handlebars' @first and @index are absent, as SH772 found looking for somewhere to emit once. → §XXVI.3
 - 📋 **SH778** (deps: —) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the same suite was green, so the evidence is a line in a log. → §XXVI.4
 - 📋 **SH779** (deps: —) **The warning that names a page whose stylesheet is emitted twice has no test, so it can stop firing unnoticed** — SH772 bounded a per-row emission by promising describeConversion names the pages taking more than one, and that line is all that stands between a reviewer and a repeat. → §XXVI.5
 

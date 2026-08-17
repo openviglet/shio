@@ -76,7 +76,8 @@ class ShRenderRelationSearchTest {
      */
     private static final String LAYOUT_HTML = """
             <html><body>
-            <main>{{#getRelation SECTIONS}}<section data-t="{{type}}"><h2>{{title}}</h2>\
+            <main>{{#getRelation SECTIONS}}<section data-t="{{type}}" data-i="{{@index}}"\
+            {{#if @first}} data-first{{/if}}{{#if @last}} data-last{{/if}}><h2>{{title}}</h2>\
             {{{TEXT}}}</section>{{else}}<p id="none">no sections</p>{{/getRelation}}</main>
             <aside>{{#search q="handbook" limit=10}}<a href="{{link}}">{{title}}</a>\
             {{else}}<span id="nohits">nothing</span>{{/search}}</aside>
@@ -163,6 +164,53 @@ class ShRenderRelationSearchTest {
         assertThat(html)
                 .as("the row shape is query's, so `type` is there and a template body is portable")
                 .contains("data-t=\"" + sectionType + "\"");
+    }
+
+    /**
+     * SH777 — the positional variables a relation had none of.
+     *
+     * <h2>Found by needing it</h2>
+     *
+     * <p>{@code getRelation} called {@code options.fn(row)} with a plain context, and Handlebars'
+     * {@code @index}, {@code @first} and {@code @last} come from a <b>data frame</b> that nothing
+     * created. SH772 hit it looking for somewhere to emit a page-wide fact once: the natural
+     * spelling — fire on the first row that carries markup — did not exist, so that task shipped a
+     * per-row emission and stated the bound instead.</p>
+     *
+     * <h2>Why the assertion renders rather than reading the helper</h2>
+     *
+     * <p>Because what is claimed is that <b>a template can ask</b>. {@code options.data(…)} being
+     * called proves nothing about whether <code>{{@index}}</code> resolves — the frame has to
+     * survive into the block body, which only the engine decides. Same argument SH384's pager made
+     * for the listing, and the reason its three names are reused rather than a second spelling
+     * invented for one product.</p>
+     */
+    @Test
+    @DisplayName("SH777: a relation's rows carry @index, @first and @last, like an each block's")
+    void getRelationRowsCarryTheirPosition() {
+        String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("""
+                        SH777: the positions Handlebars publishes for its own each block, on the \
+                        helper that walks a page's sections. Without them a template cannot draw a \
+                        separator between rows and not after the last, size the first section \
+                        differently, or emit aria-setsize — each needs a field on every section \
+                        carrying its own position, which goes stale the moment somebody reorders.""")
+                .contains("data-i=\"0\"")
+                .contains("data-i=\"1\"");
+        assertThat(html.split("data-first", -1))
+                .as("SH777: first fires once, on row zero — a page-wide fact emitted inside the "
+                        + "loop is only expressible if exactly one row can claim to be the first")
+                .hasSize(2);
+        assertThat(html.split("data-last", -1))
+                .as("and last once, on the final row, which is what makes a pager or a summary "
+                        + "drawn after the rows possible at all (SH384's argument, one helper over)")
+                .hasSize(2);
+        assertThat(html.indexOf("data-first"))
+                .as("and they are not the same row here, or the pair would pass on a one-row page "
+                        + "while saying nothing about ordering")
+                .isLessThan(html.indexOf("data-last"));
     }
 
     @Test

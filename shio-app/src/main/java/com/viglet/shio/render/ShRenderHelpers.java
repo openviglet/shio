@@ -534,11 +534,7 @@ public class ShRenderHelpers {
         if (rows.isEmpty()) {
             return options.inverse();
         }
-        StringBuilder out = new StringBuilder();
-        for (Map<String, Object> row : rows) {
-            out.append(options.fn(row));
-        }
-        return out;
+        return withPosition(options, rows);
     }
 
     /**
@@ -826,6 +822,45 @@ public class ShRenderHelpers {
             // drawn **once** expressible: the block body repeats per row, so
             // `{{#if @last}}<nav>page {{@page}} of {{@pages}}</nav>{{/if}}` is the only way to emit it
             // a single time, and without these the pager repeated per item. A test found that.
+            options.data("index", index);
+            options.data("first", index == 0);
+            options.data("last", index == rows.size() - 1);
+            out.append(options.fn(rows.get(index)));
+        }
+        return out;
+    }
+
+    /**
+     * One block body per row, with {@code @index}, {@code @first} and {@code @last} (SH777).
+     *
+     * <h3>What was missing, and how it was found</h3>
+     *
+     * <p>{@code options.fn(row)} passes a plain context. Handlebars' positional variables come from
+     * a <b>data frame</b>, and this helper created none — so inside {@code {{#getRelation sections}}}
+     * a template could not ask which row it was on or whether it was the last. SH772 found it by
+     * needing it: the captured stylesheet had to be emitted <em>once</em> for a page whose kept
+     * markup is all in sections, and the natural spelling — fire on the first row carrying markup —
+     * did not exist. It shipped a per-row emission and stated the bound instead.</p>
+     *
+     * <h3>Handlebars' own vocabulary, and the same three names SH384 already publishes</h3>
+     *
+     * <p>{@code emit} has done exactly this for a listing since SH384, for the same reason and with
+     * the same comment: a pager drawn once is only expressible as
+     * {@code {{#if @last}}…{{/if}}}, and without the frame it repeated per item. This is that idiom
+     * made shared rather than copied — a second spelling of "which row is this" would be a second
+     * thing to learn about one product.</p>
+     *
+     * <h3>What it makes expressible, which is more than the task that found it</h3>
+     *
+     * <p>A separator between rows and not after the last. A first section that renders larger.
+     * {@code aria-setsize} on a list a screen reader is counting. A numbered list that survives a
+     * reorder. Every one of those is a field on every section today, carrying its own position —
+     * a value that goes stale the moment a curator moves one.</p>
+     */
+    private CharSequence withPosition(Options options, List<Map<String, Object>> rows)
+            throws IOException {
+        StringBuilder out = new StringBuilder();
+        for (int index = 0; index < rows.size(); index++) {
             options.data("index", index);
             options.data("first", index == 0);
             options.data("last", index == rows.size() - 1);

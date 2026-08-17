@@ -1438,3 +1438,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 - **SH775** — docs-shio, the public site and the README say a page is usually mixed and its kept markup is movable content; the matrix drained the four ids that shipped since the last pass.
 - 🗑 **SH776** — abandoned: The premise was false: ShRenderHelperSweepBenchmarkTest has measured a section-composed page since SH312 — five sections is 11 queries against a floor of 6, one lookup per entry — so the corpus does answer it and SH774's inference is now cited to that number rather than re-derived.
+- **SH777** — getRelation's rows carry @index, @first and @last through the data frame SH384's pager already used, so a template can draw a separator, size the first row, or emit a fact once.

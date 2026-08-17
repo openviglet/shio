@@ -662,33 +662,6 @@ The block exists because these were found *while* doing the work and would other
 evaporate with the commit that revealed them — the cheapest findings the project ever
 gets, and the ones with no reporter but the person who tripped over them.
 
-### XXVI.3 The relation with no data frame (SH777)
-
-Found by needing it. SH772 had to emit the captured stylesheet once for a page whose
-kept markup is all in sections, and the natural spelling — fire on the first row that
-carries markup — turned out to be unavailable:
-
-    for (Map<String, Object> row : rows) {
-        out.append(options.fn(row));
-    }
-
-`options.fn(row)` passes a plain context. Handlebars' `@index`, `@first` and `@last`
-come from a **data frame**, which nothing here creates, so inside `{{#getRelation
-sections}}` there is no way to ask which row this is or how many there are. SH772
-shipped a per-row emission and stated the bound instead, which is the honest answer from
-a template that cannot count.
-
-It is not only that task's problem. A section list is the vocabulary's central shape,
-and every ordinary thing a designer does with one needs the index: a separator between
-rows and not after the last, a first row that renders larger, `aria-setsize`, a numbered
-list that survives a reorder. Today each needs a field on every section carrying its own
-position — a value that goes stale the moment somebody moves one.
-
-`{{#each}}` has the frame because Handlebars builds it, and the same is available to a
-custom block helper. The cost is one object per row, and the question worth settling
-first is whether `{{#navigation}}`, `{{#search}}`, `{{#translations}}` and `{{#menu}}`
-gain it in the same pass — four helpers with the same shape and the same silence.
-
 ### XXVI.4 The one red nobody could read (SH778)
 
 Seen once, on 2026-08-17, running `node --test "test/*.test.mjs"`:

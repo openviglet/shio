@@ -1,5 +1,14 @@
 {
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
-  "exceptions": []
+  "exceptions": [
+    {
+      "suite": "js",
+      "test": "test/fixture-traits.test.mjs — the file, with no sub-test failing",
+      "task": "SH778",
+      "declared": "2026-08-17",
+      "expires": "2026-08-24",
+      "why": "Second sighting, and the first with the counts kept: 1499 pass, 1 fail, and the failure is the FILE rather than any test in it — `✖ test\fixture-traits.test.mjs ... 'test failed'` with all nine of its sub-tests green and none listed. That shape is not an assertion; under `node --test` a file fails with no failing child when something goes wrong after the tests finish, which points at the captured-fixture server the file serves over a socket (SH528) racing `--test-force-exit`, not at any claim the file makes. Safe to commit over because nothing it asserts went red: the traits it checks all passed in the same run, and the two runs either side of this one were green. It is declared rather than re-run because re-running until it clears is what SH770 calls being right by luck, and the sighting is the perishable evidence SH778 exists to collect. It goes away with SH778 — which owes evidence first (which assertion, which port, which server state) and a fix second — and this entry is deleted in that commit."
+    }
+  ]
 }
