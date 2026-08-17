@@ -38,6 +38,7 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.agent.verify.ShPostLinks;
+import com.viglet.shio.api.agent.verify.ShPostReferenceFields;
 import com.viglet.shio.api.error.ShDataIntegrityProblem;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.render.ShTemplateTitles;
@@ -1604,6 +1605,9 @@ public class ShAgentBatchService {
 
         if (existing.isPresent()) {
             ShPostUnified post = existing.get();
+            // SH767 — before `sameData`, which is what makes a re-send of the address form a NOOP
+            // rather than a write of the same bytes under a different spelling.
+            ShAgentBatch.Op resolved = withResolvedRelations(op, address, post.getShPostType());
             // SH467 — the declared spelling is honoured on *create* and nowhere else, exactly as
             // `locale` and `translationOf` are, and here the reason is sharper than theirs: a
             // post's file path in `shio/content/**` **is** its URL, so `/x` and `/x/` are one
@@ -1611,20 +1615,20 @@ public class ShAgentBatchService {
             // re-spelled would therefore be un-done by the next `shio push` — the collapsed URL
             // that a pull wrote would arrive as a re-spelling back. Changing an existing post's
             // canonical URL is `post.move`'s gesture, not a routine apply's side effect (P7).
-            if (op.data() == null || sameData(post, op.data())) {
+            if (resolved.data() == null || sameData(post, resolved.data())) {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
             String undeclared = note(note(
-                    checkDeclaredFields(op, address, session,
+                    checkDeclaredFields(resolved, address, session,
                             TypeRef.of(post.getShPostType(), session.declaredFieldsOf(
                                     post.getShPostType().getName())),
                             readTree(post.getData())),
-                    checkTemplates(op, address, session, post.getShPostType().getName())),
-                    planTemplateTitle(op, session, post.getShPostType(), site, post.getId()));
+                    checkTemplates(resolved, address, session, post.getShPostType().getName())),
+                    planTemplateTitle(resolved, session, post.getShPostType(), site, post.getId()));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
                 shPostUnifiedWriteService.update(post.getId(),
-                        new UpdateRequest(op.data(), ShPostState.DRAFT, session.actor));
+                        new UpdateRequest(resolved.data(), ShPostState.DRAFT, session.actor));
             }
             return session.change(op, address, Change.UPDATE, undeclared, post.getId());
         }
@@ -1635,10 +1639,14 @@ public class ShAgentBatchService {
         }
 
         TypeRef postType = requirePostType(op, address, session);
+        // SH767 — the same resolution on create. `livePostType` is null for a type this batch is
+        // about to provision, and then there is nothing to read the relation declarations from: the
+        // value is stored as sent, which is what it did before, and `verify` still reports it.
+        ShAgentBatch.Op created0 = withResolvedRelations(op, address, livePostType(postType));
         String undeclared = note(note(
-                checkDeclaredFields(op, address, session, postType, null),
-                checkTemplates(op, address, session, postType.name())),
-                planTemplateTitle(op, session, livePostType(postType), site, null));
+                checkDeclaredFields(created0, address, session, postType, null),
+                checkTemplates(created0, address, session, postType.name())),
+                planTemplateTitle(created0, session, livePostType(postType), site, null));
         ShFolder folder = requireTargetFolder(op, site, address, session);
         session.planPost(address);
         if (session.dryRun || folder == null) {
@@ -1647,7 +1655,7 @@ public class ShAgentBatchService {
         shContentAclService.requireWrite(folder.getId());
         shTenantQuotaService.checkCanCreatePost();
         ShPostUnified created = shPostUnifiedWriteService.create(new CreateRequest(
-                folder.getId(), postType.id(), op.data(), ShPostState.DRAFT,
+                folder.getId(), postType.id(), created0.data(), ShPostState.DRAFT,
                 // SH348 — the locale is honoured on create and nowhere else. The writer defaults a
                 // blank one, so absent still means DEFAULT_LOCALE and nothing changes for a
                 // monolingual tree.
@@ -1658,6 +1666,125 @@ public class ShAgentBatchService {
         // identity and stores the *declared* spelling of it, which the address drops.
         shPostUnifiedWriteService.setFurl(created.getId(), declaredFurl);
         return session.change(op, address, Change.CREATE, null, created.getId());
+    }
+
+    /**
+     * SH767 — an address in a relation field is resolved to the URL the relation stores.
+     *
+     * <h2>What was being stored</h2>
+     *
+     * <p>{@code Page.sections} holds site-relative friendly URLs, and SH79 makes
+     * {@code post:<site>/<url>} the currency of every other part of this protocol. So writing the
+     * relation the way the rest of the surface is written:</p>
+     *
+     * <pre>{@code "sections": ["post:VigR2/sections/vb-top", …]}</pre>
+     *
+     * <p>was accepted, reported {@code changed: true}, and stored <b>verbatim</b>. The renderer
+     * resolved none of them and the page served with no sections at all. Measured on a replica: the
+     * post exists, its state is PUBLISHED, the route answers 200 — <b>it looks authored</b>, and the
+     * only symptom is a curator opening the page and finding the content gone.</p>
+     *
+     * <h2>Resolve rather than refuse, because that is what the op already does one field over</h2>
+     *
+     * <p>An op's {@code folder} takes either form and has since it shipped:</p>
+     *
+     * <pre>{@code op.folder().startsWith("folder:") ? ShAddress.parse(op.folder()).path() : …}</pre>
+     *
+     * <p>A relation is the same question about a different field, so it gets the same answer.
+     * Purely syntactic — {@code post:<site>/<url>} carries the URL, no lookup required — which is
+     * what makes it safe inside a batch that creates the target three ops later, and idempotent: a
+     * second write of the address form normalizes to the same URL and is a NOOP (P5).</p>
+     *
+     * <h2>And what is refused, because no normalization could make it mean this</h2>
+     *
+     * <p>Another site's post, a {@code folder:} or {@code site:}, and {@code id:} — the last
+     * because a relation stores URLs and SH79's whole point is that no address a human writes
+     * carries a UUID. Each is a 400 naming the form the field wants (P6). A value with no scheme is
+     * left exactly as sent: it is a URL, and whether it resolves is {@code verify}'s question.</p>
+     */
+    private ShAgentBatch.Op withResolvedRelations(ShAgentBatch.Op op, ShAddress address,
+                                                  ShPostType postType) {
+        JsonNode data = op.data();
+        if (data == null || !data.isObject() || postType == null) {
+            return op;
+        }
+        List<ShPostTypeAttr> attrs = postType.getShPostTypeAttrs() == null
+                ? List.of() : List.copyOf(postType.getShPostTypeAttrs());
+        tools.jackson.databind.node.ObjectNode rewritten = null;
+        for (ShPostTypeAttr attr : attrs) {
+            String field = attr.getName();
+            if (field == null || field.isBlank()
+                    || !ShPostReferenceFields.referencesPosts(attr, objectMapper)) {
+                continue;
+            }
+            JsonNode value = data.get(field);
+            if (value == null || !value.isArray()) {
+                continue;
+            }
+            tools.jackson.databind.node.ArrayNode resolved = objectMapper.createArrayNode();
+            boolean changed = false;
+            for (JsonNode entry : value) {
+                String text = entry.isString() ? entry.asString().trim() : null;
+                String url = text == null ? null : relationUrl(text, address, field);
+                if (url == null) {
+                    resolved.add(entry);
+                    continue;
+                }
+                changed |= !url.equals(text);
+                resolved.add(url);
+            }
+            if (!changed) {
+                continue;
+            }
+            if (rewritten == null) {
+                rewritten = objectMapper.createObjectNode().setAll(
+                        (tools.jackson.databind.node.ObjectNode) data);
+            }
+            rewritten.set(field, resolved);
+        }
+        if (rewritten == null) {
+            return op;
+        }
+        return new ShAgentBatch.Op(op.op(), op.address(), op.type(), op.folder(), op.to(),
+                rewritten, op.when(), op.locale(), op.translationOf(), op.url(), op.expect());
+    }
+
+    /**
+     * One relation value as the URL the field stores, or {@code null} to leave it alone.
+     *
+     * @throws RelationAddressException when the value is an address no URL in this site can mean
+     */
+    private String relationUrl(String value, ShAddress address, String field) {
+        int colon = value.indexOf(':');
+        if (colon <= 0) {
+            // No scheme: it is already a URL. Whether it resolves is `verify`'s question, not this
+            // one — refusing here would make a page unwritable until every section exists, which is
+            // the opposite of how a conversion builds one.
+            return null;
+        }
+        String scheme = value.substring(0, colon).toLowerCase(java.util.Locale.ROOT);
+        if (ShAddress.Kind.schemes().stream().noneMatch(scheme::equals)) {
+            // Not one of ours. A Multi Select value is free text, and guessing that `note:x` was
+            // meant as an address is how a lint starts reporting somebody's tag.
+            return null;
+        }
+        ShAddress parsed = ShAddress.parse(value);
+        if (parsed.kind() != ShAddress.Kind.POST) {
+            throw new RelationAddressException(field, value, address,
+                    "`" + scheme + ":` does not name a post"
+                            + (parsed.kind() == ShAddress.Kind.ID
+                                    // SH79's rule, which is the reason this one is refused rather
+                                    // than resolved: an id would resolve perfectly well and would
+                                    // put a UUID in a content file, where a human has to read it.
+                                    ? ", and a relation stores URLs so that no address anybody "
+                                            + "writes carries a UUID (SH79)." : "."));
+        }
+        if (!parsed.site().equalsIgnoreCase(address.site())) {
+            throw new RelationAddressException(field, value, address,
+                    "'" + parsed.site() + "' is not the site this post is in ('"
+                            + address.site() + "'), and a relation resolves inside one site.");
+        }
+        return parsed.path();
     }
 
     /**
@@ -1809,6 +1936,22 @@ public class ShAgentBatchService {
                 into.add(attr.getName());
             }
             collectFieldNames(attr.getShPostTypeAttrs(), into);
+        }
+    }
+
+    /** SH767 — a 400 naming the form a relation field stores, for an address it cannot mean. */
+    public static class RelationAddressException extends ShTeachingException {
+
+        public RelationAddressException(String field, String sent, ShAddress address, String why) {
+            super(ShProblem.badRequest("relation-address",
+                            "Field '" + field + "' cannot hold '" + sent + "'")
+                    .withDetail(why + " This field holds friendly URLs of posts in this site, in "
+                            + "render order — a `post:` address for this site is accepted and "
+                            + "stored as its URL. Address: " + address + ".")
+                    .withFix("Send the post's friendly URL (`/sections/hero`) or its address in "
+                            + "this site (`post:" + address.site() + "/sections/hero`).")
+                    .withExample("{\"op\":\"post.upsert\",\"address\":\"" + address
+                            + "\",\"data\":{\"" + field + "\":[\"/sections/hero\"]}}"));
         }
     }
 

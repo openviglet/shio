@@ -533,34 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.108 The relation that takes an address and means nothing by it (SH767)
-
-`Page.sections` is stored as site-relative paths — a converted page reads `sections:
-["/sections/b59589bb5"]`. Writing the same relation as the address form the rest of the
-protocol uses:
-
-    "sections": ["post:VigR2/sections/vb-top", …]
-
-is accepted, `changed: true`, and stored **verbatim**. The renderer resolves none of the
-three, the page serves with no sections, and `shio verify --site VigR2` answers `ok — 0
-error(s), 2 warning(s) over 70 object(s)`.
-
-Three surfaces have to agree for that to be quiet. SH79 makes `post:<site>/<url>` the
-currency and says writes take `post:` and `folder:`; the batch validated every other
-field on the op and this one not at all; and `verify` has a dangling-relation rule —
-SH374 grades a dangling `translationOf` as an error unscoped and a warning scoped —
-which does not reach `sections`.
-
-The failure mode is the expensive kind: **it looks authored.** The post exists, its
-state is PUBLISHED, the route answers 200, the digest lists the layout's own landmarks,
-and the only symptom is that a curator opens the page and the content is missing.
-Nothing in the loop closes.
-
-Two fixes and they are independent. The write resolves an address in a relation field,
-or refuses it naming the form it wants — P6's shape, and the batch already does exactly
-this for `folder`. And `verify` extends SH374's rule to every relation, `sections`
-first, because an unresolvable one is the same defect wherever it sits.
-
 ### XVII.110 The claim that a later task made false (SH769)
 
 Two of these turned up in one session, and only one of them had an instrument.
@@ -671,6 +643,32 @@ no way to ask the second.
 
 The cheap answer is a flag the writer sets and the template reads. The honest one is
 asking what `{{#if}}` in a head can see at all.
+
+### XVII.114 The declaration three readers agree to need (SH773)
+
+SH767 was filed on a replica where `shio verify --site VigR2` answered `ok` over a page
+whose sections resolved to nothing. Measuring it before fixing it found the report
+already right: a probe writing `post:<site>/<url>` into a declared relation reports
+`dangling-reference` today, with no fix applied.
+
+So the quiet run had another cause, and the probe found it by writing the same page
+against a `sections` field carrying **no** `widgetSettings`. Verify says nothing — not
+about the address form, and not about a section that genuinely does not exist.
+`ShPostReferenceFields` is the gate: SH154's rule is that a Multi Select is tags unless
+the model says otherwise, which is right, and it makes
+`{"multiselect":{"references":"post"}}` the one fact three readers depend on — the
+dangling lint, the SH101 digest, and now SH767's write check.
+
+`ShVocabularyPostTypes.ensure` **provisions and never upserts** (SH152), deliberately: a
+curator who added a field to their `SectionHero` keeps it, and that is what lets a
+conversion re-run against an edited site. The cost is that an instance carrying a `Page`
+from before the key existed keeps the blind field forever, and nothing says so. Every
+dev box that ran the chain early is in that state, which is why the replica measured
+clean.
+
+What is owed is the instrument, not a repair: a shipped vocabulary type whose live copy
+has drifted from the catalogue is a finding, naming the field and the key. The catalogue
+is on the classpath and the live model is one query away.
 
 ## XIX The public site (Block S)
 

@@ -2338,6 +2338,59 @@ and requires the number to move — and it is also the first live read of any MC
 This is SH751's shape one subsystem over: complete everywhere except the line that connects it,
 with every surface reporting success.
 
+## The relation that took an address and meant nothing by it (SH767)
+
+`Page.sections` stores site-relative friendly URLs, and SH79 makes `post:<site>/<url>` the currency
+of every other part of this protocol. So writing the relation the way the rest of the surface is
+written:
+
+```json
+"sections": ["post:VigR2/sections/vb-top", "post:VigR2/sections/vb-mid"]
+```
+
+was accepted, reported `changed: true`, and stored **verbatim**. The renderer resolved none of them
+and the page served with no sections at all.
+
+**The failure mode is the expensive kind: it looks authored.** The post exists, its state is
+PUBLISHED, the route answers 200, the digest lists the layout's own landmarks. The only symptom is a
+curator opening the page and finding the content gone.
+
+### Resolve, because the op already does exactly this one field over
+
+An op's `folder` has taken either form since it shipped:
+
+```java
+op.folder().startsWith("folder:") ? ShAddress.parse(op.folder()).path() : ShAddress.normalizePath(op.folder())
+```
+
+A relation is the same question about a different field, so `post.upsert` now gives it the same
+answer. The resolution is **purely syntactic** — `post:<site>/<url>` carries the URL, no lookup —
+which is what makes it safe inside a batch that creates the target three ops later, and idempotent:
+a second write of the address form normalizes to the same URL and is a NOOP (P5). It runs *before*
+`sameData`, which is what makes that true.
+
+Three forms are refused instead, each with the sentence naming what the field holds (P6):
+
+| Sent | Why |
+|---|---|
+| `post:<other site>/<url>` | a relation resolves inside one site |
+| `folder:` / `site:` | does not name a post |
+| `id:<uuid>` | resolves perfectly well, and would put a UUID in a content file — SH79's whole point |
+
+A value with **no scheme** is left exactly as sent. It is a URL; whether it resolves is `verify`'s
+question, and refusing here would make a page unwritable until every section it names exists — the
+opposite of how a conversion builds one.
+
+### What the measurement found that the task did not say
+
+The task was filed saying `verify` stayed green on the replica. It does not: a probe writing the
+address form into a declared relation reports `dangling-reference` today, before any fix. The quiet
+run had a different cause, and it is the more serious one — **the instance's `Page.sections` carried
+no `references: post` at all**, so the field was invisible to the lint, to the digest and now to this
+write check, all three of which key on that declaration. `ShVocabularyPostTypes.ensure` provisions
+and never upserts (SH152, deliberately — a curator's added field must survive), so an instance
+carrying an older `Page` keeps the blind field forever. Filed as SH773.
+
 ## A race test that was discarding the race it found (SH762)
 
 `mcp-concurrency.conformance.mjs` went red once and green minutes later on one build, saying

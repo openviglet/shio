@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent.verify;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.List;
@@ -262,5 +263,86 @@ class ShSectionCompositionTest {
                         + "different mistakes would hash the same")
                 .anySatisfy(text -> assertThat(text).contains("missing section"));
         assertThat(broken.digest()).isNotEqualTo(digest("/pricing").digest());
+    }
+
+    // --- SH767: the relation that took an address and meant nothing by it ---
+
+    /**
+     * SH767 — the write resolves an address in a relation field, the way the op's own
+     * {@code folder} has always resolved one.
+     *
+     * <h2>What was measured</h2>
+     *
+     * <p>{@code Page.sections} stores site-relative URLs, and SH79 makes {@code post:<site>/<url>}
+     * the currency of every other part of this protocol — so writing the relation the way the rest
+     * of the surface is written was accepted, reported {@code changed: true}, and stored
+     * <b>verbatim</b>. On a replica: the renderer resolved none of them, the page served with no
+     * sections, and the only symptom was a curator opening the page and finding the content gone.
+     * The post exists, its state is PUBLISHED, the route answers 200. <b>It looks authored.</b></p>
+     *
+     * <h2>Why resolving and not refusing</h2>
+     *
+     * <p>Because the op already does exactly this one field over: {@code folder} takes
+     * {@code folder:<site>/<path>} or a bare path and normalizes to the path. A relation is the
+     * same question about a different field. It is purely syntactic — the address carries the URL —
+     * which is what makes it safe inside a batch that creates the target three ops later.</p>
+     */
+    @Test
+    @DisplayName("SH767: a section named by its address is stored as the URL the relation holds")
+    void anAddressInARelationIsResolved() {
+        String url = base + "/addressed";
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                        new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + url,
+                                pageType, base, objectMapper.valueToTree(Map.of(
+                                        "title", "Addressed",
+                                        "sections", List.of("post:" + siteName + base + "/hero"))))
+                )), false, "tester"));
+
+        assertThat(findings("dangling-reference"))
+                .as("""
+                        the address form resolves to the URL the field holds, so the page composes                         the section it names. Stored verbatim this was a page that looked authored                         from every side — post present, state PUBLISHED, route 200 — and served                         with no sections at all (SH767).""")
+                .noneSatisfy(finding -> assertThat(finding.address()).endsWith(url));
+        assertThat(digest("/addressed").headings()).extracting(ShAgentDigest.Heading::text)
+                .as("and it is the section's own structure in the digest, not the hash of nothing")
+                .anySatisfy(text -> assertThat(text).contains("Build faster"));
+    }
+
+    @Test
+    @DisplayName("SH767: an address no URL in this site can mean is refused, naming the form")
+    void anAddressThatCannotBeAUrlIsRefused() {
+        for (String sent : List.of("id:" + UUID.randomUUID(), "folder:" + siteName + base,
+                "post:some-other-site" + base + "/hero")) {
+            assertThatThrownBy(() -> new TransactionTemplate(transactionManager)
+                    .executeWithoutResult(status -> shAgentBatchService.run(
+                            new ShAgentBatch(false, List.of(
+                                    new Op(ShAgentBatchService.POST_UPSERT,
+                                            "post:" + siteName + base + "/refused",
+                                            pageType, base, objectMapper.valueToTree(Map.of(
+                                                    "title", "Refused",
+                                                    "sections", List.of(sent)))))),
+                            false, "tester")))
+                    .as("%s names something no URL in this site can mean, and P6 says a refusal "
+                            + "carries the form the field wants rather than leaving a page that "
+                            + "renders a hole", sent)
+                    // The shared half of every one of them, which is the half that teaches: what
+                    // the field holds, and the two spellings it accepts. What differs is the
+                    // reason, and each carries its own.
+                    .hasMessageContaining("friendly URLs of posts in this site");
+        }
+    }
+
+    @Test
+    @DisplayName("SH767: a value with no scheme is left exactly as sent")
+    void aBareUrlIsNotRewritten() {
+        // The control, and the reason `relationUrl` looks at the scheme rather than at the colon: a
+        // Multi Select value is free text. Refusing or rewriting one that does not parse as an
+        // address would make a page unwritable until every section exists, which is the opposite of
+        // how a conversion builds one — the section arrives three ops later.
+        assertThat(findings("dangling-reference"))
+                .anySatisfy(finding -> {
+                    assertThat(finding.address()).endsWith(base + "/broken");
+                    assertThat(finding.message()).contains(base + "/no-such-section");
+                });
     }
 }
