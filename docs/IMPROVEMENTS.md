@@ -759,3 +759,26 @@ which from what fires.
 
 The tell is already computable: the guard knows whether any roadmap or ledger *line*
 carries the id, or whether it only appears in a sentence.
+
+### XXVI.16 A guard that checks one of the three gates its rule names (SH791)
+
+SH788 rewrote the rule in `agents.md` to cover all three gates — the failure it fixes
+was measured on `pnpm test`, not on Maven — and shipped two guards for it. The Java one
+reads documented commands through `RUNS_THE_SUITE`, which is `^.*mvnw[^\n]*\btest\b.*$`.
+So it checks the gate the incident did **not** happen to.
+
+Nothing is wrong today: no documented command pipes a `pnpm` gate, measured across both
+files. The gap is that the prose now says something the instrument does not check, and
+that asymmetry is the shape this repository keeps finding — a rule generalised in words
+while its guard stays where it was written.
+
+The fix is one pattern, and the care is in the second half. A scan matching `pnpm test`
+must not flag `pnpm test > log 2>&1` or the table rows both files use to list the gates,
+and the table case is not hypothetical: SH788's guard flagged one on its first run,
+because a Markdown row is three pipes and no shell. The `strip().startsWith("|")` skip
+already there is the precedent.
+
+Worth pairing with the non-vacuity anchor while the file is open. That check names
+`KEEPS_THE_RUN` now rather than a spelling, which is right, but it asserts over the
+whole population — a scan that stopped matching `pnpm` lines entirely would still pass
+on the Maven ones, so the anchor should name one command per gate it claims.
