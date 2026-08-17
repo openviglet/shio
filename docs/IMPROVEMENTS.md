@@ -713,26 +713,3 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 `red-suites.json` entry is no longer evidence either way — **SH789 deleted it**, on the
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
-
-### XXVI.20 A tool at the wall is a constraint on the next task, and only the run knows (SH795)
-
-SH793 made the per-tool headroom visible. What it showed is that **`shio_apply` has 19
-tokens and `shio_write` has 26**, against a 460 ceiling, while the other ten have
-between 257 and 364. Two tools are effectively full and the other ten are empty.
-
-That is a constraint on work nobody has planned yet, and it is exactly the constraint
-`postTypeMerge` ran into — declined because the tool it belonged on had no room. The
-next argument for either of those two meets the same wall, and today the only way to
-learn that is to write the argument and watch the build refuse it.
-
-The repository already has the right device one layer over. `ShAgentResponseBudgetTest`
-holds `AT_THE_WALL` — budgets accepted with no headroom, each with why it cannot be
-trimmed — and `known-debt.test.mjs` joins it as the seventh ledger, so it is printed
-with everything else this project knowingly carries. The per-tool MCP budgets have no
-equivalent, so their two full tools are visible only to somebody reading a passing
-test's stdout.
-
-An eighth row, then, or a reason each of the two is allowed to be where it is. Both
-readings are useful: the entry says *do not plan an argument here*, and its absence a
-release later says the tool was trimmed. What must not happen is the pair staying a fact
-that only a green run mentions.

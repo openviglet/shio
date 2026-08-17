@@ -203,6 +203,24 @@ const LEDGERS = [
     ownerIsSubject: true,
   },
   {
+    // The eighth, joined on the day it was written (SH795) rather than several blocks later —
+    // which is what SH741 asserted the count for, and the second time in a row it has held.
+    name: "per-tool AT_THE_WALL",
+    path: "shio-app/src/test/java/com/viglet/shio/api/agent/mcp/ShMcpToolBudgetTest.java",
+    holds: "MCP tools with no room for another argument, and why each cannot be trimmed",
+    since: "SH795",
+    async entries(text) {
+      const slice = enclosedBy(text, "AT_THE_WALL = Map.of(");
+      // The keys are tool names, each on its own line before its reason — the same shape the
+      // response-budget row reads, because SH795 built this one in that one's image on purpose.
+      return [...slice.matchAll(/^\s{12}"([\w.]+)",$/gm)]
+        .map(([, key]) => ({ owner: null, what: key, unsigned: false }));
+    },
+    // A tool name is the subject and no task owns it — the declaration the TOLERATED, assertion-debt
+    // and response-budget rows all make, for the reason they make it.
+    ownerIsSubject: true,
+  },
+  {
     name: "verify-baseline.json",
     path: "shio/verify-baseline.json",
     holds: "accepted verify findings, per project",
@@ -279,7 +297,7 @@ test("SH594: one reader answers what this repository is knowingly carrying", asy
   // The number is asserted, not merely printed, so inventing a *sixth* ledger without joining it
   // here fails the run. SH499 is the case: it reached for this shape unprompted, and the failing
   // count is what turned "a new debt file exists somewhere" into a one-line edit.
-  assert.equal(ledgers.length, 7, "a new ledger is a row in LEDGERS, not an eighth reader");
+  assert.equal(ledgers.length, 8, "a new ledger is a row in LEDGERS, not a ninth reader");
   // Not vacuous: if every reader came back empty the join would pass forever, which is the
   // lint-that-reports-zero failure every instrument in this repository is warned about.
   assert.ok(

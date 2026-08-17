@@ -1455,3 +1455,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH792** — Eleven such sentences, classified and asserted exactly; five are live hand-offs and four verify, so the practice was sound and only SH789's claim had rotted.
 - **SH793** — The headroom prints on every run: shio_apply is 19 under, not 3, and shio_write is 26; the number left the P1 reason and a guard refuses the next one.
 - **SH794** — One other unbounded alternation in 32 scanners and it is correct; the rule keys off @scans, since a code scan reads a usage where a prose scan reads a mention.
+- **SH795** — AT_THE_WALL holds shio_apply as the eighth ledger, against a measured threshold — one argument costs about 20 tokens, agreed by three recorded overruns.

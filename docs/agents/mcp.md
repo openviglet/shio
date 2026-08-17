@@ -301,6 +301,23 @@ a cost and names what prints it, and `ShAgentP1ConformanceTest` now refuses any 
 spelling `N tokens under`. Two tools sit within 26 tokens of the ceiling, which nothing had
 said out loud before this printed.
 
+**And a tool at the wall is now declared rather than discovered (SH795).** `AT_THE_WALL` in
+`ShMcpToolBudgetTest` holds a tool with no room for another argument and why it cannot be
+trimmed — the device `ShAgentResponseBudgetTest` uses for response budgets, one layer down,
+joined to `known-debt.test.mjs` as the **eighth** ledger so it prints with everything else
+this project knowingly carries.
+
+The threshold is measured, not chosen: **one argument costs about 20 est. tokens**, and three
+recorded instances agree — `createSite` on `shio_apply` came in 18 over, a single boolean of
+schema put `tools/list` 19 over, and `postTypeMerge` is the third. An absolute rather than a
+fraction of the ceiling, because what is being fitted is an argument and its cost does not
+scale with the tool holding it. So `shio_apply` (+19) is an entry and `shio_write` (+26) is
+one argument from becoming one.
+
+Both directions are checked, which is what stops the list accumulating: a tool that reaches
+the wall undeclared fails, and an entry that has *gained* room fails too — an exemption
+excusing nothing hides the next tool to arrive.
+
 **What the trims were, and the rule they came from.** All three were description prose
 restating a parameter the model reads one line later:
 

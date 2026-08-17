@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -134,6 +136,84 @@ class ShMcpToolBudgetTest {
                 .as("SH793: tools/list yielded no tool, so the headroom above is a report about an "
                         + "empty list — which is the shape every instrument here is warned about")
                 .isNotEmpty();
+    }
+
+    /**
+     * What one more argument costs, measured rather than chosen (SH795).
+     *
+     * <p>Three recorded instances agree closely: {@code createSite} on {@code shio_apply} came in
+     * <b>18</b> tokens over the ceiling, a single boolean of schema put {@code tools/list} <b>19</b>
+     * over, and the {@code postTypeMerge} field is the third. So a tool with fewer than twenty
+     * tokens free cannot take another argument — it will refuse the next one rather than size it,
+     * which is the failure SH743 named for response budgets and this is the same shape a layer
+     * down.</p>
+     *
+     * <p>An absolute rather than a fraction of the ceiling, because the thing being fitted is an
+     * argument and its cost does not scale with the tool that holds it.</p>
+     */
+    private static final int ROOM_FOR_ONE_ARGUMENT = 20;
+
+    /**
+     * Tools knowingly accepted with no room for another argument, and why each is (SH795).
+     *
+     * <p>Empty is the healthy state. An entry says <i>do not plan an argument here</i> — which is a
+     * fact about work nobody has started, and until SH793 printed the headroom it was discoverable
+     * only by writing the argument and watching the build refuse it.</p>
+     */
+    private static final Map<String, String> AT_THE_WALL = Map.of(
+            "shio_apply",
+            "the blueprint-apply surface, and the one the P1 list already declines postTypeMerge "
+                    + "on. Its schema is a document branch and a blueprint branch sharing one tool "
+                    + "by design (SH186), so the size is the composition rather than slack: the "
+                    + "leaner shape would be a thirteenth tool, and tools/list is paid every turn");
+
+    @Test
+    @DisplayName("SH795: a tool with no room for another argument is declared, not discovered")
+    void everyToolHasRoomForOneMoreArgument() throws IOException {
+        int limit = budget("mcp.tools.list.max-per-tool");
+        List<String> tight = new ArrayList<>();
+        perTool().forEach((name, tokens) -> {
+            if (limit - tokens < ROOM_FOR_ONE_ARGUMENT && !AT_THE_WALL.containsKey(name)) {
+                tight.add("%s = %d of %d, %d free and one argument costs about %d"
+                        .formatted(name, tokens, limit, limit - tokens, ROOM_FOR_ONE_ARGUMENT));
+            }
+        });
+
+        assertThat(tight)
+                .as("""
+                        A tool with less than one argument of headroom does not measure the next \
+                        addition, it refuses it — and whoever writes that argument pays for every \
+                        one before theirs. That is SH743's finding for response budgets, a layer \
+                        down. Trim a description to the decision it informs, or add the tool to \
+                        AT_THE_WALL with the reason it cannot be trimmed, in a diff somebody reads.
+                        The headroom for every tool is printed above.""")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH795: an accepted wall is still a wall")
+    void theAcceptedWallsAreStillWalls() throws IOException {
+        // The staleness check every declared list here earns (SH741, and SH743 made the same one for
+        // response budgets). An entry that has gained room is an exemption excusing nothing, and it
+        // hides the next tool to reach the wall. This is the only thing that makes the list shrink.
+        int limit = budget("mcp.tools.list.max-per-tool");
+        Map<String, Integer> perTool = perTool();
+        List<String> loosened = AT_THE_WALL.keySet().stream()
+                .filter(name -> perTool.containsKey(name)
+                        && limit - perTool.get(name) >= ROOM_FOR_ONE_ARGUMENT)
+                .map(name -> "%s now has %d free".formatted(name, limit - perTool.get(name)))
+                .sorted()
+                .toList();
+
+        assertThat(loosened)
+                .as("a tool on AT_THE_WALL has room again, so its entry excuses nothing and hides "
+                        + "the next one. Delete it — and if the trim that freed the room was "
+                        + "deliberate, that is the commit that should have.")
+                .isEmpty();
+        assertThat(AT_THE_WALL.keySet())
+                .as("and every entry names a tool this server actually serves, or the list is "
+                        + "excusing a name that no longer exists")
+                .allSatisfy(name -> assertThat(perTool).containsKey(name));
     }
 
     @Test
