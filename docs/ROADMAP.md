@@ -13,6 +13,8 @@
 
 - ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
+- 📋 **SH787** (deps: —) **A fixture id that is a real task id reads as a payment to the debt walk, and nothing says fixtures take SH9xxx** — A new fixture spelled `"SH3"` and the walk credited SH3, going red; had it named an already-asserted id instead, it would have masked that debt in silence. → §XXVI.12
+- 📋 **SH788** (deps: —) **Piping `pnpm test` into grep reports grep's exit code, so a run with two failures reads as a clean exit 0** — SH354 wrote that rule for Maven alone, and the same pipeline hid two red JS tests today — `fail 2` printed directly above `EXIT=0`. → §XXVI.13
 
 ## Priority
 

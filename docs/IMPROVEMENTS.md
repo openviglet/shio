@@ -712,3 +712,50 @@ Three possibilities remain and nothing yet chooses between them: the defect is g
 trigger left with some other change, or the rate is far below two in fifteen. Do not
 read the `red-suites.json` entry as evidence the flake is live — check its date, and an
 entry that expires unfired is itself the answer.
+
+### XXVI.12 A synthetic id inside an assertion is indistinguishable from a real one (SH787)
+
+SH527's walk reads every suite file and treats an id inside an assertion message as that
+task's assertion. SH630 taught it that a comment is not an assertion; SH731 taught it
+that `see SHnnn` is a citation and not a claim. Both are about the *sentence around* the
+id.
+
+Neither covers the case SH786 hit. Its fixture is a synthetic declaration, and the
+natural way to write one is with plausible ids — `"SH1"`, `"SH2"`, `"SH3"`. Those are
+real tasks. The walk credited SH3, and the suite went red saying somebody had paid a
+debt off.
+
+The red was luck. SH3 happened to be *on* the debt list, so crediting it changed the
+answer. Two outcomes are silent: an id already asserted gains a second creditor and
+nothing moves, and an id about to ship arrives **pre-paid** — so the rule that a defect
+closes with an assertion carrying its id is satisfied by a fixture with nothing to do
+with it. That is the expensive case, and the one the rule exists to prevent.
+
+`assertion-debt.test.mjs` already writes its own fixtures in the `SH9xxx` range for
+exactly this reason, in a comment, once. That is a convention nobody outside that file
+can be expected to know — the same shape as the trailing-comment rule before SH740 made
+it one reader. The lint is cheap: an id in a fixture literal that the ledger also knows
+is either a payment or a mistake, and the writer should have to say which.
+
+### XXVI.13 The gate that lies about its exit code is the JS one too (SH788)
+
+SH354 established the rule for the backend suite: tee the run, never pipe it straight
+into `grep`, because the filter that reads the total discards the failure lines and the
+next `clean` deletes the reports. `agents.md` carries it, and it names `./mvnw` only.
+
+The same pipeline is worse on the JS side, and it bit today. `pnpm test 2>&1 | tee
+js-test.log | grep -E "…"` reports **grep's** exit status, not the suite's. The run
+printed `fail 2` and the shell reported `EXIT=0`. Nothing was lost — the log held both
+failing names — but the verdict a reader takes from a green exit code is wrong, and the
+reason a gate has an exit code is so nobody has to read the output to know.
+
+Two things make this worth an id rather than a habit. It is **not** the Maven trap:
+there the danger is losing evidence, here the evidence survives and the verdict is
+wrong, so knowing SH354 does not protect you. And `.github/workflows/suites.yml` runs
+two of the three gates, so the shape is somewhere in CI too — whether it is piped there
+is the first thing to check, and the answer decides whether this is a habit or a live
+hole.
+
+The cure is `pnpm test > log 2>&1; echo "EXIT=$?"` — the verdict from the command, the
+numbers from the log — plus the rule stated once in `agents.md` for all three gates
+rather than for the one that taught it.
