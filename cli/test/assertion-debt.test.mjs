@@ -216,6 +216,15 @@ const DEBT = [
   // finds it there. Removed rather than left: an entry that says "unasserted" about something a
   // suite holds is the stale half this list's own second test fails on.
   "SH296", "SH352", "SH355", "SH414", "SH415",
+  // EARNS NOTHING YET, and that is the entry rather than an excuse. SH778's shipped half is
+  // EVIDENCE: three causes of an intermittent file-level red ruled out by measurement, and a third
+  // instrument that prints the exit code and the open handles when the fourth sighting comes. There
+  // is no assertion that "would have caught" it, because nothing is fixed — the defect has not
+  // named itself yet, and it did not reproduce in twelve runs after the instrument landed (six
+  // ordinary, six at `--test-concurrency=32`; SH698 saw eighteen). Writing a test that the three
+  // reporters are registered would assert the fix's internals, which is the one thing SH527's rule
+  // says an entry may not be. It comes off with the cure, which is SH780.
+  "SH778",
   // EARNS, and it is the cheapest closure on the list rather than new coverage. The locale run
   // (SH361 is its own decision entry, SH366-SH371 the six steps): four of the six are already
   // asserted elsewhere BY BEHAVIOUR and not by id, so the work is naming the id in a test that

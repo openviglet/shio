@@ -56,6 +56,52 @@ for (const event of ["unhandledRejection", "uncaughtException"]) {
   });
 }
 
+/*
+ * SH778 — the third instrument, because the first two were measured silent.
+ *
+ * The failure recurred on 2026-08-17 under `pnpm test`, and the kept run narrowed it by elimination
+ * rather than by guesswork:
+ *
+ *  - **Not an assertion.** `1499 pass, 1 fail`, and the one failure is the FILE. Both tests in it
+ *    reported green, and no sub-test appeared in the failing list.
+ *  - **Not an unhandled rejection or exception.** The handlers above print before anything can
+ *    swallow the reason, and they printed nothing in the run that failed.
+ *  - **Not the teardown deadline.** `closeFixture` rejects with a message naming the server and its
+ *    open connections (SH698). That message is absent, and the outer test — which owns the
+ *    `t.after` that calls it — reported green.
+ *
+ * What is left is the file's own **process exit**: `node --test` marks a file failed when its
+ * process exits non-zero, whatever its tests said, and nothing here has ever reported that code.
+ * `--test-force-exit` is in the command the gate runs, so the exit is forced rather than natural,
+ * and a forced exit is exactly where a code appears with no other trace.
+ *
+ * So this prints the code and, when it is not zero, what the loop was still holding. It does not
+ * change the outcome — the file still fails, as it should. It makes the next sighting say which of
+ * the remaining causes it was, which is what SH778 asks for before any fix.
+ */
+process.on("exit", (code) => {
+  if (code === 0) {
+    return;
+  }
+  // `_getActiveHandles` is undocumented and is the only thing that can answer "what was still
+  // open"; guarded because an internal may vanish, and an instrument that throws while reporting a
+  // failure destroys the evidence it exists to keep.
+  let handles = "unavailable";
+  try {
+    handles = (process._getActiveHandles?.() ?? [])
+      .map((handle) => handle?.constructor?.name ?? typeof handle)
+      .sort()
+      .join(", ") || "none";
+  } catch {
+    // Deliberately silent: see above. The exit code is the part that matters.
+  }
+  process.stderr.write(`\nSH778: fixture-traits.test.mjs exited ${code} with every assertion green. `
+    + `Active handles at exit: ${handles}.\nThis is the file-level red SH698 instrumented twice `
+    + "without catching — neither an unhandled rejection nor the teardown deadline, both of which "
+    + "print above and did not. A non-zero code here with no other output means the process, not a "
+    + "test, is what failed.\n");
+});
+
 /** Fetches one path off the running fixture and scans it the way `clone` does. */
 async function scan(origin, path) {
   const url = `${origin}${path}`;

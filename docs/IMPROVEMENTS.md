@@ -713,3 +713,53 @@ concludes there is nothing to hear.
 Cheap to close: `buildConversion` already produces the shape in a unit fixture — a page
 whose `<body>` begins with an accepted block and which keeps two runs — and
 `describeConversion` is a pure function over its output.
+
+### XXVI.6 The cure that waits on a sighting (SH780)
+
+SH778 shipped the evidence half and stopped there on purpose. What it established, by
+measurement rather than by guessing, is what the failure is **not**: not an assertion
+(1499 pass, 1 fail, and the one failure is the file with both its tests green), not an
+unhandled rejection or exception (SH698's handlers print first and printed nothing), and
+not the teardown deadline (`closeFixture` rejects naming the server and its open
+sockets; that message is absent and the test owning the `t.after` reported green).
+
+What is left is the file's own **process exit**. `node --test` marks a file failed when
+its process exits non-zero whatever its tests said, and `--test-force-exit` is in the
+command the gate runs — a forced exit is exactly where a code appears with no other
+trace. SH778's third instrument prints that code and the active handles.
+
+It has not fired. Twelve runs after it landed — six ordinary, six at
+`--test-concurrency=32` — all green, which matches SH698's eighteen. Two sightings in
+roughly fifteen full runs is the observed rate, and it appears under the whole suite
+rather than alone.
+
+So this task owns the cure and cannot start until the instrument speaks. It stays open
+because the `red-suites.json` entry has to name a task that removes it, and an entry
+whose owner has shipped is the state SH594 fails on. Delete that entry in the same
+commit as the fix.
+
+### XXVI.7 The half-ship the ledger reads as a whole (SH781)
+
+Hit while shipping SH778's evidence half with a `red-suites.json` entry open against it.
+
+Two rules, each right on its own. **SH594**: an exception's `task` must be one the
+roadmap lists and the changelog does not — because an entry outliving its reason means
+the next real failure is already excused. **roadkeep `ship --part`**: record the half
+that landed, leave the line open, so progress is in the ledger and the work is still on
+the backlog.
+
+Together they are unsatisfiable. `--part` writes a changelog entry, SH594 reads *any*
+entry for that id as shipped, and the exception the still-open task needs goes red the
+moment its first half lands. The rule collision is the same shape SH764 named: the act
+of recording something disabled the gate that was tracking it.
+
+The workaround taken was to file the remaining half as its own id (SH780) and repoint
+the entry, which is honest and costs an id per partial ship — acceptable once, wrong as
+a convention, because it makes the backlog grow a task for a bookkeeping reason rather
+than a product one.
+
+What is decidable: the roadmap still carries the line, with an open marker, and
+roadkeep's own `⏳` says so. A reader that asked *is this id open* rather than *is it
+mentioned in the changelog* would accept a partial and still refuse a completed one.
+`assertion-debt` and `improvements-debt` read both files already, so the pattern exists
+in this repository.

@@ -5,10 +5,10 @@
     {
       "suite": "js",
       "test": "test/fixture-traits.test.mjs — the file, with no sub-test failing",
-      "task": "SH778",
+      "task": "SH780",
       "declared": "2026-08-17",
       "expires": "2026-08-24",
-      "why": "Second sighting, and the first with the counts kept: 1499 pass, 1 fail, and the failure is the FILE rather than any test in it — `✖ test\fixture-traits.test.mjs ... 'test failed'` with all nine of its sub-tests green and none listed. That shape is not an assertion; under `node --test` a file fails with no failing child when something goes wrong after the tests finish, which points at the captured-fixture server the file serves over a socket (SH528) racing `--test-force-exit`, not at any claim the file makes. Safe to commit over because nothing it asserts went red: the traits it checks all passed in the same run, and the two runs either side of this one were green. It is declared rather than re-run because re-running until it clears is what SH770 calls being right by luck, and the sighting is the perishable evidence SH778 exists to collect. It goes away with SH778 — which owes evidence first (which assertion, which port, which server state) and a fix second — and this entry is deleted in that commit."
+      "why": "Second sighting, and the first with the counts kept: 1499 pass, 1 fail, and the failure is the FILE rather than any test in it — `✖ test\fixture-traits.test.mjs ... 'test failed'` with all nine of its sub-tests green and none listed. That shape is not an assertion; under `node --test` a file fails with no failing child when something goes wrong after the tests finish, which points at the captured-fixture server the file serves over a socket (SH528) racing `--test-force-exit`, not at any claim the file makes. Safe to commit over because nothing it asserts went red: the traits it checks all passed in the same run, and the two runs either side of this one were green. It is declared rather than re-run because re-running until it clears is what SH770 calls being right by luck, and the sighting is the perishable evidence SH778 exists to collect. It goes away with SH780. SH778 shipped the evidence half and ruled three causes out by measurement — not an assertion, not an unhandled error, not the teardown deadline — leaving the file's own process exit, which its third instrument now prints. That instrument has not fired in twelve runs since, so the cure has no subject yet and owns its own id; this entry is deleted in the commit that fixes it."
     }
   ]
 }

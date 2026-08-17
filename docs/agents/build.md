@@ -60,6 +60,42 @@ So the ledger's claim is now compared against what the gates actually said:
 "nobody has run this here" is true rather than wrong, so it is printed. That printing *is* the
 repair — the sentence whose absence cost eight pushes.
 
+### The file-level red with green assertions (SH698, SH778)
+
+`cli/test/fixture-traits.test.mjs` fails intermittently at **file** level with every assertion in it
+green:
+
+```
+✖ testixture-traits.test.mjs (1052.1779ms)
+  'test failed'
+```
+
+Two sightings on 2026-08-17, in roughly fifteen full runs. It is worth knowing about because the
+report names nothing: `node --test` marks the file failed and has no assertion to point at.
+
+**What has been ruled out, by measurement rather than by guessing.** The kept run (SH354's rule —
+`shio-js-test.red.log` survives the green re-run) says `1499 pass, 1 fail`, and the one failure is
+the file. So:
+
+| Candidate | Ruled out by |
+|---|---|
+| An assertion | Both tests in the file reported ✔ and no sub-test appears in the failing list |
+| An unhandled rejection or exception | SH698's handlers print before anything can swallow the reason, and printed nothing |
+| The teardown deadline | `closeFixture` rejects naming the server and its open sockets; that message is absent, and the outer test owning the `t.after` reported ✔ |
+
+**What is left is the file's own process exit.** `node --test` marks a file failed when its process
+exits non-zero whatever its tests said, and nothing reported that code — so SH778 added the third
+instrument: `process.on("exit")` prints the code and the active handles when it is not zero. It does
+not change the outcome; it makes the next sighting say which cause it was.
+
+**It did not reproduce in twelve runs after that** — six ordinary, six at `--test-concurrency=32` —
+which is why the instrument shipped and the cure did not. SH698 saw the same: eighteen consecutive
+runs, no reproduction. A flake that will not appear on demand is diagnosed by what the failing run
+keeps, and that is now three things instead of one.
+
+Until it names itself it is a declared entry in `red-suites.json` against SH778, which is the honest
+state: re-running until it clears is what SH770 calls being right by luck.
+
 ### A stamp taken against another commit is not a colour (SH770)
 
 The comparison above is between a **claim** and a **measurement**, and nothing asked whether the
