@@ -689,31 +689,6 @@ What is owed first is not a fix but evidence: a failure here has to say which as
 on which trait, with the port and the server's state. Then the fix, if it is still
 reproducible. Filed now because the sighting is the perishable part.
 
-### XXVI.5 The warning that is the whole bound (SH779)
-
-SH772 emits the captured stylesheet once per run of kept markup on a page that has no
-`content`, and bounded it by argument rather than by mechanism: the typical count is
-one, because such a page's accepted blocks start at the top and a capture's accepted
-blocks are contiguous. The bound is honest and it is not enforced — so the promise
-beside it carries the risk:
-
-> `describeConversion` names any page it writes in that shape, because a megabyte repeated
-> is a payload regression and a reviewer should hear it from the command that caused it.
-
-That line has no test. Every other claim SH772 makes is asserted — the head's two arms,
-the guard that keeps the sheet off an authorable page, the count of copies on the
-fixture — and this one, which is what turns an unbounded worst case into a reviewed one,
-is a `lines.push` nothing exercises.
-
-The failure mode is quiet in the way this project keeps finding: the conversion still
-runs, the pages are still correct, and the only thing missing is the sentence that would
-have made somebody move an acceptance. A reviewer reading a report with no warning
-concludes there is nothing to hear.
-
-Cheap to close: `buildConversion` already produces the shape in a unit fixture — a page
-whose `<body>` begins with an accepted block and which keeps two runs — and
-`describeConversion` is a pure function over its output.
-
 ### XXVI.6 The cure that waits on a sighting (SH780)
 
 SH778 shipped the evidence half and stopped there on purpose. What it established, by

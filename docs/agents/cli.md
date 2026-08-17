@@ -3246,6 +3246,25 @@ on a page with no leading run, and `describeConversion` names any page it writes
 because a megabyte repeated is a payload regression and a reviewer should hear it from the command
 that caused it (P9).
 
+**That line is the whole bound, so it is asserted (SH779).** Every other claim SH772 makes has a
+test; the `lines.push` that turns an unbounded worst case into a reviewed one did not, and its
+failure mode is the quiet kind — the conversion still runs, the pages are still correct, and the only
+thing missing is the sentence that would have made somebody move an acceptance. A reviewer reading a
+report with no warning concludes there is nothing to hear.
+
+The fixture is the shape itself: `<body>` opening with an accepted block, and kept markup both
+*between* two accepted blocks and after the last. It doubles as the clearest statement of what
+SH763's N-split bought, because the sections come back interleaved where they stood:
+
+```
+/sections/b1              SectionHero
+/sections/markup-home-1   SectionMarkup   <div class=mid><p>Between</p></div>
+/sections/b2              SectionRichText
+/sections/markup-home-2   SectionMarkup   <footer class=bot><p>Foot</p></footer>
+```
+
+That is exactly the case SH693 said it could not place.
+
 ### The extractor that would have half-tested it
 
 `ShConvertedLayoutRenderTest` slices `CAPTURED_STYLE_HTML` out of `convert.mjs` and renders it in

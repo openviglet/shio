@@ -12,7 +12,6 @@
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
 - ⏳ **SH778** (deps: —) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the same suite was green, so the evidence is a line in a log. → §XXVI.4
-- 📋 **SH779** (deps: —) **The warning that names a page whose stylesheet is emitted twice has no test, so it can stop firing unnoticed** — SH772 bounded a per-row emission by promising describeConversion names the pages taking more than one, and that line is all that stands between a reviewer and a repeat. → §XXVI.5
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
 - 📋 **SH781** (deps: —) **A partial ship kills the red-suite exception its own task still needs, because the ledger reads a half as a whole** — SH594 refuses an entry whose task the changelog holds, and ship --part writes an entry while leaving the line open — so the two rules cannot both be obeyed. → §XXVI.7
 

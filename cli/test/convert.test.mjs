@@ -1121,6 +1121,76 @@ test("SH766: the title is declared on every page shape, and drawn only where not
   );
 });
 
+/**
+ * SH779 — the warning that is the whole of SH772's bound.
+ *
+ * <h3>Why a `lines.push` earns a test</h3>
+ *
+ * <p>SH772 emits the captured stylesheet once per run of kept markup on a page with no `content`,
+ * and bounded that by argument rather than by mechanism: the typical count is one, because such a
+ * page's accepted blocks start at the top and a capture's accepted blocks are contiguous. The bound
+ * is honest and it is not enforced — so the promise beside it is what carries the risk, and every
+ * other claim that task makes is asserted while this one was not.</p>
+ *
+ * <h3>The shape, which is the only one that takes two copies</h3>
+ *
+ * <p>`<body>` begins with an accepted block, so there is no leading run and no `content`; and kept
+ * markup stands **between** two accepted blocks as well as after the last, so there are two runs.
+ * That is also the case SH693 said it could not place and SH763's N-split made ordinary — the
+ * sections come back interleaved, `hero, between, notes, footer`, which this pins in passing.</p>
+ */
+test("SH779: a page that would take the captured stylesheet twice is named in the report", () => {
+  const html = "<html><body><section class=hero><h1>Hi</h1></section><div class=mid><p>Between</p></div>"
+    + "<section class=notes><h2>N</h2></section><footer class=bot><p>Foot</p></footer></body></html>";
+  const at = (needle) => html.indexOf(needle);
+  const proposal = {
+    candidates: [
+      candidate("b1", { fields: { heading: "Hi" } }),
+      candidate("b2", { type: "SectionRichText", fields: { body: "<p>N</p>" } }),
+      candidate("b3", { type: "SectionCta", mode: "fidelity", fields: {} }),
+    ],
+    pages: [{
+      path: "/",
+      title: "Home",
+      blocks: ["b1", "b2", "b3"],
+      spans: [
+        [at("<section class=hero>"), at("<div class=mid>")],
+        [at("<section class=notes>"), at("<footer class=bot>")],
+        [at("<footer class=bot>"), at("</body>")],
+      ],
+    }],
+    theme: { rows: [{ path: "brand", source: "declared" }], css: ":root{}", tokens: {} },
+  };
+
+  const built = buildConversion({
+    proposal,
+    plan: { accepted: [{ block: "b1", type: "SectionHero" }, { block: "b2", type: "SectionRichText" }] },
+    site: "Acme",
+    markup: new Map([["/", html]]),
+  });
+  const page = built.document.posts.find((post) => post.type === "Page");
+
+  assert.equal(page.data.content, undefined,
+    "the fixture has to produce the shape or the report has nothing to warn about: an accepted "
+      + "block at the very top leaves no leading run, so there is no `content` (SH772)");
+  assert.deepEqual(
+    page.data.sections,
+    [`${SECTIONS_FOLDER}/b1`, `${SECTIONS_FOLDER}/markup-home-1`,
+      `${SECTIONS_FOLDER}/b2`, `${SECTIONS_FOLDER}/markup-home-2`],
+    "and the two runs are interleaved where they stood — the case SH693 said it could not place, "
+      + "which SH763's N-split made ordinary",
+  );
+
+  assert.match(
+    describeConversion(built),
+    /begins with an accepted block and keeps 2 runs/,
+    "SH779: this line is the whole of SH772's bound. The conversion still runs and the pages are "
+      + "still correct; the only thing missing without it is the sentence that would have made "
+      + "somebody move an acceptance, and a reviewer reading a report with no warning concludes "
+      + "there is nothing to hear.",
+  );
+});
+
 test("SH763: every field a conversion writes is declared by the type it names", async () => {
   const declared = declaredFields();
   assert.ok(
