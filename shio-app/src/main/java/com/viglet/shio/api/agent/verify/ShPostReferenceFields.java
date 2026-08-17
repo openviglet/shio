@@ -11,6 +11,7 @@ package com.viglet.shio.api.agent.verify;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.widget.ShSystemWidget;
 
@@ -75,6 +76,27 @@ public final class ShPostReferenceFields {
             return false;
         }
         JsonNode settings = settings(attr.getWidgetSettings(), mapper);
+        JsonNode multiselect = settings == null ? null : settings.get("multiselect");
+        JsonNode references = multiselect == null ? null : multiselect.get("references");
+        return references != null && references.isString()
+                && REFERENCES_POST.equalsIgnoreCase(references.asString().trim());
+    }
+
+    /**
+     * The same question of a <b>shipped definition</b> rather than of a live attribute (SH773).
+     *
+     * <p>Here rather than at the caller, because there is exactly one rule about what marks a
+     * {@code Multi Select} as holding post URLs and it should have one implementation. The
+     * alternative — a second parse beside the drift check — was written first and cost a silent
+     * {@code catch}: an unreadable {@code widgetSettings} would have made the field read as *not* a
+     * reference, which is the answer that reports nothing. {@link #settings} already returns
+     * {@code null} for anything it cannot read, and both callers now share that one decision.</p>
+     */
+    public static boolean referencesPosts(ShPostTypeAttrDef field, ObjectMapper mapper) {
+        if (field == null || !ShSystemWidget.MULTI_SELECT.equals(field.widget())) {
+            return false;
+        }
+        JsonNode settings = settings(field.widgetSettings(), mapper);
         JsonNode multiselect = settings == null ? null : settings.get("multiselect");
         JsonNode references = multiselect == null ? null : multiselect.get("references");
         return references != null && references.isString()

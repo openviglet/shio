@@ -265,6 +265,134 @@ class ShSectionCompositionTest {
         assertThat(broken.digest()).isNotEqualTo(digest("/pricing").digest());
     }
 
+    // --- SH773: the model that went blind, and the reader that now says so ---
+
+    /**
+     * SH773 — a vocabulary field whose live copy lost the key three readers need.
+     *
+     * <h2>What the probe found</h2>
+     *
+     * <p>SH767 was filed on a replica where {@code shio verify} answered {@code ok} over a page
+     * whose sections resolved to nothing, and measuring it before fixing it found the report
+     * already right. The quiet run had another cause, and the same probe found it: written against
+     * a {@code sections} field carrying <b>no</b> {@code widgetSettings}, verify says nothing —
+     * not about an address stored verbatim, and not about a section that genuinely does not
+     * exist.</p>
+     *
+     * <p>This fixture reproduces exactly that, and both assertions matter only together: the
+     * silence is the defect, and the new rule is what breaks it.</p>
+     */
+    @Test
+    @DisplayName("SH773: a vocabulary field that lost `references: post` is reported, not silent")
+    void aBlindRelationFieldIsReported() {
+        // `Page` because the catalogue is what the rule compares against: the finding exists only
+        // for a type the shipped vocabulary declares, and `Page.sections` is one of the three
+        // fields in the whole vocabulary that carry the key.
+        //
+        // The state is FORCED rather than assumed. `ShBlueprintApplyTest` and
+        // `ShVocabularyPostTypesTest` both provision a correct `Page` into this JVM's database, so
+        // whether this fixture can create a blind one depends on class order — and a test that is
+        // right because it sorts first is the shape SH770 was about. Blanking one String column is
+        // safe where removing the attribute would not be: SH289's cascade reaches the shared widget
+        // catalogue through `ShPostTypeAttr.shWidget`, and nothing here touches that.
+        String blindPage = "Page";
+        String before = blankSectionsSettings(blindPage);
+        try {
+            new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                    shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                            new Op(ShAgentBatchService.POST_UPSERT,
+                                    "post:" + siteName + base + "/blind",
+                                    blindPage, base, objectMapper.valueToTree(Map.of(
+                                            "title", "Blind",
+                                            "sections", List.of(base + "/not-there-at-all"))))
+                    )), false, "tester"));
+
+            assertThat(findings("dangling-reference"))
+                    .as("""
+                            the silence this task is about: the page names a section that does not                             exist, and the dangling rule cannot see it because the field never said                             its values were addresses. Every dev box that ran the replication chain                             early is in this state (SH773).""")
+                    .noneSatisfy(finding -> assertThat(finding.address()).endsWith(base + "/blind"));
+            assertThat(findings("vocabulary-drift"))
+                    .as("""
+                            so the drift itself is the finding. Not broken content — content that                             cannot be CHECKED, which is worse, and is the only reason the rule                             exists. It names the type, the field and a fix that works:                             render.provision creates a type and never edits one (SH152).""")
+                    .anySatisfy(finding -> {
+                        assertThat(finding.field()).isEqualTo("sections");
+                        assertThat(finding.message()).contains("references: post");
+                        assertThat(finding.fix()).contains("PUT /api/v2/post-type/" + blindPage);
+                    });
+        } finally {
+            restoreSectionsSettings(blindPage, before);
+        }
+    }
+
+    /**
+     * Blanks {@code <type>.sections}'s widgetSettings, creating the type and the field if this JVM
+     * has neither yet, and answers what was there before.
+     */
+    private String blankSectionsSettings(String typeName) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            ShPostType live = entityManager
+                    .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                    .setParameter("name", typeName)
+                    .getResultStream().findFirst().orElse(null);
+            if (live == null) {
+                ShPostType created = new ShPostType();
+                created.setName(typeName);
+                created.setTitle(typeName);
+                created.setSystem((byte) 0);
+                created.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+                created.setOwner("admin");
+                entityManager.persist(created);
+                attr(created, ShSystemWidget.TEXT, "title", 1, (byte) 1, null);
+                attr(created, ShSystemWidget.MULTI_SELECT, "sections", 2, (byte) 0, null);
+                return null;
+            }
+            ShPostTypeAttr sections = live.getShPostTypeAttrs() == null ? null
+                    : live.getShPostTypeAttrs().stream()
+                            .filter(each -> "sections".equals(each.getName()))
+                            .findFirst().orElse(null);
+            if (sections == null) {
+                attr(live, ShSystemWidget.MULTI_SELECT, "sections", 2, (byte) 0, null);
+                return null;
+            }
+            String had = sections.getWidgetSettings();
+            // The whole defect, in one null: SH154's rule is that a Multi Select is tags unless the
+            // model says otherwise, so this field IS tags to every reader that asks.
+            sections.setWidgetSettings(null);
+            entityManager.merge(sections);
+            return had;
+        });
+    }
+
+    private void restoreSectionsSettings(String typeName, String settings) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShPostType live = entityManager
+                    .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                    .setParameter("name", typeName)
+                    .getResultStream().findFirst().orElse(null);
+            if (live == null || live.getShPostTypeAttrs() == null) {
+                return;
+            }
+            live.getShPostTypeAttrs().stream()
+                    .filter(each -> "sections".equals(each.getName()))
+                    .findFirst()
+                    .ifPresent(each -> {
+                        each.setWidgetSettings(settings);
+                        entityManager.merge(each);
+                    });
+        });
+    }
+
+    @Test
+    @DisplayName("SH773: a type the shipped vocabulary does not carry is nobody's drift")
+    void aTypeOutsideTheVocabularyIsNotJudged() {
+        // The noise this rule must not make. `pageType` is this test's own invention with a
+        // perfectly good `references: post`, and half of any instance's types are somebody's own —
+        // comparing those against a catalogue that never described them would report a defect for
+        // every model anybody ever wrote.
+        assertThat(findings("vocabulary-drift"))
+                .noneSatisfy(finding -> assertThat(finding.address()).contains(pageType));
+    }
+
     // --- SH767: the relation that took an address and meant nothing by it ---
 
     /**

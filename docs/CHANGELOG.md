@@ -1232,6 +1232,7 @@
 - **SH770** — A stamp whose sha is not HEAD is excluded from both directions and reported as what it is — a run against another tree — so neither a stale red nor a stale green is read as this tree's colour.
 - **SH771** — The matrix names the eight ids and conformance is 122 of 122; the ratchet stays the enforcement because SH770 already bounded the interval, and its refusal now names both commits instead of one that cannot exist.
 - **SH772** — The head has a second arm for the page whose kept markup is all in sections, guarded by the field only a markup section carries — because a head cannot ask an aggregate question about a relation.
+- **SH773** — vocabulary-drift reports a live type that lost the references key three readers depend on — only the silent drift, scoped to the types a scan uses, with a fix that provisioning cannot perform.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

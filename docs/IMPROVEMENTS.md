@@ -533,32 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.114 The declaration three readers agree to need (SH773)
-
-SH767 was filed on a replica where `shio verify --site VigR2` answered `ok` over a page
-whose sections resolved to nothing. Measuring it before fixing it found the report
-already right: a probe writing `post:<site>/<url>` into a declared relation reports
-`dangling-reference` today, with no fix applied.
-
-So the quiet run had another cause, and the probe found it by writing the same page
-against a `sections` field carrying **no** `widgetSettings`. Verify says nothing — not
-about the address form, and not about a section that genuinely does not exist.
-`ShPostReferenceFields` is the gate: SH154's rule is that a Multi Select is tags unless
-the model says otherwise, which is right, and it makes
-`{"multiselect":{"references":"post"}}` the one fact three readers depend on — the
-dangling lint, the SH101 digest, and now SH767's write check.
-
-`ShVocabularyPostTypes.ensure` **provisions and never upserts** (SH152), deliberately: a
-curator who added a field to their `SectionHero` keeps it, and that is what lets a
-conversion re-run against an edited site. The cost is that an instance carrying a `Page`
-from before the key existed keeps the blind field forever, and nothing says so. Every
-dev box that ran the chain early is in that state, which is why the replica measured
-clean.
-
-What is owed is the instrument, not a repair: a shipped vocabulary type whose live copy
-has drifted from the catalogue is a finding, naming the field and the key. The catalogue
-is on the classpath and the live model is one query away.
-
 ### XVII.115 The banner keyed to the same wrong half (SH774)
 
 SH772 fixed the head; this is the same reading one surface over, found while fixing it.

@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH773** (deps: SH767 ✅) **An instance whose Page.sections lost its references declaration is invisible to the lint, the digest and the write** — Provision never upserts, so a Page made before the vocabulary carried the key keeps a blind field forever and three readers that key on it stay silent. → §XVII.114
 - 📋 **SH774** (deps: SH772 ✅) **The render banner calls a mixed page authorable when its kept markup is all in sections** — compositionOf reads content and sections off the model, and SH763 made content absent on a page that still carries the source's own markup — so the label is wrong, not missing. → §XVII.115
 
 ## Priority

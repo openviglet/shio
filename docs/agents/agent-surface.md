@@ -2391,6 +2391,53 @@ write check, all three of which key on that declaration. `ShVocabularyPostTypes.
 and never upserts (SH152, deliberately — a curator's added field must survive), so an instance
 carrying an older `Page` keeps the blind field forever. Filed as SH773.
 
+## The declaration three readers agree to need (SH773)
+
+SH767 was filed on a replica where `shio verify --site VigR2` answered `ok` over a page whose
+sections resolved to nothing. **Measuring it before fixing it found the report already right**: a
+probe writing `post:<site>/<url>` into a *declared* relation reports `dangling-reference` today,
+with no fix applied.
+
+So the quiet run had another cause, and the same probe found it — written against a `sections` field
+carrying **no** `widgetSettings`, verify says nothing. Not about the address form, and not about a
+section that genuinely does not exist.
+
+`ShPostReferenceFields` is the gate. SH154's rule — a `Multi Select` is tags unless the model says
+otherwise — is right, and it makes `{"multiselect":{"references":"post"}}` the one fact **three**
+readers depend on: the dangling lint, the SH101 digest, and SH767's write check. A type that has
+lost it is not broken content; it is content that **cannot be checked**, which is worse.
+
+### Why an instance gets into that state and cannot get out by itself
+
+`ShVocabularyPostTypes.ensure` **provisions and never upserts** (SH152), deliberately: a curator who
+added a field to their `SectionHero` keeps it, and that is what lets a conversion re-run against an
+edited site. The cost is that an instance carrying a `Page` from before the key existed keeps the
+blind field forever, and nothing said so. Every development box that ran the replication chain early
+is in that state, which is why the replica measured clean.
+
+### The rule, and what it deliberately does not report
+
+`vocabulary-drift` is an **error** in the `content` group, scoped to the types the scan's posts
+actually use, from data already loaded. It reports only the **silent** drift: a field the shipped
+catalogue declares as holding post references whose live copy does not.
+
+- A **missing** field is already loud — SH168 refuses the write naming it.
+- A curator's **extra** field is the thing SH152 exists to protect.
+- Every other difference from the catalogue would report a Combo Box somebody legitimately
+  re-worded, on every run — the noise SH551 and SH142 both warn about.
+
+The fix it names is one a caller can perform: `PUT /api/v2/post-type/<name>`. `render.provision`
+cannot do it, and the refusal says so, because reaching for the provisioning op is the obvious wrong
+move.
+
+### The fixture forces the state rather than assuming it
+
+`ShBlueprintApplyTest` and `ShVocabularyPostTypesTest` both provision a correct `Page` into the test
+JVM's database, so whether the SH773 fixture *can* create a blind one depends on class order — and a
+test that is right because it sorts first is what SH770 was about. It blanks the one String column
+and restores it in a `finally`. Safe where removing the attribute would not be: SH289's cascade
+reaches the shared widget catalogue through `ShPostTypeAttr.shWidget`, and nothing here touches it.
+
 ## A race test that was discarding the race it found (SH762)
 
 `mcp-concurrency.conformance.mjs` went red once and green minutes later on one build, saying

@@ -42,6 +42,9 @@ import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding;
 import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
+import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.post.type.ShVocabularyPostTypes;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.object.ShFolderSite;
@@ -175,6 +178,8 @@ public class ShAgentVerifyService {
     private final ShAddressResolver addressResolver;
     private final ShAgentChangesService shAgentChangesService;
     private final ShAgentDeliveryProbe deliveryProbe;
+    /** SH773 — the shipped model, to compare this instance's copy of it against. */
+    private final ShVocabularyPostTypes vocabularyPostTypes;
     private final ShAgentMemoryService shAgentMemoryService;
     private final ShTemplateFieldLint templateFieldLint;
     private final ShTemplateGraph templateGraph;
@@ -227,6 +232,7 @@ public class ShAgentVerifyService {
                                 ShTemplateGraph templateGraph,
                                 ShPageRenderService pageRenderService,
                                 ShSiteAssets siteAssets,
+                                ShVocabularyPostTypes vocabularyPostTypes,
                                 PlatformTransactionManager transactionManager) {
         RuleBasedTransactionAttribute definition = new RuleBasedTransactionAttribute();
         definition.setReadOnly(true);
@@ -243,6 +249,7 @@ public class ShAgentVerifyService {
         this.addressResolver = addressResolver;
         this.shAgentChangesService = shAgentChangesService;
         this.deliveryProbe = deliveryProbe;
+        this.vocabularyPostTypes = vocabularyPostTypes;
         this.shAgentMemoryService = shAgentMemoryService;
         this.templateFieldLint = templateFieldLint;
         this.templateGraph = templateGraph;
@@ -733,6 +740,7 @@ public class ShAgentVerifyService {
         redirectTargets(check, scan, findings);
         headConventions(check, scan, findings);
         siteScripts(check, scan, findings);
+        vocabularyDrift(check, scan, findings);
     }
 
     /**
@@ -2664,6 +2672,83 @@ public class ShAgentVerifyService {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * SH773 — a live vocabulary type whose copy of the model has lost the key three readers need.
+     *
+     * <h2>The measurement that filed this</h2>
+     *
+     * <p>SH767 was filed on a replica where {@code shio verify} answered {@code ok} over a page
+     * whose sections resolved to nothing. Measuring it before fixing it found the report already
+     * right — a probe writing an address into a <em>declared</em> relation reports
+     * {@code dangling-reference} with no fix applied. The quiet run had another cause, and the same
+     * probe found it: written against a {@code sections} field carrying <b>no</b>
+     * {@code widgetSettings}, verify says nothing. Not about the address form, and not about a
+     * section that genuinely does not exist.</p>
+     *
+     * <p>{@code ShPostReferenceFields} is the gate. SH154's rule — a {@code Multi Select} is tags
+     * unless the model says otherwise — is right, and it makes
+     * {@code {"multiselect":{"references":"post"}}} the one fact <b>three</b> readers depend on: the
+     * dangling lint, the SH101 digest, and SH767's write check. A type that has lost it is not
+     * broken content; it is content that cannot be checked, which is worse and is the only reason
+     * this rule exists.</p>
+     *
+     * <h2>Why an instance gets into that state, and cannot get out by itself</h2>
+     *
+     * <p>{@link ShVocabularyPostTypes#ensure} <b>provisions and never upserts</b> (SH152),
+     * deliberately: a curator who added a field to their {@code SectionHero} keeps it, and that is
+     * what lets a conversion re-run against an edited site. The cost is that an instance carrying a
+     * {@code Page} from before the key existed keeps the blind field forever, and nothing said so.
+     * Every development box that ran the replication chain early is in that state.</p>
+     *
+     * <h2>What it reports, and what it deliberately does not</h2>
+     *
+     * <p>Only the <b>silent</b> drift: a field the catalogue declares as holding post references
+     * whose live copy does not. A missing field is already loud — SH168 refuses the write naming it
+     * — and a curator's <em>extra</em> field is the thing SH152 exists to protect. Widening this to
+     * "every difference from the catalogue" would report a Combo Box somebody legitimately
+     * re-worded, on every run, which is the noise SH551 and SH142 both warn about.</p>
+     *
+     * <p>Scoped to the types this scan's posts actually use, from data already loaded — a site that
+     * composes no sections is told nothing about a {@code Page} it does not have.</p>
+     */
+    private void vocabularyDrift(String check, Scan scan, List<Finding> findings) {
+        Map<String, ShPostType> inUse = new LinkedHashMap<>();
+        for (ShPostUnified post : scan.posts()) {
+            ShPostType type = post.getShPostType();
+            if (type != null && type.getName() != null) {
+                inUse.putIfAbsent(type.getName(), type);
+            }
+        }
+        for (Map.Entry<String, ShPostType> entry : inUse.entrySet()) {
+            Optional<ShPostTypeDef> shipped = vocabularyPostTypes.get(entry.getKey());
+            if (shipped.isEmpty()) {
+                continue;
+            }
+            for (ShPostTypeAttrDef field : shipped.get().fields()) {
+                if (!ShPostReferenceFields.referencesPosts(field, objectMapper)) {
+                    continue;
+                }
+                declared(entry.getValue()).stream()
+                        .filter(live -> field.name().equals(live.getName()))
+                        .filter(live -> !ShPostReferenceFields.referencesPosts(live, objectMapper))
+                        .forEach(live -> findings.add(driftFinding(check, entry.getKey(), field)));
+            }
+        }
+    }
+
+    private Finding driftFinding(String check, String typeName, ShPostTypeAttrDef field) {
+        return Finding.error(check, "vocabulary-drift", "id:" + typeName, field.name(),
+                "This instance's '" + typeName + "' declares '" + field.name()
+                        + "' without `references: post`, and the shipped model declares it with. "
+                        + "Three readers key on it — the dangling-reference rule, the render digest "
+                        + "and the batch's relation check — so a page naming a section that does "
+                        + "not exist reports nothing, renders a hole, and looks authored.",
+                "PUT /api/v2/post-type/" + typeName + " with the field's widgetSettings set to "
+                        + "{\"multiselect\":{\"references\":\"post\"}}. Provisioning will not fix "
+                        + "it: render.provision creates a type and never edits one (SH152), which "
+                        + "is what protects a field you added.");
     }
 
     /**
