@@ -713,3 +713,49 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 `red-suites.json` entry is no longer evidence either way — **SH789 deleted it**, on the
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
+
+### XXVI.23 A gate you can run without leaving evidence you ran it (SH798)
+
+`pnpm test` and `pnpm conformance` go through wrappers that write `.gates/<name>.json` —
+the exit code, the commit and the time — which is what `ShDeclaredRedTest` and
+`red-suites.test.mjs` read to answer *what colour is this tree*. `pnpm conformance:docs`
+runs `node --test` directly and writes nothing.
+
+It is not a subset that inherits its parent's answer. It is a **separate job** in
+`suites.yml`, with its own trigger, its own inputs (a checkout of `vigletdocs`) and its
+own way of going red — which it was, for twelve commits, while the full conformance gate
+had not been run at all.
+
+The cost is exact. Running it four times on SH797 left the stamp reading a commit from
+earlier in the day, so the comparators kept reporting `conformance — NOT this tree, so
+not a colour`. That was true of the gate they name and false of the work actually done,
+and the two are indistinguishable from the report.
+
+Which makes this the SH770 problem one row over: that task established that an
+out-of-date stamp must not read as a colour, and this is a gate whose stamp can never be
+up to date because nothing writes it. Wrap it as its own row — `docs` beside `java`,
+`js` and `conformance` — so a green run is recorded and a red one is comparable, and the
+ledger's staleness checks reach the gate that has been carrying the most debt.
+
+### XXVI.24 A report with no ceiling cannot tell a queue from a backlog (SH799)
+
+SH771 decided the local reader prints rather than fails, and the reasoning holds:
+`COVERAGE.md` is in `vigletdocs`, so failing the commit in front of you punishes
+somebody for a gap they cannot close from where they are standing.
+
+What that leaves is a line with no threshold. `SH758: 1 shipped id(s) COVERAGE.md does
+not name yet` and `SH758: 11` are the same event to a reader scanning fifteen hundred
+green lines, and SH797 is what the second one costs: twelve accumulated, and only the
+gate that needs a second repository checked out ever said so.
+
+A ceiling on the *local* side splits the difference the current design collapses. One or
+two unnamed ids are a normal queue between a ship and the next docs pass — that should
+print and pass, exactly as now. A dozen is a backlog, and it is discoverable from this
+repository alone without needing the matrix present: the mirror
+`docs/coverage-named.json` is already generated here for that reason.
+
+So: a bounded ratchet, in the shape this repository uses everywhere else. Not a hard
+limit that blocks a ship — the SH771 argument still applies to any single commit — but a
+number that fails when the queue has clearly stopped being one, with the same
+both-directions check every other ledger here carries, so the bound falls as the debt is
+paid rather than standing as permanent headroom.
