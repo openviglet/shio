@@ -216,3 +216,92 @@ test("SH782: the reader is not vacuous — it finds the shape it exists to refus
     "the escape AFTER a nested interpolation is still read, which a scanner that stopped at the "
       + "first inner backtick would have missed");
 });
+
+/**
+ * A pattern that is nothing but alternated bare words — no boundary, no anchor, no adjacent context.
+ *
+ * <p>SH794. `exempt` written that way matches inside the identifier `ShCsrfExemptionLintTest`, which
+ * is how SH792's first run reported three innocent files. The pattern read as the rule its author
+ * meant and was a different rule — SH782's class from the other side.</p>
+ *
+ * @returns the bare-word branches, or null where the pattern carries anything that bounds them
+ */
+function unboundedWordAlternation(pattern) {
+  const body = pattern.replace(/^\((\?:)?/, "").replace(/\)$/, "");
+  // Anything here bounds the branches: an escape class, an anchor, a literal punctuation neighbour.
+  // `(?:find|get|read)\w*\(` is safe for that reason, and so is `\.(isGreaterThan|…)\(`.
+  if (/\\b|\^|\$|\\s|\\w|\\d|\\.|[[\](){}<>+*?]/.test(body)) return null;
+  const bare = body.split("|").map((branch) => branch.trim())
+    .filter((branch) => /^[A-Za-z][A-Za-z ']{2,}$/.test(branch));
+  return bare.length > 0 ? bare : null;
+}
+
+/**
+ * SH794 — where an unbounded alternation is a defect, and where it is the right pattern.
+ *
+ * <h2>The measurement, which is the whole finding</h2>
+ *
+ * <p>Across the declared scanners there is <b>one</b> such pattern besides SH792's, and it is
+ * <b>correct</b>: {@code ShAclAssociationWalkLintTest}'s
+ * {@code AccessDeniedException|ShAclPermission|GrantedAuthority} asks *does this file make a
+ * security decision*, and `SimpleGrantedAuthority` is a true instance of that concept. Every other
+ * bare word in a scan carries adjacent context — `(?:find|get|read)\w*\(` cannot match inside
+ * `target`, because `\s+` precedes it.</p>
+ *
+ * <h2>So the rule is not "always write \b"</h2>
+ *
+ * <p>It is about what the scan reads. A <b>code</b> scan sees an identifier as a <i>usage</i>, and a
+ * longer identifier containing the word is usually still the concept. A <b>prose</b> scan sees
+ * identifiers as <i>mentions</i> — a sentence naming `ShCsrfExemptionLintTest` is talking about it,
+ * not doing what it does — so a substring hit there is a false positive by construction.</p>
+ *
+ * <p>Which is why this is asserted against the `@scans` declaration SH740 already requires, rather
+ * than banning a shape. The Java scanners are <b>not</b> checked here and nothing else checks them:
+ * their declaration has no prose/code mode this reader can consult, and claiming otherwise is the
+ * SH792 defect written fresh.</p>
+ */
+test("SH794: a prose scan does not spell a bare word alternation, where a code scan may", () => {
+  const offenders = [];
+  let scanned = 0;
+  // TREES, like the walk above — not ROOT. Walking the repository took 90 seconds and read every
+  // node_modules the filter then discarded, which is a gate nobody keeps.
+  for (const file of TREES.flatMap((tree) => walk(join(ROOT, tree)))) {
+    const body = readFileSync(file, "utf8");
+    const declared = /@scans\s+(code|prose|both)\b/.exec(body);
+    if (!declared) continue;
+    scanned += 1;
+    if (declared[1] === "code") continue;
+    const patterns = [
+      ...[...withoutComments(body).matchAll(/new RegExp\(\s*[`"']((?:[^`"'\\]|\\.)*)[`"']/g)],
+      ...[...withoutComments(body).matchAll(/=\s*\/((?:[^/\\\n]|\\.)+)\/[gimsuy]*/g)],
+    ].map(([, raw]) => raw);
+    for (const raw of patterns) {
+      const words = unboundedWordAlternation(raw);
+      if (words) offenders.push(`${file.slice(ROOT.length)}: ${words.join(", ")}`);
+    }
+  }
+
+  console.log(`SH794: ${scanned} declared scanner(s) read; unbounded word alternations in a prose `
+    + `scan: ${offenders.length}`);
+  assert.deepEqual(
+    offenders,
+    [],
+    "a scan that reads prose spells a bare word with nothing bounding it, so it matches inside any "
+      + "longer identifier a sentence happens to name.\nThat is not hypothetical: `exempt` written "
+      + "this way read `ShCsrfExemptionLintTest` and reported three files as something they are not "
+      + "(SH792). It did not go red — it over-reported, which looks like diligence.\n"
+      + "Wrap the alternation: `\\b(?:a|b|c)`. A code scan may spell it bare, because there an "
+      + "identifier is a usage rather than a mention.",
+  );
+});
+
+test("SH794: the reader is not vacuous — it tells a bounded pattern from an unbounded one", () => {
+  assert.deepEqual(unboundedWordAlternation("nothing is lost|covers it|exempt"),
+    ["nothing is lost", "covers it", "exempt"], "SH792's shape, which is the one that bit");
+  assert.equal(unboundedWordAlternation("\\b(?:nothing is lost|exempt)"), null,
+    "and the same alternation bounded is silent — otherwise the fix would not clear the check");
+  assert.equal(unboundedWordAlternation("(?:find|get|read)\\w*\\("), null,
+    "adjacent context bounds a branch as well as `\\b` does: this cannot match inside `target`");
+  assert.equal(unboundedWordAlternation("\\.(hasSizeGreaterThan|isGreaterThan)\\("), null,
+    "and neither can this match inside `isGreaterThanOrEqualTo`, which is why floors.mjs is fine");
+});

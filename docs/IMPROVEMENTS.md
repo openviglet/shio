@@ -714,29 +714,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
 
-### XXVI.19 A literal without a boundary is a different rule than the one you wrote (SH794)
-
-SH792's scanner looks for sentences excusing an exclusion, and one of its literals is
-`exempt`. Written without a leading `\b`, that matches inside
-**ShCsrfExemption**`LintTest` — so three files whose only sin was naming that class were
-reported as handing work to another instrument. Caught on the first run, by reading the
-list rather than by the run going red: an over-matching scan produces *more* findings,
-and a guard that over-reports looks diligent.
-
-The class is the one SH782 already found from the other side. There the defect was a
-regex built from a template literal that could not spell an escape the string ate; here
-it is a regex that spells a word without saying it is one. Both are a pattern that reads
-as the rule its author meant and is a different rule.
-
-The deliverable is the grep, before any fix (SH322): across the JS and Java scans, which
-regexes hold a bare alphabetic literal with no `\b`, no anchor and no surrounding
-punctuation — and of those, which over-match something in this repository today. The
-second half is what separates a finding from a style note, and it is cheap to answer:
-run each pattern and read what it catches.
-
-`cli/test/regex-escape.test.mjs` is where a JS answer belongs, since it already owns "a
-scan's pattern is not what its author meant".
-
 ### XXVI.20 A tool at the wall is a constraint on the next task, and only the run knows (SH795)
 
 SH793 made the per-tool headroom visible. What it showed is that **`shio_apply` has 19

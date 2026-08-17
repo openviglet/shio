@@ -190,6 +190,44 @@ Unknown either side is **not** stale. A stamp with no `sha` predates the field a
 no git cannot be asked — inventing staleness from an absence is the same mistake in the other
 direction.
 
+### A bare word in a scan is bounded by its neighbours, or by nothing (SH794)
+
+SH792's first run read `exempt` inside **ShCsrfExemption**`LintTest` and reported three innocent
+files. SH782's class from the other side: there a regex could not spell an escape the string ate,
+here one spells a word without saying it is one. Both read as the rule the author meant and are a
+different rule, and neither goes red — they **over-report**, which looks like diligence.
+
+**The measurement said the opposite of what was expected.** Across 32 declared scanners there is
+exactly one other unbounded word alternation, and it is **correct**:
+`AccessDeniedException|ShAclPermission|GrantedAuthority` in `ShAclAssociationWalkLintTest` asks *does
+this file make a security decision*, and `SimpleGrantedAuthority` is a true instance of that. Every
+other bare word carries **adjacent context**, which bounds a branch as well as `\b` does —
+`(?:find|get|read)\w*\(` cannot match inside `target` because `\s+` precedes it, and
+`\.(hasSizeGreaterThan|isGreaterThan)\(` cannot match inside `isGreaterThanOrEqualTo` because the
+`\(` forces a backtrack to the longer branch.
+
+So the rule is **not** "always write `\b`". It is about what the scan reads, and it keys off the
+`@scans` declaration SH740 already requires:
+
+- a **code** scan sees an identifier as a *usage*, and a longer identifier containing the word is
+  usually still the concept — bare is fine;
+- a **prose** scan sees identifiers as *mentions*. A sentence naming `ShCsrfExemptionLintTest` is
+  talking about it, not doing what it does, so a substring hit there is a false positive by
+  construction — bare is a defect.
+
+Enforced in `regex-escape.test.mjs`, which already owns "a scan's pattern is not what its author
+meant". **The Java scanners are not checked and nothing else checks them** — their declaration
+carries no prose/code mode this reader can consult, and saying another instrument covers it is the
+SH792 defect written fresh.
+
+Two things its own first run cost. Walking `ROOT` instead of `TREES` took **90 seconds** and read
+every `node_modules` the filter then discarded — 64 ms scoped, and a gate that slow is one somebody
+removes. And **SH792's catalogue caught the sentence above as it was being written**: *the Java
+scanners are not checked and nothing else checks them* is hand-off-shaped, so the reader demanded a
+verdict for it. That is the first time it fired on a claim being made rather than one already there,
+and it earned a fourth kind — `uncovered`, for a sentence that names a gap instead of asserting
+somebody else fills it. Which is the thing to write when tempted by a hand-off.
+
 ### A hand-off between two instruments is a claim, and it is the one kind nothing verified (SH792)
 
 SH789's defect was not the exclusion and not its reason — both were right. It was the half that

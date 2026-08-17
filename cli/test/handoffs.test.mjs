@@ -64,6 +64,12 @@ const Kind = {
   SELF: "self-exclusion",
   /** Describes an exclusion that has since been removed. Kept as history, claims nothing now. */
   HISTORICAL: "historical",
+  /**
+   * States that a case is <b>not</b> covered — here or anywhere. The opposite of a hand-off and the
+   * thing to write when tempted by one: it names the gap instead of asserting somebody else fills
+   * it. Added when this reader caught SH794 writing one, which is the intended use.
+   */
+  UNCOVERED: "uncovered",
 };
 
 /**
@@ -93,6 +99,13 @@ const CLAIMS = {
     kind: Kind.SELF,
     why: "`floor-kind.test.mjs` is the ledger being read, not the cover; the `its own test` the "
       + "sentence names is three tests down in this same file",
+  },
+  "cli/test/regex-escape.test.mjs -> ShCsrfExemptionLintTest": {
+    kind: Kind.UNCOVERED,
+    why: "SH794's rule keys off the `@scans` declaration, which only the JS scanners carry, so the "
+      + "Java ones are unchecked — and the sentence says exactly that rather than naming a file as "
+      + "covering them. Caught by this reader on the run that added it, which is the first time it "
+      + "fired on a claim being written rather than one already there",
   },
   "cli/test/red-suites.test.mjs -> ShDeclaredRedTest": {
     kind: Kind.HANDS_OFF,
