@@ -13,6 +13,8 @@
 
 - ⏳ **SH778** (deps: a further sighting) **fixture-traits failed once in a full run and passed alone, and nothing kept enough to say why** — One sighting on 2026-08-17: the file-level test reported 'test failed' with no assertion named, and a re-run of the suite was green, so the evidence is a log line. → §XXVI.4
 - 📋 **SH780** (deps: SH778 ⏳) **The fixture-traits file still fails intermittently, and the instrument that will name it has not been triggered** — SH778 ruled out three causes and left the process exit; it did not reproduce in twelve runs after the instrument landed, so the cure waits on a sighting. → §XXVI.6
+- 📋 **SH793** (deps: —) **A capability is declined on a headroom figure that lives in a comment and nothing measures or prints** — The P1 list refuses postTypeMerge because shio_apply is "3 tokens under" the ceiling; the ceiling is enforced, that number is not, and P3 says a cost is measured. → §XXVI.18
+- 📋 **SH794** (deps: —) **A scan regex whose word-ish literal carries no boundary matches inside a longer identifier** — SH792's first run read `exempt` inside ShCsrfExemptionLintTest and reported three files as hand-offs; nothing says which other scans spell a literal the same way. → §XXVI.19
 
 ## Priority
 
