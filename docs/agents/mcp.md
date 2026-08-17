@@ -277,8 +277,29 @@ branch as the only unproved write on the MCP surface.
 per-tool ceiling. That figure was one revision stale — SH342 had already trimmed the tool
 to 435 — so the per-tool ceiling was never the binding constraint. `mcp.tools.list.total`
 was: at 2395 with 2390 of tools in it, the list had been a wall for any new argument
-anywhere. Read the per-tool number before planning a trim; `ShMcpToolBudgetTest` prints
-every tool when it fails, and forcing it to fail is the cheapest way to get the table.
+anywhere.
+
+**And that was the second time, which is what SH793 is about.** The advice here used to be
+*read the per-tool number before planning a trim — `ShMcpToolBudgetTest` prints every tool
+when it fails, and forcing it to fail is the cheapest way to get the table.* A measurement
+you have to break the build to see is one nobody takes, and the proof is the third instance:
+the P1 list declined `postTypeMerge` because `shio_apply` was "3 tokens under" the ceiling,
+and when somebody finally measured it was **19**. Same file, same figure, stale twice; both
+earlier repairs corrected the number, which is why it went stale again.
+
+So the table is printed on **every** run now, green included:
+
+```
+[SH793] per-tool MCP schema cost, ceiling 460 est. tokens
+  shio_apply        441  headroom   +19
+  shio_write        434  headroom   +26
+  …
+```
+
+The number is gone from the P1 reason rather than corrected — a reason states the *shape* of
+a cost and names what prints it, and `ShAgentP1ConformanceTest` now refuses any reason
+spelling `N tokens under`. Two tools sit within 26 tokens of the ceiling, which nothing had
+said out loud before this printed.
 
 **What the trims were, and the rule they came from.** All three were description prose
 restating a parameter the model reads one line later:

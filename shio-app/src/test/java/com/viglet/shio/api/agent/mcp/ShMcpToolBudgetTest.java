@@ -103,6 +103,39 @@ class ShMcpToolBudgetTest {
                 .isLessThanOrEqualTo(limit);
     }
 
+    /**
+     * SH793 — the headroom, printed on a green run, because a decision already rests on it.
+     *
+     * <p>The ceiling is enforced below and always was. What nothing did was <b>say how close each
+     * tool is</b>: {@link #report()} existed and was reachable only from a failure message, so the
+     * numbers appeared exactly when it was too late for them to inform anything.</p>
+     *
+     * <p>That is not tidiness. {@code ShAgentP1ConformanceTest} declines the {@code postTypeMerge}
+     * capability — a thing an agent therefore cannot reach — on the grounds that {@code shio_apply}
+     * is "3 tokens under" this ceiling. That figure is in prose, in another file, and no run
+     * reproduced it. P3 says a cost is a measured budget; a budget that decides policy while being
+     * invisible is the law honoured in the assertion and broken in the argument.</p>
+     */
+    @Test
+    @DisplayName("SH793: the per-tool headroom is published on every run, not only on a red one")
+    void theHeadroomIsVisibleWhileItCanStillInformSomething() throws IOException {
+        int limit = budget("mcp.tools.list.max-per-tool");
+        Map<String, Integer> perTool = perTool();
+
+        StringBuilder out = new StringBuilder(
+                "%n[SH793] per-tool MCP schema cost, ceiling %d est. tokens%n".formatted(limit));
+        perTool.forEach((name, tokens) -> out.append("  %-16s %4d  headroom %+5d%n"
+                .formatted(name, tokens, limit - tokens)));
+        System.out.println(out);
+
+        // Not vacuous: a report of nothing agrees with every ceiling, and the failure this is about
+        // was invisibility rather than a wrong number.
+        assertThat(perTool)
+                .as("SH793: tools/list yielded no tool, so the headroom above is a report about an "
+                        + "empty list — which is the shape every instrument here is warned about")
+                .isNotEmpty();
+    }
+
     @Test
     @DisplayName("no single tool dominates the list")
     void noSingleToolDominatesTheList() throws IOException {

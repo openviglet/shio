@@ -1453,3 +1453,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH790** — The breach message computes the tell — a line carrying the id is allocation, a sentence spelling it is a wording fix — and gives each its own instruction.
 - **SH791** — The scan reads all three gates and the anchor names one command per gate; the false-positive worry was measured away — no documented line holds both a gate and a pipe.
 - **SH792** — Eleven such sentences, classified and asserted exactly; five are live hand-offs and four verify, so the practice was sound and only SH789's claim had rotted.
+- **SH793** — The headroom prints on every run: shio_apply is 19 under, not 3, and shio_write is 26; the number left the P1 reason and a guard refuses the next one.

@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -398,10 +399,15 @@ class ShAgentP1ConformanceTest {
                 + "construction rather than by omission (SH268, decided against SH186's precedent). "
                 + "`shio import <file>` posts it; export stays declared (GET /site/{id}/export) "
                 + "because a zip *out* is a byte stream a caller can already ask for"));
+        // SH793 — this said "3 tokens under" the ceiling. It was 19 when somebody finally measured,
+        // and nothing had reproduced the 3 since it was written: the figure lived here, in prose, in
+        // a file no budget run reads. The trade still holds at 19 — a described field does not fit
+        // in that — but the number is gone rather than corrected, because a corrected one rots the
+        // same way. `ShMcpToolBudgetTest` prints the headroom for every tool on every run now.
         byFeature.put("postTypeMerge", new Delivery(Reach.REST_ONLY, "shio_apply.mergePostTypes",
                 "a deliberate trade, not an oversight: the opt-in is a body field on the blueprint "
-                + "apply, and adding it to shio_apply puts that tool over the SH132 per-tool ceiling "
-                + "it is already 3 tokens under. Recorded so the trade stays visible"));
+                + "apply, and shio_apply is close enough to the SH132 per-tool ceiling that adding "
+                + "a described field crosses it. ShMcpToolBudgetTest prints the headroom"));
         byFeature.put("graphql", new Delivery(Reach.REST_ONLY, "/graphql",
                 "the delivery surface a front end queries, undeclared here on purpose — an agent "
                 + "reads content through /agent/read and the CDA. `true` describes what the instance "
@@ -681,6 +687,44 @@ class ShAgentP1ConformanceTest {
         assertThat(List.copyOf(elsewhere.keySet()))
                 .as("sorted, like features, because the manifest is byte-stable (P5/SH136)")
                 .isSorted();
+    }
+
+    /**
+     * SH793 — a reason may not carry a measurement only this sentence remembers.
+     *
+     * <p>{@code postTypeMerge} was declined here because {@code shio_apply} was "3 tokens under" the
+     * per-tool ceiling. Nothing reproduced that figure: it lived in this file, in prose, and no
+     * budget run read it. When somebody finally measured, it was <b>19</b> — the trade still held,
+     * and the argument for it had been wrong for an unknown number of commits.</p>
+     *
+     * <p>The repair is not a corrected number, which rots identically. It is that a reason states
+     * the <em>shape</em> of a cost and names the run that prints it, while
+     * {@code ShMcpToolBudgetTest} publishes the headroom for every tool on every run. This asserts
+     * the prose keeps its side.</p>
+     *
+     * <p>P3 with the emphasis where this project keeps having to put it: measuring is not the same
+     * as having measured. A budget that decides what an agent can reach, while being invisible, is
+     * the law honoured in the assertion and broken in the argument.</p>
+     */
+    @Test
+    @DisplayName("SH793: no exception's reason states a token figure nothing in the build reproduces")
+    void aReasonDoesNotRememberANumberInsteadOfMeasuringIt() {
+        Pattern remembered = Pattern.compile("\\b\\d+\\s+tokens?\\s+(under|below|over|above|from)\\b",
+                Pattern.CASE_INSENSITIVE);
+        List<String> stale = p1Exceptions().entrySet().stream()
+                .filter(entry -> remembered.matcher(entry.getValue().why()).find())
+                .map(entry -> entry.getKey() + ": " + entry.getValue().why())
+                .toList();
+
+        assertThat(stale)
+                .as("""
+                        A reason that names a headroom is a measurement kept in prose, and prose \
+                        does not get re-run. This one said "3 tokens under" and the truth was 19 by \
+                        the time anybody looked (SH793) — the decision survived, its argument did \
+                        not, and no run could have said so.
+                        State the shape of the cost and name what prints the number: \
+                        ShMcpToolBudgetTest reports the headroom of every tool on every run.""")
+                .isEmpty();
     }
 
     @Test

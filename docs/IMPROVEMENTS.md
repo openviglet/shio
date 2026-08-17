@@ -714,31 +714,6 @@ trigger left with some other change, or the rate is far below two in fifteen. Th
 grounds that an exception licenses a red and there was none. A third sighting now meets
 SH579's rule from the top, with a diagnosis attached.
 
-### XXVI.18 The ceiling is enforced and the headroom that decides things is not (SH793)
-
-`ShMcpToolBudgetTest` reads `mcp.tools.list.max-per-tool` and holds every tool to it
-with `allSatisfy`. That part is sound: no tool can cross the ceiling without the build
-saying so.
-
-What it does not do is **print how close each one is**, and a decision already rests on
-that. The P1 exception list declines `postTypeMerge` — the blueprint-apply opt-in — on
-the grounds that adding it "puts that tool over the SH132 per-tool ceiling it is already
-3 tokens under". Three tokens is a measurement, it is written in prose, and nothing in
-the repository reproduces it. The schema has changed since; the true headroom today
-could be forty tokens or zero, and both read the same from here.
-
-So a capability an agent cannot reach is being declined on a number from an unknown
-commit. That is P3 inverted — the law says a cost is a measured budget, and here the
-*cost of measuring* is what nobody paid, so the budget decides policy while being
-invisible.
-
-The fix is the measurement first, in this repository's own idiom.
-`ShAgentResponseBudgetTest` prints its budgets and holds an `AT_THE_WALL` list of the
-ones accepted with no headroom, joined to the known-debt reader (SH743). The per-tool
-MCP budgets have no equivalent. Print the headroom per tool on every run, then re-ask
-whether the `postTypeMerge` trade still holds — and if it does not, the P1 entry is the
-thing that changes.
-
 ### XXVI.19 A literal without a boundary is a different rule than the one you wrote (SH794)
 
 SH792's scanner looks for sentences excusing an exclusion, and one of its literals is
