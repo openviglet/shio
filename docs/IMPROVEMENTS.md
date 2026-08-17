@@ -735,3 +735,50 @@ hole.
 The cure is `pnpm test > log 2>&1; echo "EXIT=$?"` — the verdict from the command, the
 numbers from the log — plus the rule stated once in `agents.md` for all three gates
 rather than for the one that taught it.
+
+### XXVI.14 An exception with an expiry and a blocked owner is a scheduled red (SH789)
+
+`red-suites.json` holds one exception, for the `fixture-traits` file-level flake. It
+expires **2026-08-24**, and `red-suites.test.mjs` kills an entry whose date has passed —
+deliberately, so a forgotten exception goes red instead of quiet.
+
+The task that removes it is SH780, and SH780 is blocked on the flake recurring. It has
+not: twelve runs when the entry was written, thirty-seven by the commit that recorded it
+as a fact, and roughly fifty now. So the three states are pinned against each other. On
+the 24th the gate goes red, the entry that explains the red is the thing that went red,
+and neither open task can ship — SH778 is waiting for the same sighting SH780 is.
+
+This is the SH787 shape one turn later: a dated failure that nobody has to be careless
+to hit. It is also not a bug in SH579, which is working exactly as designed; the design
+assumes an exception's owner can act, and this one cannot.
+
+Three ways out, and the choice is the deliverable. Delete the entry and close both tasks
+on the evidence — fifty green runs is a stronger claim than the two sightings that
+opened them. Extend the expiry, which needs a reason better than "not yet". Or keep the
+entry and let SH778 own a standing instrument rather than a wait. What must not happen
+is the date arriving while nobody has decided.
+
+### XXVI.15 A guard whose message names the wrong cause sends the reader the wrong way (SH790)
+
+SH787 reserved a range for fixture ids and asserted it from both ends. Its changelog
+sentence said so, in the obvious words, naming the boundary. Roadkeep reads any
+id-shaped token in a governed file as an id that is spent, so it derived the next task's
+number **past** the boundary — and the new task was filed inside the range SH787 had
+reserved twenty minutes earlier. The guard fired, correctly, within one command of
+shipping.
+
+That is the good half. The bad half is what it said: *move the range up before
+allocating here*. Nobody had allocated anything. The cause was a **sentence**, and the
+instruction sends the reader to renumber a range when the fix is to spell the boundary
+in words. Following it would raise the reserve, leave the prose, and derive the next
+task past the new boundary too.
+
+This is P6 turned inward. The project requires a 4xx to carry
+`fix`/`allowed`/`didYouMean`; an assertion message is the same contract with the same
+reader, and this one teaches the wrong lesson. It should distinguish the two ways a
+governed file comes to name a reserved id — a line that carries it, which is allocation,
+and prose that merely spells it, which is a wording fix — because the reader cannot tell
+which from what fires.
+
+The tell is already computable: the guard knows whether any roadmap or ledger *line*
+carries the id, or whether it only appears in a sentence.
