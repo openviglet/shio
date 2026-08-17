@@ -125,3 +125,4 @@ __pycache__/
 # stamp is evidence about a command somebody ran here, and a committed one would let a clone
 # inherit a claim about a run it never made — the same shape of lie the ledger already had.
 /.gates/
+/provoke.log.progress
