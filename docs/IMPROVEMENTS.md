@@ -737,3 +737,26 @@ The cure is small and the check is smaller: a wrapper refuses to start while ano
 holds the lock, saying which gate and since when. Both halves matter — the refusal must
 name the running gate, because the person meeting it is usually the one who forgot they
 had backgrounded it.
+
+### XXVI.29 A byte no rendering shows you (SH804)
+
+SH802 rewrote an assertion's pattern through an editing step whose string layer ate the
+escape, so what landed in the file was a literal **backspace** — one byte, `0x08` —
+where the two characters of a word boundary were meant.
+
+Every rendering hid it. The editor showed nothing. `grep` showed the line as expected.
+Node's own failure output printed `expected: /scripts\/run-gate\.mjs js\b/`, which reads
+as the word boundary that was intended, beside `actual: 'node scripts/run-gate.mjs js'`
+— a string the regex plainly contains. An assertion failing while its two halves render
+as a match is the least diagnosable shape available, and it cost the longest detour of
+the session. `od -c` was the only thing that answered.
+
+This is SH782's class in a different language: an escape resolved by the layer beneath
+the one that was supposed to read it. SH782 guards JavaScript template literals reaching
+`new RegExp`, and cannot see this — the defect did not come through JavaScript at all,
+it came through the edit.
+
+Which is why the guard should be about the **byte** rather than the route. No source
+file in this repository has any business holding a C0 control character other than tab,
+newline and carriage return, and a scan for one is a few lines, needs no parsing, and
+catches every future variant regardless of which tool introduced it.
