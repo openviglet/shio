@@ -9,8 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block X — What the gate round left, and the first P1 gap it did not touch
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
