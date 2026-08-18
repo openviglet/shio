@@ -181,6 +181,47 @@ export function comparatorCycle(recorded) {
   });
 }
 
+/**
+ * The gate table, as one line each — SH755's deliverable, in one place (SH819).
+ *
+ * <p>Three copies of these lines existed: `red-suites.test.mjs`, `ShDeclaredRedTest`, and now a
+ * command. The duplication has drifted before — `runWithLog` announced every gate as "JS suites"
+ * from the second wrapper onward, which nobody saw because that sentence is only read by somebody
+ * already reading a failure (SH802). The JVM copy has to stay, being a different language; the two
+ * JavaScript ones do not.</p>
+ *
+ * @param recorded  what {@link stamps} returned
+ * @param declared  the gates `red-suites.json` excuses, as a Set — rendered, never judged here
+ * @param self      the gate the caller is running inside, which it must not read as a colour
+ *                  (SH800); omitted for a reader that is running nothing, which is the point of
+ *                  the command — with no `self` every gate has an honest last outcome
+ * @param cleared   gates whose stamp records a clearing ({@link clearedGates}). They carry no
+ *                  colour, exactly as an absent stamp does, and saying *cleared* rather than
+ *                  *no run recorded* is the whole reason SH818 writes a file instead of unlinking
+ */
+export function gateLines(recorded, declared = new Set(), self = null, cleared = new Set()) {
+  return GATES.map((gate) => {
+    if (gate === self) {
+      return `  ${gate} — this suite, running now (its stamp is written when it ends)`;
+    }
+    const seen = recorded[gate];
+    if (!seen) {
+      return cleared.has(gate)
+        ? `  ${gate} — cleared, so not a colour; run it`
+        : `  ${gate} — no run recorded in this tree`;
+    }
+    const age = seen.sha ? ` at ${String(seen.sha).slice(0, 8)}` : "";
+    // SH770 — a stamp taken against another commit is not this tree's colour, and saying so is the
+    // whole repair: "the last run here was N commits ago" names the run somebody has to do, which
+    // neither a colour nor a silence does.
+    if (seen.stale) {
+      return `  ${gate} — last run${age}, ${seen.when} — NOT this tree, so not a colour`;
+    }
+    return `  ${gate} — ${seen.red ? "RED" : "green"}${age}, ${seen.when}`
+      + `${declared.has(gate) ? ", declared" : ""}`;
+  });
+}
+
 /** What to do about a cycle, in the words the reader needs — one sentence per line. */
 export const CYCLE_EXIT = [
   "SH818: `java` and `js` are BOTH red, and those are the two gates that judge each other.",
@@ -201,6 +242,33 @@ export const CYCLE_EXIT = [
  * somebody decided the last run was not evidence. That is the difference between an exit and a
  * hole, and it costs one field.</p>
  */
+/**
+ * The gates whose stamp records a clearing rather than a run (SH819).
+ *
+ * <p>Separate from {@link stamps} on purpose: that function's contract is *what a gate answered*,
+ * and a cleared stamp answers nothing — folding it in would give every `recorded[gate]` check a
+ * third case to get wrong, and one of them (`declared && !red`) would read a clearing as a gate
+ * that went green and retire its exception. So the colour readers keep seeing an absence, and only
+ * the report, which judges nothing, asks the second question.</p>
+ */
+export function clearedGates(root) {
+  const found = new Set();
+  for (const gate of GATES) {
+    const path = join(root, GATES_DIR, `${gate}.json`);
+    if (!existsSync(path)) {
+      continue;
+    }
+    try {
+      if (JSON.parse(readFileSync(path, "utf8"))?.cleared === true) {
+        found.add(gate);
+      }
+    } catch {
+      // A corrupt stamp is no stamp, which is this module's rule everywhere else.
+    }
+  }
+  return found;
+}
+
 export function clear(root, gate) {
   if (!GATES.includes(gate)) {
     return null;

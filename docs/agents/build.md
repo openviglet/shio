@@ -91,6 +91,16 @@ So the ledger's claim is now compared against what the gates actually said:
 "nobody has run this here" is true rather than wrong, so it is printed. That printing *is* the
 repair — the sentence whose absence cost eight pushes.
 
+**`pnpm gates` prints that table without running anything (SH819).** Until it existed the table was
+printed only *by* `ShDeclaredRedTest` and `red-suites.test.mjs`, so reading four lines derived from
+four small files meant running the Java suite or the JS suite. It runs nothing, stamps nothing, and
+**exits 0 whatever the colours are**: a reporter that failed on a red would be a fifth gate whose
+verdict came from another gate's leftovers, which is SH770's mistake promoted to a command. It
+reports; the gates judge. It is also the one reader with no gate in progress, so every row has an
+honest last outcome — each comparator has one it must not read. The lines come from `gateLines` in
+`gate-stamp.mjs`, shared with the JS comparator so this is not a third copy of the formatting; the
+JVM copy stays because it is another language.
+
 **Both comparator gates can be red about nothing but each other, and no run clears it (SH818).**
 The arrangement above has a fixed point. `java` judges `js` and `js` judges `java`, so once **both**
 stamps are red, every run of either re-reads the other's red and stamps itself red again. It is

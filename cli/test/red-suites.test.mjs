@@ -57,7 +57,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
-  CYCLE_EXIT, COMPARATOR_GATES, GATES, comparatorCycle, isStale, stamps,
+  CYCLE_EXIT, COMPARATOR_GATES, GATES, clearedGates, comparatorCycle, gateLines, isStale, stamps,
 } from "../../scripts/gate-stamp.mjs";
 import { GATE_RUNS } from "../../scripts/gates.mjs";
 
@@ -237,25 +237,13 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
   // Java side already states for its own row.
   const SELF = "js";
 
-  const lines = GATES.map((gate) => {
-    if (gate === SELF) {
-      return `  ${gate} — this suite, running now (its stamp is written when it ends)`;
-    }
-    const seen = recorded[gate];
-    if (!seen) {
-      return `  ${gate} — no run recorded in this tree`;
-    }
-    const age = seen.sha ? ` at ${seen.sha.slice(0, 8)}` : "";
-    // SH770 — a stamp taken against another commit is not this tree's colour, and saying so is the
-    // whole repair: "the last run here was N commits ago" names the run somebody has to do, which
-    // neither a colour nor a silence does.
-    if (seen.stale) {
-      return `  ${gate} — last run${age}, ${seen.when} — NOT this tree, so not a colour`;
-    }
-    return `  ${gate} — ${seen.red ? "RED" : "green"}${age}, ${seen.when}`
-      + `${declared.has(gate) ? ", declared" : ""}`;
-  });
-  console.log(`SH755: the gates, as last run here\n${lines.join("\n")}`);
+  // SH819 — the lines are `gateLines` now, shared with `pnpm gates` and unchanged in what they
+  // say. Three copies of this formatting existed and the duplication had drifted once already:
+  // `runWithLog` announced every gate as "JS suites" from the second wrapper onward, unnoticed
+  // because that sentence is only read by somebody already reading a failure (SH802). The JVM copy
+  // stays, being another language; these two do not have that excuse.
+  console.log(`SH755: the gates, as last run here\n${
+    gateLines(recorded, declared, SELF, clearedGates(root)).join("\n")}`);
 
   // SH818 — this comparator cannot see its OWN gate (that is the SELF rule above), so the cycle it
   // can be half of is invisible to it by construction. The stamp on disk for `js` is the previous

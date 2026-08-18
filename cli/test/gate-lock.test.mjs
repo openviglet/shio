@@ -30,7 +30,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { acquire, alive, clear, release, stamp, stamps, GATES_DIR } from "../../scripts/gate-stamp.mjs";
+import { readFile } from "node:fs/promises";
+
+import {
+  acquire, alive, clear, gateLines, release, stamp, stamps, GATES_DIR,
+} from "../../scripts/gate-stamp.mjs";
 
 // @scans code — the lock's own reasons quote the collision it prevents, and a raw read of this
 // header would take the description of the defect for the defect (SH740).
@@ -144,4 +148,70 @@ test("SH818: a cleared stamp carries no colour, and says it was cleared", () => 
   stamp(dir, "java", 0);
   assert.equal(stamps(dir).java?.red, false,
     "and a real run overwrites the clearing, which is the direction that must always work");
+});
+
+/**
+ * SH819 — one formatter, and the four sentences it has to be able to say.
+ *
+ * <p>The table SH755 built was reachable only by running the Java or JS suite, so reading four
+ * lines derived from four small files cost minutes — and SH818's exit instructions depend on that
+ * read, in the one state where running a gate cannot help. `pnpm gates` is the read; `gateLines` is
+ * what stops it being a third copy of the formatting. The duplication had already drifted once:
+ * `runWithLog` announced every gate as "JS suites" from the second wrapper onward (SH802).</p>
+ *
+ * <p>Driven against a fabricated world, because the real stamps are whatever the last run left and
+ * an assertion about those is a test of this afternoon.</p>
+ */
+test("SH819: the gate table says which of four things it knows about each gate", () => {
+  const world = {
+    java: { red: false, sha: "abcdef1234", when: "2026-08-18T00:00:00Z", stale: false },
+    conformance: { red: true, sha: "abcdef1234", when: "2026-08-18T00:00:00Z", stale: false },
+    docs: { red: true, sha: "0000000000", when: "2026-08-01T00:00:00Z", stale: true },
+  };
+  const lines = gateLines(world, new Set(["conformance"]), "js", new Set()).join("\n");
+
+  assert.match(lines, /java — green at abcdef12/, "a fresh stamp is a colour and names the commit");
+  assert.match(lines, /conformance — RED at abcdef12.*declared/,
+    "a red the ledger excuses says so on the same line — the reader needs both at once, or a "
+    + "declared red reads as an undeclared one");
+  assert.match(lines, /docs — last run.*NOT this tree, so not a colour/,
+    "SH770: a stamp from another commit names the run somebody has to do, which neither a colour "
+    + "nor a silence does");
+  assert.match(lines, /js — this suite, running now/,
+    "SH800: the caller's own gate is never rendered as a colour, because the stamp on disk is the "
+    + "previous run's — that is the whole reason each comparator skips one");
+
+  // SH818's record, which is the reason clearing writes a file instead of unlinking one. Without
+  // this branch the report says `no run recorded`, and the visibility the verb exists for is lost
+  // at the one place anybody would look for it.
+  const cleared = gateLines({}, new Set(), null, new Set(["java"])).join("\n");
+  assert.match(cleared, /java — cleared, so not a colour; run it/,
+    "SH819: a cleared stamp is distinguishable from an absent one HERE, or SH818 wrote a field "
+    + "nothing ever reads");
+  assert.match(cleared, /js — no run recorded in this tree/,
+    "and a gate nobody has run still says exactly that — a fresh clone is honest, not red");
+
+  // With no `self`, every gate has a last outcome. That is the one thing the command can say and
+  // neither comparator can, and it is why the parameter is optional rather than required.
+  assert.doesNotMatch(gateLines(world, new Set(), null, new Set()).join("\n"), /running now/,
+    "a reader that runs nothing has no gate in progress to except");
+});
+
+test("SH819: `pnpm gates` runs nothing, and the comparator formats nothing of its own", async () => {
+  const report = await readFile(new URL("../../scripts/gates-report.mjs", import.meta.url), "utf8");
+  const comparator = await readFile(new URL("./red-suites.test.mjs", import.meta.url), "utf8");
+
+  assert.match(report, /gateLines\(/, "the command prints the shared lines rather than its own");
+  assert.match(comparator, /gateLines\(/,
+    "SH819: and so does the comparator — a fourth copy of this formatting is how the third one "
+    + "came to call every gate `JS suites` for two wrappers");
+
+  for (const forbidden of ["spawn", "execFile", "runWithLog", "stamp("]) {
+    assert.ok(!report.includes(`${forbidden}`),
+      `SH819: the report must not ${forbidden} — a reporter that ran or stamped a gate would be a `
+      + "fifth gate whose verdict came from another gate's leftovers, which is SH770's mistake "
+      + "promoted to a command");
+  }
+  assert.ok(!/process\.exit\([^0]/.test(report),
+    "and it exits 0 whatever the colours are: it reports, the gates judge");
 });
