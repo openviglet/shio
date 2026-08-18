@@ -13,6 +13,10 @@
 
 - 📋 **SH821** (deps: —) **Four ids in `ShAgentManifestTest.java` sit in comments, so the manifest's own guarantees fail unnamed** — The next file of SH642's CLOSE debt after SH820, and the one where an unnamed failure costs most: P2's discovery contract is what these four assert. → §XXXV
 
+## Block AG — One answer to "what does this sentence assert", and the three places that answer it separately
+
+- 📋 **SH822** (deps: —) **Three private copies of the quote stripper, and one can swallow a page because it omits the newline guard** — `unquoted` is already the answer and two scans reimplement it — one of them without the guard whose absence its own source comment warns about. → §XXXVI
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

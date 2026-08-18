@@ -27,6 +27,8 @@ verify against `git ls-files` before acting.
 
 ## Block AF — Paying the revealed assertion debt, one file at a time
 
+## Block AG — One answer to "what does this sentence assert", and the three places that answer it separately
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -756,3 +758,27 @@ the same direction without anything failing. Both are gone: the run prints the s
 every pass, and the list is what is asserted. A number written beside a list it
 describes is a second copy of that list, and this repository has now found that shape in
 a budget, in a coverage summary and in a ledger.
+
+## XXXVI A mention is not a use, decided three times (SH822)
+
+`source-text.mjs` exists because a textual guard reads bytes, so writing about a rule
+can fail the build for breaking it. Its `unquoted` strips fences, inline code and quoted
+phrases — straight and curly — and its comments explain the ordering and the `\n`
+exclusions.
+
+Two scans do it themselves anyway. `absent-claims.test.mjs` has an `asserted` doing the
+same three replacements, and `ShAgentP1ConformanceTest` grew a third in SH816 because
+the Java side's `ShSourceText` has no quote handling at all. The Java copy is the
+excusable one — it is another language. The JS copy is not, and it is not identical: it
+matches `"[^"]*"` where `unquoted` matches `"[^"\n]*"`, and a character class excludes
+newlines only if told to. So one stray quotation mark swallows every line to the next
+one, which is the hazard `unquoted`'s own comment describes and guards against.
+
+The failure that produces is silent in the worst direction: a scan that strips too much
+finds nothing and reports a clean pass. No fixture in that file has an odd quote, so
+nothing has ever exercised it.
+
+The work is small — `absent-claims` imports `unquoted`, and `ShSourceText` gains the
+equivalent so the Java scans stop each writing one. Worth doing because SH740's own
+header explains why it did not happen: the tax is small and constant, which is exactly
+the kind nobody pays down. It has now been paid four times in one session.
