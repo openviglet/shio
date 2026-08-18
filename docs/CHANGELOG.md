@@ -1471,3 +1471,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 
+- **SH807** — An unref'd watchdog never touches a healthy run and names the live handles when one will not end, so a hang becomes a named file instead of a 20-minute CI timeout.

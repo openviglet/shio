@@ -260,6 +260,36 @@ fix it**: the abort came back on run 20 of the next loop. Reaching one step furt
 purpose to prove the deadline fires; destroying it made the instrument unreachable, which is this
 defect's own shape met a second time inside its fix.
 
+**And what the flag was also doing is now reported instead of hidden (SH807).** It killed any process
+with a handle still open — so a leaked handle used to be *invisible*, because the run passed. Without
+it the run does not fail either: it does not end, and CI burns its 20-minute timeout printing no
+summary at all.
+
+`scripts/test-watchdog.mjs`, imported by the cli suite, is the whole answer, and the mechanism is one
+word: **`unref()`**. An unref'd timer never keeps a process alive by itself, so a healthy run never
+meets it — the loop empties, the process exits, the timer dies having done nothing. It fires only
+when something *else* is holding the loop at the deadline, which is exactly the condition being
+watched and cannot be detected by asking what is pending, because at that moment plenty legitimately
+is.
+
+What it prints is `process.getActiveResourcesInfo()`, and there is no stack to print beside it:
+nothing threw, and every test passed. The handle **is** the finding. A leaked listening server comes
+back as
+
+```
+Still alive: ["PipeWrap","PipeWrap","TCPServerWrap"]
+✖ test\zz-leak-probe.test.mjs (8046.1734ms)
+```
+
+so a hang becomes a named file. The deadline is 120 s, `SHIO_TEST_WATCHDOG_MS` moves it, and the
+assertion drives a real leaking process rather than asserting that `setTimeout` was called.
+
+Two Windows-shaped traps met while writing it, both worth knowing: `--import` rejects a bare absolute
+path with `ERR_UNSUPPORTED_ESM_URL_SCHEME` (it reads `D:` as a protocol, so pass the `file://` href),
+and a test that spawns node inherits **`NODE_TEST_CONTEXT`** from the runner it is itself running
+under, which makes the child behave as a nested test child — that one made both assertions fail
+against a watchdog that was working perfectly.
+
 `closeFixture` is idempotent regardless (SH780): the second call joins the first rather than handing
 libuv a handle that is already closing. That is **not** what removed the flake — nothing forces the
 exit now — but closing twice is a thing a teardown should survive, and the old behaviour answered the

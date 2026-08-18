@@ -11,7 +11,6 @@
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 
-- 📋 **SH807** (deps: —) **A leaked handle now hangs the JS gate for its whole CI timeout, where the flag used to kill it** — SH780 removed `--test-force-exit` because it caused the libuv abort and cost nothing; what it also did was mask a test that never lets the process exit. → §XXVII.1
 - 📋 **SH808** (deps: —) **The method that summoned a hundred-run flake exists only as prose, so the next one is diagnosed from scratch** — SH778 waited eighty runs and SH780 provoked it in one, by repeating the suite at a concurrency the gate never uses — and the script that did it was a scratch file. → §XXVII.2
 - 📋 **SH809** (deps: —) **An agent cannot ask which fields on a page are editable, so the one P1 gap with a named route stays shut** — The P1 inventory classifies universalEditor CONSOLE_ONLY and names `/agent/editable` as what would resolve it; that route is asserted absent and no task has ever carried it. → §XXVII.3
 

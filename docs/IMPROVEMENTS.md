@@ -687,31 +687,6 @@ capabilities an agent cannot reach, most with no task against them. The law the 
 is named after has an honest list of its own breaches, and the list has been read more
 often than it has been worked.
 
-### XXVII.1 What the flag was also doing, and nothing does now (SH807)
-
-SH780 removed `--test-force-exit` on good evidence: it was half the race that aborted
-the process inside libuv, its removal is verified over 120 runs at the provoking
-concurrency, and a paired measurement puts its cost at nothing.
-
-It was doing one other thing, and that is not an argument against removing it — it is
-the consequence to own. A test that leaves a handle open no longer ends a run; it ends
-nothing at all. The runner waits, `pnpm test` waits, and in CI the job burns its
-**20-minute timeout** before anybody learns which suite is at fault, because a timeout
-kills the job and prints no summary.
-
-The flag turned that failure into a *passing* run, which is worse in every way except
-the clock: a leaked handle would simply never be found. So the exposure is an
-improvement and the reporting is what is missing.
-
-Two shapes worth measuring against each other. A **per-file deadline** turns a hang into
-a named file, which is what SH698's teardown deadline does one layer down and the reason
-its message names the server and its open sockets. Or the probe SH805 built for a
-different question — `beforeExit` with `process.getActiveResourcesInfo()` — so a suite
-that ends by naming its own live handles cannot hang silently.
-
-Worth doing before somebody meets it, because the person who does will be looking at a
-CI job that says only that twenty minutes passed.
-
 ### XXVII.2 A technique that is only a paragraph is one nobody runs (SH808)
 
 The `fixture-traits` flake resisted about a hundred and twenty runs. It was then
