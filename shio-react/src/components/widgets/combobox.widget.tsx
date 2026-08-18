@@ -1,5 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import type { WidgetProps } from "./index"
 
 interface Choice { id: string; label: string }
@@ -20,6 +21,7 @@ function parseChoices(shPostTypeAttr?: WidgetProps["attr"]["shPostTypeAttr"]): {
 }
 
 export function ComboBoxWidget({ attr, onChange }: WidgetProps) {
+  const { t } = useTranslation()
   const { choices, allowNull } = useMemo(() => parseChoices(attr.shPostTypeAttr), [attr.shPostTypeAttr])
 
   return (
@@ -27,7 +29,7 @@ export function ComboBoxWidget({ attr, onChange }: WidgetProps) {
       value={attr.strValue ?? ""}
       onValueChange={(value) => onChange({ ...attr, strValue: value === "__null__" ? "" : value })}
     >
-      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+      <SelectTrigger><SelectValue placeholder={t("content.selectPlaceholder")} /></SelectTrigger>
       <SelectContent>
         {allowNull && <SelectItem value="__null__">-- None --</SelectItem>}
         {choices.map(choice => (

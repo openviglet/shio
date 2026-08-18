@@ -63,10 +63,10 @@ export default function PostTypeSelectPage() {
 
   return (
     <>
-      <PageHeader title="Select Post Type" turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
+      <PageHeader title={t("content.selectPostType")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <h2 className="text-xl font-semibold">What would you like to post?</h2>
+          <h2 className="text-xl font-semibold">{t("content.whatToPost")}</h2>
           <div className="flex gap-2 items-center flex-wrap">
             <Button
               variant="outline"

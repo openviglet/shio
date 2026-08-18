@@ -225,5 +225,17 @@
   "preview.editSite": "Edit Site",
   "preview.cacheCleared": "Cache cleared successfully",
   "content.postTypeHasNoFields": "The post type {{name}} declares no fields yet, so there is nothing to edit. Add fields to it and this form will render them.",
-  "content.undeclaredFields": "This post holds values its post type does not declare: {{fields}}. They are kept when you save, but no field renders them."
+  "content.undeclaredFields": "This post holds values its post type does not declare: {{fields}}. They are kept when you save, but no field renders them.",
+  "content.whatToPost": "What would you like to post?",
+  "content.noChoicesConfigured": "No choices configured",
+  "content.selectPlaceholder": "Select...",
+  "content.addValueAndPressEnter": "Add value and press Enter",
+  "content.editorBold": "Bold",
+  "content.editorItalic": "Italic",
+  "content.editorUnderline": "Underline",
+  "content.editorBulletList": "Bullet List",
+  "content.editorNumberedList": "Numbered List",
+  "content.editorLink": "Link",
+  "content.editorCodeBlock": "Code Block",
+  "content.editorLinkPrompt": "Enter URL:"
 }

@@ -195,7 +195,9 @@ const DEBT = [
   // assertable there. Ordered LAST despite the size, because these are the defects a human meets:
   // a broken editor page is seen the first time somebody opens it, so the window between a
   // regression and somebody noticing is short. The others are silent.
-  "SH7", "SH8", "SH14", "SH48", "SH49", "SH50", "SH56", "SH57", "SH59", "SH73",
+  // SH50 came off in SH823: `console-english.test.mjs` is the assertion that would have caught
+  // it — a sweep of hardcoded English with nothing watching for the next one.
+  "SH7", "SH8", "SH14", "SH48", "SH49", "SH56", "SH57", "SH59", "SH73",
   "SH177", "SH178", "SH179", "SH180", "SH182", "SH237",
   // PAID (SH529). Removals and port-or-deprecate decisions: `ShRemovalsStayedRemovedTest` asserts
   // the legacy AngularJS bundles, the Thymeleaf starter and the four deprecated widget names are

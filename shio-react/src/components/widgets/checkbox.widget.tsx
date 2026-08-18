@@ -1,6 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import type { WidgetProps } from "./index"
 
 interface Choice { id: string; label: string }
@@ -20,6 +21,7 @@ function parseChoices(shPostTypeAttr?: WidgetProps["attr"]["shPostTypeAttr"]): C
 }
 
 export function CheckBoxWidget({ attr, onChange }: WidgetProps) {
+  const { t } = useTranslation()
   const choices = useMemo(() => parseChoices(attr.shPostTypeAttr), [attr.shPostTypeAttr])
   const selected = new Set(attr.arrayValue || [])
 
@@ -44,7 +46,7 @@ export function CheckBoxWidget({ attr, onChange }: WidgetProps) {
           </Label>
         </div>
       ))}
-      {choices.length === 0 && <p className="text-xs text-muted-foreground">No choices configured</p>}
+      {choices.length === 0 && <p className="text-xs text-muted-foreground">{t("content.noChoicesConfigured")}</p>}
     </div>
   )
 }

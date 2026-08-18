@@ -1517,3 +1517,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AH — The console's English, and the sweep with no instrument behind it
 
+- **SH823** — A scan over every `.tsx` holds JSX text and user-visible props at a three-entry `UNTRANSLATED` list; the twelve it found are routed through i18n, en and pt both.

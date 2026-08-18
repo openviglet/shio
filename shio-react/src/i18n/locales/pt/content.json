@@ -225,5 +225,17 @@
   "preview.editSite": "Editar Site",
   "preview.cacheCleared": "Cache limpo com sucesso",
   "content.postTypeHasNoFields": "O post type {{name}} ainda não declara campos, então não há nada para editar. Adicione campos e este formulário passará a renderizá-los.",
-  "content.undeclaredFields": "Este post contém valores que seu post type não declara: {{fields}}. Eles são preservados ao salvar, mas nenhum campo os renderiza."
+  "content.undeclaredFields": "Este post contém valores que seu post type não declara: {{fields}}. Eles são preservados ao salvar, mas nenhum campo os renderiza.",
+  "content.whatToPost": "O que você gostaria de publicar?",
+  "content.noChoicesConfigured": "Nenhuma opção configurada",
+  "content.selectPlaceholder": "Selecione...",
+  "content.addValueAndPressEnter": "Adicione um valor e pressione Enter",
+  "content.editorBold": "Negrito",
+  "content.editorItalic": "Itálico",
+  "content.editorUnderline": "Sublinhado",
+  "content.editorBulletList": "Lista com marcadores",
+  "content.editorNumberedList": "Lista numerada",
+  "content.editorLink": "Link",
+  "content.editorCodeBlock": "Bloco de código",
+  "content.editorLinkPrompt": "Digite a URL:"
 }

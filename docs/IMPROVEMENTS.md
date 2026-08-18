@@ -25,8 +25,6 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
-## Block AH — The console's English, and the sweep with no instrument behind it
-
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -733,28 +731,3 @@ URL. The rest are work.
 The other half is to keep working it while the reading is cheap. One entry names its
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
-
-## XXXVII A sweep is not a guard, and the parity test asks a different question (SH823)
-
-SH50 swept the remaining hardcoded English out of the console and routed it through
-i18n. It is on the assertion debt with **no suite naming it at all**, which is the group
-that matters: not a test whose id sits in a comment, a shipped behaviour with nothing
-standing behind it.
-
-`i18n-parity.test.mjs` looks like the guard and is not. It asserts `en` and `pt`
-describe the same *set of keys* — arithmetic, and correct — while the failure SH50 fixed
-is a page that never asks i18n at all. A string that is not a key cannot be missing from
-a locale file.
-
-Measured before filing: over 114 `.tsx` files the scan finds **15 candidates in 9
-files**, and roughly ten are real. The largest cluster is the HTML editor's toolbar —
-`Italic`, `Underline`, `Bullet List`, `Numbered List`, `Code Block` — then `What would
-you like to post?`, `Select Post Type`, `No choices configured`, `Add value and press
-Enter`. The rest are the product name, correctly untranslated, and prose inside doc
-comments, which is what stripping comments is for.
-
-So the instrument first (SH322): a scan over JSX text nodes and the user-visible string
-props, with the untranslatable exceptions held as a named list carrying its reason,
-never a count. Then the strings, which are a locale-file edit each. The value is not the
-ten — it is that the eleventh cannot be added, which is the half a hand sweep never
-buys.

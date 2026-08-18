@@ -424,6 +424,18 @@ cannot double as an identity.
   the same keys, in both directions. It was a convention with no instrument, and the failure it
   prevents is quiet: i18next falls back to the key itself, so a missing `pt` entry renders
   `universalEditor.bridgeAbsent` to a Portuguese curator and is invisible to whoever added it.
+- **A string that is not a key at all is the case parity cannot see (SH823).** `i18n-parity` asks
+  whether the locales agree; it has nothing to say about a component that never calls `t()`, and
+  that is the failure SH50's hand sweep fixed and left unguarded.
+  `shio-react/test/console-english.test.mjs` reads every `.tsx` for the two shapes a curator
+  actually reads — a **JSX text node** (`>Save changes<`) and a user-visible **string prop**
+  (`title=`, `placeholder=`, `label=`, `description=`, `aria-label=`) — and holds the findings at
+  exactly the `UNTRANSLATED` list, which is three entries with a reason each: the product name on
+  the login and setup screens, and the `FREE` plan placeholder, whose value the API compares (a
+  translated placeholder would teach a Portuguese operator to type a word the server rejects).
+  Anything interpolated is disqualified by the `{` in the span, which is why the hundreds of
+  correct `t(...)` call sites cost no whitelist. It found twelve on its first run — the HTML
+  editor's whole toolbar among them — all now routed through `content.editor*`.
 
 ## Universal Editor — it saves on the session, not on a token (SH335)
 

@@ -2,9 +2,11 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import type { WidgetProps } from "./index"
 
 export function MultiSelectWidget({ attr, onChange }: WidgetProps) {
+  const { t } = useTranslation()
   const [inputValue, setInputValue] = useState("")
   const values = attr.arrayValue || []
 
@@ -37,7 +39,7 @@ export function MultiSelectWidget({ attr, onChange }: WidgetProps) {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValue() } }}
-          placeholder="Add value and press Enter"
+          placeholder={t("content.addValueAndPressEnter")}
           className="text-sm"
         />
       </div>

@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AH — The console's English, and the sweep with no instrument behind it
-
-- 📋 **SH823** (deps: —) **A Portuguese curator sees about ten English strings the i18n sweep missed, and nothing has looked since** — SH50 swept by hand and left no instrument, so the scan lands first and the strings it names follow — measured at 15 candidates over 114 files. → §XXXVII
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
