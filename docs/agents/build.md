@@ -91,6 +91,29 @@ So the ledger's claim is now compared against what the gates actually said:
 "nobody has run this here" is true rather than wrong, so it is printed. That printing *is* the
 repair — the sentence whose absence cost eight pushes.
 
+**Both comparator gates can be red about nothing but each other, and no run clears it (SH818).**
+The arrangement above has a fixed point. `java` judges `js` and `js` judges `java`, so once **both**
+stamps are red, every run of either re-reads the other's red and stamps itself red again. It is
+reached the ordinary way: a real red in one makes the other red about it, and fixing the first
+defect is no longer enough. Measured here — the Java suite reported **1907 tests, one failure**, and
+the failure was the js stamp; the js suite was clean but for the java stamp. Neither had a defect
+and there was no sequence of runs that said so.
+
+Both readers now **print** the cycle and name the exit when they see it, and neither asserts on it:
+two red gates is a genuine red until somebody has read the two kept logs and found nothing in them,
+and a check that excused the state would turn the arrangement that catches an undeclared red into
+the one that hides a double failure. Read `shio-test.log` and `shio-js-test.log` first. If both are
+clean but for the comparator, the exit is **`pnpm gates:clear java js`**, then `pnpm java` and
+`pnpm test` in that order.
+
+That verb exists because the escape already worked without it — `rm .gates/*.json`, since an absent
+stamp is honestly *no run recorded* — and left nothing behind, so a stamp discarded to break a cycle
+was indistinguishable from one discarded to dodge a red nobody wanted to fix. `clear` writes
+`cleared: true` instead of unlinking: no colour, for the same reason an absent stamp has none, and
+a record of when and at which commit somebody decided the last run was not evidence. It deliberately
+does not decide whether you are in a cycle and does not re-run anything — a verb that cleared a
+stamp and re-ran the gate is a verb that turns any red green if you type it twice.
+
 ### The escape that belongs to the wrong layer (SH782)
 
 Inside a template literal the backslash is the **string's**, not the regex's:

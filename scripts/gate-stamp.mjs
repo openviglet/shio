@@ -154,6 +154,69 @@ export function stamp(root, gate, code) {
 }
 
 /**
+ * The two gates that host a comparator, and therefore the only pair that can deadlock (SH818).
+ *
+ * <p>`ShDeclaredRedTest` runs inside `java` and judges the other three; `red-suites.test.mjs` runs
+ * inside `js` and judges the other three. Each reads the other's stamp, which is the arrangement
+ * that makes every gate judged once — and it has a fixed point: with **both** stamps red, each run
+ * re-reads the other's red and stamps itself red again, so no sequence of runs clears it even when
+ * neither suite has a failure of its own.</p>
+ */
+export const COMPARATOR_GATES = ["java", "js"];
+
+/**
+ * Are the two comparator gates red about nothing but each other? (SH818)
+ *
+ * <p>Deliberately a <b>question about the shape</b>, not about the cause: a stamp records an exit
+ * code and never why, and inferring a reason from a code is the summarising a stamp refuses to do.
+ * So this does not suppress anything — both gates being red is still a red, and a real double
+ * failure looks identical from here. What it changes is the <em>report</em>: a reader told "these
+ * two can be red only about each other, and here is the exit" spends a minute, where the state
+ * itself gives no hint that running the gates again is the one thing that cannot work.</p>
+ */
+export function comparatorCycle(recorded) {
+  return COMPARATOR_GATES.every((gate) => {
+    const seen = recorded?.[gate];
+    return Boolean(seen) && seen.red === true && seen.stale !== true;
+  });
+}
+
+/** What to do about a cycle, in the words the reader needs — one sentence per line. */
+export const CYCLE_EXIT = [
+  "SH818: `java` and `js` are BOTH red, and those are the two gates that judge each other.",
+  "  If each suite's only failure is the other's stamp, no run of either can clear it — the",
+  "  colours are the pair, not the code. Check the kept logs first (shio-test.log,",
+  "  shio-js-test.log): a real failure there is a real failure. If both are clean but for the",
+  "  comparator, break the cycle with `pnpm gates:clear java js`, then run `pnpm java` and",
+  "  `pnpm test` in that order. Clearing is recorded, not a deletion — see .gates/<gate>.json.",
+].join("\n");
+
+/**
+ * Record that a stamp was deliberately discarded, rather than deleting the file (SH818).
+ *
+ * <p>Deleting works — the readers treat an absent stamp as *no run recorded*, which is honest —
+ * and it leaves nothing behind, so a stamp cleared to break a cycle is indistinguishable from one
+ * cleared to dodge a red somebody did not want to fix. A cleared stamp carries no colour, for the
+ * same reason an absent one does not, and it does say <em>when</em> and <em>at which commit</em>
+ * somebody decided the last run was not evidence. That is the difference between an exit and a
+ * hole, and it costs one field.</p>
+ */
+export function clear(root, gate) {
+  if (!GATES.includes(gate)) {
+    return null;
+  }
+  try {
+    const dir = join(root, GATES_DIR);
+    mkdirSync(dir, { recursive: true });
+    const record = { gate, cleared: true, sha: headSha(root), when: new Date().toISOString() };
+    writeFileSync(join(dir, `${gate}.json`), `${JSON.stringify(record, null, 2)}\n`, "utf8");
+    return record;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Was this stamp taken against the tree that is being judged? (SH770)
  *
  * <h3>The comparison that was missing</h3>
@@ -207,6 +270,10 @@ export function stamps(root) {
     }
     try {
       const record = JSON.parse(readFileSync(path, "utf8"));
+      // SH818 — a cleared stamp has no `red`, so it falls out here exactly as an absent one does,
+      // and that is the whole design: the readers already say "no run recorded in this tree" and
+      // need no new branch to be correct. The file survives so `git status` and a curious reader
+      // can see the clearing happened, which a deletion does not offer.
       if (record && typeof record === "object" && typeof record.red === "boolean") {
         found[gate] = { ...record, stale: isStale(record, head) };
       }

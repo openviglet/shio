@@ -139,6 +139,18 @@ class ShDeclaredRedTest {
                 + String.join("\n", report)
                 + "\n  (stamps are local and untracked; a gate with no run here is not a failure)\n");
 
+        // SH818 — the state this test can be half of without being able to see it. The SELF rule
+        // above skips `java` for a good reason, and the consequence is that the one stamp which
+        // would reveal the cycle is the one never read. It is read HERE, where it is not being
+        // judged: not as this tree's colour, which it isn't, but as the answer to "were we in this
+        // same place last time". Printed and never asserted — both gates red is a genuine red until
+        // somebody has read the two kept logs and found nothing in them, and a check that excused
+        // it would turn the arrangement that catches an undeclared red into one that hides a double
+        // failure.
+        if (inComparatorCycle(head)) {
+            System.out.println(CYCLE_EXIT);
+        }
+
         assertThat(undeclared)
                 .as("""
                         SH755: this gate answered red in this tree and red-suites.json says nothing \
@@ -147,6 +159,52 @@ class ShDeclaredRedTest {
                         nobody had declared, while this suite stayed green and did the convincing. \
                         Fix the suite, or declare it against an open task.""")
                 .isEmpty();
+    }
+
+    /**
+     * The two gates that host a comparator, so the only pair that can deadlock (SH818).
+     *
+     * <p>Restated here rather than imported because {@code gate-stamp.mjs} is JavaScript and this is
+     * the JVM — the same duplication {@code GATES} already carries, held in agreement by
+     * {@code red-suites.test.mjs}'s reading of that module's source.</p>
+     */
+    private static final String CYCLE_EXIT = """
+
+            [SH818] `java` and `js` are BOTH red, and those are the two gates that judge each other.
+              If each suite's only failure is the other's stamp, no run of either can clear it — the
+              colours are the pair, not the code. Read the kept logs first (shio-test.log,
+              shio-js-test.log): a real failure there is a real failure. If both are clean but for
+              the comparator, break the cycle with `pnpm gates:clear java js`, then run `pnpm java`
+              and `pnpm test` in that order. Clearing is recorded, not a deletion.
+            """;
+
+    /**
+     * Are both comparator gates red about this tree? (SH818)
+     *
+     * <p>Reads {@code java}'s own stamp, which the check above must not — there it would be the
+     * previous run's colour standing in for this one, and here it is the previous run's <em>state</em>
+     * being asked a different question. A stale stamp is excluded exactly as it is everywhere else:
+     * a cycle diagnosed from one sends a reader to clear a stamp when what they need is to run the
+     * gate.</p>
+     */
+    private boolean inComparatorCycle(String head) {
+        for (String gate : List.of("java", "js")) {
+            Path stamp = ROOT.resolve(".gates").resolve(gate + ".json");
+            if (!Files.isRegularFile(stamp)) {
+                return false;
+            }
+            try {
+                String body = Files.readString(stamp, StandardCharsets.UTF_8);
+                if (!"true".equals(group(STAMP_RED, body)) || isStale(group(STAMP_SHA, body), head)) {
+                    return false;
+                }
+            } catch (IOException unreadable) {
+                // A stamp that cannot be read is no stamp, which is this file's rule everywhere
+                // else — and a diagnostic must never be the thing that fails a gate.
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

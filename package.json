@@ -39,6 +39,7 @@
     "conformance": "node scripts/run-gate.mjs conformance",
     "conformance:raw": "pnpm --filter @viglet/shio run conformance",
     "conformance:docs": "node scripts/run-gate.mjs docs",
+    "gates:clear": "node scripts/gates-clear.mjs",
     "clean": "rimraf \"**/node_modules\" \"**/dist\" \"**/build\""
   },
   "devDependencies": {

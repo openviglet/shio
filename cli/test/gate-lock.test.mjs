@@ -30,7 +30,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { acquire, alive, release, GATES_DIR } from "../../scripts/gate-stamp.mjs";
+import { acquire, alive, clear, release, stamp, stamps, GATES_DIR } from "../../scripts/gate-stamp.mjs";
 
 // @scans code — the lock's own reasons quote the collision it prevents, and a raw read of this
 // header would take the description of the defect for the defect (SH740).
@@ -108,4 +108,40 @@ test("SH803: the liveness probe tells a running process from one that is gone", 
   assert.equal(alive(DEAD_PID), false, "and a pid nothing occupies is not");
   assert.equal(alive(undefined), false,
     "a malformed lock naming no pid is a dead one — it must not hold the gate for ever");
+});
+
+/**
+ * SH818 — clearing a stamp is an act with a record, not the absence of one.
+ *
+ * <p>The escape from a comparator cycle was `rm .gates/java.json .gates/js.json`, and it worked:
+ * the readers treat an absent stamp as *no run recorded in this tree*, which is honest. What it
+ * left behind was nothing, so a stamp discarded because the red was about the recording looked
+ * exactly like one discarded because somebody did not want to fix it. This is the same escape with
+ * the act written down — which is the only difference, and the whole of it.</p>
+ */
+test("SH818: a cleared stamp carries no colour, and says it was cleared", () => {
+  const dir = mkdtempSync(join(tmpdir(), "shio-gate-clear-"));
+
+  stamp(dir, "java", 1);
+  assert.equal(stamps(dir).java?.red, true, "the fixture is a red stamp, or this proves nothing");
+
+  const record = clear(dir, "java");
+  assert.equal(record?.cleared, true, "clearing returns what it wrote");
+  assert.ok(existsSync(join(dir, GATES_DIR, "java.json")),
+    "SH818: the file SURVIVES. A deletion is invisible to `git status`, to a reader, and to the "
+    + "next person wondering why a gate has no colour — which is the difference between an "
+    + "exit and a hole");
+
+  assert.equal(stamps(dir).java, undefined,
+    "SH818: and it is not a colour. A cleared stamp has no `red`, so it falls out of `stamps` "
+    + "exactly where an absent one does — both comparators then say `no run recorded in this "
+    + "tree` with no new branch, which is why this is a field and not a rule");
+
+  // The half that keeps the verb from becoming a way to make any red green: it clears what a gate
+  // ANSWERED, and cannot answer for it. Running the gate is still the only thing that writes one.
+  assert.equal(clear(dir, "not-a-gate"), null,
+    "a name no gate has is refused rather than writing a file no reader will ever look at");
+  stamp(dir, "java", 0);
+  assert.equal(stamps(dir).java?.red, false,
+    "and a real run overwrites the clearing, which is the direction that must always work");
 });

@@ -56,7 +56,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
-import { GATES, isStale, stamps } from "../../scripts/gate-stamp.mjs";
+import {
+  CYCLE_EXIT, COMPARATOR_GATES, GATES, comparatorCycle, isStale, stamps,
+} from "../../scripts/gate-stamp.mjs";
 import { GATE_RUNS } from "../../scripts/gates.mjs";
 
 // @scans prose reason: red-suites.json is a ledger read as text, and the reasons and dates
@@ -254,6 +256,15 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
       + `${declared.has(gate) ? ", declared" : ""}`;
   });
   console.log(`SH755: the gates, as last run here\n${lines.join("\n")}`);
+
+  // SH818 — this comparator cannot see its OWN gate (that is the SELF rule above), so the cycle it
+  // can be half of is invisible to it by construction. The stamp on disk for `js` is the previous
+  // run's, which is exactly the record that would say so: not a colour for judging, and perfectly
+  // good for asking "were we here last time too". Printed rather than asserted, because both gates
+  // being red is a genuine red until somebody reads the two logs and finds nothing in them.
+  if (comparatorCycle({ ...recorded, [SELF]: recorded[SELF] })) {
+    console.log(CYCLE_EXIT);
+  }
 
   // SH770 — judged on the runs that are about this tree. A stale stamp is excluded from BOTH
   // directions, which is what makes it read as an absent one: a stale red must not block a commit
@@ -485,4 +496,62 @@ test("SH579: the ledger and the doc that explains it can each find the other", a
       `docs/agents/build.md does not give the command for the \`${name}\` suite (${command})`,
     );
   }
+});
+
+/**
+ * SH818 — the assertion that would have caught the state two comparators can both reach.
+ *
+ * ## What happened
+ *
+ * A real red in `java` made `js` red about it. Fixing the java defect was not enough: by then `js`
+ * was red too, so the next `pnpm java` failed on the js stamp and the next `pnpm test` failed on
+ * the java stamp. The Java suite reported **1907 tests, 1 failure**, and the failure was a stamp.
+ * The js suite was clean but for the other one. Neither had a defect and no sequence of runs said
+ * so — the cycle is a fixed point of the SELF rule, which is otherwise exactly right.
+ *
+ * ## Why this is a predicate and a printout rather than a suppression
+ *
+ * Both gates red IS a red until somebody reads the two kept logs and finds nothing in them. A check
+ * that excused it would turn the one arrangement that catches an undeclared red into the one that
+ * hides a double failure. So `comparatorCycle` answers a question about the *shape*, the report
+ * names the exit, and the person decides — which is the same division SH755 already makes between
+ * printing every gate's colour and asserting only about the undeclared ones.
+ *
+ * ## Driven against a fabricated world
+ *
+ * The real stamps are whatever the last run left, so an assertion about them is a test of this
+ * afternoon (the sentence the fixture tests above already earn).
+ */
+test("SH818: both comparator gates red is a cycle, and neither one alone is", () => {
+  const red = { red: true };
+  const green = { red: false };
+
+  assert.equal(comparatorCycle({ java: red, js: red }), true,
+    "SH818: the deadlock — each of these two judges the other, so each run re-reads the other's "
+    + "red and stamps itself red again. Nothing in the state hints that running the gates once "
+    + "more is the single thing that cannot work, which is why the exit has to be printed");
+
+  assert.equal(comparatorCycle({ java: red, js: green }), false,
+    "one comparator red is the ordinary case and the arrangement working: js will report it");
+  assert.equal(comparatorCycle({ java: green, js: red }), false, "and the same the other way");
+  assert.equal(comparatorCycle({ java: red }), false,
+    "a gate with no stamp is `no run recorded`, never half a cycle — inferring a red from an "
+    + "absence is the mistake SH770 refuses one field along");
+
+  // The half that matters after SH770: a stale stamp is not this tree's colour, so it cannot be
+  // half of this tree's cycle either. Excluded here exactly as it is from `undeclared`.
+  assert.equal(comparatorCycle({ java: red, js: { red: true, stale: true } }), false,
+    "a stale red is excluded from both directions everywhere else, and a cycle diagnosed from one "
+    + "would send a reader to clear a stamp when what they need is to run the gate");
+
+  // SH818's other half: the exit is sanctioned and recorded, not a deletion somebody improvised.
+  assert.deepEqual(COMPARATOR_GATES, ["java", "js"],
+    "the pair that can deadlock is the pair that hosts a comparator, which the SELF test above "
+    + "already holds to being exactly these two");
+  assert.match(CYCLE_EXIT, /pnpm gates:clear/,
+    "the report names the verb, because the escape used before it existed was `rm`, and a stamp "
+    + "deleted to break a cycle is indistinguishable from one deleted to dodge a red");
+  assert.match(CYCLE_EXIT, /shio-test\.log/,
+    "and it sends the reader to the kept logs FIRST — clearing a stamp over a real failure is the "
+    + "way this verb becomes the thing that turns any red green");
 });

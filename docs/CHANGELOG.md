@@ -1500,3 +1500,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AD — Two comparators that judge each other, and the state they can both reach
 
+- **SH818** — Both comparators print the cycle and name the exit without asserting on it, and `pnpm gates:clear` records the discard as `cleared: true` rather than unlinking the stamp.
