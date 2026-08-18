@@ -1206,6 +1206,19 @@ says it is.
 state of a site mid-build and **not** the same as nothing being editable (SH169's argument, one
 endpoint over).
 
+**And the rows call an address `address` (SH810).** The first version answered
+`{ post, field, region }`, which was the only place in the agent packages spelling an address
+`post` — inherited from the attribute it is read from, `data-shio-post`, which is right for the HTML
+and wrong on the wire. P2 only works if what comes back is the shape the next call takes: the row
+was designed to hand straight to `post.upsert`, and a field named `post` where the write wants
+`address` means an agent has to learn that two names are one idea.
+
+`ShAgentAddressFieldLintTest` is the guard, and its first draft is the lesson. Applied to whole
+source files it flagged **nine**, every one correctly named: they declare *local variables* holding a
+post entity, and a variable holding a `ShPostUnified` should be called `post`. Scoped to a record's
+parameter list it flags exactly one thing — the wire format — and reverting the rename fires it
+naming the file. A lint that cries wolf on nine correct files is deleted within a week.
+
 **Three guards fired on the way, each correctly.** Removing the exception left the feature key
 unclassified, so it had to be declared `AGENT_ROUTE`; the manifest's `elsewhere` still pointed
 `universalEditor` at the console, which would now send a caller away from the route that answers

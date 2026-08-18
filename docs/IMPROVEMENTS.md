@@ -711,29 +711,6 @@ categories say out loud.
 
 Neither was worth holding the task for. Both are worth the block that follows it.
 
-### XXVIII.1 One field name, in the only place that spells it differently (SH810)
-
-`/agent/editable` answers with rows of `{ post, field, region }`. Every other endpoint
-on this surface — `read`, `batch`, `plan`, `apply`, `find` — calls an address `address`,
-and `ShHtmlEditable.Field` is the single place in the agent packages that names one
-`post`.
-
-It is a small thing and it is the kind that does not stay small. P2 says one call should
-replace a session, which only works if what comes back is the shape the next call takes:
-an agent reading `fields[].post` and passing it as `address` has to know that those are
-the same idea under two names. Nothing teaches it that. The row is otherwise ready to
-hand straight to `post.upsert`, which was the design, and the field name is the one
-thing standing between the answer and that.
-
-It was written that way because the *attribute* is `data-shio-post`, which is right for
-the HTML — the page says which post owns an element. The mistake was letting the wire
-format inherit a name from the markup it was read out of.
-
-The cost of changing it is bounded today and unbounded later: the endpoint shipped in
-this session, its documentation page is one section, and nothing depends on it. A
-published field name that outlives the moment it could be corrected is exactly the kind
-of thing this repository keeps finding at a distance from where it was cheap.
-
 ### XXVIII.2 Reachable, and not by the operator the law names (SH811)
 
 The P1 inventory grades reachability, and the grades are not decoration. `MCP_TOOL` is

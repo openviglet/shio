@@ -61,11 +61,14 @@ public final class ShHtmlEditable {
     /**
      * One editable field, as the page annotates it.
      *
-     * @param post   the address of the post that owns the field, as the page states it
-     * @param field  the field name a write would set
-     * @param region the region it renders through, or {@code null} where it is the page's own
+     * @param address the post that owns the field, spelled as every write on this surface spells
+     *                one (SH79). Named `address` and not `post` after the attribute it is read from:
+     *                SH810 — the wire format inherited `data-shio-post` from the markup, and an
+     *                agent should not have to learn that two names are one idea (P2)
+     * @param field   the field name a write would set
+     * @param region  the region it renders through, or {@code null} where it is the page's own
      */
-    public record Field(String post, String field, String region) {
+    public record Field(String address, String field, String region) {
     }
 
     /**

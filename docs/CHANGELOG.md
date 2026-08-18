@@ -1477,3 +1477,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block Y — The editable surface's own follow-ups, and the rest of the P1 inventory
 
+- **SH810** — The editable rows name an address `address` like every other endpoint, and a lint scoped to record components refuses the next one — its broad first draft flagged nine correctly named files.
