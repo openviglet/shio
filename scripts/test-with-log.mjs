@@ -58,7 +58,10 @@ export const PNPM_ARGS = GATE_RUNS.js.args;
  * have caught the defect at the boundary it crossed, and this is that boundary.</p>
  */
 export function runWithLog(command, args, logPath,
-  { io = process, shell = true, label = "JS suites" } = {}) {
+  // SH808 — `cwd` is an option because the flake repeater runs the cli suite from `cli/`, where its
+  // own `test/*.test.mjs` glob resolves and where any test reading `process.cwd()` still sees what
+  // the gate shows it. Defaulting to the root keeps every existing caller unchanged.
+  { io = process, shell = true, label = "JS suites", cwd = ROOT } = {}) {
   return new Promise((resolve) => {
     mkdirSync(dirname(logPath), { recursive: true });
     const log = createWriteStream(logPath, { flags: "w" });
@@ -68,7 +71,7 @@ export function runWithLog(command, args, logPath,
     // otherwise; the arguments are this file's own constants, so there is no injection surface to
     // weigh against it. It is an OPTION because a shell re-splits the command on spaces, and
     // `process.execPath` — the one a test drives this with — is a path that has them.
-    const child = spawn(command, args, { cwd: ROOT, shell });
+    const child = spawn(command, args, { cwd, shell });
 
     for (const [stream, sink] of [[child.stdout, io.stdout], [child.stderr, io.stderr]]) {
       stream.on("data", (chunk) => {

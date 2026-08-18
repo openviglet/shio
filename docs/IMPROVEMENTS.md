@@ -687,30 +687,6 @@ capabilities an agent cannot reach, most with no task against them. The law the 
 is named after has an honest list of its own breaches, and the list has been read more
 often than it has been worked.
 
-### XXVII.2 A technique that is only a paragraph is one nobody runs (SH808)
-
-The `fixture-traits` flake resisted about a hundred and twenty runs. It was then
-reproduced **on the first run** of a loop that repeated the whole suite at
-`--test-concurrency=16`, a setting the gate never uses, and again on the first run of a
-second loop. What had looked like a defect that was gone turned out to be one nobody had
-asked properly.
-
-That method is now a paragraph in `docs/agents/build.md`. The loop itself was a scratch
-script and no longer exists, so the next person meets the next flake with the same
-eighty runs of waiting the last one cost.
-
-It is a small thing to make runnable: repeat a suite N times at a chosen concurrency,
-stop at the first non-zero exit, and keep the **whole** run rather than a filtered
-summary — SH354's rule, which is what made the libuv line readable when it finally
-appeared. Everything in that sentence already exists somewhere in `scripts/`.
-
-Two properties matter more than the ergonomics. It must keep the run, because the
-evidence was one line among fifteen hundred and a `grep` would have discarded it. And it
-must take the concurrency, because the whole finding is that the gate's own setting is
-the one that does not reproduce — a repeater that runs the gate as configured would have
-found nothing in forty attempts, which is exactly what the eighty runs of waiting
-already proved.
-
 ### XXVII.3 The inventory has been read more often than it has been worked (SH809)
 
 `ShAgentP1ConformanceTest` holds the honest list of capabilities the manifest advertises

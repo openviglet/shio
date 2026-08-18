@@ -215,6 +215,21 @@ zero-reporting failure this repository warns every scan about, arriving through 
 demand is diagnosed by what a failing run keeps. True, and incomplete: *make it appear*. Both
 sightings came from the first run of a loop at a concurrency the ordinary gate does not use.
 
+**So the loop is a command now (SH808):** `pnpm flake`, defaulting to 40 runs at
+`--test-concurrency=16`, with `--runs`, `--concurrency` and `--files`. The defaults are the settings
+that reproduced rather than a taste — sixteen twice, on the first run each time; twenty-four found
+nothing in thirty — and that is the property to keep, because **a repeater that ran the suite at the
+gate's own setting would find nothing**, which is exactly what eighty runs of waiting had already
+proved. It stops at the first non-zero exit and keeps the whole run through `runWithLog`, since the
+libuv line was one among fifteen hundred and a `grep` for the summary is what discarded the evidence
+the first two times.
+
+Its own first hunt reported a `SIGHTING` on run 1 whose log read `'C:\Program' is not recognised`:
+`runWithLog` defaults to `shell: true`, and a shell re-splits `process.execPath` on the spaces in
+`C:\Program Files\nodejs\node.exe` — which that function's own comment predicts in as many words. A
+repeater that calls its own spawn failure a sighting is worse than no repeater, and the only reason
+it took one minute rather than an afternoon is that it keeps the run.
+
 **The cure was the flag, and two better-sounding ones were measured and rejected first (SH780).**
 
 `closeIdleConnections()` on the fixture server — the keep-alive sockets `fetch` leaves behind — read

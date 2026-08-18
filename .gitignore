@@ -126,3 +126,5 @@ __pycache__/
 # inherit a claim about a run it never made — the same shape of lie the ledger already had.
 /.gates/
 /provoke.log.progress
+/shio-flake.log
+/shio-flake.red.log
