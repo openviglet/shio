@@ -25,8 +25,6 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
-## Block AJ — A scope a scan cannot leave, since four have now left theirs
-
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -733,27 +731,3 @@ URL. The rest are work.
 The other half is to keep working it while the reading is cheap. One entry names its
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
-
-## XXXIX The scope a scan is about, and the file it actually reads (SH825)
-
-Four in one session, each found by tripping over it. SH794: a bare word matched inside a
-longer identifier a sentence merely named. SH816: an entry quoting the clause it
-corrected failed the check written to catch that clause. SH822: a stripper looked like a
-bad copy of a shared one and the proposed fix was the bug. SH824: an annotation's escape
-was searched for across the whole file, so a comment about it credited a bean that
-lacked it.
-
-The shape is one thing said four ways. **A scan is about a construct — an annotation's
-arguments, a sentence's assertions, one identifier — and reads a bigger text than the
-construct occupies.** It fails green, always: matching too widely finds an escape that
-is not there, so the guard passes over the case it exists for, and nothing tells that
-from a clean tree.
-
-What is not known is how many more there are, which is why this is a task and not a
-note. The population is countable: `@ShSourceScan` declares the Java scans and `//
-@scans` the JS ones — around forty — and for each, ask whether the text it matches is
-the construct it names. Some are correct by construction, the construct being the file.
-
-Then the number decides the rest. A handful and each gets a fixture, the way SH824 did.
-Many, and the answer is a shared way to say *match within this span only*, which four
-separate fixes have not produced.

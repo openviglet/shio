@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AJ — A scope a scan cannot leave, since four have now left theirs
-
-- 📋 **SH825** (deps: —) **Four scans matched outside the construct they were about, each found by accident and fixed one at a time** — Count how many source scans search a whole file for a property of one construct — the number is the finding, and it decides whether a shared narrowing helper is worth it. → §XXXIX
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

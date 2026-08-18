@@ -1332,6 +1332,29 @@ reads, and `ShSourceScanLintTest` holds it: **CODE must actually use `ShSourceTe
 claims to read code and then greps raw text is SH206's defect wearing a label — and PROSE/BOTH must
 carry a written reason, because an accident cannot explain itself.
 
+**The declaration says what a scan reads, and not how much of it (SH825).** A different failure sits
+beside the one above: a scan about a *construct* — an annotation's arguments, one method pair, one
+sentence — matching against the whole file. It always fails **green**, because matching too widely
+finds an escape that is not there, so the guard passes over exactly the case it exists for. Four
+turned up in one session (SH794, SH816, SH822's near-miss, SH824), which looked like a pattern
+worth a shared *match-within-this-span* helper.
+
+It is not one, and the count is the useful part. **Sixty-five scans declare themselves** — 28
+`@ShSourceScan`, 37 `// @scans`. A heuristic over broad containment checks flagged 23 files and 37
+call sites; reading them left **one**: `ShAgentTransactionalOverloadLintTest` read
+`body.contains(EXEMPT)`, so a single `@Transactional-overload-exempt:` comment disabled the lint for
+the whole file — and the one bean carrying such a comment declares **33 methods**. Its own prose had
+always said *"there is one honest reason to leave **the pair** mixed"*; nothing had compared the
+sentence to the code. It is scoped to the pair the comment sits above now, and narrowing it found no
+new violations, so the other 32 were clean.
+
+Everything else was a false positive of the name heuristic — the variable holds a line, or a `catch`
+body, or the question genuinely is about the file. `ShOffThreadTenantLintTest` is the one worth
+knowing about: it looks like a second instance and is not, because its boundary tokens match
+**import** lines, so narrowing to the call site invents two findings the file-level question
+correctly absorbs. Measured before changing it. **Two in sixty-five means a fixture each, not a
+helper** — four instances looked like a pattern and were four instances.
+
 ### Five strippers, not two
 
 SH613 estimated this was "the second copy the repository will want and the first it should not

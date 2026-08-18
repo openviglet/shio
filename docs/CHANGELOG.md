@@ -1525,3 +1525,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AJ — A scope a scan cannot leave, since four have now left theirs
 
+- **SH825** — Sixty-five scans read, 23 files flagged, one real: a file-wide `EXEMPT` disabling the overload lint across 33 methods, now scoped to the pair its comment sits above.

@@ -138,9 +138,7 @@ class ShAgentTransactionalOverloadLintTest {
      * The offending pairs, as {@code File.method}: annotated on some overloads, bare on others.
      */
     private static List<String> mixedOverloads(String body) {
-        if (body.contains(EXEMPT)) {
-            return List.of();
-        }
+        Set<String> exempt = exemptNames(body);
         Map<String, Set<Boolean>> byName = new LinkedHashMap<>();
         boolean annotated = false;
         for (String raw : body.split("\r?\n")) {
@@ -169,7 +167,45 @@ class ShAgentTransactionalOverloadLintTest {
         return byName.entrySet().stream()
                 .filter(entry -> entry.getValue().size() > 1)
                 .map(Map.Entry::getKey)
+                .filter(name -> !exempt.contains(name))
                 .toList();
+    }
+
+    /**
+     * The method names an {@code EXEMPT} comment covers — the pair it sits above, and no other.
+     *
+     * <h2>SH825, and why this is not a tidy-up</h2>
+     *
+     * <p>The escape read {@code body.contains(EXEMPT)}: one comment anywhere in a file turned this
+     * lint off for the <b>whole file</b>. {@code ShStaticFileService} is the only bean carrying
+     * one and it declares <b>33</b> methods, so a real mixed pair among the other thirty-two would
+     * have passed on the strength of a comment about {@code listFiles} — silently, which is the
+     * failure shape every guard here is written against.</p>
+     *
+     * <p>The exemption's own prose said what it meant: <i>"there is one honest reason to leave
+     * <b>the pair</b> mixed"</i>. It was scoped to a file because that was the cheap way to write
+     * it, and nothing since compared the sentence to the code. Same shape as SH824's whole-file
+     * search for an annotation's argument — and out of the sixty-five declared scans SH825
+     * counted, these two are what the reading found.</p>
+     */
+    private static Set<String> exemptNames(String body) {
+        Set<String> names = new LinkedHashSet<>();
+        String[] lines = body.split("\r?\n");
+        for (int index = 0; index < lines.length; index++) {
+            if (!lines[index].contains(EXEMPT)) {
+                continue;
+            }
+            // The next declaration below it, past the rest of the comment block and any
+            // annotations: a marker is written above the method it is about.
+            for (int ahead = index + 1; ahead < lines.length; ahead++) {
+                String name = declaredName(lines[ahead].stripTrailing());
+                if (name != null) {
+                    names.add(name);
+                    break;
+                }
+            }
+        }
+        return names;
     }
 
     @Test
@@ -311,5 +347,62 @@ class ShAgentTransactionalOverloadLintTest {
         } catch (IOException e) {
             throw new UncheckedIOException("cannot read " + path.toAbsolutePath(), e);
         }
+    }
+
+    /**
+     * SH825 — the exemption covers the pair it is written above, and stops there.
+     *
+     * <h2>What the audit found</h2>
+     *
+     * <p>SH824 fixed one scan that searched a whole file for a property of one construct, and asked
+     * how many more there were. Sixty-five scans declare themselves ({@code @ShSourceScan} here,
+     * {@code // @scans} in the JS suites); a heuristic over broad containment checks flagged
+     * twenty-three files and thirty-seven call sites; reading them left <b>one</b>, which is this.
+     * The rest hold a line, a {@code catch} body, or ask a question that genuinely is about the
+     * file. {@code ShOffThreadTenantLintTest} looked like a second and is not — its boundary tokens
+     * match <i>import</i> lines, so narrowing to the call site invents two findings the file-level
+     * question correctly absorbs. Measured before changing it, not after.</p>
+     *
+     * <p>Two out of sixty-five is the answer to what SH825 actually asked: a fixture each, not a
+     * shared way to say <i>match within this span</i>. Four instances looked like a pattern and
+     * were four instances.</p>
+     */
+    @Test
+    @DisplayName("SH825: an exemption covers the pair above it, not every method in the file")
+    void theExemptionIsScopedToItsPair() {
+        String body = """
+                public class ShTwoPairs {
+
+                    // @Transactional-overload-exempt: goes through the injected self-reference.
+                    public List<String> listFiles() {
+                        return self.getObject().listFiles(null);
+                    }
+
+                    @Transactional(readOnly = true)
+                    public List<String> listFiles(String folder) {
+                        return List.of();
+                    }
+
+                    @Transactional(readOnly = true)
+                    public String other() {
+                        return other(null);
+                    }
+
+                    public String other(String key) {
+                        return key;
+                    }
+                }
+                """;
+
+        assertThat(mixedOverloads(body))
+                .as("""
+                        SH825: `listFiles` is exempt and says why; `other` is a mixed pair in the \
+                        same file and nothing excuses it. The escape used to be \
+                        `body.contains(EXEMPT)`, so one comment turned this lint off for every \
+                        method beside it — and the only bean that carries one declares 33.
+                        A pair whose annotation is silently skipped is the whole defect SH357 \
+                        found: which semantics apply depends on which overload resolved, invisible \
+                        at the call site and invisible in review, because the annotation IS there.""")
+                .containsExactly("other");
     }
 }
