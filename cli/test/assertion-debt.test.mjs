@@ -230,7 +230,7 @@ const DEBT = [
   // — so the id is now named in an assertion message at the boundary it crossed, and this reader
   // finds it there. Removed rather than left: an entry that says "unasserted" about something a
   // suite holds is the stale half this list's own second test fails on.
-  "SH296", "SH352", "SH355", "SH414", "SH415",
+  "SH296", "SH355", "SH414", "SH415",
   // EARNS NOTHING YET, and that is the entry rather than an excuse. SH778's shipped half is
   // EVIDENCE: three causes of an intermittent file-level red ruled out by measurement, and a third
   // instrument that prints the exit code and the open handles when the fourth sighting comes. There

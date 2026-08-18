@@ -1350,6 +1350,22 @@ worth knowing: keyed on any read-only annotation it flags classes whose *writing
 matching `throw new X(` literally it misses the owner-qualified `Outer.XException` — which was the
 very bean it was written from.
 
+**A third, and it is the one that reads as correct (SH352, guarded by SH824).** The lint asks
+whether the annotation carries the escape, and it once asked whether the *file* did — reading
+`matcher.group(1)`, the annotation's own arguments, rather than the body. `ShPageRenderService`
+names `noRollbackFor` six times: three annotations and three comments explaining why they carry it.
+A file-wide search credits every read-only annotation in that file for a string belonging to the
+first, and a **comment** about the escape is enough on its own, so the lint goes green over a bean
+it exists to refuse. SH352 fixed it and left no assertion; SH824 is the fixture — a body whose
+class annotation lacks the escape while the file has it elsewhere must still be flagged, and moving
+the escape into that annotation must clear it. Verified by reverting the one line and watching it
+go red.
+
+That is the **fourth** scan in this repository to match outside the construct it was about, after
+SH794 (a bare word inside a longer identifier), SH816 (a quotation of the defect read as a fresh
+instance) and SH822 (where the proposed fix was the bug). None was visible from a passing run,
+which is the whole argument for pinning the scope with a fixture rather than a comment.
+
 **A write is never refused by its own audit row, and a refusal that happens anyway names the op
 (SH544).** `ShHistory.description` is `VARCHAR(255)` and `ShContentAuditService.describe()` composed
 `Created "<title>"` with nothing between them, so five of one site's 198 page titles — ordinary

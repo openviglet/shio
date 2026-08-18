@@ -243,4 +243,78 @@ class ShTeachingRollbackLintTest {
             throw new UncheckedIOException("cannot read " + path.toAbsolutePath(), e);
         }
     }
+
+    /**
+     * SH824 — the escape belongs to one annotation, and this is what stops it being found anywhere.
+     *
+     * <h2>What SH352 fixed, with nothing holding it</h2>
+     *
+     * <p>{@link #classLevelReadOnlyWithoutEscape(String)} reads {@code matcher.group(1)} — the
+     * arguments of the annotation it is judging. It once searched the whole <em>file</em>, and the
+     * difference decides real beans. {@code ShPageRenderService} names {@code noRollbackFor} six
+     * times: three annotations and three comments about why they carry it. A file-wide search
+     * credits every read-only annotation in that file for a string belonging to the first, and a
+     * comment mentioning the escape is enough on its own.</p>
+     *
+     * <p>Reverting one line therefore turns this lint green over a bean it should refuse, and green
+     * is exactly what nobody investigates. SH352 shipped that fix and no assertion, which is why it
+     * sits on the silent debt — the group with nothing at all standing behind it, as opposed to the
+     * group whose id is merely in a comment.</p>
+     *
+     * <h2>The family, since this is the fourth</h2>
+     *
+     * <p>A scan matching outside the construct it is about: SH794's bare word matching inside a
+     * longer identifier, SH816's quotation of a defect read as a fresh instance of it, SH822 where
+     * the proposed fix was the bug, and this. Every one was cheap, and not one was visible from a
+     * passing run — which is the argument for the fixture rather than the comment.</p>
+     */
+    @Test
+    @DisplayName("SH824: the escape is read from the annotation's own arguments, never the file")
+    void theEscapeIsScopedToTheAnnotation() {
+        String escaped = """
+                @Transactional(readOnly = true,
+                        noRollbackFor = ShTeachingException.class)
+                public class ShFine {
+                }
+                """;
+        assertThat(classLevelReadOnlyWithoutEscape(escaped))
+                .as("an annotation carrying its own `noRollbackFor` is not an offender, or this "
+                        + "lint refuses the shape it exists to ask for")
+                .isFalse();
+
+        // The regression, as a file: the escape is present, and it belongs to something else. This
+        // is `ShPageRenderService`'s real shape reduced — three annotations and three comments
+        // naming `noRollbackFor`, one class-level annotation without it.
+        String elsewhere = """
+                // SH249 — `noRollbackFor` because a caller may legitimately *catch* these.
+                @Transactional(readOnly = true)
+                public class ShLeaky {
+
+                    @Transactional(readOnly = true,
+                            noRollbackFor = ShTeachingException.class)
+                    public void other() {
+                    }
+                }
+                """;
+        assertThat(classLevelReadOnlyWithoutEscape(elsewhere))
+                .as("""
+                        SH352/SH824: the class-level annotation here has no `noRollbackFor` and the \
+                        FILE has three — one in a comment, one on another method. Searching the file \
+                        credits this class for somebody else's escape and the lint goes green over \
+                        the bean it exists to refuse, which is how a read-only transaction ends up \
+                        rollback-only and a teaching 404 arrives as a 500 at commit time.
+                        The escape is read from `matcher.group(1)`. Keep it there.""")
+                .isTrue();
+
+        // And the half that keeps the fixture honest: the same body with the escape moved INTO the
+        // class annotation must flip the answer, or the assertion above passes for some other
+        // reason — a pattern that stopped matching would also report `true`.
+        assertThat(classLevelReadOnlyWithoutEscape(
+                elsewhere.replace("@Transactional(readOnly = true)\npublic class ShLeaky",
+                        "@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)"
+                                + "\npublic class ShLeaky")))
+                .as("moving the escape into the class annotation is the fix the message asks for, "
+                        + "so it has to be the thing that clears the finding")
+                .isFalse();
+    }
 }
