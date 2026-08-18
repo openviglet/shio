@@ -180,7 +180,7 @@ jobs:
       # The whole log, because the summary above is a headline and a diagnosis needs the run.
       - name: Keep the run
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java-suite-log
           path: ${{ runner.temp }}/java.log
