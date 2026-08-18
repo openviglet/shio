@@ -9,6 +9,10 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block AB — What a flag does not say — reach as manifest data, not only as a test's classification
+
+- 📋 **SH815** (deps: —) **Five manifest flags say `true` to a client that cannot reach them, and the map has no field to say so** — The reach a test already computes belongs in the manifest, so discovery answers *how* rather than only *whether* — P2's job, done today by an assertion no caller reads. → §XXX
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

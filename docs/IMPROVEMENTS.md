@@ -25,6 +25,8 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
+## Block AB — What a flag does not say — reach as manifest data, not only as a test's classification
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -731,3 +733,27 @@ URL. The rest are work.
 The other half is to keep working it while the reading is cheap. One entry names its
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
+
+## XXX The boolean that cannot say "yes, if you have a shell" (SH815)
+
+`features` is a flat boolean map, so a capability is present or absent and nothing else.
+On this instance five flags answer `true` to a caller who cannot invoke them:
+`contentAsFiles`, `exchange`, `graphql`, `postTypeMerge`, `reviewQueue`. Each is
+*honest* — the capability exists, and four are decisions rather than gaps — and each is
+useless to an MCP-only client, which learns what it can do from exactly this map.
+`contentAsFiles` says so about itself: *"a client with no filesystem cannot use it, and
+the flag does not say so."*
+
+The odd part is that the answer is already computed. `ShAgentP1ConformanceTest`
+classifies every key by how it is reached — MCP tool, MCP resource, agent route,
+cross-cutting, instance fact, composed, or one of three exceptions — and asserts the
+result. So the product holds the fact twice: once as data a caller cannot see, once as a
+test nobody ships. P2 makes discovery a feature rather than a docs problem, and a
+response that answers *whether* while withholding *how* costs the agent the call it
+makes to find out.
+
+The shape is a value beside the boolean, not a second endpoint: `features` gains a
+sibling map keyed the same way, whose value is the reach and, for an exception, the
+route or command that delivers it. Then the test asserts the manifest rather than a
+table of its own, which removes the second copy instead of adding a third. Whether
+`?section=features` projects it is the sizing question, and P3 decides it.

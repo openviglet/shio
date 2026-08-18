@@ -1488,3 +1488,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AA — The gate machinery's own coverage — what SH780 and SH807 fixed in one place and not the others
 
 - **SH814** — `--test-force-exit` is gone from all nine `node --test` scripts and the watchdog is on all nine; both lists are asserted, so a tenth suite cannot be added without choosing.
+
+## Block AB — What a flag does not say — reach as manifest data, not only as a test's classification
+
