@@ -9,6 +9,11 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block Y — The editable surface's own follow-ups, and the rest of the P1 inventory
+
+- 📋 **SH810** (deps: —) **The editable answer calls an address `post`, where every other endpoint on the surface calls one `address`** — SH809 shipped `{ post, field, region }` and the whole agent surface spells that field `address`; it is a published contract and the cheapest moment to correct it is now. → §XXVIII.1
+- 📋 **SH811** (deps: —) **An MCP-only client still cannot ask which fields are editable, because the answer is a route and not a tool** — SH809 classified it AGENT_ROUTE, which the inventory's own hierarchy calls reachable but weaker than a tool — the bar P1 actually asks for. → §XXVIII.2
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

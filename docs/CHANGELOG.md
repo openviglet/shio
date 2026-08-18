@@ -1474,3 +1474,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH807** — An unref'd watchdog never touches a healthy run and names the live handles when one will not end, so a hang becomes a named file instead of a 20-minute CI timeout.
 - **SH808** — `pnpm flake` repeats the suite at the concurrency that reproduced, stops at the first failure and keeps the whole run — the loop that took four minutes where waiting took eighty runs.
 - **SH809** — `/agent/editable` reads the fields a curator could edit off the rendered page, so the one P1 exception naming a route it did not have is gone from the inventory.
+
+## Block Y — The editable surface's own follow-ups, and the rest of the P1 inventory
+
