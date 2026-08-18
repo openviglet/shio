@@ -1514,3 +1514,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AG — One answer to "what does this sentence assert", and the three places that answer it separately
 
 - **SH822** — Not duplication: the two read a document and a sentence, and the newline guard is right in one and wrong in the other — pinned in both directions, since swapping them costs three false claims.
+
+## Block AH — The console's English, and the sweep with no instrument behind it
+
