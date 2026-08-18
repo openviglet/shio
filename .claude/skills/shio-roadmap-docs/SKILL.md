@@ -89,7 +89,11 @@ real maximum block letter** — grep it to confirm before creating a block.
    already exists.** `add --block` refuses a label no heading declares, so "which
    block?" is the first decision, and the way it goes wrong is by inventing a letter
    instead of reading the headings. **Reuse is the default; a new block is the
-   exception you have to justify.**
+   exception you have to justify — and `block add` is not yours to run unprompted:
+   propose the label and title to the user and wait, the way you would for any
+   irreversible outward-facing change.** A wrong task line is one `amend`; a wrong
+   block is a heading, a ledger region that keeps it forever, and a four-surface
+   sweep when it empties.
    - **Read the candidates first.** `stats` lists the blocks that still hold open
      lines. `grep -nE '^## Block' docs/CHANGELOG.md` lists **every** block ever
      opened — including the ones the roadmap was pruned of, which are still
@@ -109,7 +113,11 @@ real maximum block letter** — grep it to confirm before creating a block.
      **CHANGELOG** is authoritative for the highest letter, and retired labels are
      never reused). The title has to be generic enough to hold *the next few
      plausible tasks of the same kind* — the block is a container for future work,
-     not a label for this one. A block named after a single deliverable empties on
+     not a label for this one. **The test is answerable before you type the title:
+     name three plausible *future* tasks the heading would hold. If the second and
+     third are the same task worded differently, the title is a deliverable and the
+     block is really a task line under an existing heading.** A block named after a
+     single deliverable empties on
      its first `ship` and drags the whole four-surface sweep behind it for one task.
      This project already paid that: Blocks **R**, **T** and **U** are three separate
      documentation blocks where one generically-titled documentation block would have

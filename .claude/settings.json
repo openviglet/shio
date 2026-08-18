@@ -1,7 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "ROADKEEP_HOME": "${CLAUDE_PROJECT_DIR}/.roadkeep"
+  },
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
       "Bash",
       "PowerShell",
@@ -44,23 +46,17 @@
       "mcp__plugin_roadkeep_roadkeep",
       "mcp__roadkeep",
       "Bash(python .roadkeep/scripts/roadkeep.py:*)",
-      "Bash(python \"${CLAUDE_PROJECT_DIR}/.roadkeep/scripts/roadkeep.py\":*)"
+      "Bash(python \"${CLAUDE_PROJECT_DIR}/.roadkeep/scripts/roadkeep.py\":*)",
+      "Edit(/.claude/skills/shio-roadmap-docs/**)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "defaultMode": "acceptEdits"
   },
   "enableAllProjectMcpServers": true,
-  "enabledPlugins": {
-    "roadkeep@alegauss": true
-  },
-  "extraKnownMarketplaces": {
-    "alegauss": {
-      "source": {
-        "source": "github",
-        "repo": "alegauss/roadkeep"
-      }
-    }
-  },
+  "enabledMcpjsonServers": [
+    "roadkeep"
+  ],
   "hooks": {
     "SessionStart": [
       {
@@ -97,10 +93,15 @@
       }
     ]
   },
-  "enabledMcpjsonServers": [
-    "roadkeep"
-  ],
-  "env": {
-    "ROADKEEP_HOME": "${CLAUDE_PROJECT_DIR}/.roadkeep"
+  "enabledPlugins": {
+    "roadkeep@alegauss": true
+  },
+  "extraKnownMarketplaces": {
+    "alegauss": {
+      "source": {
+        "source": "github",
+        "repo": "alegauss/roadkeep"
+      }
+    }
   }
 }
