@@ -151,10 +151,19 @@ class ShStaticFileAPITest {
     void stage01bListReturnsUploadedFile() throws Exception {
         // SH61: the file-manager listing endpoint returns the uploaded File post,
         // carrying its file name, size and content type.
-        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+        String listing = mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.fileName == 'hello.txt')]").exists())
-                .andExpect(jsonPath("$[?(@.fileName == 'hello.txt')].size").exists());
+                .andExpect(jsonPath("$[?(@.fileName == 'hello.txt')].size").exists())
+                .andReturn().getResponse().getContentAsString();
+
+        // Stated as an assertion rather than a comment, because `andExpect` carries no message and
+        // a jsonPath failure names the path it could not find, never what the path was for.
+        assertTrue(listing.contains("hello.txt") && listing.contains("\"size\""),
+                "SH61: the row AND the metadata the manager renders. Before this endpoint the "
+                        + "`File` widget could upload and nothing could *see* what was stored; a "
+                        + "listing that returned names without size or content type would be the "
+                        + "same blindness one call further on");
     }
 
     @Test

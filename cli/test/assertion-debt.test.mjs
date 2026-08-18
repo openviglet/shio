@@ -189,7 +189,14 @@ const DEBT = [
   // those are two suites legitimately citing one task. The finding SH821 actually made is that
   // roughly a third of `CLOSE` is not the one-line move its name promises, which is a measurement
   // recorded in the REVEALED note above and is not a property any run can fail on.
-  "SH821",
+  // SH826 is the same shape and is here for the same reason, which makes it the rule rather than
+  // the exception: **a batch payment's deliverable is the assertions it creates, each naming a
+  // different id, and the batch's own id has nothing left to assert.** SH826 moved SH39, SH40 and
+  // SH43 into the `transform/` unit suites and SH61 into the listing test; what it discovered —
+  // that three of four belonged in a file the ledger never named, putting the pointer-miss rate
+  // nearer two in five than a third — is a measurement recorded in the REVEALED note above, and a
+  // measurement is not a thing a run can fail on. A later batch belongs here without re-arguing it.
+  "SH821", "SH826",
   // EARNS, and it is the largest group by far. The console has a test tree (`shio-react/test`)
   // holding no reference to any of these; each is a React page or widget behaviour, so each is
   // assertable there. Ordered LAST despite the size, because these are the defects a human meets:
@@ -330,14 +337,21 @@ const DEBT = [
  * judgement no measurement can make. Where it is not, the entry earns a real assertion and the
  * pointer is where to start looking rather than the answer.</p>
  *
- * <p><b>How often that happens, measured on the first eleven paid (SH820, SH821).</b> Three of
- * the eleven had their real home in a different file: the recorded one mentioned the id in
+ * <p><b>How often that happens, measured on the first fifteen paid (SH820, SH821, SH826).</b>
+ * <b>Six</b> had their real home in a different file: the recorded one mentioned the id in
  * passing — as a <i>contrast</i>, in one case (`search: true` beside `searchIndexing: false`) —
  * while the assertion that would have caught the defect sat in the suite named after it. One more
- * had no local candidate at all, its guard being in another module entirely. So roughly a third
- * of this list is not the one-line move the group is named for, and the pointer is a starting
- * point in the literal sense. Reading the ledger entry for the id in `CHANGELOG.md` is what
- * settles it: it says what shipped, which is what an assertion has to be able to fail about.</p>
+ * had no local candidate at all, its guard being in another module entirely. So the pointer is a
+ * starting point in the literal sense, and reading the ledger entry for the id in `CHANGELOG.md`
+ * is what settles it: it says what shipped, which is what an assertion has to be able to fail
+ * about.</p>
+ *
+ * <p>The rate is worth stating because it is <b>not</b> settling where it first looked. Eleven paid
+ * put it near a third; SH826's four moved three more, and the figure is closer to <b>two in five</b>.
+ * The pattern behind it is legible: an id whose work spans a subsystem gets mentioned by the API
+ * test that exercises the surface, while the assertion that would have caught it lives in the unit
+ * suite named after the component — SH39, SH40 and SH43 were all recorded against
+ * `ShStaticFileAPITest` and all three belong in `transform/`. Budget for a search, not a move.</p>
  *
  * <p>{@code CLOSE} is those whose mention sits beside an assertion; {@code HEADER} is the ones
  * named in a class docstring, where the file is about the task and no one assertion carries it.
@@ -356,12 +370,8 @@ const REVEALED = {
   "SH9"    : "scaffold.test.mjs",
   "SH12"   : "ShFolderTrashTest.java",
   "SH26"   : "ShLiquibaseChangelogAgnosticTest.java",
-  "SH39"   : "ShStaticFileAPITest.java",
-  "SH40"   : "ShStaticFileAPITest.java",
-  "SH43"   : "ShStaticFileAPITest.java",
   "SH51"   : "ShFolderTrashTest.java",
   "SH58"   : "ShEmailConfigServiceTest.java",
-  "SH61"   : "ShStaticFileAPITest.java",
   "SH63"   : "emit.test.mjs",
   "SH71"   : "ShAgentBatchTest.java",
   "SH72"   : "impact.test.mjs",

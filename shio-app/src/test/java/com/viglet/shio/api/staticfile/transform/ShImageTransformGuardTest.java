@@ -40,7 +40,11 @@ class ShImageTransformGuardTest {
         ShImageTransformGuard guard = guard(properties);
         ShImageTransformSpec spec = spec("4000", null, null, null);
         assertThrows(ShImageTransformException.class,
-                () -> guard.check("post-1", spec, null));
+                () -> guard.check("post-1", spec, null),
+                "SH43: the transform surface was an open door — any caller could ask for arbitrary "
+                        + "dimensions and pin the CPU. The ceiling is what closes it, and it has to "
+                        + "refuse BEFORE the pipeline runs, or the work is already done by the time "
+                        + "anybody objects");
     }
 
     @Test

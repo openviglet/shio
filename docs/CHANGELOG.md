@@ -1526,3 +1526,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AJ — A scope a scan cannot leave, since four have now left theirs
 
 - **SH825** — Sixty-five scans read, 23 files flagged, one real: a file-wide `EXEMPT` disabling the overload lint across 33 methods, now scoped to the pair its comment sits above.
+
+## Block AK — The revealed debt, next file
+
+- **SH826** — Four more paid and the debt is 106 — three of them belonged in `transform/` rather than the API test recorded, which puts the pointer-miss rate at two in five, not a third.

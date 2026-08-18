@@ -67,7 +67,11 @@ class ShThumbnailatorImageTransformPipelineTest {
 
         BufferedImage img = decode(out);
         assertEquals(100, img.getWidth());
-        assertEquals(50, img.getHeight(), "aspect ratio preserved → fits within 100x100");
+        assertEquals(50, img.getHeight(),
+                "SH40: the engine behind SH39's seam actually re-encodes. 200x100 asked to FIT in "
+                + "100x100 comes back 100x50 — a pipeline that declined, or passed the source "
+                + "through, would return the original 200x100 with the request having looked "
+                + "like it worked");
         assertEquals("image/png", out.contentType());
     }
 
