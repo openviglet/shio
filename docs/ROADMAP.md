@@ -9,8 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block Y — The editable surface's own follow-ups, and the rest of the P1 inventory
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
