@@ -51,6 +51,21 @@ reason and with one difference that matters: a section gate **cannot** start at 
 gate ended, because dropping a section is destructive where shortening a line is not. It may only
 fall, and it falls when somebody has read the section and decided which of the two kinds it is.
 
+**Its three checks encoded an address shape roadkeep does not enforce (SH817).** A heading had to be
+`^#{3,4} X.Y` and a pointer `→ §X.Y` — the numbered form every task happened to use, and not the
+form the tool writes. A new block's first `add --ref XXXI` produces a **level-2 family heading** and
+a bare `→ §XXXI`, which is legal, and which `improvements-debt.test.mjs` accepts by name. The three
+checks then failed in decreasing order of noise, which is the wrong order: the vacuity check went
+**red** blaming its own regex, `everyOpenPointerResolves` — there because a triage once left an open
+task pointing at a deleted section — went **green over the one pointer it could not parse**, and the
+stale ratchet never counted a level-2 section, which is why the JS twin caught a block heading
+naming shipped ids and this one did not. Both patterns now take `[IVXLC]+(?:\.\d+)*` at any heading
+level, so all three check strictly more. The lesson generalises past the regex: **when an instrument
+and the tool that writes its input disagree about a format, the instrument is wrong by default** —
+the tool is the one with users. And a diagnostic must not share its caller's pattern; the vacuity
+message now re-reads the roadmap loosely and names the pointers it could not parse, because a
+message derived from the failing scan can only report that there was nothing to see.
+
 ### The four line-level defects, and the hole they exposed (SH356)
 
 Beside the sections sat four findings that are **corruption, not prose**, and three had exactly one

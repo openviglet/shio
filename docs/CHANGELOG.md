@@ -1495,3 +1495,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AC — The last open gap, and whether it is one — a reason that outlived what falsified it
 
+- **SH817** — Both patterns take `[IVXLC]+(?:\.\d+)*` at any heading level, so the dangling-pointer guard sees a bare family and the vacuity message names the pointers it could not parse.

@@ -69,9 +69,22 @@ class ShImprovementsStaleSectionRatchetTest {
      */
     private static final int STALE = 3;
 
-    /** A section heading at either level, with the task ids it names in its title. */
+    /**
+     * A section heading at any level, with the task ids it names in its title.
+     *
+     * <p><b>SH817 widened both halves of this, and the width is the check.</b> It read
+     * {@code ^#{3,4} ([IVXLC]+\.\d+)} — a numbered anchor under a level-3 heading, which was the
+     * shape every task had happened to use and is <em>not</em> the shape roadkeep enforces. A fresh
+     * block's first {@code add --ref XXXI} writes a level-2 family heading and a bare
+     * {@code → §XXXI}, which is legal and which {@code improvements-debt.test.mjs} accepts by name.
+     * Three checks in this file then read past it, in decreasing order of noise, which is the wrong
+     * order: the vacuity one went red blaming its own regex, {@link #everyOpenPointerResolves()}
+     * went green over the single pointer it could not parse — the one it exists to protect — and
+     * the stale ratchet never counted a level-2 section at all, which is why the JS twin caught a
+     * block heading naming shipped ids and this file did not.</p>
+     */
     private static final Pattern HEADING =
-            Pattern.compile("^#{3,4} ([IVXLC]+\\.\\d+) (.*)$", Pattern.MULTILINE);
+            Pattern.compile("^#{2,4} ([IVXLC]+(?:\\.\\d+)*) (.*)$", Pattern.MULTILINE);
 
     /** A ledger entry's id — the bold form roadkeep writes. */
     private static final Pattern LEDGER_ID = Pattern.compile("^- \\*\\*(SH\\d+)\\*\\*", Pattern.MULTILINE);
@@ -141,9 +154,9 @@ class ShImprovementsStaleSectionRatchetTest {
                 .isEmpty();
     }
 
-    /** A task line's id and the anchor it points at. */
+    /** A task line's id and the anchor it points at — numbered, or a bare family (SH817). */
     private static final Pattern ROADMAP_POINTER =
-            Pattern.compile("\\*\\*(SH\\d+)\\*\\*[^\\n]*→ §([IVXLC]+\\.\\d+)");
+            Pattern.compile("\\*\\*(SH\\d+)\\*\\*[^\\n]*→ §([IVXLC]+(?:\\.\\d+)*)");
 
     private static final Path ROADMAP = Path.of("..", "docs", "ROADMAP.md");
 
@@ -182,10 +195,32 @@ class ShImprovementsStaleSectionRatchetTest {
         // being true: SH750 shipped the last one and the backlog emptied completely. An empty
         // `pointedAt` is now two different states — a finished backlog, or a pointer regex that has
         // stopped matching — and they are told apart by whether the file still has task lines.
+        // SH817 — the message used to stop at "the scan has stopped matching", which sends a reader
+        // to the regex. It had stopped matching because a task pointed at `§XXXI`, a bare family
+        // roadkeep writes for a new block's first section, and the pattern demanded `§X.Y`. Naming
+        // the unresolved pointers is what turns this from a puzzle into an edit: the regex is one
+        // of two things that can be wrong here, and it is the less likely one.
         assertThat(pointedAt.isEmpty() ? roadmapTaskLines() : 0)
-                .as("the roadmap carries task lines and none yielded a `→ §` anchor, so the pointer "
-                        + "scan has stopped matching and the check below is vacuous")
+                .as("the roadmap carries %d task line(s) and none yielded a `→ §` anchor, so the "
+                        + "pointer scan has stopped matching and the check below is vacuous. The "
+                        + "pointers it could not parse: %s", roadmapTaskLines(), unparsedPointers())
                 .isZero();
+
+        // SH817, and the assertion that would have caught it. The check above only asks the
+        // question when *nothing* parsed, which is the loudest case and the rarest: with one
+        // numbered pointer beside one bare family, `pointedAt` is non-empty, this file goes green,
+        // and `everyOpenPointerResolves` silently never sees the second one. Reading every `→ §`
+        // and demanding the strict pattern take all of them is the same question asked where it
+        // actually fails — one pointer at a time, rather than all of them at once.
+        assertThat(unparsedPointers())
+                .as("""
+                        SH817: a task points at an anchor this file's pattern cannot read, so the \
+                        dangling-pointer guard below is blind to exactly that line — green, and \
+                        over the pointer it exists to protect. roadkeep writes a bare `§XXXI` for \
+                        a new block's first section and a numbered `§XXXI.1` after, and both are \
+                        legal: when an instrument and the tool writing its input disagree about a \
+                        format, widen the instrument. It is the one without users.""")
+                .isEmpty();
 
         assertThat(anchors)
                 .as("""
@@ -210,6 +245,33 @@ class ShImprovementsStaleSectionRatchetTest {
             found++;
         }
         return found;
+    }
+
+    /**
+     * SH817 — the `→ §…` pointers {@link #ROADMAP_POINTER} did not parse, verbatim.
+     *
+     * <p>Deliberately a <b>separate</b> read, looser in exactly one dimension — the address — and
+     * no looser in any other. A diagnostic sharing its caller's regex can only ever report that
+     * there was nothing to see, which is what the message used to say; a diagnostic loosened in
+     * every dimension reports the file's own legend, which is what the first draft of this did.
+     * The line must still be a task line, because {@code `→ §`} appears in the header explaining
+     * the notation and that mention is not a pointer (SH794's rule, and the third time today).</p>
+     */
+    private static Set<String> unparsedPointers() {
+        Set<String> parsed = new TreeSet<>();
+        Matcher strict = ROADMAP_POINTER.matcher(read(ROADMAP));
+        while (strict.find()) {
+            parsed.add(strict.group(2));
+        }
+
+        Set<String> unparsed = new TreeSet<>();
+        Matcher loose = Pattern.compile("\\*\\*(SH\\d+)\\*\\*[^\\n]*→ §(\\S+)").matcher(read(ROADMAP));
+        while (loose.find()) {
+            if (!parsed.contains(loose.group(2))) {
+                unparsed.add(loose.group(1) + " → §" + loose.group(2));
+            }
+        }
+        return unparsed;
     }
 
     private static Set<String> shippedIds() {
