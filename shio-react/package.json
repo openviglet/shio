@@ -21,7 +21,7 @@
     "preview": "vite preview",
     "console:provision": "node e2e/provision.mjs",
     "console:check": "node e2e/console-check.mjs",
-    "test": "node --test \"test/*.test.mjs\""
+    "test": "node --import ../scripts/test-watchdog.mjs --test \"test/*.test.mjs\""
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.12",

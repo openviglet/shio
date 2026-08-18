@@ -31,7 +31,7 @@
     "dev": "vite build --watch",
     "build": "vite build && tsc --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"test/*.test.mjs\"",
+    "test": "node --import ../scripts/test-watchdog.mjs --test \"test/*.test.mjs\"",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {

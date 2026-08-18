@@ -2187,8 +2187,17 @@ from the cause. That is why one mistake read as seven unrelated defects across f
 releases it in **`t.after`**, never only on the happy path — the watch-loop test's `stop()` sat
 after its assertions, so one wrong expectation left a `setInterval` holding the event loop and
 `node --test` printed all 199 results and then never exited. That is what "the suite hangs" was;
-stdin had nothing to do with it. `--test-force-exit` is in the `test` script so the next leak
-reports and exits instead of burning a CI timeout with no diagnostic.
+stdin had nothing to do with it. `--test-force-exit` was in the `test` script for that reason —
+until SH780 measured its benefit at nothing and removed it, because it was also half a race that
+aborted the process inside libuv. What replaced it is `scripts/test-watchdog.mjs` (SH807), which
+fails a run that will not end and **names the handle** holding it, which the flag never did.
+
+**SH814 put both over every suite instead of one.** The removal and the guard are halves of one
+decision and each had landed on `cli`'s `test` script alone: nine `node --test` scripts existed,
+the watchdog was on one, and the flag survived on `conformance` and `conformance:docs` — the two
+that drive a fixture server, whose sockets are the handle shape that produced the abort. The two
+lists are asserted exactly in `cli/test/test-runner-flags.test.mjs`, so a tenth suite cannot be
+added without deciding which it is; the paragraph above is what the lint exists to stop repeating.
 
 
 **The fixture is a catalogue of what breaks a replica (SH528).** It was 134 lines — a page, a

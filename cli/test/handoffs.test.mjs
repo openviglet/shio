@@ -123,6 +123,14 @@ const CLAIMS = {
     why: "`INERT_KEYS` is cut from its own walk, citing how assertion-debt cuts its own "
       + "declaration — a precedent for the technique, not a promise that file covers anything",
   },
+  "cli/test/test-runner-flags.test.mjs -> test-watchdog.test.mjs": {
+    kind: Kind.HANDS_OFF,
+    why: "SH814 — the lint asks only *where* the watchdog is installed and hands the question of "
+      + "whether it works to the other file. Verified: test-watchdog.test.mjs spawns a suite that "
+      + "leaks a listening server and asserts a non-zero exit naming `TCPServerWrap`, plus the "
+      + "converse that a clean suite finishes well inside the deadline — so the mechanism is "
+      + "covered there and this file may confine itself to the nine package.json scripts",
+  },
   "shio-app/src/test/java/com/viglet/shio/ShDeclaredRedTest.java -> red-suites.test.mjs": {
     kind: Kind.HANDS_OFF,
     why: "SH800 — this comparator stopped judging `java` once that gate had a stamp, and says the "

@@ -258,6 +258,16 @@ Measured properly, alternating the two configurations so drift falls on both equ
 **There is no cost.** The flag bought nothing, and the trade SH780 recorded was between a real defect
 and a number that does not exist.
 
+**"The flag is gone" was true of one script (SH814).** It was removed where the flake was found —
+`cli`'s `test` — and stayed on `conformance` and `conformance:docs`, which are the two suites that
+drive a fixture server: the sockets there are the very handle shape that produced the abort, so the
+gates keeping the flag were the ones least able to afford it, and the conformance gate is also the
+slowest and least often re-run. The watchdog SH807 added to replace it had the mirror-image reach —
+one script of nine. Both are now over every suite, and `cli/test/test-runner-flags.test.mjs` holds
+the nine as an asserted list with the two rules beside it, so a tenth cannot be added without
+choosing. The general shape is worth more than the instance: **a fix reported in the singular
+usually was one**, and the ledger sentence recording it does not know how many places it was true of.
+
 **And there was no drain to explain (SH805, retired).** A probe in the runner — `beforeExit` plus
 `process.getActiveResourcesInfo()` — shows the loop is never held: `beforeExit` fires at 6698 ms and
 `exit` at 6699 ms, one millisecond apart, with only the two stdio pipes alive. Nothing lingers.

@@ -1484,3 +1484,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 - **SH812** — `shio_context` takes `format`, so agents-md is MCP-reachable — and the staleness check now reads a tool.parameter target, which it could not, so shipping this had passed silently.
 - **SH813** — `Delivery.decision` splits the P1 exceptions the way their prose already did: the run prints 8 decided, 1 open (`contentAsFiles`), and a new test refuses an all-one-kind table.
+
+## Block AA — The gate machinery's own coverage — what SH780 and SH807 fixed in one place and not the others
+
+- **SH814** — `--test-force-exit` is gone from all nine `node --test` scripts and the watchdog is on all nine; both lists are asserted, so a tenth suite cannot be added without choosing.

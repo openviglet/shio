@@ -14,7 +14,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node --test \"test/*.test.mjs\""
+    "test": "node --import ../scripts/test-watchdog.mjs --test \"test/*.test.mjs\""
   },
   "license": "Apache-2.0",
   "keywords": [

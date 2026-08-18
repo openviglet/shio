@@ -20,8 +20,8 @@
   ],
   "scripts": {
     "test": "node --import ../scripts/test-watchdog.mjs --test \"test/*.test.mjs\"",
-    "conformance": "node --test --test-force-exit --test-concurrency=1 \"conformance/*.conformance.mjs\"",
-    "conformance:docs": "node --test --test-force-exit --test-concurrency=1 conformance/docs-vocabulary.conformance.mjs conformance/docs-stack.conformance.mjs conformance/docs-coverage.conformance.mjs"
+    "conformance": "node --import ../scripts/test-watchdog.mjs --test --test-concurrency=1 \"conformance/*.conformance.mjs\"",
+    "conformance:docs": "node --import ../scripts/test-watchdog.mjs --test --test-concurrency=1 conformance/docs-vocabulary.conformance.mjs conformance/docs-stack.conformance.mjs conformance/docs-coverage.conformance.mjs"
   },
   "dependencies": {
     "@viglet/create-shio-app": "workspace:*",

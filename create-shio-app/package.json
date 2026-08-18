@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "emit": "node src/emit.mjs",
-    "test": "node --test \"test/*.test.mjs\"",
+    "test": "node --import ../scripts/test-watchdog.mjs --test \"test/*.test.mjs\"",
     "emit:check": "node scripts/emit-guard.mjs"
   },
   "keywords": [
