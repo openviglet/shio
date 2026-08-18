@@ -11,7 +11,6 @@
 
 ## Block Z — Working the P1 inventory, and making it sortable
 
-- 📋 **SH812** (deps: —) **`shio_context` takes no `format`, so the pack rendered as project instructions is reachable only from a shell** — The P1 entry for agentsMd names the target down to the parameter, and the output meant to be written to a file is the one an MCP client cannot ask for. → §XXIX.1
 - 📋 **SH813** (deps: —) **Whether a P1 entry is a gap or a decision lives in its prose, so the inventory cannot be counted or sorted** — Planning this block meant reading ten reasons to find which were work; the run prints how many are unreachable and cannot say how many of those anybody intends to fix. → §XXIX.2
 
 ## Priority

@@ -734,28 +734,6 @@ The other half is to keep working it while the reading is cheap. One entry names
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
 
-### XXIX.1 The output meant for a file, reachable only by whoever has one (SH812)
-
-`GET /agent/context?format=agents-md` renders the context pack as project agent
-instructions — the shape a harness loads from disk instead of making a call.
-`shio_context` takes no `format`, so an MCP-only client cannot ask for it, and the
-inventory records that in the entry's own words: *the one output meant to be written to
-a file is reachable only by whoever has a file to write it to*.
-
-It is the same shape SH811 just measured and the entry already names the target down to
-the parameter, which is why it is the next one worth taking rather than the largest.
-
-Two things to get right, and the second is the constraint. **What an MCP client does
-with it** is not obvious — a client with no filesystem cannot write the file, so the
-value is the *content*, which is the pack in a form meant to be pasted into a harness
-rather than parsed. If that is not true for any real client, the honest answer is to
-change the entry's classification rather than ship a parameter nobody calls.
-
-And **the budget is thin**: `tools/list` stands at 2523 against the 2560 SH811 set, so
-about 37 tokens are free and a `format` string costs roughly twenty. That fits once. The
-next capability after this one meets a ceiling with nothing behind it, which is worth
-knowing before choosing what it should be.
-
 ### XXIX.2 A list that is now a backlog, and still reads like a report (SH813)
 
 The P1 inventory prints how many capabilities the agent cannot reach, classified by how

@@ -132,6 +132,10 @@
             "description" : "#string",
             "type" : "integer"
           },
+          "format" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "from" : {
             "description" : "#string",
             "type" : "string"

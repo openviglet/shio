@@ -333,7 +333,9 @@ public class ShAgentManifestService {
     private Map<String, String> elsewhere() {
         Map<String, String> elsewhere = new TreeMap<>();
         // CLI-shaped: a file, a byte stream or a rasteriser on one end (SH268's rule).
-        elsewhere.put("agentsMd", "shio context --format agents-md");
+        // SH812 — this pointed at the CLI, which was honest while `shio_context` took no
+        // `format`. It does now, so a pointer here would send a caller to a shell for
+        // something the tool they are already holding answers.
         elsewhere.put("contentAsFiles", "shio pull --content");
         elsewhere.put("conversionProposal", "shio propose");
         elsewhere.put("exchange", "shio import <file>");

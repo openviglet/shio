@@ -1482,3 +1482,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block Z — Working the P1 inventory, and making it sortable
 
+- **SH812** — `shio_context` takes `format`, so agents-md is MCP-reachable — and the staleness check now reads a tool.parameter target, which it could not, so shipping this had passed silently.

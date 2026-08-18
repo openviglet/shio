@@ -425,10 +425,20 @@ class ShAgentP1ConformanceTest {
                 "Block I is `shio pull/push --content` and is CLI-shaped by design (P4 is about "
                 + "Edit/Write/Grep on a disk). A client with no filesystem cannot use it, and the "
                 + "flag does not say so"));
-        byFeature.put("agentsMd", new Delivery(Reach.CLI_ONLY, "shio_context.format",
-                "?format=agents-md renders the pack as project instructions and shio_context takes "
-                + "no `format`, so the one output meant to be written to a file is reachable only by "
-                + "whoever has a file to write it to"));
+        // SH812 — `agentsMd` was here, CLI_ONLY, awaiting `shio_context.format`. That parameter
+        // exists now, and the entry's removal was FORCED by the staleness check rather than
+        // remembered: the same task taught that check to read a `tool.parameter` target, which it
+        // could not do, so shipping this had passed silently the first time round.
+        // COMPOSED and not a route, which ShAgentCapabilityJoinTest insisted on and was right to:
+        // `/agent/context` is a core endpoint that belongs to no flag, and claiming it here would
+        // count one capability twice — the objection SH732 created this category for. What delivers
+        // `agentsMd` is a PARAMETER on a capability already claimed, which is that category's
+        // definition, so it carries `closedBy` instead of a target.
+        byFeature.put("agentsMd", new Delivery(Reach.COMPOSED, null,
+                "SH812 — ?format=agents-md renders the pack as project instructions, and both the "
+                + "route and shio_context take `format` now, so the rendering meant to be written to "
+                + "a file is reachable by a client that has one",
+                List.of("shio_context")));
         byFeature.put("visualSnapshot", new Delivery(Reach.CLI_ONLY, "shio_snapshot",
                 "reported `false`, which is the honest answer (SH102): `shio snapshot` rasterizes "
                 + "and this surface has no endpoint and no tool. Classified rather than omitted so "
@@ -528,7 +538,8 @@ class ShAgentP1ConformanceTest {
                     }
                 }
                 case REST_ONLY, CONSOLE_ONLY, CLI_ONLY -> {
-                    if (tools.contains(delivery.target()) || declaredPaths.contains(delivery.target())) {
+                    if (tools.contains(delivery.target()) || declaredPaths.contains(delivery.target())
+                            || parameterExists(delivery.target())) {
                         problems.add(feature + ": exception is stale — '" + delivery.target()
                                 + "' now exists, so the capability is reachable and the entry must go");
                     }
@@ -596,7 +607,6 @@ class ShAgentP1ConformanceTest {
                         is measuring the environment instead of the code. SH315's lesson, one \
                         surface along.""")
                 .containsExactly(
-                        "agentsMd",
                         "contentAsFiles",
                         "conversionProposal",
                         "exchange",
@@ -759,6 +769,40 @@ class ShAgentP1ConformanceTest {
                 .as("the paths a current exception awaits must still be absent, or the guard is "
                         + "asserting nothing")
                 .doesNotContain("/agent/import", "/agent/trash", "/review/sessions");
+    }
+
+    /**
+     * Whether a {@code tool.parameter} target now exists (SH812).
+     *
+     * <h3>The hole this closes, which the class javadoc claimed was already closed</h3>
+     *
+     * <p>This test's central promise is that an exception naming what would resolve it fails once
+     * that thing ships — <em>ship the tool and forget the table, and this fails</em>. The staleness
+     * check compared a target against tool <b>names</b> and route <b>paths</b>, and several entries
+     * name neither: {@code agentsMd} awaited {@code shio_context.format} and {@code postTypeMerge}
+     * awaits {@code shio_apply.mergePostTypes}, which are <i>parameters</i>.</p>
+     *
+     * <p>So SH812 shipped {@code format} on {@code shio_context} and this test <b>passed</b>, with
+     * the entry still listed. The guarantee was false for exactly the targets that name their
+     * resolution most precisely, and the list is now the P1 backlog rather than a report — an
+     * exception that cannot go stale is one that outlives the work.</p>
+     */
+    private boolean parameterExists(String target) {
+        if (target == null) {
+            return false;
+        }
+        int dot = target.indexOf('.');
+        if (dot <= 0 || dot == target.length() - 1) {
+            return false;
+        }
+        String tool = target.substring(0, dot);
+        String parameter = target.substring(dot + 1);
+        return mcpTools.stream()
+                .filter(each -> each.name().equals(tool))
+                .anyMatch(each -> String.valueOf(each.inputSchema().get("properties"))
+                        .contains("\"" + parameter + "\"")
+                        || String.valueOf(each.inputSchema().get("properties"))
+                                .contains(parameter + "="));
     }
 
     private Set<String> toolNames() {

@@ -1182,6 +1182,32 @@ id-keyed post verbs with no address-native form), `webhooks` (SH343) and `previe
 That is the return on the instrument, and it is the argument for building one before working the
 thirteen known instances by hand.
 
+### The inventory's own guarantee had a hole, and shipping through it is how it was found (SH812)
+
+`ShAgentP1ConformanceTest`'s central promise is in its class javadoc: each exception *names the tool
+or index path that would resolve it, and the test asserts that name is still absent* — **ship the
+tool and forget the table, and this fails.**
+
+It did not fail. SH812 shipped `format` on `shio_context`, which is exactly what `agentsMd`'s entry
+named as its resolution, and the run came back green with the entry still listed. The staleness check
+compared a target against tool **names** and route **paths**, and several entries name neither:
+`agentsMd` awaited `shio_context.format` and `postTypeMerge` awaits `shio_apply.mergePostTypes`,
+which are **parameters**. The guarantee was false for precisely the entries that name their
+resolution most exactly.
+
+The check reads a `tool.parameter` target now — it looks the tool up and asks whether its schema
+declares that property — and re-running it failed naming `agentsMd`, which is what made removing the
+entry forced rather than remembered. That distinction is the whole value of the rule: this list
+became the P1 backlog two blocks ago, and an exception that cannot go stale is one that outlives the
+work.
+
+**Then the classification was wrong twice before it was right**, and both guards were correct.
+`AGENT_ROUTE` pointing at `/agent/context` made `ShAgentCapabilityJoinTest` fail — that route is a
+core endpoint belonging to no flag, and claiming it would count one capability twice, which is the
+objection `COMPOSED` was created for (SH732). A capability delivered by *a parameter on something
+already claimed* is that category's definition, so the entry carries `closedBy: shio_context` and no
+target at all.
+
 ### The first row of that inventory worked rather than read (SH809)
 
 `universalEditor` was the one `CONSOLE_ONLY` entry that **named a route and did not have it**:
