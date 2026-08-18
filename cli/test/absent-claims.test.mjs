@@ -49,6 +49,8 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { unquoted } from "./support/source-text.mjs";
+
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
 /** The trees whose prose a reader takes as current fact about the product. */
@@ -76,6 +78,22 @@ const ABSENT =
  * quotation marks is being <b>named</b>, not asserted — which is exactly the distinction SH740 draws
  * between a rule and a sentence about the rule, and the reason its own scanners strip comments
  * before matching.</p>
+ *
+ * <h2>Why this is not `unquoted`, which does the same three replacements (SH822)</h2>
+ *
+ * <p>It looks like a fourth copy of the shared stripper and it is not one: the two take
+ * <b>different input</b> and differ in exactly the place that matters. `unquoted` reads a whole
+ * markdown <i>document</i> line by line, so its patterns are `"[^"\n]*"` — a stray quotation mark
+ * must not run away down the page. This reads one <i>sentence</i>, already bounded by a full stop
+ * or a blank line above, where a quotation <b>legitimately wraps</b>; so the newline must be
+ * allowed inside the span, and the sentence boundary is what bounds the damage.</p>
+ *
+ * <p>Measured rather than argued, because the difference is invisible and load-bearing. Swapping
+ * in `unquoted` makes this scan report <b>three more claims</b>, and all three are quotations that
+ * happen to wrap: `content-api.md` quoting SH137's *"the new folder is not yet in the tree…"*,
+ * `docs-process.md` quoting the sentence that cost SH694, and the paragraph in that same file
+ * listing the phrasings `ABSENT` matches on. Each would be filed as a standing absence claim
+ * somebody has to sign. `absent-claims.test.mjs` pins this.</p>
  */
 const asserted = (sentence) => sentence
   .replace(/`[^`]*`/g, " ")
@@ -195,4 +213,51 @@ test("SH769: a signed claim whose sentence is gone is removed, not left standing
       + "here it is worse than usual, because the entry says what would falsify a claim that is "
       + "not being made any more. Delete it.",
   );
+});
+
+/**
+ * SH822 — two strippers that look interchangeable, and what happens when you swap them.
+ *
+ * ## The finding, which is the opposite of the one that was filed
+ *
+ * This file's `asserted` was read as a fourth private copy of `source-text.mjs`'s `unquoted`, and
+ * as the wrong copy: `unquoted` matches `"[^"\n]*"` where this matches `"[^"]*"`, and a character
+ * class excludes newlines only if told to. Stated that way it is a defect — one stray quotation
+ * mark runs away down the page.
+ *
+ * It is not, because the two are handed different things. `unquoted` reads a **document**, line by
+ * line, and there the newline guard is what stops a runaway. This reads a **sentence**, already
+ * split on a full stop or a blank line, and there a quotation *legitimately wraps* — so excluding
+ * the newline is what breaks it, and the sentence boundary is what bounds the damage.
+ *
+ * ## Which is why it is pinned rather than commented
+ *
+ * The difference is one character in a character class, in two files, and it decides three
+ * findings. A comment saying so is a sentence the next reader has to believe; this runs both over
+ * the case that separates them. The wrapped quotation is real, from `docs/agents/content-api.md`.
+ */
+test("SH822: the sentence stripper lets a quotation wrap, and the document one must not", () => {
+  const wrapped = 'SH137 argued copy needed none — "the new folder is not yet in the tree, so it\n'
+    + 'cannot be its own ancestor" — which is true of the folder being created.';
+
+  assert.doesNotMatch(asserted(wrapped), /is not yet/,
+    "SH822: a quotation that wraps is still a quotation. This is `content-api.md` verbatim, and "
+    + "with the newline excluded from the span the quoted `is not yet` survives stripping and is "
+    + "filed as an absence claim somebody has to sign — one of three the swap produced, every one "
+    + "of them a sentence quoting somebody else");
+
+  assert.match(unquoted(wrapped), /is not yet/,
+    "SH822: and the document reader does NOT strip it, which is correct for a document and is the "
+    + "whole reason these are two functions. Over a page, an unpaired quotation mark that could "
+    + "cross a newline swallows every line to the next one, and a scan that strips too much "
+    + "reports a clean pass");
+
+  // The property each one is protecting, stated as the case it must get right.
+  const runaway = 'a stray " here\nTHE CLAIM IS not yet HERE\nand another " there';
+  assert.match(unquoted(runaway), /THE CLAIM IS/,
+    "SH822: the document reader keeps a line trapped between two unpaired quotes on OTHER lines — "
+    + "this is the runaway its guard exists for");
+  assert.doesNotMatch(asserted(runaway), /THE CLAIM IS/,
+    "and the sentence reader does swallow it, which is the trade it makes knowingly: its input is "
+    + "one sentence, so the blast radius is one sentence, and allowing the wrap is worth it");
 });

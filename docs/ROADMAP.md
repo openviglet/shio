@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AG — One answer to "what does this sentence assert", and the three places that answer it separately
-
-- 📋 **SH822** (deps: —) **Three private copies of the quote stripper, and one can swallow a page because it omits the newline guard** — `unquoted` is already the answer and two scans reimplement it — one of them without the guard whose absence its own source comment warns about. → §XXXVI
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

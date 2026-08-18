@@ -1666,6 +1666,23 @@ what lets the sweep checklist quote the two false sentences it replaced instead 
 them to protect a counter. It matches within a line only — a quotation broken across a line break
 is not stripped, so wrap a quoted claim onto one line.
 
+**And `absent-claims.test.mjs` keeps a fourth, which is correct and was nearly "fixed" (SH822).**
+It looks like a copy of `unquoted` with the newline guard missing, and that reads as a defect: an
+unpaired quotation mark running away. The two take **different input**. `unquoted` reads a
+*document*, line by line, where the guard is what stops one stray quote swallowing a page. That
+one reads a *sentence*, already split on a full stop or a blank line, where a quotation
+**legitimately wraps** — the advice above ("wrap a quoted claim onto one line") is advice to
+whoever writes the doc, and a scan cannot assume it was followed. Excluding the newline there
+breaks it, and the sentence boundary is what bounds the damage.
+
+Measured, because the difference is one character and invisible: swapping in `unquoted` makes that
+scan report **three more claims**, every one a wrapped quotation — `content-api.md` quoting SH137,
+`docs-process.md` quoting the sentence that cost SH694, and that file's own list of the phrasings
+being matched. Each would be filed as a standing absence claim somebody has to sign. A test pins
+both directions rather than a comment asserting them, and the general rule is worth more than the
+instance: **before merging two functions that look identical, ask what each is handed** — these
+differ only in the input's shape, which no amount of reading the bodies reveals.
+
 The population is **files that scan this repository's own source or docs**, not every suite that
 reads a file: `"foo.mjs"` is usually a fixture filename in JS, and taking every read gives 66,
 mostly temp trees a suite wrote itself. A suite that reads back a tree it just wrote cannot be
