@@ -25,6 +25,8 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
+## Block X — What the gate round left, and the first P1 gap it did not touch
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -659,3 +661,101 @@ abstract.
 The block exists because these were found *while* doing the work and would otherwise
 evaporate with the commit that revealed them — the cheapest findings the project ever
 gets, and the ones with no reporter but the person who tripped over them.
+
+## XXVII What the gate round left (Block X)
+
+Block W spent thirty-two tasks on the instruments that judge this repository — the
+ledgers, the gates, their stamps and the scans that read source. It closed with the four
+gates comparable, every declared list joined to one reader, and a flake that had
+resisted a hundred and twenty runs both diagnosed and cured.
+
+What it leaves is of two kinds, and this block is named for both.
+
+The first is **consequence**: removing `--test-force-exit` cured the abort and also
+removed something the flag had been hiding, which is now somebody's twenty-minute CI
+timeout waiting to happen. A round that changes how a suite ends owes the next person
+the failure mode it created.
+
+The second is the **method** that round kept rediscovering and never wrote down as
+anything runnable. A flake was summoned rather than waited for; a timing claim was wrong
+twice because it was unpaired; a scan found two defects in the very document describing
+them. Each of those is a technique, and each currently survives only as prose in
+`docs/agents/build.md`.
+
+And one thing Block W deliberately did not touch: the **P1 inventory** it produced holds
+capabilities an agent cannot reach, most with no task against them. The law the product
+is named after has an honest list of its own breaches, and the list has been read more
+often than it has been worked.
+
+### XXVII.1 What the flag was also doing, and nothing does now (SH807)
+
+SH780 removed `--test-force-exit` on good evidence: it was half the race that aborted
+the process inside libuv, its removal is verified over 120 runs at the provoking
+concurrency, and a paired measurement puts its cost at nothing.
+
+It was doing one other thing, and that is not an argument against removing it — it is
+the consequence to own. A test that leaves a handle open no longer ends a run; it ends
+nothing at all. The runner waits, `pnpm test` waits, and in CI the job burns its
+**20-minute timeout** before anybody learns which suite is at fault, because a timeout
+kills the job and prints no summary.
+
+The flag turned that failure into a *passing* run, which is worse in every way except
+the clock: a leaked handle would simply never be found. So the exposure is an
+improvement and the reporting is what is missing.
+
+Two shapes worth measuring against each other. A **per-file deadline** turns a hang into
+a named file, which is what SH698's teardown deadline does one layer down and the reason
+its message names the server and its open sockets. Or the probe SH805 built for a
+different question — `beforeExit` with `process.getActiveResourcesInfo()` — so a suite
+that ends by naming its own live handles cannot hang silently.
+
+Worth doing before somebody meets it, because the person who does will be looking at a
+CI job that says only that twenty minutes passed.
+
+### XXVII.2 A technique that is only a paragraph is one nobody runs (SH808)
+
+The `fixture-traits` flake resisted about a hundred and twenty runs. It was then
+reproduced **on the first run** of a loop that repeated the whole suite at
+`--test-concurrency=16`, a setting the gate never uses, and again on the first run of a
+second loop. What had looked like a defect that was gone turned out to be one nobody had
+asked properly.
+
+That method is now a paragraph in `docs/agents/build.md`. The loop itself was a scratch
+script and no longer exists, so the next person meets the next flake with the same
+eighty runs of waiting the last one cost.
+
+It is a small thing to make runnable: repeat a suite N times at a chosen concurrency,
+stop at the first non-zero exit, and keep the **whole** run rather than a filtered
+summary — SH354's rule, which is what made the libuv line readable when it finally
+appeared. Everything in that sentence already exists somewhere in `scripts/`.
+
+Two properties matter more than the ergonomics. It must keep the run, because the
+evidence was one line among fifteen hundred and a `grep` would have discarded it. And it
+must take the concurrency, because the whole finding is that the gate's own setting is
+the one that does not reproduce — a repeater that runs the gate as configured would have
+found nothing in forty attempts, which is exactly what the eighty runs of waiting
+already proved.
+
+### XXVII.3 The inventory has been read more often than it has been worked (SH809)
+
+`ShAgentP1ConformanceTest` holds the honest list of capabilities the manifest advertises
+that the product's own primary operator cannot reach. Most entries are gaps rather than
+decisions — only `reviewQueue` is a decision, and it says so.
+
+`universalEditor` is the one with a route already named. Its entry reads: *SH185's
+bridge is a browser protocol and the console is its only client. `true` is honest to a
+human and not to an agent*. The target is `/agent/editable`, and the test asserts that
+route is **absent** — ship it and the entry fails until it is deleted, which is SH142's
+rule working exactly as designed.
+
+What an agent cannot do today is ask *which fields on this page a curator could edit*.
+It can read the post, render it, and diff draft against live (SH619), but the editable
+surface itself is expressed only in the browser protocol the console speaks. So an agent
+building a page cannot tell what it has made authorable — which is the replication
+round's whole subject, one layer up, and P7's *never surprise the curator* read from the
+other side.
+
+The block that produced this inventory closed without touching it. That is the note
+worth keeping: an instrument that lists breaches of the law the product is named after
+has now been printed on every run for many blocks, and read more often than it has been
+worked.
