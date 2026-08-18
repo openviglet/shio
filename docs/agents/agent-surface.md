@@ -1189,12 +1189,36 @@ in prose, so *how much of P1 is left* had no answer shorter than reading every e
 number the run printed was decisions and gaps **added together**: a total that does not move when
 the work lands. `Delivery.decision` splits it, set on the entries whose own reason already argued
 it, and the run prints `N decided (closing would be wrong)` beside `M still open` with the open
-ones named. Two assertions keep the field from becoming decoration: a decision must be a `Reach`
-that `isException()` — nothing is decided about a capability the agent already has — and **both
-kinds must be non-empty**, because all-decided is a table that has stopped asking and all-open is
-one that has stopped answering, and each reads as green from a distance. The failure mode it is
-really aimed at is the second: an open gap is exactly what a later task is tempted to mark decided
-rather than close.
+ones named. A decision must be a `Reach` that `isException()` — nothing is decided about a
+capability the agent already has.
+
+**And then there were none (SH816).** SH813 also asserted the split was *real* — at least one of
+each — on the reasoning that all-decided is a table that has stopped asking. The lone gap was
+`contentAsFiles`, and it was one on the strength of a single clause: *"the flag does not say so."*
+The flag had said so since 2026-08-04. SH393's `elsewhere` publishes `contentAsFiles → shio pull
+--content`, and the check above it asserts that map **set-equal to this list both ways** on every
+run — two assertions over the same nine keys, green together for a fortnight, sharing their keys
+and not their prose. On the merits it is a ninth decision, and not a close one: P4 makes the
+*filesystem* the capability rather than its delivery, so a client with no disk has nowhere to
+project to and already holds `shio_find`/`shio_read` for the reads it would want instead. Closing
+it is not merely unnecessary, it is incoherent.
+
+Zero gaps being the true state, the guard against a table that has stopped asking cannot be a count
+that is now false — and it may not be preserved by keeping a wrong entry, which is the tempting
+move. It becomes: **every decision names what would falsify it**, a `target` whose appearance fails
+the build or a `closedBy` naming the ops that already deliver it. That is the property "decided"
+must never escape, and it survives the list being entirely decisions, because it makes each entry a
+standing claim rather than a closed file.
+
+`noReasonClaimsSilenceTheManifestBreaks` is the assertion that would have caught it (SH527): a
+reason claiming the caller is not told, for a key `elsewhere` points at, is now a red build. It is
+SH793's repair one field along — that task made a reason name the run that prints its number; this
+one makes a reason about a *response* be checked against the response. Two details cost a run each.
+The phrasings are a held list, not a regex over "say", because a pattern loose enough to catch
+every wording catches the sentences explaining the rule. And **quoted spans are stripped**, because
+the first version read the corrected entry's own quotation of the old clause as a fresh claim and
+failed the build on the fix — SH794's lesson, third application, and a scan that forbids quoting
+the defect makes its own entry unwritable.
 
 ### The inventory's own guarantee had a hole, and shipping through it is how it was found (SH812)
 

@@ -394,7 +394,8 @@ class ShAgentP1ConformanceTest {
         byFeature.put("reviewQueue", new Delivery(Reach.CONSOLE_ONLY, "/review/sessions",
                 "SH109 put this off the agent namespace on purpose — it is the human's veto over "
                 + "the agent's work, so an agent approving its own run is the thing it prevents. The "
-                + "one exception here that is a design decision rather than a gap").decided());
+                + "first of these recognised as a design decision rather than a gap, and long "
+                + "believed to be the only one").decided());
         // SH732 — reclassified, and the old entry is worth keeping in view because of how it went
         // wrong. It read: "an agent can fill the trash (folder.delete, post.delete) and can neither
         // list nor restore it". SH222 answered the listing with `find?trash=true` and the restore
@@ -436,9 +437,14 @@ class ShAgentP1ConformanceTest {
                 + "reads content through /agent/read and the CDA. `true` describes what the instance "
                 + "serves to the site, not what it offers the agent").decided());
         byFeature.put("contentAsFiles", new Delivery(Reach.CLI_ONLY, "shio_files",
-                "Block I is `shio pull/push --content` and is CLI-shaped by design (P4 is about "
-                + "Edit/Write/Grep on a disk). A client with no filesystem cannot use it, and the "
-                + "flag does not say so"));
+                "SH816 — Block I is `shio pull/push --content` and CLI-shaped by design: P4 is "
+                + "*Edit/Write/Grep on a disk*, so the filesystem is the capability rather than its "
+                + "delivery mechanism. That is why closing this is not merely unnecessary but "
+                + "incoherent — a client with no disk has nowhere to project to, and the reads it "
+                + "would want instead are `shio_find` and `shio_read`, which it already has. This "
+                + "entry read *`the flag does not say so`* until SH816; `elsewhere` had published "
+                + "`shio pull --content` since 2026-08-04 and the sentence beside it never knew")
+                .decided());
         // SH812 — `agentsMd` was here, CLI_ONLY, awaiting `shio_context.format`. That parameter
         // exists now, and the entry's removal was FORCED by the staleness check rather than
         // remembered: the same task taught that check to read a `tool.parameter` target, which it
@@ -658,24 +664,33 @@ class ShAgentP1ConformanceTest {
     /**
      * SH813 — the distinction the list was already making in prose, made countable.
      *
-     * <p>Nine entries, and eight of them argue in their own reason that closing them would be
-     * wrong: {@code reviewQueue} is the curator's veto (P7), {@code pageAudit} would put a browser
-     * in the JVM, {@code siteCapture} would attach a crawler to a request-forgery surface. One —
-     * {@code contentAsFiles} — says of itself <i>"the flag does not say so"</i>, which is the
-     * sentence a gap writes. Until now the only way to tell them apart was to read all nine, so
-     * <b>"how much of P1 is left" had no answer shorter than the inventory</b>, and the number the
-     * run printed (9) was the one number that is not the answer to anything: it is decisions and
-     * gaps added together, and adding them is what makes the total stop moving even as the work
-     * lands.</p>
+     * <p>Nine entries, and every one argues in its own reason that closing it would be wrong:
+     * {@code reviewQueue} is the curator's veto (P7), {@code pageAudit} would put a browser in the
+     * JVM, {@code siteCapture} would attach a crawler to a request-forgery surface. Until SH813 the
+     * only way to tell a decision from a gap was to read all nine, so <b>"how much of P1 is left"
+     * had no answer shorter than the inventory</b>, and the number the run printed (9) was the one
+     * number that is not the answer to anything: decisions and gaps added together, which is what
+     * makes a total stop moving even as the work lands.</p>
      *
-     * <p>The field is not self-justifying, so two things hold it honest. A decision must be an
-     * <em>exception</em> — marking a reachable entry as decided would be a category error, since
-     * nothing is being decided about a capability the agent already has. And the split must be a
-     * real split: all-decisions is a table that has stopped asking, all-gaps is one that has
-     * stopped answering, and each reads as green from a distance.</p>
+     * <h2>SH816 changed what the second assertion can be, and the reason is the finding</h2>
+     *
+     * <p>SH813 asserted the split was <em>real</em> — at least one of each — because "all-decisions
+     * is a table that has stopped asking". The lone gap was {@code contentAsFiles}, and it was a gap
+     * on the strength of one clause: <i>"the flag does not say so"</i>. The flag had said so since
+     * 2026-08-04. {@code elsewhere} publishes {@code shio pull --content}, and
+     * {@link #everyExceptionSaysWhereTheCapabilityLives()} asserts that map set-equal to this list
+     * <b>both ways</b> — two assertions over the same nine keys, green together for two weeks, and
+     * neither reading the other's prose.</p>
+     *
+     * <p>So zero gaps is the true state, and the guard against a table that has stopped asking has
+     * to be something other than a count that is now false. It is this: <b>every decision names what
+     * would falsify it</b> — a {@link Delivery#target} whose appearance fails the build, or a
+     * {@link Delivery#closedBy} naming the ops that would. That is the property "decided" must not
+     * be allowed to escape, and it is the one that survives the list being entirely decisions,
+     * because it makes each entry a standing claim rather than a closed file.</p>
      */
     @Test
-    @DisplayName("a P1 exception is a gap or a decision, and both kinds exist")
+    @DisplayName("a P1 exception is a gap or a decision, and a decision names what would falsify it")
     void everyP1ExceptionIsAGapOrADecision() {
         List<Delivery> exceptions = p1Exceptions().values().stream()
                 .filter(delivery -> delivery.reach().isException())
@@ -688,16 +703,113 @@ class ShAgentP1ConformanceTest {
                 .allMatch(delivery -> delivery.reach().isException());
 
         assertThat(exceptions).filteredOn(Delivery::decision)
-                .as("SH813's non-vacuity, one half: with nothing decided, `decision` is a column of "
-                        + "false and the gap count is the old total under a new name")
+                .as("SH813's non-vacuity: with nothing decided, `decision` is a column of false and "
+                        + "the gap count is the old total under a new name")
                 .isNotEmpty();
 
-        assertThat(exceptions).filteredOn(delivery -> !delivery.decision())
-                .as("SH813's non-vacuity, the other half and the one that rots first: an unclosed "
-                        + "gap is the entry a later task is tempted to mark decided rather than "
-                        + "fix, and a table of nine decisions reports zero work outstanding")
-                .isNotEmpty();
+        // SH816 — what replaces "at least one gap exists". That assertion was the guard against a
+        // table that has stopped asking, and its premise turned out to be false: the lone gap was
+        // one on the strength of a clause `elsewhere` had falsified a fortnight earlier. A guard
+        // may not be kept by keeping a wrong entry, so the property moves to the one that survives
+        // every entry being decided — each names, in advance, the thing whose arrival refutes it.
+        assertThat(exceptions).filteredOn(Delivery::decision)
+                .as("a decision that names no falsifier is a closed file, and this list is not a "
+                        + "record of what was concluded — it is a standing claim that the agent "
+                        + "still cannot reach these. Name the tool or route whose appearance would "
+                        + "make the entry wrong (`target`), or the ops that already deliver it "
+                        + "(`closedBy`, SH732's case, where the capability arrives by another road)")
+                .allMatch(delivery -> delivery.target() != null || !delivery.closedBy().isEmpty());
     }
+
+    /**
+     * A reason with its quotations removed — what the sentence <em>asserts</em>, not what it cites.
+     *
+     * <p>Both forms this file uses: a backtick span, and the {@code *"…"*} an entry writes when it
+     * records the wording it is replacing. Removing them is what lets a corrected entry say what it
+     * corrected, which is the difference between a fix and a fix nobody can date.</p>
+     */
+    private static String asserted(String why) {
+        return why.replaceAll("`[^`]*`", " ").replaceAll("\\*\"[^\"]*\"\\*", " ");
+    }
+
+    /**
+     * SH816 — a reason may not say the manifest is silent about something the manifest publishes.
+     *
+     * <h2>The assertion that would have caught it</h2>
+     *
+     * <p>{@code contentAsFiles} was held as P1's one open gap because its reason ended <i>"a client
+     * with no filesystem cannot use it, and the flag does not say so"</i>. SH393 made that false on
+     * 2026-08-04 by publishing {@code contentAsFiles → shio pull --content} in {@code elsewhere},
+     * and {@link #everyExceptionSaysWhereTheCapabilityLives()} has asserted that map against this
+     * very list, both directions, on every run since. Nothing failed, because <b>the two checks
+     * share their keys and not their prose</b>: one compares sets, the other compares nothing.</p>
+     *
+     * <p>SH793 is the same shape one field along — a reason carrying a measurement no run
+     * reproduced — and its repair was to make the sentence name the run that prints the number.
+     * This is the repair for a sentence that describes a <em>response</em>: check it against the
+     * response. A reason claiming the caller is not told may not name a capability the caller is
+     * told about, and the phrasings are held as a list rather than a regex over "say", because a
+     * pattern loose enough to catch every wording catches the sentences explaining the rule.</p>
+     *
+     * <h2>A mention is not a use, and this cost the first run</h2>
+     *
+     * <p>The corrected {@code contentAsFiles} reason records what the old one claimed, in quotes —
+     * and the first version of this check read that quotation as the claim and failed the build on
+     * the entry it had just fixed. The same mistake as SH794 (a bare word matching inside an
+     * identifier a sentence names) and as {@code improvements-debt.test.mjs}, which strips code
+     * spans because "§X.Y" between backticks is the <em>notation</em>. So quoted spans are removed
+     * before matching. A history that cannot be written down is one the next reader re-derives, and
+     * a scan that forbids quoting the defect makes its own entry unwritable.</p>
+     */
+    @Test
+    @DisplayName("SH816: no reason claims the manifest is silent about a capability it points at")
+    void noReasonClaimsSilenceTheManifestBreaks() {
+        Map<String, String> elsewhere = shAgentManifestService.manifest().elsewhere();
+        List<String> claimsSilence = List.of(
+                "does not say", "doesn't say", "says nothing", "is silent", "no pointer");
+
+        List<String> contradicted = p1Exceptions().entrySet().stream()
+                .filter(entry -> elsewhere.containsKey(entry.getKey()))
+                .filter(entry -> claimsSilence.stream()
+                        .anyMatch(phrase -> asserted(entry.getValue().why()).contains(phrase)))
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
+
+        assertThat(contradicted)
+                .as("""
+                        SH816: this entry's reason says the caller is not told, and `elsewhere` \
+                        tells them — the manifest publishes a pointer for exactly this key. One of \
+                        the two is wrong and the reason is the one that cannot be called by a \
+                        client, so it is the one to fix. If the entry really is a gap, say what is \
+                        missing in terms of something a caller could ask for and fail to get.""")
+                .isEmpty();
+
+        assertThat(elsewhere)
+                .as("SH816 is vacuous with an empty `elsewhere`, and it would then pass over the "
+                        + "state it exists to catch — the pointers are what the reasons are checked "
+                        + "against, so their absence is not a green")
+                .isNotEmpty();
+
+        // The sentence that WAS there, run through the same predicate. An empty result above is
+        // two indistinguishable things — nothing to find, or a scan that finds nothing — and this
+        // separates them without keeping the defect around to be found. It also pins the quoted
+        // exclusion from the other side: strip too much and the real clause stops matching too.
+        String wasThere = "A client with no filesystem cannot use it, and the flag does not say so";
+        assertThat(claimsSilence)
+                .as("SH816 non-vacuity: the exact clause that held `contentAsFiles` open for a "
+                        + "fortnight must still match, or this test is green because it looks for "
+                        + "wording nobody writes")
+                .anyMatch(phrase -> asserted(wasThere).contains(phrase));
+        assertThat(asserted("it read " + BACKTICK + wasThere + BACKTICK + " until this was fixed"))
+                .as("and a quotation of that same clause must NOT match, which is the distinction "
+                        + "the first run of this check got wrong — it failed the build on the entry "
+                        + "recording its own correction")
+                .doesNotContain("does not say");
+    }
+
+    /** One backtick, named — the literal inside a Java string is unreadable beside a regex. */
+    private static final String BACKTICK = "`";
 
     /**
      * SH732 — the assertion that would have caught it, at the boundary it crossed.

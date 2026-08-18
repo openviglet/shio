@@ -1496,3 +1496,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AC — The last open gap, and whether it is one — a reason that outlived what falsified it
 
 - **SH817** — Both patterns take `[IVXLC]+(?:\.\d+)*` at any heading level, so the dangling-pointer guard sees a bare family and the vacuity message names the pointers it could not parse.
+- **SH816** — `contentAsFiles` is a ninth decision — P4 makes the disk the capability — and a reason claiming the caller is not told, for a key `elsewhere` points at, is now a red build.

@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AC — The last open gap, and whether it is one — a reason that outlived what falsified it
-
-- 📋 **SH816** (deps: —) **P1's one open gap is open on a sentence the manifest falsified on 2026-08-04, and nothing reads the two together** — Decide `contentAsFiles` on its merits and make the reason falsifiable: a claim about what a response says must be asserted against that response, not written beside it. → §XXXI
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
