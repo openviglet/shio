@@ -9,6 +9,10 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block AF — Paying the revealed assertion debt, one file at a time
+
+- 📋 **SH821** (deps: —) **Four ids in `ShAgentManifestTest.java` sit in comments, so the manifest's own guarantees fail unnamed** — The next file of SH642's CLOSE debt after SH820, and the one where an unnamed failure costs most: P2's discovery contract is what these four assert. → §XXXV
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

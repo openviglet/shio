@@ -1505,3 +1505,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AE — Reading the gates without running one
 
 - **SH819** — `pnpm gates` prints the four colours from the stamps, running and stamping nothing and exiting 0 whatever they say; the JS comparator now shares its formatter.
+
+## Block AF — Paying the revealed assertion debt, one file at a time
+
+- **SH820** — Seven ids moved from banner comments into the assertion that would have caught each defect; the CLOSE debt is 53 and the two prose counts that disagreed are gone.

@@ -566,7 +566,9 @@ test("push --content splits a tree past the op ceiling into several applies", as
   const urls = applies.flatMap((call) => call.body.posts.map((post) => post.url)).sort();
   assert.equal(urls.length, 9);
   assert.equal(new Set(urls).size, 9);
-  assert.ok(applies.every((call) => call.body.posts.length + call.body.folders.length <= 5));
+  assert.ok(applies.every((call) => call.body.posts.length + call.body.folders.length <= 5),
+    "SH199: every part is under the ceiling. A split that produced one oversized document has "
+      + "done the work and still fails at the wall it was splitting to stay under");
   assert.ok(applies.every((call) => call.body.prune === false));
   assert.equal(result.documents.length, applies.length);
 });
@@ -1092,7 +1094,9 @@ test("the base snapshot keeps no copy of any field value", async () => {
   // part by part it *proves* one, which is what turns a dropped edit into a reported conflict.
   assert.ok(Object.values(entry.digest).every((hash) => /^[0-9a-f]{16}\.\d+$/.test(hash)));
   // And still no value anywhere: a length is not a copy of the content.
-  assert.doesNotMatch(raw, /Server|First|Hello/);
+  assert.doesNotMatch(raw, /Server|First|Hello/,
+    "SH148: the merge base is fingerprints, so it holds no field value at all — the version it "
+      + "replaced was a second copy of the site on disk, in every clone that committed it");
 });
 
 test("SH215: a base-fingerprint collision is reported by name, not dropped", async () => {
@@ -1272,7 +1276,9 @@ test("--accept records the unprovable rename and pushes nothing", async () => {
   const written = JSON.parse(ctx.fs.files.get(BASELINE_PATH));
   assert.deepEqual(written.acceptedMoves, [
     { from: "post:Blog/blog/hello", to: "post:Blog/blog/greeting", reason: "the old page was retired" },
-  ]);
+  ], "SH214: the acceptance is recorded WITH its reason and the push does not happen. Folding the "
+    + "judgement into the run that performs it is what makes a destructive operation and the "
+    + "decision to allow it un-reviewable separately");
   // `verify`'s own list is untouched — one file, two producers, neither erasing the other.
   assert.deepEqual(written.accepted, []);
   assert.match(ctx.stdout.text, /Nothing was pushed/);
@@ -1387,6 +1393,8 @@ test("push --content declares an empty folder from its marker alone", async () =
   assert.deepEqual(
     applied.body.folders.map((folder) => folder.path),
     ["/", "/archive"],
+    "SH149: a folder exists because its marker does, not because a post named it — before this, "
+      + "scaffolding a structure and then filling it had to leave the file tree entirely",
   );
   assert.deepEqual(applied.body.posts, []);
 });
@@ -1637,8 +1645,12 @@ test("pull --content writes a template as a real .html beside the post file", as
 
   // Verbatim, so the file an editor opens is the program and `Grep` reaches it — which is the
   // whole of law P4's claim, and what escaped JSON in YAML frontmatter defeated.
-  assert.equal(ctx.fs.files.get(REGION_HTML_FILE), REGION_HTML);
-  assert.equal(ctx.fs.files.get(REGION_JS_FILE), REGION_JS);
+  assert.equal(ctx.fs.files.get(REGION_HTML_FILE), REGION_HTML,
+    "SH191: a template projects as a real .html, byte for byte. Escaped JSON inside YAML "
+      + "frontmatter is what an editor cannot open and `Grep` cannot reach, which is P4's whole "
+      + "claim");
+  assert.equal(ctx.fs.files.get(REGION_JS_FILE), REGION_JS,
+    "SH191: and its JavaScript beside it, for the same reason");
   const md = ctx.fs.files.get(REGION_MD);
   assert.match(md, /^files:\n {2}HTML: content-list\.HTML\.html\n {2}JAVASCRIPT: content-list\.JAVASCRIPT\.js$/m);
   assert.doesNotMatch(md, /\{\{#each/);
@@ -1800,6 +1812,8 @@ test("one sync pulls, pushes, and records both as JSONL events", async () => {
   assert.deepEqual(
     events.map((event) => event.event),
     ["pull", "push"],
+    "SH90: one sync is both halves and records both. A loop that pulled and did not push, or "
+      + "did either without an event, is a dev loop whose state nothing can be read back from",
   );
   assert.equal(events[0].written, 1);
   assert.equal(events[0].reason, "startup");
@@ -1852,7 +1866,11 @@ test("the watch loop is stoppable and triggers a sync on demand", async (t) => {
   assert.equal(watchers.length, 1);
   assert.equal(norm(watchers[0].path), norm(join(ctx.cwd, "shio", "content")));
   handle.stop();
-  assert.equal(watchers.length, 0);
+  assert.equal(watchers.length, 0,
+    "SH198: stopping releases the watcher. A loop that armed a timer and never gave it back is "
+      + "what made `node --test` print every result and then not exit — read for a while as `the "
+      + "suite hangs`, which is a sentence about the runner and was a sentence about this handle. "
+      + "The general case is SH807's watchdog; this is the local half it can name");
 });
 
 // --- the change feed's CLI surface (SH88) ---

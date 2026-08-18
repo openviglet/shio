@@ -315,10 +315,11 @@ const DEBT = [
  * judgement no measurement can make. Where it is not, the entry earns a real assertion and the
  * pointer is where to start looking rather than the answer.</p>
  *
- * <p>{@code CLOSE} is the 62 whose mention sits beside an assertion; {@code HEADER} is the 25
+ * <p>{@code CLOSE} is those whose mention sits beside an assertion; {@code HEADER} is the ones
  * named in a class docstring, where the file is about the task and no one assertion carries it.
  * The second group is the more expensive half and it is marked so nobody starts with it by
- * accident.</p>
+ * accident. Neither carries a size — the two sentences that did said 63 and 62 of the same list
+ * (SH820), and the run prints both figures on every pass anyway.</p>
  *
  * <p>Still a named list rather than a number, so it can only shrink through a diff that says
  * which and why.</p>
@@ -346,7 +347,6 @@ const REVEALED = {
   "SH78"   : "ShAgentResponseBudgetTest.java",
   "SH83"   : "ShMcpServerTest.java",
   "SH89"   : "content-assets.test.mjs",
-  "SH90"   : "content-commands.test.mjs",
   "SH92"   : "ShAgentManifestTest.java",
   "SH93"   : "ShAgentManifestTest.java",
   "SH94"   : "ShBlueprintRegistryTest.java",
@@ -359,8 +359,6 @@ const REVEALED = {
   "SH123"  : "ShAgentReadTest.java",
   "SH125"  : "ShAgentJsonLeanTest.java",
   "SH128"  : "ShAgentMoveAndPruneTest.java",
-  "SH148"  : "content-commands.test.mjs",
-  "SH149"  : "content-commands.test.mjs",
   "SH151"  : "ShAgentBatchTest.java",
   "SH153"  : "ShBlueprintApplyTest.java",
   "SH154"  : "ShSectionCompositionTest.java",
@@ -368,15 +366,11 @@ const REVEALED = {
   "SH173"  : "content-assets.test.mjs",
   "SH175"  : "ShAgentOpsContractTest.java",
   "SH176"  : "ShAgentSourceAttributionTest.java",
-  "SH191"  : "content-commands.test.mjs",
   "SH196"  : "ShAgentSafetyTest.java",
-  "SH198"  : "content-commands.test.mjs",
-  "SH199"  : "content-commands.test.mjs",
   // SH203 was here, credited to ShObjectCopyNamingTest, and SH244 paid it: `folder.copy` drives a
   // destination inside the source's own subtree and requires `folder-copy-cycle`, so the guard
   // SH203 installed on `ShFolderWriteService.checkCopyable` — the one both surfaces share — now
   // fails a build if it is removed. A different entry point from the console's, and the same code.
-  "SH214"  : "content-commands.test.mjs",
   "SH236"  : "ShPostTypeRenameTest.java",
   "SH288"  : "ShAgentP1ConformanceTest.java",
   "SH300"  : "render.conformance.mjs",
@@ -419,11 +413,14 @@ const REVEALED = {
 };
 
 /**
- * The 25 named in a class docstring rather than beside an assertion (SH642).
+ * The ones named in a class docstring rather than beside an assertion (SH642).
  *
  * <p>The more expensive half, marked so nobody starts with it by accident: the file is about the
  * task and no one assertion carries it, so which assertion earns the id is a judgement no
- * measurement makes. The other 63 are a one-line move.</p>
+ * measurement makes. The rest are closer to a one-line move — and only closer, which SH820 found
+ * on doing seven of them: each still needs somebody to decide which assertion in the neighbourhood
+ * is the one that would have caught the defect, and one of the seven had no local candidate at
+ * all (SH198's leaked timer, whose real guard is SH807's watchdog a repository away).</p>
  */
 const HEADER = new Set([
   "SH53", "SH64", "SH65", "SH69", "SH70", "SH86", "SH87", "SH97", "SH126", "SH129",
@@ -435,10 +432,15 @@ const HEADER = new Set([
 const REVEALED_IDS = Object.keys(REVEALED);
 
 /**
- * The 63 whose mention sits beside an assertion — the cheap half, and where to start.
+ * The ones whose mention sits beside an assertion — the cheap half, and where to start.
  *
  * Derived from the file rather than declared twice: the `// header` marker is the one distinction
  * between the two groups, and a second list of ids would be a second thing to keep in step.
+ *
+ * **No count here (SH820).** It read "the 63" and then "the 62" four lines apart, which is what a
+ * number written beside a list it is supposed to describe always comes to — and the moment the
+ * list shrank, both were wrong in the same direction. The run prints the size on every pass; the
+ * list is the thing that is asserted.
  */
 const CLOSE = REVEALED_IDS.filter((id) => !HEADER.has(id));
 
@@ -1005,4 +1007,50 @@ test("SH642: the header group names ids the map actually holds", () => {
     + "subtraction, which is the one direction a debt count must not be wrong in");
   assert.equal(CLOSE.length + HEADER.size, REVEALED_IDS.length,
     "and the two groups partition the revealed list rather than overlapping it");
+});
+
+
+/**
+ * SH820 — an entry that has been paid must leave the ledger, and only this notices.
+ *
+ * ## The drift a hand-kept list has and a computed one cannot
+ *
+ * `DEBT` and `REVEALED` are named lists, deliberately: a ceiling lets one task pay the debt and the
+ * next spend it. The cost of a list is that it goes stale in a direction nothing above checks. The
+ * main comparison asks *is every shipped id asserted or declared*, and an id that is **both** —
+ * asserted by a suite and still sitting in the ledger — satisfies it twice over. It is silent, it
+ * inflates the debt, and the inflation is what makes the number stop meaning anything.
+ *
+ * SH820 paid seven and removed seven by hand. Removing six would have gone green, and the seventh
+ * would have been reported as debt for as long as anybody left it there — the same shape SH789
+ * found one ledger along, where a declared red outlived its red for fifty green runs because the
+ * only reader that could have said so excluded that gate.
+ *
+ * ## Why this is the assertion SH820 earns
+ *
+ * The rule (SH527) is that a defect closes with the assertion that would have caught it. What SH820
+ * did was move ids into the assertions that would have caught their defects; what could go wrong
+ * while doing that is paying an entry and forgetting the ledger, or the reverse — striking an entry
+ * whose id no assertion actually carries, which is the more expensive mistake and is caught by the
+ * main test the moment the ledger no longer excuses it.
+ */
+test("SH820: no ledger entry names an id a suite already asserts", async () => {
+  const { found } = await assertedIds();
+  const declared = [...new Set([...DEBT, ...REVEALED_IDS])].sort(byId);
+
+  const paid = declared.filter((id) => found.has(id));
+
+  assert.deepEqual(paid, [],
+    "SH820: these ids are asserted by a suite AND declared as debt, so the ledger is charging for "
+      + "work that is done. The main comparison cannot see it — an id that is both asserted and "
+      + "declared passes on either count — so the entry sits there inflating the figure the whole "
+      + "instrument exists to make meaningful.\nDelete the entry; the assertion naming the id is "
+      + "the evidence it is paid.");
+
+  // Non-vacuous in the one way that matters: this must be able to find a payment. `found` is the
+  // real corpus, so a fabricated id proves nothing — an id the suite genuinely asserts does.
+  assert.ok(found.has("SH820"),
+    "SH820: the reader must credit this very test, or `paid` is empty because nothing is ever "
+    + "found rather than because nothing is owed — which is the reading that made a debt of 124 "
+    + "look like 124 unasserted tasks");
 });

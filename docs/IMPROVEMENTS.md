@@ -25,6 +25,8 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
+## Block AF — Paying the revealed assertion debt, one file at a time
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -731,3 +733,26 @@ URL. The rest are work.
 The other half is to keep working it while the reading is cheap. One entry names its
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
+
+## XXXV The next four, and what doing the first seven taught (SH821)
+
+SH820 paid the seven in `content-commands.test.mjs` and the CLOSE debt is 53.
+`ShAgentManifestTest.java` is next by size — SH52, SH76, SH92, SH93 — and it matters
+more than its count: those four are the manifest's own guarantees, so a red there is a
+break in the one document P2 says replaces a session, reported without saying which
+promise broke.
+
+Doing the first seven corrected the ledger's estimate of itself. It called this half *a
+one-line move*, and six of the seven were a judgement rather than a move: several
+assertions sat in the neighbourhood and only one was the one that would have caught the
+defect. The seventh had no local candidate at all — SH198 is a leaked timer, and the
+assertion that catches a leaked timer is SH807's watchdog in another module, so what the
+entry earned was a message naming the local half and pointing at the general one. Expect
+the same here rather than a sweep.
+
+The other correction is smaller and worth keeping. Two sentences four lines apart
+described the same list as *the 63* and *the 62*, and paying seven made both wrong in
+the same direction without anything failing. Both are gone: the run prints the size on
+every pass, and the list is what is asserted. A number written beside a list it
+describes is a second copy of that list, and this repository has now found that shape in
+a budget, in a coverage summary and in a ledger.
