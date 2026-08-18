@@ -1534,3 +1534,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AL — Two removals nobody is watching
 
 - **SH827** — A content scan holds `schemaJson`, its endpoint and both migration services absent; a second guard holds `post-unified.ts` to one exported schema builder.
+
+## Block AM — A build that could not start is not a colour
+
+- **SH828** — The runner reads the log it already keeps and stamps `inconclusive` where no suite ran, so a locked file stops manufacturing a red the ledger must then excuse.

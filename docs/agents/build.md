@@ -101,6 +101,24 @@ honest last outcome — each comparator has one it must not read. The lines come
 `gate-stamp.mjs`, shared with the JS comparator so this is not a third copy of the formatting; the
 JVM copy stays because it is another language.
 
+**A build that never began is stamped INCONCLUSIVE, not red (SH828).** A non-zero exit is only a
+*colour* if a suite ran, and the exit code cannot tell you: Maven exits 1 for a failed test and 1
+for a failed `clean`. So the runner reads the log it already keeps — a run that reached surefire
+prints `Tests run:`, node's runner prints its counts — and where a failure carries neither, it
+writes `inconclusive: true` with the exit code and a reason instead of `red: true`. The process
+still exits non-zero, so whoever ran it sees the failure; what changes is that no comparator is
+told the code is broken.
+
+Measured twice in one session, both times the IDE's Java language server holding something under
+`shio-app/target` so `clean` could not delete it. Zero tests ran, the stamp said red,
+`red-suites.test.mjs` demanded a ledger entry against an open task for a defect nobody can find,
+and the pair then reached the deadlock below. SH803 had already written the rule for a different
+cause — *a false red is worse than an absent stamp* — and a lock, a compile error and an
+unresolvable dependency are all the same shape. The one case deliberately kept **red** is a Spring
+context that will not load: surefire still reports a count for it, and that failure is about the
+code. No comparator needed a new branch, because a stamp with no `red` already reads as *no run
+recorded*, exactly as `cleared` does.
+
 **Both comparator gates can be red about nothing but each other, and no run clears it (SH818).**
 The arrangement above has a fixed point. `java` judges `js` and `js` judges `java`, so once **both**
 stamps are red, every run of either re-reads the other's red and stamps itself red again. It is

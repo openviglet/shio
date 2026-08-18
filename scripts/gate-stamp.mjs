@@ -233,6 +233,57 @@ export const CYCLE_EXIT = [
 ].join("\n");
 
 /**
+ * Did this run's log show a suite actually running? (SH828)
+ *
+ * <p>The question a stamp could not ask. `stamp(root, key, code)` records whatever the command
+ * exited with, so a Maven `clean` that cannot delete a locked file exits non-zero having run
+ * <b>zero tests</b> and is written down exactly as a red suite would be. Then `red-suites.test.mjs`
+ * demands a ledger entry against an open task for a defect nobody can find, the other comparator
+ * goes red about that stamp, and the pair reaches SH818's deadlock — twice in one session, both
+ * times a file lock held by the IDE's language server and cleared by a retry.</p>
+ *
+ * <p>SH803 wrote the rule for a different cause and it covers this one verbatim: <i>a false red is
+ * worse than an absent stamp — absence says nothing, and this manufactures a declaration for a
+ * defect nobody can find.</i></p>
+ *
+ * <p><b>Evidence, not a guess.</b> A Maven run that reached surefire prints `Tests run:`; node's
+ * runner prints its own counts. Anything that got that far and failed is a real red and stays one —
+ * including a Spring context that would not load, which surfaces as errors in the summary and so
+ * prints the line. What has no such line is a build that never began: a lock, a compile error, an
+ * unresolvable dependency. Those are worth seeing and are not a colour.</p>
+ */
+export function suiteRan(log) {
+  return /Tests run:|(?:ℹ|#)\s*tests\s+\d+/m.test(String(log ?? ""));
+}
+
+/**
+ * Record a run whose command failed before any suite ran (SH828).
+ *
+ * <p>Carries no `red`, so it falls out of {@link stamps} exactly where an absent or {@link clear}ed
+ * one does and every reader says <i>no run recorded in this tree</i> with no new branch. It does
+ * carry the exit code and a one-line reason, because the difference between "nobody ran this" and
+ * "this could not run" is the whole point of writing anything at all.</p>
+ */
+export function inconclusive(root, gate, code, why) {
+  if (!GATES.includes(gate)) {
+    return null;
+  }
+  try {
+    const dir = join(root, GATES_DIR);
+    mkdirSync(dir, { recursive: true });
+    const record = {
+      gate, code, inconclusive: true, why,
+      sha: headSha(root), when: new Date().toISOString(),
+    };
+    writeFileSync(join(dir, `${gate}.json`), `${JSON.stringify(record, null, 2)}
+`, "utf8");
+    return record;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Record that a stamp was deliberately discarded, rather than deleting the file (SH818).
  *
  * <p>Deleting works — the readers treat an absent stamp as *no run recorded*, which is honest —
