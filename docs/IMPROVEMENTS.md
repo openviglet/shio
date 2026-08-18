@@ -733,25 +733,3 @@ URL. The rest are work.
 The other half is to keep working it while the reading is cheap. One entry names its
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
-
-### XXIX.2 A list that is now a backlog, and still reads like a report (SH813)
-
-The P1 inventory prints how many capabilities the agent cannot reach, classified by how
-they are delivered instead. What it cannot print is how many of those are **work**.
-
-That distinction exists and is well argued — `reviewQueue` keeps the curator's veto off
-the agent namespace by design, `visualSnapshot` reports `false` so it claims nothing,
-three more are CLI-shaped because their input is a file or somebody else's URL — but it
-lives in each entry's `why`, as prose. So *how much of P1 is left* is answered by
-reading ten paragraphs, which is how this block was planned and is not a thing anybody
-will do twice.
-
-It mattered less while the list was evidence. SH809 and SH811 turned it into the backlog
-for the law the product is named after, and a backlog that cannot be sorted is one that
-gets worked in the order somebody happens to read it.
-
-The change is small: a `decision` flag beside `reach` on `Delivery`, set where the
-reason already says so, and the run's summary line gaining *N gaps, M decisions* beside
-the count it prints today. The assertion that keeps it honest is the one the list
-already uses — the set is asserted exactly, so a `decision` added without an argument is
-a reviewable diff rather than a number that quietly moved.

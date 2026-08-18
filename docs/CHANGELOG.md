@@ -1483,3 +1483,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block Z — Working the P1 inventory, and making it sortable
 
 - **SH812** — `shio_context` takes `format`, so agents-md is MCP-reachable — and the staleness check now reads a tool.parameter target, which it could not, so shipping this had passed silently.
+- **SH813** — `Delivery.decision` splits the P1 exceptions the way their prose already did: the run prints 8 decided, 1 open (`contentAsFiles`), and a new test refuses an all-one-kind table.

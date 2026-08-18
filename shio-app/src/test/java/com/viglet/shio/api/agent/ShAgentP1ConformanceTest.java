@@ -160,8 +160,7 @@ class ShAgentP1ConformanceTest {
      *               — which is what makes a stale exception fail rather than rot
      * @param why    the claim. For a cross-cutting or instance fact it is the whole justification;
      *               for an exception it is what P1 is paying for and, where one exists, the task id
-     */
-    /**
+     *
      * @param closedBy SH732 — what would make this exception stale, named in advance.
      *
      *                 <p>The staleness check used to ask whether {@link #target} now exists, and
@@ -174,11 +173,26 @@ class ShAgentP1ConformanceTest {
      *                 <p>Naming the evidence turns the entry into a falsifiable claim: an op name, a
      *                 tool, or a route whose existence means the gap closed. Empty for an exception
      *                 whose target IS the evidence, which is most of them.</p>
+     *
+     * @param decision SH813 — whether closing this exception would be <em>wrong</em>, rather than
+     *                 merely undone. The distinction was always argued in {@link #why}, in prose,
+     *                 so <em>how much of P1 is left</em> could only be answered by reading every
+     *                 entry — which is fine for a report and useless for the backlog this list
+     *                 became when SH809 and SH811 started working it.
      */
-    record Delivery(Reach reach, String target, String why, List<String> closedBy) {
+    record Delivery(Reach reach, String target, String why, List<String> closedBy, boolean decision) {
 
         Delivery(Reach reach, String target, String why) {
-            this(reach, target, why, List.of());
+            this(reach, target, why, List.of(), false);
+        }
+
+        Delivery(Reach reach, String target, String why, List<String> closedBy) {
+            this(reach, target, why, closedBy, false);
+        }
+
+        /** The same entry, marked as a thing nobody intends to close. */
+        Delivery decided() {
+            return new Delivery(reach, target, why, closedBy, true);
         }
     }
 
@@ -380,7 +394,7 @@ class ShAgentP1ConformanceTest {
         byFeature.put("reviewQueue", new Delivery(Reach.CONSOLE_ONLY, "/review/sessions",
                 "SH109 put this off the agent namespace on purpose — it is the human's veto over "
                 + "the agent's work, so an agent approving its own run is the thing it prevents. The "
-                + "one exception here that is a design decision rather than a gap"));
+                + "one exception here that is a design decision rather than a gap").decided());
         // SH732 — reclassified, and the old entry is worth keeping in view because of how it went
         // wrong. It read: "an agent can fill the trash (folder.delete, post.delete) and can neither
         // list nor restore it". SH222 answered the listing with `find?trash=true` and the restore
@@ -407,7 +421,7 @@ class ShAgentP1ConformanceTest {
                 "an SH68 package is a zip, and this surface is JSON — so import is CLI-shaped by "
                 + "construction rather than by omission (SH268, decided against SH186's precedent). "
                 + "`shio import <file>` posts it; export stays declared (GET /site/{id}/export) "
-                + "because a zip *out* is a byte stream a caller can already ask for"));
+                + "because a zip *out* is a byte stream a caller can already ask for").decided());
         // SH793 — this said "3 tokens under" the ceiling. It was 19 when somebody finally measured,
         // and nothing had reproduced the 3 since it was written: the figure lived here, in prose, in
         // a file no budget run reads. The trade still holds at 19 — a described field does not fit
@@ -416,11 +430,11 @@ class ShAgentP1ConformanceTest {
         byFeature.put("postTypeMerge", new Delivery(Reach.REST_ONLY, "shio_apply.mergePostTypes",
                 "a deliberate trade, not an oversight: the opt-in is a body field on the blueprint "
                 + "apply, and shio_apply is close enough to the SH132 per-tool ceiling that adding "
-                + "a described field crosses it. ShMcpToolBudgetTest prints the headroom"));
+                + "a described field crosses it. ShMcpToolBudgetTest prints the headroom").decided());
         byFeature.put("graphql", new Delivery(Reach.REST_ONLY, "/graphql",
                 "the delivery surface a front end queries, undeclared here on purpose — an agent "
                 + "reads content through /agent/read and the CDA. `true` describes what the instance "
-                + "serves to the site, not what it offers the agent"));
+                + "serves to the site, not what it offers the agent").decided());
         byFeature.put("contentAsFiles", new Delivery(Reach.CLI_ONLY, "shio_files",
                 "Block I is `shio pull/push --content` and is CLI-shaped by design (P4 is about "
                 + "Edit/Write/Grep on a disk). A client with no filesystem cannot use it, and the "
@@ -442,26 +456,26 @@ class ShAgentP1ConformanceTest {
         byFeature.put("visualSnapshot", new Delivery(Reach.CLI_ONLY, "shio_snapshot",
                 "reported `false`, which is the honest answer (SH102): `shio snapshot` rasterizes "
                 + "and this surface has no endpoint and no tool. Classified rather than omitted so "
-                + "flipping it to `true` has to pass through this table"));
+                + "flipping it to `true` has to pass through this table").decided());
         byFeature.put("siteCapture", new Delivery(Reach.CLI_ONLY, "shio_clone",
                 "SH377 — the same two reasons as pageAudit, and one more that is decisive on its own: "
                 + "the input is a URL somebody else controls, so an endpoint that fetched it is "
                 + "SH101's request-forgery surface with a crawler attached. SH268 settled the boundary "
-                + "and this is the case it was settled for"));
+                + "and this is the case it was settled for").decided());
         byFeature.put("conversionProposal", new Delivery(Reach.CLI_ONLY, "shio_propose",
                 "SH379 — CLI-shaped for the reason its input is: the markup it maps lives in the file "
                 + "tree, and reading it over an endpoint would mean either uploading a stranger's HTML "
                 + "or having the instance fetch it, which SH268 settled. The artefact is also a *file* "
                 + "a reviewer argues with and partially accepts, which is P4's case rather than a "
-                + "JSON-RPC one"));
+                + "JSON-RPC one").decided());
         byFeature.put("pageAudit", new Delivery(Reach.CLI_ONLY, "shio_audit",
-                "SH391 — and the one exception on this list that is a decision rather than a gap in "
-                + "the same sense `reviewQueue` is. `shio audit` returns text an agent can act on, "
+                "SH391 — a decision rather than a gap, in the same sense `reviewQueue` is; SH813 made "
+                + "that distinction a field, and the run counts it. `shio audit` returns text an agent can act on, "
                 + "so P1 would ordinarily demand a tool; two things refuse it. `tools/list` is "
                 + "capped at 12 with 11 used and is paid every turn, while a Bash call is paid when "
                 + "it is made. And it needs a *browser*: an endpoint would put Chromium in the JVM, "
                 + "which is a standing non-goal — so unlike `contentAsFiles`, closing this one "
-                + "would break something rather than fix it"));
+                + "would break something rather than fix it").decided());
         return byFeature;
     }
 
@@ -591,14 +605,32 @@ class ShAgentP1ConformanceTest {
         new TreeMap<>(byReach).forEach((reach, list) ->
                 System.out.printf("  %-14s %2d  %s%n", reach, list.size(), new TreeSet<>(list)));
         System.out.printf("  not agent-reachable: %d, of which advertised true on this instance: "
-                + "%d — %s%n%n", unreachable.size(), advertisedNow.size(), advertisedNow);
+                + "%d — %s%n", unreachable.size(), advertisedNow.size(), advertisedNow);
+
+        // SH813 — the line that turns a report into a worklist. `how much of P1 is left` used to be
+        // answered by reading every reason, which is fine once and useless as a backlog; the two
+        // words are `decisions` (closing one would be wrong) and `gaps` (nobody has yet).
+        Map<String, Delivery> exceptions = p1Exceptions();
+        List<String> gaps = exceptions.entrySet().stream()
+                .filter(entry -> entry.getValue().reach().isException())
+                .filter(entry -> !entry.getValue().decision())
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
+        long decisions = exceptions.values().stream()
+                .filter(delivery -> delivery.reach().isException())
+                .filter(Delivery::decision)
+                .count();
+        System.out.printf("  of those, %d decided (closing would be wrong) and %d still open — %s%n%n",
+                decisions, gaps.size(), gaps);
 
         assertThat(unreachable)
                 .as("""
                         the inventory is the deliverable, so it is asserted exactly: gaining an \
                         entry must be a reviewable diff with a reason, and closing one must be an \
-                        edit here rather than a number quietly moving. Only `reviewQueue` is a \
-                        decision (SH109); the rest are gaps, most with a task id.
+                        edit here rather than a number quietly moving. Which of these are gaps and \
+                        which are decisions is `Delivery.decision` since SH813 — a field rather \
+                        than a sentence somebody has to read nine of.
 
                         Asserted over the *classification* and not over what this instance \
                         advertises, because a config-driven flag (webhooks, previewTokens, \
@@ -615,13 +647,56 @@ class ShAgentP1ConformanceTest {
                         "postTypeMerge",
                         "reviewQueue",
                         "siteCapture",
-
                         "visualSnapshot");
 
         assertThat(advertisedNow)
                 .as("a flag that is off claims nothing, so it cannot be a P1 break — but it must "
                         + "still be classified, or flipping it on would bypass this table")
                 .isSubsetOf(unreachable);
+    }
+
+    /**
+     * SH813 — the distinction the list was already making in prose, made countable.
+     *
+     * <p>Nine entries, and eight of them argue in their own reason that closing them would be
+     * wrong: {@code reviewQueue} is the curator's veto (P7), {@code pageAudit} would put a browser
+     * in the JVM, {@code siteCapture} would attach a crawler to a request-forgery surface. One —
+     * {@code contentAsFiles} — says of itself <i>"the flag does not say so"</i>, which is the
+     * sentence a gap writes. Until now the only way to tell them apart was to read all nine, so
+     * <b>"how much of P1 is left" had no answer shorter than the inventory</b>, and the number the
+     * run printed (9) was the one number that is not the answer to anything: it is decisions and
+     * gaps added together, and adding them is what makes the total stop moving even as the work
+     * lands.</p>
+     *
+     * <p>The field is not self-justifying, so two things hold it honest. A decision must be an
+     * <em>exception</em> — marking a reachable entry as decided would be a category error, since
+     * nothing is being decided about a capability the agent already has. And the split must be a
+     * real split: all-decisions is a table that has stopped asking, all-gaps is one that has
+     * stopped answering, and each reads as green from a distance.</p>
+     */
+    @Test
+    @DisplayName("a P1 exception is a gap or a decision, and both kinds exist")
+    void everyP1ExceptionIsAGapOrADecision() {
+        List<Delivery> exceptions = p1Exceptions().values().stream()
+                .filter(delivery -> delivery.reach().isException())
+                .toList();
+
+        assertThat(p1Exceptions().values().stream().filter(Delivery::decision))
+                .as("`decision` says *closing this would be wrong*, which is only a claim about a "
+                        + "capability the agent cannot reach. Marking a reachable entry decided "
+                        + "would hide it from the gap count while it is not in it")
+                .allMatch(delivery -> delivery.reach().isException());
+
+        assertThat(exceptions).filteredOn(Delivery::decision)
+                .as("SH813's non-vacuity, one half: with nothing decided, `decision` is a column of "
+                        + "false and the gap count is the old total under a new name")
+                .isNotEmpty();
+
+        assertThat(exceptions).filteredOn(delivery -> !delivery.decision())
+                .as("SH813's non-vacuity, the other half and the one that rots first: an unclosed "
+                        + "gap is the entry a later task is tempted to mark decided rather than "
+                        + "fix, and a table of nine decisions reports zero work outstanding")
+                .isNotEmpty();
     }
 
     /**

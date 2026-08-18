@@ -11,8 +11,6 @@
 
 ## Block Z — Working the P1 inventory, and making it sortable
 
-- 📋 **SH813** (deps: —) **Whether a P1 entry is a gap or a decision lives in its prose, so the inventory cannot be counted or sorted** — Planning this block meant reading ten reasons to find which were work; the run prints how many are unreachable and cannot say how many of those anybody intends to fix. → §XXIX.2
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

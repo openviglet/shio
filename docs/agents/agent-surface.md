@@ -1182,6 +1182,20 @@ id-keyed post verbs with no address-native form), `webhooks` (SH343) and `previe
 That is the return on the instrument, and it is the argument for building one before working the
 thirteen known instances by hand.
 
+**Which of those are gaps and which are settled is a field, not a paragraph (SH813).** The list
+above already made the distinction — `reviewQueue` is P7's veto, `pageAudit` would put Chromium in
+the JVM, `siteCapture` would attach a crawler to SH101's request-forgery surface — but it made it
+in prose, so *how much of P1 is left* had no answer shorter than reading every entry, and the one
+number the run printed was decisions and gaps **added together**: a total that does not move when
+the work lands. `Delivery.decision` splits it, set on the entries whose own reason already argued
+it, and the run prints `N decided (closing would be wrong)` beside `M still open` with the open
+ones named. Two assertions keep the field from becoming decoration: a decision must be a `Reach`
+that `isException()` — nothing is decided about a capability the agent already has — and **both
+kinds must be non-empty**, because all-decided is a table that has stopped asking and all-open is
+one that has stopped answering, and each reads as green from a distance. The failure mode it is
+really aimed at is the second: an open gap is exactly what a later task is tempted to mark decided
+rather than close.
+
 ### The inventory's own guarantee had a hole, and shipping through it is how it was found (SH812)
 
 `ShAgentP1ConformanceTest`'s central promise is in its class javadoc: each exception *names the tool
