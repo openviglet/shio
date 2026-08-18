@@ -25,6 +25,8 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
+## Block Z — Working the P1 inventory, and making it sortable
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -708,3 +710,70 @@ is reachable, and it is not the bar the law actually asks for, which the invento
 categories say out loud.
 
 Neither was worth holding the task for. Both are worth the block that follows it.
+
+## XXIX The inventory as a worklist (Block Z)
+
+Two blocks ago the P1 inventory was a thing that got printed. SH809 took one row of it
+and shipped the route it named; SH811 took the same row to the stricter reach the
+inventory itself grades. Both were small, because the honest entries had already done
+the hard part — each one names *what would resolve it*, and the test asserts that target
+absent, so shipping cannot be forgotten.
+
+That changes what the list is for. It was written as evidence — the first honest measure
+of how far P1 is actually honoured — and it is now the backlog for the law the product
+is named after.
+
+Which exposes the thing this block starts with. **The list cannot be sorted.** Whether
+an entry is a gap or a decision lives in the prose of its reason, so answering *how much
+is left* means reading ten paragraphs, and doing that is how this block was planned.
+`reviewQueue` is a decision and says so; `visualSnapshot` is honest because the flag
+reports false; three are CLI-shaped because their input is a file or somebody else's
+URL. The rest are work.
+
+The other half is to keep working it while the reading is cheap. One entry names its
+target down to the parameter — a tool that takes no `format`, so the output meant to be
+written to a file is reachable only by whoever has a file.
+
+### XXIX.1 The output meant for a file, reachable only by whoever has one (SH812)
+
+`GET /agent/context?format=agents-md` renders the context pack as project agent
+instructions — the shape a harness loads from disk instead of making a call.
+`shio_context` takes no `format`, so an MCP-only client cannot ask for it, and the
+inventory records that in the entry's own words: *the one output meant to be written to
+a file is reachable only by whoever has a file to write it to*.
+
+It is the same shape SH811 just measured and the entry already names the target down to
+the parameter, which is why it is the next one worth taking rather than the largest.
+
+Two things to get right, and the second is the constraint. **What an MCP client does
+with it** is not obvious — a client with no filesystem cannot write the file, so the
+value is the *content*, which is the pack in a form meant to be pasted into a harness
+rather than parsed. If that is not true for any real client, the honest answer is to
+change the entry's classification rather than ship a parameter nobody calls.
+
+And **the budget is thin**: `tools/list` stands at 2523 against the 2560 SH811 set, so
+about 37 tokens are free and a `format` string costs roughly twenty. That fits once. The
+next capability after this one meets a ceiling with nothing behind it, which is worth
+knowing before choosing what it should be.
+
+### XXIX.2 A list that is now a backlog, and still reads like a report (SH813)
+
+The P1 inventory prints how many capabilities the agent cannot reach, classified by how
+they are delivered instead. What it cannot print is how many of those are **work**.
+
+That distinction exists and is well argued — `reviewQueue` keeps the curator's veto off
+the agent namespace by design, `visualSnapshot` reports `false` so it claims nothing,
+three more are CLI-shaped because their input is a file or somebody else's URL — but it
+lives in each entry's `why`, as prose. So *how much of P1 is left* is answered by
+reading ten paragraphs, which is how this block was planned and is not a thing anybody
+will do twice.
+
+It mattered less while the list was evidence. SH809 and SH811 turned it into the backlog
+for the law the product is named after, and a backlog that cannot be sorted is one that
+gets worked in the order somebody happens to read it.
+
+The change is small: a `decision` flag beside `reach` on `Delivery`, set where the
+reason already says so, and the run's summary line gaining *N gaps, M decisions* beside
+the count it prints today. The assertion that keeps it honest is the one the list
+already uses — the set is asserted exactly, so a `decision` added without an argument is
+a reviewable diff rather than a number that quietly moved.
