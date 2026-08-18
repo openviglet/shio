@@ -1491,3 +1491,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AB — What a flag does not say — reach as manifest data, not only as a test's classification
 
+- 🗑 **SH815** — abandoned: The premise was false: `elsewhere` (SH393) already publishes exactly the nine exceptions, asserted set-equal both ways to the P1 classification, and the full manifest carries it — a caller reading `contentAsFiles: true` also reads `shio pull --content`, so the sibling map this proposed exists and is guarded.
+
+## Block AC — The last open gap, and whether it is one — a reason that outlived what falsified it
+

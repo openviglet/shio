@@ -25,7 +25,7 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
-## Block AB — What a flag does not say — reach as manifest data, not only as a test's classification
+## Block AC — The last open gap, and whether it is one — a reason that outlived what falsified it
 
 ## Table of contents
 
@@ -734,26 +734,27 @@ The other half is to keep working it while the reading is cheap. One entry names
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
 
-## XXX The boolean that cannot say "yes, if you have a shell" (SH815)
+## XXXI The gap that may not be one, and the assertion that will not let it be typed away (SH816)
 
-`features` is a flat boolean map, so a capability is present or absent and nothing else.
-On this instance five flags answer `true` to a caller who cannot invoke them:
-`contentAsFiles`, `exchange`, `graphql`, `postTypeMerge`, `reviewQueue`. Each is
-*honest* — the capability exists, and four are decisions rather than gaps — and each is
-useless to an MCP-only client, which learns what it can do from exactly this map.
-`contentAsFiles` says so about itself: *"a client with no filesystem cannot use it, and
-the flag does not say so."*
+SH813 split the P1 exceptions into eight decisions and one gap. The gap is
+`contentAsFiles`, and it is a gap solely because its reason ends *"a client with no
+filesystem cannot use it, and the flag does not say so."* The flag has said so since
+2026-08-04: SH393's `elsewhere` publishes `contentAsFiles → shio pull --content`, the
+full manifest carries it, and `ShAgentP1ConformanceTest` asserts `elsewhere` set-equal
+to the exception list **both ways** on every run. Two assertions over the same nine
+keys, green together for two weeks, and neither reads the other's prose.
 
-The odd part is that the answer is already computed. `ShAgentP1ConformanceTest`
-classifies every key by how it is reached — MCP tool, MCP resource, agent route,
-cross-cutting, instance fact, composed, or one of three exceptions — and asserts the
-result. So the product holds the fact twice: once as data a caller cannot see, once as a
-test nobody ships. P2 makes discovery a feature rather than a docs problem, and a
-response that answers *whether* while withholding *how* costs the agent the call it
-makes to find out.
+So the question is open on the merits, and it should be settled rather than inherited.
+P4 makes content-as-files deliberately filesystem-shaped — `Edit`/`Write`/`Grep` are the
+point, not a fallback — which is the shape of every other decision on the list. If that
+holds, the entry is a ninth decision and P1 has no open gap at all.
 
-The shape is a value beside the boolean, not a second endpoint: `features` gains a
-sibling map keyed the same way, whose value is the reach and, for an exception, the
-route or command that delivers it. Then the test asserts the manifest rather than a
-table of its own, which removes the second copy instead of adding a third. Whether
-`?section=features` projects it is the sizing question, and P3 decides it.
+That conclusion is exactly what SH813's non-vacuity assertion refuses to let anyone
+type: mark it decided and *"a table of nine decisions reports zero work outstanding"*
+goes red. Good. Whoever closes this has to either argue the ninth decision and change
+what the assertion asks, or state what is genuinely still missing. What must not happen
+is the reason being quietly corrected while the classification rides along unchanged.
+
+The instrument the whole thing wants: a reason making a claim about a response is
+checked against that response. Here, the words *"does not say"* beside a key `elsewhere`
+holds.

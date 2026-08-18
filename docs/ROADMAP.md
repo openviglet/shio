@@ -9,9 +9,9 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AB — What a flag does not say — reach as manifest data, not only as a test's classification
+## Block AC — The last open gap, and whether it is one — a reason that outlived what falsified it
 
-- 📋 **SH815** (deps: —) **Five manifest flags say `true` to a client that cannot reach them, and the map has no field to say so** — The reach a test already computes belongs in the manifest, so discovery answers *how* rather than only *whether* — P2's job, done today by an assertion no caller reads. → §XXX
+- 📋 **SH816** (deps: —) **P1's one open gap is open on a sentence the manifest falsified on 2026-08-04, and nothing reads the two together** — Decide `contentAsFiles` on its merits and make the reason falsifiable: a claim about what a response says must be asserted against that response, not written beside it. → §XXXI
 
 ## Priority
 
