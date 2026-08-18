@@ -8,6 +8,8 @@
  */
 package com.viglet.shio.api.cda;
 
+import static org.hamcrest.Matchers.describedAs;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -152,7 +154,12 @@ class ShCdaSearchTest {
                         .param("siteId", siteId)
                         .principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.posts.length()").value(2))
+                .andExpect(jsonPath("$.posts.length()")
+                        .value(describedAs("SH52: two, and which two is the whole endpoint — the "
+                                + "title hit and the BODY-only hit, with the DRAFT carrying the "
+                                + "same term excluded. One means the raw attribute data is not "
+                                + "being searched and `/query`'s filters have been renamed; three "
+                                + "means PROD is serving a draft", is(2))))
                 .andExpect(jsonPath("$.totalPosts").value(2));
     }
 

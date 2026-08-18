@@ -209,7 +209,13 @@ class ShBlueprintApplyTest {
                 });
         assertThat(applied.content().changed()).isEqualTo(14);
         assertThat(applied.verify()).isNotNull();
-        assertThat(applied.verify().missing()).isEmpty();
+        assertThat(applied.verify().missing())
+                .as("SH93: the package keeps its own promise. `verify.posts` is what the author "
+                        + "said applying would produce, checked against what it did — so this "
+                        + "being empty is the difference between an apply that ran and an apply "
+                        + "that worked, which is P9's whole point and the one thing a caller "
+                        + "cannot see from a 200")
+                .isEmpty();
         // SH635 — this assertion has failed twice, in a full suite, and never alone: `errors()` came
         // back as 2 where 0 was expected, and both times the run was green on the next attempt with
         // the same code. There was nothing to diagnose from, because the number is all the assertion

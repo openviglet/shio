@@ -65,6 +65,11 @@ class ShAgentManifestTest {
         ShAgentManifest manifest = shAgentManifestService.manifest();
 
         assertThat(manifest.features())
+                .as("SH76: an unshipped capability is reported `false`, never omitted. That single "
+                        + "rule is what the whole document is for — an absent flag cannot be told "
+                        + "from a flag nobody wrote, so the caller probes, which is the cost P2 "
+                        + "says one cached call replaces. A manifest that dropped its false "
+                        + "entries would be smaller, would validate, and would be useless")
                 // SH102's PNG: a screenshot is for the human handoff, and advertising it
                 // here would invite an agent to spend three orders of magnitude more
                 // tokens than the SH101 digest costs to learn less.

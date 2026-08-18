@@ -177,6 +177,19 @@ const ELSEWHERE = {
  * "unasserted", and the assertion turned out to be a defect.</p>
  */
 const DEBT = [
+  // DOES NOT EARN ONE, and this is the first entry added for that reason rather than for cost.
+  // SH821's deliverable is four ids moved into the assertions that would have caught their
+  // defects — so it is asserted four times over, by SH52 in `ShCdaSearchTest`, SH76 in
+  // `ShAgentManifestTest`, SH92 in `ShBlueprintRegistryTest` and SH93 in `ShBlueprintApplyTest`.
+  // What it cannot have is an assertion about ITSELF, and three designs were built and measured
+  // before saying so rather than after: (1) a prose lint refusing a count written beside the list
+  // it describes fired on three legitimate sentences including a quotation of the defect it was
+  // fixing; (2) "no pointer names an id several suite files name" flags 49 of 49, because this
+  // file names every one of them; (3) restricted to header docstrings, 25 of 49 — and most of
+  // those are two suites legitimately citing one task. The finding SH821 actually made is that
+  // roughly a third of `CLOSE` is not the one-line move its name promises, which is a measurement
+  // recorded in the REVEALED note above and is not a property any run can fail on.
+  "SH821",
   // EARNS, and it is the largest group by far. The console has a test tree (`shio-react/test`)
   // holding no reference to any of these; each is a React page or widget behaviour, so each is
   // assertable there. Ordered LAST despite the size, because these are the defects a human meets:
@@ -315,6 +328,15 @@ const DEBT = [
  * judgement no measurement can make. Where it is not, the entry earns a real assertion and the
  * pointer is where to start looking rather than the answer.</p>
  *
+ * <p><b>How often that happens, measured on the first eleven paid (SH820, SH821).</b> Three of
+ * the eleven had their real home in a different file: the recorded one mentioned the id in
+ * passing — as a <i>contrast</i>, in one case (`search: true` beside `searchIndexing: false`) —
+ * while the assertion that would have caught the defect sat in the suite named after it. One more
+ * had no local candidate at all, its guard being in another module entirely. So roughly a third
+ * of this list is not the one-line move the group is named for, and the pointer is a starting
+ * point in the literal sense. Reading the ledger entry for the id in `CHANGELOG.md` is what
+ * settles it: it says what shipped, which is what an assertion has to be able to fail about.</p>
+ *
  * <p>{@code CLOSE} is those whose mention sits beside an assertion; {@code HEADER} is the ones
  * named in a class docstring, where the file is about the task and no one assertion carries it.
  * The second group is the more expensive half and it is marked so nobody starts with it by
@@ -336,19 +358,15 @@ const REVEALED = {
   "SH40"   : "ShStaticFileAPITest.java",
   "SH43"   : "ShStaticFileAPITest.java",
   "SH51"   : "ShFolderTrashTest.java",
-  "SH52"   : "ShAgentManifestTest.java",
   "SH58"   : "ShEmailConfigServiceTest.java",
   "SH61"   : "ShStaticFileAPITest.java",
   "SH63"   : "emit.test.mjs",
   "SH71"   : "ShAgentBatchTest.java",
   "SH72"   : "impact.test.mjs",
   "SH75"   : "ShAgentJsonLeanTest.java",
-  "SH76"   : "ShAgentManifestTest.java",
   "SH78"   : "ShAgentResponseBudgetTest.java",
   "SH83"   : "ShMcpServerTest.java",
   "SH89"   : "content-assets.test.mjs",
-  "SH92"   : "ShAgentManifestTest.java",
-  "SH93"   : "ShAgentManifestTest.java",
   "SH94"   : "ShBlueprintRegistryTest.java",
   "SH96"   : "blueprints.test.mjs",
   "SH100"  : "ShAddressResolverTest.java",
@@ -1054,3 +1072,4 @@ test("SH820: no ledger entry names an id a suite already asserts", async () => {
     + "found rather than because nothing is owed — which is the reading that made a debt of 124 "
     + "look like 124 unasserted tasks");
 });
+

@@ -46,6 +46,12 @@ class ShBlueprintRegistryTest {
     @DisplayName("the first-party set loads, validated, in a stable order")
     void firstPartySetLoads() {
         assertThat(registry.names())
+                .as("SH92: every first-party package passes load-time validation, which is the "
+                        + "part of the format that matters — a referenced file that is not in the "
+                        + "package, a path escaping it, an unknown manifest key, a `{{placeholder}}` "
+                        + "no parameter declares. A name missing here is a package the registry "
+                        + "refused, and the author's mistake would otherwise have surfaced as a "
+                        + "stranger's half-applied site")
                 .containsExactly("blog", "docs", "landing", "marketing-site", "nextjs-starter",
                         "product-catalog");
     }

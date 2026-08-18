@@ -1509,6 +1509,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AF — Paying the revealed assertion debt, one file at a time
 
 - **SH820** — Seven ids moved from banner comments into the assertion that would have caught each defect; the CLOSE debt is 53 and the two prose counts that disagreed are gone.
+- **SH821** — Four more paid and the debt is 111 — but three had their real home in another file entirely, so the ledger's pointer now says it is a starting point and how often it misses.
 
 ## Block AG — One answer to "what does this sentence assert", and the three places that answer it separately
 
