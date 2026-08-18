@@ -1522,3 +1522,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AI — Scans that match outside the construct they are about
 
 - **SH824** — A fixture pins the escape to the annotation's own arguments, verified by reverting the line and watching it go red; SH352 comes off the silent debt.
+
+## Block AJ — A scope a scan cannot leave, since four have now left theirs
+
