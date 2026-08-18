@@ -278,6 +278,10 @@ class ShAgentP1ConformanceTest {
                 + "because this flag was a half-truth for exactly the clients the manifest informs"));
 
         // --- Declared in the endpoint index ---------------------------------------------------
+        byFeature.put("universalEditor", route("/agent/editable",
+                "SH809 — the bridge is still a browser protocol, and this is the reading of it "
+                + "an agent needs: which fields a curator could edit, off the rendered page. It "
+                + "was the one CONSOLE_ONLY entry naming a route it did not have"));
         byFeature.put("pathAddressing", route("/agent/resolve", "an address becomes an id, so no "
                 + "UUID has to survive between calls (SH79)"));
         byFeature.put("manifestProjection", route("/agent/manifest", "?include= on this document "
@@ -365,9 +369,14 @@ class ShAgentP1ConformanceTest {
     private static Map<String, Delivery> p1Exceptions() {
         Map<String, Delivery> byFeature = new TreeMap<>();
 
-        byFeature.put("universalEditor", new Delivery(Reach.CONSOLE_ONLY, "/agent/editable",
-                "SH185's bridge is a browser protocol and the console is its only client. `true` is "
-                + "honest to a human and not to an agent; SH335 is what that costs in practice"));
+        // SH809 — `universalEditor` was here, CONSOLE_ONLY, naming `/agent/editable` as what would
+        // resolve it. That route exists now, so the entry is gone rather than corrected: SH142's
+        // rule is that an exception which has become unnecessary fails the build, and this list
+        // asserts its targets absent precisely so shipping one cannot be forgotten.
+        //
+        // It read the page rather than the model, which is why it was small enough to be the first
+        // of these worked. The inventory had been printed on every run for many blocks and read
+        // more often than it had been worked; this is one row of it.
         byFeature.put("reviewQueue", new Delivery(Reach.CONSOLE_ONLY, "/review/sessions",
                 "SH109 put this off the agent namespace on purpose — it is the human's veto over "
                 + "the agent's work, so an agent approving its own run is the thing it prevents. The "
@@ -596,7 +605,7 @@ class ShAgentP1ConformanceTest {
                         "postTypeMerge",
                         "reviewQueue",
                         "siteCapture",
-                        "universalEditor",
+
                         "visualSnapshot");
 
         assertThat(advertisedNow)

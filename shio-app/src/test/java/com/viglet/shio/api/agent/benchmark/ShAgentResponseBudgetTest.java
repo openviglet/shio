@@ -271,10 +271,11 @@ class ShAgentResponseBudgetTest {
      * regression, and the caller who meets it is whichever task happens to add the next line.</p>
      */
     private static final Map<String, String> AT_THE_WALL = Map.of(
-            "manifest",
-            "format=json is DEFINED as the full document, so trimming it is a discoverability "
-                    + "decision (P2) rather than a tidy-up. The cheap readings are budgeted "
-                    + "separately and have room: manifest.terse took 21% in SH230",
+            // `manifest` was here and is not any more (SH809). Adding `/agent/editable` took it over
+            // its ceiling, and the ceiling was raised to the 4% headroom this very rule requires
+            // rather than to the measurement — so the entry stopped excusing anything, and the
+            // staleness check below said so on the run that raised it. That is the list working:
+            // an exemption outliving its wall hides the next budget that needs one.
             "manifest.check",
             "include=features,limits is already the smallest reading of the manifest — 385 tokens "
                     + "against the full 2636 — so there is no leaner shape to reach for; its "

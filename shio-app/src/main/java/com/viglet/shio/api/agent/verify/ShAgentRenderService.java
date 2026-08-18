@@ -123,6 +123,40 @@ public class ShAgentRenderService {
         return hasAddress ? fromContent(address.trim()) : fromUrl(url.trim());
     }
 
+    /**
+     * SH809 — which fields on a page a curator could edit, and which regions it declares.
+     *
+     * <p>The one P1 exception with a route already named. {@code universalEditor} sat in
+     * {@code ShAgentP1ConformanceTest}'s inventory as {@code CONSOLE_ONLY} because SH185's bridge is
+     * a browser protocol the console alone speaks — so an agent could read a post, render it, and
+     * diff draft against live, and still not answer <em>which fields can somebody change</em>.</p>
+     *
+     * <p>It composes rather than forks (P10): the same render the digest takes, read through
+     * {@link ShHtmlEditable}, which parses the attributes the bridge already emits. Deriving
+     * editability from post-types instead would answer what the *model* permits, and the two would
+     * agree only by accident (SH583). What a curator can click is what the page says.</p>
+     *
+     * @param rawAddress a {@code post:} address, as everywhere else on this surface (SH79)
+     * @return the fields and regions, or a page that renders to nothing reported as empty
+     */
+    public ShAgentEditable editable(String rawAddress) {
+        var resolved = shAddressResolver.resolve(rawAddress);
+        ShPostUnified post = draftPreferred(resolved.id())
+                .orElseThrow(() -> new NotAPageException(rawAddress, resolved.kind()));
+        String address = shAddressResolver.addressOf(post).toString();
+
+        Optional<String> html = renderedHtml(post);
+        if (html.isEmpty()) {
+            // The same honest fallback the digest takes for a post with no layout binding or no
+            // friendly URL, which is the normal state of a site mid-build. An empty list here would
+            // read as "nothing is editable" rather than "this page does not render yet", so the
+            // source says which question was answered (SH169's argument, one endpoint over).
+            return new ShAgentEditable(address, SOURCE_CONTENT, List.of(), List.of());
+        }
+        return new ShAgentEditable(address, SOURCE_RENDERED,
+                ShHtmlEditable.of(html.get()), ShHtmlEditable.regions(html.get()));
+    }
+
     // --- content ------------------------------------------------------------
 
     private ShAgentDigest fromContent(String rawAddress) {

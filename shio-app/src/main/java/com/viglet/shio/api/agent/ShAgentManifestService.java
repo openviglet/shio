@@ -347,7 +347,10 @@ public class ShAgentManifestService {
         // SH648 added `site.restore`. A pointer that says "console" for something three ops do is
         // worse than no pointer: it costs a caller the one read that would have told them
         // otherwise, and P2 makes this document the read a session makes first.
-        elsewhere.put("universalEditor", "console");
+        // SH809 — `universalEditor` pointed here at "console", which was honest while the bridge was
+        // a browser protocol with no agent counterpart. `/agent/editable` is that counterpart, so
+        // the capability is no longer elsewhere and a pointer would send a caller away from the
+        // route that answers them.
         // REST-only, and deliberately: the delivery surface a front end queries, and a body field
         // that would cost more on tools/list than it saves.
         elsewhere.put("graphql", "POST /graphql");
@@ -433,6 +436,14 @@ public class ShAgentManifestService {
                                 + "PageLayout or Region, include=impact says what renders through "
                                 + "it — ask before you rewrite a shared one.",
                         "console", "GET /api/v2/agent/read?address=post:Blog/blog/hello-world"),
+                // Deliberately terse: the first draft cost 90 tokens over the manifest's ceiling and
+                // P3 says lean the payload before moving it. What survives is the decision a reader
+                // makes — that this is the page's answer, not the model's, and that `content` is a
+                // page which does not render rather than one with nothing to edit.
+                new ShAgentEndpoint("GET", "/agent/editable",
+                        "Which fields a curator could edit on a page, and its regions, from the "
+                                + "rendered page. `source:content` means it does not render yet.",
+                        "console", "GET /api/v2/agent/editable?address=post:Blog/blog/hello-world"),
                 new ShAgentEndpoint("GET", "/agent/verify",
                         "Check your own work: required fields, dangling references, missing "
                                 + "assets, duplicate URLs, empty folders, unresolved links. "

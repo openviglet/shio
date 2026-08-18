@@ -1182,6 +1182,39 @@ id-keyed post verbs with no address-native form), `webhooks` (SH343) and `previe
 That is the return on the instrument, and it is the argument for building one before working the
 thirteen known instances by hand.
 
+### The first row of that inventory worked rather than read (SH809)
+
+`universalEditor` was the one `CONSOLE_ONLY` entry that **named a route and did not have it**:
+`/agent/editable`, asserted absent, with the note that SH185's bridge is a browser protocol and the
+console is its only client — *`true` is honest to a curator and not to an agent*.
+
+So an agent could read a post, render it and diff draft against live (SH619), and still not answer
+the question a curator's job turns on: **which fields on this page can somebody change**. That is the
+replication round's subject one layer up — a replica is authorable or it is a screenshot — and P7's
+*never surprise the curator* read from the other side.
+
+`GET /api/v2/agent/editable?address=post:Blog/blog/hello` answers it, and **reads the page rather
+than the model**. The editable surface is already written down in the rendered HTML by the protocol
+SH185 specified for the browser — `data-shio-prop` naming a field, `data-shio-post` the post that
+owns it, `data-shio-region` one level up — and the console's editor reads exactly those. Deriving
+editability from post-types and layout bindings would answer what the *model permits*, a different
+question, and the two would agree only by accident (SH583). What a curator can click is what the page
+says it is.
+
+`source` distinguishes the two empties: `rendered` means the page composed and this is its answer,
+`content` means it does not render yet — no layout binding, or no friendly URL — which is the normal
+state of a site mid-build and **not** the same as nothing being editable (SH169's argument, one
+endpoint over).
+
+**Three guards fired on the way, each correctly.** Removing the exception left the feature key
+unclassified, so it had to be declared `AGENT_ROUTE`; the manifest's `elsewhere` still pointed
+`universalEditor` at the console, which would now send a caller away from the route that answers
+them; and the new endpoint took the manifest **90 tokens over its ceiling**. P3 says lean first, so
+the description was cut to the decision it informs (~53 tokens), and only then was the ceiling raised
+— to the 4% headroom SH743 requires rather than to the measurement, which in turn made `manifest`'s
+`AT_THE_WALL` entry stale and the staleness check said so. Four instruments, one change, no
+argument.
+
 **Which surface owns a capability is a decision, and it is written down now (SH393).** SH268
 argued a zip cannot be a JSON-RPC message, SH186 that a JSON-shaped verb becomes an op rather than
 a thirteenth tool, SH104 that a curator's artifact has no server surface, SH288 that a file beats a

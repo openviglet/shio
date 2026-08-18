@@ -686,27 +686,3 @@ And one thing Block W deliberately did not touch: the **P1 inventory** it produc
 capabilities an agent cannot reach, most with no task against them. The law the product
 is named after has an honest list of its own breaches, and the list has been read more
 often than it has been worked.
-
-### XXVII.3 The inventory has been read more often than it has been worked (SH809)
-
-`ShAgentP1ConformanceTest` holds the honest list of capabilities the manifest advertises
-that the product's own primary operator cannot reach. Most entries are gaps rather than
-decisions — only `reviewQueue` is a decision, and it says so.
-
-`universalEditor` is the one with a route already named. Its entry reads: *SH185's
-bridge is a browser protocol and the console is its only client. `true` is honest to a
-human and not to an agent*. The target is `/agent/editable`, and the test asserts that
-route is **absent** — ship it and the entry fails until it is deleted, which is SH142's
-rule working exactly as designed.
-
-What an agent cannot do today is ask *which fields on this page a curator could edit*.
-It can read the post, render it, and diff draft against live (SH619), but the editable
-surface itself is expressed only in the browser protocol the console speaks. So an agent
-building a page cannot tell what it has made authorable — which is the replication
-round's whole subject, one layer up, and P7's *never surprise the curator* read from the
-other side.
-
-The block that produced this inventory closed without touching it. That is the note
-worth keeping: an instrument that lists breaches of the law the product is named after
-has now been printed on every run for many blocks, and read more often than it has been
-worked.

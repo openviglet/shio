@@ -11,8 +11,6 @@
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 
-- 📋 **SH809** (deps: —) **An agent cannot ask which fields on a page are editable, so the one P1 gap with a named route stays shut** — The P1 inventory classifies universalEditor CONSOLE_ONLY and names `/agent/editable` as what would resolve it; that route is asserted absent and no task has ever carried it. → §XXVII.3
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

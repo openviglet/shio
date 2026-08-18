@@ -623,6 +623,24 @@ public class ShAgentAPI {
     }
 
     /**
+     * SH809 — which fields on a page a curator could edit.
+     *
+     * <p>The one P1 exception that named a route and did not have it. {@code universalEditor} was
+     * advertised {@code true} and reachable only from the console, because SH185's bridge is a
+     * browser protocol — <em>honest to a human and not to an agent</em>, as the inventory put it.
+     * So an agent could read a post, render it, and diff draft against live, and still not answer
+     * the question a curator's job turns on.</p>
+     *
+     * <p>It reads the page rather than the model, which is deliberate: the answer is what somebody
+     * can actually click, and the annotations are already there for the browser to use.</p>
+     */
+    @GetMapping("/editable")
+    @Operation(summary = "Which fields on a page a curator could edit, and the regions it declares")
+    public ResponseEntity<Object> editable(@RequestParam(name = "address") String address) {
+        return ResponseEntity.ok(shAgentRenderService.editable(address));
+    }
+
+    /**
      * What has changed, resumably (SH88).
      *
      * <p>Without {@code since} this is a window — the most recent entries, and a starting
