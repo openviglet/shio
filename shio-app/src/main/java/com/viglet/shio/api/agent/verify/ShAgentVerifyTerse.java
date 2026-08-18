@@ -124,6 +124,31 @@ public final class ShAgentVerifyTerse {
     }
 
     /** Diagnostics: a header line plus one {@code incident} per folded failure. */
+    /**
+     * SH811 — the editable fields, in the same line vocabulary the digest uses.
+     *
+     * <p>An `edit` line per field and a `region` line per region, so an MCP client reading a digest
+     * gets the authorable half in the shape it is already parsing. The address comes first because
+     * it is the argument the next call takes.</p>
+     */
+    public static String editable(ShAgentEditable editable) {
+        StringBuilder out = new StringBuilder(ShTerse.line("editable")
+                .attr("at", editable.address())
+                .attr("source", editable.source())
+                .build());
+        for (ShHtmlEditable.Field field : editable.fields()) {
+            out.append(ShTerse.line("edit")
+                    .word(field.address())
+                    .word(field.field())
+                    .attr("region", field.region())
+                    .build());
+        }
+        for (String region : editable.regions()) {
+            out.append(ShTerse.line("region").word(region).build());
+        }
+        return out.toString();
+    }
+
     public static String diagnostics(ShAgentDiagnostics diagnostics) {
         StringBuilder out = new StringBuilder(ShTerse.line("diagnostics")
                 .word(diagnostics.incidents().size())

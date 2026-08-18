@@ -710,26 +710,3 @@ is reachable, and it is not the bar the law actually asks for, which the invento
 categories say out loud.
 
 Neither was worth holding the task for. Both are worth the block that follows it.
-
-### XXVIII.2 Reachable, and not by the operator the law names (SH811)
-
-The P1 inventory grades reachability, and the grades are not decoration. `MCP_TOOL` is
-*the strictest bar, and what P1 actually asks for*, because an MCP-only client can
-invoke it with nothing else. `AGENT_ROUTE` means a route exists and the manifest
-declares it, so an agent **with HTTP** can find it.
-
-SH809 delivered the second. That closed the exception honestly — the capability is
-reachable and the inventory is one row shorter — and it left the stricter half open: a
-client connected over `POST /mcp` and nothing else still cannot ask which fields a
-curator could edit, which is the operator the product is named after.
-
-The shape is the question, not whether. A thirteenth tool costs `tools/list` on every
-turn of every session, and SH793 measured that surface with two tools already inside
-twenty tokens of the per-tool ceiling — this is the constraint that declined
-`postTypeMerge`, so it is not hypothetical. The cheaper shape is the one SH186 and SH732
-already used: fold it into a tool that exists. `shio_verify` and `shio_digest` both take
-an address and answer a question about a rendered page, and `editable` is a third
-question of exactly that kind.
-
-Measure before choosing: what an `include=editable` on an existing tool costs against
-what a new tool costs, both against the ceiling that is already the binding constraint.

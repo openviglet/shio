@@ -58,14 +58,29 @@ public class ShDigestTool implements ShMcpTool {
         return ShMcpTool.schema(Map.of(
                 "address", ShMcpTool.string("post:<site>/<url> — the page as Shio holds it."),
                 "url", ShMcpTool.string(
-                        "Absolute delivery URL, when the instance allows fetching.")),
+                        "Absolute delivery URL, when the instance allows fetching."),
+                // SH811 — a parameter and not a thirteenth tool, decided by measurement: the twelve
+                // tools sum to 2499 against a 2500 ceiling, so `tools/list` has ONE token of
+                // headroom, and a new tool the size of this one costs 146. This costs a fraction of
+                // that and answers from the render already being taken.
+                "include", ShMcpTool.string(
+                        "editable — the fields a curator could edit here.")),
                 List.of());
     }
 
     @Override
     public String call(JsonNode arguments) {
-        return ShAgentVerifyTerse.digest(shAgentRenderService.digest(
-                ShMcpArgs.string(arguments, "address"),
-                ShMcpArgs.string(arguments, "url")));
+        String address = ShMcpArgs.string(arguments, "address");
+        String digest = ShAgentVerifyTerse.digest(
+                shAgentRenderService.digest(address, ShMcpArgs.string(arguments, "url")));
+
+        // Only for an address: `url` digests somebody else's delivery, and the editable surface is
+        // a claim about content this instance holds. Asking for it there would answer about a page
+        // Shio does not own, which is worse than refusing (P6's rule about a silent default).
+        String include = ShMcpArgs.string(arguments, "include");
+        if (include != null && include.contains("editable") && address != null) {
+            return digest + ShAgentVerifyTerse.editable(shAgentRenderService.editable(address));
+        }
+        return digest;
     }
 }

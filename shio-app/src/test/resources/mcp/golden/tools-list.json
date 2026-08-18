@@ -156,6 +156,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "include" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "url" : {
             "description" : "#string",
             "type" : "string"

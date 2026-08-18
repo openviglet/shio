@@ -1478,3 +1478,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block Y — The editable surface's own follow-ups, and the rest of the P1 inventory
 
 - **SH810** — The editable rows name an address `address` like every other endpoint, and a lint scoped to record components refuses the next one — its broad first draft flagged nine correctly named files.
+- **SH811** — `include=editable` on shio_digest costs 24 tokens where a thirteenth tool costs 146, so an MCP-only client can now ask — the strictest reach the inventory grades.

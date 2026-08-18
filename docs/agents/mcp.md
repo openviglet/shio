@@ -301,6 +301,30 @@ a cost and names what prints it, and `ShAgentP1ConformanceTest` now refuses any 
 spelling `N tokens under`. Two tools sit within 26 tokens of the ceiling, which nothing had
 said out loud before this printed.
 
+**The next capability was an argument, exactly as the budget file predicted (SH811).** That file said
+in as many words that the next thing to arrive here would be *"an argument, a trim, or a conversation
+about which tool leaves"*, and SH811 took the first — because the measurement left no real choice:
+
+| option | cost |
+|---|---|
+| `include=editable` on `shio_digest` | **24** tokens (146 → 170), after the description was cut to its decision |
+| a thirteenth tool the size of `shio_digest` | **146** tokens — and `ShMcpServerTest` refuses a thirteenth anyway |
+
+The twelve tools summed to **2499 against a 2500 ceiling** — one token of headroom — so *any*
+addition needed the line moved. It went to **2560** rather than to the 2523 measured, because a
+ceiling at its wall refuses the next addition instead of measuring it, which is the failure SH743
+named; 37 free is about two arguments at the ~20 SH795 measured one to cost.
+
+It also belongs on `shio_digest` on the merits and not only on the budget: that tool takes an address
+and answers a structural question about the rendered page, and *which fields are editable* is a third
+question of exactly that kind, off exactly that render (P10). SH809's `/agent/editable` gave the
+capability an `AGENT_ROUTE`; this is the `MCP_TOOL` reach the inventory calls the bar P1 actually
+asks for.
+
+Two guards caught the change on the way, both by design: the `tools/list` **golden** moved by exactly
+four lines — every MCP client reads those bytes and nothing else in the build checks them — and SH673
+found the budget **restated** in `mcp-transport.conformance.mjs`, which is what that rule exists for.
+
 **And a tool at the wall is now declared rather than discovered (SH795).** `AT_THE_WALL` in
 `ShMcpToolBudgetTest` holds a tool with no room for another argument and why it cannot be
 trimmed — the device `ShAgentResponseBudgetTest` uses for response budgets, one layer down,

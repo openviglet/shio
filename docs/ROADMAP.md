@@ -11,8 +11,6 @@
 
 ## Block Y — The editable surface's own follow-ups, and the rest of the P1 inventory
 
-- 📋 **SH811** (deps: —) **An MCP-only client still cannot ask which fields are editable, because the answer is a route and not a tool** — SH809 classified it AGENT_ROUTE, which the inventory's own hierarchy calls reachable but weaker than a tool — the bar P1 actually asks for. → §XXVIII.2
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
