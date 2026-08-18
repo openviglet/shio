@@ -21,6 +21,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH529 — three removals, held by an assertion instead of by memory (SH20, SH21, SH60).
  *
@@ -55,6 +58,13 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(value = ShSourceScan.Reads.BOTH,
+        reason = "SH827 added a content scan beside the file-name ones. It reads CODE for the Java "
+                + "sources — `ShSourceText.code`, because this repository explains its removals by "
+                + "naming them and a raw read reports the explanation as the defect — and raw text "
+                + "for the Liquibase YAML, where a re-added column is data rather than a symbol. "
+                + "The vacuity check then asserts a PROSE phrase is *not* found, which is the "
+                + "distinction itself and only says anything if both halves are read.")
 class ShRemovalsStayedRemovedTest {
 
     private static final Path MAIN_RESOURCES = Path.of("src", "main", "resources");
@@ -135,6 +145,20 @@ class ShRemovalsStayedRemovedTest {
         assertThat(matching(MAIN_RESOURCES, name -> name.equals("application.properties")))
                 .as("and reaches src/main/resources too, or the three assertions above are theatre")
                 .isNotEmpty();
+
+        // SH827 — the content scan needs its own proof, and for a stronger reason than the two
+        // above: `declaring` strips comments, so a strip that took the whole file would report a
+        // clean tree for ever and look exactly like a removal that held.
+        assertThat(declaring(MAIN_JAVA, "ShPostTypeAttr"))
+                .as("SH827: `declaring` finds a symbol that IS there. An absence assertion has one "
+                        + "failure mode — matching nothing — and this one strips comments first, "
+                        + "which is a second way to match nothing that reads identically")
+                .isNotEmpty();
+        assertThat(declaring(MAIN_JAVA, "SH177 dropped the column"))
+                .as("SH827: and does NOT find a phrase that exists only in prose, which is the "
+                        + "distinction it was built for — this repository explains its removals by "
+                        + "naming them, so a raw scan reports the explanation as the defect")
+                .isEmpty();
     }
 
     private static List<String> matching(Path root, java.util.function.Predicate<String> name) {
@@ -157,6 +181,93 @@ class ShRemovalsStayedRemovedTest {
             return Files.readString(path);
         } catch (IOException e) {
             throw new UncheckedIOException("cannot read " + path.toAbsolutePath(), e);
+        }
+    }
+
+    /**
+     * SH827 — the denormalization that was correct exactly once.
+     *
+     * <h2>What SH177 removed, and why an absence is the right shape for it</h2>
+     *
+     * <p>{@code schemaJson} was a denormalized copy of a post-type's field list, and its only writer
+     * was the one-shot {@code POST /api/v2/migration/unified/run}. So it was right the day the
+     * migration ran, <b>empty</b> for every type a blueprint or {@code shio push} created after, and
+     * <b>stale</b> for every type edited after — a denormalization with no invalidation. The column
+     * went, and with it the migration service, its endpoint and the console's own
+     * {@code ShPostUnifiedMigrationService}, because the model already carries {@code fields} and
+     * one shape is cheaper to keep right than two.</p>
+     *
+     * <p>Nothing would notice any of it coming back, which is what this class is for: a removal is
+     * the one regression with no human in its path. The likely reversal is not a revert either — it
+     * is somebody adding a cached field list for a perfectly good reason and rediscovering, at
+     * whatever cost SH177 already paid, that there is no invalidation to hang it on.</p>
+     *
+     * <h2>By content, not by file name</h2>
+     *
+     * <p>The other assertions here match file names, which is right for a bundle or a widget. A
+     * dropped column and a retired mapping live <em>inside</em> files that legitimately remain, so
+     * this reads them. {@code ShSourceText.code} strips the comments first — {@code post-unified.ts}
+     * and this very javadoc explain the removal by naming it, and a scan that could not tell a
+     * mention from a use would report the explanation as the defect (SH825's family).</p>
+     */
+    @Test
+    @DisplayName("SH177: schemaJson, its migration endpoint and both migration services are gone")
+    void theDenormalizedSchemaStayedRemoved() {
+        List<String> found = new ArrayList<>();
+
+        for (String name : List.of("schemaJson", "migration/unified", "ShPostUnifiedMigrationService")) {
+            found.addAll(declaring(MAIN_JAVA, name));
+        }
+        // The column itself: a Liquibase changeset adding it back would not name a Java symbol.
+        found.addAll(declaring(MAIN_RESOURCES, "schemaJson"));
+        found.addAll(matching(MAIN_JAVA, file -> file.contains("MigrationService")));
+
+        assertThat(found)
+                .as("""
+                        SH177 dropped `schemaJson` and everything that wrote it. A copy of the \
+                        field list with no invalidation is right on the day it is built and wrong \
+                        from the next write onward — empty for every post-type created after, \
+                        stale for every one edited after — and the model already carries `fields`.
+                        If this is a deliberate return, it needs the invalidation SH177 could not \
+                        find, and this assertion is where to say so.""")
+                .isEmpty();
+    }
+
+    /**
+     * Files under {@code root} whose <b>code</b> names {@code needle} — comments stripped (SH827).
+     *
+     * <p>The strip is not tidiness. This repository explains its removals in prose, so the sentence
+     * *"there is no `schemaJson` — SH177 dropped the column"* is exactly the text a raw scan would
+     * report as the column coming back. Same distinction {@code @ShSourceScan} exists to make, one
+     * assertion along.</p>
+     */
+    private static List<String> declaring(Path root, String needle) {
+        if (!Files.exists(root)) {
+            return List.of();
+        }
+        try (Stream<Path> files = Files.walk(root)) {
+            return files.filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String file = path.getFileName().toString();
+                        return file.endsWith(".java") || file.endsWith(".yaml") || file.endsWith(".xml");
+                    })
+                    .filter(path -> readCode(path).contains(needle))
+                    .map(path -> path + " names " + needle)
+                    .sorted()
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static String readCode(Path path) {
+        try {
+            String body = Files.readString(path);
+            return path.getFileName().toString().endsWith(".java")
+                    ? ShSourceText.code(body)
+                    : body;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

@@ -205,7 +205,7 @@ const DEBT = [
   // SH50 came off in SH823: `console-english.test.mjs` is the assertion that would have caught
   // it — a sweep of hardcoded English with nothing watching for the next one.
   "SH7", "SH8", "SH14", "SH48", "SH49", "SH56", "SH57", "SH59", "SH73",
-  "SH177", "SH178", "SH179", "SH180", "SH182", "SH237",
+  "SH179", "SH180", "SH182", "SH237",
   // PAID (SH529). Removals and port-or-deprecate decisions: `ShRemovalsStayedRemovedTest` asserts
   // the legacy AngularJS bundles, the Thymeleaf starter and the four deprecated widget names are
   // absent. They ranked first for return-risk rather than for cost — an absence has NOBODY looking

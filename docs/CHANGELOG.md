@@ -1530,3 +1530,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AK — The revealed debt, next file
 
 - **SH826** — Four more paid and the debt is 106 — three of them belonged in `transform/` rather than the API test recorded, which puts the pointer-miss rate at two in five, not a third.
+
+## Block AL — Two removals nobody is watching
+
+- **SH827** — A content scan holds `schemaJson`, its endpoint and both migration services absent; a second guard holds `post-unified.ts` to one exported schema builder.
