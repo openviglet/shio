@@ -25,6 +25,8 @@ Block I, and so on. Each section header names its block.
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
+## Block AD — Two comparators that judge each other, and the state they can both reach
+
 ## Table of contents
 
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
@@ -731,3 +733,25 @@ URL. The rest are work.
 The other half is to keep working it while the reading is cheap. One entry names its
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
+
+## XXXIII A red that is entirely the recording of a red (SH818)
+
+`ShDeclaredRedTest` judges every gate but `java`; `red-suites.test.mjs` judges every
+gate but `js`. Each reads the other's `.gates/<key>.json` and fails on an undeclared
+red. That is SH800's design and it is right — a suite cannot know its own outcome — but
+it has a fixed point nobody named: once **both** stamps are red, every run of either
+re-reads the other's red and stamps itself red again. The Java suite was 1907/0 with one
+failure, and that failure was the js stamp. The js suite was clean but for the java
+stamp. Neither had a defect and there was no sequence of runs that said so.
+
+It was reached in the ordinary way. A real red in `java` made `js` red about it; fixing
+the java defect was not enough, because by then js was red too. The escape used was
+deleting both stamps and re-running in order, which works — an absent stamp is honestly
+*not run*, and the report says as much. But nothing here sanctions it, `gate-stamp.mjs`
+has no verb for it, and a stamp deleted to dodge a genuine red is indistinguishable from
+this.
+
+The fix is for the comparators to detect the cycle rather than join it: a gate whose
+stamp is red, where the only red the other reports is *this* gate, is not evidence — it
+is the pair, and the report should say so and name the exit. `pnpm gates` is where a
+reader already looks.

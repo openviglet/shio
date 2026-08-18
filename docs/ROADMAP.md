@@ -9,6 +9,10 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block AD — Two comparators that judge each other, and the state they can both reach
+
+- 📋 **SH818** (deps: —) **The java and js gates each go red only about the other's stamp, and no run of either can clear it** — A deadlock with no failure under it, escaped by deleting stamps — which nothing sanctions and nothing tells from dodging a real red, so the comparators should name the cycle. → §XXXIII
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
