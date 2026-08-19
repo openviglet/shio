@@ -103,7 +103,9 @@ public record ShAgentDigest(String source, String address, String url, Integer s
      *                 regions whose lists are disjoint is a page serving two visual languages, which
      *                 is the second positional defect and the one nothing could state. A fact here;
      *                 `verify` is where it becomes a finding, because a digest describes and the
-     *                 gate judges
+     *                 gate judges. SH829 — named by the {@code Theme} post each sheet came from
+     *                 ({@code data-shio-theme} on the {@code <style>}), falling back to
+     *                 {@code style[N]} for a sheet no post owns and for a title two sheets share
      */
     public record Region(String tag, int order, String markup, int unstyled,
                          List<String> styledBy) {

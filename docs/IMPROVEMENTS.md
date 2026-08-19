@@ -533,36 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.116 An index is not a name (SH829)
-
-SH765 shipped and the column is there. On a fresh replica of `www.viglet.org`:
-
-    regions (document order):
-      header      1      verbatim  4 unstyled  style[2]
-      nav         2      verbatim  0 unstyled  style[2]
-      section     3      verbatim  1 unstyled  style[1]+style[2]
-      section×8   4-11   sections  0 unstyled  style[1]
-      footer      12     sections  4 unstyled  style[2]
-
-That is the two visual languages, stated. Regions 4–11 are painted by one sheet and the
-chrome by another, and region 3 by both — which took a screenshot and an hour of
-hand-parsing to establish before this column existed.
-
-What it does not say is **which sheet**. `style[1]` and `style[2]` are ordinal positions
-in the document, and nothing in the digest's output maps them to anything. Both sheets
-are ordinary posts with titles — `VigR3 (Shio)` and `VigR3 (captured)` — so the names
-are one read away and the reader has to make it.
-
-That read is the whole cost this column was added to remove. A region table that says
-`style[2]` answers *there are two* and leaves *which one is the captured theme* to a
-second call; naming them answers both at once, and a name survives a page where the
-sheets appear in a different order.
-
-Print the theme's title where the post has one and fall back to the index where it does
-not — an inline `<style>` a layout writes has no title and honestly is `style[N]`. The
-distinction is worth keeping: it is exactly the difference between a sheet somebody can
-edit and one nobody can.
-
 ### XVII.117 The tool warning about the artefact it just wrote (SH830)
 
 A replication onto an **empty** instance — 0 sites, 0 post-types — converts cleanly: 66

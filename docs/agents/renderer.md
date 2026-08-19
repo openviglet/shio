@@ -702,6 +702,19 @@ renderer over one body of content at a second address. See the section on it bel
   for. The fixture is half the lesson: SH549's sentinel was `.sh549-captured-marker{color:#123456}`
   — no `"`, no `&` — so it survived escaping unchanged and passed on a page whose every `url()` had
   been destroyed. It carries an `@font-face` now.
+- **`{{theme.title}}` sits beside it and is escaped, which is the same decision read the other way
+  (SH829)** — the model's theme frame carries the resolved `Theme` post's title, so a layout can
+  write `<style data-shio-theme="{{theme.title}}">{{theme.css}}</style>` and the render digest's
+  region table can print `VigR3 (captured)` where it printed `style[2]`. Two stashes, two contexts,
+  two encodings: the CSS is raw because a `<style>` is a raw-text element, and the title is escaped
+  because it is going into an **attribute** — the reason `ShRegionComposer` put a theme's title on
+  `<body>` rather than into a comment (SH297). Getting the pair backwards is invisible on an ordinary
+  title and breaks the digest's key on the first one with an `&` in it, which is what
+  `ShPageRenderTest` asserts. `null` rather than an empty string when no theme resolved, so
+  `data-shio-theme=""` reads as *no post* and the digest keeps `style[N]`; the title reaches
+  `ShRenderModel.of` as a fourth argument from `ShPageRenderService`, which already resolved it for
+  SH297's marker, rather than as a fourth component on `ShThemeAssets` — that record is the theme's
+  *assets*, built by `ShThemeTokens` from three fields of the post, none of which is its title.
 - **The list is derived, because it stated a rule and held four of six (SH657)** — SH555 spelled the
   pairs by hand while its own sentence said *the fields declared as `Ace Editor - CSS/JavaScript`*,
   and `ShRenderPostTypes` declares **six**. `Theme.TOKENS` (SH195) and `SiteScripts.SCRIPTS` (SH389)

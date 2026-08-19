@@ -210,7 +210,12 @@ public class ShPageRenderService {
         String themeTitle = themeTitleOf(layout);
         String missingTheme = theme == null && themeTitle != null && !themeTitle.isBlank()
                 ? themeTitle : null;
-        Map<String, Object> model = new LinkedHashMap<>(renderModel.of(page, theme, scripts));
+        // SH829 — the title reaches the model as well as the missing-theme marker, so a layout can
+        // name the sheet it emits and the digest's region table can print `VigR3 (captured)` where
+        // it printed `style[2]`. Same value, one resolution: `themeTitle` is what the layout names
+        // and, when `theme` is non-null, what the post resolving it is called.
+        Map<String, Object> model =
+                new LinkedHashMap<>(renderModel.of(page, theme, scripts, themeTitle));
         // Reserved, like `post`/`site`/`theme`: it lets the helpers pick DRAFT vs PUBLISHED
         // and lets a layout render its own "you are looking at a draft" marker.
         //

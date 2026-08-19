@@ -812,7 +812,7 @@ function pageLayout(markup, site, theme, capturedFor = false) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{post.title}}</title>
 ${HEAD_CONVENTIONS_HTML}
-<style>{{theme.css}}</style>
+<style data-shio-theme="{{theme.title}}">{{theme.css}}</style>
 ${capturedFor ? `${CAPTURED_STYLE_HTML}\n` : ""}</head>
 <body class="shio-page">
 ${PAGE_BODY_HTML}
@@ -895,11 +895,23 @@ export const HEAD_CONVENTIONS_HTML =
  * emits today. More than one needs markup <em>between</em> two accepted blocks on a page with no
  * leading run, and `describeConversion` says so when it writes one, because a megabyte repeated is
  * a payload regression and a reviewer should hear it from the command that caused it (P9).</p>
+ *
+ * <h3>It says whose sheet it is (SH829)</h3>
+ *
+ * <p>`data-shio-theme="{{title}}"` is the captured `Theme` post's own title, which `getRelation`
+ * already puts on every row — so a replica's region table prints `VigR3 (captured)` beside the
+ * layout's `VigR3 (Shio)` instead of `style[2]` beside `style[1]`, and a reader stops having to make
+ * a second call to learn which ordinal is which. An **attribute**, because a title is content and
+ * Handlebars escapes an attribute value; HTML's own `title` on a `<style>` would have been the
+ * obvious spelling and is the wrong one — it declares an *alternate stylesheet set*, and two sheets
+ * with different titles means the browser paints with one of them.</p>
  */
 export const CAPTURED_STYLE_HTML =
-  '{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}'
+  '{{#if content}}{{#getRelation "/theme/captured"}}'
+  + '<style data-shio-theme="{{title}}">{{CSS}}</style>{{/getRelation}}{{/if}}'
   + '{{#unless content}}{{#getRelation sections}}{{#if html}}'
-  + '{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}'
+  + '{{#getRelation "/theme/captured"}}'
+  + '<style data-shio-theme="{{title}}">{{CSS}}</style>{{/getRelation}}'
   + '{{/if}}{{/getRelation}}{{/unless}}';
 
 /**

@@ -174,6 +174,67 @@ class ShHtmlRegionsTest {
                         tuple("footer", List.of("style[1]")));
     }
 
+    /**
+     * SH829 — the column SH694 added to end a lookup was ending in one.
+     *
+     * <p>{@code style[1]} and {@code style[2]} are ordinal positions, and nothing the digest returned
+     * mapped them to anything; both sheets are ordinary {@code Theme} posts with titles, so the
+     * reader had to make a second call to learn which ordinal was the captured theme. The
+     * {@code <style>} now carries that title, and this asserts the whole rule in one page: a named
+     * sheet prints its name, and an inline sheet a layout wrote by hand has no post and keeps the
+     * index — the distinction between a sheet somebody can edit and one nobody can.</p>
+     */
+    @Test
+    @DisplayName("SH829: a region names its stylesheet's theme, and an unnamed sheet keeps its index")
+    void styledByNamesTheTheme() {
+        String html = """
+                <html><head>
+                  <style data-shio-theme="VigR3 (Shio)">.shio-section{padding:2rem}</style>
+                  <style data-shio-theme="VigR3 &amp; co">.site-head{color:#111}</style>
+                  <style>.hand-written{color:#333}</style>
+                </head><body>
+                  <section sh-post="a1" class="shio-section">x</section>
+                  <header class="site-head">chrome</header>
+                  <footer class="hand-written">chrome</footer>
+                </body></html>
+                """;
+
+        var regions = ShHtmlRegions.of(html, List.of(), ShHtmlAppearance.definedBySheet(html));
+
+        assertThat(regions)
+                .as("""
+                        the title travels as an attribute, so it survives being content — `&amp;` \
+                        decodes back to the post's own name rather than reaching the reader as \
+                        markup (SH829).""")
+                .extracting(ShHtmlRegions.Region::tag, ShHtmlRegions.Region::styledBy)
+                .containsExactly(
+                        tuple("section", List.of("VigR3 (Shio)")),
+                        tuple("header", List.of("VigR3 & co")),
+                        tuple("footer", List.of("style[3]")));
+    }
+
+    /**
+     * SH829 — a name two sheets share is not a name, and half-naming them is worse than the index.
+     *
+     * <p>Printing {@code VigR3} twice would give the reader two keys mapping to one post and one
+     * mapping to neither, which is the second lookup this column removes, restored and disguised.</p>
+     */
+    @Test
+    @DisplayName("SH829: two sheets naming one theme both fall back to their positions")
+    void ambiguousThemeNamesFallBackToTheIndex() {
+        String html = """
+                <html><head>
+                  <style data-shio-theme="VigR3">.a{color:#111}</style>
+                  <style data-shio-theme="VigR3">.b{color:#222}</style>
+                </head><body>
+                  <header class="a">x</header><footer class="b">y</footer>
+                </body></html>
+                """;
+
+        assertThat(ShHtmlAppearance.definedBySheet(html))
+                .containsOnlyKeys("style[1]", "style[2]");
+    }
+
     @Test
     @DisplayName("SH694: with no sheet map the list is empty, which is an absence not a claim")
     void styledByIsEmptyWithoutSheets() {

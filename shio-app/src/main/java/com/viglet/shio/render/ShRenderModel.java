@@ -119,13 +119,25 @@ public class ShRenderModel {
      */
     public Map<String, Object> of(ShPostUnified post, ShThemeAssets theme,
                                   Map<String, Object> scripts) {
+        return of(post, theme, scripts, null);
+    }
+
+    /**
+     * @param themeTitle SH829 — the title of the {@code Theme} post {@code theme} came from, so a
+     *                   layout can name the sheet it emits. An overload rather than a fourth
+     *                   component on {@link ShThemeAssets}: the record is the theme's <em>assets</em>
+     *                   and is built by {@code ShThemeTokens} from three fields of the post, none of
+     *                   which is its title — the caller that resolved the post is the one that knows.
+     */
+    public Map<String, Object> of(ShPostUnified post, ShThemeAssets theme,
+                                  Map<String, Object> scripts, String themeTitle) {
         // Resolved once: both frames need it now that SH337 projects the site's origin, and
         // the folder walk below is not free.
         ShSite site = siteOf(post);
         Map<String, Object> model = new LinkedHashMap<>(fieldsOf(post));
         model.put("post", postFrame(post, site));
         model.put("site", siteFrame(site, scripts));
-        model.put("theme", themeFrame(theme));
+        model.put("theme", themeFrame(theme, themeTitle));
         return ShStableMap.copyOf(model);
     }
 
@@ -322,8 +334,15 @@ public class ShRenderModel {
      * {@code {{theme.css}}}: the fix belongs where the value is built, or every hand-written layout
      * in the product keeps the defect and only the generated one is cured.</p>
      */
-    private Map<String, Object> themeFrame(ShThemeAssets theme) {
+    private Map<String, Object> themeFrame(ShThemeAssets theme, String themeTitle) {
         Map<String, Object> frame = new LinkedHashMap<>();
+        // SH829 — escaped, unlike the two below: this one is written into an *attribute*
+        // (`<style data-shio-theme="{{theme.title}}">`), which is the context that made
+        // `ShRegionComposer` put a theme's title on `<body>` rather than into a comment. Null when
+        // no theme resolved, so `data-shio-theme=""` is the honest empty and the digest keeps
+        // `style[N]`.
+        frame.put("title", theme == null || themeTitle == null || themeTitle.isBlank()
+                ? null : themeTitle);
         frame.put("css", theme == null ? null : raw(theme.css()));
         frame.put("javascript", theme == null ? null : raw(theme.javascript()));
         // SH195 — the same values the `:root` block carries, dotted, for the places a custom

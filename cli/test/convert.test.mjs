@@ -406,8 +406,10 @@ test("SH449: nothing accepted writes the page verbatim, which is what fidelity m
   const layout = document.posts.find((post) => post.type === "PageLayout");
   assert.match(layout.data.HTML, /\{\{\{content\}\}\}/,
     "the shell interpolates the page's markup — triple-stash, or the replica renders as escaped text");
-  assert.match(layout.data.HTML, /<style>\{\{theme\.css\}\}<\/style>/,
-    "and inlines the captured theme, which is the one thing a replica must not take from the source");
+  assert.match(layout.data.HTML, /<style data-shio-theme="\{\{theme\.title\}\}">\{\{theme\.css\}\}<\/style>/,
+    "and inlines the captured theme, which is the one thing a replica must not take from the source"
+      + " — SH829: named by the post it came from, so the digest's region table prints a title and"
+      + " not an ordinal the reader has to resolve with a second call");
   assert.deepEqual(
     document.postTypeLayout,
     { Page: "Acme (layout)" },
@@ -1586,7 +1588,9 @@ test("SH510: an authorable conversion is presented by the theme it can apply", (
     "one handle, not two. Two stylesheets on one page would make the cascade depend on which came "
       + "first, which is the accident SH424 spent a task removing - reintroduced by inclusion",
   );
-  assert.equal(layout.data.HTML.split("<style>").length - 1, 1);
+  // `<style` and not `<style>`: SH829 gave the element an attribute, and a count keyed on the bare
+  // closing bracket would have read one stylesheet as none — which is the direction that passes.
+  assert.equal(layout.data.HTML.split("<style").length - 1, 1);
 });
 
 /** The per-page block SH549 puts in the layout's head — read from the module, never restated. */
@@ -1600,6 +1604,35 @@ test("SH549: the block's hardcoded URL is the one the captured theme post is wri
   assert.ok(
     CAPTURED_STYLE_HTML.includes(`"${CAPTURED_THEME_URL}"`),
     `${CAPTURED_STYLE_HTML} must reference ${CAPTURED_THEME_URL}`,
+  );
+});
+
+test("SH829: every <style> a conversion emits says which Theme post it came from", () => {
+  // The two sheets a replica carries are two posts with titles, and the digest's region table
+  // printed `style[1]` and `style[2]` — an ordinal the reader had to resolve with a second call.
+  // Both emissions are here, so both are asserted here: a page that named one and not the other
+  // would print a title beside an index, which is the lookup restored and disguised.
+  const opened = CAPTURED_STYLE_HTML.match(/<style\b[^>]*>/g) ?? [];
+  assert.equal(opened.length, 2, "both branches of SH772's condition emit the captured sheet");
+  for (const tag of opened) {
+    assert.equal(
+      tag, '<style data-shio-theme="{{title}}">',
+      "`title` is the row `getRelation` yields for the captured Theme post, and an attribute is "
+        + "where Handlebars escapes it - a title is content, and HTML's own `title` on a <style> "
+        + "would declare an alternate stylesheet set and stop the browser painting with both",
+    );
+  }
+
+  const { document } = buildConversion({
+    proposal: withCapturedTheme({ pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }] }),
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+  const layout = document.posts.find((post) => post.type === "PageLayout");
+  assert.ok(
+    layout.data.HTML.includes('<style data-shio-theme="{{theme.title}}">{{theme.css}}</style>'),
+    "and the layout's own sheet is named from the model, so a hand-written layout that does not "
+      + "ask for the title honestly keeps style[N] rather than being given an invented one",
   );
 });
 

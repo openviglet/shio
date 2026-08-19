@@ -75,6 +75,20 @@ public final class ShHtmlAppearance {
     private static final Pattern STYLE_BLOCK =
             Pattern.compile("(?is)<style(\\s[^>]*)?>(.*?)</style>");
 
+    /**
+     * SH829 — the {@code Theme} post whose CSS a {@code <style>} carries, on the element itself.
+     *
+     * <p>{@code data-shio-theme} rather than HTML's own {@code title}: a titled {@code <style>} is
+     * an <b>alternate stylesheet set</b>, and two of them with different titles means the browser
+     * applies one and drops the other. Naming the sheet must not change which sheets paint the
+     * page.</p>
+     *
+     * <p>{@code data-shio-theme-missing} cannot match it — {@code -} is not {@code \s*=} — which is
+     * what lets the two attributes share a prefix without sharing a reading.</p>
+     */
+    private static final Pattern SHEET_THEME =
+            Pattern.compile("(?is)\\bdata-shio-theme\\s*=\\s*(\"([^\"]*)\"|'([^']*)'|([^\\s>]+))");
+
     private ShHtmlAppearance() {
         throw new IllegalStateException("Utility class");
     }
@@ -109,37 +123,107 @@ public final class ShHtmlAppearance {
      * <em>partition</em> — a class costs twice only where two sheets both define it.</p>
      */
     private static List<String> styleSheetsIn(String html) {
+        return sheetsIn(html).stream().map(Sheet::css).toList();
+    }
+
+    /**
+     * One {@code <style>} element: the {@code Theme} post it names, and what it contains.
+     *
+     * @param theme the post's title from {@code data-shio-theme}, or {@code null} — an inline
+     *              {@code <style>} a layout writes is nobody's post and has no name to print
+     */
+    private record Sheet(String theme, String css) {
+    }
+
+    private static List<Sheet> sheetsIn(String html) {
         if (html == null) {
             return List.of();
         }
-        List<String> sheets = new ArrayList<>();
+        List<Sheet> sheets = new ArrayList<>();
         Matcher matcher = STYLE_BLOCK.matcher(html);
         while (matcher.find()) {
             // Separated, so a selector at the end of one block and one at the start of the next
             // cannot be read as a single name.
-            sheets.add(matcher.group(2));
+            sheets.add(new Sheet(themeOf(matcher.group(1)), matcher.group(2)));
         }
         return sheets;
     }
 
+    /** The attribute's value, decoded — it travelled as an attribute so a title could be content. */
+    private static String themeOf(String attributes) {
+        if (attributes == null) {
+            return null;
+        }
+        Matcher matcher = SHEET_THEME.matcher(attributes);
+        if (!matcher.find()) {
+            return null;
+        }
+        String value = firstNonNull(matcher.group(2), matcher.group(3), matcher.group(4));
+        String title = org.jsoup.parser.Parser.unescapeEntities(value, true).trim();
+        return title.isEmpty() ? null : title;
+    }
+
     /**
-     * Which of the page's own stylesheets defines each class (SH694).
+     * Which of the page's own stylesheets defines each class (SH694), by the name each carries
+     * (SH829).
      *
-     * <p>Keyed {@code style[1]}, {@code style[2]} — the sheet's position in the document, which is
-     * what the markup actually carries. A friendlier name would have to be invented: a rendered page
-     * does not say which block is the captured theme and which the Shio one, and a label the reader
-     * cannot check is the thing SH689 spent a task removing.</p>
+     * <h3>An index is not a name</h3>
+     *
+     * <p>SH694 keyed these {@code style[1]}, {@code style[2]} — the sheet's position in the document
+     * — and said a friendlier name would have to be invented, because a rendered page does not say
+     * which block is the captured theme and which the Shio one. It does now: the {@code <style>}
+     * carries {@code data-shio-theme} with the title of the {@code Theme} post whose CSS it holds,
+     * so the name is read off the page rather than invented, which is the property SH689 was
+     * protecting. A region table that says {@code VigR3 (captured)} answers <em>which sheet</em>;
+     * one that says {@code style[2]} answers only <em>there are two</em> and costs a second read.</p>
+     *
+     * <p>The index stays where there is nothing to read: an inline {@code <style>} a layout writes
+     * by hand is not a post and honestly is {@code style[N]}. Keeping the distinction is worth
+     * something on its own — it is exactly the difference between a sheet somebody can edit and one
+     * nobody can.</p>
+     *
+     * <h3>A name that cannot be told apart is not one either</h3>
+     *
+     * <p>Two sheets naming the same title, or a title that collides with the {@code style[N]} of
+     * another sheet, both fall back to the index for <b>every</b> sheet involved. Half-naming them
+     * would print two keys the reader cannot map back to two posts, which is the second lookup this
+     * removes, restored.</p>
      */
     public static Map<String, Set<String>> definedBySheet(String html) {
         Map<String, Set<String>> bySheet = new LinkedHashMap<>();
-        List<String> sheets = styleSheetsIn(html);
+        List<Sheet> sheets = sheetsIn(html);
+        List<String> names = keysFor(sheets);
         for (int at = 0; at < sheets.size(); at++) {
-            Set<String> names = definedIn(sheets.get(at));
-            if (!names.isEmpty()) {
-                bySheet.put("style[" + (at + 1) + "]", names);
+            Set<String> defined = definedIn(sheets.get(at).css());
+            if (!defined.isEmpty()) {
+                bySheet.put(names.get(at), defined);
             }
         }
         return bySheet;
+    }
+
+    /**
+     * One key per sheet, in document order: its theme's title where that is unambiguous, else its
+     * position.
+     */
+    private static List<String> keysFor(List<Sheet> sheets) {
+        List<String> indexes = new ArrayList<>();
+        for (int at = 0; at < sheets.size(); at++) {
+            indexes.add("style[" + (at + 1) + "]");
+        }
+        Set<String> ambiguous = new LinkedHashSet<>(indexes);
+        Set<String> seen = new LinkedHashSet<>();
+        for (Sheet sheet : sheets) {
+            if (sheet.theme() != null && !seen.add(sheet.theme())) {
+                ambiguous.add(sheet.theme());
+            }
+        }
+        List<String> keys = new ArrayList<>();
+        for (int at = 0; at < sheets.size(); at++) {
+            String theme = sheets.get(at).theme();
+            keys.add(theme == null || ambiguous.contains(theme) ? indexes.get(at) : theme);
+        }
+        return keys;
     }
 
     /**

@@ -2372,6 +2372,27 @@ region names a sheet the column is **omitted** rather than filled with dashes: a
 means the caller supplied no sheet map, and a dash down the page would assert that nothing styles any
 of it (SH694's absence-is-not-a-claim rule, one reader along).
 
+**And SH829 is that column naming what it points at.** `style[1]` and `style[2]` are ordinal
+positions, and nothing the digest returned mapped them to anything — so a column added to end a
+lookup ended in one: both sheets are ordinary `Theme` posts with titles, and the reader had to make a
+second call to learn which ordinal was the captured theme. The `<style>` element now carries
+**`data-shio-theme`** with that title, written by the two places that emit a themed sheet — the
+converted layout's `<style data-shio-theme="{{theme.title}}">{{theme.css}}</style>` and
+`CAPTURED_STYLE_HTML`'s `{{title}}` off the `getRelation` row — and `definedBySheet` keys on it:
+
+```
+regions (document order):
+  header      1      verbatim  4 unstyled  VigR3 (captured)
+  section×8   4-11   sections  0 unstyled  VigR3 (Shio)
+```
+
+The name is **read off the page**, not invented, which is the property SH689 was protecting when
+SH694 chose the ordinal. Three rules keep it honest: a `<style>` with no attribute is nobody's post
+and keeps `style[N]` — the difference between a sheet somebody can edit and one nobody can; a title
+two sheets share sends *both* back to their indexes, because half-naming them restores the second
+lookup in disguise; and the title travels as an **attribute**, not HTML's own `title` on `<style>`,
+which would declare an *alternate stylesheet set* and stop a browser painting with both.
+
 **The finding is disjointness, not "two sheets exist".** Almost every real page carries a reset and a
 theme; a rule that fired on those would be the next thing nobody reads. It fires when the chrome's
 sheets and the sections' sheets have *nothing* in common, and a test pins the negative case.

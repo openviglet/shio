@@ -1234,6 +1234,7 @@
 - **SH772** — The head has a second arm for the page whose kept markup is all in sections, guarded by the field only a markup section carries — because a head cannot ask an aggregate question about a relation.
 - **SH773** — vocabulary-drift reports a live type that lost the references key three readers depend on — only the silent drift, scoped to the types a scan uses, with a fix that provisioning cannot perform.
 - **SH774** — The banner reads the composed page rather than two model keys, so a page whose kept markup is all in sections reports mixed; resolving the sections was priced at a query each and refused.
+- **SH829** — The `<style>` carries `data-shio-theme` with its Theme post's title, so the region table prints `VigR3 (captured)` rather than `style[2]`; a sheet no post owns keeps its index.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

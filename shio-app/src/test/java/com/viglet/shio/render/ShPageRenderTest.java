@@ -575,6 +575,54 @@ class ShPageRenderTest {
     }
 
     @Test
+    @DisplayName("SH829: {{theme.title}} names the sheet, and it is escaped where the CSS is not")
+    void aThemesTitleNamesTheSheetItEmits() {
+        // The pair, in one page: `{{theme.css}}` is raw because a `<style>` is a raw-text element
+        // (SH461), and `{{theme.title}}` beside it is *not*, because it is written into an attribute
+        // — the same reason SH297 put a theme's title on `<body>` instead of into a comment. Getting
+        // this backwards is invisible on an ordinary title and breaks the digest's key on the one
+        // title with an ampersand in it.
+        String site = "sh829-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh829Page" + UUID.randomUUID().toString().substring(0, 8);
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH829_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType themeType = postType(ShSystemPostType.THEME, (byte) 1, when);
+
+            post(owner, root, themeType, "VigR3 & co", "/theme",
+                    json("CSS", ".shio-section{padding:2rem}"), when);
+            post(owner, root, layoutType, "SH829_LAYOUT", "/l",
+                    json("HTML", "<html><head><style data-shio-theme=\"{{theme.title}}\">"
+                            + "{{theme.css}}</style></head>"
+                            + "<body><section class=\"shio-section\">{{TEXT}}</section></body></html>",
+                            "THEME", "VigR3 & co"),
+                    when);
+            post(owner, root, pageType, "Home", "/", json("TEXT", "body"), when);
+        });
+
+        String html = shPageRenderService.render(site, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("the attribute carries the Theme post's title, escaped for its context")
+                .contains("data-shio-theme=\"VigR3 &amp; co\"");
+        assertThat(com.viglet.shio.api.agent.verify.ShHtmlAppearance.definedBySheet(html))
+                .as("""
+                        so the digest's region table prints the post's name where it printed an \
+                        ordinal — which is the second call SH765's column was added to remove and \
+                        was still costing (SH829).""")
+                .containsOnlyKeys("VigR3 & co");
+    }
+
+    @Test
     @DisplayName("SH297: a layout with no theme at all is not marked")
     void noThemeNamedIsNotADefect() {
         // "No theme named" and "a theme named that is not there" are different facts, and only the
