@@ -287,7 +287,10 @@ export const PALETTE_BRIDGE = Object.freeze({
  *          what each looked for, `rejected` (SH846) the slots that were **offered** a value and refused
  *          it, which is a different fact from being offered none. All sorted by name, so two runs over
  *          one capture report identically (P5). A slot the bridge does not name is in none of them: it
- *          has no source to take from, which is not the same fact as a source that did not state one.
+ *          has no source to take from, which is not the same fact as a source that did not state one —
+ *          it is `unbridged` (SH849), counted rather than listed, because a reader given "0 of 9" over
+ *          a theme with fifteen slots cannot tell whether six are missing from the report or from the
+ *          theme, and that arithmetic is the same on every run.
  */
 export function vocabularyTokensFrom(rows) {
   const palette = paletteByGroup(rows);
@@ -339,7 +342,26 @@ export function vocabularyTokensFrom(rows) {
     unmapped: unmapped.sort(byName),
     rejected: rejected.sort(byName),
     unchecked,
+    unbridged: unbridgedSlots(),
   };
+}
+
+/**
+ * The theme's slots {@link PALETTE_BRIDGE} names no source role for, sorted (SH849).
+ *
+ * <p>Derived from the two constants rather than typed, for the reason every count in this project is:
+ * a number a reader can check against the artefact beneath it has to come from it. A measure is a line
+ * length almost no stylesheet declares and a rhythm step is the unit other spacing is a multiple of;
+ * four of the five text steps are a scale `recurringTokens` cannot order. Each keeps its default
+ * **silently** and on purpose — the run states how many, never which, because the answer is the same
+ * on every run and a constant list is the line everybody stops reading (P3).</p>
+ */
+function unbridgedSlots() {
+  const named = new Set(Object.keys(PALETTE_BRIDGE));
+  return Object.entries(VOCABULARY_THEME_TOKENS)
+    .flatMap(([family, leaves]) => Object.keys(leaves).map((leaf) => `${family}.${leaf}`))
+    .filter((slot) => !named.has(slot))
+    .sort();
 }
 
 /**

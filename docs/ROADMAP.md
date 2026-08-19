@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH849** (deps: SH846 ✅) **propose tells the reader that convert says which colour each token filled, and convert prints nothing of the kind** — A conversion writing 65 objects and a whole theme printed 38 lines and no role coverage, so the promise is in the note and not in the run. → §XVII.136
 - 📋 **SH850** (deps: SH845 ✅) **Lifting a token out of the kept CSS deletes it without re-declaring it, so the rules that read it resolve to nothing** — 132 of the 133 lifted properties are declared nowhere on the served page and all 132 are still referenced, taking dangling var() calls from 231 to 958. → §XVII.137
 - 📋 **SH851** (deps: SH850) **Nothing counts a var() the page never declares, so a change that quadrupled them shipped as an improvement** — page-unstyled reads class names and verify stayed at two warnings while dangling references went from 231 to 958 and a curator saw the difference. → §XVII.138
 - 📋 **SH852** (deps: SH848 ✅) **The button and the card are the two pairs the theme paints and the only two the contrast floor never holds** — CONTRAST_PAIRS holds ink-on-surface and defers the rest to the task that makes accent reachable, which SH848 was, so an unreadable button ships unchecked. → §XVII.139

@@ -1402,6 +1402,30 @@ it. Four decisions worth keeping:
   `isTranslucent` of the `background` role only, and the refusal is reported as `translucent` rather
   than `transparent`, because "declared no colour there" and "declared one you can see through" call
   for different fixes.
+- **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
+  pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
+  each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a
+  `Theme (Shio)` and a `PageLayout` in **38 lines**, and grepping it for `palette`, `role`, `filled`,
+  `defaulted` and `rejected` returned nothing. The command destructures the builder's result by hand
+  and rebuilds an object literal for `describeConversion`; `palette` was not in it, the formatter's
+  parameter defaulted to `null`, and the section was skipped in silence on every real run. **The
+  third time at that exact call site** — SH684's comment there says *a field the builder returns that
+  nobody names here reaches no reader at all*, about `kept`/`declined`, and SH763's `markup` (with
+  SH772's per-run payload warning inside it) had been dropped the same way and never printed either.
+  Every existing test calls `describeConversion(conversion)` with the builder's own object, so four
+  tasks' worth of assertions all passed through the one join the command does not make. **The
+  instrument first (SH338):** `report-wiring.test.mjs` reads the rule off the source — every
+  parameter an `export function describe*({…})` destructures must be passed at every call site that
+  assembles a literal — finding formatters by shape rather than from a list, and following a hoisted
+  `const` so the right repair cannot silence it. A call that forwards somebody else's object whole
+  (`describe(spec)`) is deliberately not checked: there is no enumeration there to be incomplete.
+  Its own first bug was the same shape — a key pattern ending at `:`/`,`/`}` saw only the parameters
+  with **no** default, which is exactly the set that cannot fail silently, and it reported a clean
+  tree over three real omissions. Both call sites are now one `const reported = {…}`. And the count
+  line closes its own arithmetic: `0 of 9` over a theme of fifteen tokens left six unaccounted for,
+  so `vocabularyTokensFrom` derives `unbridged` from `PALETTE_BRIDGE` and `VOCABULARY_THEME_TOKENS`
+  and the run states **how many**, never which — the answer is the same on every run, and a constant
+  six-line list is the clause everybody stops reading (P3).
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

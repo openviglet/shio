@@ -351,6 +351,9 @@ export function buildConversion({
           mapped: palette.mapped,
           unmapped: palette.unmapped,
           rejected: palette.rejected,
+          // SH849 — the slots the bridge names no source role for, so `--json` can do the same
+          // arithmetic the report line does rather than having to know this theme's shape.
+          unbridged: palette.unbridged,
           ...(palette.unchecked.length ? { unchecked: palette.unchecked } : {}),
         },
       }
@@ -1726,11 +1729,18 @@ export function describeConversion({ document, sections, markup = [], pages = []
     // three tokens taken from the captured stylesheet. A refusal is the most actionable line here:
     // the source *has* a value for that role and it is one this theme will not paint with.
     const rejected = palette.rejected ?? [];
+    // SH849 — and the slots that are in none of the three, said as a count. A reader given
+    // "0 of 9" over a theme with fifteen tokens cannot tell whether six are missing from the report
+    // or from the theme; naming them instead would be six constant lines on every run, which is the
+    // clause everybody stops reading. `vocabularyTokensFrom` derives the list from the two
+    // constants, so this number cannot drift from the theme it describes.
+    const unbridged = palette.unbridged?.length ?? 0;
     lines.push(
       `  palette: ${palette.mapped.length} of `
         + `${palette.mapped.length + palette.unmapped.length + rejected.length} `
         + "token(s) from the captured stylesheet, under this theme's own names"
-        + `${rejected.length ? `, ${rejected.length} refused` : ""}`,
+        + `${rejected.length ? `, ${rejected.length} refused` : ""}`
+        + `${unbridged ? `, and ${unbridged} slot(s) this theme has no source role for` : ""}`,
     );
     for (const row of palette.mapped) {
       lines.push(`    --${row.name.replace(".", "-")} ${preview(row.value)} — ${row.from} `

@@ -70,8 +70,19 @@ export async function run(flags, positionals, ctx) {
     // SH684 — `kept` and `declined` beside `dropped`, because this list is enumerated by hand and a
     // field the builder returns that nobody names here reaches no reader at all: the decline was
     // being made and printed nowhere, which is the same shape as the defect the task is about.
+    //
+    // SH849 — and it happened twice more under that comment. `palette` (SH831/SH846) and
+    // `markup` (SH763, with SH772's payload warning inside it) were both returned, both formatted
+    // at length by `describeConversion`, and both dropped here — so a conversion writing 65 objects
+    // and a whole theme printed 38 lines naming no colour, no role and no token. Enumerating by
+    // hand is what makes that silent, and `report-wiring.test.mjs` is what stops the next one:
+    // every parameter the formatter destructures must be passed at every call site it has.
     document, stale, sections, pages, verbatim, mixed, extras, dropped, kept, declined, home,
-    unfollowed,
+    unfollowed, palette,
+    // The builder's verbatim `SectionMarkup` posts. Renamed on the way out because `markup` is
+    // already taken above by the *capture's* markup cache — two different things one word apart,
+    // which is the other half of why this field never reached the report.
+    markup: markupPosts,
   } = buildConversion({
     proposal,
     plan,
@@ -105,10 +116,17 @@ export async function run(flags, positionals, ctx) {
     );
   }
 
+  // SH849 — one object, two call sites. Written out twice before, which is the other half of how a
+  // field goes missing: the two literals were the same length and one word apart, so a reader
+  // checking that a new field reached the report had two places to look and no reason to think so.
+  const reported = {
+    document, sections, markup: markupPosts, pages, verbatim, mixed, extras,
+    requires: proposal.requires, dropped, kept, declined, home, unfollowed, palette,
+  };
+
   if (typeof flags.out === "string" && flags.out) {
     await write(join(ctx.cwd, flags.out), `${JSON.stringify(document, null, 2)}\n`, ctx);
-    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, kept, declined, home, unfollowed },
-      flags));
+    ctx.stdout.write(describeConversion(reported, flags));
     ctx.stdout.write(`  document: ${flags.out} (nothing was applied)\n`);
     return { document, applied: false, exitCode: 0 };
   }
@@ -121,8 +139,7 @@ export async function run(flags, positionals, ctx) {
     await requirePostTypeFields(proposal.requires ?? [], { baseUrl, user, password }, ctx);
   }
 
-  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, mixed, extras, requires: proposal.requires, dropped, kept, declined, home, unfollowed },
-    flags));
+  ctx.stdout.write(describeConversion(reported, flags));
 
   // SH437/SH471 — the bytes, which are not content and so cannot ride the document. **Before** the
   // apply, not after: a `File` field has to hold the id of the post that holds those bytes, and the

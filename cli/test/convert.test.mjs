@@ -1725,9 +1725,15 @@ test("SH846: a palette the floor never touches reports exactly as it did before"
   });
 
   assert.deepEqual(conversion.palette.rejected, []);
-  assert.match(describeConversion(conversion), /palette: 2 of 9 token\(s\)[^\n]*names\n/,
+  const count = /^ {2}palette: .*$/m.exec(describeConversion(conversion))[0];
+  assert.match(count, /palette: 2 of 9 token\(s\) from the captured stylesheet/);
+  assert.ok(!count.includes("refused"),
     "no `refused` clause where nothing was refused - a count that always carries a zero is a count "
       + "a reader stops reading");
+  // SH849 — and the clause that is on every run, because it is arithmetic rather than an outcome:
+  // nine slots the bridge names does not add up to a theme of fifteen, and a reader cannot tell a
+  // report that omitted six from a theme that has six the source can never fill.
+  assert.match(count, /and 6 slot\(s\) this theme has no source role for/);
 });
 
 test("SH509: a fidelity conversion carries no theme it would not use", () => {
@@ -2507,4 +2513,62 @@ test("SH584: a capture with no ceiling says nothing, and a pre-SH387 one does no
     assert.equal(built.unfollowed, undefined);
     assert.ok(!describeConversion(built).includes("did not follow"));
   }
+});
+
+// --- SH849: the report the run does not print ---
+
+test("SH849: a run prints the palette it computed, and the markup runs it wrote", async () => {
+  // The measurement: `shio convert --site VigR6 --create-site` wrote 65 objects, a `Theme`, a
+  // `Theme (Shio)` and a `PageLayout` in **38 lines**, none of which named a colour, a role or a
+  // token. Grepping that run for `palette`, `role`, `filled`, `defaulted` and `rejected` returned
+  // nothing. Every assertion above this one calls `describeConversion(conversion)` with the
+  // builder's own object, so all of them pass through the one join the command does not make -
+  // which is why four tasks' worth of coverage could not see it. `report-wiring.test.mjs` holds
+  // the rule; this holds the run.
+  const styled = {
+    "/": PAGE.replace(
+      "<body>",
+      "<body><style>:root{--ink:#10243a;--wash:#eef3f8;--brand:#0b7285}"
+        + "body{color:var(--ink);background:var(--wash)}"
+        + ".btn{background-color:var(--brand);color:var(--wash)}</style>",
+    ),
+  };
+  const probe = ctxWith({ site: styled });
+  const id = await idOf(probe);
+  const ctx = ctxWith({ site: styled, plan: { accepted: [{ block: id, type: "SectionHero" }] } });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+
+  assert.match(ctx.stdout.text, /palette: \d+ of \d+ token\(s\) from the captured stylesheet/,
+    "the count, which is the line a curator reads about appearance");
+  assert.match(ctx.stdout.text, /--color-ink #10243a — ink \(text#1\)/,
+    "and it is traceable: the value, and the token of the source's own that it came from");
+  assert.match(ctx.stdout.text, /--color-accent #0b7285 — brand \(accent#1\)/);
+  assert.match(ctx.stdout.text, /--color-line [^\n]*the source states no border#1/,
+    "including the slots that kept a default, since a reader cannot tell a colour that was matched "
+      + "from one that was never looked for unless the run says which (P9)");
+});
+
+test("SH849: --out and a live apply print the same report, because they now pass the same object", async () => {
+  // Two call sites, the same fourteen fields written out twice, one word apart. That is the other
+  // half of how a field goes missing, and it is why both are now one `const` above them.
+  const probe = ctxWith();
+  const id = await idOf(probe);
+  const plan = { accepted: [{ block: id, type: "SectionHero" }] };
+
+  const out = ctxWith({ plan });
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], out);
+  const wet = ctxWith({ plan });
+  await convert.run({ site: "Acme" }, [], wet);
+
+  // Each run appends its own tail - `document: …` for one, the uploads and the change count for
+  // the other - so the property is that everything `describeConversion` wrote is identical, not
+  // that the two streams are.
+  const MARK = "every post lands in DRAFT";
+  const report = (text) => text.slice(0, text.indexOf(MARK) + MARK.length);
+  assert.ok(out.stdout.text.includes(MARK) && wet.stdout.text.includes(MARK));
+  assert.equal(report(out.stdout.text), report(wet.stdout.text),
+    "a reviewer reading an --out run and an operator reading the apply are looking at one report");
+  assert.match(report(wet.stdout.text), /palette: \d+ of \d+ token\(s\)/,
+    "and the palette is in it - the apply path is the one the measurement was taken on");
 });
