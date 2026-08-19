@@ -533,32 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.139 The two pairs the floor still does not hold (SH852)
-
-SH846 put a contrast floor on the pairs the vocabulary theme paints one on top of the
-other, and held **two** of the four: `color.ink` on `color.surface`, and
-`color.ink-muted` on the same surface. Its own doc names the bound and the reason:
-
-> The button (`color.surface` on `color.accent`) and the card (`color.ink` on
-> `color.surface-sunk`) are the same relation and are deliberately not held here:
-> `color.accent` is the slot the bridge can least often fill at all (SH847), so a floor
-> on it would fire on the default almost every time and say nothing anybody can act on.
-> They come back with the task that makes accent reachable.
-
-SH848 is that task. `accentFor` elects an accent from the value's own chroma, which
-needs neither a page pair nor a colour space this reader converts, so the slot is filled
-from the source on any site with a coloured button — and a filled slot is one a floor
-can judge. What ships unchecked today is exactly the pair a curator sees most: the
-button's label is `color.surface`, and a source whose accent is a pale yellow gets white
-on it.
-
-The hazard is the **precedence**, and it is why this is a task rather than two array
-entries. `enforceContrast` walks the pairs in order and reverts whichever half came from
-the source; `color.surface` sits in three of the four pairs, so a button judged after
-the page could revert a surface the page pair has already settled. The order in which a
-shared slot may be reverted has to be stated, not discovered by whichever pair is listed
-first.
-
 ### XVII.140 One :root, two vocabularies (SH853)
 
 SH850 put the captured theme's `:root` block back on the page, which is what its own

@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH852** (deps: SH848 ✅) **The button and the card are the two pairs the theme paints and the only two the contrast floor never holds** — CONTRAST_PAIRS holds ink-on-surface and defers the rest to the task that makes accent reachable, which SH848 was, so an unreadable button ships unchecked. → §XVII.139
 - 📋 **SH853** (deps: SH850 ✅) **Two token vocabularies land on one :root and the captured one is second, so the source silently wins a shared name** — A mixed page carries both themes and --text-base is declared by each, so composed sections take Tailwind's 1rem instead of the value the Shio theme states. → §XVII.140
 
 ## Priority

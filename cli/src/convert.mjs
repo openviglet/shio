@@ -355,6 +355,10 @@ export function buildConversion({
           // arithmetic the report line does rather than having to know this theme's shape.
           unbridged: palette.unbridged,
           ...(palette.unchecked.length ? { unchecked: palette.unchecked } : {}),
+          // SH852 — and the pair the floor judged, failed, and was not allowed to fix, which is the
+          // one state worse than either: the theme ships a pair nobody can read and the run said so
+          // rather than counting two filled slots as two successes.
+          ...(palette.unheld.length ? { unheld: palette.unheld } : {}),
         },
       }
       : {}),

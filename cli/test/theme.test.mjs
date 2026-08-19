@@ -37,7 +37,7 @@ import {
   rewriteUrls,
   scanCss,
 } from "../src/theme.mjs";
-import { VOCABULARY_THEME_TOKENS, vocabularyTokensFrom } from "../src/vocabulary-theme.mjs";
+import { CONTRAST_PAIRS, VOCABULARY_THEME_TOKENS, vocabularyTokensFrom } from "../src/vocabulary-theme.mjs";
 
 const declarationsOf = (css) => scanCss(css).declarations;
 
@@ -1003,7 +1003,11 @@ test("SH846: a check that could not run is reported, not passed", () => {
     "refusing what it cannot read would throw away the source's palette, which is the loss SH845 "
       + "spent a task repairing");
   assert.deepEqual(rejected, []);
-  assert.deepEqual(unchecked.map((row) => row.text), ["color.ink", "color.ink-muted"]);
+  assert.deepEqual(unchecked.map((row) => [row.text, row.on]),
+    [["color.ink", "color.surface"], ["color.ink-muted", "color.surface"], ["color.surface", "color.accent"]],
+    "SH852 - three pairs, because the button's label IS `color.surface`: the value the page pair "
+      + "could not be judged on is the same value the button is written in, and a report naming two "
+      + "of the three would have the curator fix a page whose button is unread for the same reason");
 });
 
 test("SH846: a default-on-default pair needs no note, because nothing captured is in it", () => {
@@ -1292,4 +1296,79 @@ test("SH848: what a value states about its own alpha is read in three spellings"
   assert.equal(isTranslucent("color-mix(in oklab, red 50%, blue)"), false,
     "a mix of two opaque colours is opaque, and a mix this cannot read comes back false - "
       + "declining rather than replacing the source's page with this theme's on no evidence");
+});
+
+// --- SH852: the other two pairs, and the precedence a shared slot needed before they could land ---
+
+test("SH852: all four painted pairs have a floor, and the two that arrived are the button and the card", () => {
+  assert.deepEqual(CONTRAST_PAIRS.map((pair) => [pair.text, pair.on]), [
+    ["color.ink", "color.surface"],
+    ["color.ink-muted", "color.surface"],
+    ["color.ink", "color.surface-sunk"],
+    ["color.surface", "color.accent"],
+  ], "the stylesheet paints `.shio-button{background:var(--color-accent);color:var(--color-surface)}` "
+    + "and `.shio-card{background:var(--color-surface-sunk)}` with `--color-ink` on it - SH846 held "
+    + "two of the four and deferred these to the task that made accent reachable");
+  const slots = CONTRAST_PAIRS.flatMap((pair) => [pair.text, pair.on]);
+  assert.equal(slots.filter((name) => name === "color.surface").length, 3,
+    "the order is the decision, not the array: `color.surface` is in three of these four, so the "
+      + "pair that may move it has to be stated rather than discovered by which one is listed first");
+});
+
+test("SH852: a pale accent is the half that gives way, so the button's label survives the page's", () => {
+  const { tokens, mapped, rejected } = vocabularyTokensFrom([
+    colorRow("vg.bg", "#ffffff", "background"),
+    colorRow("vg.fg", "#1f2937", "text"),
+    colorRow("vg.brand", "#ffe066", "accent"),
+  ]);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  assert.ok(contrastRatio("#ffffff", "#ffe066") < 1.5,
+    "white on a pale yellow is the pair a curator sees most and the one that shipped unchecked");
+  assert.equal(from["color.surface"], "#ffffff",
+    "the page's surface is settled by pair 1 and is the button's LABEL, so a button judged without "
+      + "a precedence would revert a surface the page had already settled");
+  assert.equal(tokens.color.accent.$value, VOCABULARY_THEME_TOKENS.color.accent.$value);
+  assert.deepEqual(rejected.map((row) => [row.name, row.reason]), [["color.accent", "contrast"]]);
+  assert.match(rejected[0].detail, /against --color-surface #ffffff, under the 1\.5:1 floor/);
+});
+
+test("SH852: reverting one slot re-judges every pair, because a shared slot is in more than one", () => {
+  // `color.surface` is in three of the four pairs. Reverting it for the button would leave the page
+  // pair holding a value nothing re-read - the state the second rule exists to make impossible.
+  const { tokens, mapped } = vocabularyTokensFrom([
+    colorRow("vg.bg", "#fffdf0", "background"),
+    colorRow("vg.fg", "#fffce8", "text"),
+    colorRow("vg.brand", "#fffbe0", "accent"),
+  ]);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  assert.equal(from["color.ink"], undefined, "pair 1 fails and the text gives way first (SH846)");
+  assert.equal(from["color.accent"], undefined, "and pair 4 fails on the slot it introduces");
+  assert.ok(contrastRatio(tokens.color.ink.$value, tokens.color.surface.$value) >= 1.5);
+  assert.ok(contrastRatio(tokens.color.surface.$value, tokens.color.accent.$value) >= 1.5,
+    "every pair is legible at the end of the loop, not just the last one judged");
+});
+
+test("SH852: a pair the floor may not fix is reported, never counted as a filled slot", () => {
+  // The measured case: a dark source states its page and no card, so the card is this file's default
+  // near-white under the source's near-white ink. Nothing captured `color.surface-sunk`, so the pair
+  // has nothing it is allowed to move - and giving way with `color.ink` instead would revert the
+  // page's text, fail pair 1, and take the page's surface with it.
+  const { tokens, mapped, rejected, unheld } = vocabularyTokensFrom([
+    colorRow("vg.bg", "#0f172a", "background"),
+    colorRow("vg.fg", "#f1f5f9", "text"),
+  ]);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  assert.equal(from["color.ink"], "#f1f5f9", "the page's two slots are the ones a later pair may not move");
+  assert.equal(from["color.surface"], "#0f172a");
+  assert.deepEqual(rejected, [], "nothing was reverted, and calling this a rejection would report a "
+    + "slot the source filled as one it did not");
+  assert.deepEqual(unheld.map((row) => [row.text, row.on]), [["color.ink", "color.surface-sunk"]]);
+  assert.match(unheld[0].detail, /--color-surface-sunk is this theme's default and the source states none/,
+    "the fix is naming the slot the source never stated - a curator told only that the card is "
+      + "unreadable cannot tell which of the two halves to go and change");
+  assert.ok(unheld[0].ratio < 1.5);
+  assert.equal(tokens.color["surface-sunk"].$value, VOCABULARY_THEME_TOKENS.color["surface-sunk"].$value);
 });

@@ -1402,6 +1402,26 @@ it. Four decisions worth keeping:
   `isTranslucent` of the `background` role only, and the refusal is reported as `translucent` rather
   than `transparent`, because "declared no colour there" and "declared one you can see through" call
   for different fixes.
+- **The other two pairs, and the precedence that had to be stated before they could land (SH852).**
+  SH846 held two of the four pairs the theme paints one on top of the other and deferred the button
+  (`color.surface` on `color.accent`) and the card (`color.ink` on `color.surface-sunk`) to the task
+  that made accent reachable, which SH848 was. The pair shipping unchecked was the one a curator sees
+  most: **the button's label IS `color.surface`**, so a source whose accent is a pale yellow gets
+  white on it. The hazard is not the arithmetic, it is the sharing — `color.surface` is in **three of
+  the four**, so a button judged after the page reverts a surface the page pair already settled, and
+  the page pair is then wrong again in a state nothing re-reads. Two rules, both in `CONTRAST_PAIRS`'
+  own header. **Precedence is first appearance in the array** (page, caption, card, button — largest
+  area first), and a pair may move only the slot it *introduces*: the card reverts
+  `color.surface-sunk`, never the page's `color.ink`. **And every pair is judged again after any
+  revert**, until a whole pass moves nothing — a revert is one-way (source out, default in), so it
+  terminates at the default pair, and that loop is what makes the precedence an ordering rather than
+  a lock. The fallback is *not* "then the other half", and the measured case says why: a dark source
+  states its page and no card, so the card pair is a captured near-white ink on this file's default
+  near-white card, and letting `color.ink` give way instead fails pair 1 and takes the page's surface
+  with it — two good slots lost to a pair neither is about. So a pair the floor judged, failed and
+  was **not allowed to fix** is its own list, `unheld`, beside `unchecked` in the palette report and
+  naming the slot the source never stated, because a curator told only that the card is unreadable
+  cannot tell which half to change.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

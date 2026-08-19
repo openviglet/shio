@@ -235,21 +235,38 @@ export const VOCABULARY_THEME_SLUG = "shio";
  * `color.ink` is settled before `color.ink-muted`, since both are painted on one surface and the
  * page's own text is the load-bearing half.</p>
  *
- * <h2>The bound, said rather than left to be discovered</h2>
+ * <h2>All four, and the precedence that lets the last two in (SH852)</h2>
  *
- * <p>Two pairs, not four. The button (`color.surface` on `color.accent`) and the card
- * (`color.ink` on `color.surface-sunk`) are the same relation and are deliberately not held here:
- * `color.accent` is the slot the bridge can least often fill at all (SH847), so a floor on it would
- * fire on the default almost every time and say nothing anybody can act on. They come back with the
- * task that makes accent reachable.</p>
+ * <p>SH846 held two of the four and said why the other two waited: `color.accent` is the slot the
+ * bridge can least often fill at all (SH847), so a floor on it would fire on the default almost every
+ * time. SH848 filled it — `accentFor` elects an accent from the value's own chroma — and the pair a
+ * curator sees most is the one that was shipping unchecked: the button's label is `color.surface`, so
+ * a source whose accent is a pale yellow gets white on it.</p>
  *
- * <p>SH848 is that task, and they do not come back with it: `color.surface` sits in three of the four
- * pairs, so a button judged after the page could revert a surface the page pair has already settled.
- * The order in which a shared slot may be reverted is a decision, not an array entry — <b>SH852</b>.</p>
+ * <p>The hazard is not the arithmetic, it is the **sharing**. `color.surface` sits in three of these
+ * four pairs, so a button judged after the page can revert a surface the page pair has already
+ * settled — and the page pair is then wrong again, in a state nothing re-reads. Two rules, and the
+ * order below is the first of them:</p>
+ *
+ * <ol>
+ * <li><b>Precedence is first appearance in this array</b>, and this array is ordered page, caption,
+ * card, button — largest area and most certain reading first. When a pair fails, the half that gives
+ * way is the one this order <i>introduces</i>: the card reverts `color.surface-sunk` and not the
+ * page's `color.ink`, the button reverts `color.accent` and not the page's `color.surface`. Only if
+ * that half is already this file's default does the shared half give way, since a pair that can
+ * revert nothing is a pair no floor holds.</li>
+ * <li><b>Every pair is judged again after any revert</b>, until a whole pass moves nothing. A revert
+ * is one-way — the source's value out, this file's default in — so there are at most as many of them
+ * as there are slots, and the state it terminates at is the default pair, which is legible by
+ * construction. This is what makes rule 1 an ordering and not a lock: a settlement a later pair had
+ * to undo is re-decided rather than left standing.</li>
+ * </ol>
  */
 export const CONTRAST_PAIRS = Object.freeze([
   Object.freeze({ text: "color.ink", on: "color.surface" }),
   Object.freeze({ text: "color.ink-muted", on: "color.surface" }),
+  Object.freeze({ text: "color.ink", on: "color.surface-sunk" }),
+  Object.freeze({ text: "color.surface", on: "color.accent" }),
 ]);
 
 /**
@@ -282,7 +299,7 @@ export const PALETTE_BRIDGE = Object.freeze({
  * @param rows the extracted token rows (`proposal.theme.rows`), each carrying the `group` and — for
  *             colour — the `role` the source uses it in, the `refs` that argued for it, and whether
  *             any of those uses was at page level
- * @returns `{tokens, mapped, unmapped, rejected, unchecked}` — `mapped` is `{name, from, role, value}`
+ * @returns `{tokens, mapped, unmapped, rejected, unchecked, unheld}` — `mapped` is `{name, from, role, value}`
  *          per slot that took a captured value, `unmapped` the slots that kept this file's default and
  *          what each looked for, `rejected` (SH846) the slots that were **offered** a value and refused
  *          it, which is a different fact from being offered none. All sorted by name, so two runs over
@@ -334,7 +351,7 @@ export function vocabularyTokensFrom(rows) {
       unmapped.push({ name, role: wanted, value: definition.$value });
     }
   }
-  const unchecked = enforceContrast(tokens, mapped, rejected);
+  const { unchecked, unheld } = enforceContrast(tokens, mapped, rejected);
   const byName = (a, b) => (a.name < b.name ? -1 : 1);
   return {
     tokens,
@@ -342,6 +359,7 @@ export function vocabularyTokensFrom(rows) {
     unmapped: unmapped.sort(byName),
     rejected: rejected.sort(byName),
     unchecked,
+    unheld,
     unbridged: unbridgedSlots(),
   };
 }
@@ -384,13 +402,18 @@ function refusedValue(want, row) {
 /**
  * Holds {@link CONTRAST_PAIRS} to {@link CONTRAST_FLOOR}, reverting the source's half where they fail.
  *
- * <p>Mutates `tokens`, `mapped` and `rejected` in place, and returns the pairs it could not judge —
- * a value in a colour space this scanner does not parse ({@link parseColor}), which is reported
- * rather than passed. Runs after every slot is filled, because a pair is not a property of either
- * half and the two are decided independently by design.</p>
+ * <p>Mutates `tokens`, `mapped` and `rejected` in place, and returns `{unchecked, unheld}` — the pairs
+ * it could not judge, a value in a colour space this scanner does not parse ({@link parseColor}), and
+ * the pairs it judged, failed, and had nothing it was allowed to move. Runs after every slot is
+ * filled, because a pair is not a property of either half and the two are decided independently by
+ * design.</p>
+ *
+ * <p>SH852 — the two rules {@link CONTRAST_PAIRS} states, in the two places they land: `introduced`
+ * is the precedence, and the outer loop is the re-judging. Both lists are collected in a final pass
+ * rather than as the pairs are met, because a revert changes what a pair holds and a note written
+ * mid-loop would quote a value the run went on to replace.</p>
  */
 function enforceContrast(tokens, mapped, rejected) {
-  const unchecked = [];
   const valueOf = (name) => {
     const [family, leaf] = name.split(".");
     return tokens[family]?.[leaf]?.$value;
@@ -408,23 +431,68 @@ function enforceContrast(tokens, mapped, rejected) {
     });
     return true;
   };
-  for (const pair of CONTRAST_PAIRS) {
-    let ratio = contrastRatio(valueOf(pair.text), valueOf(pair.on));
-    if (ratio === null) {
-      // Only where a captured value is in play: a default-on-default pair is known good, and a note
-      // about one would be noise in the only report a curator reads about appearance.
-      if (mapped.some((row) => row.name === pair.text || row.name === pair.on)) {
-        unchecked.push({ text: pair.text, on: pair.on, value: valueOf(pair.text), against: valueOf(pair.on) });
-      }
-      continue;
-    }
-    if (ratio >= CONTRAST_FLOOR) continue;
-    // The text first, then the surface — and never a default, which is why this terminates.
-    if (!revert(pair.text, pair.on, ratio)) revert(pair.on, pair.text, ratio);
-    ratio = contrastRatio(valueOf(pair.text), valueOf(pair.on));
-    if (ratio !== null && ratio < CONTRAST_FLOOR) revert(pair.on, pair.text, ratio);
+  // Rule 1: first appearance in CONTRAST_PAIRS is the precedence, and a pair may only move the slot
+  // it *introduces*. A tie is the page pair, whose two halves arrive together, and there the text
+  // gives way first for SH846's reason — the surface is the larger area and the more certain reading.
+  const introduced = new Map();
+  CONTRAST_PAIRS.forEach((pair, at) => {
+    for (const name of [pair.text, pair.on]) if (!introduced.has(name)) introduced.set(name, at);
+  });
+  const mayMove = (pair, at) => {
+    const [first, second] = introduced.get(pair.on) > introduced.get(pair.text)
+      ? [[pair.on, pair.text], [pair.text, pair.on]]
+      : [[pair.text, pair.on], [pair.on, pair.text]];
+    // Measured, and the reason the fallback is not "then the other half": a dark source states its
+    // page and no card, so the card pair is a captured near-white ink on this file's default
+    // near-white card. Its own slot cannot move — nothing captured it — and letting `color.ink` give
+    // way instead reverts the page's text, which then fails pair 1 and takes the page's surface with
+    // it. Two good slots lost to a pair neither of them is about.
+    return [first, second].filter(([name]) => introduced.get(name) >= at);
+  };
+
+  // Rule 2: judge every pair again until a whole pass reverts nothing. `revert` only ever replaces a
+  // captured value with this file's default, so each slot can move once and the bound is the number
+  // of them; the extra pass is what proves the last one moved nothing.
+  for (let pass = 0; pass <= introduced.size; pass += 1) {
+    let moved = false;
+    CONTRAST_PAIRS.forEach((pair, at) => {
+      const ratio = contrastRatio(valueOf(pair.text), valueOf(pair.on));
+      if (ratio === null || ratio >= CONTRAST_FLOOR) return;
+      // ...and never a default, which is why this terminates: `revert` answers false for a slot that
+      // took no captured value, so the pair falls through to whatever else it is allowed to move.
+      for (const [name, against] of mayMove(pair, at)) if (revert(name, against, ratio)) { moved = true; break; }
+    });
+    if (!moved) break;
   }
-  return unchecked.sort((a, b) => (a.text < b.text ? -1 : 1));
+
+  const unchecked = [];
+  const unheld = [];
+  CONTRAST_PAIRS.forEach((pair, at) => {
+    const ratio = contrastRatio(valueOf(pair.text), valueOf(pair.on));
+    const row = { text: pair.text, on: pair.on, value: valueOf(pair.text), against: valueOf(pair.on) };
+    // Only where a captured value is in play: a default-on-default pair is known good, and a note
+    // about one would be noise in the only report a curator reads about appearance.
+    if (!mapped.some((each) => each.name === pair.text || each.name === pair.on)) return;
+    if (ratio === null) unchecked.push(row);
+    else if (ratio < CONTRAST_FLOOR) {
+      // Judged, failed, and the floor was not allowed to fix it — which is a *worse* state than
+      // either list above and the one a report may least leave out (P9). The slot that could have
+      // moved is named, because that is the fix: the source has to state it, or the curator does.
+      const [stuck] = mayMove(pair, at);
+      unheld.push({
+        ...row,
+        ratio: Number(ratio.toFixed(2)),
+        detail: `--${pair.text.replace(".", "-")} ${row.value} reads at ${ratio.toFixed(2)}:1 against `
+          + `--${pair.on.replace(".", "-")} ${row.against}, under the ${CONTRAST_FLOOR}:1 floor; `
+          + `${stuck ? `--${stuck[0].replace(".", "-")} is this theme's default and the source states none` : "neither half is this run's to move"}`,
+      });
+    }
+  });
+  // By both halves (P5): `color.ink` is the text of two pairs now, so the text alone no longer
+  // orders them and a run's report would depend on the engine's sort being stable.
+  const key = (row) => `${row.text} ${row.on}`;
+  const byPair = (a, b) => (key(a) < key(b) ? -1 : 1);
+  return { unchecked: unchecked.sort(byPair), unheld: unheld.sort(byPair) };
 }
 
 const defaultValue = (name) => {
