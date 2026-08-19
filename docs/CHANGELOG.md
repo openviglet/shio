@@ -1483,6 +1483,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH841** — A stale stamp whose subject the commits since have touched is reported as OWED with the count, so a gate nobody needed reads differently from one nobody ran.
 - **SH842** — Three ids reach the assertion that would have caught each, and two of the three were not in the file the ledger named — the rate the earlier batches measured, met again.
 - **SH843** — Two ledgers carry the declaration markers, so a reason field stops paying debt, and the real figure went from 102 to 103 with one id earning its assertion and one reaching the list.
+- **SH844** — A gate's subject is the code it exercises, so conformance stops being billed for the other two gates' tests, and a reader refuses a subject that reaches into another's suites.
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 

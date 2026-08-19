@@ -119,6 +119,19 @@ name what is *certain*, so a path missing there makes the report silent rather t
 quiet about a real debt is the failure this accepts; a warning that fires on every commit is the next
 thing nobody reads.
 
+**And that is exactly what it did for two commits (SH844).** The paragraph above forbids a false
+alarm and the subject beneath it declared `cli/` and `shio-app/` for `conformance` — both of which
+also hold the suites of the two gates that are **not** conformance. Found by *using* the instrument:
+`pnpm gates` reported three owed commits and every file they touched was another gate's test. A
+subject is the code a gate **exercises** — `cli/src/`, `cli/conformance/`, `shio-app/src/main/`,
+`fixtures/` — and a gate's *own* tests belong in it, which is why `java` keeps `shio-app/` whole and
+the check compares across gates instead of banning test trees. `GATE_SUITES` names where each unit
+gate's suites live and `red-suites.test.mjs` refuses a subject that reaches into another's; the
+overlap between `conformance` and `docs` on `cli/conformance/` stays, deliberately, because neither
+can name the other's files with a prefix and a run of either is cheap. The shipped subject reached
+**two** trees, not the three the first draft of that assertion claimed — `shio-react/test/` is under
+neither prefix, which is the difference between counting gates wronged and trees claimed.
+
 **A build that never began is stamped INCONCLUSIVE, not red (SH828).** A non-zero exit is only a
 *colour* if a suite ran, and the exit code cannot tell you: Maven exits 1 for a failed test and 1
 for a failed `clean`. So the runner reads the log it already keeps — a run that reached surefire

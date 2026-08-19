@@ -58,7 +58,8 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
-  CYCLE_EXIT, COMPARATOR_GATES, GATES, GATE_COVERS, clearedGates, comparatorCycle, gateLines,
+  CYCLE_EXIT, COMPARATOR_GATES, GATES, GATE_COVERS, GATE_SUITES, clearedGates, comparatorCycle,
+  gateLines,
   isStale, owedGates, stamps,
 } from "../../scripts/gate-stamp.mjs";
 import { GATE_RUNS } from "../../scripts/gates.mjs";
@@ -359,6 +360,52 @@ test("SH841: the owed debt is printed on the stale line and nowhere else", () =>
       + "invent a reason to re-run a gate that just ran here");
   assert.doesNotMatch(gateLines(world, new Set(), null, new Set()).join("\n"), /OWED/,
     "and with nothing measured it says nothing: an absent argument is an absent claim");
+});
+
+/**
+ * SH844 — the check that can tell a subject that is too wide from one that is right.
+ *
+ * <p>Found by <em>using</em> SH841 rather than by reading it: `pnpm gates` said conformance was owed
+ * three commits, and every file those commits touched was a test of another gate. That instrument's
+ * own rationale forbids exactly this — *"naming a false one is the failure it must not have, because
+ * a warning that fires on every commit is the next thing nobody reads"* — and it then declared
+ * `cli/` and `shio-app/`, each of which also holds the suites of the two gates that are not it.</p>
+ *
+ * <p>A subject is the code a gate <b>exercises</b>. Its own tests belong in it — editing a Java test
+ * really does owe the Java gate a run — and another gate's do not, which is why this compares across
+ * gates rather than banning test trees outright.</p>
+ */
+test("SH844: no gate's subject reaches into another gate's suite tree", () => {
+  const reaching = [];
+  for (const [gate, covers] of Object.entries(GATE_COVERS)) {
+    if (covers === null) continue;
+    for (const [other, suites] of Object.entries(GATE_SUITES)) {
+      if (other === gate) continue;
+      for (const suite of suites) {
+        for (const cover of covers) {
+          if (suite.startsWith(cover)) reaching.push(`${gate} claims ${suite} (${other}'s)`);
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(reaching, [],
+    "SH844: this gate would be reported as OWED by every commit to a gate that is not it, which is "
+      + "the false alarm SH841's own design forbids. Name the code the gate exercises, not the "
+      + "directory that happens to hold somebody else's tests too.");
+
+  // Non-vacuous, and it has to be shown rather than assumed: the rule must be able to catch the
+  // exact subject that was there. A rule matching nothing would pass over any list at all.
+  const wide = { conformance: ["cli/", "shio-app/"] };
+  const caught = Object.entries(GATE_SUITES)
+    .filter(([other]) => other !== "conformance")
+    .flatMap(([, suites]) => suites)
+    .filter((suite) => wide.conformance.some((cover) => suite.startsWith(cover)));
+  assert.deepEqual(caught.toSorted(), ["cli/test/", "shio-app/src/test/"],
+    "SH844: the subject as it shipped reached exactly the two trees under `cli/` and `shio-app/` — "
+      + "`shio-react/test/` is the JS gate's too and was never in reach, which is the difference "
+      + "between counting the gates wronged and counting the trees claimed. This reader must find "
+      + "both or it is agreeing with anything");
 });
 
 test("SH841: every gate declares what it is about, or the reader is silent about it by accident", () => {

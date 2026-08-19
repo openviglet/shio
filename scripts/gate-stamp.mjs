@@ -72,14 +72,39 @@ export const GATES_DIR = ".gates";
  * that fires on every commit is the next thing nobody reads (SH192's rule, one instrument along).</p>
  */
 export const GATE_COVERS = {
-  // No stamp is ever written for it by another gate, so this is about `pnpm java` runs only.
+  // No stamp is ever written for it by another gate, so this is about `pnpm java` runs only. Its
+  // own test tree is IN the subject and that is not the mistake below: a Java test is what this
+  // gate runs, so editing one really does owe it a run.
   java: ["shio-app/"],
   // Everything: `pnpm test` reads the source, the docs and the ledgers, and SH770's own note says so.
   js: null,
-  // The CLI it drives, the instance it drives it against, and the corpus it drives with.
-  conformance: ["cli/", "shio-app/", "fixtures/"],
+  // SH844 — the CLI it drives, the instance it drives it against, and the corpus it drives with,
+  // and NOT the two test trees those directories also hold. It read `cli/` and `shio-app/`, so
+  // every commit to the JS or the Java gate billed this one: measured at three owed commits whose
+  // every file was a test of another gate. `pnpm conformance` runs `cli/conformance/**` against a
+  // jar built from `shio-app/src/main/**`, driving `cli/src/**` — that is the subject.
+  conformance: ["cli/src/", "cli/conformance/", "shio-app/src/main/", "fixtures/"],
   // The pages, plus the mirror the ratchet reads — its other input lives in another repository.
+  // It shares `cli/conformance/` with the gate above, deliberately: both run out of that directory,
+  // neither can name the other's files with a prefix, and a run of either is cheap enough that
+  // claiming a few of the other's edits is the right side to err on.
   docs: ["docs/", "cli/conformance/", "README.md"],
+};
+
+/**
+ * Where each gate's own suites live, for the one check that can tell a wide subject from a right
+ * one (SH844).
+ *
+ * <p>Only the trees a *unit* gate owns. `cli/conformance/` is deliberately absent: two gates run out
+ * of it and the note above says why that overlap is accepted. What is not accepted is a subject
+ * reaching into a tree that belongs to a different gate entirely, which is how conformance came to
+ * be billed for every commit to the other two.</p>
+ */
+export const GATE_SUITES = {
+  java: ["shio-app/src/test/"],
+  js: ["cli/test/", "shio-react/test/"],
+  conformance: [],
+  docs: [],
 };
 
 /**

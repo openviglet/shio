@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
-
-- 📋 **SH844** (deps: —) **A gate is reported as owed by commits that only touched another gate's tests, the false alarm its design forbids** — conformance declares cli/ and shio-app/ as its subject, and both directories also hold the suites of the two gates that are not it. → §XVII.131
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
