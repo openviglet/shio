@@ -9,6 +9,11 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block Q — Replication (an existing site becomes an authorable Shio site)
+
+- 📋 **SH829** (deps: SH765 ✅) **The region table names the sheet painting each region as style[1] and style[2], and nothing says which is which** — Both themes are posts with titles, so the column that exists to end a second lookup ends in one. → §XVII.116
+- 📋 **SH830** (deps: SH763 ✅) **convert writes one layout covering every section type and only the types it used, so its own output warns** — A fresh replica used no hero, so the template's subheading and align resolve for nothing and verify reports two warnings against the file convert just wrote. → §XVII.117
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

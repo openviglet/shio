@@ -533,6 +533,65 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.116 An index is not a name (SH829)
+
+SH765 shipped and the column is there. On a fresh replica of `www.viglet.org`:
+
+    regions (document order):
+      header      1      verbatim  4 unstyled  style[2]
+      nav         2      verbatim  0 unstyled  style[2]
+      section     3      verbatim  1 unstyled  style[1]+style[2]
+      section×8   4-11   sections  0 unstyled  style[1]
+      footer      12     sections  4 unstyled  style[2]
+
+That is the two visual languages, stated. Regions 4–11 are painted by one sheet and the
+chrome by another, and region 3 by both — which took a screenshot and an hour of
+hand-parsing to establish before this column existed.
+
+What it does not say is **which sheet**. `style[1]` and `style[2]` are ordinal positions
+in the document, and nothing in the digest's output maps them to anything. Both sheets
+are ordinary posts with titles — `VigR3 (Shio)` and `VigR3 (captured)` — so the names
+are one read away and the reader has to make it.
+
+That read is the whole cost this column was added to remove. A region table that says
+`style[2]` answers *there are two* and leaves *which one is the captured theme* to a
+second call; naming them answers both at once, and a name survives a page where the
+sheets appear in a different order.
+
+Print the theme's title where the post has one and fall back to the index where it does
+not — an inline `<style>` a layout writes has no title and honestly is `style[N]`. The
+distinction is worth keeping: it is exactly the difference between a sheet somebody can
+edit and one nobody can.
+
+### XVII.117 The tool warning about the artefact it just wrote (SH830)
+
+A replication onto an **empty** instance — 0 sites, 0 post-types — converts cleanly: 66
+objects, exit 0, four routes 200, `verify` 0 errors. Two of its four warnings are
+self-inflicted:
+
+    ! template-unknown-field post:VigR3/theme/layout · align
+    ! template-unknown-field post:VigR3/theme/layout · subheading
+
+Both are `SectionHero` fields. The generated `PageLayout` is one template with a branch
+per field across every section type in the vocabulary, and `convert` creates only the
+types a capture actually produced. This capture accepted no hero, so `SectionHero` was
+never created and the two branches resolve for nothing.
+
+The warning is correct and well-written — it lists the values `{{#if}}` does provide and
+says why it is a warning rather than an error. The problem is that it is guaranteed. Any
+conversion that does not use every section type warns, and the count is a property of
+what the source happened to contain rather than of anything wrong. On a fresh instance
+that is the common case.
+
+It matters because it is the *tool warning about the file the tool just wrote*, on a run
+that is otherwise clean, and a warning nobody can act on is what teaches a reader to
+stop reading warnings. This suite's whole value rests on that not happening.
+
+Two ways out and the first is cheaper: emit branches only for the types the conversion
+created, or have `convert` create the vocabulary whole so the template is always
+satisfied. The first keeps the model to what the site uses, which is the direction SH763
+already chose.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
