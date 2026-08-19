@@ -710,3 +710,70 @@ URL. The rest are work.
 The other half is to keep working it while the reading is cheap. One entry names its
 target down to the parameter — a tool that takes no `format`, so the output meant to be
 written to a file is reachable only by whoever has a file.
+
+## XL Replication — the palette a source actually wears
+
+Block Q closed and reopened around one question that four rounds of measurement did not
+settle: which of a source's colours is *its* colour.
+
+Everything upstream of that now works. `propose` lifts the declared palette whole (133
+tokens where it once ranked three literals), the lifted declarations are re-emitted
+rather than dropped (SH850), the theme's own names are namespaced so a collision is
+reported (SH853), a floor refuses a value that cannot serve its role (SH852), and
+`convert` prints which slot each token filled and why the rest kept a default (SH849).
+
+What remains is a judgement, and the sections under this heading are about making it
+from evidence a page carries rather than from a property of a colour in isolation.
+
+### XL.1 The election that skipped the brand (SH855)
+
+SH848 moved the accent off its hardcoded default and onto a colour the source actually
+declares, and `convert` now says which one and why:
+
+    --shio-color-accent oklch(69.6% .17 162.48) — color.emerald.500 (accent#1)
+
+That is Tailwind's `emerald-500`, a green-teal. Every primary button on `www.viglet.org`
+is orange, and the orange is declared as `--vg-brand: #c2410c / #f97316`.
+
+Both signals a chroma election would use point the other way:
+
+    --color-emerald-500   16 var() references   chroma ~0.17
+    --vg-brand            20 var() references   chroma ~0.19
+
+So the brand is used more and is more chromatic, and it lost. Emerald is genuinely used
+— 16 references, probably a product dot — so this is not a catalogue entry mistaken for
+a choice. It is a real colour of the site, and it is not the site's accent.
+
+What separates them is not a scalar. The brand is the fill of the element the source
+styles as its primary call to action; emerald is a decoration. That is a **structural**
+fact, readable from the rendered page — SH848's filing proposed exactly this and the
+implementation chose a colour-space metric instead.
+
+Rank by where a colour is used, not by what it is: the computed background of the
+highest-prominence button, then the most-referenced non-neutral, with chroma only as a
+tie-break. The report already exists to say which rule fired.
+
+### XL.2 A floor that cannot read the floor (SH856)
+
+SH852 gave the palette a contrast floor, which is the right guard: a surface and an
+accent that cannot be told apart is the defect a curator would report. On this replica
+it fired and then stood down:
+
+    --shio-color-surface #ffffff on --shio-color-accent oklch(69.6% .17 162.48)
+      — contrast NOT checked: one of them is in a colour space this reader
+        does not parse. Look at the page
+
+The honesty is right and the outcome is the loop P9 exists to close, run backwards. A
+check written to spare a human from looking ends by asking a human to look, and it will
+do that on **every** source built after about 2024 — `oklch` is what Tailwind v4 emits
+and what shadcn ships, which is to say the two things most of the web a replication
+meets is built with.
+
+It is also self-inflicted in a way worth naming: the value the reader could not parse is
+one **Shio itself wrote** into the theme, one line above, from a token it had already
+elected. The election understood the colour well enough to rank it by chroma; the floor
+could not read the same string.
+
+One conversion, not a colour library: `oklch` and `color-mix` to sRGB, enough for a
+relative-luminance ratio. Where a value is genuinely unparseable the abstention is
+correct and should name the value rather than the space.
