@@ -533,6 +533,62 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.124 The half of SH836 nothing asserts (SH837)
+
+SH836 has two halves and they are not the same size. The small one stops a false
+positive: a name inside a guard inside `{{#form}}` was read against the listing's keys
+and reported as declared nowhere. That is asserted, at the lint, and verified by
+reverting the walk-out and watching `label` come back.
+
+The large one is the opposite direction. `isPageScoped()` reads `helperScope` now, so a
+reference guarded at the top level of a layout is the **page's** again and reaches the
+*error* — *the bound post-type declares no such field, so this renders empty on every
+page of that type*. That branch could never fire behind a guard before, and a template
+puts most of its references behind one.
+
+Nothing shows it. `ShTemplateFieldLintTest`'s layout holds exactly one undeclared page
+field, `headline`, and it sits at the top level:
+
+    <p class="byline">{{headline}}</p>          <- reported, always was
+    {{#if SUMMARY}}<p>{{SUMMARY}}</p>{{/if}}    <- guarded, and SUMMARY is declared
+
+So the fixture cannot distinguish the fix from its absence on the half that matters. The
+suite going from 1915 to 1917 with no new failures is consistent with the branch working
+and equally consistent with nothing reaching it.
+
+The assertion is a guarded reference to a field the bound post-type does not declare,
+reported as an **error** naming both — and the scanner-level test above it is not a
+substitute, because what changed is which of the lint's two branches a reference takes.
+
+### XVII.125 A rule the corpus cannot reach (SH838)
+
+SH834 sets three bars, one per kind of group, and the corpus reaches two of them.
+Measured across every archetype while the task was being designed, the page-level
+declarations are:
+
+    theme-heavy   body { font-family: var(--font-body) }
+    awkward       (none)
+    query-pages   (none)
+    locale-prefixed (none)
+    spa           (none)
+
+So `needs: "rank"` is exercised — `theme-heavy`'s `--radius` and its font stack both
+land — and `needs: "page"` is exercised by the colours. `needs: "page-only"`, which
+fills `text.base` from a `body { font-size }` and refuses the other four steps of the
+scale, is reached by a synthetic stylesheet in `theme.test.mjs` and by nothing that goes
+through `clone → propose → convert`.
+
+This is SH833's shape one file along, and SH833's own rationale is the argument: *until
+a fixture produces it, the branch has never been run end to end*. It is a bar the
+extractor clears differently from the other two — it is the one rule that admits a
+**recurring** row below `minRefs`, on the strength of its selector alone — so the path
+from a page-level literal through `recurringTokens` to a written `Theme.TOKENS` is
+exactly the part no archetype walks.
+
+A `body { font-size: … }` in one archetype closes it, and the check that keeps it closed
+is the harder half: SH833 holds unproduced *types* as a named list, and there is no
+equivalent for an unreached admission **rule**.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

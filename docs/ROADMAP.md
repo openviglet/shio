@@ -9,6 +9,11 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
+
+- 📋 **SH837** (deps: —) **SH836 shipped the half that stops a false warning asserted, and the half that starts a true error not** — The lint fixture's one undeclared page field sits outside every guard, so nothing shows a guarded name reaching the error it could not fire before. → §XVII.124
+- 📋 **SH838** (deps: —) **No archetype states a font size at page level, so SH834's one rule for a scale has never run end to end** — The rule that fills text.base is the narrowest of the three and the only one a synthetic sheet alone exercises; the corpus reaches the other two and not it. → §XVII.125
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
