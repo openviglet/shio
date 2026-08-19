@@ -533,6 +533,67 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.132 The palette the source already published (SH845)
+
+SH831 built the bridge and it works — `--color-ink` is now `#234652`, the source's text
+colour, where it used to be a hardcoded `#12151a`. What crosses the bridge is the
+problem.
+
+`propose` extracted **three** colour tokens from `www.viglet.org`:
+
+    color.background-1   #0000
+    color.background-2   color-mix(in oklab, var(--vg-accent) 50%, transparent)
+    color.text-1         #234652
+
+The captured stylesheet declares **49** custom properties, and they are a named design
+system, not literals: `--vg-accent`, `--vg-brand`, `--vg-brand-dark`,
+`--vg-brand-light`, `--vg-background`, `--vg-foreground`, `--vg-border`, `--vg-card`.
+Those names map almost one-to-one onto the fourteen the Shio theme reads.
+
+The extractor ranks `color:` occurrences by frequency instead, so the commonest declared
+background in a utility sheet — `#0000`, transparent — becomes `background-1`, and the
+site's actual accent is not extracted at all. `--color-accent` therefore stays at its
+default `#0b5533`, a dark green, on a site whose accent is orange. That single unmapped
+role is most of what a curator sees.
+
+`propose` excluded the real palette deliberately: its report says 319 tokens were *not
+written* as `variant-only: declared only under @layer theme`. The rule is reasonable for
+a utility class and wrong for a `:root` custom property, which is a declaration of
+intent rather than a variant.
+
+Read the declared properties first and rank literals only where none exist.
+
+### XVII.133 A mapping that cannot say what it could not map (SH846)
+
+Independent of where the tokens come from (SH845), the mapping itself has no floor and
+no report.
+
+On the replica it produced:
+
+    --color-surface: #0000                 a fully transparent page background
+    --color-accent:  #0b5533               the built-in default, unmapped
+
+`.shio-page` sets `background: var(--color-surface)`, so the section area has no
+background of its own and shows whatever lies behind it. It happens to look white here
+because the document behind it is, which is exactly the kind of accident that survives
+review and breaks on a dark layout.
+
+Two rules, and the second matters more than the first.
+
+**A role has a floor.** A surface that is fully transparent, or a text colour with no
+contrast against its own surface, is not a value the mapping should accept — the default
+is better and the run should say it was used. This is the same instinct as SH684's: a
+derivation that cannot fill a required field declines rather than writing something
+unusable.
+
+**A mapping states its coverage.** Fourteen names are read by the theme; some number
+were filled from the source and the rest kept their defaults. That count is the single
+most useful line the conversion could print about appearance, and today the pipeline
+prints nothing — a curator discovers an unmapped accent by looking at the page, which is
+the loop SH692 exists to close.
+
+Print filled, defaulted and rejected, with the role names.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

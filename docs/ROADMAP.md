@@ -9,6 +9,11 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block Q — Replication (an existing site becomes an authorable Shio site)
+
+- 📋 **SH845** (deps: SH831 ✅) **Token extraction counts colour literals and ignores the named palette the source already declares** — The captured sheet declares 49 --vg-* properties including accent, brand and border, and propose wrote three tokens, one of them fully transparent. → §XVII.132
+- 📋 **SH846** (deps: SH831 ✅) **The palette mapping accepts a transparent colour as the page surface and never says which roles it could not fill** — It wrote --color-surface:#0000 and left --color-accent at its built-in green, and the run said nothing about either. → §XVII.133
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
