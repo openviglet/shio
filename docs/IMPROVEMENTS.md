@@ -533,36 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.127 SH831's own defect, on the other half of the palette (SH840)
-
-Measured on a stylesheet built to ask exactly one question:
-
-    body{color:#111111}
-    .a{color:#333333} .b … .e   (five in all)
-
-    row color.text-1  #333333  refs=5  page=false
-    row color.text-2  #111111  refs=1  page=true
-    color.ink <- #333333
-
-The replica's body copy takes the **card's** colour. That is SH831's finding word for
-word — *ranking a role by reference count picked the accent as the archetype's text
-colour, and shipping it would have painted the replica's body copy teal* — reached on
-the half SH831 did not touch.
-
-SH831 fixed it for **declared** tokens, whose role is inferred, and left recurring rows
-to the extractor's own ranking on the argument that the ranking *is* the contract. That
-argument was sound while a recurring row carried no `page` flag: the better evidence did
-not exist. SH834 added it, for the `text.base` rule, and `paletteByGroup` still sorts on
-`source` then `refs` then value — so the flag is recorded on every recurring row and
-read for one slot only.
-
-The sort is the fix: a page-level row first, within each half. `admits` is the wrong
-place — the bar decides what may fill a slot, and this is which of several eligible rows
-fills it first.
-
-Worth checking in the same pass whether `theme-heavy` should grow the case, since a
-corpus that cannot reach it is SH838 again.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

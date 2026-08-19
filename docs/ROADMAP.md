@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block Q — Replication (an existing site becomes an authorable Shio site)
-
-- 📋 **SH840** (deps: —) **The page's own text colour loses its slot to a card colour the sheet happens to repeat more often** — SH831 made a page-level statement decide a declared token's slot and never applied it to a recurring one, which SH834 gave the same flag and nothing sorts by. → §XVII.127
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

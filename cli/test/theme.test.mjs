@@ -771,3 +771,31 @@ test("SH839: the page-level exemption still admits the literal it was written fo
     "one occurrence, below minRefs, kept on the strength of its selector - narrowing the rule to "
       + "literals must not narrow it out of existence");
 });
+
+// --- SH840: the page's own value wins its slot ---
+
+/** A site with no custom properties: a body colour stated once, and a card colour repeated five. */
+const COMPETING_SHEET = `
+  body{color:#111111}
+  .a{color:#333333} .b{color:#333333} .c{color:#333333} .d{color:#333333} .e{color:#333333}
+`;
+
+test("SH840: a page-level row outranks a more-referenced one, which is SH831's finding twice", () => {
+  const rows = themeFor(COMPETING_SHEET).rows;
+  const { mapped } = vocabularyTokensFrom(rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  // What the extractor sees, and why the ranking alone gets it wrong: the card colour is written
+  // five times and the body's once, so `color.text-1` is the CARD's. SH831 measured this exact
+  // shape on declared tokens - `--brand` beating `--ink` four to three - and fixed it there only.
+  assert.deepEqual(
+    rows.map((row) => [row.path, row.value, row.refs, row.page === true]),
+    [["color.text-1", "#333333", 5, false], ["color.text-2", "#111111", 1, true]],
+  );
+  assert.equal(from["color.ink"], "#111111",
+    "the page's own text colour, not the one five rules reach for - a replica whose body copy is "
+      + "the card's colour is the artefact SH831 refused to ship on the other half of the palette");
+  assert.equal(from["color.ink-muted"], "#333333",
+    "and the repeated one is not discarded, it falls to the next slot: the sort decides which of "
+      + "several eligible rows fills a slot first, which is why this is not a bar in `admits`");
+});

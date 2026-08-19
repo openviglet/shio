@@ -1293,6 +1293,21 @@ it. Four decisions worth keeping:
   would lose a real shadow to a rule about a pointer. The corrected figure is in the comment rather
   than only in a ledger: on that corpus the exemption admits **one** row, `font.size.1 = 17px`, which
   is the case it exists for.
+- **And a page-level row wins its slot, which is SH831's finding on the other half (SH840).** SH831
+  made a page-level statement decide a *declared* token's role and left recurring rows to the
+  extractor's ranking, on the argument that the ranking **is** the published contract — sound at the
+  time, because a recurring row carried no better evidence. SH834 gave it some, for the `text.base`
+  rule, and nothing sorted by it. Measured: `body{color:#111111}` against `.a…e{color:#333333}`
+  yields `color.text-1 #333333 refs=5` and `color.text-2 #111111 refs=1 page=true`, so **the
+  replica's body copy took the card's colour** — SH831's own sentence, one half along. The fix is the
+  **sort** and not `admits`: a bar decides what may fill a slot at all, and this decides which of
+  several eligible rows fills it first. The repeated colour is not discarded, it falls to
+  `color.ink-muted`. **Stated bound, checked rather than assumed:** no archetype reaches this key.
+  `theme-heavy` and `query-pages` state their colours through custom properties, so their text rows
+  are *declared* and already page-filtered by SH831, and the rest carry no palette; reaching it needs
+  one colour repeated three or more times away from `body` **and** a different colour on `body`,
+  which is a real shape for a site with no custom properties and one no archetype here has a content
+  reason to grow. The coverage is `theme.test.mjs`'s, deliberately.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

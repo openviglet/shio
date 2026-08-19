@@ -283,6 +283,28 @@ function admits(needs, row) {
  * the kept CSS so editing it in the console changes the replica — then the recurring ones in the
  * order `recurringTokens` already ranks by: most-referenced, ties on the value. So `text#1` means
  * the same thing on both sides of the join and two runs over one capture agree (P5).</p>
+ *
+ * <h3>SH840 — and a page-level row first within each half</h3>
+ *
+ * <p>Measured on a stylesheet built to ask exactly one question:</p>
+ *
+ * <pre>  body{{color:#111111}}    .a…​.e{{color:#333333}}   (five in all)
+ *
+ *   color.text-1  #333333  refs=5  page=false
+ *   color.text-2  #111111  refs=1  page=true
+ *   color.ink  &lt;-  #333333</pre>
+ *
+ * <p>The replica's body copy took the **card's** colour. That is SH831's own finding word for word
+ * — *ranking a role by reference count picked the accent as the archetype's text colour, and
+ * shipping it would have painted the replica's body copy teal* — reached on the half SH831 did not
+ * touch. Its reason for leaving recurring rows to the extractor's ranking was sound at the time: the
+ * ranking *is* the published contract, and a recurring row carried no better evidence. SH834 gave it
+ * some, for the `text.base` rule, and nothing here sorted by it — so the flag was recorded on every
+ * row and read for one slot.</p>
+ *
+ * <p>The **sort** is where it belongs and `admits` is not: a bar decides what may fill a slot at all,
+ * and this decides which of several eligible rows fills it first. Declared-first stays the outer key,
+ * so within the declared half — already filtered to page-level for colour — nothing moves.</p>
  */
 function paletteByGroup(rows) {
   const byKey = new Map();
@@ -298,6 +320,7 @@ function paletteByGroup(rows) {
       if ((a.source === "declared") !== (b.source === "declared")) {
         return a.source === "declared" ? -1 : 1;
       }
+      if ((a.page === true) !== (b.page === true)) return a.page === true ? -1 : 1;
       if ((a.refs ?? 0) !== (b.refs ?? 0)) return (b.refs ?? 0) - (a.refs ?? 0);
       return a.value < b.value ? -1 : 1;
     });
