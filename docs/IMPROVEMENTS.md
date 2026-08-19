@@ -533,6 +533,93 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.121 The half of the palette nothing reads (SH834)
+
+SH831 pointed the vocabulary theme's six colours at the captured palette and stopped
+there, deliberately: colour was what that improvement measured and what the visible
+mismatch was. The extractor does not stop there. On `theme-heavy` the rows it writes are
+
+    brand          #0b7285                                 color   declared
+    ink            #10243a                                 color   declared
+    wash           #eef3f8                                 color   declared
+    font.body      "Fixture Sans", system-ui, sans-serif           declared
+    font.weight.1  700                                             recurring
+
+and the last two reach nothing. `VOCABULARY_THEME_TOKENS` declares eight non-colour
+tokens — `size.measure`, `size.radius`, `space.step`, and five `text.*` steps — and
+every one still ships this file's default on every replica, while `LENGTH_GROUPS` and
+`OTHER_GROUPS` already bucket `font-size`, `border-radius`, spacing and a font stack out
+of the source.
+
+Type is the visible half. A replica in the source's colours and a system font stack
+reads as *nearly* the source, which is the failure shape a wrong value has over a
+missing one: the reader sees a near-miss and cannot tell a defect from a decision.
+
+Two things this needs that the colour bridge did not. A **font stack** is not a token
+the theme has — `.shio-page` hardcodes `system-ui, …`, so there is nothing to point at
+until the theme declares one. And a **rank is not a role** for lengths:
+`recurringTokens` gives `font.size.1..n` ordered by reference count, while the theme's
+five text steps are a *scale*, so mapping rank onto scale position is a guess where
+colour had `body { color }` as an unambiguous statement. Take what the source states
+plainly, report the rest, refuse the guess.
+
+### XVII.122 The FAQ shape the classifier cannot see (SH835)
+
+Found by running SH833, not by reading `classify`. The `theme-heavy` archetype carried a
+plainly-labelled FAQ:
+
+    <section class="faq"><h2>Questions</h2>
+      <dl><dt>Does the font arrive?</dt><dd>Only if …</dd>
+          <dt>Is the sprite collected?</dt><dd>It is named by …</dd></dl>
+
+and the conversion created no `SectionFaq` at all. `classify` offers two routes to that
+type — two or more `<details>`, or two or more repeated units whose headings end in `?`
+— and a `<dl>` is neither: `dt`/`dd` are siblings rather than units, so the block falls
+through to `SectionFeatureGrid` and two questions become two cards. SH833 rewrote the
+fixture as `<details>` to give the type a producer, which was the right fix for that
+task and leaves this one untouched.
+
+The bar is deliberate and it is not what is wrong. `<details>` is *evidence*, and
+`classify`'s standing rule is that a guess wearing a type name is worse than `null` —
+SH379 sends an unrecognised block to a `Block*` post-type of its own rather than forcing
+it into the nearest shape. A `<dl>` is not a guess: the element exists to pair a term
+with its description, which is the whole of the FAQ shape, and `dt`/`dd` are the pairs.
+So the honest addition is a third route with the same standing as the other two — **a
+`<dl>` holding two or more `dt`/`dd` pairs** — and the rows come from the pairs, `dt` to
+`question` and the `dd` after it to `answer`.
+
+Worth checking in the same pass whether the two existing routes agree about what a row
+is, since this one derives them from a shape neither `repeatedUnits` nor `details`
+produces.
+
+### XVII.123 The scope a guard steals (SH836)
+
+Measured while shipping SH832, in that task's own assertion output.
+`ShTemplateFieldScanner` pushes every block onto one stack and hands a reference the
+**innermost** one, so
+
+    {{#each ITEMS}}{{#if ./title}}{{./title}}{{/if}}{{/each}}
+
+yields `("./title", "each")` for the guard's argument and `("./title", "if")` for what
+it guards. That is right for the scanner — the scope is where the reference is written —
+and it is what `ShTemplateFieldLint` then asks `ShRenderHelpers.rowKeysFor` about, whose
+`switch` answers `FORM_FIELD_KEYS` for `form`, `IMAGE_KEYS` for `image`, and `ROW_KEYS`
+for **everything else, including `if`**.
+
+So `{{#form}}{{#if required}}{{label}}{{/if}}{{/form}}` asks the listing's keys about
+`label`, does not find it, and falls to *no post-type anywhere declares this*. That is
+exactly the false positive `FORM_FIELD_KEYS` was added to stop — its own javadoc says
+the set was "declared, documented as read by both, and read by nothing", and this is the
+second way to reach the same warning on a correct template. A rule with false positives
+is one authors learn to ignore, which is SH192's finding and the reason this lint is a
+warning rather than an error.
+
+The fix is a scope the lint asks about rather than the one the reference sits in: walk
+out through the builtin blocks (`if`, `unless`, `each`, `with`) to the nearest
+**helper**, and ask about that. `NOT_A_FIELD` already names the four. What must not
+change is the scanner's own answer, which several tests pin and which is correct as it
+stands.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
