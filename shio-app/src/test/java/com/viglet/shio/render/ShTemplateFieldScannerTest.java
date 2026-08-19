@@ -67,6 +67,20 @@ class ShTemplateFieldScannerTest {
                 .toList();
     }
 
+    /** SH836 — keyed by the scope the reference is *written* in, which nothing else here prints. */
+    private static List<String> writtenScopes(String template) {
+        return ShTemplateFieldScanner.referencesIn(template, HELPERS).stream()
+                .map(reference -> reference.scope() + ":" + reference.name())
+                .toList();
+    }
+
+    /** SH836 — keyed by the scope the *lint* asks about, which is not always the one written. */
+    private static List<String> helperScopes(String template) {
+        return ShTemplateFieldScanner.referencesIn(template, HELPERS).stream()
+                .map(reference -> reference.helperScope() + ":" + reference.name())
+                .toList();
+    }
+
     @Test
     @DisplayName("a top-level interpolation belongs to the page")
     void topLevelBelongsToThePage() {
@@ -104,12 +118,53 @@ class ShTemplateFieldScannerTest {
     @Test
     @DisplayName("a block's own argument is resolved in the enclosing scope")
     void blockArgumentsAreEnclosingScope() {
-        // `{{#if TEXT}}` asks about the current scope's TEXT, so it is page-scoped even though
-        // everything between the braces is not.
+        // `{{#if TEXT}}` asks about the current scope's TEXT — and so does everything between the
+        // braces, which is SH836's correction to this test's own premise. An `{{#if}}` decides
+        // whether its body renders and leaves the context exactly as it found it, so a guarded
+        // reference is owned by whatever encloses the guard. This one is at the top level, so both
+        // are the page's, and the strong check — *the bound post-type declares no such field* — now
+        // reaches the reference it could never see before.
         assertThat(pageScoped("{{#if SUMMARY}}<p>{{SUMMARY}}</p>{{/if}}"))
-                .containsExactly("SUMMARY");
-        assertThat(inBlocks("{{#if SUMMARY}}<p>{{SUMMARY}}</p>{{/if}}"))
-                .containsExactly("if:SUMMARY");
+                .containsExactly("SUMMARY", "SUMMARY");
+        assertThat(writtenScopes("{{#if SUMMARY}}<p>{{SUMMARY}}</p>{{/if}}"))
+                .as("""
+                        and `scope` is unchanged, because it answers a different question: where the \
+                        reference is WRITTEN. Only `helperScope` walks out, and only through a block \
+                        that rebinds nothing — so `inBlocks` above, which reads `isPageScoped`, is \
+                        now empty for this template and that is the change rather than a loss.""")
+                .containsExactly("null:SUMMARY", "if:SUMMARY");
+        assertThat(inBlocks("{{#if SUMMARY}}<p>{{SUMMARY}}</p>{{/if}}")).isEmpty();
+    }
+
+    /**
+     * SH836 — the two builtins that rebind the context are not transparent, and the suite is what
+     * said so.
+     *
+     * <p>The task was filed naming all four builtins as blocks to walk out through, and with
+     * {@code each} among them {@code {{#each ITEMS}}{{inner}}{{/each}}} reported {@code inner} as the
+     * <em>page's</em> field — wrong on every listing, and the exact defect SH251 exists to catch with
+     * the sign flipped. {@code blocksClose} above is what refused it; this pins the pair directly so
+     * the distinction survives somebody reading only one of them.</p>
+     */
+    @Test
+    @DisplayName("SH836: a guard is transparent and an iteration is not")
+    void onlyBlocksThatRebindNothingAreWalkedOut() {
+        assertThat(helperScopes("{{#form}}{{#if required}}{{label}}{{/if}}{{/form}}"))
+                .as("""
+                        the false positive FORM_FIELD_KEYS was added to stop, reached a second way: \
+                        behind a guard the lint asked the LISTING's keys about `label`, did not find \
+                        it, and fell to "no post-type anywhere declares this" — on a correct form \
+                        body.""")
+                .containsExactly("form:required", "form:label");
+        assertThat(helperScopes("{{#each ITEMS}}{{#if inner}}{{inner}}{{/if}}{{/each}}"))
+                .as("""
+                        an iteration rebinds the context, so a reference inside one is a row's — \
+                        and `ITEMS` is the block's own argument, resolved OUTSIDE it, which is why \
+                        the first entry is the page's and the other two are not.""")
+                .containsExactly("null:ITEMS", "each:inner", "each:inner");
+        assertThat(helperScopes("{{#with post}}{{#if title}}{{title}}{{/if}}{{/with}}"))
+                .as("`with` rebinds too, and is the other one the filed rule got wrong")
+                .containsExactly("null:post", "with:title", "with:title");
     }
 
     @Test

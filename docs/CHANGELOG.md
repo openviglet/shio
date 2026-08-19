@@ -1475,6 +1475,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH804** — A scan over 1482 files refuses every C0 byte but tab, newline and return; it found two live defects in build.md, and reads itself rather than being exempt.
 - **SH805** — There is no drain to remove: beforeExit and exit fire a millisecond apart with only stdio alive, and paired runs put the flag's cost at nothing — the seconds were machine variance.
 - **SH806** — Every context was opening a rolling appender in a temp directory of 309,064 entries; a test logback config removes the file, and the assertion boots a context because a plain one cannot see it.
+- **SH836** — A reference carries the scope that decides whose data it is, so a guarded name is read against its helper's keys — and a guarded page field reaches the error it could not before.
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 

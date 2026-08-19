@@ -104,7 +104,7 @@ class ShTemplateFieldLintTest {
             <div>{{#search q="x" type="%s" limit=3}}<span>{{summary}}</span>{{/search}}</div>
             <form>{{#form type="%s"}}<label for="{{name}}">{{label}}</label>
               <input type="{{input}}" data-w="{{widget}}" data-o="{{ordinal}}"
-              {{#if required}}required{{/if}}>{{/form}}</form>""";
+              {{#if required}}required aria-label="{{label}}"{{/if}}>{{/form}}</form>""";
 
     @Autowired
     private ShAgentVerifyService verifyService;
@@ -171,6 +171,35 @@ class ShTemplateFieldLintTest {
         assertThat(templateFindings())
                 .extracting(Finding::field)
                 .doesNotContain("label", "input", "widget", "ordinal", "required");
+    }
+
+    /**
+     * SH836 — the second way to the same false positive, which the set above could not stop.
+     *
+     * <h3>The fixture's own blind spot, and why it read as coverage</h3>
+     *
+     * <p>{@code {{#if required}}} is a block <em>argument</em>, resolved in the enclosing scope, so
+     * it was already asked about {@code form} and passed. Everything *inside* the guard was not: the
+     * scanner hands a reference the innermost block, so {@code {{label}}} there carried the scope
+     * {@code if}, and {@code rowKeysFor}'s {@code switch} answers {@code ROW_KEYS} for every name it
+     * does not know. The listing's keys have no {@code label}, so it fell through to *no post-type
+     * anywhere declares this* — on a correct form body, which is the one failure a field lint cannot
+     * afford (SH192's finding, and the reason {@code FORM_FIELD_KEYS} exists at all).</p>
+     *
+     * <p>The guard is where a template puts most of its references, so the set was unreachable in
+     * the ordinary case and reachable only in the one this fixture happened to write. The fixture
+     * carries both now.</p>
+     */
+    @Test
+    @DisplayName("SH836: a guard does not change whose keys a reference is read against")
+    void aReferenceBehindAGuardIsStillTheHelpersOwn() {
+        assertThat(templateFindings())
+                .as("""
+                        `{{label}}` inside `{{#if required}}` inside `{{#form}}` is the form's own \
+                        key, and asking the listing's about it is how a correct template earns a \
+                        warning nobody can act on.""")
+                .extracting(Finding::field)
+                .doesNotContain("label");
     }
 
     @Test

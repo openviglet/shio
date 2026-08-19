@@ -803,7 +803,24 @@ renderer over one body of content at a second address. See the section on it bel
   SH832: `{{./TEXT}}` was `SKIPPED` as *"explicitly relative; the lint cannot say whose scope it lands
   in"*, and that had it backwards — `./TEXT` is the one spelling whose scope is not in doubt, and a
   **bare** `TEXT` is the ambiguous one, resolved up the context chain. It is `REPORTED` now, which is
-  what keeps the lint seeing the generated layout after SH832 respelled it. Whether Handlebars.java's
+  what keeps the lint seeing the generated layout after SH832 respelled it.
+- **A reference carries two scopes, because a guard is not an owner (SH836)** — the scanner hands each
+  reference the **innermost** block, which is right for *where it is written* and is what
+  `ShTemplateFieldLint` was asking `rowKeysFor` about. That `switch` answers `FORM_FIELD_KEYS` for
+  `form`, `IMAGE_KEYS` for `image` and `ROW_KEYS` for everything else — **including `if`**. So
+  `{{#form}}{{#if required}}{{label}}{{/if}}{{/form}}` asked the *listing's* keys about `label` and
+  fell through to *no post-type anywhere declares this*, on a correct form body: the exact false
+  positive `FORM_FIELD_KEYS` was added to stop, reached a second way, and unreachable in the ordinary
+  case because a guard is where a template puts most of its references. The record now carries
+  `helperScope` beside `scope` — the nearest enclosing block that decides whose data is in scope — and
+  the lint asks about that one. `scope` is unchanged and still pinned. **The larger half is the other
+  direction:** `isPageScoped()` reads `helperScope`, so `{{#if headline}}{{headline}}{{/if}}` at the
+  top of a layout is the *page's* reference again and reaches the **error** — *the bound post-type
+  declares no such field* — which could never fire behind a guard before. And the rule is narrower
+  than the task that filed it: only `if` and `unless` are transparent. `each` and `with` **rebind** the
+  context, which is what they are for, and walking out through them reported a row's field as the
+  page's — wrong on every listing, SH251's defect inverted. `ShTemplateFieldScannerTest.blocksClose`
+  is what refused the filed version; a test pins the pair directly now. Whether Handlebars.java's
   AST would replace all of this is **asserted rather than remembered (SH274)**: on 4.5.3
   `Template#collect` is *deduplicated* — four references to `TEXT` at three scopes return `[TEXT]` —
   `collect(SECTION)` gives only the helper's name, and the structural nodes are in `internal`.

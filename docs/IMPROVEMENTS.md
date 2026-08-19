@@ -533,34 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.123 The scope a guard steals (SH836)
-
-Measured while shipping SH832, in that task's own assertion output.
-`ShTemplateFieldScanner` pushes every block onto one stack and hands a reference the
-**innermost** one, so
-
-    {{#each ITEMS}}{{#if ./title}}{{./title}}{{/if}}{{/each}}
-
-yields `("./title", "each")` for the guard's argument and `("./title", "if")` for what
-it guards. That is right for the scanner — the scope is where the reference is written —
-and it is what `ShTemplateFieldLint` then asks `ShRenderHelpers.rowKeysFor` about, whose
-`switch` answers `FORM_FIELD_KEYS` for `form`, `IMAGE_KEYS` for `image`, and `ROW_KEYS`
-for **everything else, including `if`**.
-
-So `{{#form}}{{#if required}}{{label}}{{/if}}{{/form}}` asks the listing's keys about
-`label`, does not find it, and falls to *no post-type anywhere declares this*. That is
-exactly the false positive `FORM_FIELD_KEYS` was added to stop — its own javadoc says
-the set was "declared, documented as read by both, and read by nothing", and this is the
-second way to reach the same warning on a correct template. A rule with false positives
-is one authors learn to ignore, which is SH192's finding and the reason this lint is a
-warning rather than an error.
-
-The fix is a scope the lint asks about rather than the one the reference sits in: walk
-out through the builtin blocks (`if`, `unless`, `each`, `with`) to the nearest
-**helper**, and ask about that. `NOT_A_FIELD` already names the four. What must not
-change is the scanner's own answer, which several tests pin and which is correct as it
-stands.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

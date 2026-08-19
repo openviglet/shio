@@ -170,7 +170,7 @@ public class ShTemplateFieldLint {
             // legitimate there and nowhere else; asking the helper is what keeps this from
             // warning on a correct template, which is the one failure mode a field lint cannot
             // afford — an author who sees a false finding stops reading the true ones.
-            if (!ShRenderHelpers.rowKeysFor(reference.scope()).contains(root)
+            if (!ShRenderHelpers.rowKeysFor(reference.helperScope()).contains(root)
                     && !anyDeclared.contains(root)
                     && reported.add("row:" + root)) {
                 findings.add(declaredNowhere(subject, reference, root));
@@ -192,12 +192,13 @@ public class ShTemplateFieldLint {
     private ShTemplateFinding declaredNowhere(ShPostUnified subject, ShTemplateReference reference,
                                               String field) {
         return new ShTemplateFinding(subject, "template-unknown-field", false, field,
-                "Inside `{{#" + reference.scope() + "}}` this template interpolates `{{" + field
+                "Inside `{{#" + reference.helperScope() + "}}` this template interpolates `{{" + field
                         + "}}`, and no post-type in this instance declares a field of that name — "
                         + "so it cannot resolve for any post the block lists.",
                 "Rename it to a field the listed posts have, or to one of the values `{{#"
-                        + reference.scope() + "}}` provides ("
-                        + String.join(", ", new TreeSet<>(ShRenderHelpers.rowKeysFor(reference.scope()))) + "). "
+                        + reference.helperScope() + "}}` provides ("
+                        + String.join(", ",
+                                new TreeSet<>(ShRenderHelpers.rowKeysFor(reference.helperScope()))) + "). "
                         + "This is a warning rather than an error because the rows come from a "
                         + "helper, and which posts it finds is not something the CMS can settle.");
     }

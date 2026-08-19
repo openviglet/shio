@@ -65,6 +65,22 @@ public final class ShTemplateFieldScanner {
     private static final Set<String> BUILTIN_BLOCKS = Set.of("if", "unless", "each", "with");
 
     /**
+     * The blocks that do <b>not</b> change whose data is in scope (SH836).
+     *
+     * <p>Two of the four builtins, and the split is the whole of this rule: {@code {{#if}}} and
+     * {@code {{#unless}}} decide whether their body renders and leave the context exactly as they
+     * found it, so a reference inside one belongs to whatever encloses <em>them</em>. {@code {{#each}}}
+     * and {@code {{#with}}} <b>rebind</b> it — that is what they are for — so they are scopes and stay
+     * scopes.</p>
+     *
+     * <p>The task this ships under was filed naming all four, and the suite refused it: with `each`
+     * transparent, {@code {{#each ITEMS}}{{inner}}{{/each}}} reported {@code inner} as the page's own
+     * field, which is wrong on every listing and is the exact defect SH251 exists to catch, inverted.
+     * `ShTemplateFieldScannerTest.blocksClose` is what said so.</p>
+     */
+    private static final Set<String> TRANSPARENT_BLOCKS = Set.of("if", "unless");
+
+    /**
      * The helper shapes, <b>passed in</b> rather than restated (SH260).
      *
      * <p>This class used to keep two copies of the capability set — which helpers open blocks, and
@@ -117,15 +133,27 @@ public final class ShTemplateFieldScanner {
     /**
      * One interpolation.
      *
-     * @param name  the path as written, e.g. {@code TEXT} or {@code post.title}
-     * @param scope the block it sits inside, or {@code null} at the top level — which is the
-     *              only scope whose owner is known
+     * @param name        the path as written, e.g. {@code TEXT} or {@code post.title}
+     * @param scope       the block it sits inside, or {@code null} at the top level — where it is
+     *                    <em>written</em>, which is what several readers pin
+     * @param helperScope SH836 — the nearest enclosing block that is not a builtin, or {@code null}.
+     *                    A `{{#if}}` does not change whose data is in scope, and only a helper knows
+     *                    what keys its rows carry, so this is the one a reader asks about. The two
+     *                    differ exactly where a reference sits behind a guard, which is most of them
      */
-    public record ShTemplateReference(String name, String scope) {
+    public record ShTemplateReference(String name, String scope, String helperScope) {
 
-        /** Whether this reference belongs to the page's own post-type. */
+        /**
+         * Whether this reference belongs to the page's own post-type.
+         *
+         * <p>SH836 — asked of {@link #helperScope} and not of {@link #scope}, because a builtin block
+         * is not an owner. {@code {{#if headline}}{{headline}}{{/if}}} at the top of a layout is a
+         * reference to the <b>page's</b> field, and reading `if` as a scope made it a *row* reference
+         * — the weaker of the two checks, so the error that says "the bound post-type declares no
+         * such field" could never fire behind a guard, which is where a template puts most of them.</p>
+         */
         public boolean isPageScoped() {
-            return scope == null;
+            return helperScope == null;
         }
 
         /** The first path segment, which is what a reserved frame is recognised by. */
@@ -192,25 +220,26 @@ public final class ShTemplateFieldScanner {
                 // The block's own argument is resolved where the block is written, not inside
                 // it: `{{#if TEXT}}` asks about the current scope's TEXT.
                 if (BUILTIN_BLOCKS.contains(name) || helpers.pathArguments().contains(name)) {
-                    addIfPath(found, argumentOf(body.substring(1), name), blocks.peekFirst());
+                    addIfPath(found, argumentOf(body.substring(1), name), blocks.peekFirst(),
+                            helperOf(blocks));
                 }
                 // SH261 — and its hash arguments, in the same enclosing scope for the same reason.
-                addHashPaths(found, body.substring(1), blocks.peekFirst());
+                addHashPaths(found, body.substring(1), blocks.peekFirst(), helperOf(blocks));
                 blocks.addFirst(name);
                 continue;
             }
             String token = firstToken(body);
             // SH261 — an inline helper may take hash arguments too (`{{file_url HERO alt=TITLE}}`),
             // and they resolve in the scope the call is written in, which is the current one.
-            addHashPaths(found, body, blocks.peekFirst());
+            addHashPaths(found, body, blocks.peekFirst(), helperOf(blocks));
             if (helpers.pathArguments().contains(token) || helpers.blocks().contains(token)) {
                 // The helper's name is not a field; its argument is. `{{file_url HERO}}` asks
                 // about HERO, and reporting `file_url` would be a false positive on the very
                 // helper the 2018 navigation region used.
-                addIfPath(found, argumentOf(body, token), blocks.peekFirst());
+                addIfPath(found, argumentOf(body, token), blocks.peekFirst(), helperOf(blocks));
                 continue;
             }
-            addIfPath(found, token, blocks.peekFirst());
+            addIfPath(found, token, blocks.peekFirst(), helperOf(blocks));
         }
         return List.copyOf(found);
     }
@@ -238,13 +267,14 @@ public final class ShTemplateFieldScanner {
      * needs no cleverness about nesting: a subexpression is skipped whole rather than descended
      * into.</p>
      */
-    private static void addHashPaths(List<ShTemplateReference> found, String body, String scope) {
+    private static void addHashPaths(List<ShTemplateReference> found, String body, String scope,
+                                     String helperScope) {
         for (String token : tokens(body)) {
             int equals = token.indexOf('=');
             if (equals <= 0 || equals == token.length() - 1) {
                 continue;
             }
-            addIfPath(found, token.substring(equals + 1), scope);
+            addIfPath(found, token.substring(equals + 1), scope, helperScope);
         }
     }
 
@@ -294,10 +324,28 @@ public final class ShTemplateFieldScanner {
         return out;
     }
 
-    private static void addIfPath(List<ShTemplateReference> found, String token, String scope) {
+    private static void addIfPath(List<ShTemplateReference> found, String token, String scope,
+                                  String helperScope) {
         if (isPath(token)) {
-            found.add(new ShTemplateReference(token, scope));
+            found.add(new ShTemplateReference(token, scope, helperScope));
         }
+    }
+
+    /**
+     * The nearest enclosing block that decides whose data is in scope (SH836).
+     *
+     * <p>{@code blocks} is innermost-first, so this is one scan out through the
+     * {@link #TRANSPARENT_BLOCKS}. A block name that is neither builtin nor a registered helper is
+     * still returned — an unknown block is somebody's helper as far as this can tell, and reporting
+     * it is what lets the reader see the name they wrote.</p>
+     */
+    private static String helperOf(Deque<String> blocks) {
+        for (String block : blocks) {
+            if (!TRANSPARENT_BLOCKS.contains(block)) {
+                return block;
+            }
+        }
+        return null;
     }
 
     /**
