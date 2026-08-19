@@ -533,6 +533,35 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.131 A subject wide enough to own somebody else's tests (SH844)
+
+Found by using SH841 rather than by reading it, which is the only way this one shows up.
+Two commits after that instrument shipped, `pnpm gates` said:
+
+    conformance — last run at 407af1c1 — NOT this tree, and OWED: 3 commit(s)
+
+and the files those commits touched, under the subject conformance declares:
+
+    cli/test/{assertion-debt,content-round-trip,handoffs,red-suites}.test.mjs
+    shio-app/src/test/java/…/{ShAgentJsonLeanTest,ShAgentResponseBudgetTest,ShMcpServerTest}.java
+
+Every one is a **test file**, and none of them can change what `pnpm conformance` does:
+it runs `cli/conformance/**` against a jar built from `shio-app/src/main/**`, driving
+`cli/src/**`. The debt is not real.
+
+SH841's own rationale rules this out in as many words — *"naming a false one is the
+failure it must not have, because a warning that fires on every commit is the next thing
+nobody reads"* — and then declared `cli/` and `shio-app/`, each of which also holds the
+suites of the two gates that are **not** conformance. Every commit to the JS or Java
+gate now bills the third one.
+
+A subject is the code a gate **exercises**, not every path under a directory that
+happens to also hold other gates' tests. `cli/src/`, `cli/conformance/`,
+`shio-app/src/main/` and `fixtures/` is that, and `java` stays `shio-app/` because its
+own tests genuinely are what it runs. The check that keeps it honest is the harder half:
+nothing today can tell a subject that is too wide from one that is right, and the
+evidence is a run of the gate coming back unchanged.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
