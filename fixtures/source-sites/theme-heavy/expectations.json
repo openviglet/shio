@@ -44,7 +44,7 @@
     "themeCoversDrawnClasses": true,
     "noSourceBaseInHrefs": true
   },
-  "collections": ["features", "questions", "logos", "quotes"],
+  "collections": ["features", "quotes"],
   "scenarios": { "fidelity": true, "authorable": true, "headless": false },
   "needsBrowser": false,
   "routes": {}

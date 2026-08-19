@@ -243,26 +243,14 @@ export function buildConversion({
   // **400 — binds no layout for post-type 'Page'**. Block Q is named "an existing site becomes an
   // authorable Shio site" and neither of its two modes produced one. Every page needs a layout,
   // because the renderer resolves one per post-type; the layout below serves all three modes.
-  if (pages.length) {
-    // SH549 — the captured stylesheet, reaching only the pages that carry verbatim markup. Named
-    // only when the layout named the *vocabulary* theme: a pure-fidelity conversion already names the
-    // captured one, and emitting it twice would put a megabyte on the page twice.
-    const capturedFor = theme === vocabularyThemeTitle(site)
-      && extras.includes("Theme") && held.length > 0;
-    posts.push(pageLayout(markup, site, theme, capturedFor));
-    extras.push("PageLayout");
-  }
-
-  const folders = [
-    SECTIONS_FOLDER,
-    ...(pages.length ? [PAGES_FOLDER] : []),
-    ...(extras.length ? [THEME_FOLDER] : []),
-  ];
   // SH607 — the SH95 types this document writes posts of, sorted so two conversions of one capture
   // are the same bytes (P5). Filtered to the vocabulary on purpose: a block the vocabulary has no
   // type for is proposed as a `Block*` post-type of its own (SH379), and naming one here would
   // trade its honest `No post-type named 'BlockPricing'` for a refusal about a catalogue that was
   // never going to carry it.
+  //
+  // SH830 — computed above the layout rather than below it, because the layout is now written
+  // *against* it: the template branches for the types this conversion creates and for no others.
   const vocabulary = [
     ...(pages.length ? [PAGE_TYPE] : []),
     ...new Set(sections.map((post) => post.type).filter((type) => type in SECTION_TYPES)),
@@ -272,6 +260,21 @@ export function buildConversion({
     // the other ten, met one type later.
     ...(markupPosts.length ? [MARKUP_TYPE] : []),
   ].sort((a, b) => (a < b ? -1 : 1));
+  if (pages.length) {
+    // SH549 — the captured stylesheet, reaching only the pages that carry verbatim markup. Named
+    // only when the layout named the *vocabulary* theme: a pure-fidelity conversion already names the
+    // captured one, and emitting it twice would put a megabyte on the page twice.
+    const capturedFor = theme === vocabularyThemeTitle(site)
+      && extras.includes("Theme") && held.length > 0;
+    posts.push(pageLayout(markup, site, theme, capturedFor, sectionFieldsOf(vocabulary)));
+    extras.push("PageLayout");
+  }
+
+  const folders = [
+    SECTIONS_FOLDER,
+    ...(pages.length ? [PAGES_FOLDER] : []),
+    ...(extras.length ? [THEME_FOLDER] : []),
+  ];
   return {
     document: {
       site,
@@ -611,6 +614,109 @@ export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-lab
 {{/getRelation}}`;
 
 /**
+ * The three fields the section element carries as **attributes** rather than as a branch (SH830).
+ *
+ * <p>Spelled out because they are the one shape {@link pageBodyFor} cannot recognise structurally: a
+ * `{{#if F}}…{{/if}}` line says which field it is gated on, and ` data-shio-align="{{align}}"` says
+ * only that it interpolates something. `type` is beside them and is deliberately *not* here — it is a
+ * key `getRelation` puts on every row, so no post-type has to declare it.</p>
+ */
+const BODY_ATTRIBUTE_FIELDS = Object.freeze(["align", "variant", "columns"]);
+
+/**
+ * Every field name the section types this conversion creates declare (SH830).
+ *
+ * <p>Read from `SECTION_TYPES` — the same table `propose` maps blocks with — plus the row fields a
+ * `repeats` names, because `{{#each features}}{{icon}}` is a reference like any other. `html` comes
+ * from `SectionMarkup`, which is in no table for SH763's reason: no block maps into it.</p>
+ */
+export function sectionFieldsOf(vocabulary) {
+  const names = new Set();
+  for (const type of vocabulary) {
+    const spec = SECTION_TYPES[type];
+    if (!spec) continue;
+    for (const field of spec.fields) names.add(field);
+    for (const field of spec.repeats?.of ?? []) names.add(field);
+  }
+  if (vocabulary.includes(MARKUP_TYPE)) names.add("html");
+  return names;
+}
+
+/**
+ * {@link PAGE_BODY_HTML} with the branches this conversion has no type for removed (SH830).
+ *
+ * <h3>The tool warning about the file the tool just wrote</h3>
+ *
+ * <p>The generated layout is one template with a branch per field across the whole vocabulary, and
+ * `convert` creates only the types a capture actually produced. A replication onto an **empty**
+ * instance — 66 objects, exit 0, four routes 200 — therefore ended with two of its four `verify`
+ * warnings against the layout `convert` had written seconds earlier:</p>
+ *
+ * <pre>! template-unknown-field post:VigR3/theme/layout · align
+ * ! template-unknown-field post:VigR3/theme/layout · subheading</pre>
+ *
+ * <p>Both are `SectionHero` fields, and that capture accepted no hero. The warning is correct — it
+ * lists what `{{#if}}` does provide and says why it is a warning — and it is **guaranteed**: any
+ * conversion not using every section type warns, and the count measures what the source happened to
+ * contain rather than anything wrong. A warning nobody can act on is what teaches a reader to stop
+ * reading warnings, which is the one thing this suite's value rests on.</p>
+ *
+ * <h3>Filtered here rather than authored per conversion</h3>
+ *
+ * <p>`PAGE_BODY_HTML` stays a **constant with no interpolation** — SH464's seam, the bytes
+ * `ShConvertedLayoutRenderTest` slices out of this file and renders through the real engine. Building
+ * the body by concatenation would have left that test reading a fragment, so the complete template is
+ * still the thing under test and this removes from it. The other way out — creating the vocabulary
+ * whole so every branch resolves — provisions sixteen post-types a site does not use, which is the
+ * opposite of the direction SH763 chose.</p>
+ *
+ * <p>Two shapes and nothing else, both asserted by `convert.test.mjs` so a template edit that leaves
+ * this reader behind fails rather than silently keeping every branch: a line that is one whole
+ * `{{#if F}}…{{/if}}`, and a line that opens `{{#if F}}…{{else}}` whose `{{/if}}` stands alone
+ * later — the markup branch, whose *else* arm is the authorable page and must survive. Only inside
+ * `{{#getRelation sections}}`: outside it the references are the `Page`'s own fields, which this
+ * function knows nothing about and must not judge.</p>
+ */
+export function pageBodyFor(fields) {
+  const declared = (name) => fields.has(name);
+  const lines = PAGE_BODY_HTML.split("\n");
+  const kept = [];
+  let inSections = false;
+  let closing = 0;
+  for (const line of lines) {
+    if (line.startsWith("{{#getRelation sections}}")) inSections = true;
+    if (!inSections) {
+      kept.push(line);
+      continue;
+    }
+    if (line === "{{/if}}" && closing > 0) {
+      closing -= 1;
+      continue;
+    }
+    const whole = /^\{\{#if (\w+)\}\}.*\{\{\/if\}\}$/.exec(line);
+    if (whole && !declared(whole[1])) continue;
+    const opens = /^\{\{#if (\w+)\}\}.*\{\{else\}\}$/.exec(line);
+    if (opens && !declared(opens[1])) {
+      closing += 1;
+      continue;
+    }
+    kept.push(strippedAttributes(line, declared));
+    if (line.startsWith("{{/getRelation}}")) inSections = false;
+  }
+  return kept.join("\n");
+}
+
+/** ` data-shio-align="{{align}}"` and its two siblings, gone where nothing declares the field. */
+function strippedAttributes(line, declared) {
+  let stripped = line;
+  for (const field of BODY_ATTRIBUTE_FIELDS) {
+    if (declared(field)) continue;
+    stripped = stripped.split(` data-shio-${field}="{{${field}}}"`).join("");
+  }
+  return stripped;
+}
+
+/**
  * Which theme the one layout names — the whole of SH510, in one decision.
  *
  * <h3>What was being sent</h3>
@@ -794,8 +900,11 @@ function layoutTheme({ site, captured, authorable }) {
  * the same way adding a row does. `ShConvertedLayoutRenderTest` holds that exemption and asserts its
  * premise: a presentation field that becomes free text fails there rather than staying exempt.</p>
  */
-function pageLayout(markup, site, theme, capturedFor = false) {
+function pageLayout(markup, site, theme, capturedFor = false, fields = null) {
   const lang = langOf(markup);
+  // SH830 — every branch when the caller names no vocabulary, which is what the older callers and
+  // the fixtures expect; filtered to what the conversion's own types declare when it does.
+  const body = fields ? pageBodyFor(fields) : PAGE_BODY_HTML;
   return {
     url: FIDELITY_LAYOUT_URL,
     type: "PageLayout",
@@ -815,7 +924,7 @@ ${HEAD_CONVENTIONS_HTML}
 <style data-shio-theme="{{theme.title}}">{{theme.css}}</style>
 ${capturedFor ? `${CAPTURED_STYLE_HTML}\n` : ""}</head>
 <body class="shio-page">
-${PAGE_BODY_HTML}
+${body}
 </body>
 </html>
 `,

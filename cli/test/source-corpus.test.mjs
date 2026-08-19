@@ -898,6 +898,19 @@ describe("SH560 group I: the checks the corpus declared and no assertion consume
         const html = layout.data.HTML ?? "";
         for (const field of entry.declaration.collections) {
           holding(entry.id, `collection-rows-annotated-${slug(field)}`, () => {
+            // SH830 — the layout carries the branches for the types the conversion created, so a
+            // declared collection it does not draw is a declaration the corpus cannot keep. This
+            // check ran on four fields here and two of them were **vacuous**: `questions` and
+            // `logos` passed against a branch every layout carried whether or not any post on the
+            // site could fill it. A coverage claim that cannot fail is worth less than none.
+            assert.ok(
+              html.includes(`{{#each ${field}}}`),
+              `SH830 / ${entry.id}: the declaration names \`${field}\` and this conversion creates `
+                + "no type that has one, so the layout draws no such branch. Either the archetype's "
+                + "markup should produce that type - `propose` wants two or more <details> for an "
+                + "FAQ and three image-only units for a logo wall - or the key is a claim about the "
+                + "template rather than about this replica, which convert.test.mjs already holds.",
+            );
             // A row-level field is `<field>.{{@index}}.<name>`, in either declaration form: a value
             // that lands in an attribute is declared by `sh-field-attr`, so counting only `sh-field`
             // under-reports every attribute-valued field and once read a complete page as 9 of 10.

@@ -27,14 +27,15 @@ import { test } from "node:test";
 import {
   CAPTURED_STYLE_HTML, CAPTURED_THEME_URL, LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER,
   PAGE_BODY_HTML,
-  VOCABULARY_CLASSES, WRAPPER_ROLES, buildConversion, describeConversion, withResolvedFileFields,
+  VOCABULARY_CLASSES, WRAPPER_ROLES, buildConversion, describeConversion, pageBodyFor,
+  sectionFieldsOf, withResolvedFileFields,
 } from "../src/convert.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
 } from "../src/vocabulary-theme.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import { INVENTORY_FILE, MARKUP_DIR, markupFileFor } from "../src/clone.mjs";
-import { PLAN_FILE, SECTION_REQUIRED, missingRequired } from "../src/propose.mjs";
+import { PLAN_FILE, SECTION_REQUIRED, SECTION_TYPES, missingRequired } from "../src/propose.mjs";
 import { norm } from "./support/paths.mjs";
 
 // --- the translation ---
@@ -581,9 +582,13 @@ test("SH449: an accepted page composes sections and carries no verbatim copy of 
   // SectionLogoWall — heading and logos, nothing else — rendered as a bare <h2>. `{{#each}}` and not
   // `{{#getRelation}}`: an SH95 Relator declares nested fields, so its value is an array of row
   // objects in the section's own data rather than a list of references to other posts.
+  // SH830 — read from `PAGE_BODY_HTML` and not from this conversion's layout. The claim is about
+  // the *template*: every collection field of the vocabulary is drawn somewhere in it. A conversion
+  // now carries the branches for the types it created, and this fixture accepted one hero — so
+  // asserting it here would be asserting that the layout draws a field no post on the site has.
   for (const collection of ["features", "questions", "logos", "quotes"]) {
     assert.match(
-      layout.data.HTML,
+      PAGE_BODY_HTML,
       new RegExp(`\\{\\{#each ${collection}\\}\\}`),
       `SH465: the layout draws ${collection}. Whether it draws them *correctly* is asserted where `
         + "the renderer is — ShConvertedLayoutRenderTest reads these bytes and runs them, and the "
@@ -1066,6 +1071,52 @@ test("SH763: the layout draws a markup section verbatim, in the place the list g
   );
 });
 
+test("SH830: the layout branches for the types the conversion created, and for no others", () => {
+  // The measurement: a replication onto an empty instance converted cleanly - 66 objects, exit 0,
+  // four routes 200 - and two of its four `verify` warnings were `template-unknown-field · align`
+  // and `· subheading` against the layout `convert` had just written. Both are SectionHero fields
+  // and the capture accepted no hero, so the branches resolved for nothing. The warning is correct
+  // and guaranteed, which is the combination that teaches a reader to stop reading warnings.
+  const fields = sectionFieldsOf(["Page", "SectionFeatureGrid", "SectionMarkup"]);
+  const body = pageBodyFor(fields);
+
+  for (const gone of ["subheading", "align", "variant", "image", "ctaLabel", "quotes", "logos"]) {
+    assert.ok(
+      !body.includes(gone),
+      `no type this conversion creates declares \`${gone}\`, so the branch that reads it is a `
+        + "guaranteed warning against a file convert wrote seconds earlier",
+    );
+  }
+  for (const kept of ["heading", "intro", "body", "features", "columns", "html"]) {
+    assert.ok(body.includes(`{{${kept}}}`) || body.includes(`{{#if ${kept}}}`),
+      `SectionFeatureGrid or SectionMarkup declares \`${kept}\`, and dropping a branch a post can `
+        + "fill would lose content rather than a warning");
+  }
+  assert.match(body, /data-shio-section="\{\{type\}\}"/,
+    "`type` is a key getRelation puts on every row, so no post-type has to declare it and no "
+      + "conversion may drop it");
+
+  // The markup branch is the one multi-line shape, and its *else* arm is the authorable page: an
+  // authorable-only conversion has to lose the branch and keep the section.
+  const authorable = pageBodyFor(sectionFieldsOf(["Page", "SectionRichText"]));
+  assert.ok(!authorable.includes("{{#if html}}"), "no SectionMarkup, so nothing declares `html`");
+  assert.ok(!authorable.includes("{{else}}"), "and the branch went with it, opener and closer");
+  assert.match(authorable, /<section class="shio-section"[\s\S]*<\/section>/,
+    "while the arm that draws a composed section survives - dropping it would render every "
+      + "authorable page empty, which is a far worse defect than the warning this removes");
+  assert.equal(
+    (authorable.match(/\{\{\/getRelation\}\}/g) ?? []).length, 1,
+    "and the template still closes exactly once: an unbalanced block is a layout that will not "
+      + "compile, which SH192 refuses at write time",
+  );
+
+  // Nothing dropped when the whole vocabulary is present, or the filter would be removing branches
+  // a site can fill - the direction that loses content instead of noise.
+  assert.equal(pageBodyFor(sectionFieldsOf([...Object.keys(SECTION_TYPES), "SectionMarkup"])),
+    PAGE_BODY_HTML,
+    "a conversion using every type gets the template unchanged, byte for byte (P5)");
+});
+
 /**
  * SH763 — the assertion that would have caught it, at the boundary it crossed.
  *
@@ -1349,7 +1400,12 @@ test("SH508: the layout carries a structural contract, named by role and owned b
   });
   const html = document.posts.find((post) => post.type === "PageLayout").data.HTML;
   const elements = layoutElements(html);
-  const used = new Set(elements.flatMap((element) => element.classes));
+  // SH830 — the contract is a property of the *template*, so the roles are counted over it and over
+  // the shell this conversion wrote (`shio-page` is on the layout's own `<body>` and in no branch).
+  // A conversion carries the branches for the types it created, and this one accepted a hero: asking
+  // its layout for `shio-grid` would be asking it to draw a field no post on the site has.
+  const template = layoutElements(PAGE_BODY_HTML);
+  const used = new Set([...elements, ...template].flatMap((element) => element.classes));
 
   assert.deepEqual(
     LAYOUT_ROLES.filter((role) => !used.has(role)), [],
@@ -1362,7 +1418,7 @@ test("SH508: the layout carries a structural contract, named by role and owned b
     "the rhythm *between* sections needs no wrapper at all: the sections are body's own children, "
       + "and body is the one element both modes already have",
   );
-  const section = elements.find((element) => element.classes.includes("shio-section"));
+  const section = template.find((element) => element.classes.includes("shio-section"));
   assert.match(
     section.attrs, /data-shio-columns="\{\{columns\}\}"/,
     "the grid's column count is SectionFeatureGrid.columns and not a role: a theme reads "
@@ -1371,7 +1427,9 @@ test("SH508: the layout carries a structural contract, named by role and owned b
   );
 
   // The two properties SH185 imposes, and the reason the rule names three roles rather than eight.
-  const wrappers = elements.filter((element) =>
+  // Over the template (SH830): the rules bind every wrapper the vocabulary can emit, not only the
+  // ones the branches this conversion kept happen to reach.
+  const wrappers = template.filter((element) =>
     element.classes.some((name) => WRAPPER_ROLES.includes(name)));
   assert.ok(
     wrappers.length >= 4,
@@ -1391,7 +1449,7 @@ test("SH508: the layout carries a structural contract, named by role and owned b
     );
   }
   assert.ok(
-    elements.some((element) =>
+    template.some((element) =>
       element.classes.some((name) => LAYOUT_ROLES.includes(name) && !WRAPPER_ROLES.includes(name))
       && /\bsh-field(-attr)?=/.test(element.attrs)),
     "and the premise of that scoping: a role outside WRAPPER_ROLES does land on an element that "
@@ -1455,8 +1513,10 @@ test("SH556: what the removed classes addressed is still addressable", () => {
 
   assert.match(html, /<section class="shio-section"[^>]*data-shio-section="\{\{type\}\}"/,
     "`[data-shio-section=\"SectionHero\"]` is what `.shio-section-SectionHero` was");
+  // SH830 — over the template, for the reason the SH508 test above states: this conversion accepted
+  // a hero, so its layout carries no row at all and the claim being made is about the vocabulary.
   for (const row of ["features", "questions", "logos", "quotes"]) {
-    assert.ok(html.includes(`data-shio-row="${row}"`),
+    assert.ok(PAGE_BODY_HTML.includes(`data-shio-row="${row}"`),
       `\`[data-shio-row="${row}"]\` is what \`.shio-${row}\` was, and it reaches the leaves too: `
         + `\`[data-shio-row="${row}"] h3\` is the title the class named`);
   }

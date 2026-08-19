@@ -1053,6 +1053,21 @@ it. Four decisions worth keeping:
   what SH449's CLI tests did: they asserted the document's *shape* and could not see that the
   authorable branch wrote no layout at all. `ShConvertedLayoutRenderTest` slices those bytes out of
   this file and renders them through the real engine, so there is no second copy to drift (SH245).
+- **And the layout a conversion writes is that template minus the types it did not create (SH830).**
+  The constant carries a branch per field across the whole vocabulary; `convert` provisions only the
+  types a capture produced. So a replication onto an empty instance converted cleanly — 66 objects,
+  exit 0, four routes 200 — and *two of its four `verify` warnings were against the layout `convert`
+  had written seconds earlier*: `template-unknown-field · align` and `· subheading`, both
+  `SectionHero` fields on a capture that accepted no hero. Correct, well-written, and **guaranteed**
+  — any conversion not using every type warns, and the count measures what the source contained
+  rather than anything wrong. A warning nobody can act on is what teaches a reader to stop reading
+  warnings, which is the one thing a suite of them rests on. `pageBodyFor(sectionFieldsOf(vocabulary))`
+  removes the branches instead, keeping `PAGE_BODY_HTML` itself complete so the seam above still has
+  its bytes; the other way out — provisioning the vocabulary whole so every branch resolves — installs
+  sixteen post-types a site does not use, against SH763's direction. Two shapes and no more: a line
+  that is one whole `{{#if F}}…{{/if}}`, and the markup branch, whose `{{else}}` arm is the authorable
+  page and must survive its opener. Only inside `{{#getRelation sections}}` — outside it the
+  references are the `Page`'s own fields, which the filter knows nothing about and must not judge.
 - **A collection is `{{#each}}`, never `{{#getRelation}}` (SH465).** SH464's union drew six *scalar*
   fields and no collection, and four of the seven section types are collection-shaped:
   `SectionFeatureGrid.features`, `SectionFaq.questions`, `SectionLogoWall.logos` and
