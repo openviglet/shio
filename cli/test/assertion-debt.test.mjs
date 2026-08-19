@@ -88,7 +88,7 @@ const SUITES = [
 const READABLE = new Set([".mjs", ".js", ".ts", ".tsx", ".java"]);
 
 /**
- * The two markers around this file's own declarations, whose ids must not count (SH527).
+ * The two markers around a declaration, whose ids must not count (SH527, SH843).
  *
  * <p>Found twice, in opposite directions, which is why the boundary is here and not at the file.
  * **First**: reading this file whole counted all forty declared ids as *asserted*, so the debt came
@@ -97,6 +97,24 @@ const READABLE = new Set([".mjs", ".js", ".ts", ".tsx", ".java"]);
  * this file and nothing else names it. So what is skipped is the region between these markers, and
  * the rest of the file counts like any other suite: a test whose name carries an id is exactly the
  * assertion this reader is looking for.</p>
+ *
+ * <h3>SH843 — the markers were general and only this file wrote them</h3>
+ *
+ * <p>`withoutDeclaration` has always run over <b>every</b> file in the walk; no other file had ever
+ * carried the pair, so the mechanism read as private to this one. It is not. A named list's reason
+ * is a string in an object literal — <em>code</em>, by the not-a-comment rule below — so any ledger
+ * with a sentence per entry credits every id those sentences name. Measured across every suite file:
+ * <b>832 ids credited anywhere, three whose every credit was a reason field</b> — SH253 in
+ * `content-round-trip.test.mjs`, SH641 and SH842 in `handoffs.test.mjs`. The third is the argument:
+ * SH842 shipped one iteration earlier, its own rule says a batch payment belongs in `DEBT`, and a
+ * `why:` string paid it instead — silently, in the commit that wrote the sentence, which is SH731's
+ * failure by a route SH731 does not cover.</p>
+ *
+ * <p>The cure is <b>not</b> a broader comment rule: a reason field is deliberately not a comment,
+ * and blanking every string would stop an assertion message paying anything at all. Those two
+ * ledgers carry the markers now, and `aDeclarationMarkerIsBalanced` refuses a `start` with no `end`
+ * — which would swallow the rest of a file's assertions in silence, retiring debt rather than
+ * inventing it, the same direction every failure of this reader has taken.</p>
  */
 const MARK = "debt-declaration";
 const DECLARATION = [`${MARK}:start`, `${MARK}:end`];
@@ -196,7 +214,16 @@ const DEBT = [
   // that three of four belonged in a file the ledger never named, putting the pointer-miss rate
   // nearer two in five than a third — is a measurement recorded in the REVEALED note above, and a
   // measurement is not a thing a run can fail on. A later batch belongs here without re-arguing it.
-  "SH821", "SH826",
+  // SH842 is the third, and it arrives by the route SH843 opened rather than by the rule above:
+  // it never reached this list at all, because a `why:` string in `handoffs.test.mjs` credited it
+  // as asserted. A ledger's reason is a string in an object literal — code, by the not-a-comment
+  // rule — so the sentence explaining where SH113's assertion lives paid SH842's debt in the same
+  // commit that wrote it. Marking that ledger as a declaration is what let the id fall to where the
+  // rule had always sent it. SH641 was added here in the same edit and taken straight back out,
+  // which is worth the line: it looked identical — its deliverable is an id deliberately NOT
+  // written in `ShAgentReadTest` — and the run said it is asserted elsewhere. Two ids losing one
+  // fake credit each does not make them the same kind of debt, and the reader is what settles it.
+  "SH821", "SH826", "SH842",
   // EARNS, and it is the largest group by far. The console has a test tree (`shio-react/test`)
   // holding no reference to any of these; each is a React page or widget behaviour, so each is
   // assertable there. Ordered LAST despite the size, because these are the defects a human meets:
@@ -1082,3 +1109,59 @@ test("SH820: no ledger entry names an id a suite already asserts", async () => {
     + "look like 124 unasserted tasks");
 });
 
+
+test("SH843: a declaration marker is balanced, so a stray start cannot swallow a file", async () => {
+  // The failure this refuses is silent and in the retiring direction, like every other failure this
+  // reader has had: `withoutDeclaration` cuts from `start` to `end`, so a `start` with no `end`
+  // removes the rest of the file — every assertion below it stops counting and the debt figure
+  // falls. Nothing else would notice, because a smaller debt is what everybody wants to see.
+  const unbalanced = [];
+  for (const suite of SUITES) {
+    const { tree, only } = typeof suite === "string" ? { tree: suite, only: null } : suite;
+    for (const path of walk(join(ROOT, tree))) {
+      if (only && !only.test(path)) continue;
+      const body = await readFile(path, "utf8");
+      // The SAME reading `withoutDeclaration` does — first index of each — and not a count of
+      // occurrences. A count is the obvious guard and is wrong here: this very file names the
+      // start marker once more in the failure message below, so counting reports 2:1 on a file
+      // whose region is perfectly closed. A guard that fires on its own prose is one somebody
+      // silences.
+      const start = body.indexOf(DECLARATION[0]);
+      const end = body.indexOf(DECLARATION[1]);
+      // No character class here on purpose: a `[/\\]` written through a shell heredoc loses its
+      // escape and becomes an unterminated regex — twice in one session, which is SH782's finding
+      // meeting the tool that writes the file rather than the template that builds the pattern.
+      const name = path.split("/").pop().split("\\").pop();
+      if (start >= 0 && !(end > start)) unbalanced.push(name);
+    }
+  }
+
+  assert.deepEqual(unbalanced, [],
+    "SH843: a `debt-declaration:start` with no `end` cuts everything after it out of the walk, so "
+      + "the assertions below it stop paying and the debt silently falls. Close the region.");
+});
+
+test("SH843: a reason field in a named list credits nothing, and an assertion still does", async () => {
+  // Derived, never a list of ids — and that is this task's own finding turned on it. The first
+  // version named the three the measurement found (two in the handoff ledger, one in the
+  // round-trip one) and so CREDITED all three from its own loop: a bare id on a code line, which
+  // is exactly the payment being refused, committed in the act of refusing it. The debt figure did
+  // not move, which is how it was caught — three ids lost a credit and the total stayed at 102.
+  // A property cannot do that, and it cannot go stale either.
+  const raw = await readFile(join(ROOT, "cli/test/handoffs.test.mjs"), "utf8");
+
+  const whole = assertedIn(raw, false);
+  const cut = assertedIn(withoutDeclaration(raw), false);
+
+  assert.ok(whole.size > cut.size,
+    "SH843: cutting the declaration must remove credits, or the markers are in the wrong place and "
+      + "every id those reasons name still reads as asserted. A named list's reason is a string in "
+      + "an object literal, so it is code by the not-a-comment rule above");
+  assert.ok(cut.size > 0,
+    "SH843: and it must not remove them all — the markers cut the LEDGER, not the file, so this "
+      + "suite's own test names still pay. A rule that blanked the file would satisfy the line "
+      + "above by deleting the evidence, which is the direction every failure of this reader takes");
+
+  const { found } = await assertedIds();
+  assert.ok(found.has("SH820"), "and an ordinary assertion message still pays, corpus-wide");
+});

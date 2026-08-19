@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
-
-- 📋 **SH843** (deps: —) **A named list's reason field pays assertion debt, because a ledger entry is a code line and not prose** — Three ids are credited by nothing but a why string — SH842 among them, one iteration after it shipped, and it is the payment SH731 was built to refuse reached another way. → §XVII.130
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

@@ -77,7 +77,13 @@ const Kind = {
  *
  * <p>A `HANDS_OFF` entry must say how its claim was checked. The others say why they are not the
  * shape, which is the part a reader would otherwise re-derive.</p>
+ *
+ * <p>SH843 — bracketed as a <b>declaration</b>, so the ids these reasons name do not read as
+ * assertions. `assertion-debt.test.mjs` counts every id on a line that is not a comment, and a
+ * reason is a string in an object literal: code, by that rule. Eleven ids were credited from this
+ * ledger and three across the tree were credited by <em>nothing else</em>.</p>
  */
+/* debt-declaration:start — the reasons below name ids and assert none of them (SH843). */
 const CLAIMS = {
   "cli/conformance/mcp-budget.conformance.mjs -> ShUnstableSortLintTest": {
     kind: Kind.HISTORICAL,
@@ -150,6 +156,20 @@ const CLAIMS = {
       + "Verified: ShAgentCommitOrderTest injects ShAuditFeedWatermark, holds a position and "
       + "asserts the feed's ceiling stays below it",
   },
+  "cli/test/assertion-debt.test.mjs -> handoffs.test.mjs": {
+    kind: Kind.HANDS_OFF,
+    why: "SH843 — the debt reader says two ledgers carry its declaration markers now, this one among "
+      + "them, so the ids their reasons name stop reading as asserted. Verified by the run rather "
+      + "than by the sentence: cutting the region here removes credits and leaves this file's own "
+      + "test names paying, which is the pair `aReasonFieldCreditsNothing` asserts",
+  },
+  "cli/test/assertion-debt.test.mjs -> ShAgentReadTest": {
+    kind: Kind.HISTORICAL,
+    why: "SH843 — a DEBT comment explaining why SH641 LOOKED like debt: its deliverable is an id "
+      + "deliberately not written in that file. It claims nothing now, and the paragraph says so: "
+      + "the id was added to DEBT in the same edit and taken straight back out, because the reader "
+      + "answered that it is asserted elsewhere. Kept because being wrong about it is the finding",
+  },
   "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentJsonLeanTest.java -> ShAgentResponseBudgetTest": {
     kind: Kind.HANDS_OFF,
     why: "SH842 — this file asserts the header's NAME and says the assertion that would have caught "
@@ -171,6 +191,8 @@ const CLAIMS = {
       + "wrapped in ShStatelessRequestMatcher",
   },
 };
+
+/* debt-declaration:end */
 
 /**
  * A sentence saying this instrument is not doing something, or that another is.

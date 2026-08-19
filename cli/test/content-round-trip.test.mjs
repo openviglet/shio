@@ -112,6 +112,7 @@ const ADVERSARIAL = [
  * - `{ why }` — the format **carries** the value lossily and must not throw. Declaring a carry and
  *   getting a refusal is now a failure too, which is the same blind spot facing the other way.
  */
+/* debt-declaration:start — the reasons below name ids and assert none of them (SH843). */
 const DECLARED = {
   // Only two, and writing the list is what proved it. The body's framing has to be stripped on
   // read, and the reflex is to assume that costs every whitespace-ish value — but `bodySafe`
@@ -211,6 +212,8 @@ const DECLARED = {
   },
 };
 
+/* debt-declaration:end */
+
 /**
  * Asserts exactness, or that the loss is declared — and fails a declaration that is now wrong.
  *
@@ -263,8 +266,10 @@ function assertRoundTrip(format, entry, read) {
   assert.equal(
     actual,
     entry.value,
-    `${format}/${entry.name}: ${JSON.stringify(entry.value)} came back as ` +
-      `${JSON.stringify(actual)}. Either fix the format, or add a DECLARED entry saying why ` +
+    `SH253: ${format}/${entry.name}: ${JSON.stringify(entry.value)} came back as ` +
+      `${JSON.stringify(actual)}. A value the format changes on the way through is the defect in ` +
+      "one line — it is not a diff anybody made, so a sync reports it for ever and a curator " +
+      `undoes nothing by editing. Either fix the format, or add a DECLARED entry saying why ` +
       "this value cannot be held and where it survives instead.",
   );
 }

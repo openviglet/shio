@@ -653,6 +653,24 @@ preference: over 405 suite files and 699 credited ids, the first-id rule loses a
 ids that are genuinely asserted**, because a message may legitimately assert two; the citation
 spelling costs **0**. A debt ledger must err toward keeping a payment rather than inventing one.
 
+**And a named list's reason field is a code line, so it paid debt too (SH843).** The not-a-comment
+rule is right and its blind spot is what *else* is not a comment: a ledger entry's `why:` is a
+string in an object literal, and this repository is built out of named lists carrying a sentence
+each. Measured across every suite file — **832 ids credited anywhere, three whose every credit was
+a reason field**. The third is the argument: SH842 shipped one iteration earlier, its own rule sends
+a batch payment to `DEBT`, and it never arrived because the sentence explaining where SH113's
+assertion lives paid it — silently, in the commit that wrote the sentence, which is SH731's failure
+by a route SH731 does not cover. `withoutDeclaration` had always run over **every** file; no other
+file had written the `debt-declaration` markers, so a general mechanism read as private to one
+suite. Two ledgers carry them now, real debt went **102 → 103**, and the cure is deliberately not a
+broader comment rule — a reason field is not a comment, and blanking every string would stop an
+assertion message paying anything. Two things the round is worth remembering for: the first guard
+written for it **named the three ids in a loop** and so credited all three, which is the defect
+committed in the act of refusing it — a derived property replaced the list; and a stray `start` with
+no `end` would cut the rest of a file out of the walk, retiring debt in silence, so
+`aDeclarationMarkerIsBalanced` reads the region exactly the way `withoutDeclaration` does rather
+than counting occurrences, because this very file names the marker once more in a failure message.
+
 **And since SH529 each DEBT group carries a verdict, because a list is not a decision.** SH527
 established the count and held it; the question it left open was *which of these earn an
 assertion* — not all do, and saying which is the work rather than a way out of it. Every group now
