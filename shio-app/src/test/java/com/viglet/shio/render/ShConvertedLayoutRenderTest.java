@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,6 +164,21 @@ class ShConvertedLayoutRenderTest {
      */
     private static final String CAPTURED_FONT =
             "@font-face{font-family:\"Inter\";src:url(\"/assets/inter.woff2\") format(\"woff2\")}";
+
+    /**
+     * SH850 — a rule that reads a token the CSS field no longer declares, which is what SH424 made
+     * every captured stylesheet look like.
+     *
+     * <p>{@code shio propose} lifts a source's declared custom properties into {@code TOKENS} and
+     * <b>removes the declarations from {@code CSS}</b>, because the source re-declaring them later
+     * at equal specificity is what made every token inert. That is sound on the fidelity path, where
+     * {@code theme.css} carries the compiled {@code :root} block ahead of the stylesheet. It is a
+     * page-wide loss on this one.</p>
+     */
+    private static final String CAPTURED_LIFTED_RULE = ".sh850-lifted{color:var(--color-brand)}";
+    /** The token the rule above reads, in the field SH424 moved it to. */
+    private static final String CAPTURED_TOKENS =
+            "{\"color\":{\"brand\":{\"$value\":\"#0b7285\"}}}";
 
     /**
      * Every section type the shipped blueprints declare — the vocabulary, read rather than listed.
@@ -334,7 +350,13 @@ class ShConvertedLayoutRenderTest {
             // head, and not from `{{theme.css}}`.
             post(site, theme, postType(ShSystemPostType.THEME, (byte) 1, when),
                     siteName + " (captured)", "/theme/captured",
-                    json("TITLE", siteName + " (captured)", "CSS", CAPTURED_RULE + CAPTURED_FONT),
+                    // SH850 — with the two fields a real captured theme has. `TOKENS` is not
+                    // decoration here: `propose` puts the source's declared custom properties in it
+                    // and takes them OUT of `CSS`, so a fixture carrying only `CSS` is a captured
+                    // theme from before SH424 and cannot show what that trade costs on this path.
+                    json("TITLE", siteName + " (captured)",
+                            "CSS", CAPTURED_RULE + CAPTURED_FONT + CAPTURED_LIFTED_RULE,
+                            "TOKENS", CAPTURED_TOKENS),
                     when);
             post(site, root, pageType, "Verbatim", VERBATIM_URL,
                     "{\"title\":\"Verbatim\",\"content\":\"<section class=\\\"features\\\">"
@@ -1316,6 +1338,74 @@ class ShConvertedLayoutRenderTest {
                 .as("and the whole of the theme survived, not just the half without quotes — "
                         + "SH549's sentinel passed on a page whose every url() had been destroyed")
                 .contains(CAPTURED_RULE);
+    }
+
+    /**
+     * SH850 — the same emission, missing the other half of what a theme is.
+     *
+     * <h2>SH555's sentence, one field along</h2>
+     *
+     * <p><em>One of the two emissions was written as a field read.</em> SH555 found what that cost in
+     * escaping and fixed it on the value. What it left is that {@code {{CSS}}} off a relation row is
+     * the <b>stored</b> stylesheet, and the stylesheet a theme renders as is
+     * {@code ShThemeTokens.assets} — its {@code TOKENS} compiled into a {@code :root} block and
+     * prepended. The fidelity path gets that through {@code theme.css}; this one never did.</p>
+     *
+     * <p>It became a page-wide defect when SH424 started <b>removing</b> the lifted declarations from
+     * {@code CSS}, on the stated promise that the token block re-declares them. Measured on a real
+     * replica one round apart: distinct undefined properties 62 → 194, dangling {@code var()}
+     * occurrences <b>231 → 958</b>. Of the 133 properties lifted out of that sheet, 132 were declared
+     * nowhere on the served page and all 132 were still read by a rule that stayed — Tailwind's
+     * {@code @theme} layer, which every utility class in the sheet resolves through. A {@code var()}
+     * with no declaration and no fallback makes its declaration invalid at computed-value time, so
+     * the element takes the inherited or initial value: colour, blur and animation gone across the
+     * verbatim chrome, which is the half of a mixed page a curator recognises as the site.</p>
+     *
+     * <p>The check is the one §XVII.137 named — <b>no served page has a {@code var()} the page does
+     * not declare</b> — asked of the one page in this fixture that carries a captured stylesheet.</p>
+     */
+    @Test
+    @DisplayName("SH850: the captured stylesheet arrives with the tokens its own rules read")
+    void aCapturedStylesheetCarriesTheTokensItsRulesRead() {
+        String html = shPageRenderService.render(siteName, VERBATIM_URL, ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("SH424 took `--color-brand` out of `CSS` because `TOKENS` re-declares it. On "
+                        + "this path nothing did: `{{CSS}}` is a field read, and a field is what was "
+                        + "stored rather than what the theme renders as")
+                .contains("--color-brand:#0b7285")
+                .contains(CAPTURED_LIFTED_RULE);
+
+        assertThat(danglingCustomProperties(html))
+                .as("§XVII.137's closing assertion, asked of the page rather than of the store: a "
+                        + "`var()` with no declaration and no fallback is not a wrong colour, it is "
+                        + "no colour — the declaration is invalid at computed-value time and the "
+                        + "element inherits")
+                .isEmpty();
+    }
+
+    /**
+     * Every custom property a page's inline CSS reads without declaring and without a fallback.
+     *
+     * <p>Read off the rendered HTML rather than off any field, because that is the only place the
+     * question can be answered: the store held a coherent pair and the page did not. A {@code var()}
+     * carrying a fallback is excluded — that is a declaration the author made at the call site, and
+     * counting it would report every defensive stylesheet in the world as broken.</p>
+     */
+    private static List<String> danglingCustomProperties(String html) {
+        Set<String> declared = new HashSet<>();
+        Matcher declaration = Pattern.compile("(--[\\w-]+)\\s*:").matcher(html);
+        while (declaration.find()) {
+            declared.add(declaration.group(1));
+        }
+        List<String> dangling = new ArrayList<>();
+        Matcher reference = Pattern.compile("var\\(\\s*(--[\\w-]+)\\s*([,)])").matcher(html);
+        while (reference.find()) {
+            if (")".equals(reference.group(2)) && !declared.contains(reference.group(1))) {
+                dangling.add(reference.group(1));
+            }
+        }
+        return dangling;
     }
 
     /**

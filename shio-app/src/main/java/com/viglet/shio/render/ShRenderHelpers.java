@@ -35,6 +35,8 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import org.springframework.data.domain.PageRequest;
 
@@ -1607,6 +1609,7 @@ public class ShRenderHelpers {
     private Map<String, Object> row(ShPostUnified post) {
         String type = typeNameOf(post);
         Map<String, Object> row = new LinkedHashMap<>(shRenderModel.fieldsOf(post));
+        composedStylesheet(row, type, post);
         rawTextFields(row, type);
         row.put("id", post.getId());
         row.put("title", post.getTitle());
@@ -1662,6 +1665,30 @@ public class ShRenderHelpers {
      * every other type keeps escaping, because an {@code Article}'s body in a listing card is
      * exactly the case where it is the right encoding.</p>
      */
+    /**
+     * SH850 — a {@code Theme} row's {@code CSS} is the stylesheet it <b>renders as</b>, not the field.
+     *
+     * <h3>SH555's own sentence, with one more field in it</h3>
+     *
+     * <p><em>One of the two emissions was written as a field read.</em> That fixed the escaping and
+     * left the composition: a theme renders as {@code ShThemeTokens.assets} — its {@code TOKENS}
+     * compiled into a {@code :root} block and prepended — and this row carried the stored bytes.
+     * Harmless while the two fields were independent; page-wide the moment SH424 started <b>removing</b>
+     * a lifted declaration from {@code CSS} on the promise that the compiled block re-declares it.
+     * Measured on a replica one round apart: dangling {@code var()} occurrences <b>231 → 958</b>, of
+     * which 132 were properties lifted out of the captured sheet and still read by rules that stayed.</p>
+     *
+     * <p>Ahead of {@link #rawTextFields}, so the composed value is what gets SH555's answer — the
+     * order is the whole of why this is two statements rather than one. And the composition itself
+     * lives on {@link ShRenderModel}, which owns the other emission: two copies of it have now
+     * diverged twice, and a third would be nobody's fault in particular.</p>
+     */
+    private void composedStylesheet(Map<String, Object> row, String type, ShPostUnified post) {
+        if (ShSystemPostType.THEME.equals(type) && row.get(ShSystemPostTypeAttr.CSS) != null) {
+            row.put(ShSystemPostTypeAttr.CSS, shRenderModel.themeAssetsOf(post).css());
+        }
+    }
+
     private static void rawTextFields(Map<String, Object> row, String type) {
         if (!RAW_TEXT_FIELDS.containsKey(type)) {
             return;

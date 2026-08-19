@@ -533,35 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.137 Lifted out, and not put back (SH850)
-
-SH845's diagnosis was right — the source re-declaring a property later at equal
-specificity is what made every extracted token inert. The repair removes the lifted
-declarations from the kept CSS and prepends a token block. The token block carries the
-handful of roles the theme maps, and **the rest are not written anywhere**.
-
-Measured on the same source, one round apart:
-
-                                        round 4    round 5
-      distinct undefined properties          62        194
-      dangling var() occurrences            231        958
-
-Of the 133 properties lifted out of the captured sheet, **132 are declared nowhere on
-the page, and all 132 are still read by a `var()` in a rule that stayed**. They are
-Tailwind's `@theme` layer — `--color-amber-500`, `--color-blue-400`, `--blur-md`,
-`--animate-spin` — which is what every utility class in the sheet resolves through.
-
-A `var()` with no declaration and no fallback makes its declaration invalid at
-computed-value time, so the element takes the inherited or initial value. That is a
-page-wide loss of colour, blur and animation across the verbatim chrome — the half of a
-mixed page that was previously correct, and the half a curator recognises as the site.
-
-The fix is not to stop lifting. It is to emit **every** lifted declaration in the
-prepended block, in its original order and with its original context, and to keep the
-role mapping as a separate concern layered on top.
-
-The assertion that closes it: no served page has a `var()` the page does not declare.
-
 ### XVII.138 The reference nobody counts (SH851)
 
 SH850 is a large visual regression that every instrument passed. `verify` answered `0
@@ -614,6 +585,38 @@ the source; `color.surface` sits in three of the four pairs, so a button judged 
 the page could revert a surface the page pair has already settled. The order in which a
 shared slot may be reverted has to be stated, not discovered by whichever pair is listed
 first.
+
+### XVII.140 One :root, two vocabularies (SH853)
+
+SH850 put the captured theme's `:root` block back on the page, which is what its own
+rules need. The generated layout emits the Shio theme first and the captured one second,
+so at equal specificity the source wins every name they share.
+
+Measured against Tailwind v4's own `@theme` output, which is what these replicas
+capture:
+
+    Shio theme      --color-accent --color-ink … --text-base --text-h1 --text-lead
+    Tailwind v4     --color-red-500 --spacing --radius-lg --text-sm --text-base …
+    collides        --text-base
+
+One name today, and it is the page's body type. On a mixed page the composed sections
+take Tailwind's `1rem` where the Shio theme states `1.0625rem` — and `--text-base` is
+exactly the slot SH834 went to the trouble of filling from `body { font-size }`, so the
+value the bridge worked out is overwritten by the same source it was read from, at a
+different rank.
+
+The count is one because the two vocabularies barely overlap today. It is not one by
+construction: both name themselves after CSS roles, so `--color-accent`, `--radius` and
+`--font-family` are all names either could grow into, and the next collision arrives
+with a source rather than with a commit here.
+
+There is no cascade answer that serves both halves — one `:root` is carrying two
+vocabularies for two halves of one page, and whichever wins, the other half is wrong.
+What is decidable is that it must not be decided by **which `<style>` came second**,
+which is the accident SH424 and SH510 each spent a task removing.
+
+The assertion that closes it: no name is declared by both blocks on a page that carries
+both.
 
 ## XIX The public site (Block S)
 

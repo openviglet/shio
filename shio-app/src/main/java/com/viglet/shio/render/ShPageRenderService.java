@@ -678,31 +678,24 @@ public class ShPageRenderService {
      *
      * <p>The page renders either way; without this the operator would see an unstyled page and
      * nothing anywhere would say why, which is exactly the silent degradation SH270 exists to
-     * refuse. The catch lives here rather than in {@code ShThemeTokens} because reporting needs the
-     * incident log and that class is a pure function — {@code ShSilentCatchInventoryTest} is what
-     * made the placement a decision instead of an accident.</p>
+     * refuse. The catch lives outside {@code ShThemeTokens} because reporting needs the incident log
+     * and that class is a pure function — {@code ShSilentCatchInventoryTest} is what made the
+     * placement a decision instead of an accident.</p>
+     *
+     * <p>SH850 — and it lives on {@link ShRenderModel} rather than here, which is a different
+     * decision from that one and was made for a different reason: this is not the only place a
+     * theme's stylesheet is built, and being written where each was needed is how the two diverged
+     * twice. This method stays as the name the render path reads.</p>
      */
     private ShThemeAssets themeAssets(ShPostUnified theme) {
-        String css = fieldOf(theme, ShSystemPostTypeAttr.CSS);
-        String javascript = fieldOf(theme, ShSystemPostTypeAttr.JAVASCRIPT);
-        try {
-            return ShThemeTokens.assets(fieldOf(theme, ShSystemPostTypeAttr.TOKENS), css,
-                    javascript);
-        } catch (JacksonException e) {
-            incidentLog.record(ShAgentIncidentLog.Kind.CONTENT,
-                    ShAddress.post(theme.getShSite() == null ? null : theme.getShSite().getName(),
-                            theme.getFurl()).toString(),
-                    "This Theme's TOKENS is not valid JSON, so the page rendered with no design "
-                            + "tokens at all: " + e.getOriginalMessage(),
-                    "Rewrite TOKENS as W3C Design Tokens JSON "
-                            + "({\"color\":{\"accent\":{\"$value\":\"#0b5\"}}}) with "
-                            + "post.upsert, or clear the field to render on the theme's CSS alone.",
-                    // SH204: the line above already resolves `theme.getShSite().getName()`, so the
-                    // lazy association is initialised by the time this reads its id.
-                    ShAgentIncidentFrames.of(e),
-                    theme.getShSite() == null ? null : theme.getShSite().getId());
-            return ShThemeTokens.assets(null, css, javascript);
-        }
+        // SH850 — the composition moved to `ShRenderModel`, which is where the *other* emission of
+        // a theme's stylesheet is built. It was written here because this is where it was needed,
+        // and the second one (`{{#getRelation "/theme/captured"}}{{CSS}}`, SH549) was written as a
+        // plain field read for the same reason — so the two diverged twice, in escaping (SH555) and
+        // then in composition, and a page lost 132 declarations its own rules were still reading.
+        // One implementation, asked by both, is what makes a third divergence not a thing that can
+        // happen quietly.
+        return renderModel.themeAssetsOf(theme);
     }
 
     /**

@@ -702,6 +702,26 @@ renderer over one body of content at a second address. See the section on it bel
   for. The fixture is half the lesson: SH549's sentinel was `.sh549-captured-marker{color:#123456}`
   — no `"`, no `&` — so it survived escaping unchanged and passed on a page whose every `url()` had
   been destroyed. It carries an `@font-face` now.
+- **And the same sentence had one more field in it (SH850)** — *one of the two emissions was written
+  as a field read*. SH555 gave that read SH461's answer on **escaping** and left the **composition**:
+  the stylesheet a theme renders as is `ShThemeTokens.assets` — its `TOKENS` compiled into a `:root`
+  block and prepended — and a `getRelation` row carried the stored `CSS` bytes. Harmless while the
+  two fields were independent, page-wide the moment they stopped being: SH424 **removes** a lifted
+  declaration from `CSS` because the source re-declaring it later at equal specificity is what made
+  every token inert, on the stated promise that the compiled block re-declares it. On this path
+  nothing did. Measured on a replica one round apart — distinct undefined properties **62 → 194**,
+  dangling `var()` occurrences **231 → 958**; of 133 lifted properties, **132** were declared nowhere
+  on the served page and all 132 were still read by a rule that stayed (Tailwind's `@theme` layer,
+  which every utility class in the sheet resolves through). A `var()` with no declaration and no
+  fallback makes its declaration invalid at computed-value time, so the element inherits: colour,
+  blur and animation gone across the verbatim chrome — the half of a mixed page a curator recognises
+  as the site. **The fix is one composition, not a second copy.** `ShRenderModel.themeAssetsOf` owns
+  it, with the incident SH270 requires, and both emissions ask it: `ShPageRenderService.themeAssets`
+  is now a call, and `ShRenderHelpers.composedStylesheet` runs *ahead* of `rawTextFields` so the
+  composed value is what gets SH555's answer. Two copies written where each was needed is how they
+  diverged twice; a third would have been nobody's fault in particular. The assertion is §XVII.137's
+  own — **no served page has a `var()` it does not declare** — read off the rendered HTML rather than
+  off any field, because the store held a coherent pair and the page did not.
 - **`{{theme.title}}` sits beside it and is escaped, which is the same decision read the other way
   (SH829)** — the model's theme frame carries the resolved `Theme` post's title, so a layout can
   write `<style data-shio-theme="{{theme.title}}">{{theme.css}}</style>` and the render digest's

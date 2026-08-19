@@ -25,6 +25,7 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.utils.ShStableMap;
 
 import tools.jackson.core.JacksonException;
@@ -354,6 +355,70 @@ public class ShRenderModel {
     /** A value a stash must not entity-escape. Null stays null, so an absent field stays absent. */
     private static Object raw(String value) {
         return value == null ? null : new Handlebars.SafeString(value);
+    }
+
+    /**
+     * A {@code Theme} post as it <b>renders</b> — its {@code TOKENS} compiled and prepended (SH850).
+     *
+     * <h2>One of the two emissions was written as a field read</h2>
+     *
+     * <p>That is SH555's sentence, and it had one more field in it. A converted site's verbatim pages
+     * reach the captured stylesheet through
+     * {@code {{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}} — a plain
+     * field read off a listing row. SH555 gave that read SH461's answer on escaping. What it left is
+     * that the stylesheet a theme <em>renders as</em> is not the {@code CSS} field: it is
+     * {@link ShThemeTokens#assets}, the {@code TOKENS} compiled into a {@code :root} block ahead of
+     * it. The fidelity path gets that through {@code theme.css}; this one got the stored bytes.</p>
+     *
+     * <p>Harmless while the two fields were independent, and page-wide the moment they stopped being.
+     * SH424 <b>removes</b> a lifted declaration from {@code CSS} — the source re-declaring it later
+     * at equal specificity is what made every token inert — on the stated promise that the compiled
+     * block re-declares it. Measured on a real replica one round apart: distinct undefined properties
+     * 62 → 194, dangling {@code var()} occurrences <b>231 → 958</b>. Of 133 lifted properties, 132
+     * were declared nowhere on the served page and all 132 were still read by a rule that stayed.
+     * A {@code var()} with no declaration and no fallback makes its declaration invalid at
+     * computed-value time, so the element takes the inherited or initial value — colour, blur and
+     * animation gone across the verbatim chrome, which is the half of a mixed page a curator
+     * recognises as the site.</p>
+     *
+     * <h2>Here rather than at either call site</h2>
+     *
+     * <p>Two emissions of one theme have now diverged twice, in escaping and in composition, because
+     * each was written where it was needed. This is the composition, once, with the degradation and
+     * the incident SH270 requires — and both callers ask it rather than owning a copy. A theme whose
+     * {@code TOKENS} is unparseable renders on its CSS alone and says so; returning the field
+     * untouched and staying quiet is the silent degradation that costs the diagnosis, not the page.</p>
+     *
+     * @param theme a {@code Theme} post, or null
+     * @return its stylesheet, script and tokens, never null
+     */
+    public ShThemeAssets themeAssetsOf(ShPostUnified theme) {
+        if (theme == null) {
+            return new ShThemeAssets(null, null);
+        }
+        Map<String, Object> fields = fieldsOf(theme);
+        String css = text(fields.get(ShSystemPostTypeAttr.CSS));
+        String javascript = text(fields.get(ShSystemPostTypeAttr.JAVASCRIPT));
+        try {
+            return ShThemeTokens.assets(text(fields.get(ShSystemPostTypeAttr.TOKENS)), css,
+                    javascript);
+        } catch (JacksonException e) {
+            incidentLog.record(ShAgentIncidentLog.Kind.CONTENT,
+                    "id:" + (theme.getId() == null ? "?" : theme.getId()),
+                    "This Theme's TOKENS is not valid JSON, so the page rendered with no design "
+                            + "tokens at all: " + e.getOriginalMessage(),
+                    "Rewrite TOKENS as W3C Design Tokens JSON "
+                            + "({\"color\":{\"accent\":{\"$value\":\"#0b5\"}}}) with post.upsert, or "
+                            + "clear the field to render on the theme's CSS alone.",
+                    // SH204 — `siteIdOf` is this class's own resolver, used for the same reason the
+                    // catch above uses it rather than reaching for `post.getShSite()`.
+                    ShAgentIncidentFrames.of(e), siteIdOf(theme));
+            return ShThemeTokens.assets(null, css, javascript);
+        }
+    }
+
+    private static String text(Object value) {
+        return value == null ? null : value.toString();
     }
 
     /**
