@@ -11,8 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH833** (deps: —) **No archetype in the source corpus converts to a SectionFaq or a SectionLogoWall** — theme-heavy declares four collection fields and its conversion creates two, so SH475's row-annotation check ran vacuously on half of them until SH830 made the layout branch. → §XVII.120
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

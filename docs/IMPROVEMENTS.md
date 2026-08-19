@@ -533,30 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.120 Two of the seven section types have no producer (SH833)
-
-SH830 filtered the generated layout to the branches a conversion's own types declare,
-and the first thing that broke was a corpus check nobody suspected.
-`theme-heavy/expectations.json` declared `collections: ["features", "questions",
-"logos", "quotes"]`, and the SH475 assertion — *every collection field annotates its
-rows, not just its heading* — passed on all four. Measured after the filter landed, that
-conversion creates:
-
-    Page  SectionCta  SectionFeatureGrid  SectionMarkup  SectionTestimonial
-
-No `SectionFaq`, no `SectionLogoWall`. Two of the four assertions were reading a branch
-the layout carried whether or not any post on the site could fill it, so they could not
-fail. The declaration was cut to the two that are real and the check now refuses a
-collection the layout does not draw, which is the instrument SH338's order asks for.
-
-What is left is a coverage hole rather than a defect: the archetype *has* both shapes —
-a `<dl>` of questions and a two-image "Trusted by" row — and `classify` wants two or
-more `<details>` for an FAQ and three image-only units for a logo wall. Both bars are
-deliberate and both are unmet here, so the corpus has never converted either type, on
-any archetype. Either an archetype grows markup that meets the bar, or the bars are
-wrong about real sources; the honest first step is a fixture that produces each, because
-until one exists neither classifier branch has ever been run end to end.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

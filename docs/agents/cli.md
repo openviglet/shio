@@ -2300,6 +2300,22 @@ entity once for a title and not at all for a link label. `keeps`/`drops` are sub
 one expected string precisely so this case does not fail for a reason that is not its subject; the
 entity is its own task, and `awkward`'s `doubleEscaped` is where that question already lives.
 
+**And the corpus now counts which of the vocabulary's types it has ever produced (SH833).** The hole
+was invisible in the direction that matters: `theme-heavy` declared four collection fields, its
+conversion created **two**, and SH475's *every collection field annotates its rows* passed on all
+four — because the generated layout carried a branch per field of the whole vocabulary whether or not
+any post could fill it. SH830 made the layout branch, the two vacuous cases turned red, and counting
+the rest found the corpus producing **four of seven** section types. Every miss was a fixture that
+plainly meant to exercise the type and did not clear a deliberate bar: `classify` wants two or more
+`<details>` for an FAQ (it had a `<dl>`), three image-only **units** for a logo wall (it had two bare
+`<img>`, which are not units at all — `unitsAmong` skips a child with no element children, so a logo
+wall must be `<li><img></li>` before it is one), and prose with no repeated structure and no call to
+action for a rich text (no block anywhere was only that). The archetype grew all three, and group L
+holds `UNPRODUCED_TYPES` as a **named list** — empty now, kept rather than deleted, because it is the
+only reader of the other direction: a fixture edit that costs the corpus its last producer of a type.
+`SectionHero` sat on that list until the run printed otherwise, which is why it is measured rather
+than reasoned.
+
 **Both drivers now have a caller, and that was the half that was missing.** `serve` shipped with the
 loader and was called by nothing, so the sentence above — *a divergence between the tiers is a
 statement about the boundary* — was unfalsifiable: one driver ran, and every claim the corpus made

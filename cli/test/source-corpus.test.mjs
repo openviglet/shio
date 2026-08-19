@@ -52,7 +52,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { INVENTORY_FILE, INVENTORY_VERSION } from "../src/clone.mjs";
-import { PLAN_FILE } from "../src/propose.mjs";
+import { PLAN_FILE, SECTION_TYPES } from "../src/propose.mjs";
 import * as clone from "../src/commands/clone.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import * as propose from "../src/commands/propose.mjs";
@@ -968,6 +968,64 @@ describe("SH560 group J: the replica as a site somebody can move around in", () 
       }
     });
   }
+});
+
+// -------------------------------------------------------------------------------------------------
+// Group L — which of the vocabulary's types this corpus has ever produced (SH833)
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Types no archetype converts to, held as a **named list** rather than a count.
+ *
+ * <p>Same device as `OPEN` and `INERT_KEYS`, and for the same reason: a ceiling lets one task pay
+ * the debt and the next task spend it. An entry here says *no source in this corpus has markup
+ * `classify` reads as this type*, which is a coverage hole and not a defect — but one that reads as
+ * coverage until somebody counts, which is exactly how SH833 was found.</p>
+ *
+ * <p><b>Empty, and the three it lost are the measurement.</b> When this check was written the corpus
+ * produced four of seven: `SectionFaq` wanted two or more `<details>` and `theme-heavy` had a `<dl>`;
+ * `SectionLogoWall` wanted three image-only *units* and it had two bare `<img>`, which are not units
+ * at all — `unitsAmong` skips a child with no element children, so a logo wall has to be
+ * `<li><img></li>` before it is one; and `SectionRichText` — prose, no repeated structure, no call to
+ * action — had no block anywhere that was only that. All three bars are deliberate and all three were
+ * unmet by fixtures that plainly meant to exercise them. `SectionHero` was on this list until the run
+ * printed otherwise, which is the reason the list is measured rather than reasoned.</p>
+ *
+ * <p>Kept as a list rather than deleted now that it is empty, for `CLOSED_OWNERS`' reason: it is the
+ * only reader of the other direction — a fixture edit that costs the corpus its last producer of a
+ * type — and a check that exists only while it is failing is one nobody re-adds.</p>
+ */
+const UNPRODUCED_TYPES = [];
+
+describe("SH833: every section type the vocabulary declares has a source that produces it", () => {
+  test("the corpus names the types it has never converted to, and the count is printed", async () => {
+    // The hole this closes was invisible in the direction that matters. `theme-heavy` declared four
+    // collection fields, its conversion created two, and the SH475 row-annotation assertion passed
+    // on all four — because the generated layout carried a branch per field of the WHOLE vocabulary
+    // whether or not any post could fill it. SH830 made the layout branch, the two vacuous cases
+    // turned red, and the archetype grew the markup `classify` actually asks for: two or more
+    // <details> for an FAQ, three image-only units for a logo wall, and a block that is prose and
+    // nothing else. Three bars, all deliberate, all unmet by a fixture that plainly meant to
+    // exercise them.
+    const produced = new Set();
+    for (const entry of corpus.filter((each) => each.declaration.propose?.accept === "all")) {
+      const run = await capture(entry, { accept: true });
+      try {
+        for (const type of run.conversion.postTypes ?? []) produced.add(type);
+      } finally {
+        await run.dispose();
+      }
+    }
+    const missing = Object.keys(SECTION_TYPES).filter((type) => !produced.has(type)).sort();
+    console.log(`SH833: ${Object.keys(SECTION_TYPES).length - missing.length} of `
+      + `${Object.keys(SECTION_TYPES).length} section type(s) produced by this corpus`
+      + `${missing.length ? `, missing: ${missing.join(" ")}` : ""}`);
+
+    assert.deepEqual(missing, UNPRODUCED_TYPES,
+      "a type that has gained a producer must leave UNPRODUCED_TYPES and one that has lost its "
+        + "last one must join it - held as a list because a count lets the next fixture spend what "
+        + "this one paid, and because a classifier branch no source reaches has never run end to end");
+  });
 });
 
 // -------------------------------------------------------------------------------------------------
