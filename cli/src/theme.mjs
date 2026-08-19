@@ -477,6 +477,64 @@ export function contrastRatio(foreground, background) {
   return (high + 0.05) / (low + 0.05);
 }
 
+/** `oklch(L C H)` and `lch(L C H)` — the chroma is the second component, whatever the first is. */
+const POLAR_COLOR = /^(ok)?lch\(\s*[^\s,/)]+[\s,]+([^\s,/)]+)/i;
+/** `oklab(L a b)` and `lab(L a b)` — chroma is the length of the `a`/`b` vector. */
+const RECTANGULAR_COLOR = /^(ok)?lab\(\s*[^\s,/)]+[\s,]+(-?[^\s,/)]+)[\s,]+(-?[^\s,/)]+)/i;
+/** What CSS calls 100% chroma in each space: 0.4 for the `ok*` pair, 150 for CIE's. */
+const CHROMA_TOP = { ok: 0.4, cie: 150 };
+
+/**
+ * How colourful a value is, 0 for any grey and 1 for the most a space can state — or null (SH848).
+ *
+ * <h3>The one property of a colour that survives a change of vocabulary</h3>
+ *
+ * <p>A shadcn palette calls a near-white hover tint `--vg-accent` and puts the orange every button is
+ * painted with under `--vg-brand`; another sheet swaps the two words. What neither can swap is that
+ * `oklch(97% 0 0)` has **no colour in it** and `#c2410c` has a great deal — which is the whole of what
+ * separates an accent from a surface, a tint or a neutral. So this is the evidence
+ * {@link pageStatement}'s reversal test falls back on, and the name is left to break ties.</p>
+ *
+ * <p>It reads the polar and rectangular spellings directly rather than through {@link parseColor},
+ * which is what makes it usable on the palettes that need it most: `oklch()` states its chroma as a
+ * number, so no colour-space conversion is required to know there is none — and this module's rule
+ * since SH380 is that it scans rather than models. `color-mix()`, `color()` and `hwb()` state no
+ * chroma any regex can lift, so they come back **null**, which callers must read as *cannot say*
+ * rather than as zero: refusing a colour for having no chroma when none was legible would be the
+ * silent-pass failure one direction along.</p>
+ */
+export function chromaOf(value) {
+  const raw = String(value ?? "").trim().toLowerCase();
+  const rgb = parseColor(raw);
+  if (rgb) {
+    // Nothing painted is not a colourful thing, whatever the channels under the alpha say.
+    if (rgb.a === 0) return 0;
+    const channels = [rgb.r, rgb.g, rgb.b];
+    return clampUnit((Math.max(...channels) - Math.min(...channels)) / 255);
+  }
+  const polar = POLAR_COLOR.exec(raw);
+  if (polar) return chromaUnit(polar[2], polar[1] ? CHROMA_TOP.ok : CHROMA_TOP.cie);
+  const rectangular = RECTANGULAR_COLOR.exec(raw);
+  if (rectangular) {
+    const top = rectangular[1] ? CHROMA_TOP.ok : CHROMA_TOP.cie;
+    const [a, b] = [chromaUnit(rectangular[2], top), chromaUnit(rectangular[3], top)];
+    if (a === null || b === null) return null;
+    return clampUnit(Math.hypot(a, b));
+  }
+  return null;
+}
+
+/** One chroma component as a 0–1 quantity. A percentage is already relative to the space's top. */
+function chromaUnit(part, top) {
+  const raw = String(part).trim();
+  if (raw === "none") return 0;
+  const number = Number.parseFloat(raw);
+  if (!Number.isFinite(number)) return null;
+  return clampUnit(Math.abs(raw.endsWith("%") ? number / 100 : number / top));
+}
+
+const clampUnit = (number) => Math.min(Math.max(number, 0), 1);
+
 // ---------------------------------------------------------------------------------------------
 // Declared tokens
 // ---------------------------------------------------------------------------------------------
@@ -492,7 +550,7 @@ export function contrastRatio(foreground, background) {
  * that does not survive the round trip above.
  */
 export function declaredTokens(declarations) {
-  const roles = rolesByUse(declarations, pageStatement(declarations).reversals);
+  const roles = rolesByUse(declarations, pageStatement(declarations));
   const roots = new Map();
   const variants = new Map();
   for (const declaration of declarations) {
@@ -545,6 +603,10 @@ export function declaredTokens(declarations) {
           // SH847 — a reversal is a statement about the page, so it clears the same bar a
           // page-level use does. `admits` reads this; nothing else about the row changes.
           ...(use.reversal ? { reversal: true } : {}),
+          // SH848 — and so is a fill with real colour in it: the page bar exists because colour has
+          // competing roles, and chroma settles that competition on the value rather than needing a
+          // selector to. Carried apart from `reversal` so a report can say which signal answered.
+          ...(use.saturated ? { saturated: true } : {}),
         }
         : {}),
     });
@@ -655,21 +717,25 @@ function isPageSelector(selector) {
  * `--icon: url("/img/sprite.svg")` read by `background-image` is roled by nothing rather than
  * counted as a length.</p>
  */
-function rolesByUse(declarations, reversals = new Set()) {
+function rolesByUse(declarations, page = { reversals: new Set(), values: new Map() }) {
   const counts = new Map();
   for (const declaration of declarations) {
     if (declaration.property.startsWith("--")) continue;
-    const slot = accentIfReversed(GROUP_FOR_PROPERTY.get(declaration.property), declaration, reversals);
+    const slot = accentFor(GROUP_FOR_PROPERTY.get(declaration.property), declaration, page);
     if (!slot) continue;
-    const page = isPageSelector(declaration.selector) && !declaration.conditional;
+    const onPage = isPageSelector(declaration.selector) && !declaration.conditional;
     const key = slot.role ? `${slot.group} ${slot.role}` : slot.group;
     for (const match of String(declaration.value ?? "").matchAll(VAR_REF)) {
       const seen = counts.get(match[1]) ?? new Map();
       const tally = seen.get(key)
-        ?? { group: slot.group, role: slot.role, test: slot.test, refs: 0, page: 0, reversal: false };
+        ?? {
+          group: slot.group, role: slot.role, test: slot.test,
+          refs: 0, page: 0, reversal: false, saturated: false,
+        };
       tally.refs += 1;
-      tally.page += page ? 1 : 0;
+      tally.page += onPage ? 1 : 0;
       tally.reversal ||= slot.reversal === true;
+      tally.saturated ||= slot.saturated === true;
       seen.set(key, tally);
       counts.set(match[1], seen);
     }
@@ -680,6 +746,12 @@ function rolesByUse(declarations, reversals = new Set()) {
       // A page-level use outranks any number of element-level ones, in both directions: it decides
       // which role this token has, not only how highly it ranks within one.
       if ((a[1].page > 0) !== (b[1].page > 0)) return a[1].page > 0 ? -1 : 1;
+      // SH848 — and so does an accent this token's own colour argued for, for the reason SH840 gave
+      // the page bar: counting says which colour a site reaches for often, and a fill with real
+      // chroma in it says which colour the site *acts* with. `--brand` read by four `color:` rules
+      // and one saturated `background` is the accent, not the body copy — the count reads the other
+      // way, and the count was measured wrong on exactly this shape.
+      if ((a[1].saturated === true) !== (b[1].saturated === true)) return a[1].saturated ? -1 : 1;
       if (a[1].refs !== b[1].refs) return b[1].refs - a[1].refs;
       return a[0] < b[0] ? -1 : 1;
     });
@@ -766,8 +838,19 @@ function resolveVar(value, values, depth = 0) {
  * that needs the page pair is silent where the page states none, which is the right failure: it
  * declines rather than guessing from a rule it cannot situate.</p>
  *
- * @returns `{surface, ink, reversals}` — the page's two colours, resolved through root custom
- *          properties, and the rule keys whose background is an accent candidate.
+ * <h2>SH848 — and the half a reversal cannot reach</h2>
+ *
+ * <p>The test above needs the button's own text colour to *be* the page's surface, and a shadcn sheet
+ * writes `.btn{{background:var(--primary);color:var(--primary-foreground)}}` where
+ * `--primary-foreground` is a near-white of its own — a different value from `--background`, and in
+ * `oklch()`, which {@link parseColor} declines, so the two cannot even be compared. Measured: the
+ * accent slot kept its built-in green a fourth round on a site whose buttons are orange. What
+ * {@link accentFor} falls back on is {@link chromaOf}, which needs no page pair and no colour-space
+ * conversion.</p>
+ *
+ * @returns `{surface, ink, reversals, values}` — the page's two colours, the rule keys whose
+ *          background is an accent candidate, and the root custom properties both were resolved
+ *          through, so a caller can resolve a `var()` the same way rather than a second way.
  */
 export function pageStatement(declarations) {
   const rows = declarations ?? [];
@@ -799,7 +882,7 @@ export function pageStatement(declarations) {
       reversals.add(key);
     }
   }
-  return { surface, ink, reversals };
+  return { surface, ink, reversals, values };
 }
 
 /** Two colours a reader would call one. The floor SH846 set, used here as an equality (SH847). */
@@ -809,17 +892,71 @@ function same(one, other) {
 }
 
 /**
- * A background inside a reversal rule is an `accent`, not a `background` (SH847).
+ * How much colour a fill must hold before this file will call it an accent (SH848).
+ *
+ * <p><b>Not a taste threshold.</b> Measured across the values the failing case actually holds:
+ * `#c2410c` reads 0.71 and `#f97316` 0.89, while a shadcn palette's neutrals — `oklch(97% 0 0)`,
+ * `oklch(20.5% 0 0)` — read exactly 0, and its greys (`#e5e7eb` 0.02, `#6b7280` 0.08) and this
+ * corpus's own page colours (`--wash` `#eef3f8` 0.04, `--ink` `#10243a` 0.16) sit an order of
+ * magnitude below. So the bar is set in the gap rather than at a number somebody liked: above every
+ * neutral, tint and near-black a page is built from, and below every brand colour a button is painted
+ * with. A muted accent under it keeps this theme's default and is reported unmapped, which is the
+ * failure this file prefers — a colour it could not argue for is not one it should ship.</p>
+ */
+export const ACCENT_CHROMA_FLOOR = 0.25;
+
+/** A rule that fires only while the reader is doing something. Its fill is a state, not the element. */
+const INTERACTIVE_STATE = /:(?:hover|focus|focus-visible|focus-within|active|target|visited)\b/i;
+
+/**
+ * A background that is the site's accent rather than a surface — by reversal (SH847) or by colour.
  *
  * <p>One substitution, applied at both call sites, so every rule downstream — the ranking, the
  * admission bar, the bridge's `accent#1` — keeps working unchanged on evidence it already knows how
  * to weigh. A reversal is what makes a background the call-to-action's colour rather than a
  * surface's; nothing else about how a colour is counted changes.</p>
+ *
+ * <h3>SH848 — the second signal, and the three things that disqualify a fill</h3>
+ *
+ * <p>A reversal is the stronger reading and is tried first. Where the page states no background, or
+ * where the button's foreground is a token of its own rather than the page's — which is what a
+ * shadcn sheet writes, and what left the accent slot at its default a fourth round — there is still
+ * one thing the value itself says: {@link chromaOf}. A fill with real colour in it, on an element
+ * that is not the page, is what a call-to-action is; a tint, a grey and a near-black are what
+ * surfaces are made of.</p>
+ *
+ * <ul>
+ *   <li><b>The page's own rules are excluded</b>, for {@link pageStatement}'s reason: a background on
+ *       `body` is the page, and a saturated page is still a page.</li>
+ *   <li><b>An interactive state is excluded.</b> `.btn:hover` states the colour the button turns,
+ *       and taking it would paint every button on the replica with the source's hover colour — the
+ *       measured palette holds `--vg-brand` and `--vg-brand-hover` one beside the other, so this is
+ *       the tie the ranking would otherwise break by luck.</li>
+ *   <li><b>The page's own two colours are excluded</b>, the same pair and for the same reason the
+ *       reversal test excludes them: a rule repainting the page's surface or its ink is not making
+ *       an element the accent.</li>
+ * </ul>
+ *
+ * <h3>What it does on the corpus: one archetype, and it is the one that has a brand colour</h3>
+ *
+ * <p>`theme-heavy`'s accent becomes `#0b7285` — its own `--brand`, filling `.mark` — where it kept
+ * this file's default before. That corrects SH847's stated bound rather than contradicting it: that
+ * task said the archetype *keeps taking its accent from `fill`*, and the sheet declares no `fill` at
+ * all, so what it kept was the default. The other four archetypes carry no saturated fill and are
+ * unchanged, which is the same shape as SH847's zero: a signal declines where the evidence it needs
+ * is absent.</p>
  */
-function accentIfReversed(slot, declaration, reversals) {
+function accentFor(slot, declaration, page) {
   if (!slot || slot.group !== "color" || slot.role !== "background") return slot;
-  if (!reversals.has(ruleKey(declaration))) return slot;
-  return { ...slot, role: "accent", reversal: true };
+  if (page.reversals.has(ruleKey(declaration))) return { ...slot, role: "accent", reversal: true };
+  if (isPageSelector(declaration.selector) && !declaration.conditional) return slot;
+  if (INTERACTIVE_STATE.test(String(declaration.selector ?? ""))) return slot;
+  const value = resolveVar(declaration.value, page.values);
+  const chroma = chromaOf(value);
+  if (chroma === null || chroma < ACCENT_CHROMA_FLOOR) return slot;
+  if (page.surface && same(value, page.surface)) return slot;
+  if (page.ink && same(value, page.ink)) return slot;
+  return { ...slot, role: "accent", saturated: true };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -840,10 +977,10 @@ function accentIfReversed(slot, declaration, reversals) {
  */
 export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {}) {
   const buckets = new Map();
-  const { reversals } = pageStatement(declarations);
+  const statement = pageStatement(declarations);
   for (const declaration of declarations) {
     if (declaration.property.startsWith("--")) continue;
-    const slot = accentIfReversed(bucketFor(declaration), declaration, reversals);
+    const slot = accentFor(bucketFor(declaration), declaration, statement);
     if (!slot) continue;
     const key = `${slot.group} ${slot.role ?? ""} ${declaration.value}`;
     // SH834 — where the literal was, not only how often. `body { font-size: 17px }` is the page
@@ -855,6 +992,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
       existing.refs += 1;
       existing.page ||= page;
       existing.reversal ||= slot.reversal === true;
+      existing.saturated ||= slot.saturated === true;
       existing.properties.add(declaration.property);
     } else {
       buckets.set(key, {
@@ -865,6 +1003,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
         refs: 1,
         page,
         reversal: slot.reversal === true,
+        saturated: slot.saturated === true,
         properties: new Set([declaration.property]),
       });
     }
@@ -889,7 +1028,10 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     // the page's own*, and a reversal answers *this is the element the page turns inside out*. A
     // site with one button has stated its accent once, and counting is the wrong question to ask
     // of a labelled statement.
-    .filter((row) => row.refs >= minRefs || row.page || row.reversal)
+    // SH848 — and a saturated fill answers it a third way, which is the same answer as the second:
+    // a site with one button has stated its accent once whether or not that button's own text
+    // happens to be the page's surface.
+    .filter((row) => row.refs >= minRefs || row.page || row.reversal || row.saturated)
     .sort((a, b) => {
       if (a.group !== b.group) return a.group < b.group ? -1 : 1;
       if ((a.role ?? "") !== (b.role ?? "")) return (a.role ?? "") < (b.role ?? "") ? -1 : 1;
@@ -928,6 +1070,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
       ...(row.role ? { role: row.role } : {}),
       page: row.page === true,
       ...(row.reversal ? { reversal: true } : {}),
+      ...(row.saturated ? { saturated: true } : {}),
       refs: row.refs,
       properties: [...row.properties].sort(),
     });
@@ -1020,6 +1163,43 @@ const TRANSPARENT = /^(?:#(?:[0-9a-f]{3}0|[0-9a-f]{6}00)|(?:rgba?|hsla?|hwb|lab|
 export function isTransparent(value) {
   const raw = String(value ?? "").trim();
   return raw.toLowerCase() === "transparent" || TRANSPARENT.test(raw);
+}
+
+/** The alpha a colour function states after its slash, for the spellings {@link parseColor} declines. */
+const STATED_ALPHA = /^(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^)]*\/\s*([^)\s]+)\s*\)$/i;
+/** `color-mix(… , transparent)` — a mix with nothing is a translucent value however it is spelled. */
+const MIXED_WITH_NOTHING = /^color-mix\((?=[\s\S]*[\s,(]transparent[\s,)0-9%])/i;
+
+/**
+ * A colour that lets the document through: alpha below 1, transparent included (SH848).
+ *
+ * <p>{@link isTransparent} asks whether a value paints *nothing*, which is a property of the value and
+ * true of `#0000` on every slot. This asks the weaker question a **role** makes decisive: a surface is
+ * what the page is painted with, and one at 50% is not one — measured as
+ * `color-mix(in oklab, var(--vg-accent) 50%, transparent)` landing on `--color-surface`, where the
+ * replica looked white only because the document behind it was, which is SH846's own finding at an
+ * alpha its floor let through.</p>
+ *
+ * <p>Read three ways, because the palettes this meets are written three ways: through
+ * {@link parseColor} where it parses; off the slash-alpha the modern functional syntax states even in
+ * a space this module does not model; and off `color-mix()` naming `transparent` as one of its two
+ * colours. A mix this cannot read comes back false — the same declining-rather-than-guessing rule the
+ * rest of the file keeps, since refusing a surface nobody could show was translucent would replace
+ * the source's page with this theme's on no evidence.</p>
+ */
+export function isTranslucent(value) {
+  const raw = String(value ?? "").trim();
+  if (isTransparent(raw)) return true;
+  const parsed = parseColor(raw);
+  if (parsed) return parsed.a < 1;
+  const stated = STATED_ALPHA.exec(raw);
+  if (stated) {
+    const alpha = stated[1].endsWith("%")
+      ? Number.parseFloat(stated[1]) / 100
+      : Number.parseFloat(stated[1]);
+    return Number.isFinite(alpha) && alpha < 1;
+  }
+  return MIXED_WITH_NOTHING.test(raw);
 }
 
 // ---------------------------------------------------------------------------------------------

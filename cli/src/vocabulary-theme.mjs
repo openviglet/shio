@@ -54,7 +54,7 @@
 
 // SH846 — the colour arithmetic a floor needs. It lives beside the CSS reader that already owns
 // `isColor`, so there is one place that decides what this project calls a colour.
-import { contrastRatio, isTransparent } from "./theme.mjs";
+import { contrastRatio, isTransparent, isTranslucent } from "./theme.mjs";
 
 /**
  * The DTCG tree, which is what makes the theme *editable* rather than merely present.
@@ -242,6 +242,10 @@ export const VOCABULARY_THEME_SLUG = "shio";
  * `color.accent` is the slot the bridge can least often fill at all (SH847), so a floor on it would
  * fire on the default almost every time and say nothing anybody can act on. They come back with the
  * task that makes accent reachable.</p>
+ *
+ * <p>SH848 is that task, and they do not come back with it: `color.surface` sits in three of the four
+ * pairs, so a button judged after the page could revert a surface the page pair has already settled.
+ * The order in which a shared slot may be reverted is a decision, not an array entry — <b>SH852</b>.</p>
  */
 export const CONTRAST_PAIRS = Object.freeze([
   Object.freeze({ text: "color.ink", on: "color.surface" }),
@@ -311,9 +315,17 @@ export function vocabularyTokensFrom(rows) {
       // Asking whether the filter removed anything at all would report `background#2` as refused on
       // a source that states one background — the slot was never offered a second, which is the
       // other fact entirely and the one this list exists to separate.
+      // SH848 — which floor fired, because the two are different facts about the source and a
+      // reader who cannot tell them apart cannot act on either: "it declared no colour there" and
+      // "it declared one you can see through" call for different fixes.
+      const refused = offered[want.rank - 1].value;
+      const translucent = !isTransparent(refused);
       rejected.push({
-        name, role: wanted, value: definition.$value, reason: "transparent",
-        detail: `the source's ${wanted} is ${offered[want.rank - 1].value}, which paints nothing`,
+        name, role: wanted, value: definition.$value,
+        reason: translucent ? "translucent" : "transparent",
+        detail: translucent
+          ? `the source's ${wanted} is ${refused}, which lets the page behind it through`
+          : `the source's ${wanted} is ${refused}, which paints nothing`,
       });
     } else {
       unmapped.push({ name, role: wanted, value: definition.$value });
@@ -330,9 +342,21 @@ export function vocabularyTokensFrom(rows) {
   };
 }
 
-/** Whether a row is a value the slot's kind may never take. See {@link CONTRAST_FLOOR}'s neighbour. */
+/**
+ * Whether a row is a value the slot's kind may never take. See {@link CONTRAST_FLOOR}'s neighbour.
+ *
+ * <p>SH848 — <b>the floor belongs on the role, not on the value.</b> SH846 refused a colour that
+ * paints nothing, which is a property of the value and therefore the same answer on every slot; what
+ * it let through was `color-mix(in oklab, var(--vg-accent) 50%, transparent)` landing on
+ * `--color-surface`, because 50% is not 0%. A surface at half alpha is not a surface — the page's
+ * background is the one colour a replica cannot have the document showing through — while the same
+ * value is a perfectly ordinary border, overlay or accent, and refusing it everywhere would throw
+ * away decisions the source made on purpose.</p>
+ */
 function refusedValue(want, row) {
-  return want.group === "color" && isTransparent(row.value);
+  if (want.group !== "color") return false;
+  if (isTransparent(row.value)) return true;
+  return want.role === "background" && isTranslucent(row.value);
 }
 
 /**
@@ -396,7 +420,17 @@ function admits(needs, row) {
   // a token has; a rule that paints the page's own surface as its text is such a statement, made
   // about the element rather than about the page. A declared accent is otherwise refused twice over
   // — roled `background` and then failed for not being page-level — which is why it never arrived.
-  if (needs === "page") return row.source !== "declared" || row.page === true || row.reversal === true;
+  //
+  // SH848 — and a saturated fill is a third, made by the value. What the bar is really asking is
+  // *has the competition between this token's possible roles been settled by something other than a
+  // count*; a colour with real chroma in it, filling an element that is not the page, settles it
+  // without needing a selector to. That is the half a reversal cannot reach: a shadcn button's own
+  // foreground is a token of its own, not the page's surface, and the pair is in `oklch()`, which
+  // this project's reader does not compare at all.
+  if (needs === "page") {
+    return row.source !== "declared" || row.page === true
+      || row.reversal === true || row.saturated === true;
+  }
   return true;
 }
 
@@ -463,7 +497,9 @@ function paletteByGroup(rows) {
       // statements about the page, and the accent role now takes rows from `fill` and from a
       // reversal alike. A button is what a site's accent is; an SVG fill is one of four properties
       // that happen to bucket there.
-      const stated = (row) => row.page === true || row.reversal === true;
+      // SH848 — a saturated fill ranks with them, and for the same reason: it is the third way the
+      // competition between a colour's roles is settled by something other than a count.
+      const stated = (row) => row.page === true || row.reversal === true || row.saturated === true;
       if (stated(a) !== stated(b)) return stated(a) ? -1 : 1;
       if ((a.refs ?? 0) !== (b.refs ?? 0)) return (b.refs ?? 0) - (a.refs ?? 0);
       return a.value < b.value ? -1 : 1;

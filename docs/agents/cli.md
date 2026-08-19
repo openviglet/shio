@@ -1372,6 +1372,36 @@ it. Four decisions worth keeping:
   states a page-level background, so no reversal is computable on any of them and `theme-heavy` still
   takes its accent from `fill`. A signal that needs the page pair declines where the page states
   none, rather than guessing from a rule it cannot situate.
+- **The half a reversal cannot reach, and the role that owns the floor (SH848).** SH845 lifted **133
+  declared tokens** where three literals used to be ranked, and the accent slot still read
+  `--color-accent: #0b5533` — this file's dark green — a **fourth** round, on a site whose buttons
+  are orange. The source is a shadcn-derived palette, where the words mean something of their own:
+  `--vg-accent` is `oklch(97% 0 0)`, a near-white hover tint; `--vg-primary` a near-black neutral;
+  the orange sits under `--vg-brand`. Two things kept SH847's reversal off it, and only one is about
+  naming — a shadcn button's text is `--vg-primary-foreground`, a near-white of its **own** rather
+  than the page's, so the equality never holds; and both are `oklch()`, which `parseColor` declines,
+  so the pair could not have been compared even had they matched. **What survives a change of
+  vocabulary is how much colour a value holds.** `chromaOf` reads it off the value — the second
+  component of `oklch()`/`lch()`, the `a`/`b` vector of `oklab()`/`lab()`, the channel spread of
+  everything `parseColor` parses — so no colour-space conversion is needed to know a tint has none;
+  `color-mix()`, `color()` and `hwb()` come back **null**, which is *cannot say* and never zero.
+  `accentFor` elects a background as the accent when its chroma clears `ACCENT_CHROMA_FLOOR` (0.25),
+  excluding the page's own rules, the page's two colours (SH847's pair, for SH847's reason) and any
+  **interactive state** — `.btn:hover` says what the button becomes, and the failing palette holds
+  `--vg-brand` and `--vg-brand-hover` side by side, so without that the tie breaks by luck. The floor
+  is **in the gap and measured**: every neutral in reach reads 0–0.16 (`oklch(97% 0 0)` and
+  `oklch(20.5% 0 0)` are exactly 0; `#e5e7eb` 0.02, `#6b7280` 0.08, `theme-heavy`'s `--wash` 0.04 and
+  `--ink` 0.16) and every brand colour 0.48–0.89. A saturated row clears the page bar in `admits` and
+  is exempt from `minRefs`, on SH847's argument one signal along. **Corpus movement: one archetype**
+  — `theme-heavy`'s accent becomes `#0b7285`, its own brand colour, which corrects SH847's tail
+  above: it never took an accent from `fill`, because that sheet declares none. Second half, same
+  rationale: **the floor belongs on the role.** SH846 refused a value that paints *nothing*, and
+  `color-mix(in oklab, var(--vg-accent) 50%, transparent)` is not nothing — it landed on
+  `--color-surface`, and the replica looked white only because the document behind it was. A surface
+  at half alpha is not a surface; the same value is an ordinary border. So `refusedValue` asks
+  `isTranslucent` of the `background` role only, and the refusal is reported as `translucent` rather
+  than `transparent`, because "declared no colour there" and "declared one you can see through" call
+  for different fixes.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

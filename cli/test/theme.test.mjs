@@ -20,13 +20,16 @@ import {
 
 // @scans both reason: token names are extracted from Java source, and the javadoc naming them
 // is deliberately part of what is read (SH740).
+  ACCENT_CHROMA_FLOOR,
   buildTheme,
+  chromaOf,
   contrastRatio,
   customPropertyFor,
   declaredTokens,
   describeTheme,
   dtcgFor,
   flatten,
+  isTranslucent,
   pageStatement,
   parseColor,
   pathForCustomProperty,
@@ -1093,9 +1096,10 @@ test("SH847: a reversal is a labelled statement, so one button is enough and cou
 });
 
 test("SH847: a source that states no page background gets no reversals, and the corpus is that source", () => {
-  // Every archetype: none states a page-level background, so `theme-heavy` keeps taking its accent
-  // from `fill` exactly as SH831 wrote it. A signal that needs the page pair declines where the
-  // page states none rather than guessing from a rule it cannot situate.
+  // Every archetype: none states a page-level background, so no reversal can be computed on any of
+  // them. A signal that needs the page pair declines where the page states none rather than guessing
+  // from a rule it cannot situate. (SH848 reads `.mark` below by its chroma instead, which needs no
+  // page pair — so `theme-heavy` does now get an accent, and it gets it from the other signal.)
   const { surface, reversals } = pageStatement(declarationsOf(`
     .mark{background:#0b7285;color:#fff}
     .quote{background:#10243a;color:#fff}
@@ -1129,4 +1133,163 @@ test("SH847: a reversal under a media query is its own rule, so a variant cannot
     "the key carries the condition, so `.btn` inside and outside a query are two rules - the same "
       + "separation `declaredTokens` makes, since merging them would attribute one's background to "
       + "the other's text colour");
+});
+
+// --- SH848: the role read off the colour, because the same word is a different role per vocabulary ---
+
+/**
+ * The palette this was filed on: shadcn's words, where `accent` is a near-white hover tint, `primary`
+ * is a near-black neutral, and the orange every button is painted with sits under `brand`.
+ *
+ * <p>Two things stop SH847's reversal from reaching it, and only one of them is about naming. The
+ * button's own text is `--vg-primary-foreground` — a near-white of its OWN, not the page's
+ * `--vg-background` — so the reversal test's equality never holds; and both are in `oklch()`, which
+ * `parseColor` declines outright, so the two could not have been compared even had they matched.</p>
+ */
+const SHADCN_SHEET = `
+  :root{
+    --vg-background:#ffffff;--vg-foreground:oklch(14.5% 0 0);
+    --vg-accent:oklch(97% 0 0);--vg-primary:oklch(20.5% 0 0);
+    --vg-primary-foreground:oklch(98.5% 0 0);
+    --vg-brand:#c2410c;--vg-brand-hover:#f97316;--vg-border:#e5e7eb
+  }
+  body{background:var(--vg-background);color:var(--vg-foreground)}
+  .card{background:var(--vg-accent);border:1px solid var(--vg-border)}
+  .nav a:hover{background-color:var(--vg-accent)}
+  .chip{background-color:var(--vg-accent);color:var(--vg-primary)}
+  .btn{background-color:var(--vg-brand);color:var(--vg-primary-foreground)}
+  .btn:hover{background-color:var(--vg-brand-hover);color:var(--vg-primary-foreground)}
+`;
+
+test("SH848: a shadcn palette hands over its brand colour, not the near-white its `accent` names", () => {
+  const rows = themeFor(SHADCN_SHEET).rows;
+  const { mapped, tokens } = vocabularyTokensFrom(rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  assert.equal(tokens.color.accent.$value, "#c2410c",
+    "measured on the replica as `--color-accent: #0b5533`, this file's built-in dark green, "
+      + "unchanged across four rounds on a site whose accent is orange");
+  assert.equal(from["color.accent"], "#c2410c");
+  assert.equal(from["color.surface"], "#ffffff", "and the slots the page states outright are "
+    + "untouched: the new signal is a fallback, not a re-reading of what already worked");
+  assert.equal(from["color.ink"], "oklch(14.5% 0 0)");
+
+  const brand = rows.find((row) => row.name === "--vg-brand");
+  assert.equal(brand.role, "accent");
+  assert.equal(brand.saturated, true, "carried apart from `reversal`, so a report can say which of "
+    + "the two signals answered");
+  assert.equal(brand.page, false, "and it is not page-level, which is the bar it would still be "
+    + "failing");
+  assert.equal(brand.reversal, undefined, "nor is it a reversal - the button's text is a token of "
+    + "its own, which is what a shadcn sheet writes");
+});
+
+test("SH848: the tint the source called `accent` is refused, having no colour in it to be one", () => {
+  const rows = themeFor(SHADCN_SHEET).rows;
+  const tint = rows.find((row) => row.name === "--vg-accent");
+
+  assert.equal(chromaOf("oklch(97% 0 0)"), 0,
+    "zero chroma is what a hover tint is, in any vocabulary and in a space `parseColor` cannot "
+      + "convert - which is the whole reason the chroma is read off the value rather than computed");
+  assert.equal(tint.role, "background",
+    "four rules read it and every one of them paints a surface; a name table would have handed it "
+      + "the accent slot on the word, which is the unverifiable label SH689 spent a task removing");
+  assert.equal(vocabularyTokensFrom(rows).mapped.find((row) => row.name === "color.accent").value,
+    "#c2410c");
+});
+
+test("SH848: a hover fill is the colour the button turns, so the resting one wins the slot", () => {
+  const rows = themeFor(SHADCN_SHEET).rows;
+  const hover = rows.find((row) => row.name === "--vg-brand-hover");
+
+  assert.equal(chromaOf("#f97316") > chromaOf("#c2410c"), true,
+    "the hover colour is the MORE saturated of the two, so chroma alone would take it - the "
+      + "selector is what says which is the element and which is a state");
+  assert.equal(hover.role, "background",
+    "`.btn:hover` states what the button becomes, not what it is; taking it would paint every "
+      + "button on the replica with the source's hover colour");
+});
+
+test("SH848: the page's own two colours are not accents, however saturated the page is", () => {
+  const { mapped } = vocabularyTokensFrom(themeFor(`
+    :root{--bg:#f4a259;--fg:#3b1f0b;--panel:#f4a259}
+    body{background:var(--bg);color:var(--fg)}
+    .panel{background-color:var(--panel);color:var(--fg)}
+    .band{background-color:#3b1f0b;color:#f4a259}
+  `).rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  assert.equal(from["color.surface"], "#f4a259");
+  assert.equal(from["color.accent"], undefined,
+    "a rule repainting the page's surface is not an accent and neither is one painting its ink - "
+      + "the same pair the reversal test excludes, excluded here for the same reason, or a "
+      + "saturated page would elect itself its own call-to-action");
+});
+
+test("SH848: a chroma nothing could read is not a zero, so the slot declines instead of refusing", () => {
+  assert.equal(chromaOf("color-mix(in oklab, red 50%, blue)"), null,
+    "cannot say - and a caller that read null as zero would refuse a colour nobody showed was "
+      + "grey, which is the silent-pass failure one direction along");
+  assert.equal(chromaOf("oklch(0.7 0.19 40)") >= ACCENT_CHROMA_FLOOR, true);
+  assert.equal(chromaOf("hsl(20 90% 50%)") >= ACCENT_CHROMA_FLOOR, true);
+
+  // The button's text is its own dark grey rather than the page's surface, so SH847's reversal —
+  // which is the stronger reading and is tried first — does not fire and chroma is all that is left.
+  const { mapped } = vocabularyTokensFrom(themeFor(`
+    body{background:#ffffff;color:#111111}
+    .btn{background-color:color-mix(in oklab, red 50%, blue);color:#3f3f46}
+  `).rows);
+  assert.equal(mapped.find((row) => row.name === "color.accent"), undefined);
+});
+
+test("SH848: the floor is in the gap, so every neutral a page is built from stays below it", () => {
+  // Measured rather than chosen: the values the failing palette actually holds, and the ones this
+  // project's own corpus holds. A bar between two clusters an order of magnitude apart is evidence;
+  // a bar somebody liked the look of is the taste threshold this file refuses to ship.
+  for (const grey of ["oklch(97% 0 0)", "oklch(20.5% 0 0)", "#e5e7eb", "#6b7280", "#eef3f8", "#10243a"]) {
+    assert.equal(chromaOf(grey) < ACCENT_CHROMA_FLOOR, true, `${grey} reads ${chromaOf(grey)}`);
+  }
+  for (const brand of ["#c2410c", "#f97316", "#0b7285", "#ea580c", "#38bdf8"]) {
+    assert.equal(chromaOf(brand) >= ACCENT_CHROMA_FLOOR, true, `${brand} reads ${chromaOf(brand)}`);
+  }
+});
+
+test("SH848: the floor is the role's, so a surface at half alpha is refused and a border is not", () => {
+  const row = (path, value, role) => ({
+    path, value, type: "color", source: "declared", group: "color", role, refs: 2, page: true,
+  });
+  const { tokens, mapped, rejected } = vocabularyTokensFrom([
+    row("vg.surface", "color-mix(in oklab, var(--vg-accent) 50%, transparent)", "background"),
+    row("vg.surface.2", "#eef3f8", "background"),
+    row("vg.fg", "#111827", "text"),
+    row("vg.line", "rgba(17, 24, 39, 0.12)", "border"),
+  ]);
+  const from = Object.fromEntries(mapped.map((each) => [each.name, each.value]));
+
+  assert.equal(tokens.color.surface.$value, "#eef3f8",
+    "SH846's floor asked whether the value paints NOTHING, which 50% does not - so the page surface "
+      + "became a translucent tint of a near-white and the replica looked white only because the "
+      + "document behind it was");
+  assert.equal(from["color.line"], "rgba(17, 24, 39, 0.12)",
+    "and the same value is an ordinary border: refusing it everywhere would throw away a decision "
+      + "the source made on purpose, which is why the floor is on the role and not on the value");
+  assert.deepEqual(rejected.map((each) => [each.name, each.reason]),
+    [["color.surface-sunk", "translucent"]]);
+  assert.match(rejected[0].detail, /which lets the page behind it through/,
+    "a different fact from `paints nothing`, and a reader who cannot tell them apart cannot act on "
+      + "either");
+});
+
+test("SH848: what a value states about its own alpha is read in three spellings", () => {
+  assert.equal(isTranslucent("#0000"), true);
+  assert.equal(isTranslucent("rgba(0,0,0,.5)"), true);
+  assert.equal(isTranslucent("oklch(70% .2 40 / 0.4)"), true,
+    "the slash-alpha is stated even in a space this module does not model, so it is read off the "
+      + "text rather than through a conversion nobody wrote");
+  assert.equal(isTranslucent("color-mix(in oklab, var(--a) 50%, transparent)"), true);
+  assert.equal(isTranslucent("#ffffff"), false);
+  assert.equal(isTranslucent("oklch(70% .2 40)"), false);
+  assert.equal(isTranslucent("color-mix(in oklab, red 50%, blue)"), false,
+    "a mix of two opaque colours is opaque, and a mix this cannot read comes back false - "
+      + "declining rather than replacing the source's page with this theme's on no evidence");
 });

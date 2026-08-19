@@ -533,36 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.135 The same word, two vocabularies (SH848)
-
-SH845 worked: `propose` now lifts **133 declared tokens** where it used to rank three
-literals. What the roles are filled *from* is still wrong, and the reason is that the
-match is by name.
-
-The source is a shadcn-derived palette, where the words mean something specific:
-
-    --vg-accent   oklch(97% 0 0)      near-white, zero chroma — a hover tint
-    --vg-primary  oklch(20.5% 0 0)    near-black neutral
-    --vg-brand    #c2410c / #f97316   the orange on every button
-
-`--color-accent` matched `--vg-accent` on the word and got a hover tint; the brand
-orange sits under a name no generic mapping would guess. `--color-surface` took
-`color-mix(in oklab, var(--vg-accent) 50%, transparent)`, so the page surface is a
-translucent tint of that same near-white — the SH846 floor rejects a fully transparent
-colour and 50% passes it.
-
-Measured on the replica: `--color-accent: #0b5533`, the built-in dark green, unchanged
-across four rounds on a site whose accent is orange. SH847 set out to read the accent
-off the source's buttons and did not reach this one.
-
-Name matching cannot work across vocabularies because the same word is a different role
-in each. What is stable is the **rendered evidence**: the fill of the element the source
-styles as its primary button, the page's own background, its body text colour. Rank
-candidates by that and use the name only to break ties.
-
-The floor belongs on the role, not the value: a surface with meaningful alpha is not a
-surface.
-
 ### XVII.136 A note that promises another command's output (SH849)
 
 `shio propose` ends its theme report with a pointer:
@@ -644,6 +614,32 @@ It belongs beside `unstyledClasses` in `appearance`, with the same treatment: re
 distinct names, let `verify` grade it, and hold the count. `page-unstyled` already
 exists for one half of the same question — this is the other half, on the half of the
 vocabulary that a modern stylesheet actually uses.
+
+### XVII.139 The two pairs the floor still does not hold (SH852)
+
+SH846 put a contrast floor on the pairs the vocabulary theme paints one on top of the
+other, and held **two** of the four: `color.ink` on `color.surface`, and
+`color.ink-muted` on the same surface. Its own doc names the bound and the reason:
+
+> The button (`color.surface` on `color.accent`) and the card (`color.ink` on
+> `color.surface-sunk`) are the same relation and are deliberately not held here:
+> `color.accent` is the slot the bridge can least often fill at all (SH847), so a floor
+> on it would fire on the default almost every time and say nothing anybody can act on.
+> They come back with the task that makes accent reachable.
+
+SH848 is that task. `accentFor` elects an accent from the value's own chroma, which
+needs neither a page pair nor a colour space this reader converts, so the slot is filled
+from the source on any site with a coloured button — and a filled slot is one a floor
+can judge. What ships unchecked today is exactly the pair a curator sees most: the
+button's label is `color.surface`, and a source whose accent is a pale yellow gets white
+on it.
+
+The hazard is the **precedence**, and it is why this is a task rather than two array
+entries. `enforceContrast` walks the pairs in order and reverts whichever half came from
+the source; `color.surface` sits in three of the four pairs, so a button judged after
+the page could revert a surface the page pair has already settled. The order in which a
+shared slot may be reverted has to be stated, not discovered by whichever pair is listed
+first.
 
 ## XIX The public site (Block S)
 
