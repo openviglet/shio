@@ -1254,6 +1254,7 @@
 - **SH853** — The Shio theme's fifteen custom properties are prefixed `--shio-`, so the two `:root` blocks a mixed page carries share no name by construction, and `collidingProperties` reports any a source reaches into anyway instead of leaving `<style>` order to decide.
 - **SH854** — The pair the contrast floor may not fix is now a line in the printed report, and a second wiring rule holds every palette field to being read somewhere other than the literal that forwards it into `--json`.
 - **SH855** — The accent is elected rather than counted: a reversal, then a fill whose own rule states what goes on top of it, then references across every role, then chroma — and the run names which fired.
+- **SH856** — The floor grades oklch, oklab, hwb and color-mix instead of abstaining on them, and where it still cannot read a value it names the value rather than the space.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

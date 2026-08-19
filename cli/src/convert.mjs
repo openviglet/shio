@@ -1779,10 +1779,17 @@ export function describeConversion({ document, sections, markup = [], pages = []
     // A check that could not run is not a check that passed — the silence this project keeps paying
     // for. Named here rather than counted, because there are at most two of them (CONTRAST_PAIRS).
     for (const row of palette.unchecked ?? []) {
+      // SH856 — the value, not the space. `oklch()` is converted now, so what reaches this line is
+      // `lab()`, `lch()` or `color()`, and "a colour space this reader does not parse" told a curator
+      // which of two halves to look at only by leaving it out. Naming both where both are unreadable
+      // is the case a singular clause got wrong.
+      const unreadable = row.unreadable?.length
+        ? row.unreadable.map((each) => preview(each)).join(" and ")
+        : "one of them";
       lines.push(
         `    --${row.text.replace(".", "-")} ${preview(row.value)} on `
-          + `--${row.on.replace(".", "-")} ${preview(row.against)} — contrast NOT checked: one of `
-          + "them is in a colour space this reader does not parse. Look at the page",
+          + `--${row.on.replace(".", "-")} ${preview(row.against)} — contrast NOT checked: `
+          + `${unreadable} is a value this reader cannot convert. Look at the page`,
       );
     }
     // SH854 — the third of the floor's answers, and the worst: judged, failed, and nothing this run

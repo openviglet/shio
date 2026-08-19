@@ -373,22 +373,42 @@ export function typeOf(value) {
  *
  * <h3>Null is a real answer, and the caller has to print it</h3>
  *
- * <p>Hex, `rgb()`/`rgba()` and `hsl()`/`hsla()` — the three spellings a hand-written or Tailwind v3
- * sheet uses, and between them most of what {@link isColor} admits. `oklch()`, `lab()` and
- * `color-mix()` are **not** parsed: each needs a colour-space conversion, and this module's rule
- * since SH380 is that it scans rather than models. So they come back null.</p>
- *
  * <p>What a caller must not do with null is treat it as a pass. A floor that silently admits
  * everything it could not read is the failure this whole file keeps meeting — a check whose silence
  * is indistinguishable from a clean result. `vocabularyTokensFrom` reports the pair as unchecked
  * instead, which is P9's rule: cheap textual proof, including proof that no proof was available.</p>
+ *
+ * <h3>SH856 — and the abstention was the whole answer on most of the modern web</h3>
+ *
+ * <p>Hex, `rgb()` and `hsl()` were the three spellings this read, which is a hand-written or
+ * Tailwind **v3** sheet. What a replication meets now is `oklch()`: it is what Tailwind v4 emits and
+ * what shadcn ships. So SH852's contrast floor fired and stood down —</p>
+ *
+ * <pre>  --shio-color-surface #ffffff on --shio-color-accent oklch(69.6% .17 162.48)
+ *     — contrast NOT checked: one of them is in a colour space this reader does not parse</pre>
+ *
+ * <p>— which is P9's loop run backwards: a check written to spare a human from looking ended by
+ * asking one to look, on every source built after about 2024. And self-inflicted, because the value
+ * it could not read is one **Shio itself wrote** into the theme one line above, out of a token its
+ * own election had ranked by chroma.</p>
+ *
+ * <p>So the `ok*` pair is converted — `oklch()` through `oklab()` through linear sRGB, which is one
+ * cube, two matrices and a gamma encode — and `color-mix()` is resolved by mixing its two sides,
+ * premultiplied, in the space it names. `hwb()` comes along for nothing, being `hsl()` with the two
+ * ends swapped. **`lab()`, `lch()` and `color()` still abstain**, and that is the boundary the
+ * rationale drew rather than an omission: CIE's pair needs a D50 white point and a chromatic
+ * adaptation, and `color()` a table of profiles — which is the colour library this module has
+ * declined to become since SH380, and a contrast ratio computed through a matrix nobody here can
+ * check is worse than an honest silence. What changes for them is the *wording*: the run names the
+ * value it could not read rather than the space, since a curator can act on a value.</p>
  */
 export function parseColor(value) {
   const raw = String(value ?? "").trim().toLowerCase();
   if (raw === "transparent") return { r: 0, g: 0, b: 0, a: 0 };
   const hex = /^#([0-9a-f]{3,8})$/.exec(raw);
   if (hex) return fromHex(hex[1]);
-  const fn = /^(rgba?|hsla?)\(([^)]*)\)$/.exec(raw);
+  if (raw.startsWith("color-mix(")) return parseColorMix(raw);
+  const fn = /^(rgba?|hsla?|hwb|oklab|oklch)\(([^)]*)\)$/.exec(raw);
   if (!fn) return null;
   // Both the legacy comma form and the modern space-with-slash form, which real sheets mix freely.
   const parts = fn[2].replace(/\//g, " ").split(/[\s,]+/).filter(Boolean);
@@ -399,11 +419,194 @@ export function parseColor(value) {
     const channels = parts.slice(0, 3).map((part) => channelOf(part));
     return channels.some((each) => each === null) ? null : { ...toRgb(channels), a: alpha };
   }
-  const hue = Number.parseFloat(parts[0]);
-  const saturation = unitOf(parts[1]);
-  const lightness = unitOf(parts[2]);
-  if (!Number.isFinite(hue) || saturation === null || lightness === null) return null;
-  return { ...hslToRgb(hue, saturation, lightness), a: alpha };
+  if (fn[1] === "oklab" || fn[1] === "oklch") {
+    const lab = okLabOf(fn[1], parts);
+    return lab ? { ...oklabToRgb(lab), a: alpha } : null;
+  }
+  const hue = angleOf(parts[0]);
+  const one = unitOf(parts[1]);
+  const two = unitOf(parts[2]);
+  if (hue === null || one === null || two === null) return null;
+  // `hwb(H W B)` is the same wheel `hsl()` walks, stated as how much white and how much black are
+  // mixed into it — so it is one line of arithmetic on top of what is already here rather than a
+  // second conversion. Whiteness and blackness that sum past 1 are a grey, which is what CSS says.
+  if (fn[1] === "hwb") return { ...hwbToRgb(hue, one, two), a: alpha };
+  return { ...hslToRgb(hue, one, two), a: alpha };
+}
+
+/**
+ * `color-mix(in <space>, <colour> [<p>%], <colour> [<p>%])` resolved to one colour (SH856).
+ *
+ * <p>Split on the **top-level** commas, since either side may be a function of its own —
+ * `color-mix(in oklab, oklch(70% .2 40) 30%, #fff)` is one comma inside a paren and two outside.
+ * Either side unreadable is the whole value unreadable, which is the recursion doing the right
+ * thing: a mix of a colour and something this reader declines is not half-known.</p>
+ *
+ * <p>Interpolated **premultiplied**, the way CSS specifies, and that is not a detail here: the value
+ * that made SH848 write a role floor is `color-mix(in oklab, var(--vg-accent) 50%, transparent)`, and
+ * un-premultiplied that is a half-step toward black rather than the tint at half alpha. In `oklab`
+ * when the space named is one of the `ok*` pair and in sRGB otherwise — a mix in `lab` or in a
+ * profile is interpolated in sRGB and is the one approximation here, taken because the alternative is
+ * the conversion the doc above declines and the error is a shade rather than a verdict.</p>
+ */
+function parseColorMix(raw) {
+  const inner = /^color-mix\((.*)\)$/s.exec(raw);
+  if (!inner) return null;
+  const parts = splitTopLevel(inner[1]);
+  if (parts.length !== 3) return null;
+  const space = /^in\s+([\w-]+)/.exec(parts[0].trim());
+  if (!space) return null;
+  const sides = parts.slice(1).map((part) => sideOf(part));
+  if (sides.some((side) => side === null)) return null;
+  const [first, second] = sides;
+  // A weight the source left out is whatever the other side did not take; both out is an even mix.
+  let one = first.weight ?? (second.weight === null ? 0.5 : 1 - second.weight);
+  let two = second.weight ?? 1 - one;
+  const sum = one + two;
+  if (sum <= 0) return null;
+  // Weights that do not sum to 100% are normalised, and a sum BELOW it also scales the alpha down —
+  // `color-mix(in srgb, red 20%, blue 20%)` is a 40%-opaque purple, not an opaque one.
+  const scale = sum < 1 ? sum : 1;
+  [one, two] = [one / sum, two / sum];
+  const mixed = space[1].startsWith("ok")
+    ? mixPremultiplied(first.color, second.color, one, rgbToOklab, oklabToRgb)
+    : mixPremultiplied(first.color, second.color, one, srgbCoordinates, (each) => each);
+  return { ...mixed, a: clampUnit(mixed.a * scale) };
+}
+
+/** One side of a `color-mix()`: a colour and, where the source stated one, its weight. */
+function sideOf(part) {
+  const raw = part.trim();
+  const percent = /\s([\d.]+)%$/.exec(raw) ?? /^([\d.]+)%\s/.exec(raw);
+  const color = parseColor(percent ? raw.replace(percent[0], " ").trim() : raw);
+  if (!color) return null;
+  const weight = percent ? Number.parseFloat(percent[1]) / 100 : null;
+  return { color, weight: weight !== null && Number.isFinite(weight) ? weight : null };
+}
+
+/** Split on commas that are not inside parentheses. */
+function splitTopLevel(text) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let at = 0; at < text.length; at += 1) {
+    const char = text[at];
+    if (char === "(") depth += 1;
+    else if (char === ")") depth -= 1;
+    else if (char === "," && depth === 0) {
+      parts.push(text.slice(start, at));
+      start = at + 1;
+    }
+  }
+  parts.push(text.slice(start));
+  return parts;
+}
+
+/**
+ * Two colours interpolated in whatever space `into`/`back` name, with alpha premultiplied.
+ *
+ * <p>Un-premultiplied at the end by the mixed alpha, and left alone at zero: nothing painted has no
+ * colour to recover, and dividing by it would be a NaN in the middle of a contrast ratio.</p>
+ */
+function mixPremultiplied(one, other, weight, into, back) {
+  // `into` returns coordinates and no alpha, which is not tidiness: Oklab's own second axis is called
+  // `a`, so a mix that carried alpha in the same object and skipped the key named `a` dropped the
+  // green–red axis and turned `#c2410c` into pure red. Measured, on the first run of this function.
+  const [first, second] = [into(one), into(other)];
+  const keys = Object.keys(first);
+  const alpha = one.a * weight + other.a * (1 - weight);
+  const at = (key) => first[key] * one.a * weight + second[key] * other.a * (1 - weight);
+  const premultiplied = Object.fromEntries(keys.map((key) => [key, at(key)]));
+  if (alpha <= 0) return { ...back(premultiplied), a: 0 };
+  return { ...back(Object.fromEntries(keys.map((key) => [key, premultiplied[key] / alpha]))), a: alpha };
+}
+
+/** The three coordinates of an sRGB colour, without its alpha. See {@link mixPremultiplied}. */
+const srgbCoordinates = ({ r, g, b }) => ({ r, g, b });
+
+/** `oklab(L a b)` and `oklch(L C H)` as `{l, a, b}`, or null where a component is not a number. */
+function okLabOf(name, parts) {
+  const lightness = unitOf(parts[0]);
+  if (lightness === null) return null;
+  if (name === "oklab") {
+    const [a, b] = [axisOf(parts[1]), axisOf(parts[2])];
+    return a === null || b === null ? null : { l: lightness, a, b };
+  }
+  const chroma = axisOf(parts[1], { top: CHROMA_TOP.ok, absolute: true });
+  const hue = angleOf(parts[2]);
+  if (chroma === null || hue === null) return null;
+  const radians = (hue * Math.PI) / 180;
+  return { l: lightness, a: chroma * Math.cos(radians), b: chroma * Math.sin(radians) };
+}
+
+/** One `oklab` axis: a bare number, or a percentage of the space's own top (±0.4). `none` is zero. */
+function axisOf(part, { top = CHROMA_TOP.ok, absolute = false } = {}) {
+  const raw = String(part).trim();
+  if (raw === "none") return 0;
+  const number = Number.parseFloat(raw);
+  if (!Number.isFinite(number)) return null;
+  const value = raw.endsWith("%") ? (number / 100) * top : number;
+  return absolute ? Math.abs(value) : value;
+}
+
+/** An angle in degrees, in any of the four units CSS spells one in. `none` is zero. */
+function angleOf(part) {
+  const raw = String(part).trim();
+  if (raw === "none") return 0;
+  const number = Number.parseFloat(raw);
+  if (!Number.isFinite(number)) return null;
+  if (raw.endsWith("turn")) return number * 360;
+  if (raw.endsWith("rad")) return (number * 180) / Math.PI;
+  if (raw.endsWith("grad")) return number * 0.9;
+  return number;
+}
+
+// Ottosson's own coefficients, in the two directions. Written out rather than folded into one matrix
+// helper: they are the only matrices in this module, and a reader checking them against the
+// published constants should be able to read them off the page.
+const OKLAB_TO_LMS = [
+  [1, 0.3963377774, 0.2158037573],
+  [1, -0.1055613458, -0.0638541728],
+  [1, -0.0894841775, -1.2914855480],
+];
+const LMS_TO_LINEAR = [
+  [4.0767416621, -3.3077115913, 0.2309699292],
+  [-1.2684380046, 2.6097574011, -0.3413193965],
+  [-0.0041960863, -0.7034186147, 1.7076147010],
+];
+const LINEAR_TO_LMS = [
+  [0.4122214708, 0.5363325363, 0.0514459929],
+  [0.2119034982, 0.6806995451, 0.1073969566],
+  [0.0883024619, 0.2817188376, 0.6299787005],
+];
+const LMS_TO_OKLAB = [
+  [0.2104542553, 0.7936177850, -0.0040720468],
+  [1.9779984951, -2.4285922050, 0.4505937099],
+  [0.0259040371, 0.7827717662, -0.8086757660],
+];
+
+const apply = (matrix, [x, y, z]) => matrix.map((row) => row[0] * x + row[1] * y + row[2] * z);
+
+/** sRGB's transfer function, and its inverse. 0–1 in, 0–1 out, both ways. */
+const encodeGamma = (unit) =>
+  (unit <= 0.0031308 ? 12.92 * unit : 1.055 * Math.abs(unit) ** (1 / 2.4) - 0.055);
+const decodeGamma = (unit) =>
+  (unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4);
+
+/** `{l, a, b}` in Oklab → `{r, g, b}` in 0–255 sRGB, clamped into gamut (SH856). */
+function oklabToRgb({ l, a, b }) {
+  const lms = apply(OKLAB_TO_LMS, [l, a, b]).map((each) => each ** 3);
+  const [r, g, blue] = apply(LMS_TO_LINEAR, lms).map((each) => encodeGamma(each) * 255);
+  const bound = (each) => Math.min(Math.max(each, 0), 255);
+  return { r: bound(r), g: bound(g), b: bound(blue) };
+}
+
+/** `{r, g, b}` in 0–255 sRGB → `{l, a, b}` in Oklab. The inverse, for interpolating a mix. */
+function rgbToOklab({ r, g, b }) {
+  const linear = [r, g, b].map((each) => decodeGamma(Math.min(Math.max(each, 0), 255) / 255));
+  const lms = apply(LINEAR_TO_LMS, linear).map((each) => Math.cbrt(each));
+  const [l, a, second] = apply(LMS_TO_OKLAB, lms);
+  return { l, a, b: second };
 }
 
 function fromHex(digits) {
@@ -442,6 +645,18 @@ function hslToRgb(hue, saturation, lightness) {
   const m = l - c / 2;
   const [r, g, b] = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60) % 6];
   return { r: (r + m) * 255, g: (g + m) * 255, b: (b + m) * 255 };
+}
+
+/** `hwb(H W B)` — the pure hue with `W` white and `B` black mixed in; past 1 together it is a grey. */
+function hwbToRgb(hue, whiteness, blackness) {
+  const [w, b] = [clampUnit(whiteness), clampUnit(blackness)];
+  if (w + b >= 1) {
+    const grey = (w / (w + b)) * 255;
+    return { r: grey, g: grey, b: grey };
+  }
+  const pure = hslToRgb(hue, 1, 0.5);
+  const mix = (channel) => ((channel / 255) * (1 - w - b) + w) * 255;
+  return { r: mix(pure.r), g: mix(pure.g), b: mix(pure.b) };
 }
 
 /** WCAG relative luminance. The one part of a contrast ratio that is not arithmetic. */
@@ -505,13 +720,10 @@ const CHROMA_TOP = { ok: 0.4, cie: 150 };
  */
 export function chromaOf(value) {
   const raw = String(value ?? "").trim().toLowerCase();
-  const rgb = parseColor(raw);
-  if (rgb) {
-    // Nothing painted is not a colourful thing, whatever the channels under the alpha say.
-    if (rgb.a === 0) return 0;
-    const channels = [rgb.r, rgb.g, rgb.b];
-    return clampUnit((Math.max(...channels) - Math.min(...channels)) / 255);
-  }
+  // SH856 — the stated chroma is read FIRST, and the order is the whole of what keeps SH848's floor
+  // where it was measured. `parseColor` converts `oklch()` now, so asking it first would answer this
+  // question in sRGB channel spread for a value that states the number outright — a different scale,
+  // silently, on the one constant whose position between two measured clusters is the argument.
   const polar = POLAR_COLOR.exec(raw);
   if (polar) return chromaUnit(polar[2], polar[1] ? CHROMA_TOP.ok : CHROMA_TOP.cie);
   const rectangular = RECTANGULAR_COLOR.exec(raw);
@@ -520,6 +732,13 @@ export function chromaOf(value) {
     const [a, b] = [chromaUnit(rectangular[2], top), chromaUnit(rectangular[3], top)];
     if (a === null || b === null) return null;
     return clampUnit(Math.hypot(a, b));
+  }
+  const rgb = parseColor(raw);
+  if (rgb) {
+    // Nothing painted is not a colourful thing, whatever the channels under the alpha say.
+    if (rgb.a === 0) return 0;
+    const channels = [rgb.r, rgb.g, rgb.b];
+    return clampUnit((Math.max(...channels) - Math.min(...channels)) / 255);
   }
   return null;
 }
@@ -768,7 +987,15 @@ function rolesByUse(declarations, page = { reversals: new Set(), paired: new Set
       // chroma in it says which colour the site *acts* with. `--brand` read by four `color:` rules
       // and one saturated `background` is the accent, not the body copy — the count reads the other
       // way, and the count was measured wrong on exactly this shape.
-      if ((a[1].saturated === true) !== (b[1].saturated === true)) return a[1].saturated ? -1 : 1;
+      //
+      // SH856 — **and a reversal, which this asked about `saturated` alone.** Both are the same
+      // argument, and `admits` and `paletteByGroup` have read them as one pair since SH847; this line
+      // did not, so a token whose fill is a reversal and not saturated was roled by the count after
+      // all. Unreachable while `oklch()` could not be compared — the brand of the sheet SH848 was
+      // filed against came out roled `text`, its eleven link colours outvoting its two buttons, the
+      // moment the reversal it always was became legible.
+      const settled = (tally) => tally.reversal === true || tally.saturated === true;
+      if (settled(a[1]) !== settled(b[1])) return settled(a[1]) ? -1 : 1;
       if (a[1].refs !== b[1].refs) return b[1].refs - a[1].refs;
       return a[0] < b[0] ? -1 : 1;
     });
@@ -989,11 +1216,18 @@ function accentFor(slot, declaration, page) {
   // which signal admitted it: a reversal IS a pair, and a report that said otherwise would be
   // describing the code path rather than the source.
   const paired = page.paired?.has(ruleKey(declaration)) === true;
+  // SH856 — the state exclusion is checked BEFORE the reversal, and it used to be checked after.
+  // `.btn:hover` states the colour the button turns whichever signal reads the rule, and SH848 wrote
+  // that reason down while guarding only the chroma path with it. The gap was unreachable until this
+  // task made `oklch()` comparable: on the very sheet SH848 was filed against, `.btn:hover` states
+  // `--vg-primary-foreground`, `oklch(98.5% 0 0)`, which is now the same colour as the page's white —
+  // so `.btn:hover` became a reversal, reversal outranks everything, and the accent came out
+  // `--vg-brand-hover`. A signal that could not fire is not a signal that was right.
+  if (INTERACTIVE_STATE.test(String(declaration.selector ?? ""))) return slot;
   if (page.reversals.has(ruleKey(declaration))) {
     return { ...slot, role: "accent", reversal: true, paired };
   }
   if (isPageSelector(declaration.selector) && !declaration.conditional) return slot;
-  if (INTERACTIVE_STATE.test(String(declaration.selector ?? ""))) return slot;
   const value = resolveVar(declaration.value, page.values);
   const chroma = chromaOf(value);
   if (chroma === null || chroma < ACCENT_CHROMA_FLOOR) return slot;

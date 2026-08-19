@@ -995,13 +995,17 @@ test("SH846: the floor is below every published grade, so a real caption grey su
 });
 
 test("SH846: a check that could not run is reported, not passed", () => {
+  // SH856 — written with `oklch(0.98 0.01 250)`, which this reader converts now. The property is
+  // about the ABSTENTION, so the fixture moves to a value that is still genuinely unreadable rather
+  // than the property being dropped: `lab()` needs a D50 white point and a chromatic adaptation,
+  // which is the colour library this module declines to become.
   const { mapped, rejected, unchecked } = vocabularyTokensFrom([
-    colorRow("vg.bg", "oklch(0.98 0.01 250)", "background"),
+    colorRow("vg.bg", "lab(98% 1 -4)", "background"),
     colorRow("vg.fg", "#334155", "text"),
   ]);
 
-  assert.equal(parseColor("oklch(0.98 0.01 250)"), null,
-    "this module scans rather than models, and a colour-space conversion is modelling");
+  assert.equal(parseColor("lab(98% 1 -4)"), null,
+    "this module scans rather than models, and a chromatic adaptation is modelling");
   assert.deepEqual(mapped.map((row) => row.name), ["shio-color.ink", "shio-color.surface"],
     "refusing what it cannot read would throw away the source's palette, which is the loss SH845 "
       + "spent a task repairing");
@@ -1183,12 +1187,19 @@ test("SH848: a shadcn palette hands over its brand colour, not the near-white it
 
   const brand = rows.find((row) => row.name === "--vg-brand");
   assert.equal(brand.role, "accent");
-  assert.equal(brand.saturated, true, "carried apart from `reversal`, so a report can say which of "
-    + "the two signals answered");
   assert.equal(brand.page, false, "and it is not page-level, which is the bar it would still be "
     + "failing");
-  assert.equal(brand.reversal, undefined, "nor is it a reversal - the button's text is a token of "
-    + "its own, which is what a shadcn sheet writes");
+  // SH856 corrects this task's stated bound, the way SH848 corrected SH847's. This asserted
+  // `saturated: true` and `reversal: undefined`, on the reasoning that the button's text is
+  // `--vg-primary-foreground` — a near-white of its OWN — and that both it and the page's
+  // `--vg-background` are in `oklch()`, "which `parseColor` declines, so the two could not have been
+  // compared even had they matched". They can be compared now, and they DO match: `oklch(98.5% 0 0)`
+  // is the page's white to within the 1.5:1 floor `same` uses. So the stronger reading is the one
+  // that fires, and it was never wrong — only unreachable.
+  assert.equal(brand.reversal, true, "the button IS the page turned inside out; SH848 could not see "
+    + "it because the pair was in a colour space this reader had not learned");
+  assert.equal(brand.saturated, undefined, "and the fallback stands down where the signal it was a "
+    + "fallback FOR can answer - which is what makes the two flags separate facts");
 });
 
 test("SH848: the tint the source called `accent` is refused, having no colour in it to be one", () => {
@@ -1501,7 +1512,11 @@ test("SH855: the run names the signal that elected the accent, and only for the 
   const { mapped } = vocabularyTokensFrom(themeFor(CATALOGUE_SHEET).rows);
   const accent = mapped.find((row) => row.name === "shio-color.accent");
 
-  assert.match(accent.elected, /^a fill whose own rule states what goes on top of it, over color\.emerald\.500 /,
+  // SH856 — the sheet is shadcn's own, so the button's label is `oklch(98.5% 0 0)` and that is the
+  // page's white once this reader can convert it: the reversal is the signal that fires here, and
+  // the pairing is what answers where a label is NOT the page's surface. Both are asserted, in the
+  // test below and in this one, because which of the four fired is the thing being printed.
+  assert.match(accent.elected, /^a rule that paints the page inside out, over color\.emerald\.500 /,
     "`accent#1` names a rank, and the rank was the whole claim - a reader given "
       + "`color.emerald.500 (accent#1)` has nothing to disagree with (P9)");
   assert.deepEqual(mapped.filter((row) => row.elected).map((row) => row.name),
@@ -1574,4 +1589,101 @@ test("SH855: a reversal still outranks a pair, so SH847's reading is the one tha
     "the page turned inside out is the strongest reading there is, and it is stated once against a "
       + "paired fill stated three times - the order of the signals is the claim, not the counts");
   assert.match(accent.elected, /^a rule that paints the page inside out, /);
+});
+
+test("SH855: the pairing beats the count where the button's label is not the page's surface", () => {
+  // The case the pairing exists for, and it is the commoner one: a button labelled in a dark grey of
+  // its own is no reversal, however legible the pair is. Twelve fills against two, and the two win.
+  const { mapped } = vocabularyTokensFrom(themeFor(`
+    :root{--brand:#c2410c;--ok:#059669;--bg:#ffffff;--fg:#18181b;--label:#3f3f46}
+    body{background:var(--bg);color:var(--fg)}
+    .btn{background-color:var(--brand);color:var(--label)}
+    .btn-lg{background-color:var(--brand);color:var(--label)}
+    .d1,.d2,.d3{background-color:var(--ok)}
+    .d4,.d5,.d6{background-color:var(--ok)}
+    .d7,.d8,.d9{background-color:var(--ok)}
+    .d10,.d11,.d12{background-color:var(--ok)}
+  `).rows);
+  const accent = mapped.find((row) => row.name === "shio-color.accent");
+
+  assert.equal(accent.from, "brand");
+  assert.match(accent.elected, /^a fill whose own rule states what goes on top of it, over ok #059669$/);
+});
+
+// --- SH856: the floor that could not read the floor ---
+
+test("SH856: the pair the floor abstained on is the pair it now grades", () => {
+  // The line the replica shipped, verbatim: `--shio-color-surface #ffffff on --shio-color-accent
+  // oklch(69.6% .17 162.48) — contrast NOT checked`. Both halves of the failing pair, and the value
+  // is Tailwind v4's own emerald-500, which is what `convert` had just elected and written.
+  const ratio = contrastRatio("#ffffff", "oklch(69.6% .17 162.48)");
+
+  assert.ok(ratio !== null, "a check written to spare a human from looking ended by asking one to "
+    + "look, on every source built after about 2024 - oklch is what Tailwind v4 emits and what "
+    + "shadcn ships");
+  assert.equal(ratio.toFixed(2), "2.46");
+  assert.ok(ratio >= 1.5, "and the answer is that the pair holds, which is the fact the abstention "
+    + "was standing in for");
+});
+
+test("SH856: oklch and oklab convert to the sRGB a luminance can be taken of", () => {
+  const rgb = (value) => {
+    const each = parseColor(value);
+    return each && [each.r, each.g, each.b].map((channel) => Math.round(channel));
+  };
+
+  assert.deepEqual(rgb("oklch(69.6% .17 162.48)"), [0, 188, 125],
+    "Tailwind v4's emerald-500, clipped into sRGB - the wide-gamut value is outside it, and a hard "
+      + "clip is what this takes rather than CSS's own gamut mapping, which is enough for a ratio");
+  assert.deepEqual(rgb("oklch(97% 0 0)"), [245, 245, 245], "no chroma is a grey in any lightness");
+  assert.deepEqual(rgb("oklch(20.5% 0 0)"), [23, 23, 23]);
+  assert.deepEqual(rgb("oklab(0.696 -0.1622 0.0505)"), rgb("oklch(69.6% 0.17 162.5)"),
+    "the polar and rectangular spellings of one colour, which is the same conversion one step apart");
+  assert.deepEqual(rgb("oklch(70% 50% 40)"), rgb("oklch(70% 0.2 40)"),
+    "a chroma stated as a percentage is relative to the space's own top (0.4), not to anything here");
+  assert.deepEqual(rgb("oklch(70% 0.2 0.111turn)"), rgb("oklch(70% 0.2 40deg)"),
+    "and a hue in any of the four units CSS spells one in");
+});
+
+test("SH856: a color-mix is resolved by mixing its sides, premultiplied and in the space it names", () => {
+  const mixed = parseColor("color-mix(in oklab, #c2410c 50%, transparent)");
+
+  assert.deepEqual([mixed.r, mixed.g, mixed.b].map(Math.round), [194, 65, 12],
+    "the value SH848 wrote its role floor for. Un-premultiplied this is a half-step toward black - "
+      + "`transparent` is a BLACK with no alpha - and the tint's own colour would be gone");
+  assert.equal(mixed.a, 0.5);
+  assert.equal(parseColor("color-mix(in srgb, #ff0000 50%, #0000ff)").r, 127.5,
+    "and a mix in a space that is not one of the ok pair is interpolated in sRGB, which is what `in "
+      + "srgb` asks for");
+  assert.equal(parseColor("color-mix(in oklab, lab(50% 40 30) 50%, #ffffff)"), null,
+    "either side unreadable is the whole value unreadable: a mix of a colour and something this "
+      + "reader declines is not half-known");
+});
+
+test("SH856: hwb is the same wheel hsl walks, so it costs one line rather than a conversion", () => {
+  const rgb = (value) => {
+    const each = parseColor(value);
+    return each && [each.r, each.g, each.b].map((channel) => Math.round(channel));
+  };
+
+  assert.deepEqual(rgb("hwb(20 10% 20%)"), [204, 85, 26]);
+  assert.deepEqual(rgb("hwb(20 60% 60%)"), [128, 128, 128],
+    "whiteness and blackness that sum past 1 are a grey, which is what CSS says of them");
+});
+
+test("SH856: the three that still abstain say so by the value, not by the space", () => {
+  for (const value of ["lab(50% 40 30)", "lch(50% 40 30)", "color(display-p3 1 0 0)"]) {
+    assert.equal(parseColor(value), null, `${value} is the boundary the rationale drew: CIE's pair `
+      + "needs a D50 white point and an adaptation, and `color()` a table of profiles");
+  }
+
+  const { unchecked } = vocabularyTokensFrom([
+    colorRow("vg.bg", "lab(98% 1 -4)", "background"),
+    colorRow("vg.fg", "lch(20% 5 250)", "text"),
+  ]);
+  const page = unchecked.find((row) => row.text === "shio-color.ink");
+
+  assert.deepEqual(page.unreadable, ["--shio-color-ink lch(20% 5 250)", "--shio-color-surface lab(98% 1 -4)"],
+    "both, because a pair of unreadable values is two of them and a report naming one sends a "
+      + "curator to fix half a pair - which is what `one of them` did");
 });

@@ -1484,6 +1484,35 @@ it. Four decisions worth keeping:
   goes on top of it, over color.emerald.500 …`. **The accent alone carries that clause**: for the
   other eight slots the rank *is* the evidence, and `accent#1` was a rank presented as a claim
   nobody could refute (P9, P3).
+- **A floor that could not read the floor (SH856).** `parseColor` read hex, `rgb()` and `hsl()` —
+  which is a hand-written or Tailwind **v3** sheet — so SH852's contrast floor fired and stood down:
+  *`--shio-color-surface #ffffff` on `--shio-color-accent oklch(69.6% .17 162.48)` — contrast NOT
+  checked: one of them is in a colour space this reader does not parse. Look at the page.* P9's loop
+  run backwards, on every source built after about 2024, and self-inflicted — the value it could not
+  read is one **Shio wrote itself** one line above, from a token its own election had ranked by
+  chroma. Now converted: `oklch()` → `oklab()` → linear sRGB (one cube, two of Ottosson's matrices, a
+  gamma encode, a hard clip into gamut — `oklch(69.6% .17 162.48)` is `rgb(0, 188, 125)`), and
+  `color-mix()` by mixing its two sides **premultiplied** in the space it names, which is not a
+  detail: `color-mix(in oklab, var(--vg-accent) 50%, transparent)` — the value SH848 wrote a role
+  floor for — is a half-step toward black un-premultiplied, `transparent` being a black with no
+  alpha. `hwb()` comes free, being `hsl()` with the ends swapped. **`lab()`, `lch()` and `color()`
+  still abstain**, deliberately: CIE's pair needs a D50 white point and a chromatic adaptation and
+  `color()` a table of profiles, which is the colour library this module has declined to be since
+  SH380 — a ratio computed through a matrix nobody here can check is worse than an honest silence.
+  What changed for them is the wording: the run names **the value** it could not read, and both
+  halves where both are unreadable, since `one of them` told a curator which half to fix only by
+  omission. `chromaOf` still reads the *stated* chroma first, and that order is load-bearing: asking
+  `parseColor` first would answer SH848's floor in sRGB channel spread for a value that states the
+  number outright. **Two defects it exposed, neither of them new.** `accentFor` checked SH848's
+  interactive-state exclusion *after* the reversal branch, so `.btn:hover` became a reversal the
+  moment `oklch(98.5% 0 0)` could be compared to the page's white, and the accent came out
+  `--vg-brand-hover`; and `rolesByUse` ranked a token's competing roles on `saturated` alone where
+  `admits` and `paletteByGroup` have read `reversal` and `saturated` as one pair since SH847, so the
+  brand of SH848's own sheet came out roled **`text`**, its eleven link colours outvoting its two
+  buttons. Both were unreachable while the pair was illegible, which is the whole point: a signal that
+  could not fire is not a signal that was right. SH848's stated bound — *"nor is it a reversal, the
+  button's text is a token of its own"* — is corrected in its own test, the way SH848 corrected
+  SH847's.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

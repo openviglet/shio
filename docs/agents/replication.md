@@ -57,7 +57,7 @@ regions (document order):
 | **section** | its declaration × its theme | equality: what is served is exactly that composition |
 | **the seam** | the declaration | declared order, one theme in force per region, no unaccounted gap |
 
-A section region's reference needs no capture and no human approval: it is
+A section region's reference needs no capture and no curator's approval: it is
 *synthesisable*, because a section is `(its type, its field values) × (the theme in
 force)`. Every appearance defect this project has found is a difference from it —
 a footer above the first section is **order**, two stylesheets over one region is

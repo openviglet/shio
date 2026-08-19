@@ -58,6 +58,7 @@
 // spelling `ShThemeTokens` will actually emit rather than in one this file guessed.
 import {
   accentOrder, contrastRatio, customPropertyFor, flatten, isAccentRow, isTransparent, isTranslucent,
+  parseColor,
 } from "./theme.mjs";
 
 /**
@@ -528,7 +529,16 @@ function enforceContrast(tokens, mapped, rejected) {
     // Only where a captured value is in play: a default-on-default pair is known good, and a note
     // about one would be noise in the only report a curator reads about appearance.
     if (!mapped.some((each) => each.name === pair.text || each.name === pair.on)) return;
-    if (ratio === null) unchecked.push(row);
+    // SH856 — which value could not be read, not which space. Both halves are asked, because a pair
+    // of `lab()` colours is two unreadable values and a report naming one of them sends a curator to
+    // fix half a pair. `parseColor` is the authority on what is legible, so this cannot claim a value
+    // is unreadable that the ratio would have accepted.
+    if (ratio === null) {
+      const unreadable = [pair.text, pair.on]
+        .filter((name) => parseColor(valueOf(name)) === null)
+        .map((name) => `--${name.replace(".", "-")} ${valueOf(name)}`);
+      unchecked.push({ ...row, unreadable });
+    }
     else if (ratio < CONTRAST_FLOOR) {
       // Judged, failed, and the floor was not allowed to fix it — which is a *worse* state than
       // either list above and the one a report may least leave out (P9). The slot that could have

@@ -725,31 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.2 A floor that cannot read the floor (SH856)
-
-SH852 gave the palette a contrast floor, which is the right guard: a surface and an
-accent that cannot be told apart is the defect a curator would report. On this replica
-it fired and then stood down:
-
-    --shio-color-surface #ffffff on --shio-color-accent oklch(69.6% .17 162.48)
-      — contrast NOT checked: one of them is in a colour space this reader
-        does not parse. Look at the page
-
-The honesty is right and the outcome is the loop P9 exists to close, run backwards. A
-check written to spare a human from looking ends by asking a human to look, and it will
-do that on **every** source built after about 2024 — `oklch` is what Tailwind v4 emits
-and what shadcn ships, which is to say the two things most of the web a replication
-meets is built with.
-
-It is also self-inflicted in a way worth naming: the value the reader could not parse is
-one **Shio itself wrote** into the theme, one line above, from a token it had already
-elected. The election understood the colour well enough to rank it by chroma; the floor
-could not read the same string.
-
-One conversion, not a colour library: `oklch` and `color-mix` to sRGB, enough for a
-relative-luminance ratio. Where a value is genuinely unparseable the abstention is
-correct and should name the value rather than the space.
-
 ### XL.3 The row with nothing in it (SH857)
 
 SH832 was right and it uncovered this. Before it, an empty row borrowed its parent's
