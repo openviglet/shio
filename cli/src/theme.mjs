@@ -368,6 +368,115 @@ export function typeOf(value) {
   return null;
 }
 
+/**
+ * A colour as `{r, g, b, a}` in 0–255 / 0–1, or null when this reader cannot say (SH846).
+ *
+ * <h3>Null is a real answer, and the caller has to print it</h3>
+ *
+ * <p>Hex, `rgb()`/`rgba()` and `hsl()`/`hsla()` — the three spellings a hand-written or Tailwind v3
+ * sheet uses, and between them most of what {@link isColor} admits. `oklch()`, `lab()` and
+ * `color-mix()` are **not** parsed: each needs a colour-space conversion, and this module's rule
+ * since SH380 is that it scans rather than models. So they come back null.</p>
+ *
+ * <p>What a caller must not do with null is treat it as a pass. A floor that silently admits
+ * everything it could not read is the failure this whole file keeps meeting — a check whose silence
+ * is indistinguishable from a clean result. `vocabularyTokensFrom` reports the pair as unchecked
+ * instead, which is P9's rule: cheap textual proof, including proof that no proof was available.</p>
+ */
+export function parseColor(value) {
+  const raw = String(value ?? "").trim().toLowerCase();
+  if (raw === "transparent") return { r: 0, g: 0, b: 0, a: 0 };
+  const hex = /^#([0-9a-f]{3,8})$/.exec(raw);
+  if (hex) return fromHex(hex[1]);
+  const fn = /^(rgba?|hsla?)\(([^)]*)\)$/.exec(raw);
+  if (!fn) return null;
+  // Both the legacy comma form and the modern space-with-slash form, which real sheets mix freely.
+  const parts = fn[2].replace(/\//g, " ").split(/[\s,]+/).filter(Boolean);
+  if (parts.length < 3) return null;
+  const alpha = parts.length > 3 ? unitOf(parts[3]) : 1;
+  if (alpha === null) return null;
+  if (fn[1].startsWith("rgb")) {
+    const channels = parts.slice(0, 3).map((part) => channelOf(part));
+    return channels.some((each) => each === null) ? null : { ...toRgb(channels), a: alpha };
+  }
+  const hue = Number.parseFloat(parts[0]);
+  const saturation = unitOf(parts[1]);
+  const lightness = unitOf(parts[2]);
+  if (!Number.isFinite(hue) || saturation === null || lightness === null) return null;
+  return { ...hslToRgb(hue, saturation, lightness), a: alpha };
+}
+
+function fromHex(digits) {
+  const wide = digits.length <= 4
+    ? [...digits].map((each) => each + each).join("")
+    : digits;
+  if (wide.length !== 6 && wide.length !== 8) return null;
+  const at = (index) => Number.parseInt(wide.slice(index, index + 2), 16);
+  return { r: at(0), g: at(2), b: at(4), a: wide.length === 8 ? at(6) / 255 : 1 };
+}
+
+/** `0.5`, `50%` — a 0–1 quantity however it was written. Null when it is neither. */
+function unitOf(part) {
+  const raw = String(part).trim();
+  const number = Number.parseFloat(raw);
+  if (!Number.isFinite(number)) return null;
+  return raw.endsWith("%") ? number / 100 : number;
+}
+
+/** A 0–255 channel, which `rgb()` may also write as a percentage. */
+function channelOf(part) {
+  const raw = String(part).trim();
+  const number = Number.parseFloat(raw);
+  if (!Number.isFinite(number)) return null;
+  return raw.endsWith("%") ? (number / 100) * 255 : number;
+}
+
+const toRgb = ([r, g, b]) => ({ r, g, b });
+
+function hslToRgb(hue, saturation, lightness) {
+  const h = ((hue % 360) + 360) % 360;
+  const s = Math.min(Math.max(saturation, 0), 1);
+  const l = Math.min(Math.max(lightness, 0), 1);
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60) % 6];
+  return { r: (r + m) * 255, g: (g + m) * 255, b: (b + m) * 255 };
+}
+
+/** WCAG relative luminance. The one part of a contrast ratio that is not arithmetic. */
+function luminance({ r, g, b }) {
+  const channel = (value) => {
+    const unit = Math.min(Math.max(value, 0), 255) / 255;
+    return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+/** `over` composited under `colour`, so a translucent text colour is judged as it will be seen. */
+function over(colour, backdrop) {
+  if (colour.a >= 1) return colour;
+  const mix = (a, b) => a * colour.a + b * (1 - colour.a);
+  return { r: mix(colour.r, backdrop.r), g: mix(colour.g, backdrop.g), b: mix(colour.b, backdrop.b), a: 1 };
+}
+
+/**
+ * The WCAG contrast ratio between a colour and the surface behind it, or null if either is unreadable.
+ *
+ * <p>1 means the two are the same colour and 21 is black on white. A translucent foreground is
+ * composited over the backdrop first — `rgba(0,0,0,.05)` on white is a 1.05 ratio and not a 21 one,
+ * and judging it unresolved is how a floor lets an invisible value through.</p>
+ */
+export function contrastRatio(foreground, background) {
+  const front = parseColor(foreground);
+  const back = parseColor(background);
+  if (!front || !back || back.a < 1) return null;
+  const light = luminance(over(front, back));
+  const dark = luminance(back);
+  const [high, low] = light >= dark ? [light, dark] : [dark, light];
+  return (high + 0.05) / (low + 0.05);
+}
+
 // ---------------------------------------------------------------------------------------------
 // Declared tokens
 // ---------------------------------------------------------------------------------------------
@@ -758,7 +867,7 @@ const TRANSPARENT = /^(?:#(?:[0-9a-f]{3}0|[0-9a-f]{6}00)|(?:rgba?|hsla?|hwb|lab|
  * is the loss SH424 exists to prevent. The rule is about what may be inferred from a count, not
  * about what a stylesheet is allowed to contain.</p>
  */
-function isTransparent(value) {
+export function isTransparent(value) {
   const raw = String(value ?? "").trim();
   return raw.toLowerCase() === "transparent" || TRANSPARENT.test(raw);
 }

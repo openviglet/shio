@@ -533,37 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.133 A mapping that cannot say what it could not map (SH846)
-
-Independent of where the tokens come from (SH845), the mapping itself has no floor and
-no report.
-
-On the replica it produced:
-
-    --color-surface: #0000                 a fully transparent page background
-    --color-accent:  #0b5533               the built-in default, unmapped
-
-`.shio-page` sets `background: var(--color-surface)`, so the section area has no
-background of its own and shows whatever lies behind it. It happens to look white here
-because the document behind it is, which is exactly the kind of accident that survives
-review and breaks on a dark layout.
-
-Two rules, and the second matters more than the first.
-
-**A role has a floor.** A surface that is fully transparent, or a text colour with no
-contrast against its own surface, is not a value the mapping should accept — the default
-is better and the run should say it was used. This is the same instinct as SH684's: a
-derivation that cannot fill a required field declines rather than writing something
-unusable.
-
-**A mapping states its coverage.** Fourteen names are read by the theme; some number
-were filled from the source and the rest kept their defaults. That count is the single
-most useful line the conversion could print about appearance, and today the pipeline
-prints nothing — a curator discovers an unmapped accent by looking at the page, which is
-the loop SH692 exists to close.
-
-Print filled, defaulted and rejected, with the role names.
-
 ### XVII.134 The accent no palette can reach (SH847)
 
 SH845 got the source's declared palette across the bridge — `color.ink`,

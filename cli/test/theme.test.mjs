@@ -21,11 +21,13 @@ import {
 // @scans both reason: token names are extracted from Java source, and the javadoc naming them
 // is deliberately part of what is read (SH740).
   buildTheme,
+  contrastRatio,
   customPropertyFor,
   declaredTokens,
   describeTheme,
   dtcgFor,
   flatten,
+  parseColor,
   pathForCustomProperty,
   recurringTokens,
   rewriteUrls,
@@ -901,4 +903,116 @@ test("SH845: the declared palette reaches the theme, and the transparent literal
   assert.equal(kept["color.surface-sunk"], VOCABULARY_THEME_TOKENS.color["surface-sunk"].$value,
     "a slot the source did not state keeps the default and is reported - which is a better artefact "
       + "than a card painted with a utility class's transparent (P9)");
+});
+
+// --- SH846: the mapping's floor, and the third thing a run can say about a slot ---
+
+const colorRow = (path, value, role, extra = {}) => ({
+  path, value, type: "color", source: "declared", group: "color", role, refs: 3, page: true, ...extra,
+});
+
+test("SH846: a fully transparent value is not a page, so the slot is refused rather than filled", () => {
+  const { tokens, mapped, rejected } = vocabularyTokensFrom([
+    colorRow("vg.bg", "#0000", "background"),
+    colorRow("vg.fg", "#234652", "text"),
+  ]);
+
+  assert.equal(tokens.color.surface.$value, VOCABULARY_THEME_TOKENS.color.surface.$value,
+    "`.shio-page` sets `background: var(--color-surface)`, so a transparent one shows whatever lies "
+      + "behind it - white here only because the document is, which is the accident that survives "
+      + "review and breaks on a dark layout");
+  assert.deepEqual(mapped.map((row) => row.name), ["color.ink"]);
+  assert.equal(rejected[0].name, "color.surface");
+  assert.equal(rejected[0].reason, "transparent");
+  assert.match(rejected[0].detail, /the source's background#1 is #0000, which paints nothing/);
+});
+
+test("SH846: refused and never-offered are two facts, and a rank nothing filled is the second", () => {
+  const { rejected, unmapped } = vocabularyTokensFrom([colorRow("vg.bg", "#0000", "background")]);
+
+  assert.deepEqual(rejected.map((row) => row.name), ["color.surface"]);
+  assert.deepEqual(unmapped.map((row) => row.name).filter((name) => name.startsWith("color.surface")),
+    ["color.surface-sunk"],
+    "the source states ONE background and the floor took it, so `background#2` was never offered a "
+      + "row at all - calling that refused would report a defect the source does not have");
+});
+
+test("SH846: a mapping never writes a pair it assembled that cannot be read", () => {
+  const { tokens, mapped, rejected } = vocabularyTokensFrom([
+    colorRow("vg.bg", "#ffffff", "background"),
+    colorRow("vg.fg", "#f9fafb", "text"),
+  ]);
+
+  assert.equal(tokens.color.ink.$value, VOCABULARY_THEME_TOKENS.color.ink.$value);
+  assert.deepEqual(mapped.map((row) => row.name), ["color.surface"],
+    "the surface is the larger area and the more certain reading, so the text is the half that "
+      + "gives way where both came from the source");
+  assert.equal(rejected[0].name, "color.ink");
+  assert.equal(rejected[0].reason, "contrast");
+  assert.match(rejected[0].detail, /1\.05:1 against --color-surface #ffffff, under the 1\.5:1 floor/);
+});
+
+test("SH846: the failure does not need a bad source — a dark page under a default ink is the likelier half", () => {
+  const { tokens, rejected } = vocabularyTokensFrom([colorRow("vg.bg", "#0f172a", "background")]);
+
+  assert.equal(tokens.color.surface.$value, VOCABULARY_THEME_TOKENS.color.surface.$value,
+    "nothing about #0f172a is wrong; it is wrong under THIS file's near-black default, and no rule "
+      + "about the source's own values could have caught it");
+  assert.equal(rejected[0].name, "color.surface");
+  assert.match(rejected[0].detail, /1\.02:1 against --color-ink/);
+});
+
+test("SH846: an ordinary dark theme states both halves and nothing moves", () => {
+  const { tokens, mapped, rejected } = vocabularyTokensFrom([
+    colorRow("vg.bg", "#0f172a", "background"),
+    colorRow("vg.fg", "#f1f5f9", "text"),
+  ]);
+
+  assert.deepEqual(rejected, [], "the floor must not fire on the case it exists to allow through");
+  assert.deepEqual(mapped.map((row) => row.value).sort(), ["#0f172a", "#f1f5f9"]);
+  assert.equal(tokens.color.surface.$value, "#0f172a");
+});
+
+test("SH846: the floor is below every published grade, so a real caption grey survives it", () => {
+  // 2.85:1 - under WCAG's 3 and 4.5, and a colour a great many sites ship on purpose. A mapping
+  // that graded the source's design would be substituting taste for the source.
+  assert.equal(contrastRatio("#999999", "#ffffff").toFixed(2), "2.85");
+  const { mapped } = vocabularyTokensFrom([
+    colorRow("vg.bg", "#ffffff", "background"),
+    colorRow("vg.fg", "#111111", "text"),
+    colorRow("vg.muted", "#999999", "text", { refs: 1 }),
+  ]);
+
+  assert.deepEqual(mapped.map((row) => [row.name, row.value]).sort(),
+    [["color.ink", "#111111"], ["color.ink-muted", "#999999"], ["color.surface", "#ffffff"]]);
+});
+
+test("SH846: a check that could not run is reported, not passed", () => {
+  const { mapped, rejected, unchecked } = vocabularyTokensFrom([
+    colorRow("vg.bg", "oklch(0.98 0.01 250)", "background"),
+    colorRow("vg.fg", "#334155", "text"),
+  ]);
+
+  assert.equal(parseColor("oklch(0.98 0.01 250)"), null,
+    "this module scans rather than models, and a colour-space conversion is modelling");
+  assert.deepEqual(mapped.map((row) => row.name), ["color.ink", "color.surface"],
+    "refusing what it cannot read would throw away the source's palette, which is the loss SH845 "
+      + "spent a task repairing");
+  assert.deepEqual(rejected, []);
+  assert.deepEqual(unchecked.map((row) => row.text), ["color.ink", "color.ink-muted"]);
+});
+
+test("SH846: a default-on-default pair needs no note, because nothing captured is in it", () => {
+  const { unchecked } = vocabularyTokensFrom([]);
+
+  assert.deepEqual(unchecked, []);
+});
+
+test("SH846: a translucent foreground is judged as it will be seen, not as if it were opaque", () => {
+  assert.equal(contrastRatio("rgba(0,0,0,.05)", "#ffffff").toFixed(2), "1.12",
+    "compositing is what makes this 1.12 and not 21 - an uncomposited reading is how a floor lets "
+      + "an invisible value through");
+  assert.equal(contrastRatio("hsl(0 0% 60%)", "hsl(0 0% 100%)").toFixed(2), "2.85",
+    "and hsl reads the same as the hex it is, or the floor depends on which spelling the source used");
+  assert.equal(contrastRatio("#0b5533", "color-mix(in oklab, red 50%, blue)"), null);
 });

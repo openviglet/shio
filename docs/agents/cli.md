@@ -1331,6 +1331,26 @@ it. Four decisions worth keeping:
   call-to-action is a `background-color` on a non-page selector. Blast radius of the transparent
   rule on the corpus, grepped rather than argued: **zero** — no archetype declares a transparent
   colour at all.
+- **A slot can refuse what it was offered, and that is a third thing to say about it (SH846).** Half
+  of this task was already shipped and the roadmap did not know: SH831's report *does* name every
+  role the source states nothing for, and one `describeConversion` run refutes "the run said nothing
+  about either" — the accent half was closed in SH831. What reproduced is the **floor**. A source
+  declaring `--vg-background: #0000` and `--vg-foreground: #f9fafb` produced a transparent page under
+  near-white body copy, printed as *3 of 9 token(s) from the captured stylesheet*: two failures
+  reported as two successes, on the one line a curator reads about appearance. **The pair is what has
+  a floor, not the row** — `#f9fafb` is a fine text colour and is only wrong against *that* surface —
+  and the likelier failure needs no bad source at all: a source stating a dark page and no page-level
+  text colour leaves this file's near-black default on it, which no rule about the source's values
+  could catch. So `CONTRAST_PAIRS` is checked after every slot is filled, and **the source's half
+  gives way** (text before surface), which terminates because the defaults are a pair chosen
+  together. **`CONTRAST_FLOOR` is 1.5 and is not a legibility grade:** WCAG's 4.5 and 3 grade a
+  *design*, and `#999` on `#ffffff` is 2.85 — a caption colour a great many sites ship on purpose,
+  which a mapping entitled to grade the source would replace with this file's grey. Refused is kept
+  distinct from never-offered by asking whether **this slot's own rank** held a row: a source stating
+  one background has no `background#2` to refuse, and reporting one would name a defect the source
+  does not have. And a pair in a colour space `parseColor` does not read (`oklch`, `lab`,
+  `color-mix`) is printed as **not checked** rather than passed — refusing it would throw away the
+  palette SH845 just repaired, and silence would be indistinguishable from a clean result.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

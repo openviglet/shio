@@ -1670,6 +1670,66 @@ test("SH831: the theme the replica renders with is painted in the source's own c
       + "`text.lead`. Only the step the page states outright can be taken");
 });
 
+test("SH846: a run says which slots refused a value, which is neither filled nor never-offered", () => {
+  // The measurement: this source declares a transparent page and a near-white text colour, and the
+  // run reported `--color-surface: #0000` as one of *3 of 9 token(s) from the captured stylesheet*.
+  // Two failures printed as two successes, on the one report a curator reads about appearance.
+  const conversion = buildConversion({
+    proposal: withCapturedTheme({
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+      theme: {
+        css: CAPTURED_CSS,
+        tokens: {},
+        rows: [
+          { path: "vg.background", value: "#0000", type: "color", source: "declared", group: "color", role: "background", refs: 2, page: true },
+          { path: "vg.foreground", value: "#f9fafb", type: "color", source: "declared", group: "color", role: "text", refs: 3, page: true },
+        ],
+      },
+    }),
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  const written = conversion.document.posts.find((post) => post.data.TITLE === vocabularyThemeTitle("Acme"));
+  const tokens = JSON.parse(written.data.TOKENS);
+  assert.equal(tokens.color.surface.$value, VOCABULARY_THEME_TOKENS.color.surface.$value,
+    "the default is the right value to ship - SH684's instinct, one surface along: a derivation "
+      + "that cannot fill a required field declines rather than writing something unusable");
+  assert.equal(tokens.color.ink.$value, VOCABULARY_THEME_TOKENS.color.ink.$value);
+  assert.deepEqual(conversion.palette.rejected.map((row) => [row.name, row.reason]),
+    [["color.ink", "contrast"], ["color.surface", "transparent"]]);
+
+  const report = describeConversion(conversion);
+  assert.match(report, /palette: 0 of 9 token\(s\)[^\n]*, 2 refused/,
+    "and the count says so: a refusal used to be counted as a token taken from the stylesheet");
+  assert.match(report, /--color-surface [^\n]*REFUSED: the source's background#1 is #0000, which paints nothing/);
+  assert.match(report, /--color-ink [^\n]*REFUSED: #f9fafb from vg\.foreground reads at 1\.05:1/,
+    "with the ratio, so a reader can check the refusal instead of taking it (P9)");
+});
+
+test("SH846: a palette the floor never touches reports exactly as it did before", () => {
+  const conversion = buildConversion({
+    proposal: withCapturedTheme({
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+      theme: {
+        css: CAPTURED_CSS,
+        tokens: {},
+        rows: [
+          { path: "vg.background", value: "#0f172a", type: "color", source: "declared", group: "color", role: "background", refs: 2, page: true },
+          { path: "vg.foreground", value: "#f1f5f9", type: "color", source: "declared", group: "color", role: "text", refs: 3, page: true },
+        ],
+      },
+    }),
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.deepEqual(conversion.palette.rejected, []);
+  assert.match(describeConversion(conversion), /palette: 2 of 9 token\(s\)[^\n]*names\n/,
+    "no `refused` clause where nothing was refused - a count that always carries a zero is a count "
+      + "a reader stops reading");
+});
+
 test("SH509: a fidelity conversion carries no theme it would not use", () => {
   // The roles are SH508's, and a verbatim page has none of them. Writing it anyway would be a post
   // no page renders — and on the one path that already reaches 0.00% against its source.

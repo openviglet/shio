@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH846** (deps: SH831 ✅) **The palette mapping accepts a transparent colour as the page surface and never says which roles it could not fill** — It wrote --color-surface:#0000 and left --color-accent at its built-in green, and the run said nothing about either. → §XVII.133
 - 📋 **SH847** (deps: SH845 ✅) **The theme's accent keeps its default green on every source whose call-to-action is a background** — The accent role is fed only by fill, stroke, caret-color and text-decoration-color, so a real button — a background-color on a non-page selector — never reaches it. → §XVII.134
 
 ## Priority

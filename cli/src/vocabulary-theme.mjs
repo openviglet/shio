@@ -52,6 +52,10 @@
  * the half that stops sending the captured one on an authorable page.
  */
 
+// SH846 — the colour arithmetic a floor needs. It lives beside the CSS reader that already owns
+// `isColor`, so there is one place that decides what this project calls a colour.
+import { contrastRatio, isTransparent } from "./theme.mjs";
+
 /**
  * The DTCG tree, which is what makes the theme *editable* rather than merely present.
  *
@@ -204,6 +208,58 @@ export const VOCABULARY_THEME_SLUG = "shio";
  * default silently; a slot it names and cannot fill is reported. That distinction is the whole
  * difference between "this theme has nowhere to put that" and "the source did not say".</p>
  */
+/**
+ * The pairs the theme actually paints one on top of the other, and therefore the ones with a floor
+ * (SH846).
+ *
+ * <h2>A mapping that assembled a pair neither side chose</h2>
+ *
+ * <p>The bridge fills each slot from the best row for *that* slot and never looked at two together,
+ * so it could write a source surface under a default text colour — or the reverse. Measured: a source
+ * declaring `--vg-background: #0000` and `--vg-foreground: #f9fafb` produced `--color-surface: #0000`
+ * with near-white body copy on it, reported as *3 of 9 token(s) from the captured stylesheet*. Two
+ * failures presented as two successes, and the page looked white only because the document behind it
+ * was — the accident that survives review and breaks on a dark layout.</p>
+ *
+ * <p>The pair is what has a floor, not the row: `#f9fafb` is a perfectly good text colour and is only
+ * wrong against *this* surface. And the failure does not need a bad source at all — a source stating a
+ * dark page and no page-level text colour leaves this file's near-black default on it, which is the
+ * likelier half and one no rule about the source's values could catch.</p>
+ *
+ * <h2>Which half gives way</h2>
+ *
+ * <p>Whichever came from the **source**, because the defaults are a pair chosen together and legible
+ * by construction — so reverting always terminates, at worst at the default pair. Where both came from
+ * the source the text gives way first: the surface is the larger area and the more certain reading
+ * (`background#1` is what `body` states), and reverting it would throw away more on weaker evidence.
+ * `color.ink` is settled before `color.ink-muted`, since both are painted on one surface and the
+ * page's own text is the load-bearing half.</p>
+ *
+ * <h2>The bound, said rather than left to be discovered</h2>
+ *
+ * <p>Two pairs, not four. The button (`color.surface` on `color.accent`) and the card
+ * (`color.ink` on `color.surface-sunk`) are the same relation and are deliberately not held here:
+ * `color.accent` is the slot the bridge can least often fill at all (SH847), so a floor on it would
+ * fire on the default almost every time and say nothing anybody can act on. They come back with the
+ * task that makes accent reachable.</p>
+ */
+export const CONTRAST_PAIRS = Object.freeze([
+  Object.freeze({ text: "color.ink", on: "color.surface" }),
+  Object.freeze({ text: "color.ink-muted", on: "color.surface" }),
+]);
+
+/**
+ * The ratio below which two colours are one colour (SH846).
+ *
+ * <p><b>Not a legibility grade.</b> WCAG's own numbers — 4.5 for body text, 3 for large text and UI —
+ * grade a *design*, and this mapping is not entitled to grade the source's: `#999` on `#ffffff` is
+ * 2.85, a caption colour a great many sites ship on purpose, and rejecting it would replace the
+ * source's own muted grey with this file's. So the floor sits below every published grade and asks
+ * only the question the rationale asks — is there any contrast at all. Near-black on near-black is
+ * 1.1 and white on white is 1.0; both are refused, and every real design decision is admitted.</p>
+ */
+export const CONTRAST_FLOOR = 1.5;
+
 export const PALETTE_BRIDGE = Object.freeze({
   "color.ink": { group: "color", role: "text", rank: 1, needs: "page" },
   "color.ink-muted": { group: "color", role: "text", rank: 2, needs: "page" },
@@ -222,35 +278,113 @@ export const PALETTE_BRIDGE = Object.freeze({
  * @param rows the extracted token rows (`proposal.theme.rows`), each carrying the `group` and — for
  *             colour — the `role` the source uses it in, the `refs` that argued for it, and whether
  *             any of those uses was at page level
- * @returns `{tokens, mapped, unmapped}` — `mapped` is `{name, from, role, value}` per slot that took
- *          a captured value, `unmapped` the slots that kept this file's default and what each looked
- *          for. Both sorted by name, so two runs over one capture report identically (P5). A slot
- *          the bridge does not name is in neither list: it has no source to take from, which is not
- *          the same fact as a source that did not state one.
+ * @returns `{tokens, mapped, unmapped, rejected, unchecked}` — `mapped` is `{name, from, role, value}`
+ *          per slot that took a captured value, `unmapped` the slots that kept this file's default and
+ *          what each looked for, `rejected` (SH846) the slots that were **offered** a value and refused
+ *          it, which is a different fact from being offered none. All sorted by name, so two runs over
+ *          one capture report identically (P5). A slot the bridge does not name is in none of them: it
+ *          has no source to take from, which is not the same fact as a source that did not state one.
  */
 export function vocabularyTokensFrom(rows) {
   const palette = paletteByGroup(rows);
   const tokens = structuredClone(VOCABULARY_THEME_TOKENS);
   const mapped = [];
   const unmapped = [];
+  const rejected = [];
   for (const [name, want] of Object.entries(PALETTE_BRIDGE)) {
     const [family, leaf] = name.split(".");
     const definition = tokens[family]?.[leaf];
     if (!definition) continue;
-    const candidates = (palette.get(want.role ? `${want.group} ${want.role}` : want.group) ?? [])
+    const offered = (palette.get(want.role ? `${want.group} ${want.role}` : want.group) ?? [])
       .filter((row) => admits(want.needs, row));
+    // SH846 — a value floor is a property of the row, so it filters the candidates the way `admits`
+    // does rather than failing the slot: `#0000` is not a background this source states, it is the
+    // absence of one, and the next row down is a better answer than the default.
+    const candidates = offered.filter((row) => !refusedValue(want, row));
     const row = candidates[want.rank - 1];
     const wanted = `${want.role ?? want.group}#${want.rank}`;
     if (row) {
       tokens[family][leaf] = { ...definition, $value: row.value };
       mapped.push({ name, from: row.path, role: wanted, value: row.value });
+    } else if (offered[want.rank - 1]) {
+      // Refused, and not merely unfilled: **this slot's own rank** held a row and the floor took it.
+      // Asking whether the filter removed anything at all would report `background#2` as refused on
+      // a source that states one background — the slot was never offered a second, which is the
+      // other fact entirely and the one this list exists to separate.
+      rejected.push({
+        name, role: wanted, value: definition.$value, reason: "transparent",
+        detail: `the source's ${wanted} is ${offered[want.rank - 1].value}, which paints nothing`,
+      });
     } else {
       unmapped.push({ name, role: wanted, value: definition.$value });
     }
   }
+  const unchecked = enforceContrast(tokens, mapped, rejected);
   const byName = (a, b) => (a.name < b.name ? -1 : 1);
-  return { tokens, mapped: mapped.sort(byName), unmapped: unmapped.sort(byName) };
+  return {
+    tokens,
+    mapped: mapped.sort(byName),
+    unmapped: unmapped.sort(byName),
+    rejected: rejected.sort(byName),
+    unchecked,
+  };
 }
+
+/** Whether a row is a value the slot's kind may never take. See {@link CONTRAST_FLOOR}'s neighbour. */
+function refusedValue(want, row) {
+  return want.group === "color" && isTransparent(row.value);
+}
+
+/**
+ * Holds {@link CONTRAST_PAIRS} to {@link CONTRAST_FLOOR}, reverting the source's half where they fail.
+ *
+ * <p>Mutates `tokens`, `mapped` and `rejected` in place, and returns the pairs it could not judge —
+ * a value in a colour space this scanner does not parse ({@link parseColor}), which is reported
+ * rather than passed. Runs after every slot is filled, because a pair is not a property of either
+ * half and the two are decided independently by design.</p>
+ */
+function enforceContrast(tokens, mapped, rejected) {
+  const unchecked = [];
+  const valueOf = (name) => {
+    const [family, leaf] = name.split(".");
+    return tokens[family]?.[leaf]?.$value;
+  };
+  const revert = (name, against, ratio) => {
+    const [family, leaf] = name.split(".");
+    const at = mapped.findIndex((row) => row.name === name);
+    if (at < 0) return false;
+    const [row] = mapped.splice(at, 1);
+    tokens[family][leaf] = { ...tokens[family][leaf], $value: defaultValue(name) };
+    rejected.push({
+      name, role: row.role, value: defaultValue(name), reason: "contrast",
+      detail: `${row.value} from ${row.from} reads at ${ratio.toFixed(2)}:1 against `
+        + `--${against.replace(".", "-")} ${valueOf(against)}, under the ${CONTRAST_FLOOR}:1 floor`,
+    });
+    return true;
+  };
+  for (const pair of CONTRAST_PAIRS) {
+    let ratio = contrastRatio(valueOf(pair.text), valueOf(pair.on));
+    if (ratio === null) {
+      // Only where a captured value is in play: a default-on-default pair is known good, and a note
+      // about one would be noise in the only report a curator reads about appearance.
+      if (mapped.some((row) => row.name === pair.text || row.name === pair.on)) {
+        unchecked.push({ text: pair.text, on: pair.on, value: valueOf(pair.text), against: valueOf(pair.on) });
+      }
+      continue;
+    }
+    if (ratio >= CONTRAST_FLOOR) continue;
+    // The text first, then the surface — and never a default, which is why this terminates.
+    if (!revert(pair.text, pair.on, ratio)) revert(pair.on, pair.text, ratio);
+    ratio = contrastRatio(valueOf(pair.text), valueOf(pair.on));
+    if (ratio !== null && ratio < CONTRAST_FLOOR) revert(pair.on, pair.text, ratio);
+  }
+  return unchecked.sort((a, b) => (a.text < b.text ? -1 : 1));
+}
+
+const defaultValue = (name) => {
+  const [family, leaf] = name.split(".");
+  return VOCABULARY_THEME_TOKENS[family][leaf].$value;
+};
 
 /** Whether a row clears the bar its slot's group sets — the three rules the bridge's doc states. */
 function admits(needs, row) {

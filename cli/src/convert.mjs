@@ -341,8 +341,19 @@ export function buildConversion({
     // SH831 — which of the theme's colours took a captured value and which kept a default. Present
     // only where the theme was written: a fidelity conversion never renders this theme, and reporting
     // a palette nothing paints with would be a note about an artefact that is not on the site.
+    // SH846 — and which of them was *offered* a value and refused it, which is neither of the two
+    // above: a slot the source said nothing about and a slot the source said something unusable
+    // about kept the same default for different reasons, and only one of them is a defect a curator
+    // can go and fix in the source.
     ...(theme === vocabularyThemeTitle(site)
-      ? { palette: { mapped: palette.mapped, unmapped: palette.unmapped } }
+      ? {
+        palette: {
+          mapped: palette.mapped,
+          unmapped: palette.unmapped,
+          rejected: palette.rejected,
+          ...(palette.unchecked.length ? { unchecked: palette.unchecked } : {}),
+        },
+      }
       : {}),
   };
 }
@@ -1710,18 +1721,40 @@ export function describeConversion({ document, sections, markup = [], pages = []
   // tell a colour that took a captured value from one that kept a default it was never offered — the
   // difference between a theme that matched the source and one that only looks like it might have.
   if (palette) {
+    // SH846 — three counts rather than two, because a rejected slot used to be indistinguishable
+    // from one nothing was offered for, and the run reported `--color-surface: #0000` as one of
+    // three tokens taken from the captured stylesheet. A refusal is the most actionable line here:
+    // the source *has* a value for that role and it is one this theme will not paint with.
+    const rejected = palette.rejected ?? [];
     lines.push(
-      `  palette: ${palette.mapped.length} of ${palette.mapped.length + palette.unmapped.length} `
-        + "token(s) from the captured stylesheet, under this theme's own names",
+      `  palette: ${palette.mapped.length} of `
+        + `${palette.mapped.length + palette.unmapped.length + rejected.length} `
+        + "token(s) from the captured stylesheet, under this theme's own names"
+        + `${rejected.length ? `, ${rejected.length} refused` : ""}`,
     );
     for (const row of palette.mapped) {
       lines.push(`    --${row.name.replace(".", "-")} ${preview(row.value)} — ${row.from} `
         + `(${row.role})`);
     }
+    for (const row of rejected) {
+      lines.push(
+        `    --${row.name.replace(".", "-")} ${preview(row.value)} — REFUSED: ${row.detail}. `
+          + "This theme's default stands; fix it in the source, or edit the Theme post's TOKENS",
+      );
+    }
     for (const row of palette.unmapped) {
       lines.push(
         `    --${row.name.replace(".", "-")} ${preview(row.value)} — the source states no `
           + `${row.role}, so this theme's default stands. Edit the Theme post's TOKENS to set it`,
+      );
+    }
+    // A check that could not run is not a check that passed — the silence this project keeps paying
+    // for. Named here rather than counted, because there are at most two of them (CONTRAST_PAIRS).
+    for (const row of palette.unchecked ?? []) {
+      lines.push(
+        `    --${row.text.replace(".", "-")} ${preview(row.value)} on `
+          + `--${row.on.replace(".", "-")} ${preview(row.against)} — contrast NOT checked: one of `
+          + "them is in a colour space this reader does not parse. Look at the page",
       );
     }
   }
