@@ -600,15 +600,15 @@ test("SH831: the page's own colour wins the slot, and the accent read more often
   // The measurement this rule exists for: ranking `text` by reference count picks #0b7285 - the
   // accent - and paints the replica's body copy teal, which is a worse artefact than the generic
   // default it replaced. A colour the source states at page level is the only one taken.
-  assert.equal(from.ink, "#10243a", "the body's own colour, not the one four rules reach for");
-  assert.equal(from.surface, "#eef3f8");
+  assert.equal(from["color.ink"], "#10243a", "the body's own colour, not the one four rules reach for");
+  assert.equal(from["color.surface"], "#eef3f8");
   assert.equal(tokens.color.ink.$value, "#10243a");
   assert.equal(tokens.color["ink-muted"].$value, VOCABULARY_THEME_TOKENS.color["ink-muted"].$value,
     "and the accent did not slide into the next text slot either: `--brand` is excluded from the "
       + "declared half outright, not merely outranked, so a slot with nothing to fill it keeps "
       + "this file's default");
   assert.ok(
-    unmapped.some((row) => row.name === "ink-muted" && row.role === "text#2"),
+    unmapped.some((row) => row.name === "color.ink-muted" && row.role === "text#2"),
     "the second text colour is reported by the role it looked for, so a reader can tell a default "
       + "that was chosen from one that was never offered a value (P9)",
   );
@@ -620,8 +620,8 @@ test("SH831: a recurring literal fills a slot the source declares no variable fo
 
   // `border-color` and `fill` three times each: the extractor already ranks these by role, which is
   // its published contract, so they are taken at their own rank with no second inference.
-  assert.equal(from.line, "#d9e2ec");
-  assert.equal(from.accent, "#ff6600",
+  assert.equal(from["color.line"], "#d9e2ec");
+  assert.equal(from["color.accent"], "#ff6600",
     "the source's accent, which is the single line the whole task is about: the replica stopped "
       + "carrying this theme's dark green beside a page painted orange");
 });
@@ -634,9 +634,13 @@ test("SH831: a source with no palette at all changes nothing, and says so for ev
     "byte-identical to the defaults, so a capture with nothing to say leaves the theme it had (P5)");
   assert.deepEqual(
     unmapped.map((row) => row.name),
-    ["accent", "ink", "ink-muted", "line", "surface", "surface-sunk"],
-    "and all six are named rather than silently kept - the report is the difference between a "
-      + "theme that matched the source and one that only looks like it might have",
+    ["color.accent", "color.ink", "color.ink-muted", "color.line", "color.surface",
+      "color.surface-sunk", "size.radius", "text.base", "text.family"],
+    "and every slot the bridge names is named back rather than silently kept - the report is the "
+      + "difference between a theme that matched the source and one that only looks like it "
+      + "might have. SH834: nine, because `size.measure` and `space.step` are in no group and are "
+      + "therefore in neither list — this theme has nowhere to put them, which is a different "
+      + "fact from the source not stating one",
   );
 });
 
@@ -645,4 +649,88 @@ test("SH831: two runs over one palette map identically", () => {
   const twice = vocabularyTokensFrom(themeFor(PALETTE_SHEET).rows);
 
   assert.equal(JSON.stringify(once), JSON.stringify(twice));
+});
+
+// --- SH834: the half of the palette nothing read ---
+
+/**
+ * A source that states one thing plainly per group: a page-level font stack, a corner radius used
+ * only on an element, and a font-size scale with no page-level step. The three admission rules
+ * disagree about all three, which is the whole of SH834.
+ */
+const TYPE_SHEET = `
+  :root{--radius:6px;--font-body:"Fixture Sans",system-ui,sans-serif}
+  body{font-family:var(--font-body)}
+  .badge{border-radius:var(--radius)}
+  .card{border-radius:var(--radius)}
+  .pill{border-radius:var(--radius)}
+  .h2{font-size:28px}
+  .h3{font-size:28px}
+  .h4{font-size:28px}
+`;
+
+test("SH834: a declared token is roled by every group, not only by colour", () => {
+  const rows = TYPE_SHEET && themeFor(TYPE_SHEET).rows;
+  const row = (path) => rows.find((each) => each.path === path);
+
+  assert.equal(row("radius").group, "radius",
+    "`--radius` is read by three `border-radius` rules; before this it left the extractor as a "
+      + "bare name with nothing saying what it was for");
+  assert.equal(row("radius").role, null, "a length group has one role, so there is none to name");
+  assert.equal(row("font.body").group, "font.family");
+  assert.equal(row("font.body").page, true, "`body { font-family: … }` is a page-level statement");
+});
+
+test("SH834: a group with one role is taken at its rank, with no page-level statement", () => {
+  const { mapped, tokens } = vocabularyTokensFrom(themeFor(TYPE_SHEET).rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  // The argument SH831 made for colour is about COMPETING roles - the same colour is text here and
+  // a background there - so it does not carry to a group that has one. `body { border-radius }`
+  // would mean nothing, so there is nothing for a page-level selector to disambiguate.
+  assert.equal(from["size.radius"], "6px", "used on three elements and on no page-level selector");
+  assert.equal(tokens.size.radius.$value, "6px");
+  assert.equal(from["text.family"], '"Fixture Sans",system-ui,sans-serif',
+    "and the stack, which had nowhere to land until this theme declared a token for it - "
+      + "`.shio-page` hardcoded `system-ui, …`, so a replica in the source's colours and the "
+      + "system font read as *nearly* the source");
+});
+
+test("SH834: a scale is refused rather than guessed, and the refusal is reported", () => {
+  const { mapped, unmapped, tokens } = vocabularyTokensFrom(themeFor(TYPE_SHEET).rows);
+
+  // 28px is declared three times, so `recurringTokens` writes `font.size.1` — and rank is not
+  // scale position: this theme's five text steps are ordered by size, so taking rank 1 for
+  // `text.base` would set the body copy to whatever size the source happened to repeat most.
+  assert.ok(themeFor(TYPE_SHEET).rows.some((row) => row.path === "font.size.1"),
+    "the row is there to be taken, which is what makes the refusal a decision rather than a gap");
+  assert.ok(!mapped.some((row) => row.name === "text.base"));
+  assert.equal(tokens.text.base.$value, VOCABULARY_THEME_TOKENS.text.base.$value);
+  assert.ok(
+    unmapped.some((row) => row.name === "text.base" && row.role === "font.size#1"),
+    "reported, because a refusal nobody states is indistinguishable from a group nobody read",
+  );
+  for (const step of ["lead", "h1", "h2", "h3"]) {
+    assert.equal(tokens.text[step].$value, VOCABULARY_THEME_TOKENS.text[step].$value,
+      `text.${step} is not in the bridge at all - four steps of a scale cannot be derived from a `
+        + "ranking, and inventing three of them from one measured value is the guess this refuses");
+  }
+});
+
+test("SH834: a page-level font-size is the one step of the scale that can be taken", () => {
+  const { mapped } = vocabularyTokensFrom(themeFor(`${TYPE_SHEET}\n  body{font-size:17px}`).rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  // The declared half has carried `page` since SH831; the recurring half carries it now, because a
+  // literal on `body` is the same statement as a variable on `body` and only one of them was read.
+  assert.equal(from["text.base"], "17px",
+    "one occurrence, on the page's own selector, outranks three of the same value on classes");
+});
+
+test("SH834: a token used where no group looks is roled by nothing", () => {
+  const rows = themeFor(':root{--icon:url("/img/sprite.svg")}.badge{background-image:var(--icon)}').rows;
+
+  assert.equal(rows.find((row) => row.path === "icon").group, undefined,
+    "`background-image` is in no group, and a url() counted as a length would have reached a slot "
+      + "expecting one");
 });

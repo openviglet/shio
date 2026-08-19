@@ -1712,15 +1712,16 @@ export function describeConversion({ document, sections, markup = [], pages = []
   if (palette) {
     lines.push(
       `  palette: ${palette.mapped.length} of ${palette.mapped.length + palette.unmapped.length} `
-        + "colour(s) from the captured tokens, under this theme's own names",
+        + "token(s) from the captured stylesheet, under this theme's own names",
     );
     for (const row of palette.mapped) {
-      lines.push(`    --color-${row.name} ${row.value} — ${row.from} (${row.role})`);
+      lines.push(`    --${row.name.replace(".", "-")} ${preview(row.value)} — ${row.from} `
+        + `(${row.role})`);
     }
     for (const row of palette.unmapped) {
       lines.push(
-        `    --color-${row.name} ${row.value} — the source's palette has no ${row.role}, so this `
-          + "theme's default stands. Edit the Theme post's TOKENS to set it",
+        `    --${row.name.replace(".", "-")} ${preview(row.value)} — the source states no `
+          + `${row.role}, so this theme's default stands. Edit the Theme post's TOKENS to set it`,
       );
     }
   }

@@ -330,7 +330,7 @@ export function typeOf(value) {
  * that does not survive the round trip above.
  */
 export function declaredTokens(declarations) {
-  const roles = colorRolesByUse(declarations);
+  const roles = rolesByUse(declarations);
   const roots = new Map();
   const variants = new Map();
   for (const declaration of declarations) {
@@ -364,11 +364,17 @@ export function declaredTokens(declarations) {
       continue;
     }
     const use = roles.get(name);
+    // SH834 — and only where the value is of the group's own kind: a `--icon: url(…)` read by
+    // `background-image` is roled by nothing rather than counted as a length.
+    const roled = use && use.test(group[0].value);
     tokens.push({
       path, name, value: group[0].value, type: typeOf(group[0].value), source: "declared",
-      // SH831 — what the source uses this colour *for*, where its own name does not say. Present
-      // only when something references it in a colour property; a token nothing uses has no role.
-      ...(use ? { role: use.role, refs: use.refs, page: use.page } : {}),
+      // SH831 — what the source uses this token *for*, where its own name does not say. Present
+      // only when something references it in a property some group claims; a token nothing uses
+      // has no role, and neither has one used only where no group looks.
+      ...(roled
+        ? { group: use.group, role: use.role, refs: use.refs, page: use.page > 0 }
+        : {}),
     });
   }
   // A variant with no root declaration at all: the palette lives entirely under `.dark`, and there is
@@ -390,6 +396,23 @@ function normalizeSelector(selector) {
 
 /** `var(--brand)` and `var(--brand, #fff)` — every custom property a value reads. */
 const VAR_REF = /var\(\s*(--[\w-]+)/g;
+
+/**
+ * Which group and role each property implies, as one table (SH834).
+ *
+ * <p>The same three tables `bucketFor` walks, flattened once so a *declared* token can be roled by
+ * the properties that read it — the question SH831 asked of colour and SH834 asks of everything
+ * else. Colour is the only group with competing roles; a length or a font stack has exactly one,
+ * which is what makes the admission rules downstream differ by group rather than by taste.</p>
+ */
+const GROUP_FOR_PROPERTY = new Map([
+  ...Object.entries(COLOR_ROLES).map(([property, role]) =>
+    [property, { group: "color", role, type: "color", test: isColor }]),
+  ...LENGTH_GROUPS.flatMap((entry) => entry.properties.map((property) =>
+    [property, { group: entry.group, role: null, type: entry.type, test: isLength }])),
+  ...OTHER_GROUPS.flatMap((entry) => entry.properties.map((property) =>
+    [property, { group: entry.group, role: null, type: entry.type, test: () => true }])),
+]);
 
 /**
  * The selectors that make a colour the **page's**, rather than one element's (SH831).
@@ -433,20 +456,35 @@ const PAGE_SELECTORS = new Set([":root", "html", "body", "*", "html,body", "body
  * counting says which colour a site reaches for often, and only the selector says which colour is
  * the page's. Downstream (`vocabularyTokensFrom`) takes page-level uses and nothing else from the
  * declared half, because a count is evidence about a name and this is evidence about a role.</p>
+ *
+ * <h2>SH834 — the same question, asked of every group</h2>
+ *
+ * <p>This read `COLOR_ROLES` alone, so a `--radius` read by three `border-radius` rules and a
+ * `--font-body` read by `body { font-family }` left the extractor as bare names with nothing saying
+ * what they were for. Every group is bucketed now, through {@link GROUP_FOR_PROPERTY}. What differs
+ * downstream is only *which* evidence admits a row: colour is the one group with competing roles,
+ * so it needs the page-level statement; a corner radius or a font stack has one role wherever it
+ * appears, and there is nothing for a selector to disambiguate.</p>
+ *
+ * <p>The value is tested against its group the way `bucketFor` tests a literal, so
+ * `--icon: url("/img/sprite.svg")` read by `background-image` is roled by nothing rather than
+ * counted as a length.</p>
  */
-function colorRolesByUse(declarations) {
+function rolesByUse(declarations) {
   const counts = new Map();
   for (const declaration of declarations) {
     if (declaration.property.startsWith("--")) continue;
-    const role = COLOR_ROLES[declaration.property];
-    if (!role) continue;
+    const slot = GROUP_FOR_PROPERTY.get(declaration.property);
+    if (!slot) continue;
     const page = PAGE_SELECTORS.has(normalizeSelector(declaration.selector)) && !declaration.atRule;
+    const key = slot.role ? `${slot.group} ${slot.role}` : slot.group;
     for (const match of String(declaration.value ?? "").matchAll(VAR_REF)) {
       const seen = counts.get(match[1]) ?? new Map();
-      const tally = seen.get(role) ?? { refs: 0, page: 0 };
+      const tally = seen.get(key)
+        ?? { group: slot.group, role: slot.role, test: slot.test, refs: 0, page: 0 };
       tally.refs += 1;
       tally.page += page ? 1 : 0;
-      seen.set(role, tally);
+      seen.set(key, tally);
       counts.set(match[1], seen);
     }
   }
@@ -459,8 +497,7 @@ function colorRolesByUse(declarations) {
       if (a[1].refs !== b[1].refs) return b[1].refs - a[1].refs;
       return a[0] < b[0] ? -1 : 1;
     });
-    const [role, tally] = ranked[0];
-    roles.set(name, { role, refs: tally.refs, page: tally.page > 0 });
+    roles.set(name, ranked[0][1]);
   }
   return roles;
 }
@@ -490,9 +527,14 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     const slot = bucketFor(declaration);
     if (!slot) continue;
     const key = `${slot.group} ${slot.role ?? ""} ${declaration.value}`;
+    // SH834 — where the literal was, not only how often. `body { font-size: 17px }` is the page
+    // saying what its own text is; the same value on a card is one step of a scale, and only the
+    // selector separates them. The declared half has carried this since SH831.
+    const page = PAGE_SELECTORS.has(normalizeSelector(declaration.selector)) && !declaration.atRule;
     const existing = buckets.get(key);
     if (existing) {
       existing.refs += 1;
+      existing.page ||= page;
       existing.properties.add(declaration.property);
     } else {
       buckets.set(key, {
@@ -501,13 +543,21 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
         type: slot.type,
         value: declaration.value,
         refs: 1,
+        page,
         properties: new Set([declaration.property]),
       });
     }
   }
 
   const kept = [...buckets.values()]
-    .filter((row) => row.refs >= minRefs)
+    // SH834 — `minRefs` asks *is this value a palette*, and a page-level declaration does not have
+    // to answer it: `body { font-size: 17px }` is the page stating its own type, once, by nature.
+    // Repetition is evidence for a value nobody labelled; a selector that means "everything" is
+    // evidence of a different kind, and the bar for one was never the bar for the other. Measured
+    // before it was written: across the whole source corpus this admits **nothing** — the only
+    // page-level literals anywhere are `body { margin: 0 }`, and `0` is not a length, so no bucket
+    // exists to exempt. The rule is right and its blast radius here is zero.
+    .filter((row) => row.refs >= minRefs || row.page)
     .sort((a, b) => {
       if (a.group !== b.group) return a.group < b.group ? -1 : 1;
       if ((a.role ?? "") !== (b.role ?? "")) return (a.role ?? "") < (b.role ?? "") ? -1 : 1;
@@ -541,7 +591,10 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
       source: "recurring",
       // SH831 — carried rather than left to be re-parsed out of `path`. The declared rows now carry
       // one too, so a reader that wants "the colour this site uses as text" asks both the same way.
+      // SH834 — and the group beside it, for the same reason one group along.
+      group: row.group,
       ...(row.role ? { role: row.role } : {}),
+      page: row.page === true,
       refs: row.refs,
       properties: [...row.properties].sort(),
     });

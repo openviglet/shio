@@ -1239,6 +1239,7 @@
 - **SH831** — The Shio theme's six colours are filled from the captured palette by role and rank, and every slot the source states nothing about keeps its default and is named in the run.
 - **SH832** — Every field a row draws is spelled `./name`, so an empty row renders an empty card; the scanner reports that form, and a bare one inside an each-block now fails the suite.
 - **SH833** — theme-heavy grew the markup each of the three unmet classifier bars asks for, so the corpus produces all seven section types and a check names any that lose their last producer.
+- **SH834** — The theme's radius and font stack come from the source too, by a rule per kind of group: a page-level statement for colour, a rank where a group has one role, and a refusal for a scale.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

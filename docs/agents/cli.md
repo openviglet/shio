@@ -1240,6 +1240,27 @@ it. Four decisions worth keeping:
   thing a stylesheet says without ambiguity. Everything else keeps the default **and is named in the
   run**, because a reader cannot tell a colour that was matched from one that was never looked for
   (P9), and mapping less is the only direction that cannot make a replica worse.
+- **And the other half of it, where the rule differs per kind of group (SH834).** SH831 stopped at
+  colour, so a replica took the source's accent and kept this file's font stack, corner radius and
+  type scale with nothing saying it had — while the extractor had already bucketed all of it and
+  `font.body` reached nothing. What the rest needed was not more mapping but **three admission
+  rules**, different because the groups are: a group with **competing roles** needs the page-level
+  statement (colour is the only one — the same colour is text here and a background there); a group
+  with **one role** is taken at its rank (a value in `border-radius` is a corner radius wherever it
+  appears, and `body { border-radius }` would mean nothing for a selector to disambiguate); a group
+  that is a **scale** is refused, because `recurringTokens` ranks `font.size` by reference count
+  while the theme's five text steps are ordered by *size* — rank 2 is not `text.lead`. The one step
+  that can be taken is the one the page states outright, which is why `recurringTokens` now keeps a
+  **page-level bucket below `minRefs`**: that threshold asks *is this value a palette*, and
+  `body { font-size: 17px }` is the page stating its own type once, by nature. Measured before it
+  was written — across the whole corpus that exemption admits nothing, since the only page-level
+  literals anywhere are `body { margin: 0 }` and `0` is not a length. `.shio-page` also stopped
+  hardcoding its font stack: `text.family` is a token now, because the bridge cannot point at a
+  literal. `size.measure` and `space.step` are in **no** slot deliberately — a measure is a line
+  length almost nothing declares, and a rhythm step is the unit other spacing is a multiple of,
+  which the commonest `padding` value is not. A slot the bridge does not name keeps its default
+  silently; one it names and cannot fill is reported, and that is the difference between *this theme
+  has nowhere to put it* and *the source did not say*.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

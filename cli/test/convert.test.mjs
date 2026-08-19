@@ -1622,9 +1622,12 @@ test("SH831: the theme the replica renders with is painted in the source's own c
         css: CAPTURED_CSS,
         tokens: {},
         rows: [
-          { path: "ink", value: "#10243a", type: "color", source: "declared", role: "text", page: true },
-          { path: "brand", value: "#0b7285", type: "color", source: "declared", role: "text", refs: 4, page: false },
-          { path: "color.accent-1", value: "#ff6600", type: "color", source: "recurring", role: "accent", refs: 7 },
+          { path: "ink", value: "#10243a", type: "color", source: "declared", group: "color", role: "text", page: true },
+          { path: "brand", value: "#0b7285", type: "color", source: "declared", group: "color", role: "text", refs: 4, page: false },
+          { path: "color.accent-1", value: "#ff6600", type: "color", source: "recurring", group: "color", role: "accent", refs: 7 },
+          // SH834 — a radius and a font stack beside them, each in a group with one role, so
+          // neither needs the page-level statement a colour does.
+          { path: "radius", value: "6px", type: "dimension", source: "declared", group: "radius", role: null, refs: 3, page: false },
         ],
       },
     }),
@@ -1642,19 +1645,29 @@ test("SH831: the theme the replica renders with is painted in the source's own c
   assert.equal(tokens.color.line.$value, VOCABULARY_THEME_TOKENS.color.line.$value,
     "a slot the palette says nothing about keeps the default, which is the right value to ship - a "
       + "replica with an invisible border is worse than one with a borrowed grey");
-  assert.equal(tokens.size.radius.$value, VOCABULARY_THEME_TOKENS.size.radius.$value,
-    "and nothing outside the palette moved: this bridges colour, and a dimension it did not touch "
-      + "must not arrive changed");
+  // SH834 — a corner radius is a group with one role, so `--radius` is taken at its rank without
+  // the page-level statement `--brand` was refused for. The two rules are different because the
+  // groups are: `body { border-radius }` would mean nothing, so there is nothing to disambiguate.
+  assert.equal(tokens.size.radius.$value, "6px");
+  assert.equal(tokens.space.step.$value, VOCABULARY_THEME_TOKENS.space.step.$value,
+    "and a slot the bridge names no group for keeps its default silently: a rhythm step is the "
+      + "unit other spacing is a multiple of, which the commonest padding value is not");
 
-  assert.deepEqual(palette.mapped.map((row) => row.name), ["accent", "ink"]);
+  assert.deepEqual(palette.mapped.map((row) => row.name),
+    ["color.accent", "color.ink", "size.radius"]);
   assert.deepEqual(palette.unmapped.map((row) => row.name),
-    ["ink-muted", "line", "surface", "surface-sunk"]);
+    ["color.ink-muted", "color.line", "color.surface", "color.surface-sunk", "text.base",
+      "text.family"]);
   const report = describeConversion(conversion);
   assert.match(report, /--color-accent #ff6600 — color\.accent-1 \(accent#1\)/,
     "said out loud, and traceable: the reader can check the value against the token it came from");
-  assert.match(report, /--color-line [^\n]*the source's palette has no border#1/,
+  assert.match(report, /--color-line [^\n]*the source states no border#1/,
     "and so is the default that stood, because a reader cannot tell a colour that was matched from "
       + "one that was never looked for unless the run says which (P9)");
+  assert.match(report, /--text-base [^\n]*the source states no font\.size#1/,
+    "SH834: a scale is refused rather than guessed — `recurringTokens` ranks font sizes by "
+      + "reference count and this theme's five steps are ordered by size, so rank 2 is not "
+      + "`text.lead`. Only the step the page states outright can be taken");
 });
 
 test("SH509: a fidelity conversion carries no theme it would not use", () => {

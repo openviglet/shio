@@ -77,6 +77,14 @@ export const VOCABULARY_THEME_TOKENS = Object.freeze({
     step: { $value: "1.5rem", $type: "dimension", $description: "One unit of rhythm. Everything else is a multiple." },
   },
   text: {
+    // SH834 — the stack `.shio-page` used to hardcode. A token, because the bridge cannot point at
+    // a literal: a replica whose colours are the source's and whose type is the system font reads
+    // as *nearly* the source, which is the shape a wrong value has over a missing one.
+    family: {
+      $value: "system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif",
+      $type: "fontFamily",
+      $description: "The stack the whole page is set in.",
+    },
     base: { $value: "1.0625rem", $type: "dimension" },
     lead: { $value: "1.25rem", $type: "dimension" },
     h1: { $value: "2.5rem", $type: "dimension" },
@@ -94,7 +102,7 @@ export const VOCABULARY_THEME_TOKENS = Object.freeze({
  */
 export const VOCABULARY_THEME_CSS = `*,*::before,*::after{box-sizing:border-box}
 img{max-width:100%;height:auto}
-.shio-page{margin:0;padding-block:calc(var(--space-step) * 2);background:var(--color-surface);color:var(--color-ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:var(--text-base);line-height:1.6;-webkit-font-smoothing:antialiased}
+.shio-page{margin:0;padding-block:calc(var(--space-step) * 2);background:var(--color-surface);color:var(--color-ink);font-family:var(--text-family);font-size:var(--text-base);line-height:1.6;-webkit-font-smoothing:antialiased}
 .shio-page > * + *{margin-block-start:calc(var(--space-step) * 2)}
 .shio-container{width:100%;max-width:var(--size-measure);margin-inline:auto;padding-inline:var(--space-step)}
 .shio-nav{width:100%;max-width:var(--size-measure);margin-inline:auto;padding-inline:var(--space-step)}
@@ -169,78 +177,123 @@ export const VOCABULARY_THEME_SLUG = "shio";
  * with an unreadable button is worse than one with the wrong green — and it is the wrong thing to
  * ship <em>quietly</em>, because the reader cannot tell a colour that was matched from one that was
  * never looked for (P9).</p>
+ *
+ * <h2>SH834 — the other half of the palette, and the three admission rules</h2>
+ *
+ * <p>SH831 bridged colour and stopped, so a replica took the source's accent and kept this file's
+ * font stack, corner radius and type scale with nothing saying it had. The extractor had already
+ * bucketed all of it. What the rest needed was not more mapping but a rule per *kind of group*, and
+ * the three are different because the groups are:</p>
+ *
+ * <ul>
+ *   <li><b>`page`</b> — a group with <em>competing roles</em>. The same colour is text here and a
+ *       background there, so only `body {{ color }}` separates *the* text colour from *a* text
+ *       colour. Colour is the only such group.</li>
+ *   <li><b>`rank`</b> — a group with <em>one role</em>. A value in `border-radius` is a corner
+ *       radius wherever it appears and a `font-family` is the stack; there is nothing for a
+ *       selector to disambiguate, so the most-referenced value is the answer.</li>
+ *   <li><b>`page-only`</b> — a group that is a <em>scale</em>. `recurringTokens` ranks `font.size`
+ *       by reference count, and the theme's five text steps are ordered by *size*: rank 2 is not
+ *       `text.lead`. So the only step that can be taken is the one the page states outright, and
+ *       the other four are refused rather than guessed.</li>
+ * </ul>
+ *
+ * <p>`size.measure` and `space.step` are in no group at all, deliberately. A measure is a line
+ * length almost no stylesheet declares, and a rhythm step is the *unit other spacing is a multiple
+ * of* — which the commonest `padding` value is not. A slot the bridge does not name keeps its
+ * default silently; a slot it names and cannot fill is reported. That distinction is the whole
+ * difference between "this theme has nowhere to put that" and "the source did not say".</p>
  */
 export const PALETTE_BRIDGE = Object.freeze({
-  ink: { role: "text", rank: 1 },
-  "ink-muted": { role: "text", rank: 2 },
-  surface: { role: "background", rank: 1 },
-  "surface-sunk": { role: "background", rank: 2 },
-  line: { role: "border", rank: 1 },
-  accent: { role: "accent", rank: 1 },
+  "color.ink": { group: "color", role: "text", rank: 1, needs: "page" },
+  "color.ink-muted": { group: "color", role: "text", rank: 2, needs: "page" },
+  "color.surface": { group: "color", role: "background", rank: 1, needs: "page" },
+  "color.surface-sunk": { group: "color", role: "background", rank: 2, needs: "page" },
+  "color.line": { group: "color", role: "border", rank: 1, needs: "page" },
+  "color.accent": { group: "color", role: "accent", rank: 1, needs: "page" },
+  "size.radius": { group: "radius", role: null, rank: 1, needs: "rank" },
+  "text.family": { group: "font.family", role: null, rank: 1, needs: "rank" },
+  "text.base": { group: "font.size", role: null, rank: 1, needs: "page-only" },
 });
 
 /**
  * This theme's tokens with the captured palette's values in them, and what could not be filled.
  *
- * @param rows the extracted token rows (`proposal.theme.rows`), each carrying the `role` the source
- *             uses it in and the `refs` that argued for it
- * @returns `{tokens, mapped, unmapped}` — `mapped` is `{name, from, value}` per colour that took a
- *          captured value, `unmapped` the names that kept this file's default and the role each
- *          looked for. Both sorted by name, so two runs over one capture report identically (P5).
+ * @param rows the extracted token rows (`proposal.theme.rows`), each carrying the `group` and — for
+ *             colour — the `role` the source uses it in, the `refs` that argued for it, and whether
+ *             any of those uses was at page level
+ * @returns `{tokens, mapped, unmapped}` — `mapped` is `{name, from, role, value}` per slot that took
+ *          a captured value, `unmapped` the slots that kept this file's default and what each looked
+ *          for. Both sorted by name, so two runs over one capture report identically (P5). A slot
+ *          the bridge does not name is in neither list: it has no source to take from, which is not
+ *          the same fact as a source that did not state one.
  */
 export function vocabularyTokensFrom(rows) {
-  const palette = paletteByRole(rows);
-  const colors = {};
+  const palette = paletteByGroup(rows);
+  const tokens = structuredClone(VOCABULARY_THEME_TOKENS);
   const mapped = [];
   const unmapped = [];
-  for (const [name, definition] of Object.entries(VOCABULARY_THEME_TOKENS.color)) {
-    const want = PALETTE_BRIDGE[name];
-    const row = want ? (palette.get(want.role) ?? [])[want.rank - 1] : undefined;
-    const wanted = want ? `${want.role}#${want.rank}` : null;
+  for (const [name, want] of Object.entries(PALETTE_BRIDGE)) {
+    const [family, leaf] = name.split(".");
+    const definition = tokens[family]?.[leaf];
+    if (!definition) continue;
+    const candidates = (palette.get(want.role ? `${want.group} ${want.role}` : want.group) ?? [])
+      .filter((row) => admits(want.needs, row));
+    const row = candidates[want.rank - 1];
+    const wanted = `${want.role ?? want.group}#${want.rank}`;
     if (row) {
-      colors[name] = { ...definition, $value: row.value };
+      tokens[family][leaf] = { ...definition, $value: row.value };
       mapped.push({ name, from: row.path, role: wanted, value: row.value });
     } else {
-      colors[name] = definition;
       unmapped.push({ name, role: wanted, value: definition.$value });
     }
   }
   const byName = (a, b) => (a.name < b.name ? -1 : 1);
-  return {
-    tokens: { ...VOCABULARY_THEME_TOKENS, color: colors },
-    mapped: mapped.sort(byName),
-    unmapped: unmapped.sort(byName),
-  };
+  return { tokens, mapped: mapped.sort(byName), unmapped: unmapped.sort(byName) };
+}
+
+/** Whether a row clears the bar its slot's group sets — the three rules the bridge's doc states. */
+function admits(needs, row) {
+  if (needs === "page-only") return row.page === true;
+  // A recurring row's role is the extractor's own contract, so it is admitted at its own rank
+  // whatever the rule; only the *declared* half, whose role is inferred, has to clear `page`.
+  if (needs === "page") return row.source !== "declared" || row.page === true;
+  return true;
 }
 
 /**
- * The captured colour rows grouped by role, each group in the order the ranks name.
+ * The captured rows keyed by group — and by group plus role where the group has several.
  *
- * <h3>A declared token is taken only where the source states its role at page level</h3>
+ * <h3>Why a declared colour needs a page-level statement and a declared radius does not</h3>
  *
  * <p>A recurring row's role is the extractor's published contract — it saw the literal land in
- * `color:` or `background:` and ranked it by how often. A **declared** token's role is inferred from
- * the declarations that read it, and inference by count was measured wrong: on `theme-heavy`,
- * `--brand` is read by four `color:` rules and `--ink` by three, so the accent would have become the
- * replica's body copy. `body { color: var(--ink) }` is the one thing a stylesheet says without
- * ambiguity, so a declared row is admitted when, and only when, that is where it was used
- * (`row.page`). Everything else keeps this theme's default and is reported — mapping less is the
- * direction that cannot make a replica worse than the generic theme it replaced.</p>
+ * `color:` or `border-radius:` and ranked it by how often. A **declared** token's role is inferred
+ * from the declarations that read it, and for colour inference by count was measured wrong: on
+ * `theme-heavy`, `--brand` is read by four `color:` rules and `--ink` by three, so the accent would
+ * have become the replica's body copy. `body {{ color: var(--ink) }}` is the one thing a stylesheet
+ * says without ambiguity.</p>
  *
- * <p>Within a role, page-level declared rows come first, then the recurring ones in the order
- * `recurringTokens` already ranks by — most-referenced, ties on the value — so `text#1` means the
- * same thing on both sides of the join and two runs over one capture agree (P5).</p>
+ * <p>That argument is about **competing roles**, so it does not carry to a group that has one: a
+ * `--radius` read by three `border-radius` rules is the site's corner radius, and there is no rival
+ * reading for a page-level selector to settle — `body {{ border-radius }}` would mean nothing. So
+ * the bar is set per slot ({@link PALETTE_BRIDGE}'s `needs`) rather than here, and this only orders
+ * the candidates.</p>
+ *
+ * <p>Within a key, declared rows come first — a name the *source* wrote, which SH424 lifts out of
+ * the kept CSS so editing it in the console changes the replica — then the recurring ones in the
+ * order `recurringTokens` already ranks by: most-referenced, ties on the value. So `text#1` means
+ * the same thing on both sides of the join and two runs over one capture agree (P5).</p>
  */
-function paletteByRole(rows) {
-  const byRole = new Map();
+function paletteByGroup(rows) {
+  const byKey = new Map();
   for (const row of rows ?? []) {
-    if (row?.type !== "color" || !row.role || typeof row.value !== "string") continue;
-    if (row.source === "declared" && !row.page) continue;
-    const group = byRole.get(row.role) ?? [];
+    if (!row?.group || typeof row.value !== "string") continue;
+    const key = row.role ? `${row.group} ${row.role}` : row.group;
+    const group = byKey.get(key) ?? [];
     group.push(row);
-    byRole.set(row.role, group);
+    byKey.set(key, group);
   }
-  for (const group of byRole.values()) {
+  for (const group of byKey.values()) {
     group.sort((a, b) => {
       if ((a.source === "declared") !== (b.source === "declared")) {
         return a.source === "declared" ? -1 : 1;
@@ -249,5 +302,5 @@ function paletteByRole(rows) {
       return a.value < b.value ? -1 : 1;
     });
   }
-  return byRole;
+  return byKey;
 }
