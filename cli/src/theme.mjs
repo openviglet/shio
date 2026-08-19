@@ -330,6 +330,7 @@ export function typeOf(value) {
  * that does not survive the round trip above.
  */
 export function declaredTokens(declarations) {
+  const roles = colorRolesByUse(declarations);
   const roots = new Map();
   const variants = new Map();
   for (const declaration of declarations) {
@@ -362,7 +363,13 @@ export function declaredTokens(declarations) {
       unsure.push({ name, reason: "name", detail: `${name} does not survive the DTCG round trip` });
       continue;
     }
-    tokens.push({ path, name, value: group[0].value, type: typeOf(group[0].value), source: "declared" });
+    const use = roles.get(name);
+    tokens.push({
+      path, name, value: group[0].value, type: typeOf(group[0].value), source: "declared",
+      // SH831 — what the source uses this colour *for*, where its own name does not say. Present
+      // only when something references it in a colour property; a token nothing uses has no role.
+      ...(use ? { role: use.role, refs: use.refs, page: use.page } : {}),
+    });
   }
   // A variant with no root declaration at all: the palette lives entirely under `.dark`, and there is
   // no default to lift. Reported, because silence here reads as "this site declares no tokens".
@@ -379,6 +386,83 @@ export function declaredTokens(declarations) {
 
 function normalizeSelector(selector) {
   return String(selector ?? "").replace(/\s+/g, "").toLowerCase();
+}
+
+/** `var(--brand)` and `var(--brand, #fff)` — every custom property a value reads. */
+const VAR_REF = /var\(\s*(--[\w-]+)/g;
+
+/**
+ * The selectors that make a colour the **page's**, rather than one element's (SH831).
+ *
+ * <p>`body { color: var(--ink) }` is a stylesheet saying *this is what this site's text looks like*.
+ * `.card h3 { color: var(--brand) }` is not, whatever the count. `*` is here because a reset that
+ * sets a colour on everything is making the same statement in the other direction.</p>
+ */
+const PAGE_SELECTORS = new Set([":root", "html", "body", "*", "html,body", "body,html"]);
+
+/**
+ * What a declared token is *used for*, read off the declarations that reference it (SH831).
+ *
+ * <h2>A name is not a role, and the source picked the name</h2>
+ *
+ * <p>{@link recurringTokens} knows what a literal is for, because it saw the property the literal
+ * landed in: `color: #10243a` is text, `background: #eef3f8` is a surface. A **declared** token
+ * carried none of that — `declaredTokens` never looked at where `--brand` is read — so the extracted
+ * palette was a list of the source's own words (`brand`, `ink`, `wash`, `vg-primary`) and nothing
+ * downstream could tell which one was the accent. That is why SH831's bridge could not be a name
+ * table: a synonym list guessing that `brand` means accent is exactly the unverifiable label SH689
+ * spent a task removing.</p>
+ *
+ * <p>The evidence is already in the file and is the same evidence the recurring side uses: which
+ * properties read the variable, bucketed through `COLOR_ROLES`. A declaration whose own property is a
+ * custom property is skipped — `--button-bg: var(--brand)` is an alias, not a use — for the reason
+ * `recurringTokens` skips them too.</p>
+ *
+ * <p>Most-referenced role wins, ties broken on the role's name so two runs over one stylesheet agree
+ * (P5). A token read in one colour property once is still roled: one use is what the source had, and
+ * the rank ordering downstream is what decides whether it is reached.</p>
+ *
+ * <h2>`page` is the part that had to be measured, and the count alone was wrong</h2>
+ *
+ * <p>Ranking a role by reference count picked the **accent** as the archetype's text colour: in
+ * `theme-heavy`, `--brand` is read by four `color:` declarations (a nav link, a card heading, two
+ * `::before` marks) and `--ink` by three — one of which is `body`. Shipping that would have painted
+ * the replica's body copy teal, which is a worse artefact than the generic default it replaced.</p>
+ *
+ * <p>So a use is recorded with *where* it was, and a page-level use decides the role on its own:
+ * counting says which colour a site reaches for often, and only the selector says which colour is
+ * the page's. Downstream (`vocabularyTokensFrom`) takes page-level uses and nothing else from the
+ * declared half, because a count is evidence about a name and this is evidence about a role.</p>
+ */
+function colorRolesByUse(declarations) {
+  const counts = new Map();
+  for (const declaration of declarations) {
+    if (declaration.property.startsWith("--")) continue;
+    const role = COLOR_ROLES[declaration.property];
+    if (!role) continue;
+    const page = PAGE_SELECTORS.has(normalizeSelector(declaration.selector)) && !declaration.atRule;
+    for (const match of String(declaration.value ?? "").matchAll(VAR_REF)) {
+      const seen = counts.get(match[1]) ?? new Map();
+      const tally = seen.get(role) ?? { refs: 0, page: 0 };
+      tally.refs += 1;
+      tally.page += page ? 1 : 0;
+      seen.set(role, tally);
+      counts.set(match[1], seen);
+    }
+  }
+  const roles = new Map();
+  for (const [name, seen] of counts) {
+    const ranked = [...seen.entries()].sort((a, b) => {
+      // A page-level use outranks any number of element-level ones, in both directions: it decides
+      // which role this token has, not only how highly it ranks within one.
+      if ((a[1].page > 0) !== (b[1].page > 0)) return a[1].page > 0 ? -1 : 1;
+      if (a[1].refs !== b[1].refs) return b[1].refs - a[1].refs;
+      return a[0] < b[0] ? -1 : 1;
+    });
+    const [role, tally] = ranked[0];
+    roles.set(name, { role, refs: tally.refs, page: tally.page > 0 });
+  }
+  return roles;
 }
 
 const byKey = (a, b) => (a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1);
@@ -455,6 +539,9 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
       value: row.value,
       type: row.type ?? typeOf(row.value),
       source: "recurring",
+      // SH831 — carried rather than left to be re-parsed out of `path`. The declared rows now carry
+      // one too, so a reader that wants "the colour this site uses as text" asks both the same way.
+      ...(row.role ? { role: row.role } : {}),
       refs: row.refs,
       properties: [...row.properties].sort(),
     });
@@ -818,7 +905,10 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
     notes.push(
       `${recurringWritten.length} recurring token(s) name the palette and change nothing on their ` +
         `own — no rule references them until the CSS is rewired, which this does NOT do: a ` +
-        `search-and-replace over a stranger's stylesheet breaks a replica in a way no digest catches`,
+        `search-and-replace over a stranger's stylesheet breaks a replica in a way no digest ` +
+        `catches. SH831: \`shio convert\` reads them, so on an authorable conversion they paint ` +
+        `the theme the composed sections render with, and that run says which of its colours ` +
+        `each one filled`,
     );
   }
   // SH427 — said out loud, because "16 declared tokens and no stylesheet in the tree" is a state a

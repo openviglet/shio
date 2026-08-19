@@ -31,6 +31,7 @@ import {
   rewriteUrls,
   scanCss,
 } from "../src/theme.mjs";
+import { VOCABULARY_THEME_TOKENS, vocabularyTokensFrom } from "../src/vocabulary-theme.mjs";
 
 const declarationsOf = (css) => scanCss(css).declarations;
 
@@ -553,4 +554,95 @@ test("a stylesheet with nothing to lift is a theme with no tokens, not a failure
 
 test("two runs over one stylesheet produce identical bytes", () => {
   assert.equal(JSON.stringify(themeFor()), JSON.stringify(themeFor()));
+});
+
+// --- SH831: the bridge from the captured palette to the theme the replica renders with ---
+
+/**
+ * A source shaped like the two the pipeline actually meets: its own custom properties, and enough
+ * repeated literals for the recurring reader to name a role. `--brand` is read by four `color:`
+ * declarations and `--ink` by three — one of which is `body`, which is the whole point.
+ */
+const PALETTE_SHEET = `
+  :root{--ink:#10243a;--wash:#eef3f8;--brand:#0b7285}
+  body{color:var(--ink);background:var(--wash)}
+  .navlink{color:var(--brand)}
+  .card h3{color:var(--brand)}
+  .card::before{color:var(--brand)}
+  .hero .cta::after{color:var(--brand)}
+  .a{border-color:#d9e2ec}
+  .b{border-color:#d9e2ec}
+  .c{border-color:#d9e2ec}
+  .d{fill:#ff6600}
+  .e{fill:#ff6600}
+  .f{fill:#ff6600}
+`;
+
+test("SH831: a declared colour carries the role the source uses it in, not the name it was given", () => {
+  const rows = themeFor(PALETTE_SHEET).rows;
+  const row = (path) => rows.find((each) => each.path === path);
+
+  assert.equal(row("ink").role, "text", "`body { color: var(--ink) }` is a stylesheet saying what "
+    + "this site's text looks like; the name `ink` is the source's word and could have been anything");
+  assert.equal(row("wash").role, "background");
+  assert.equal(row("brand").role, "text",
+    "read by four `color:` rules, so `text` is the honest role - which is exactly why the count "
+      + "alone must not decide the rank");
+  assert.equal(row("ink").page, true);
+  assert.equal(row("brand").page, false,
+    "a nav link and two ::before marks are not the page, whatever the count");
+});
+
+test("SH831: the page's own colour wins the slot, and the accent read more often does not take it", () => {
+  const { mapped, unmapped, tokens } = vocabularyTokensFrom(themeFor(PALETTE_SHEET).rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  // The measurement this rule exists for: ranking `text` by reference count picks #0b7285 - the
+  // accent - and paints the replica's body copy teal, which is a worse artefact than the generic
+  // default it replaced. A colour the source states at page level is the only one taken.
+  assert.equal(from.ink, "#10243a", "the body's own colour, not the one four rules reach for");
+  assert.equal(from.surface, "#eef3f8");
+  assert.equal(tokens.color.ink.$value, "#10243a");
+  assert.equal(tokens.color["ink-muted"].$value, VOCABULARY_THEME_TOKENS.color["ink-muted"].$value,
+    "and the accent did not slide into the next text slot either: `--brand` is excluded from the "
+      + "declared half outright, not merely outranked, so a slot with nothing to fill it keeps "
+      + "this file's default");
+  assert.ok(
+    unmapped.some((row) => row.name === "ink-muted" && row.role === "text#2"),
+    "the second text colour is reported by the role it looked for, so a reader can tell a default "
+      + "that was chosen from one that was never offered a value (P9)",
+  );
+});
+
+test("SH831: a recurring literal fills a slot the source declares no variable for", () => {
+  const { mapped } = vocabularyTokensFrom(themeFor(PALETTE_SHEET).rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  // `border-color` and `fill` three times each: the extractor already ranks these by role, which is
+  // its published contract, so they are taken at their own rank with no second inference.
+  assert.equal(from.line, "#d9e2ec");
+  assert.equal(from.accent, "#ff6600",
+    "the source's accent, which is the single line the whole task is about: the replica stopped "
+      + "carrying this theme's dark green beside a page painted orange");
+});
+
+test("SH831: a source with no palette at all changes nothing, and says so for every colour", () => {
+  const { tokens, mapped, unmapped } = vocabularyTokensFrom(themeFor("a{display:block}").rows);
+
+  assert.deepEqual(mapped, []);
+  assert.equal(JSON.stringify(tokens), JSON.stringify(VOCABULARY_THEME_TOKENS),
+    "byte-identical to the defaults, so a capture with nothing to say leaves the theme it had (P5)");
+  assert.deepEqual(
+    unmapped.map((row) => row.name),
+    ["accent", "ink", "ink-muted", "line", "surface", "surface-sunk"],
+    "and all six are named rather than silently kept - the report is the difference between a "
+      + "theme that matched the source and one that only looks like it might have",
+  );
+});
+
+test("SH831: two runs over one palette map identically", () => {
+  const once = vocabularyTokensFrom(themeFor(PALETTE_SHEET).rows);
+  const twice = vocabularyTokensFrom(themeFor(PALETTE_SHEET).rows);
+
+  assert.equal(JSON.stringify(once), JSON.stringify(twice));
 });

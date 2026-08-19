@@ -533,36 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.118 Three palettes, no bridge (SH831)
-
-This is why an authorable replica looks nothing like its source, and it is not the theme
-being generic on purpose.
-
-One served page carries **three** token vocabularies:
-
-    --color-ink #12151a, --color-surface #ffffff, --color-accent #0b5533
-        the Shio section theme's, hardcoded defaults, paints regions 4-11
-    --vg-background, --vg-foreground, --vg-card, --vg-primary …
-        the source's own, inside the captured sheet, paints the chrome
-    Theme.TOKENS: color.text-1, color.background-1, border.width.1 …
-        what `propose` extracted, read by nothing
-
-The Shio theme reads fourteen `var(--color-*)` names and **defines none of them**; the
-values come from a `:root` block of baked-in defaults. `--color-accent` is a dark green
-while the site's accent is orange, which is the whole visual mismatch in one line.
-
-`propose` said so at capture time: *"12 recurring token(s) name the palette and change
-nothing on their own — no rule references them until the CSS is rewired, which this does
-NOT do."* It is an accurate note about an artefact the pipeline then ships anyway.
-
-The bridge is small and it is the highest-value thing left in replication: map the
-extracted palette onto the fourteen names the section theme already reads, and emit that
-`:root` instead of the defaults. Nothing needs rewriting — the sections keep their own
-markup and class names, and the page stops carrying two accents.
-
-Where extraction cannot decide a name, the default is the right fallback and should be
-reported rather than silently used.
-
 ### XVII.119 The row that borrows its parent's words (SH832)
 
 On the replica's home page a section renders its heading three times: once as the `h2`,

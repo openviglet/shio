@@ -138,3 +138,116 @@ img{max-width:100%;height:auto}
  */
 export const vocabularyThemeTitle = (site) => `${site} (Shio)`;
 export const VOCABULARY_THEME_SLUG = "shio";
+
+/**
+ * Which extracted token feeds each of this theme's six colours (SH831).
+ *
+ * <h2>Three palettes on one page, and no bridge between any two</h2>
+ *
+ * <p>This is why an authorable replica looked nothing like its source, and it was not the theme being
+ * generic on purpose. One served page carried three token vocabularies: this theme's — six colours,
+ * read through eight `var(--color-*)` references — painting the composed regions; the source's own,
+ * inside the captured sheet, painting the chrome; and `Theme.TOKENS`, the palette `propose` extracted
+ * at capture time, **read by nothing**. `--color-accent` was a dark green while the site's accent was
+ * orange, which is the whole visual mismatch in one line. `propose` said so and shipped it anyway:
+ * *"12 recurring token(s) name the palette and change nothing on their own — no rule references them
+ * until the CSS is rewired, which this does NOT do."*</p>
+ *
+ * <p>Nothing needs rewiring. The extractor already ranks each colour role by how many declarations
+ * reference it (`recurringTokens`), so `color.text-1` is the colour the source writes as text most
+ * often and `color.background-1` is its page. Pointing this theme's six names at those six is the
+ * whole bridge: the sections keep their markup and their class names, and the page stops carrying two
+ * accents.</p>
+ *
+ * <h2>The pairs, and the one that is weakest</h2>
+ *
+ * <p><b>`accent` is the least certain and the most visible.</b> The extractor's `accent` role is fed
+ * by `fill`, `stroke`, `caret-color` and `text-decoration-color` — a real site's call-to-action is
+ * usually a `background-color`, which lands in `background`. So a source with no SVG palette yields no
+ * `color.accent-*` at all and keeps this theme's green. That is why an unmapped name is
+ * <b>reported</b> rather than silently defaulted: the default is the right value to ship — a replica
+ * with an unreadable button is worse than one with the wrong green — and it is the wrong thing to
+ * ship <em>quietly</em>, because the reader cannot tell a colour that was matched from one that was
+ * never looked for (P9).</p>
+ */
+export const PALETTE_BRIDGE = Object.freeze({
+  ink: { role: "text", rank: 1 },
+  "ink-muted": { role: "text", rank: 2 },
+  surface: { role: "background", rank: 1 },
+  "surface-sunk": { role: "background", rank: 2 },
+  line: { role: "border", rank: 1 },
+  accent: { role: "accent", rank: 1 },
+});
+
+/**
+ * This theme's tokens with the captured palette's values in them, and what could not be filled.
+ *
+ * @param rows the extracted token rows (`proposal.theme.rows`), each carrying the `role` the source
+ *             uses it in and the `refs` that argued for it
+ * @returns `{tokens, mapped, unmapped}` — `mapped` is `{name, from, value}` per colour that took a
+ *          captured value, `unmapped` the names that kept this file's default and the role each
+ *          looked for. Both sorted by name, so two runs over one capture report identically (P5).
+ */
+export function vocabularyTokensFrom(rows) {
+  const palette = paletteByRole(rows);
+  const colors = {};
+  const mapped = [];
+  const unmapped = [];
+  for (const [name, definition] of Object.entries(VOCABULARY_THEME_TOKENS.color)) {
+    const want = PALETTE_BRIDGE[name];
+    const row = want ? (palette.get(want.role) ?? [])[want.rank - 1] : undefined;
+    const wanted = want ? `${want.role}#${want.rank}` : null;
+    if (row) {
+      colors[name] = { ...definition, $value: row.value };
+      mapped.push({ name, from: row.path, role: wanted, value: row.value });
+    } else {
+      colors[name] = definition;
+      unmapped.push({ name, role: wanted, value: definition.$value });
+    }
+  }
+  const byName = (a, b) => (a.name < b.name ? -1 : 1);
+  return {
+    tokens: { ...VOCABULARY_THEME_TOKENS, color: colors },
+    mapped: mapped.sort(byName),
+    unmapped: unmapped.sort(byName),
+  };
+}
+
+/**
+ * The captured colour rows grouped by role, each group in the order the ranks name.
+ *
+ * <h3>A declared token is taken only where the source states its role at page level</h3>
+ *
+ * <p>A recurring row's role is the extractor's published contract — it saw the literal land in
+ * `color:` or `background:` and ranked it by how often. A **declared** token's role is inferred from
+ * the declarations that read it, and inference by count was measured wrong: on `theme-heavy`,
+ * `--brand` is read by four `color:` rules and `--ink` by three, so the accent would have become the
+ * replica's body copy. `body { color: var(--ink) }` is the one thing a stylesheet says without
+ * ambiguity, so a declared row is admitted when, and only when, that is where it was used
+ * (`row.page`). Everything else keeps this theme's default and is reported — mapping less is the
+ * direction that cannot make a replica worse than the generic theme it replaced.</p>
+ *
+ * <p>Within a role, page-level declared rows come first, then the recurring ones in the order
+ * `recurringTokens` already ranks by — most-referenced, ties on the value — so `text#1` means the
+ * same thing on both sides of the join and two runs over one capture agree (P5).</p>
+ */
+function paletteByRole(rows) {
+  const byRole = new Map();
+  for (const row of rows ?? []) {
+    if (row?.type !== "color" || !row.role || typeof row.value !== "string") continue;
+    if (row.source === "declared" && !row.page) continue;
+    const group = byRole.get(row.role) ?? [];
+    group.push(row);
+    byRole.set(row.role, group);
+  }
+  for (const group of byRole.values()) {
+    group.sort((a, b) => {
+      if ((a.source === "declared") !== (b.source === "declared")) {
+        return a.source === "declared" ? -1 : 1;
+      }
+      if ((a.refs ?? 0) !== (b.refs ?? 0)) return (b.refs ?? 0) - (a.refs ?? 0);
+      return a.value < b.value ? -1 : 1;
+    });
+  }
+  return byRole;
+}

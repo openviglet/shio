@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH831** (deps: —) **A replica carries three token vocabularies and no mapping, so the captured palette paints the chrome and nothing else** — The section theme reads fourteen semantic names and defines none, the page supplies them as hardcoded defaults, and the source's tokens use another prefix. → §XVII.118
 - 📋 **SH832** (deps: —) **An empty collection row draws the section's own title, because the row's field lookup falls through to the parent** — The generated layout has eight bare field lookups inside each-blocks and none scoped, so two empty cards each rendered the heading above them. → §XVII.119
 - 📋 **SH833** (deps: —) **No archetype in the source corpus converts to a SectionFaq or a SectionLogoWall** — theme-heavy declares four collection fields and its conversion creates two, so SH475's row-annotation check ran vacuously on half of them until SH830 made the layout branch. → §XVII.120
 

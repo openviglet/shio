@@ -1206,6 +1206,24 @@ it. Four decisions worth keeping:
   silently: every role in `LAYOUT_ROLES` is styled, every `var()` the stylesheet reads is a token the
   theme declares, and **every token it declares is read** — a token nothing uses is a field a curator
   can edit to no effect. And nothing in it names a section type.
+- **Its six colours come from the source's palette, which is why a replica stopped looking nothing
+  like its source (SH831).** One served page carried **three** token vocabularies and no mapping
+  between any two: this theme's, painting the composed regions; the source's own, inside the captured
+  sheet, painting the chrome; and `Theme.TOKENS`, the palette `propose` extracted, *read by nothing*.
+  `--color-accent` was a dark green while the site's accent was orange. `propose` even said so —
+  *"12 recurring token(s) name the palette and change nothing on their own"* — an accurate note about
+  an artefact the pipeline shipped anyway. Nothing needed rewiring: `PALETTE_BRIDGE` points the six
+  names at a **role and a rank** (`ink` = `text#1`, `accent` = `accent#1`), and `vocabularyTokensFrom`
+  fills them from the extracted rows. Two halves with different rules, and the split was measured:
+  a **recurring** row's role is the extractor's own contract — it saw the literal land in `color:` and
+  ranked it by count — while a **declared** token's role has to be inferred from the declarations that
+  read it, and inference by count was *wrong*. On `theme-heavy`, `--brand` is read by four `color:`
+  rules and `--ink` by three, so ranking by references would have painted the replica's body copy
+  teal, worse than the generic default it replaced. So a declared row is admitted only where the use
+  was at page level (`body`/`html`/`:root`/`*`, the `page` flag `declaredTokens` now carries) — the one
+  thing a stylesheet says without ambiguity. Everything else keeps the default **and is named in the
+  run**, because a reader cannot tell a colour that was matched from one that was never looked for
+  (P9), and mapping less is the only direction that cannot make a replica worse.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

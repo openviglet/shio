@@ -44,6 +44,7 @@ import { normalizeUrl } from "./content-files.mjs";
 import { SECTION_FILE_FIELDS, SECTION_REQUIRED, SECTION_TYPES } from "./propose.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_SLUG, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
+  vocabularyTokensFrom,
 } from "./vocabulary-theme.mjs";
 
 /** Where a converted section lands. One folder, because a section is addressed by its own url. */
@@ -234,8 +235,12 @@ export function buildConversion({
   // layout **names** it: it styles SH508's roles, and a page that is verbatim in whole or in part has
   // none of them, so anywhere else it would be a post nobody renders. `Theme (Shio)` rather than
   // `Theme` in `extras`, because that string is what decides whether the *captured* theme was written.
+  // SH831 — the captured palette, under this theme's own names. Computed whether or not the theme is
+  // written, because `describeConversion` reports the colours that found no source and a run that
+  // named none would be the silent default the whole task is about.
+  const palette = vocabularyTokensFrom(proposal?.theme?.rows);
   if (theme === vocabularyThemeTitle(site)) {
-    posts.push(vocabularyThemePost(site));
+    posts.push(vocabularyThemePost(site, palette.tokens));
     extras.push("Theme (Shio)");
   }
   // SH449 wrote the layout only for a verbatim page, and SH464 is what that cost: the authorable
@@ -333,6 +338,12 @@ export function buildConversion({
     // not only printed, for SH576's reason one line up: the corpus asserts it, and `--json` is a
     // caller too.
     ...(unfollowed ? { unfollowed } : {}),
+    // SH831 — which of the theme's colours took a captured value and which kept a default. Present
+    // only where the theme was written: a fidelity conversion never renders this theme, and reporting
+    // a palette nothing paints with would be a note about an artefact that is not on the site.
+    ...(theme === vocabularyThemeTitle(site)
+      ? { palette: { mapped: palette.mapped, unmapped: palette.unmapped } }
+      : {}),
   };
 }
 
@@ -1598,7 +1609,7 @@ function themePost(theme, site) {
  * CLI, and a site with a theme of its own overrides this by naming that one on the layout. The bytes
  * live in `vocabulary-theme.mjs`, which is where the argument for each rule is.</p>
  */
-function vocabularyThemePost(site) {
+function vocabularyThemePost(site, tokens) {
   return {
     url: `${THEME_FOLDER}/${VOCABULARY_THEME_SLUG}`,
     type: "Theme",
@@ -1606,7 +1617,9 @@ function vocabularyThemePost(site) {
     data: {
       TITLE: vocabularyThemeTitle(site),
       CSS: VOCABULARY_THEME_CSS,
-      TOKENS: `${JSON.stringify(VOCABULARY_THEME_TOKENS, null, 2)}\n`,
+      // SH831 — the captured palette's values under this theme's own names, so the composed
+      // regions are painted in the source's colours instead of this file's defaults.
+      TOKENS: `${JSON.stringify(tokens ?? VOCABULARY_THEME_TOKENS, null, 2)}\n`,
     },
   };
 }
@@ -1634,7 +1647,7 @@ function scriptsPost(scripts, site) {
 export function describeConversion({ document, sections, markup = [], pages = [], verbatim = 0,
                                      mixed = 0, extras,
                                      requires = [], dropped = [], kept = [], declined = [],
-                                     home = null, unfollowed = null },
+                                     home = null, unfollowed = null, palette = null },
                                    options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
@@ -1691,6 +1704,25 @@ export function describeConversion({ document, sections, markup = [], pages = []
   const theme = document.posts.find((post) => post.type === "PageLayout")?.data?.THEME;
   if (theme) {
     lines.push(`  presented by ${theme} — the one stylesheet the layout names`);
+  }
+  // SH831 — the palette said out loud, both halves. `propose` already reported that the extracted
+  // tokens "change nothing on their own"; they change something now, and the reader has to be able to
+  // tell a colour that took a captured value from one that kept a default it was never offered — the
+  // difference between a theme that matched the source and one that only looks like it might have.
+  if (palette) {
+    lines.push(
+      `  palette: ${palette.mapped.length} of ${palette.mapped.length + palette.unmapped.length} `
+        + "colour(s) from the captured tokens, under this theme's own names",
+    );
+    for (const row of palette.mapped) {
+      lines.push(`    --color-${row.name} ${row.value} — ${row.from} (${row.role})`);
+    }
+    for (const row of palette.unmapped) {
+      lines.push(
+        `    --color-${row.name} ${row.value} — the source's palette has no ${row.role}, so this `
+          + "theme's default stands. Edit the Theme post's TOKENS to set it",
+      );
+    }
   }
   // SH576 — the note whose absence was the defect. Every page of a locale-prefixed source is written
   // correctly and none of them is at `/`, so a run that says only what it wrote describes a complete

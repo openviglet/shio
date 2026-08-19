@@ -1236,6 +1236,7 @@
 - **SH774** — The banner reads the composed page rather than two model keys, so a page whose kept markup is all in sections reports mixed; resolving the sections was priced at a query each and refused.
 - **SH829** — The `<style>` carries `data-shio-theme` with its Theme post's title, so the region table prints `VigR3 (captured)` rather than `style[2]`; a sheet no post owns keeps its index.
 - **SH830** — The generated layout carries the branches the conversion's own types declare, so a replica no longer ends with `verify` warnings against the file `convert` wrote seconds earlier.
+- **SH831** — The Shio theme's six colours are filled from the captured palette by role and rank, and every slot the source states nothing about keeps its default and is named in the run.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

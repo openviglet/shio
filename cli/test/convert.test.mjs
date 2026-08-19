@@ -1554,7 +1554,56 @@ test("SH509: an authorable conversion carries the theme it is presented with, as
     "a Theme post and not a file: a stylesheet in the jar would be the one part of a converted site "
       + "nobody can change, which is the shape SH183 rejected when it made the render model content");
   assert.deepEqual(JSON.parse(theme.data.TOKENS), VOCABULARY_THEME_TOKENS,
-    "and the tokens ride it, so changing a colour is a field edit rather than a stylesheet rewrite");
+    "and the tokens ride it, so changing a colour is a field edit rather than a stylesheet rewrite "
+      + "- this proposal declares no palette, so SH831 has nothing to bridge and the defaults stand");
+});
+
+test("SH831: the theme the replica renders with is painted in the source's own colours", () => {
+  // The defect, in one line: a served page carried three token vocabularies and no mapping between
+  // any two. `--color-accent` was this file's dark green while the site's accent was orange, and the
+  // extracted palette that knew better was read by nothing. `propose` even said so - "12 recurring
+  // token(s) name the palette and change nothing on their own" - an accurate note about an artefact
+  // the pipeline then shipped anyway.
+  const conversion = buildConversion({
+    proposal: withCapturedTheme({
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+      theme: {
+        css: CAPTURED_CSS,
+        tokens: {},
+        rows: [
+          { path: "ink", value: "#10243a", type: "color", source: "declared", role: "text", page: true },
+          { path: "brand", value: "#0b7285", type: "color", source: "declared", role: "text", refs: 4, page: false },
+          { path: "color.accent-1", value: "#ff6600", type: "color", source: "recurring", role: "accent", refs: 7 },
+        ],
+      },
+    }),
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  const { document, palette } = conversion;
+  const written = document.posts.find((post) => post.data.TITLE === vocabularyThemeTitle("Acme"));
+  const tokens = JSON.parse(written.data.TOKENS);
+  assert.equal(tokens.color.ink.$value, "#10243a", "the page's own text colour");
+  assert.equal(tokens.color.accent.$value, "#ff6600",
+    "and the accent, which is the whole visual mismatch: eight `var(--color-*)` references in this "
+      + "theme now resolve to the source's palette instead of to a green nobody chose");
+  assert.equal(tokens.color.line.$value, VOCABULARY_THEME_TOKENS.color.line.$value,
+    "a slot the palette says nothing about keeps the default, which is the right value to ship - a "
+      + "replica with an invisible border is worse than one with a borrowed grey");
+  assert.equal(tokens.size.radius.$value, VOCABULARY_THEME_TOKENS.size.radius.$value,
+    "and nothing outside the palette moved: this bridges colour, and a dimension it did not touch "
+      + "must not arrive changed");
+
+  assert.deepEqual(palette.mapped.map((row) => row.name), ["accent", "ink"]);
+  assert.deepEqual(palette.unmapped.map((row) => row.name),
+    ["ink-muted", "line", "surface", "surface-sunk"]);
+  const report = describeConversion(conversion);
+  assert.match(report, /--color-accent #ff6600 — color\.accent-1 \(accent#1\)/,
+    "said out loud, and traceable: the reader can check the value against the token it came from");
+  assert.match(report, /--color-line [^\n]*the source's palette has no border#1/,
+    "and so is the default that stood, because a reader cannot tell a colour that was matched from "
+      + "one that was never looked for unless the run says which (P9)");
 });
 
 test("SH509: a fidelity conversion carries no theme it would not use", () => {
