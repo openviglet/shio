@@ -592,6 +592,69 @@ created, or have `convert` create the vocabulary whole so the template is always
 satisfied. The first keeps the model to what the site uses, which is the direction SH763
 already chose.
 
+### XVII.118 Three palettes, no bridge (SH831)
+
+This is why an authorable replica looks nothing like its source, and it is not the theme
+being generic on purpose.
+
+One served page carries **three** token vocabularies:
+
+    --color-ink #12151a, --color-surface #ffffff, --color-accent #0b5533
+        the Shio section theme's, hardcoded defaults, paints regions 4-11
+    --vg-background, --vg-foreground, --vg-card, --vg-primary …
+        the source's own, inside the captured sheet, paints the chrome
+    Theme.TOKENS: color.text-1, color.background-1, border.width.1 …
+        what `propose` extracted, read by nothing
+
+The Shio theme reads fourteen `var(--color-*)` names and **defines none of them**; the
+values come from a `:root` block of baked-in defaults. `--color-accent` is a dark green
+while the site's accent is orange, which is the whole visual mismatch in one line.
+
+`propose` said so at capture time: *"12 recurring token(s) name the palette and change
+nothing on their own — no rule references them until the CSS is rewired, which this does
+NOT do."* It is an accurate note about an artefact the pipeline then ships anyway.
+
+The bridge is small and it is the highest-value thing left in replication: map the
+extracted palette onto the fourteen names the section theme already reads, and emit that
+`:root` instead of the defaults. Nothing needs rewriting — the sections keep their own
+markup and class names, and the page stops carrying two accents.
+
+Where extraction cannot decide a name, the default is the right fallback and should be
+reported rather than silently used.
+
+### XVII.119 The row that borrows its parent's words (SH832)
+
+On the replica's home page a section renders its heading three times: once as the `h2`,
+and once inside each of two cards that should be empty.
+
+The rows genuinely are empty. `GET /agent/read` on `post:VigR3/sections/bcb58dcbb`:
+
+    heading: Ask a question, get an answer
+      row 0: title=None body=None
+      row 1: title=None body=None
+
+The layout guards each field, so an empty row should draw an empty card:
+
+    {{#each features}}<li class="shio-card" …>{{#if title}}<h3 …>{{title}}</h3>{{/if}}
+
+Handlebars resolves a bare name up the context chain. Inside `{{#each}}`, a row with no
+`title` of its own finds the **section post's** `title` — which is the heading — so
+`{{#if title}}` is true and `{{title}}` prints the parent's words. The guard cannot
+fire, because the thing it guards against is never absent.
+
+The generated template carries **eight** bare lookups inside `each` blocks and **zero**
+scoped ones (`{{this.title}}` or `{{./title}}`), so every collection type is affected:
+features, questions, logos, quotes.
+
+Two things follow, and the second is the larger one. Scoping the lookups is a mechanical
+fix. But a row that renders as its parent is also invisible to every count —
+`annotations` reports the card as annotated, `diff` sees text where the capture had
+text, and the page reads as populated. It is the failure shape this project keeps
+meeting: not a blank, a plausible wrong value.
+
+The assertion that closes it: a section with an empty row renders a card with no
+heading.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
