@@ -533,34 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.129 The next batch, chosen by counting (SH842)
-
-The revealed debt is 69 entries and the run prints the shape: *36 have no suite naming
-them at all; 69 are named by a suite and not by an assertion (45 of those beside one)*.
-Four batches have been paid a file at a time — SH820, SH821, SH826, SH827 — and each one
-chose its file by reading. This one chose by counting:
-
-    69 revealed entries across 57 files
-      3  ShAgentJsonLeanTest.java   SH75 SH113 SH125
-      2  ShApiTokenFilterTest.java  SH4 SH5
-      2  ShFolderTrashTest.java     SH12 SH51
-      … 47 files carrying exactly one
-
-So the distribution is flat and one file holds three. That is the whole reason to take
-this one first: a batch's cost is mostly in reading the task and finding the boundary
-the defect crossed, and three ids in one suite share the reading.
-
-What the earlier batches measured is the thing to expect rather than hope against.
-**Roughly a third of the cheap half is not in the file the ledger names**: SH821 found
-three of eleven belonged elsewhere, SH826 six of fifteen — an id whose work spans a
-subsystem gets mentioned by the test that exercises the surface, while the assertion
-that would have caught it lives in the unit suite named after the component. So the
-deliverable per id is *the assertion at the boundary the defect crossed*, wherever that
-is, and the ledger's pointer is a hint rather than an address.
-
-All three are agent-surface response-shape tasks, which is one boundary and argues the
-cluster is real rather than an artefact of the pointer.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

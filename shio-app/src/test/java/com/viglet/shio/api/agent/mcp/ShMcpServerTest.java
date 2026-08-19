@@ -218,7 +218,15 @@ class ShMcpServerTest {
 
         ObjectNode response = call("tools/call", params);
 
-        assertThat(response.has("error")).isFalse();
+        assertThat(response.has("error"))
+                .as("""
+                        SH75: the two error channels are what this server rests on, and this is the \
+                        half that reaches the model. A JSON-RPC `error` means the MESSAGE was \
+                        unusable and is the client's problem; anything the caller could fix travels \
+                        as a normal result. Routing a teaching error the other way throws away the \
+                        `fix` and the `didYouMean` that make the retry succeed — silently, because \
+                        a client swallows a transport fault.""")
+                .isFalse();
         JsonNode result = response.get("result");
         assertThat(result.get("isError").asBoolean()).isTrue();
         String text = result.get("content").get(0).get("text").asString();
@@ -234,7 +242,14 @@ class ShMcpServerTest {
 
         JsonNode error = call("tools/call", params).get("error");
 
-        assertThat(error.get("code").asInt()).isEqualTo(-32602);
+        assertThat(error.get("code").asInt())
+                .as("""
+                        SH75: and the other half of the line. A tool that does not exist is an \
+                        unusable MESSAGE, so it is a JSON-RPC error and the CLIENT is what has to \
+                        change — sending it as a result with isError would ask the model to fix \
+                        somebody else's code. The pair is the decision; either one alone is a \
+                        convention nobody can act on.""")
+                .isEqualTo(-32602);
         assertThat(error.get("data").toString()).contains("shio_context");
     }
 

@@ -150,6 +150,15 @@ const CLAIMS = {
       + "Verified: ShAgentCommitOrderTest injects ShAuditFeedWatermark, holds a position and "
       + "asserts the feed's ceiling stays below it",
   },
+  "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentJsonLeanTest.java -> ShAgentResponseBudgetTest": {
+    kind: Kind.HANDS_OFF,
+    why: "SH842 — this file asserts the header's NAME and says the assertion that would have caught "
+      + "SH113 is the one measuring a response against its ceiling. Written while paying that id's "
+      + "debt and caught by this reader on the same run, which is the intended use. Verified in the "
+      + "same commit rather than assumed: `everyCanonicalResponseStaysWithinItsBudget` in "
+      + "ShAgentResponseBudgetTest now names SH113 in its own failure message, and it is the "
+      + "assertion that fails when a payload grows past its ceiling",
+  },
   "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentReadTest.java -> assertion-debt.test.mjs": {
     kind: Kind.SELF,
     why: "an id is deliberately NOT written here so the debt walk does not credit it (SH641) — an "

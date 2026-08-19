@@ -172,8 +172,8 @@ class ShAgentJsonLeanTest {
         assertThat(responses).allSatisfy(response -> {
             String json = objectMapper.writeValueAsString(response);
             assertThat(json)
-                    .withFailMessage("Agent JSON must not ship nulls — absent and null say the "
-                            + "same thing, so a null is pure cost. Offending payload:%n%s", json)
+                    .withFailMessage("SH125: agent JSON must not ship nulls — absent and null say "
+                            + "the same thing, so a null is pure cost. Offending payload:%n%s", json)
                     .doesNotContain(":null");
         });
     }
@@ -230,8 +230,11 @@ class ShAgentJsonLeanTest {
 
     @Test
     void theEstTokensHeaderNameIsStable() {
-        // SH112/SH113 and any client-side accounting key off this exact header, and it
-        // now covers the CDA too (SH124) — renaming it silently breaks all of them.
+        // see SH112 and see SH113: both, and any client-side accounting, key off this exact
+        // header, and it now covers the CDA too (SH124) — renaming it silently breaks all of them.
+        // Spelled as references (SH731) because that is what they are: this assertion is about the
+        // header's NAME, and the assertion that would have caught SH113 is the one that measures a
+        // response against its ceiling, which lives in ShAgentResponseBudgetTest.
         assertThat(ShEstTokensHeaderFilter.HEADER).isEqualTo("X-Shio-Est-Tokens");
         assertThat(Map.of(ShEstTokensHeaderFilter.HEADER, "1")).containsKey("X-Shio-Est-Tokens");
     }

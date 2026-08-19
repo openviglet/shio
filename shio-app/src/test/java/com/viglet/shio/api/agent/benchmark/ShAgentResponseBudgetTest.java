@@ -254,7 +254,7 @@ class ShAgentResponseBudgetTest {
                 .isNotEmpty();
 
         assertThat(breaches)
-                .as("A response got more expensive. Design law P3: a token regression is a "
+                .as("SH113: a response got more expensive. Design law P3: a token regression is a "
                         + "build failure, not a footnote. Either make the payload leaner, or "
                         + "raise the ceiling in src/test/resources/token-budgets.properties "
                         + "and say why in the commit message — a ceiling moved without a "

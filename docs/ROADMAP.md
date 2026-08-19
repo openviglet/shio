@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
-
-- 📋 **SH842** (deps: —) **Three of the revealed debt's ids sit in one file and none of them reaches an assertion that names it** — SH75, SH113 and SH125 are all recorded against ShAgentJsonLeanTest, the largest cluster of the sixty-nine, and one file is where a batch costs least per id. → §XVII.129
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

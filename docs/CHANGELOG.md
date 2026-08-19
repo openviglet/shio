@@ -1481,6 +1481,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH837** — A field drawn inside a guard and declared by nothing is asserted as an error, and reverting the walk-out drops it to a warning rather than removing it — which is what makes it a test.
 - **SH838** — An archetype states its own type size, so all three of the bridge's bars are cleared by a real capture, and a rule that loses its last one is named by the run.
 - **SH841** — A stale stamp whose subject the commits since have touched is reported as OWED with the count, so a gate nobody needed reads differently from one nobody ran.
+- **SH842** — Three ids reach the assertion that would have caught each, and two of the three were not in the file the ledger named — the rate the earlier batches measured, met again.
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 
