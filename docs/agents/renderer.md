@@ -799,7 +799,11 @@ renderer over one body of content at a second address. See the section on it bel
   the failure mode here is *silent under-reporting* and writing the table immediately found
   `{{& TEXT}}` — unescaped output, the same reference as a triple stash — being dropped. **Add a row
   when you touch the scanner**; `UNREACHABLE` is a claim about another part of the system (three rows
-  rest on SH183's refusing `TemplateLoader`) so it must carry its reason. Whether Handlebars.java's
+  rest on SH183's refusing `TemplateLoader`) so it must carry its reason. One row **changed** under
+  SH832: `{{./TEXT}}` was `SKIPPED` as *"explicitly relative; the lint cannot say whose scope it lands
+  in"*, and that had it backwards — `./TEXT` is the one spelling whose scope is not in doubt, and a
+  **bare** `TEXT` is the ambiguous one, resolved up the context chain. It is `REPORTED` now, which is
+  what keeps the lint seeing the generated layout after SH832 respelled it. Whether Handlebars.java's
   AST would replace all of this is **asserted rather than remembered (SH274)**: on 4.5.3
   `Template#collect` is *deduplicated* — four references to `TEXT` at three scopes return `[TEXT]` —
   `collect(SECTION)` gives only the helper's name, and the structural nodes are in `internal`.

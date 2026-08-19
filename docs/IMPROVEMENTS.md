@@ -533,39 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.119 The row that borrows its parent's words (SH832)
-
-On the replica's home page a section renders its heading three times: once as the `h2`,
-and once inside each of two cards that should be empty.
-
-The rows genuinely are empty. `GET /agent/read` on `post:VigR3/sections/bcb58dcbb`:
-
-    heading: Ask a question, get an answer
-      row 0: title=None body=None
-      row 1: title=None body=None
-
-The layout guards each field, so an empty row should draw an empty card:
-
-    {{#each features}}<li class="shio-card" …>{{#if title}}<h3 …>{{title}}</h3>{{/if}}
-
-Handlebars resolves a bare name up the context chain. Inside `{{#each}}`, a row with no
-`title` of its own finds the **section post's** `title` — which is the heading — so
-`{{#if title}}` is true and `{{title}}` prints the parent's words. The guard cannot
-fire, because the thing it guards against is never absent.
-
-The generated template carries **eight** bare lookups inside `each` blocks and **zero**
-scoped ones (`{{this.title}}` or `{{./title}}`), so every collection type is affected:
-features, questions, logos, quotes.
-
-Two things follow, and the second is the larger one. Scoping the lookups is a mechanical
-fix. But a row that renders as its parent is also invisible to every count —
-`annotations` reports the card as annotated, `diff` sees text where the capture had
-text, and the page reads as populated. It is the failure shape this project keeps
-meeting: not a blank, a plausible wrong value.
-
-The assertion that closes it: a section with an empty row renders a card with no
-heading.
-
 ### XVII.120 Two of the seven section types have no producer (SH833)
 
 SH830 filtered the generated layout to the branches a conversion's own types declare,

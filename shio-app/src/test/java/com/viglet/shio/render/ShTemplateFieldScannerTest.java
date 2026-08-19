@@ -9,6 +9,7 @@
 package com.viglet.shio.render;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.List;
 
@@ -151,7 +152,7 @@ class ShTemplateFieldScannerTest {
                 {{! a comment }}
                 {{!-- a long comment --}}
                 {{> partial}}
-                {{#each ITEMS}}{{@index}} {{this}} {{./x}} {{../outer}}{{/each}}
+                {{#each ITEMS}}{{@index}} {{this}} {{../outer}}{{/each}}
                 {{#if (eq A B)}}x{{/if}}
                 {{lookup a b}}
                 {{"literal"}}
@@ -162,6 +163,33 @@ class ShTemplateFieldScannerTest {
                         ignore, which is SH192's finding applied a second time.""")
                 .extracting(ShTemplateReference::name)
                 .containsExactly("ITEMS");
+    }
+
+    /**
+     * SH832 — {@code ./x} left this list, because it was on it for a reason that was backwards.
+     *
+     * <p>It sat beside {@code ../outer} as "resolved somewhere this cannot model", and the opposite
+     * is true: {@code ./x} is the <b>current</b> context's own {@code x} — the scope the reference is
+     * already written in and the only one this scanner ever knows. The ambiguous spelling is the
+     * <em>bare</em> {@code x}, which Handlebars resolves up the context chain until something
+     * answers, and that fallthrough is the defect SH832 fixed by respelling the generated layout.
+     * Skipping the cure would have blinded the field lint on every template the product ships.</p>
+     */
+    @Test
+    @DisplayName("SH832: ./x is the current row's own field, and is reported as one")
+    void aRelativePathIsTheCurrentScopesField() {
+        assertThat(ShTemplateFieldScanner.referencesIn(
+                "{{#each ITEMS}}{{#if ./title}}{{./title}} {{../outer}}{{/if}}{{/each}}", HELPERS))
+                .extracting(ShTemplateReference::name, ShTemplateReference::root,
+                        ShTemplateReference::scope)
+                .as("""
+                        the scope is the innermost block the reference sits in, so the guard's own \
+                        argument is scoped to the `each` and what it guards is scoped to the `if` — \
+                        which is what a bare name did here too, and is not what SH832 changed.""")
+                .containsExactly(
+                        tuple("ITEMS", "ITEMS", null),
+                        tuple("./title", "title", "each"),
+                        tuple("./title", "title", "if"));
     }
 
     // ── SH261: hash arguments ───────────────────────────────────────────────────────

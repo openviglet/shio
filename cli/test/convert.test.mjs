@@ -1071,6 +1071,57 @@ test("SH763: the layout draws a markup section verbatim, in the place the list g
   );
 });
 
+/**
+ * Every field reference the template makes inside an `{{#each}}`, with whether it is scoped (SH832).
+ *
+ * A deliberate re-read of the bytes rather than a list: the defect was that nobody had counted, and
+ * a list would go stale on the next field the vocabulary gains. Block names, `@index`, helper names
+ * and quoted literals are not references; `../` is a reference to a scope this rule is not about.
+ */
+function eachScopedReferences(template) {
+  const found = [];
+  let depth = 0;
+  for (const [, body] of template.matchAll(/\{\{\{?([^{}]+)\}?\}\}/g)) {
+    const trimmed = body.trim();
+    if (/^#each\b/.test(trimmed)) { depth += 1; continue; }
+    if (/^\/each\b/.test(trimmed)) { depth -= 1; continue; }
+    if (!depth || /^[!>=/]/.test(trimmed)) continue;
+    const tokens = trimmed.replace(/^[#^]\S*\s*/, "").split(/\s+/);
+    for (const token of tokens) {
+      if (!token || /^[@"'(]/.test(token) || token.includes("=") || token.startsWith("../")) continue;
+      if (["this", "else", "if", "unless", "each", "with", "file_url"].includes(token)) continue;
+      found.push({ token, scoped: token.startsWith("./") });
+    }
+  }
+  return found;
+}
+
+test("SH832: no field a row draws is spelled so Handlebars can find it on the parent", () => {
+  // On the replica's home page a section rendered its heading three times: once as the `h2`, and
+  // once inside each of two cards whose rows were genuinely empty (title=None body=None). A bare
+  // name resolves UP the context chain, so `{{#if title}}` found the section post's title, was
+  // true, and `{{title}}` printed the heading — the guard could not fire, because the thing it
+  // guards against is never absent. Eight bare lookups, zero scoped, every collection type.
+  const references = eachScopedReferences(PAGE_BODY_HTML);
+
+  assert.ok(references.length >= 8,
+    `the reader found ${references.length} reference(s) inside {{#each}} — a rule that matches `
+      + "nothing is the way this check would silently stop working");
+  assert.deepEqual(
+    references.filter((each) => !each.scoped).map((each) => each.token), [],
+    "each one must be `./name`: not a blank but a plausible wrong value is this project's recurring "
+      + "failure shape, and this one is invisible to every count - `annotations` reports the card as "
+      + "annotated and `diff` sees text where the capture had text",
+  );
+  // And the reader in the other direction, on the spelling that shipped the defect: a check whose
+  // scanner silently matched nothing would pass forever after the next field was added bare.
+  assert.deepEqual(
+    eachScopedReferences('{{#each features}}{{#if title}}{{title}}{{/if}}{{/each}}')
+      .map((each) => each.scoped), [false, false],
+    "the reader finds the shape it exists to refuse",
+  );
+});
+
 test("SH830: the layout branches for the types the conversion created, and for no others", () => {
   // The measurement: a replication onto an empty instance converted cleanly - 66 objects, exit 0,
   // four routes 200 - and two of its four `verify` warnings were `template-unknown-field · align`

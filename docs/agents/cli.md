@@ -1079,6 +1079,22 @@ it. Four decisions worth keeping:
   `getRelation` resolves ids and friendly URLs and would stringify a row map into nothing, while
   `ShRenderModel.fieldsOf` already hands Handlebars the `List<Map>` that `{{#each}}` walks. One
   `{{#each}}` per collection, wrapped in `{{#if}}` so an absent one renders no empty container.
+- **And inside one, every name is `./name` — a bare one finds the parent's (SH832).** On a replica's
+  home page a section rendered its heading three times: once as the `h2`, once inside each of two
+  cards whose rows were genuinely empty. Handlebars resolves a bare name **up the context chain**, so
+  a row with no `title` of its own finds the section post's, `{{#if title}}` is true, and the guard
+  cannot fire — the thing it guards against is never absent. Eight bare lookups, zero scoped, all
+  four collection types. Reproduced before it was fixed: both cards drew `<h3>Empty rows</h3>`, the
+  section's *title*; the mechanism takes whichever name the parent frame offers first. `./` and not
+  `this.`, which is the obvious spelling and the wrong one here — `ShTemplateFieldScanner.isPath`
+  accepts `this.title` as a path and the field lint then reports `this` as undeclared on every layout;
+  `./title` was excluded from the scan entirely until SH832 taught it the one-character prefix, so the
+  fix would have cost the lint its sight of exactly the templates the product ships.
+  `convert.test.mjs` re-reads the bytes for any unscoped reference inside an `{{#each}}` rather than
+  keeping a list of names, and `ShConvertedLayoutRenderTest` renders the case no other fixture there
+  could: every other section carries a sentinel in every field, so a fallthrough and a correct read
+  produce the same page. Not a blank — a **plausible wrong value**, invisible to every count:
+  `annotations` reports the card as annotated and `diff` sees text where the capture had text.
 - **A row is addressed by a path, because it is not a post (SH465 stated the problem, SH475 is the
   address).** SH185 addresses a field as a flat `prop` on the post the nearest `sh-post` ancestor
   names, and a row sits inside `<section sh-post="{{id}}">` — so `sh-field="body"` on a feature row

@@ -103,8 +103,15 @@ class ShTemplateGrammarCoverageTest {
             new Construct("{{@TEXT}}", Disposition.SKIPPED, "a data variable, not a field"),
             new Construct("{{this}}", Disposition.SKIPPED, "the context itself"),
             new Construct("{{.}}", Disposition.SKIPPED, "the context itself, short form"),
-            new Construct("{{./TEXT}}", Disposition.SKIPPED,
-                    "explicitly relative; the lint cannot say whose scope it lands in"),
+            // SH832 — was SKIPPED with "explicitly relative; the lint cannot say whose scope it
+            // lands in", which had it backwards: `./TEXT` is the ONE spelling whose scope is not in
+            // doubt. It is the current context's own `TEXT`, and a *bare* `TEXT` is the ambiguous
+            // one — Handlebars resolves that up the chain, which is the defect SH832 fixed. The
+            // generated layout is spelled this way now, so skipping it would blind the lint on the
+            // templates the product ships.
+            new Construct("{{./TEXT}}", Disposition.REPORTED,
+                    "the current context's own field, which is what the scope it is written in "
+                            + "already says"),
             new Construct("{{../TEXT}}", Disposition.SKIPPED,
                     "a parent reference; same reason, one level out"),
             new Construct("{{lookup a TEXT}}", Disposition.SKIPPED,

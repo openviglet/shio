@@ -139,6 +139,8 @@ class ShConvertedLayoutRenderTest {
 
     /** Where the SH465 coverage page lives, kept off {@code /} so SH464's counts are untouched. */
     private static final String VOCABULARY_URL = "/vocabulary";
+    /** SH832 — a page whose one section's rows are empty, which no other fixture here can be. */
+    private static final String EMPTY_ROWS_URL = "/empty-rows";
     /** SH476 — its own page, so SH464's counts on `/` are untouched by a fixture about escaping. */
     private static final String ENTITY_URL = "/entities";
     /** SH549 — a page that kept the source's markup, so it needs the source's stylesheet. */
@@ -312,6 +314,19 @@ class ShConvertedLayoutRenderTest {
             page.put("title", "Vocabulary");
             page.set("sections", composed);
             post(site, root, pageType, "Vocabulary", VOCABULARY_URL, page.toString(), when);
+
+            // SH832 — the fixture the whole vocabulary page could not be: two rows with nothing in
+            // them, under a section that has a heading. Every other section here carries a sentinel
+            // in every field, which is exactly the shape that cannot show a row borrowing its
+            // parent's words — the value is there either way.
+            post(site, sections, postType("SectionFeatureGrid", (byte) 0, when),
+                    "Empty rows", EMPTY_ROWS_URL + "/grid",
+                    "{\"heading\":\"Ask a question, get an answer\","
+                            + "\"features\":[{\"title\":null,\"body\":null},{}]}",
+                    when);
+            post(site, root, pageType, "Empty rows", EMPTY_ROWS_URL,
+                    "{\"title\":\"Empty rows\",\"sections\":[\"" + EMPTY_ROWS_URL + "/grid\"]}",
+                    when);
 
             // SH549 — the captured `Theme` and a page that kept the source's markup. The layout above
             // names no theme at all, which is what makes this fixture the honest one for the
@@ -682,6 +697,57 @@ class ShConvertedLayoutRenderTest {
                 .as("the pair keeps the attribute name, and the renderer copies it verbatim — it "
                         + "has never parsed a prop and this does not make it start")
                 .contains("data-shio-prop-attr=\"ctaHref:href\"");
+    }
+
+    /**
+     * SH832 — the assertion that closes it: a section with an empty row renders a card with no
+     * heading.
+     *
+     * <h3>The defect, and why every other fixture in this class was blind to it</h3>
+     *
+     * <p>On a replica's home page a section rendered its heading <b>three times</b>: once as the
+     * {@code h2}, and once inside each of two cards whose rows were genuinely empty
+     * ({@code title=None body=None}). Handlebars resolves a bare name <em>up the context chain</em>,
+     * so inside {@code {{#each features}}} a row with no {@code title} found the section post's —
+     * which is the heading — {@code {{#if title}}} was true, and the guard could not fire because
+     * the thing it guards against is never absent.</p>
+     *
+     * <p>Every other section here carries a sentinel in every field, which is what made this
+     * invisible: the value is present either way, so a fallthrough and a correct read produce the
+     * same page. That is the failure shape this project keeps meeting — not a blank, a
+     * <b>plausible wrong value</b> — and it is invisible to every count too: {@code annotations}
+     * reports the card as annotated, {@code diff} sees text where the capture had text, and the
+     * page reads as populated.</p>
+     *
+     * <p>Reproduced here before the fix rather than trusted: with one branch spelled bare again, both
+     * cards rendered {@code <h3 …>Empty rows</h3>} — the section post's <b>title</b>, which the row
+     * has no more of its own than it has a {@code heading}. The report named the heading and the
+     * mechanism reaches whichever the parent frame offers first; either way the words are somebody
+     * else's.</p>
+     */
+    @Test
+    @DisplayName("SH832: an empty row draws an empty card, not its section's heading")
+    void anEmptyRowDoesNotBorrowItsParentsWords() {
+        String html = shPageRenderService.render(siteName, EMPTY_ROWS_URL, ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("the section still draws its own heading, once — the fix must not cost the "
+                        + "page the one place the words belong")
+                .containsOnlyOnce("Ask a question, get an answer");
+        assertThat(html)
+                .as("""
+                        and the cards are there and empty: two rows, two `shio-card` elements, no \
+                        `h3` inside either. A card that vanished would be a different defect and \
+                        would pass an assertion written only about the heading.""")
+                .contains("data-shio-row=\"features\"");
+        assertThat(html.split("data-shio-row=\"features\"", -1).length - 1)
+                .as("both rows render, so the guard is guarding rather than the block being skipped")
+                .isEqualTo(2);
+        assertThat(html.substring(html.indexOf("<ul class=\"shio-grid\"")))
+                .as("no leaf inside the grid drew anything: `{{#if ./title}}` is false where "
+                        + "`{{#if title}}` was true, which is the whole of SH832")
+                .doesNotContain("<h3")
+                .doesNotContain("<p sh-field=\"features.");
     }
 
     @Test

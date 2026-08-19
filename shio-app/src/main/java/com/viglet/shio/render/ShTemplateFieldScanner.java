@@ -130,8 +130,9 @@ public final class ShTemplateFieldScanner {
 
         /** The first path segment, which is what a reserved frame is recognised by. */
         public String root() {
-            int dot = name.indexOf('.');
-            return dot < 0 ? name : name.substring(0, dot);
+            String path = name.startsWith("./") ? name.substring(2) : name;
+            int dot = path.indexOf('.');
+            return dot < 0 ? path : path.substring(0, dot);
         }
     }
 
@@ -302,23 +303,42 @@ public final class ShTemplateFieldScanner {
     /**
      * Whether a token is a plain path this can reason about.
      *
-     * <p>Excluded: the empty token, a data variable, {@code this} and its {@code ./} forms, a
-     * parent reference ({@code ../}), a subexpression, a quoted literal, a number, and anything
-     * with a character a path cannot contain. Every one of those is either not a field or is
-     * resolved somewhere this cannot see.</p>
+     * <p>Excluded: the empty token, a data variable, bare {@code this}, a parent reference
+     * ({@code ../}), a subexpression, a quoted literal, a number, and anything with a character a
+     * path cannot contain. Every one of those is either not a field or is resolved somewhere this
+     * cannot see.</p>
+     *
+     * <h3>{@code ./name} is a field, and it used to be dropped with the rest (SH832)</h3>
+     *
+     * <p>Handlebars resolves a bare name <b>up the context chain</b>, so inside {@code {{#each
+     * features}}} a row with no {@code title} of its own finds the section post's — which is its
+     * heading. Every guard around such a name is inert, because the thing it guards against is never
+     * absent, and the page renders the parent's words in a card that should be empty. The cure is to
+     * spell the reference {@code ./title}, so the generated layout now does; every one of those was
+     * then invisible to this scanner, which is the field lint going blind on exactly the templates it
+     * ships with. The {@code ./} prefix is stripped and the rest read as the path it is — one
+     * character of grammar, and the alternative spelling {@code this.title} is worse here: it passes
+     * this test as written and reports {@code this} as an undeclared field on every layout.</p>
+     *
+     * <p>{@code ../title} stays excluded. It resolves in a scope this cannot see, which is the same
+     * reason it was excluded before.</p>
      */
     private static boolean isPath(String token) {
         if (token == null || token.isEmpty() || NOT_A_FIELD.contains(token)) {
             return false;
         }
-        char first = token.charAt(0);
+        String path = token.startsWith("./") ? token.substring(2) : token;
+        if (path.isEmpty() || NOT_A_FIELD.contains(path)) {
+            return false;
+        }
+        char first = path.charAt(0);
         if (first == '@' || first == '.' || first == '"' || first == '\'' || first == '('
                 || Character.isDigit(first)) {
             return false;
         }
         // A path segment may hold letters, digits, `_`, `-` and `.`; a `=` means this was a hash
         // pair and not a positional argument.
-        return token.chars().allMatch(c -> Character.isLetterOrDigit(c)
+        return path.chars().allMatch(c -> Character.isLetterOrDigit(c)
                 || c == '_' || c == '-' || c == '.');
     }
 
