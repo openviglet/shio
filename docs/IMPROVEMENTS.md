@@ -777,3 +777,58 @@ could not read the same string.
 One conversion, not a colour library: `oklch` and `color-mix` to sRGB, enough for a
 relative-luminance ratio. Where a value is genuinely unparseable the abstention is
 correct and should name the value rather than the space.
+
+### XL.3 The row with nothing in it (SH857)
+
+SH832 was right and it uncovered this. Before it, an empty row borrowed its parent's
+title and drew a card repeating the section heading — wrong, and it looked populated.
+Now the same row draws a card with nothing in it, and a curator sees two grey rectangles
+under a heading.
+
+The stored value is exactly that:
+
+    post:VigR7/sections/bcb58dcbb
+      heading  "Ask a question, get an answer"
+      features [ {}, {} ]
+
+Two rows, each an empty object. `propose` derived them because the source block had two
+repeated units — *"3 repeated units, each with text"* is its own reason for proposing a
+`SectionFeatureGrid` — and then no field of either unit produced a value. The rows were
+written regardless, and the layout draws one `<li class="shio-card">` per row.
+
+This is the same seam SH684 closed one level up: a candidate whose required field cannot
+be filled is declined rather than written. A row is the same case at the row's
+granularity, and it has no guard.
+
+Either side can hold it and the layout is the cheaper one. `propose` cannot always know
+whether a row will render — a row carrying only an `icon` is legitimately thin — but a
+row where **every** declared field is empty draws a box and nothing else, on any type.
+Skip it, and let `propose` report how many it dropped so the count is not silent.
+
+`shio diff` should also stop scoring an empty row as a row.
+
+### XL.4 The overlay that cannot be dismissed (SH858)
+
+The replica serves `www.viglet.org`'s cookie banner, painted correctly, fixed over the
+content, with **Decline** and **Accept analytics** buttons and a close cross. None of
+them do anything: measured on the served page, zero `onclick` or `addEventListener` in
+that region and **no `<script src>` anywhere**.
+
+`clone` predicted it in the exact words — *"the replica will render and not respond — a
+handler, a toggle, **a modal that will not close**"* — and predicting a defect is not
+the same as it being acceptable. This one is not cosmetic. It is a permanent obstruction
+of the page's own content, and every reader meets it.
+
+`propose` already recognises the category. Its own reason for not proposing these blocks
+is that *"an overlay is painted over the page rather than part of it"*. An overlay is
+chrome **whose entire purpose is behaviour** — it exists to appear, be answered, and go
+away. Keeping its markup and dropping its script keeps the one part that has no value
+alone.
+
+There is a second reason beyond appearance: a consent banner that cannot record consent
+is not a consent banner. Shipping one that looks functional and stores nothing is worse
+than shipping none, and SH421 already treats a dropped site script as a compliance
+defect that renders perfectly.
+
+So: an overlay whose dismiss behaviour was not captured is dropped, and the run names
+it. `--scripts` remains how a caller asks for the working one.

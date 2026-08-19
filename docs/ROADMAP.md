@@ -13,6 +13,8 @@
 
 - 📋 **SH855** (deps: SH848 ✅) **The elected accent is emerald on a site whose every button is orange, and both obvious signals point at the orange** — It chose color.emerald.500 at 16 var() references and chroma .17 over --vg-brand at 20 references and chroma near .19. → §XL.1
 - 📋 **SH856** (deps: SH852 ✅) **The contrast floor abstains on the colour space every modern source ships and tells the reader to look at the page** — It could not parse oklch on the one pair it was built to grade, so the check that replaces a human's eye asked for one. → §XL.2
+- 📋 **SH857** (deps: SH832 ✅) **A collection row with no field values is written anyway and renders as an empty card** — One section holds features [{},{}] and the page draws two empty boxes, which SH832 stopped masking with the parent's heading rather than stopped producing. → §XL.3
+- 📋 **SH858** (deps: —) **A consent overlay is kept without the script that dismisses it, so it covers the page forever and records no consent** — The banner is verbatim chrome with Decline and Accept buttons and zero handlers on a page carrying no script src at all. → §XL.4
 
 ## Priority
 
