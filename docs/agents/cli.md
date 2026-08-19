@@ -1422,6 +1422,25 @@ it. Four decisions worth keeping:
   was **not allowed to fix** is its own list, `unheld`, beside `unchecked` in the palette report and
   naming the slot the source never stated, because a curator told only that the card is unreadable
   cannot tell which half to change.
+- **The list with no line, which is SH849's defect one level inside the parameter it fixed (SH854).**
+  SH852's third answer — `unheld`, the pair the contrast floor **judged, failed and was not allowed
+  to fix** — reached `palette.unheld` in the document and `--json` and stopped there. So a dark
+  source, which states its page and no card, printed *"palette: 2 of 9 token(s) from the captured
+  stylesheet"* with no `refused` clause over a replica whose cards are unreadable: two successes
+  printed over a defect, on the one report a curator reads about appearance.
+  `report-wiring.test.mjs` could not see it, and correctly — **the parameter *is* passed**; what was
+  missing is a loop inside it, and no rule about destructured parameters reaches one. **The
+  instrument first (SH338):** that file gains a second rule whose subject is the palette's own fields
+  from both ends — the keys `vocabularyTokensFrom` returns and the keys the document forwards — and
+  the question is whether each is read **somewhere other than the forwarding literal itself**.
+  Forwarding a field into `--json` is not reading it: that is precisely the state `unheld` was in,
+  and the state a reader of the printed report cannot tell from a field nobody computed. `tokens`
+  passes because it becomes the `Theme` post; everything else passes only by being formatted into a
+  line. Run before the fix, it named `unheld` and nothing else. The line itself is worded to be
+  neither of its neighbours — the other two say *this theme's default stands*, and a reader who took
+  this for one of them would think the run had already handled it, so it says **`contrast NOT HELD`**
+  and *both halves ship as they are*, then names the slot the source never stated, which is the half
+  a curator can fix.
 - **One `:root`, two vocabularies, and the second `<style>` deciding (SH853).** SH850 put the
   captured theme's `:root` block back on the page, which its own rules need; the generated layout
   emits the Shio theme first and the captured one second, so at equal specificity **the source wins

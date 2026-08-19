@@ -164,6 +164,23 @@ function declaredObject(source, name) {
   return declaration ? balanced(source, declaration.index + declaration[0].length - 1) : null;
 }
 
+/** The object literal `export function <name>` returns, so a builder's own shape can be read. */
+function returnedObject(source, name) {
+  const declaration = new RegExp(`\\bexport function ${name}\\s*\\(`).exec(source);
+  if (!declaration) return null;
+  const at = source.indexOf("return {", declaration.index);
+  return at < 0 ? null : balanced(source, source.indexOf("{", at));
+}
+
+/** The `<name>: { … }` literal in this source, with the span it occupies. */
+function nestedLiteral(source, name) {
+  const declaration = new RegExp(`\\b${name}:\\s*\\{`).exec(source);
+  if (!declaration) return null;
+  const open = declaration.index + declaration[0].length - 1;
+  const literal = balanced(source, open);
+  return literal ? { literal, at: open, end: open + literal.length } : null;
+}
+
 test("SH849: every field a report formatter reads is passed at every call site it has", async () => {
   const files = await modules();
   const found = formatters(files);
@@ -211,4 +228,43 @@ test("SH849: the reader finds the formatter this was filed on, and the call site
   assert.ok(site, "the command's call site is not being read, so nothing about it is being checked");
   assert.ok(site.keys.has("palette") && site.keys.has("markup"),
     `the two fields SH849 found dropped: ${[...site.keys].sort().join(" ")}`);
+});
+
+/**
+ * SH854 — the same defect one level inside the parameter, where SH849's rule cannot reach.
+ *
+ * <p>SH852 added `unheld` — the pair the contrast floor judged, failed and was **not allowed to
+ * fix**, which is the worst of the three states it can report — to what `vocabularyTokensFrom`
+ * returns and to the `palette` literal `--json` carries, and no line to `describeConversion`. The
+ * parameter was passed, so the rule above was satisfied and stayed satisfied: what was missing is a
+ * loop *inside* it, and no rule about destructured parameters can see one.</p>
+ *
+ * <p>So the subject here is the palette's own fields, from both ends — the keys the builder returns
+ * and the keys the document forwards — and the question is whether each is read somewhere **other
+ * than the forwarding literal itself**. Forwarding a field into `--json` is not reading it: that is
+ * precisely the state `unheld` was in, and the state a reader of the printed report cannot tell from
+ * a field nobody computed. `tokens` passes because it becomes the `Theme` post; every other field
+ * passes only by being formatted into a line.</p>
+ */
+test("SH854: every field of the palette report is read somewhere other than the literal that forwards it", async () => {
+  const files = await modules();
+  const convert = files.find((file) => file.name === "convert.mjs").source;
+  const vocabulary = files.find((file) => file.name === "vocabulary-theme.mjs").source;
+
+  const returned = returnedObject(vocabulary, "vocabularyTokensFrom");
+  const forwarded = nestedLiteral(convert, "palette");
+  assert.ok(returned, "vocabularyTokensFrom's return is not being read, so nothing here is checked");
+  assert.ok(forwarded, "the palette literal convert.mjs builds is not being read");
+
+  const subject = [...new Set([...keysOf(returned), ...keysOf(forwarded.literal)])].sort();
+  // Non-vacuity: the palette has had at least six fields since SH849, and this file only grows.
+  assert.ok(subject.length >= 6, `palette fields found: ${subject.join(" ")}`);
+
+  const elsewhere = convert.slice(0, forwarded.at) + convert.slice(forwarded.end);
+  const unread = subject.filter((key) => !new RegExp(`palette\\s*\\??\\.\\s*${key}\\b`).test(elsewhere));
+
+  assert.deepEqual(unread, [],
+    "A palette field the document carries and the report never prints is computed, tested and passed "
+      + "to nobody — SH849's defect one level inside the parameter it fixed, which is where SH852 "
+      + "put `unheld`. Print it in describeConversion, or stop reporting it");
 });

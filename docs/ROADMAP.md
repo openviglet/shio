@@ -11,8 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH854** (deps: —) **The pair the contrast floor may not fix reaches --json and never the report the command prints** — SH852 added `unheld` to the palette and to `--json` and no line to `describeConversion`, so the state worse than a refusal is the one a curator never reads. → §XVII.141
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

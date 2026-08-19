@@ -1781,6 +1781,19 @@ export function describeConversion({ document, sections, markup = [], pages = []
           + "them is in a colour space this reader does not parse. Look at the page",
       );
     }
+    // SH854 — the third of the floor's answers, and the worst: judged, failed, and nothing this run
+    // was allowed to move. It is not a refusal — no slot was reverted, so `rejected` would report a
+    // value the source filled as one it did not — and it is not unchecked, because the arithmetic
+    // ran. Named last because it is the line a reader has to act on: the pair ships unreadable, and
+    // `detail` carries the slot the source never stated, which is the half a curator can fix.
+    for (const row of palette.unheld ?? []) {
+      lines.push(
+        `    --${row.text.replace(".", "-")} ${preview(row.value)} on `
+          + `--${row.on.replace(".", "-")} ${preview(row.against)} — contrast NOT HELD: ${row.detail}. `
+          + "Both halves ship as they are; state the missing slot in the source, or edit the Theme "
+          + "post's TOKENS",
+      );
+    }
     // SH853 — a name both `:root` blocks declare. Empty by construction since every family here is
     // prefixed `shio-`, so a line printed at all means a *source* reached into that namespace: the
     // one case the prefix cannot rule out, and the one the cascade would otherwise settle by which

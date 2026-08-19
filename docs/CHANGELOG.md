@@ -1252,6 +1252,7 @@
 - **SH851** — A page's own CSS is read for the custom properties it never declares, so verify warns and the appearance hash moves when a stylesheet loses its tokens.
 - **SH852** — All four painted pairs now have a contrast floor: precedence is first appearance in CONTRAST_PAIRS and a pair may revert only the slot it introduces, every pair is re-judged until a pass moves nothing, and a pair the floor may not fix is reported as `unheld` rather than shipped as two filled slots.
 - **SH853** — The Shio theme's fifteen custom properties are prefixed `--shio-`, so the two `:root` blocks a mixed page carries share no name by construction, and `collidingProperties` reports any a source reaches into anyway instead of leaving `<style>` order to decide.
+- **SH854** — The pair the contrast floor may not fix is now a line in the printed report, and a second wiring rule holds every palette field to being read somewhere other than the literal that forwards it into `--json`.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

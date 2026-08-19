@@ -1736,6 +1736,42 @@ test("SH846: a palette the floor never touches reports exactly as it did before"
   assert.match(count, /and 6 slot\(s\) this theme has no source role for/);
 });
 
+test("SH854: the pair the floor was not allowed to fix is a line in the report, not only in --json", () => {
+  // The same source as the test above, which is the point: a run that says `2 of 9, nothing refused`
+  // over a replica whose cards are unreadable is two successes printed over a defect. SH852 computed
+  // the fact and carried it to `--json`; a reader of the text had no reason to make that call.
+  const conversion = buildConversion({
+    proposal: withCapturedTheme({
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+      theme: {
+        css: CAPTURED_CSS,
+        tokens: {},
+        rows: [
+          { path: "vg.background", value: "#0f172a", type: "color", source: "declared", group: "color", role: "background", refs: 2, page: true },
+          { path: "vg.foreground", value: "#f1f5f9", type: "color", source: "declared", group: "color", role: "text", refs: 3, page: true },
+        ],
+      },
+    }),
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.deepEqual(conversion.palette.unheld.map((row) => [row.text, row.on]),
+    [["shio-color.ink", "shio-color.surface-sunk"]]);
+
+  const report = describeConversion(conversion);
+  assert.match(report, /--shio-color-ink [^\n]*on --shio-color-surface-sunk [^\n]*contrast NOT HELD/,
+    "neither refused nor unchecked: nothing was reverted, so `rejected` would name a slot the "
+      + "source filled as one it did not, and the arithmetic ran, so `unchecked` would be a lie the "
+      + "other way");
+  assert.match(report, /--shio-color-surface-sunk is this theme's default and the source states none/,
+    "the fix is the slot the source never stated - a curator told only that a pair is unreadable "
+      + "cannot tell which of the two halves to go and change");
+  assert.match(report, /Both halves ship as they are/,
+    "and it says the pair ships, because the other two lines say a default stands and a reader who "
+      + "read this as one of them would think the run had already handled it");
+});
+
 test("SH509: a fidelity conversion carries no theme it would not use", () => {
   // The roles are SH508's, and a verbatim page has none of them. Writing it anyway would be a post
   // no page renders — and on the one path that already reaches 0.00% against its source.

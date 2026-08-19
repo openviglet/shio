@@ -512,54 +512,6 @@ asserted at the level the agent surface is.
 > runnable Node app" is superseded by `create-shio-app` (SH8) and, going forward, by
 > blueprints → [CHANGELOG.md](CHANGELOG.md) Block J.
 
-## XVII Replication (Block Q) — a site that already exists becomes one an agent can author
-
-The question this block answers is one a customer asks in one sentence: *take the site
-we have and make it a Shio site the agent maintains.* Nothing in Blocks A–P is wrong for
-it, and none of it is aimed at it — every capability assumes the site is being
-**built**, from a blueprint or from nothing. A replication inverts the direction: the
-target already exists, somebody else's markup is the specification, and "done" is not
-"it renders" but "it renders the same".
-
-That inversion splits into three phases, and each has a different owner. **Capture** is
-the CLI's, because the instance fetches no URL (SH268) and runs no browser (a standing
-non-goal). **Convert** is the file tree's, because a proposal a human corrects before it
-is applied is a diff, not an API call (P4, P7). **Prove** is the perception loop's, and
-it is the phase Block P left honest about its limits — the appearance digest covers the
-failure an *agent* creates and not the one a human sees (SH265), which is precisely the
-failure a replica has.
-
-Two gaps in the middle are not about replication at all: they are ordinary site features
-nobody has needed yet because no first-party blueprint has a menu, a second page of a
-listing, or six languages. They surface here because a real site has all three.
-
-### XVII.141 The list with no line (SH854)
-
-SH852 gave the contrast floor a third answer. `unchecked` is a pair it could not judge;
-`rejected` is a slot it reverted; `unheld` is the pair it **judged, failed, and was not
-allowed to fix** — the card on a dark source, where the source states no
-`shio-color.surface-sunk` and the only revertible half is the page's own ink.
-
-That is the worst of the three states and the only one with no line in
-`describeConversion`. The formatter loops over `mapped`, `rejected`, `unmapped`,
-`unchecked` and — since SH853 — `collides`. `unheld` reaches `palette.unheld` in the
-document and `--json`, and stops there.
-
-So the run prints *"palette: 2 of 9 token(s) from the captured stylesheet"* over a
-replica whose cards are unreadable, and the fact that says so is one `--json` call away
-from a reader who has no reason to make it. Which is SH849's defect exactly one task
-later: computed, carried, tested, and passed to nobody. `report-wiring.test.mjs` did not
-catch it because the parameter *is* passed — `palette` reaches the formatter whole, and
-what is missing is a loop inside it, which no rule about destructured parameters can
-see.
-
-The line takes the slot the source never stated, because that is the fix and a curator
-told only that a pair is unreadable cannot tell which half to change — the same argument
-`unheld[].detail` already carries and nothing prints.
-
-The assertion that closes it: every list `vocabularyTokensFrom` returns is reachable
-from the text `convert` prints.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
