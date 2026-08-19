@@ -37,7 +37,10 @@ import {
   rewriteUrls,
   scanCss,
 } from "../src/theme.mjs";
-import { CONTRAST_PAIRS, VOCABULARY_THEME_TOKENS, vocabularyTokensFrom } from "../src/vocabulary-theme.mjs";
+import {
+  collidingProperties, CONTRAST_PAIRS, declaredProperties, VOCABULARY_THEME_CSS,
+  VOCABULARY_THEME_TOKENS, vocabularyTokensFrom,
+} from "../src/vocabulary-theme.mjs";
 
 const declarationsOf = (css) => scanCss(css).declarations;
 
@@ -606,15 +609,15 @@ test("SH831: the page's own colour wins the slot, and the accent read more often
   // The measurement this rule exists for: ranking `text` by reference count picks #0b7285 - the
   // accent - and paints the replica's body copy teal, which is a worse artefact than the generic
   // default it replaced. A colour the source states at page level is the only one taken.
-  assert.equal(from["color.ink"], "#10243a", "the body's own colour, not the one four rules reach for");
-  assert.equal(from["color.surface"], "#eef3f8");
-  assert.equal(tokens.color.ink.$value, "#10243a");
-  assert.equal(tokens.color["ink-muted"].$value, VOCABULARY_THEME_TOKENS.color["ink-muted"].$value,
+  assert.equal(from["shio-color.ink"], "#10243a", "the body's own colour, not the one four rules reach for");
+  assert.equal(from["shio-color.surface"], "#eef3f8");
+  assert.equal(tokens["shio-color"].ink.$value, "#10243a");
+  assert.equal(tokens["shio-color"]["ink-muted"].$value, VOCABULARY_THEME_TOKENS["shio-color"]["ink-muted"].$value,
     "and the accent did not slide into the next text slot either: `--brand` is excluded from the "
       + "declared half outright, not merely outranked, so a slot with nothing to fill it keeps "
       + "this file's default");
   assert.ok(
-    unmapped.some((row) => row.name === "color.ink-muted" && row.role === "text#2"),
+    unmapped.some((row) => row.name === "shio-color.ink-muted" && row.role === "text#2"),
     "the second text colour is reported by the role it looked for, so a reader can tell a default "
       + "that was chosen from one that was never offered a value (P9)",
   );
@@ -626,8 +629,8 @@ test("SH831: a recurring literal fills a slot the source declares no variable fo
 
   // `border-color` and `fill` three times each: the extractor already ranks these by role, which is
   // its published contract, so they are taken at their own rank with no second inference.
-  assert.equal(from["color.line"], "#d9e2ec");
-  assert.equal(from["color.accent"], "#ff6600",
+  assert.equal(from["shio-color.line"], "#d9e2ec");
+  assert.equal(from["shio-color.accent"], "#ff6600",
     "the source's accent, which is the single line the whole task is about: the replica stopped "
       + "carrying this theme's dark green beside a page painted orange");
 });
@@ -640,8 +643,8 @@ test("SH831: a source with no palette at all changes nothing, and says so for ev
     "byte-identical to the defaults, so a capture with nothing to say leaves the theme it had (P5)");
   assert.deepEqual(
     unmapped.map((row) => row.name),
-    ["color.accent", "color.ink", "color.ink-muted", "color.line", "color.surface",
-      "color.surface-sunk", "size.radius", "text.base", "text.family"],
+    ["shio-color.accent", "shio-color.ink", "shio-color.ink-muted", "shio-color.line", "shio-color.surface",
+      "shio-color.surface-sunk", "shio-size.radius", "shio-text.base", "shio-text.family"],
     "and every slot the bridge names is named back rather than silently kept - the report is the "
       + "difference between a theme that matched the source and one that only looks like it "
       + "might have. SH834: nine, because `size.measure` and `space.step` are in no group and are "
@@ -694,9 +697,9 @@ test("SH834: a group with one role is taken at its rank, with no page-level stat
   // The argument SH831 made for colour is about COMPETING roles - the same colour is text here and
   // a background there - so it does not carry to a group that has one. `body { border-radius }`
   // would mean nothing, so there is nothing for a page-level selector to disambiguate.
-  assert.equal(from["size.radius"], "6px", "used on three elements and on no page-level selector");
-  assert.equal(tokens.size.radius.$value, "6px");
-  assert.equal(from["text.family"], '"Fixture Sans",system-ui,sans-serif',
+  assert.equal(from["shio-size.radius"], "6px", "used on three elements and on no page-level selector");
+  assert.equal(tokens["shio-size"].radius.$value, "6px");
+  assert.equal(from["shio-text.family"], '"Fixture Sans",system-ui,sans-serif',
     "and the stack, which had nowhere to land until this theme declared a token for it - "
       + "`.shio-page` hardcoded `system-ui, …`, so a replica in the source's colours and the "
       + "system font read as *nearly* the source");
@@ -707,17 +710,17 @@ test("SH834: a scale is refused rather than guessed, and the refusal is reported
 
   // 28px is declared three times, so `recurringTokens` writes `font.size.1` — and rank is not
   // scale position: this theme's five text steps are ordered by size, so taking rank 1 for
-  // `text.base` would set the body copy to whatever size the source happened to repeat most.
+  // `shio-text.base` would set the body copy to whatever size the source happened to repeat most.
   assert.ok(themeFor(TYPE_SHEET).rows.some((row) => row.path === "font.size.1"),
     "the row is there to be taken, which is what makes the refusal a decision rather than a gap");
-  assert.ok(!mapped.some((row) => row.name === "text.base"));
-  assert.equal(tokens.text.base.$value, VOCABULARY_THEME_TOKENS.text.base.$value);
+  assert.ok(!mapped.some((row) => row.name === "shio-text.base"));
+  assert.equal(tokens["shio-text"].base.$value, VOCABULARY_THEME_TOKENS["shio-text"].base.$value);
   assert.ok(
-    unmapped.some((row) => row.name === "text.base" && row.role === "font.size#1"),
+    unmapped.some((row) => row.name === "shio-text.base" && row.role === "font.size#1"),
     "reported, because a refusal nobody states is indistinguishable from a group nobody read",
   );
   for (const step of ["lead", "h1", "h2", "h3"]) {
-    assert.equal(tokens.text[step].$value, VOCABULARY_THEME_TOKENS.text[step].$value,
+    assert.equal(tokens["shio-text"][step].$value, VOCABULARY_THEME_TOKENS["shio-text"][step].$value,
       `text.${step} is not in the bridge at all - four steps of a scale cannot be derived from a `
         + "ranking, and inventing three of them from one measured value is the guess this refuses");
   }
@@ -729,7 +732,7 @@ test("SH834: a page-level font-size is the one step of the scale that can be tak
 
   // The declared half has carried `page` since SH831; the recurring half carries it now, because a
   // literal on `body` is the same statement as a variable on `body` and only one of them was read.
-  assert.equal(from["text.base"], "17px",
+  assert.equal(from["shio-text.base"], "17px",
     "one occurrence, on the page's own selector, outranks three of the same value on classes");
 });
 
@@ -798,10 +801,10 @@ test("SH840: a page-level row outranks a more-referenced one, which is SH831's f
     rows.map((row) => [row.path, row.value, row.refs, row.page === true]),
     [["color.text-1", "#333333", 5, false], ["color.text-2", "#111111", 1, true]],
   );
-  assert.equal(from["color.ink"], "#111111",
+  assert.equal(from["shio-color.ink"], "#111111",
     "the page's own text colour, not the one five rules reach for - a replica whose body copy is "
       + "the card's colour is the artefact SH831 refused to ship on the other half of the palette");
-  assert.equal(from["color.ink-muted"], "#333333",
+  assert.equal(from["shio-color.ink-muted"], "#333333",
     "and the repeated one is not discarded, it falls to the next slot: the sort decides which of "
       + "several eligible rows fills a slot first, which is why this is not a bar in `admits`");
 });
@@ -900,11 +903,11 @@ test("SH845: the declared palette reaches the theme, and the transparent literal
   const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
   const kept = Object.fromEntries(unmapped.map((row) => [row.name, row.value]));
 
-  assert.equal(from["color.ink"], "#234652", "the source's text colour, which the replica used to "
+  assert.equal(from["shio-color.ink"], "#234652", "the source's text colour, which the replica used to "
     + "render with this file's hardcoded #12151a because the token was never written");
-  assert.equal(from["color.surface"], "#ffffff");
-  assert.equal(from["size.radius"], "8px");
-  assert.equal(kept["color.surface-sunk"], VOCABULARY_THEME_TOKENS.color["surface-sunk"].$value,
+  assert.equal(from["shio-color.surface"], "#ffffff");
+  assert.equal(from["shio-size.radius"], "8px");
+  assert.equal(kept["shio-color.surface-sunk"], VOCABULARY_THEME_TOKENS["shio-color"]["surface-sunk"].$value,
     "a slot the source did not state keeps the default and is reported - which is a better artefact "
       + "than a card painted with a utility class's transparent (P9)");
 });
@@ -921,12 +924,12 @@ test("SH846: a fully transparent value is not a page, so the slot is refused rat
     colorRow("vg.fg", "#234652", "text"),
   ]);
 
-  assert.equal(tokens.color.surface.$value, VOCABULARY_THEME_TOKENS.color.surface.$value,
-    "`.shio-page` sets `background: var(--color-surface)`, so a transparent one shows whatever lies "
+  assert.equal(tokens["shio-color"].surface.$value, VOCABULARY_THEME_TOKENS["shio-color"].surface.$value,
+    "`.shio-page` sets `background: var(--shio-color-surface)`, so a transparent one shows whatever lies "
       + "behind it - white here only because the document is, which is the accident that survives "
       + "review and breaks on a dark layout");
-  assert.deepEqual(mapped.map((row) => row.name), ["color.ink"]);
-  assert.equal(rejected[0].name, "color.surface");
+  assert.deepEqual(mapped.map((row) => row.name), ["shio-color.ink"]);
+  assert.equal(rejected[0].name, "shio-color.surface");
   assert.equal(rejected[0].reason, "transparent");
   assert.match(rejected[0].detail, /the source's background#1 is #0000, which paints nothing/);
 });
@@ -934,9 +937,9 @@ test("SH846: a fully transparent value is not a page, so the slot is refused rat
 test("SH846: refused and never-offered are two facts, and a rank nothing filled is the second", () => {
   const { rejected, unmapped } = vocabularyTokensFrom([colorRow("vg.bg", "#0000", "background")]);
 
-  assert.deepEqual(rejected.map((row) => row.name), ["color.surface"]);
-  assert.deepEqual(unmapped.map((row) => row.name).filter((name) => name.startsWith("color.surface")),
-    ["color.surface-sunk"],
+  assert.deepEqual(rejected.map((row) => row.name), ["shio-color.surface"]);
+  assert.deepEqual(unmapped.map((row) => row.name).filter((name) => name.startsWith("shio-color.surface")),
+    ["shio-color.surface-sunk"],
     "the source states ONE background and the floor took it, so `background#2` was never offered a "
       + "row at all - calling that refused would report a defect the source does not have");
 });
@@ -947,23 +950,23 @@ test("SH846: a mapping never writes a pair it assembled that cannot be read", ()
     colorRow("vg.fg", "#f9fafb", "text"),
   ]);
 
-  assert.equal(tokens.color.ink.$value, VOCABULARY_THEME_TOKENS.color.ink.$value);
-  assert.deepEqual(mapped.map((row) => row.name), ["color.surface"],
+  assert.equal(tokens["shio-color"].ink.$value, VOCABULARY_THEME_TOKENS["shio-color"].ink.$value);
+  assert.deepEqual(mapped.map((row) => row.name), ["shio-color.surface"],
     "the surface is the larger area and the more certain reading, so the text is the half that "
       + "gives way where both came from the source");
-  assert.equal(rejected[0].name, "color.ink");
+  assert.equal(rejected[0].name, "shio-color.ink");
   assert.equal(rejected[0].reason, "contrast");
-  assert.match(rejected[0].detail, /1\.05:1 against --color-surface #ffffff, under the 1\.5:1 floor/);
+  assert.match(rejected[0].detail, /1\.05:1 against --shio-color-surface #ffffff, under the 1\.5:1 floor/);
 });
 
 test("SH846: the failure does not need a bad source — a dark page under a default ink is the likelier half", () => {
   const { tokens, rejected } = vocabularyTokensFrom([colorRow("vg.bg", "#0f172a", "background")]);
 
-  assert.equal(tokens.color.surface.$value, VOCABULARY_THEME_TOKENS.color.surface.$value,
+  assert.equal(tokens["shio-color"].surface.$value, VOCABULARY_THEME_TOKENS["shio-color"].surface.$value,
     "nothing about #0f172a is wrong; it is wrong under THIS file's near-black default, and no rule "
       + "about the source's own values could have caught it");
-  assert.equal(rejected[0].name, "color.surface");
-  assert.match(rejected[0].detail, /1\.02:1 against --color-ink/);
+  assert.equal(rejected[0].name, "shio-color.surface");
+  assert.match(rejected[0].detail, /1\.02:1 against --shio-color-ink/);
 });
 
 test("SH846: an ordinary dark theme states both halves and nothing moves", () => {
@@ -974,7 +977,7 @@ test("SH846: an ordinary dark theme states both halves and nothing moves", () =>
 
   assert.deepEqual(rejected, [], "the floor must not fire on the case it exists to allow through");
   assert.deepEqual(mapped.map((row) => row.value).sort(), ["#0f172a", "#f1f5f9"]);
-  assert.equal(tokens.color.surface.$value, "#0f172a");
+  assert.equal(tokens["shio-color"].surface.$value, "#0f172a");
 });
 
 test("SH846: the floor is below every published grade, so a real caption grey survives it", () => {
@@ -988,7 +991,7 @@ test("SH846: the floor is below every published grade, so a real caption grey su
   ]);
 
   assert.deepEqual(mapped.map((row) => [row.name, row.value]).sort(),
-    [["color.ink", "#111111"], ["color.ink-muted", "#999999"], ["color.surface", "#ffffff"]]);
+    [["shio-color.ink", "#111111"], ["shio-color.ink-muted", "#999999"], ["shio-color.surface", "#ffffff"]]);
 });
 
 test("SH846: a check that could not run is reported, not passed", () => {
@@ -999,13 +1002,13 @@ test("SH846: a check that could not run is reported, not passed", () => {
 
   assert.equal(parseColor("oklch(0.98 0.01 250)"), null,
     "this module scans rather than models, and a colour-space conversion is modelling");
-  assert.deepEqual(mapped.map((row) => row.name), ["color.ink", "color.surface"],
+  assert.deepEqual(mapped.map((row) => row.name), ["shio-color.ink", "shio-color.surface"],
     "refusing what it cannot read would throw away the source's palette, which is the loss SH845 "
       + "spent a task repairing");
   assert.deepEqual(rejected, []);
   assert.deepEqual(unchecked.map((row) => [row.text, row.on]),
-    [["color.ink", "color.surface"], ["color.ink-muted", "color.surface"], ["color.surface", "color.accent"]],
-    "SH852 - three pairs, because the button's label IS `color.surface`: the value the page pair "
+    [["shio-color.ink", "shio-color.surface"], ["shio-color.ink-muted", "shio-color.surface"], ["shio-color.surface", "shio-color.accent"]],
+    "SH852 - three pairs, because the button's label IS `shio-color.surface`: the value the page pair "
       + "could not be judged on is the same value the button is written in, and a report naming two "
       + "of the three would have the curator fix a page whose button is unread for the same reason");
 });
@@ -1063,11 +1066,11 @@ test("SH847: the declared accent reaches the theme, having been refused twice ov
 
   const { mapped } = vocabularyTokensFrom(rows);
   const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
-  assert.equal(from["color.accent"], "#ea580c",
+  assert.equal(from["shio-color.accent"], "#ea580c",
     "the one slot a curator sees most: it paints every button on the replica, and it kept this "
       + "file's dark green on a site whose accent is orange");
-  assert.equal(from["color.surface"], "#ffffff");
-  assert.equal(from["color.ink"], "#234652");
+  assert.equal(from["shio-color.surface"], "#ffffff");
+  assert.equal(from["shio-color.ink"], "#234652");
 });
 
 test("SH847: the signal is stated relative to the page, so a dark source reads the same way", () => {
@@ -1080,10 +1083,10 @@ test("SH847: the signal is stated relative to the page, so a dark source reads t
   const { mapped } = vocabularyTokensFrom(rows);
   const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
 
-  assert.equal(from["color.accent"], "#38bdf8",
+  assert.equal(from["shio-color.accent"], "#38bdf8",
     "the button's text is the page's surface here too - a test written in absolute lightness would "
       + "have caught the white-on-orange case and missed this one entirely");
-  assert.equal(from["color.surface"], "#0f172a");
+  assert.equal(from["shio-color.surface"], "#0f172a");
 });
 
 test("SH847: a reversal is a labelled statement, so one button is enough and counting is the wrong question", () => {
@@ -1170,13 +1173,13 @@ test("SH848: a shadcn palette hands over its brand colour, not the near-white it
   const { mapped, tokens } = vocabularyTokensFrom(rows);
   const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
 
-  assert.equal(tokens.color.accent.$value, "#c2410c",
-    "measured on the replica as `--color-accent: #0b5533`, this file's built-in dark green, "
+  assert.equal(tokens["shio-color"].accent.$value, "#c2410c",
+    "measured on the replica as `--shio-color-accent: #0b5533`, this file's built-in dark green, "
       + "unchanged across four rounds on a site whose accent is orange");
-  assert.equal(from["color.accent"], "#c2410c");
-  assert.equal(from["color.surface"], "#ffffff", "and the slots the page states outright are "
+  assert.equal(from["shio-color.accent"], "#c2410c");
+  assert.equal(from["shio-color.surface"], "#ffffff", "and the slots the page states outright are "
     + "untouched: the new signal is a fallback, not a re-reading of what already worked");
-  assert.equal(from["color.ink"], "oklch(14.5% 0 0)");
+  assert.equal(from["shio-color.ink"], "oklch(14.5% 0 0)");
 
   const brand = rows.find((row) => row.name === "--vg-brand");
   assert.equal(brand.role, "accent");
@@ -1198,7 +1201,7 @@ test("SH848: the tint the source called `accent` is refused, having no colour in
   assert.equal(tint.role, "background",
     "four rules read it and every one of them paints a surface; a name table would have handed it "
       + "the accent slot on the word, which is the unverifiable label SH689 spent a task removing");
-  assert.equal(vocabularyTokensFrom(rows).mapped.find((row) => row.name === "color.accent").value,
+  assert.equal(vocabularyTokensFrom(rows).mapped.find((row) => row.name === "shio-color.accent").value,
     "#c2410c");
 });
 
@@ -1223,8 +1226,8 @@ test("SH848: the page's own two colours are not accents, however saturated the p
   `).rows);
   const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
 
-  assert.equal(from["color.surface"], "#f4a259");
-  assert.equal(from["color.accent"], undefined,
+  assert.equal(from["shio-color.surface"], "#f4a259");
+  assert.equal(from["shio-color.accent"], undefined,
     "a rule repainting the page's surface is not an accent and neither is one painting its ink - "
       + "the same pair the reversal test excludes, excluded here for the same reason, or a "
       + "saturated page would elect itself its own call-to-action");
@@ -1243,7 +1246,7 @@ test("SH848: a chroma nothing could read is not a zero, so the slot declines ins
     body{background:#ffffff;color:#111111}
     .btn{background-color:color-mix(in oklab, red 50%, blue);color:#3f3f46}
   `).rows);
-  assert.equal(mapped.find((row) => row.name === "color.accent"), undefined);
+  assert.equal(mapped.find((row) => row.name === "shio-color.accent"), undefined);
 });
 
 test("SH848: the floor is in the gap, so every neutral a page is built from stays below it", () => {
@@ -1270,15 +1273,15 @@ test("SH848: the floor is the role's, so a surface at half alpha is refused and 
   ]);
   const from = Object.fromEntries(mapped.map((each) => [each.name, each.value]));
 
-  assert.equal(tokens.color.surface.$value, "#eef3f8",
+  assert.equal(tokens["shio-color"].surface.$value, "#eef3f8",
     "SH846's floor asked whether the value paints NOTHING, which 50% does not - so the page surface "
       + "became a translucent tint of a near-white and the replica looked white only because the "
       + "document behind it was");
-  assert.equal(from["color.line"], "rgba(17, 24, 39, 0.12)",
+  assert.equal(from["shio-color.line"], "rgba(17, 24, 39, 0.12)",
     "and the same value is an ordinary border: refusing it everywhere would throw away a decision "
       + "the source made on purpose, which is why the floor is on the role and not on the value");
   assert.deepEqual(rejected.map((each) => [each.name, each.reason]),
-    [["color.surface-sunk", "translucent"]]);
+    [["shio-color.surface-sunk", "translucent"]]);
   assert.match(rejected[0].detail, /which lets the page behind it through/,
     "a different fact from `paints nothing`, and a reader who cannot tell them apart cannot act on "
       + "either");
@@ -1302,16 +1305,16 @@ test("SH848: what a value states about its own alpha is read in three spellings"
 
 test("SH852: all four painted pairs have a floor, and the two that arrived are the button and the card", () => {
   assert.deepEqual(CONTRAST_PAIRS.map((pair) => [pair.text, pair.on]), [
-    ["color.ink", "color.surface"],
-    ["color.ink-muted", "color.surface"],
-    ["color.ink", "color.surface-sunk"],
-    ["color.surface", "color.accent"],
-  ], "the stylesheet paints `.shio-button{background:var(--color-accent);color:var(--color-surface)}` "
-    + "and `.shio-card{background:var(--color-surface-sunk)}` with `--color-ink` on it - SH846 held "
+    ["shio-color.ink", "shio-color.surface"],
+    ["shio-color.ink-muted", "shio-color.surface"],
+    ["shio-color.ink", "shio-color.surface-sunk"],
+    ["shio-color.surface", "shio-color.accent"],
+  ], "the stylesheet paints `.shio-button{background:var(--shio-color-accent);color:var(--shio-color-surface)}` "
+    + "and `.shio-card{background:var(--shio-color-surface-sunk)}` with `--shio-color-ink` on it - SH846 held "
     + "two of the four and deferred these to the task that made accent reachable");
   const slots = CONTRAST_PAIRS.flatMap((pair) => [pair.text, pair.on]);
-  assert.equal(slots.filter((name) => name === "color.surface").length, 3,
-    "the order is the decision, not the array: `color.surface` is in three of these four, so the "
+  assert.equal(slots.filter((name) => name === "shio-color.surface").length, 3,
+    "the order is the decision, not the array: `shio-color.surface` is in three of these four, so the "
       + "pair that may move it has to be stated rather than discovered by which one is listed first");
 });
 
@@ -1325,16 +1328,16 @@ test("SH852: a pale accent is the half that gives way, so the button's label sur
 
   assert.ok(contrastRatio("#ffffff", "#ffe066") < 1.5,
     "white on a pale yellow is the pair a curator sees most and the one that shipped unchecked");
-  assert.equal(from["color.surface"], "#ffffff",
+  assert.equal(from["shio-color.surface"], "#ffffff",
     "the page's surface is settled by pair 1 and is the button's LABEL, so a button judged without "
       + "a precedence would revert a surface the page had already settled");
-  assert.equal(tokens.color.accent.$value, VOCABULARY_THEME_TOKENS.color.accent.$value);
-  assert.deepEqual(rejected.map((row) => [row.name, row.reason]), [["color.accent", "contrast"]]);
-  assert.match(rejected[0].detail, /against --color-surface #ffffff, under the 1\.5:1 floor/);
+  assert.equal(tokens["shio-color"].accent.$value, VOCABULARY_THEME_TOKENS["shio-color"].accent.$value);
+  assert.deepEqual(rejected.map((row) => [row.name, row.reason]), [["shio-color.accent", "contrast"]]);
+  assert.match(rejected[0].detail, /against --shio-color-surface #ffffff, under the 1\.5:1 floor/);
 });
 
 test("SH852: reverting one slot re-judges every pair, because a shared slot is in more than one", () => {
-  // `color.surface` is in three of the four pairs. Reverting it for the button would leave the page
+  // `shio-color.surface` is in three of the four pairs. Reverting it for the button would leave the page
   // pair holding a value nothing re-read - the state the second rule exists to make impossible.
   const { tokens, mapped } = vocabularyTokensFrom([
     colorRow("vg.bg", "#fffdf0", "background"),
@@ -1343,17 +1346,17 @@ test("SH852: reverting one slot re-judges every pair, because a shared slot is i
   ]);
   const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
 
-  assert.equal(from["color.ink"], undefined, "pair 1 fails and the text gives way first (SH846)");
-  assert.equal(from["color.accent"], undefined, "and pair 4 fails on the slot it introduces");
-  assert.ok(contrastRatio(tokens.color.ink.$value, tokens.color.surface.$value) >= 1.5);
-  assert.ok(contrastRatio(tokens.color.surface.$value, tokens.color.accent.$value) >= 1.5,
+  assert.equal(from["shio-color.ink"], undefined, "pair 1 fails and the text gives way first (SH846)");
+  assert.equal(from["shio-color.accent"], undefined, "and pair 4 fails on the slot it introduces");
+  assert.ok(contrastRatio(tokens["shio-color"].ink.$value, tokens["shio-color"].surface.$value) >= 1.5);
+  assert.ok(contrastRatio(tokens["shio-color"].surface.$value, tokens["shio-color"].accent.$value) >= 1.5,
     "every pair is legible at the end of the loop, not just the last one judged");
 });
 
 test("SH852: a pair the floor may not fix is reported, never counted as a filled slot", () => {
   // The measured case: a dark source states its page and no card, so the card is this file's default
-  // near-white under the source's near-white ink. Nothing captured `color.surface-sunk`, so the pair
-  // has nothing it is allowed to move - and giving way with `color.ink` instead would revert the
+  // near-white under the source's near-white ink. Nothing captured `shio-color.surface-sunk`, so the pair
+  // has nothing it is allowed to move - and giving way with `shio-color.ink` instead would revert the
   // page's text, fail pair 1, and take the page's surface with it.
   const { tokens, mapped, rejected, unheld } = vocabularyTokensFrom([
     colorRow("vg.bg", "#0f172a", "background"),
@@ -1361,14 +1364,64 @@ test("SH852: a pair the floor may not fix is reported, never counted as a filled
   ]);
   const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
 
-  assert.equal(from["color.ink"], "#f1f5f9", "the page's two slots are the ones a later pair may not move");
-  assert.equal(from["color.surface"], "#0f172a");
+  assert.equal(from["shio-color.ink"], "#f1f5f9", "the page's two slots are the ones a later pair may not move");
+  assert.equal(from["shio-color.surface"], "#0f172a");
   assert.deepEqual(rejected, [], "nothing was reverted, and calling this a rejection would report a "
     + "slot the source filled as one it did not");
-  assert.deepEqual(unheld.map((row) => [row.text, row.on]), [["color.ink", "color.surface-sunk"]]);
-  assert.match(unheld[0].detail, /--color-surface-sunk is this theme's default and the source states none/,
+  assert.deepEqual(unheld.map((row) => [row.text, row.on]), [["shio-color.ink", "shio-color.surface-sunk"]]);
+  assert.match(unheld[0].detail, /--shio-color-surface-sunk is this theme's default and the source states none/,
     "the fix is naming the slot the source never stated - a curator told only that the card is "
       + "unreadable cannot tell which of the two halves to go and change");
   assert.ok(unheld[0].ratio < 1.5);
-  assert.equal(tokens.color["surface-sunk"].$value, VOCABULARY_THEME_TOKENS.color["surface-sunk"].$value);
+  assert.equal(tokens["shio-color"]["surface-sunk"].$value, VOCABULARY_THEME_TOKENS["shio-color"]["surface-sunk"].$value);
+});
+
+// --- SH853: one :root, two vocabularies ---
+
+/** Tailwind v4's own `@theme` output, which is what these replicas capture. */
+const TAILWIND_TOKENS = {
+  color: { "red-500": { $value: "#ef4444" }, "slate-900": { $value: "#0f172a" } },
+  spacing: { $value: "0.25rem" },
+  radius: { lg: { $value: "0.5rem" } },
+  text: { sm: { $value: "0.875rem" }, base: { $value: "1rem" }, lg: { $value: "1.125rem" } },
+  font: { sans: { $value: "ui-sans-serif, system-ui" } },
+};
+
+test("SH853: no name is declared by both blocks on a page that carries both", () => {
+  assert.deepEqual(collidingProperties(TAILWIND_TOKENS), [],
+    "a mixed page carries this theme's :root and the captured one's at equal specificity, so a "
+      + "shared name is won by whichever <style> came second - the accident SH424 and SH510 each "
+      + "spent a task removing, and there is no order that is right for both halves of the page");
+});
+
+test("SH853: the disjointness is bought by the prefix, not re-checked per source", () => {
+  const declared = declaredProperties(VOCABULARY_THEME_TOKENS);
+  assert.equal(declared.length, 15, "the whole theme, and the number the `unbridged` count is of");
+  assert.deepEqual(declared.filter((name) => !name.startsWith("--shio-")), [],
+    "the families used to be `color`, `size`, `space` and `text` - the same words a source's own "
+      + "design tokens are named after, which is why the count of collisions was one rather than "
+      + "zero and would have grown with the next capture rather than with a commit here");
+  assert.ok(declared.includes("--shio-text-base"));
+  assert.ok(declared.includes("--shio-color-accent"));
+});
+
+test("SH853: the check is on the claim, so a source that reaches into the namespace is reported", () => {
+  const collides = collidingProperties({ "shio-text": { base: { $value: "1rem" } } });
+
+  assert.deepEqual(collides, ["--shio-text-base"],
+    "the prefix rules out every realistic source and cannot rule out a deliberate one, so the "
+      + "residual case is named rather than settled by document order - which is the whole "
+      + "difference between a decision and an accident");
+});
+
+test("SH853: the names compared are the ones ShThemeTokens will emit, not the ones the CSS reads", () => {
+  // `--text-base` is what Tailwind declares; this theme now declares `--shio-text-base`. Reading the
+  // stylesheet for `var(--…)` would compare what each theme USES and miss what each one DECLARES,
+  // which is the only half a `:root` collision is about.
+  assert.equal(customPropertyFor("shio-text.base"), "--shio-text-base");
+  assert.deepEqual(declaredProperties(TAILWIND_TOKENS).filter((name) => name.startsWith("--text-")),
+    ["--text-base", "--text-lg", "--text-sm"]);
+  assert.ok(VOCABULARY_THEME_CSS.includes("var(--shio-text-base)"),
+    "and the stylesheet reads the renamed token, or the theme ships every rule unstyled");
+  assert.ok(!/var\(--(color|text|size|space)-/.test(VOCABULARY_THEME_CSS));
 });

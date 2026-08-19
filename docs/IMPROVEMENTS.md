@@ -533,37 +533,32 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.140 One :root, two vocabularies (SH853)
+### XVII.141 The list with no line (SH854)
 
-SH850 put the captured theme's `:root` block back on the page, which is what its own
-rules need. The generated layout emits the Shio theme first and the captured one second,
-so at equal specificity the source wins every name they share.
+SH852 gave the contrast floor a third answer. `unchecked` is a pair it could not judge;
+`rejected` is a slot it reverted; `unheld` is the pair it **judged, failed, and was not
+allowed to fix** — the card on a dark source, where the source states no
+`shio-color.surface-sunk` and the only revertible half is the page's own ink.
 
-Measured against Tailwind v4's own `@theme` output, which is what these replicas
-capture:
+That is the worst of the three states and the only one with no line in
+`describeConversion`. The formatter loops over `mapped`, `rejected`, `unmapped`,
+`unchecked` and — since SH853 — `collides`. `unheld` reaches `palette.unheld` in the
+document and `--json`, and stops there.
 
-    Shio theme      --color-accent --color-ink … --text-base --text-h1 --text-lead
-    Tailwind v4     --color-red-500 --spacing --radius-lg --text-sm --text-base …
-    collides        --text-base
+So the run prints *"palette: 2 of 9 token(s) from the captured stylesheet"* over a
+replica whose cards are unreadable, and the fact that says so is one `--json` call away
+from a reader who has no reason to make it. Which is SH849's defect exactly one task
+later: computed, carried, tested, and passed to nobody. `report-wiring.test.mjs` did not
+catch it because the parameter *is* passed — `palette` reaches the formatter whole, and
+what is missing is a loop inside it, which no rule about destructured parameters can
+see.
 
-One name today, and it is the page's body type. On a mixed page the composed sections
-take Tailwind's `1rem` where the Shio theme states `1.0625rem` — and `--text-base` is
-exactly the slot SH834 went to the trouble of filling from `body { font-size }`, so the
-value the bridge worked out is overwritten by the same source it was read from, at a
-different rank.
+The line takes the slot the source never stated, because that is the fix and a curator
+told only that a pair is unreadable cannot tell which half to change — the same argument
+`unheld[].detail` already carries and nothing prints.
 
-The count is one because the two vocabularies barely overlap today. It is not one by
-construction: both name themselves after CSS roles, so `--color-accent`, `--radius` and
-`--font-family` are all names either could grow into, and the next collision arrives
-with a source rather than with a commit here.
-
-There is no cascade answer that serves both halves — one `:root` is carrying two
-vocabularies for two halves of one page, and whichever wins, the other half is wrong.
-What is decidable is that it must not be decided by **which `<style>` came second**,
-which is the accident SH424 and SH510 each spent a task removing.
-
-The assertion that closes it: no name is declared by both blocks on a page that carries
-both.
+The assertion that closes it: every list `vocabularyTokensFrom` returns is reachable
+from the text `convert` prints.
 
 ## XIX The public site (Block S)
 

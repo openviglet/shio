@@ -54,18 +54,36 @@
 
 // SH846 — the colour arithmetic a floor needs. It lives beside the CSS reader that already owns
 // `isColor`, so there is one place that decides what this project calls a colour.
-import { contrastRatio, isTransparent, isTranslucent } from "./theme.mjs";
+// SH853 — and the name compiler, so the two `:root` blocks a mixed page carries are compared in the
+// spelling `ShThemeTokens` will actually emit rather than in one this file guessed.
+import { contrastRatio, customPropertyFor, flatten, isTransparent, isTranslucent } from "./theme.mjs";
 
 /**
  * The DTCG tree, which is what makes the theme *editable* rather than merely present.
  *
- * <p>`ShThemeTokens` compiles `color.ink` into `--color-ink` on `:root`, prepended to the CSS below,
- * so every value a curator is likely to want to change is a field edit in the console rather than a
- * stylesheet rewrite. That is the whole argument for the token layer (SH424), and a theme that
- * hard-coded its own colours would ship with the layer switched off.</p>
+ * <p>`ShThemeTokens` compiles `shio-color.ink` into `--shio-color-ink` on `:root`, prepended to the
+ * CSS below, so every value a curator is likely to want to change is a field edit in the console
+ * rather than a stylesheet rewrite. That is the whole argument for the token layer (SH424), and a
+ * theme that hard-coded its own colours would ship with the layer switched off.</p>
+ *
+ * <h2>Why every family is prefixed `shio-` (SH853)</h2>
+ *
+ * <p>A **mixed** page carries two `:root` blocks — this theme's and the captured one's — and one
+ * `:root` cannot hold two vocabularies: at equal specificity whichever `&lt;style&gt;` came second
+ * wins every name they share, and there is no ordering that is right for both halves of the page.
+ * The families used to be `color`, `size`, `space` and `text`, which are the *same* words a source's
+ * design tokens are named after: measured against Tailwind v4's own `@theme` output, the old
+ * `--text-base` collided — this theme's `1.0625rem`, the slot SH834 fills from the source's own
+ * `body { font-size }`, overwritten by Tailwind's `1rem` in the composed half. One name, and one only
+ * because the two vocabularies barely overlapped *then*: `--color-accent`, `--radius` and
+ * `--font-family` are all names either could have grown into, and the next collision arrives with a source
+ * rather than with a commit here. So the disjointness is bought by **construction** rather than
+ * re-checked per source, and `collidingProperties` reports whatever a source manages to collide with
+ * anyway — the accident SH424 and SH510 each spent a task removing, not left to `<style>` order a
+ * third time.</p>
  */
 export const VOCABULARY_THEME_TOKENS = Object.freeze({
-  color: {
+  "shio-color": {
     ink: { $value: "#12151a", $type: "color", $description: "Text, and anything that reads as text." },
     "ink-muted": { $value: "#5a6373", $type: "color", $description: "A subheading, a caption, an attribution." },
     surface: { $value: "#ffffff", $type: "color", $description: "The page." },
@@ -73,14 +91,14 @@ export const VOCABULARY_THEME_TOKENS = Object.freeze({
     line: { $value: "#dde3ec", $type: "color", $description: "Every border in the theme." },
     accent: { $value: "#0b5533", $type: "color", $description: "The one colour that means *act*: the button." },
   },
-  size: {
+  "shio-size": {
     measure: { $value: "68ch", $type: "dimension", $description: "How wide a line of text is allowed to get." },
     radius: { $value: "10px", $type: "dimension" },
   },
-  space: {
+  "shio-space": {
     step: { $value: "1.5rem", $type: "dimension", $description: "One unit of rhythm. Everything else is a multiple." },
   },
-  text: {
+  "shio-text": {
     // SH834 — the stack `.shio-page` used to hardcode. A token, because the bridge cannot point at
     // a literal: a replica whose colours are the source's and whose type is the system font reads
     // as *nearly* the source, which is the shape a wrong value has over a missing one.
@@ -106,34 +124,34 @@ export const VOCABULARY_THEME_TOKENS = Object.freeze({
  */
 export const VOCABULARY_THEME_CSS = `*,*::before,*::after{box-sizing:border-box}
 img{max-width:100%;height:auto}
-.shio-page{margin:0;padding-block:calc(var(--space-step) * 2);background:var(--color-surface);color:var(--color-ink);font-family:var(--text-family);font-size:var(--text-base);line-height:1.6;-webkit-font-smoothing:antialiased}
-.shio-page > * + *{margin-block-start:calc(var(--space-step) * 2)}
-.shio-container{width:100%;max-width:var(--size-measure);margin-inline:auto;padding-inline:var(--space-step)}
-.shio-nav{width:100%;max-width:var(--size-measure);margin-inline:auto;padding-inline:var(--space-step)}
-.shio-nav ul{display:flex;flex-wrap:wrap;gap:var(--space-step);list-style:none;margin:0;padding:0}
-.shio-nav a{color:var(--color-ink-muted);font-weight:600;text-decoration:none}
-.shio-nav a:hover,.shio-nav a:focus-visible{color:var(--color-accent);text-decoration:underline}
-.shio-stack > * + *{margin-block-start:var(--space-step)}
-.shio-grid{display:grid;gap:var(--space-step);grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));list-style:none;margin:0;padding:0}
-.shio-card{background:var(--color-surface-sunk);border:1px solid var(--color-line);border-radius:var(--size-radius);padding:var(--space-step)}
-.shio-card > * + *{margin-block-start:calc(var(--space-step) / 2)}
-.shio-card cite{display:block;font-style:normal;color:var(--color-ink-muted)}
-.shio-card h3{font-size:var(--text-h3);line-height:1.3;margin:0}
+.shio-page{margin:0;padding-block:calc(var(--shio-space-step) * 2);background:var(--shio-color-surface);color:var(--shio-color-ink);font-family:var(--shio-text-family);font-size:var(--shio-text-base);line-height:1.6;-webkit-font-smoothing:antialiased}
+.shio-page > * + *{margin-block-start:calc(var(--shio-space-step) * 2)}
+.shio-container{width:100%;max-width:var(--shio-size-measure);margin-inline:auto;padding-inline:var(--shio-space-step)}
+.shio-nav{width:100%;max-width:var(--shio-size-measure);margin-inline:auto;padding-inline:var(--shio-space-step)}
+.shio-nav ul{display:flex;flex-wrap:wrap;gap:var(--shio-space-step);list-style:none;margin:0;padding:0}
+.shio-nav a{color:var(--shio-color-ink-muted);font-weight:600;text-decoration:none}
+.shio-nav a:hover,.shio-nav a:focus-visible{color:var(--shio-color-accent);text-decoration:underline}
+.shio-stack > * + *{margin-block-start:var(--shio-space-step)}
+.shio-grid{display:grid;gap:var(--shio-space-step);grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));list-style:none;margin:0;padding:0}
+.shio-card{background:var(--shio-color-surface-sunk);border:1px solid var(--shio-color-line);border-radius:var(--shio-size-radius);padding:var(--shio-space-step)}
+.shio-card > * + *{margin-block-start:calc(var(--shio-space-step) / 2)}
+.shio-card cite{display:block;font-style:normal;color:var(--shio-color-ink-muted)}
+.shio-card h3{font-size:var(--shio-text-h3);line-height:1.3;margin:0}
 .shio-card p{margin:0}
 .shio-section{margin:0}
 .shio-media{margin:0}
-.shio-media img,img.shio-media{display:block;border-radius:var(--size-radius)}
+.shio-media img,img.shio-media{display:block;border-radius:var(--shio-size-radius)}
 .shio-actions{margin:0}
-.shio-button{display:inline-block;padding:0.7em 1.4em;border-radius:var(--size-radius);background:var(--color-accent);color:var(--color-surface);font-weight:600;text-decoration:none}
+.shio-button{display:inline-block;padding:0.7em 1.4em;border-radius:var(--shio-size-radius);background:var(--shio-color-accent);color:var(--shio-color-surface);font-weight:600;text-decoration:none}
 .shio-button:hover,.shio-button:focus-visible{filter:brightness(1.15)}
-.shio-page-title{font-size:var(--text-h1);line-height:1.15;margin:0}
-.shio-heading{font-size:var(--text-h2);line-height:1.2;margin:0}
-.shio-subheading{font-size:var(--text-lead);color:var(--color-ink-muted);margin:0}
+.shio-page-title{font-size:var(--shio-text-h1);line-height:1.15;margin:0}
+.shio-heading{font-size:var(--shio-text-h2);line-height:1.2;margin:0}
+.shio-subheading{font-size:var(--shio-text-lead);color:var(--shio-color-ink-muted);margin:0}
 .shio-intro{margin:0}
-.shio-body > * + *{margin-block-start:var(--space-step)}
+.shio-body > * + *{margin-block-start:var(--shio-space-step)}
 [data-shio-align="center"] .shio-stack{text-align:center}
 [data-shio-align="center"] .shio-grid{text-align:start}
-[data-shio-variant="subtle"] .shio-button{background:transparent;border:1px solid var(--color-accent);color:var(--color-accent)}
+[data-shio-variant="subtle"] .shio-button{background:transparent;border:1px solid var(--shio-color-accent);color:var(--shio-color-accent)}
 @media (min-width:48em){
 [data-shio-columns="2"] .shio-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 [data-shio-columns="3"] .shio-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -152,15 +170,42 @@ export const vocabularyThemeTitle = (site) => `${site} (Shio)`;
 export const VOCABULARY_THEME_SLUG = "shio";
 
 /**
+ * The custom properties a theme's `:root` block will carry, in `ShThemeTokens`' own spelling (SH853).
+ *
+ * <p>Derived from the DTCG tree rather than read off the CSS, because the block is *generated* from
+ * that tree at render time — a reader that grepped `var(--…)` out of the stylesheet would see the
+ * names each theme **uses** and miss every name it **declares**, which is the half a collision is
+ * about. Sorted, so two runs over one document report identically (P5).</p>
+ */
+export const declaredProperties = (tokens) =>
+  Object.keys(flatten(tokens ?? {})).map(customPropertyFor).sort();
+
+/**
+ * The names both `:root` blocks on a mixed page declare, which is a defect whichever way it is
+ * resolved (SH853).
+ *
+ * <p>A mixed page carries this theme's block and the captured one's, at equal specificity, so the
+ * second `<style>` wins every shared name — and no order is right for both halves of the page. The
+ * `shio-` prefix on {@link VOCABULARY_THEME_TOKENS} makes the intersection empty by construction, so
+ * this is the check on the claim rather than the mechanism: a source that declares `--shio-*` itself,
+ * or a family added here without the prefix, is reported instead of being decided by document order.
+ * Answered for **any** pair of trees, so the caller passes the two it is about to write.</p>
+ */
+export function collidingProperties(capturedTokens, tokens = VOCABULARY_THEME_TOKENS) {
+  const captured = new Set(declaredProperties(capturedTokens));
+  return declaredProperties(tokens).filter((name) => captured.has(name));
+}
+
+/**
  * Which extracted token feeds each of this theme's six colours (SH831).
  *
  * <h2>Three palettes on one page, and no bridge between any two</h2>
  *
  * <p>This is why an authorable replica looked nothing like its source, and it was not the theme being
  * generic on purpose. One served page carried three token vocabularies: this theme's — six colours,
- * read through eight `var(--color-*)` references — painting the composed regions; the source's own,
+ * read through eight `var(--shio-color-*)` references — painting the composed regions; the source's own,
  * inside the captured sheet, painting the chrome; and `Theme.TOKENS`, the palette `propose` extracted
- * at capture time, **read by nothing**. `--color-accent` was a dark green while the site's accent was
+ * at capture time, **read by nothing**. `--shio-color-accent` was a dark green while the site's accent was
  * orange, which is the whole visual mismatch in one line. `propose` said so and shipped it anyway:
  * *"12 recurring token(s) name the palette and change nothing on their own — no rule references them
  * until the CSS is rewired, which this does NOT do."*</p>
@@ -198,11 +243,11 @@ export const VOCABULARY_THEME_SLUG = "shio";
  *       selector to disambiguate, so the most-referenced value is the answer.</li>
  *   <li><b>`page-only`</b> — a group that is a <em>scale</em>. `recurringTokens` ranks `font.size`
  *       by reference count, and the theme's five text steps are ordered by *size*: rank 2 is not
- *       `text.lead`. So the only step that can be taken is the one the page states outright, and
+ *       `shio-text.lead`. So the only step that can be taken is the one the page states outright, and
  *       the other four are refused rather than guessed.</li>
  * </ul>
  *
- * <p>`size.measure` and `space.step` are in no group at all, deliberately. A measure is a line
+ * <p>`shio-size.measure` and `shio-space.step` are in no group at all, deliberately. A measure is a line
  * length almost no stylesheet declares, and a rhythm step is the *unit other spacing is a multiple
  * of* — which the commonest `padding` value is not. A slot the bridge does not name keeps its
  * default silently; a slot it names and cannot fill is reported. That distinction is the whole
@@ -216,7 +261,7 @@ export const VOCABULARY_THEME_SLUG = "shio";
  *
  * <p>The bridge fills each slot from the best row for *that* slot and never looked at two together,
  * so it could write a source surface under a default text colour — or the reverse. Measured: a source
- * declaring `--vg-background: #0000` and `--vg-foreground: #f9fafb` produced `--color-surface: #0000`
+ * declaring `--vg-background: #0000` and `--vg-foreground: #f9fafb` produced `--shio-color-surface: #0000`
  * with near-white body copy on it, reported as *3 of 9 token(s) from the captured stylesheet*. Two
  * failures presented as two successes, and the page looked white only because the document behind it
  * was — the accident that survives review and breaks on a dark layout.</p>
@@ -232,18 +277,18 @@ export const VOCABULARY_THEME_SLUG = "shio";
  * by construction — so reverting always terminates, at worst at the default pair. Where both came from
  * the source the text gives way first: the surface is the larger area and the more certain reading
  * (`background#1` is what `body` states), and reverting it would throw away more on weaker evidence.
- * `color.ink` is settled before `color.ink-muted`, since both are painted on one surface and the
+ * `shio-color.ink` is settled before `shio-color.ink-muted`, since both are painted on one surface and the
  * page's own text is the load-bearing half.</p>
  *
  * <h2>All four, and the precedence that lets the last two in (SH852)</h2>
  *
- * <p>SH846 held two of the four and said why the other two waited: `color.accent` is the slot the
+ * <p>SH846 held two of the four and said why the other two waited: `shio-color.accent` is the slot the
  * bridge can least often fill at all (SH847), so a floor on it would fire on the default almost every
  * time. SH848 filled it — `accentFor` elects an accent from the value's own chroma — and the pair a
- * curator sees most is the one that was shipping unchecked: the button's label is `color.surface`, so
+ * curator sees most is the one that was shipping unchecked: the button's label is `shio-color.surface`, so
  * a source whose accent is a pale yellow gets white on it.</p>
  *
- * <p>The hazard is not the arithmetic, it is the **sharing**. `color.surface` sits in three of these
+ * <p>The hazard is not the arithmetic, it is the **sharing**. `shio-color.surface` sits in three of these
  * four pairs, so a button judged after the page can revert a surface the page pair has already
  * settled — and the page pair is then wrong again, in a state nothing re-reads. Two rules, and the
  * order below is the first of them:</p>
@@ -251,8 +296,8 @@ export const VOCABULARY_THEME_SLUG = "shio";
  * <ol>
  * <li><b>Precedence is first appearance in this array</b>, and this array is ordered page, caption,
  * card, button — largest area and most certain reading first. When a pair fails, the half that gives
- * way is the one this order <i>introduces</i>: the card reverts `color.surface-sunk` and not the
- * page's `color.ink`, the button reverts `color.accent` and not the page's `color.surface`. Only if
+ * way is the one this order <i>introduces</i>: the card reverts `shio-color.surface-sunk` and not the
+ * page's `shio-color.ink`, the button reverts `shio-color.accent` and not the page's `shio-color.surface`. Only if
  * that half is already this file's default does the shared half give way, since a pair that can
  * revert nothing is a pair no floor holds.</li>
  * <li><b>Every pair is judged again after any revert</b>, until a whole pass moves nothing. A revert
@@ -263,10 +308,10 @@ export const VOCABULARY_THEME_SLUG = "shio";
  * </ol>
  */
 export const CONTRAST_PAIRS = Object.freeze([
-  Object.freeze({ text: "color.ink", on: "color.surface" }),
-  Object.freeze({ text: "color.ink-muted", on: "color.surface" }),
-  Object.freeze({ text: "color.ink", on: "color.surface-sunk" }),
-  Object.freeze({ text: "color.surface", on: "color.accent" }),
+  Object.freeze({ text: "shio-color.ink", on: "shio-color.surface" }),
+  Object.freeze({ text: "shio-color.ink-muted", on: "shio-color.surface" }),
+  Object.freeze({ text: "shio-color.ink", on: "shio-color.surface-sunk" }),
+  Object.freeze({ text: "shio-color.surface", on: "shio-color.accent" }),
 ]);
 
 /**
@@ -282,15 +327,15 @@ export const CONTRAST_PAIRS = Object.freeze([
 export const CONTRAST_FLOOR = 1.5;
 
 export const PALETTE_BRIDGE = Object.freeze({
-  "color.ink": { group: "color", role: "text", rank: 1, needs: "page" },
-  "color.ink-muted": { group: "color", role: "text", rank: 2, needs: "page" },
-  "color.surface": { group: "color", role: "background", rank: 1, needs: "page" },
-  "color.surface-sunk": { group: "color", role: "background", rank: 2, needs: "page" },
-  "color.line": { group: "color", role: "border", rank: 1, needs: "page" },
-  "color.accent": { group: "color", role: "accent", rank: 1, needs: "page" },
-  "size.radius": { group: "radius", role: null, rank: 1, needs: "rank" },
-  "text.family": { group: "font.family", role: null, rank: 1, needs: "rank" },
-  "text.base": { group: "font.size", role: null, rank: 1, needs: "page-only" },
+  "shio-color.ink": { group: "color", role: "text", rank: 1, needs: "page" },
+  "shio-color.ink-muted": { group: "color", role: "text", rank: 2, needs: "page" },
+  "shio-color.surface": { group: "color", role: "background", rank: 1, needs: "page" },
+  "shio-color.surface-sunk": { group: "color", role: "background", rank: 2, needs: "page" },
+  "shio-color.line": { group: "color", role: "border", rank: 1, needs: "page" },
+  "shio-color.accent": { group: "color", role: "accent", rank: 1, needs: "page" },
+  "shio-size.radius": { group: "radius", role: null, rank: 1, needs: "rank" },
+  "shio-text.family": { group: "font.family", role: null, rank: 1, needs: "rank" },
+  "shio-text.base": { group: "font.size", role: null, rank: 1, needs: "page-only" },
 });
 
 /**
@@ -388,7 +433,7 @@ function unbridgedSlots() {
  * <p>SH848 — <b>the floor belongs on the role, not on the value.</b> SH846 refused a colour that
  * paints nothing, which is a property of the value and therefore the same answer on every slot; what
  * it let through was `color-mix(in oklab, var(--vg-accent) 50%, transparent)` landing on
- * `--color-surface`, because 50% is not 0%. A surface at half alpha is not a surface — the page's
+ * `--shio-color-surface`, because 50% is not 0%. A surface at half alpha is not a surface — the page's
  * background is the one colour a replica cannot have the document showing through — while the same
  * value is a perfectly ordinary border, overlay or accent, and refusing it everywhere would throw
  * away decisions the source made on purpose.</p>
@@ -444,7 +489,7 @@ function enforceContrast(tokens, mapped, rejected) {
       : [[pair.text, pair.on], [pair.on, pair.text]];
     // Measured, and the reason the fallback is not "then the other half": a dark source states its
     // page and no card, so the card pair is a captured near-white ink on this file's default
-    // near-white card. Its own slot cannot move — nothing captured it — and letting `color.ink` give
+    // near-white card. Its own slot cannot move — nothing captured it — and letting `shio-color.ink` give
     // way instead reverts the page's text, which then fails pair 1 and takes the page's surface with
     // it. Two good slots lost to a pair neither of them is about.
     return [first, second].filter(([name]) => introduced.get(name) >= at);
@@ -488,7 +533,7 @@ function enforceContrast(tokens, mapped, rejected) {
       });
     }
   });
-  // By both halves (P5): `color.ink` is the text of two pairs now, so the text alone no longer
+  // By both halves (P5): `shio-color.ink` is the text of two pairs now, so the text alone no longer
   // orders them and a run's report would depend on the engine's sort being stable.
   const key = (row) => `${row.text} ${row.on}`;
   const byPair = (a, b) => (key(a) < key(b) ? -1 : 1);
@@ -562,7 +607,7 @@ function admits(needs, row) {
  * shipping it would have painted the replica's body copy teal* — reached on the half SH831 did not
  * touch. Its reason for leaving recurring rows to the extractor's ranking was sound at the time: the
  * ranking *is* the published contract, and a recurring row carried no better evidence. SH834 gave it
- * some, for the `text.base` rule, and nothing here sorted by it — so the flag was recorded on every
+ * some, for the `shio-text.base` rule, and nothing here sorted by it — so the flag was recorded on every
  * row and read for one slot.</p>
  *
  * <p>The **sort** is where it belongs and `admits` is not: a bar decides what may fill a slot at all,

@@ -1575,7 +1575,7 @@ test("SH556: what the removed classes addressed is still addressable", () => {
 
 // --- SH509: the theme the vocabulary never had ---
 
-/** The DTCG tree flattened the way `ShThemeTokens` flattens it: `color.ink` → `color-ink`. */
+/** The DTCG tree flattened the way `ShThemeTokens` flattens it: `shio-color.ink` → `color-ink`. */
 function declaredCustomProperties(tree, prefix = "", into = new Set()) {
   for (const [name, node] of Object.entries(tree)) {
     if (name.startsWith("$") || node === null || typeof node !== "object") continue;
@@ -1611,7 +1611,7 @@ test("SH509: an authorable conversion carries the theme it is presented with, as
 
 test("SH831: the theme the replica renders with is painted in the source's own colours", () => {
   // The defect, in one line: a served page carried three token vocabularies and no mapping between
-  // any two. `--color-accent` was this file's dark green while the site's accent was orange, and the
+  // any two. `--shio-color-accent` was this file's dark green while the site's accent was orange, and the
   // extracted palette that knew better was read by nothing. `propose` even said so - "12 recurring
   // token(s) name the palette and change nothing on their own" - an accurate note about an artefact
   // the pipeline then shipped anyway.
@@ -1638,41 +1638,41 @@ test("SH831: the theme the replica renders with is painted in the source's own c
   const { document, palette } = conversion;
   const written = document.posts.find((post) => post.data.TITLE === vocabularyThemeTitle("Acme"));
   const tokens = JSON.parse(written.data.TOKENS);
-  assert.equal(tokens.color.ink.$value, "#10243a", "the page's own text colour");
-  assert.equal(tokens.color.accent.$value, "#ff6600",
+  assert.equal(tokens["shio-color"].ink.$value, "#10243a", "the page's own text colour");
+  assert.equal(tokens["shio-color"].accent.$value, "#ff6600",
     "and the accent, which is the whole visual mismatch: eight `var(--color-*)` references in this "
       + "theme now resolve to the source's palette instead of to a green nobody chose");
-  assert.equal(tokens.color.line.$value, VOCABULARY_THEME_TOKENS.color.line.$value,
+  assert.equal(tokens["shio-color"].line.$value, VOCABULARY_THEME_TOKENS["shio-color"].line.$value,
     "a slot the palette says nothing about keeps the default, which is the right value to ship - a "
       + "replica with an invisible border is worse than one with a borrowed grey");
   // SH834 — a corner radius is a group with one role, so `--radius` is taken at its rank without
   // the page-level statement `--brand` was refused for. The two rules are different because the
   // groups are: `body { border-radius }` would mean nothing, so there is nothing to disambiguate.
-  assert.equal(tokens.size.radius.$value, "6px");
-  assert.equal(tokens.space.step.$value, VOCABULARY_THEME_TOKENS.space.step.$value,
+  assert.equal(tokens["shio-size"].radius.$value, "6px");
+  assert.equal(tokens["shio-space"].step.$value, VOCABULARY_THEME_TOKENS["shio-space"].step.$value,
     "and a slot the bridge names no group for keeps its default silently: a rhythm step is the "
       + "unit other spacing is a multiple of, which the commonest padding value is not");
 
   assert.deepEqual(palette.mapped.map((row) => row.name),
-    ["color.accent", "color.ink", "size.radius"]);
+    ["shio-color.accent", "shio-color.ink", "shio-size.radius"]);
   assert.deepEqual(palette.unmapped.map((row) => row.name),
-    ["color.ink-muted", "color.line", "color.surface", "color.surface-sunk", "text.base",
-      "text.family"]);
+    ["shio-color.ink-muted", "shio-color.line", "shio-color.surface", "shio-color.surface-sunk", "shio-text.base",
+      "shio-text.family"]);
   const report = describeConversion(conversion);
-  assert.match(report, /--color-accent #ff6600 — color\.accent-1 \(accent#1\)/,
+  assert.match(report, /--shio-color-accent #ff6600 — color\.accent-1 \(accent#1\)/,
     "said out loud, and traceable: the reader can check the value against the token it came from");
-  assert.match(report, /--color-line [^\n]*the source states no border#1/,
+  assert.match(report, /--shio-color-line [^\n]*the source states no border#1/,
     "and so is the default that stood, because a reader cannot tell a colour that was matched from "
       + "one that was never looked for unless the run says which (P9)");
-  assert.match(report, /--text-base [^\n]*the source states no font\.size#1/,
+  assert.match(report, /--shio-text-base [^\n]*the source states no font\.size#1/,
     "SH834: a scale is refused rather than guessed — `recurringTokens` ranks font sizes by "
       + "reference count and this theme's five steps are ordered by size, so rank 2 is not "
-      + "`text.lead`. Only the step the page states outright can be taken");
+      + "`shio-text.lead`. Only the step the page states outright can be taken");
 });
 
 test("SH846: a run says which slots refused a value, which is neither filled nor never-offered", () => {
   // The measurement: this source declares a transparent page and a near-white text colour, and the
-  // run reported `--color-surface: #0000` as one of *3 of 9 token(s) from the captured stylesheet*.
+  // run reported `--shio-color-surface: #0000` as one of *3 of 9 token(s) from the captured stylesheet*.
   // Two failures printed as two successes, on the one report a curator reads about appearance.
   const conversion = buildConversion({
     proposal: withCapturedTheme({
@@ -1692,18 +1692,18 @@ test("SH846: a run says which slots refused a value, which is neither filled nor
 
   const written = conversion.document.posts.find((post) => post.data.TITLE === vocabularyThemeTitle("Acme"));
   const tokens = JSON.parse(written.data.TOKENS);
-  assert.equal(tokens.color.surface.$value, VOCABULARY_THEME_TOKENS.color.surface.$value,
+  assert.equal(tokens["shio-color"].surface.$value, VOCABULARY_THEME_TOKENS["shio-color"].surface.$value,
     "the default is the right value to ship - SH684's instinct, one surface along: a derivation "
       + "that cannot fill a required field declines rather than writing something unusable");
-  assert.equal(tokens.color.ink.$value, VOCABULARY_THEME_TOKENS.color.ink.$value);
+  assert.equal(tokens["shio-color"].ink.$value, VOCABULARY_THEME_TOKENS["shio-color"].ink.$value);
   assert.deepEqual(conversion.palette.rejected.map((row) => [row.name, row.reason]),
-    [["color.ink", "contrast"], ["color.surface", "transparent"]]);
+    [["shio-color.ink", "contrast"], ["shio-color.surface", "transparent"]]);
 
   const report = describeConversion(conversion);
   assert.match(report, /palette: 0 of 9 token\(s\)[^\n]*, 2 refused/,
     "and the count says so: a refusal used to be counted as a token taken from the stylesheet");
-  assert.match(report, /--color-surface [^\n]*REFUSED: the source's background#1 is #0000, which paints nothing/);
-  assert.match(report, /--color-ink [^\n]*REFUSED: #f9fafb from vg\.foreground reads at 1\.05:1/,
+  assert.match(report, /--shio-color-surface [^\n]*REFUSED: the source's background#1 is #0000, which paints nothing/);
+  assert.match(report, /--shio-color-ink [^\n]*REFUSED: #f9fafb from vg\.foreground reads at 1\.05:1/,
     "with the ratio, so a reader can check the refusal instead of taking it (P9)");
 });
 
@@ -1777,7 +1777,7 @@ test("SH509: the theme styles every role SH508 declares, and assumes no section 
   assert.deepEqual(
     [...used].filter((name) => !declared.has(name)).sort(), [],
     "every custom property the stylesheet reads is a token the theme declares - ShThemeTokens "
-      + "compiles color.ink into --color-ink and prepends the :root block, so an undeclared one is a "
+      + "compiles color.ink into --shio-color-ink and prepends the :root block, so an undeclared one is a "
       + "declaration the browser drops",
   );
   assert.deepEqual(
@@ -2541,10 +2541,10 @@ test("SH849: a run prints the palette it computed, and the markup runs it wrote"
 
   assert.match(ctx.stdout.text, /palette: \d+ of \d+ token\(s\) from the captured stylesheet/,
     "the count, which is the line a curator reads about appearance");
-  assert.match(ctx.stdout.text, /--color-ink #10243a — ink \(text#1\)/,
+  assert.match(ctx.stdout.text, /--shio-color-ink #10243a — ink \(text#1\)/,
     "and it is traceable: the value, and the token of the source's own that it came from");
-  assert.match(ctx.stdout.text, /--color-accent #0b7285 — brand \(accent#1\)/);
-  assert.match(ctx.stdout.text, /--color-line [^\n]*the source states no border#1/,
+  assert.match(ctx.stdout.text, /--shio-color-accent #0b7285 — brand \(accent#1\)/);
+  assert.match(ctx.stdout.text, /--shio-color-line [^\n]*the source states no border#1/,
     "including the slots that kept a default, since a reader cannot tell a colour that was matched "
       + "from one that was never looked for unless the run says which (P9)");
 });

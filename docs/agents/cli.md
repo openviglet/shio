@@ -1422,6 +1422,24 @@ it. Four decisions worth keeping:
   was **not allowed to fix** is its own list, `unheld`, beside `unchecked` in the palette report and
   naming the slot the source never stated, because a curator told only that the card is unreadable
   cannot tell which half to change.
+- **One `:root`, two vocabularies, and the second `<style>` deciding (SH853).** SH850 put the
+  captured theme's `:root` block back on the page, which its own rules need; the generated layout
+  emits the Shio theme first and the captured one second, so at equal specificity **the source wins
+  every name they share**. Measured against Tailwind v4's own `@theme` output — what these replicas
+  capture — the collision was `--text-base`: this theme's `1.0625rem`, the slot SH834 fills from the
+  source's own `body { font-size }`, overwritten by Tailwind's `1rem` in the composed half. One name,
+  and one only because the two vocabularies barely overlapped: both are named after CSS roles, so
+  `--color-accent`, `--radius` and `--font-family` are all names either could grow into, and **the
+  next collision arrives with a source rather than with a commit here**. There is no cascade answer —
+  one `:root` carrying two vocabularies for two halves of one page is wrong whichever way it is
+  ordered — so the disjointness is bought by **construction**: every family in
+  `VOCABULARY_THEME_TOKENS` is prefixed `shio-`, and the fifteen properties are `--shio-color-ink`,
+  `--shio-text-base`, `--shio-space-step` and so on. `collidingProperties` is the check on the claim
+  rather than the mechanism — it compares the two trees a run is about to write, in the spelling
+  `ShThemeTokens` will emit (**declared**, not the `var(--…)` a stylesheet *reads*, which is the
+  other half and the wrong one) — and it reaches `--json` as `palette.collides` and the report as a
+  line naming the property, because the residual case the prefix cannot rule out is a source that
+  reaches into the namespace deliberately.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

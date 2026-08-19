@@ -43,6 +43,7 @@
 import { normalizeUrl } from "./content-files.mjs";
 import { SECTION_FILE_FIELDS, SECTION_REQUIRED, SECTION_TYPES } from "./propose.mjs";
 import {
+  collidingProperties,
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_SLUG, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
   vocabularyTokensFrom,
 } from "./vocabulary-theme.mjs";
@@ -239,6 +240,11 @@ export function buildConversion({
   // written, because `describeConversion` reports the colours that found no source and a run that
   // named none would be the silent default the whole task is about.
   const palette = vocabularyTokensFrom(proposal?.theme?.rows);
+  // SH853 — the names both `:root` blocks would declare on a page that carries both. Computed from
+  // the two trees this run is about to write, not from a constant, because one of them is the
+  // source's: the `shio-` prefix makes the answer empty by construction and the *check* is what
+  // says so on this capture, rather than the cascade deciding by which `<style>` came second.
+  const collides = collidingProperties(proposal?.theme?.tokens, palette.tokens);
   if (theme === vocabularyThemeTitle(site)) {
     posts.push(vocabularyThemePost(site, palette.tokens));
     extras.push("Theme (Shio)");
@@ -359,6 +365,10 @@ export function buildConversion({
           // one state worse than either: the theme ships a pair nobody can read and the run said so
           // rather than counting two filled slots as two successes.
           ...(palette.unheld.length ? { unheld: palette.unheld } : {}),
+          // SH853 — a name both `:root` blocks on a mixed page declare. Empty by construction since
+          // the `shio-` prefix, and reported rather than asserted because the other half of the
+          // intersection is the *source's* and arrives with a capture, not with a commit here.
+          ...(collides.length ? { collides } : {}),
         },
       }
       : {}),
@@ -1729,7 +1739,7 @@ export function describeConversion({ document, sections, markup = [], pages = []
   // difference between a theme that matched the source and one that only looks like it might have.
   if (palette) {
     // SH846 — three counts rather than two, because a rejected slot used to be indistinguishable
-    // from one nothing was offered for, and the run reported `--color-surface: #0000` as one of
+    // from one nothing was offered for, and the run reported `--shio-color-surface: #0000` as one of
     // three tokens taken from the captured stylesheet. A refusal is the most actionable line here:
     // the source *has* a value for that role and it is one this theme will not paint with.
     const rejected = palette.rejected ?? [];
@@ -1769,6 +1779,16 @@ export function describeConversion({ document, sections, markup = [], pages = []
         `    --${row.text.replace(".", "-")} ${preview(row.value)} on `
           + `--${row.on.replace(".", "-")} ${preview(row.against)} — contrast NOT checked: one of `
           + "them is in a colour space this reader does not parse. Look at the page",
+      );
+    }
+    // SH853 — a name both `:root` blocks declare. Empty by construction since every family here is
+    // prefixed `shio-`, so a line printed at all means a *source* reached into that namespace: the
+    // one case the prefix cannot rule out, and the one the cascade would otherwise settle by which
+    // `<style>` came second. Named, because renaming the token is the fix and it takes the name.
+    for (const name of palette.collides ?? []) {
+      lines.push(
+        `    ${name} — declared by BOTH this theme and the captured one, so on a mixed page whichever`
+          + " <style> comes second wins it. Rename this theme's token in the Theme post's TOKENS",
       );
     }
   }

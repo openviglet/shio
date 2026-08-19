@@ -11,7 +11,7 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH853** (deps: SH850 ✅) **Two token vocabularies land on one :root and the captured one is second, so the source silently wins a shared name** — A mixed page carries both themes and --text-base is declared by each, so composed sections take Tailwind's 1rem instead of the value the Shio theme states. → §XVII.140
+- 📋 **SH854** (deps: —) **The pair the contrast floor may not fix reaches --json and never the report the command prints** — SH852 added `unheld` to the palette and to `--json` and no line to `describeConversion`, so the state worse than a refusal is the one a curator never reads. → §XVII.141
 
 ## Priority
 
