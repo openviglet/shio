@@ -46,6 +46,74 @@ export const GATES = ["java", "js", "conformance", "docs"];
 /** Where stamps live, relative to the repository root. */
 export const GATES_DIR = ".gates";
 
+/**
+ * What each gate is <b>about</b> — the paths whose change certainly makes it worth running (SH841).
+ *
+ * <h3>The verdict that was missing</h3>
+ *
+ * <p>SH770 taught every reader that a stale stamp is not a colour, and excluded it from both
+ * directions — correctly, since a stale red blocks a commit over a fixed defect and a stale green
+ * reads as *this tree is green*. Excluded from both, it reads as <b>absent</b>, and absent is where
+ * the reasoning stopped. Measured: `conformance` went <b>twenty commits</b> without running, eight
+ * of them editing the four files its replication scenarios drive, and every reader called that not a
+ * colour. It came back 123/123 — nothing was broken, and nothing had asked.</p>
+ *
+ * <p>There is a difference between a gate nobody needed and one that is <b>owed</b>, and only the
+ * second has evidence: the commits since the stamp touched what it judges. `GATE_RUNS` names each
+ * gate's command; this names its subject, and the two are apart because a reader needs the subject
+ * without loading the runner.</p>
+ *
+ * <h3>A floor, never a ceiling</h3>
+ *
+ * <p>A gate can be owed for a reason no list holds — `js` reads the whole tree, which is why it has
+ * `null` and is owed by any change at all. The others name what is <b>certain</b>, so a path missing
+ * here means the report says nothing rather than the wrong thing. Being silent about a real debt is
+ * the failure this accepts; naming a false one is the failure it must not have, because a warning
+ * that fires on every commit is the next thing nobody reads (SH192's rule, one instrument along).</p>
+ */
+export const GATE_COVERS = {
+  // No stamp is ever written for it by another gate, so this is about `pnpm java` runs only.
+  java: ["shio-app/"],
+  // Everything: `pnpm test` reads the source, the docs and the ledgers, and SH770's own note says so.
+  js: null,
+  // The CLI it drives, the instance it drives it against, and the corpus it drives with.
+  conformance: ["cli/", "shio-app/", "fixtures/"],
+  // The pages, plus the mirror the ratchet reads — its other input lives in another repository.
+  docs: ["docs/", "cli/conformance/", "README.md"],
+};
+
+/**
+ * The gates whose stamp is stale <em>and</em> whose subject the commits since have touched (SH841).
+ *
+ * <p>Returns `{gate: n}` where `n` is how many of those commits are the reason. A stale stamp with
+ * nothing to show for it is not here at all: that gate is genuinely absent rather than owed, which
+ * is the distinction the whole entry is about.</p>
+ *
+ * <p>Git failing answers `{}`. A checkout that cannot be asked owes nothing it can be told about,
+ * and inventing a debt from an absence is SH770's mistake in the third direction.</p>
+ */
+export function owedGates(root, recorded) {
+  const owed = {};
+  for (const gate of GATES) {
+    const seen = recorded[gate];
+    if (!seen?.stale || !seen.sha) {
+      continue;
+    }
+    const covers = GATE_COVERS[gate];
+    try {
+      const args = ["log", "--oneline", `${seen.sha}..HEAD`];
+      const since = execFileSync("git", covers ? [...args, "--", ...covers] : args,
+        { cwd: root, encoding: "utf8" }).trim();
+      if (since) {
+        owed[gate] = since.split("\n").length;
+      }
+    } catch {
+      // An unknown sha, a shallow clone, no git at all — every one of them is "cannot say".
+    }
+  }
+  return owed;
+}
+
 /** The commit a stamp is about, or `null` where git cannot say — a stamp with no sha is still one. */
 export function headSha(root) {
   try {
@@ -199,7 +267,8 @@ export function comparatorCycle(recorded) {
  *                  colour, exactly as an absent stamp does, and saying *cleared* rather than
  *                  *no run recorded* is the whole reason SH818 writes a file instead of unlinking
  */
-export function gateLines(recorded, declared = new Set(), self = null, cleared = new Set()) {
+export function gateLines(recorded, declared = new Set(), self = null, cleared = new Set(),
+                          owed = {}) {
   return GATES.map((gate) => {
     if (gate === self) {
       return `  ${gate} — this suite, running now (its stamp is written when it ends)`;
@@ -215,7 +284,13 @@ export function gateLines(recorded, declared = new Set(), self = null, cleared =
     // whole repair: "the last run here was N commits ago" names the run somebody has to do, which
     // neither a colour nor a silence does.
     if (seen.stale) {
-      return `  ${gate} — last run${age}, ${seen.when} — NOT this tree, so not a colour`;
+      // SH841 — and the half that names it: "not a colour" is where the reasoning stopped, so a
+      // stale stamp whose subject has changed since says how many commits are the reason. A warning
+      // and never a failure — a gate needing a packaged jar and a running instance cannot be a
+      // precondition for a commit, and the honest response is to run it rather than declare it.
+      const debt = owed[gate];
+      return `  ${gate} — last run${age}, ${seen.when} — NOT this tree, so not a colour`
+        + (debt ? `, and OWED: ${debt} commit(s) since have touched what it judges` : "");
     }
     return `  ${gate} — ${seen.red ? "RED" : "green"}${age}, ${seen.when}`
       + `${declared.has(gate) ? ", declared" : ""}`;

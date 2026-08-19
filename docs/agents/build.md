@@ -101,6 +101,24 @@ honest last outcome — each comparator has one it must not read. The lines come
 `gate-stamp.mjs`, shared with the JS comparator so this is not a third copy of the formatting; the
 JVM copy stays because it is another language.
 
+**And a stale stamp can be OWED, which is the verdict that was missing (SH841).** SH770 taught every
+reader that a stamp from another commit is not this tree's colour and excluded it from *both*
+directions — right, since a stale red blocks a commit over a fixed defect and a stale green reads as
+*this tree is green*. Excluded from both it reads as **absent**, and absent is where the reasoning
+stopped. Measured by running the gate nothing had asked for: `conformance` went **twenty commits**
+without a run, eight of them editing the four files its replication scenarios drive, and it came back
+123/123 — nothing broken, and nothing had asked. A gate nobody needed and a gate that is owed are
+different facts, and only the second has evidence: the commits since the stamp touched what it
+judges. `GATE_COVERS` in `gate-stamp.mjs` names each gate's **subject** — `GATE_RUNS` names its
+command, and the two are apart because a reader needs the subject without loading the runner — and
+`owedGates` counts the commits since a stale stamp that touched it. It is a **warning on the line,
+never a failure**: a gate needing a packaged jar and a running instance cannot be a precondition for
+a commit, and the honest response is to run it rather than declare it. The list is a **floor, not a
+ceiling**: `js` reads the whole tree and so carries `null`, meaning any change at all; the others
+name what is *certain*, so a path missing there makes the report silent rather than wrong. Being
+quiet about a real debt is the failure this accepts; a warning that fires on every commit is the next
+thing nobody reads.
+
 **A build that never began is stamped INCONCLUSIVE, not red (SH828).** A non-zero exit is only a
 *colour* if a suite ran, and the exit code cannot tell you: Maven exits 1 for a failed test and 1
 for a failed `clean`. So the runner reads the log it already keeps — a run that reached surefire

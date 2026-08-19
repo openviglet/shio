@@ -53,11 +53,13 @@
  * look is the other half, and that is `.github/workflows/suites.yml`.
  */
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
-  CYCLE_EXIT, COMPARATOR_GATES, GATES, clearedGates, comparatorCycle, gateLines, isStale, stamps,
+  CYCLE_EXIT, COMPARATOR_GATES, GATES, GATE_COVERS, clearedGates, comparatorCycle, gateLines,
+  isStale, owedGates, stamps,
 } from "../../scripts/gate-stamp.mjs";
 import { GATE_RUNS } from "../../scripts/gates.mjs";
 
@@ -243,7 +245,8 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
   // because that sentence is only read by somebody already reading a failure (SH802). The JVM copy
   // stays, being another language; these two do not have that excuse.
   console.log(`SH755: the gates, as last run here\n${
-    gateLines(recorded, declared, SELF, clearedGates(root)).join("\n")}`);
+    gateLines(recorded, declared, SELF, clearedGates(root), owedGates(root, recorded))
+      .join("\n")}`);
 
   // SH818 — this comparator cannot see its OWN gate (that is the SELF rule above), so the cycle it
   // can be half of is invisible to it by construction. The stamp on disk for `js` is the previous
@@ -305,6 +308,72 @@ test("SH770: a stamp from another commit is not this tree's colour, in either di
   assert.deepEqual([...declared].filter((gate) => fresh(gate) && !fresh(gate).red), [],
     "and a green recorded against another commit does not retire a declaration");
 });
+
+/**
+ * SH841 — the verdict beside red, green and not-this-tree.
+ *
+ * <p>SH770 is right and is not the gap: a stale stamp must be excluded from both directions, or a
+ * stale red blocks a commit over a fixed defect and a stale green reads as *this tree is green*.
+ * Excluded from both it reads as **absent**, and absent is where the reasoning stopped. Measured by
+ * running the gate nothing had asked for: `conformance` went twenty commits without a run, eight of
+ * them editing the four files its replication scenarios drive, and it came back 123/123 — nothing
+ * broken, and nothing had asked.</p>
+ *
+ * <p>A gate nobody needed and a gate that is **owed** are different facts, and only the second has
+ * evidence: the commits since the stamp touched what it judges.</p>
+ */
+test("SH841: a stale stamp with a changed subject is owed, and one without it is merely absent", () => {
+  const root = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  const previous = execFileSync("git", ["rev-parse", "HEAD~1"], { cwd: root, encoding: "utf8" }).trim();
+
+  // `js` covers the whole tree, so a stamp one commit back is owed by construction — whatever that
+  // commit touched. That is what makes this stable rather than a bet on the repository's history.
+  const owed = owedGates(root, {
+    js: { sha: previous, red: false, stale: true },
+    java: { sha: head, red: false, stale: false },
+  });
+  assert.ok(owed.js >= 1, `a stale stamp one commit back is owed: ${JSON.stringify(owed)}`);
+  assert.equal(owed.java, undefined,
+    "and a stamp AT head is not stale, so it is not owed either - the debt is about the diff since "
+      + "the run, and a run with no diff after it has none");
+
+  assert.deepEqual(owedGates(root, { js: { sha: "0".repeat(40), red: false, stale: true } }), {},
+    "a sha git cannot resolve answers nothing: a checkout that cannot be asked owes nothing it can "
+      + "be told about, which is SH770's rule in a third direction");
+  assert.deepEqual(owedGates(root, {}), {}, "and no stamp is no debt");
+});
+
+test("SH841: the owed debt is printed on the stale line and nowhere else", () => {
+  const world = {
+    conformance: { sha: "4b20d8e0", when: "then", red: false, stale: true },
+    java: { sha: "42d02432", when: "now", red: false, stale: false },
+  };
+  const lines = gateLines(world, new Set(), null, new Set(), { conformance: 8, java: 99 })
+    .join("\n");
+
+  assert.match(lines, /conformance —[^\n]*not a colour, and OWED: 8 commit\(s\)/,
+    "the sentence names the run somebody has to do, which neither a colour nor a silence does");
+  assert.doesNotMatch(lines, /java —[^\n]*OWED/,
+    "a FRESH stamp is a colour and takes no debt, whatever a caller passes - the reader must not "
+      + "invent a reason to re-run a gate that just ran here");
+  assert.doesNotMatch(gateLines(world, new Set(), null, new Set()).join("\n"), /OWED/,
+    "and with nothing measured it says nothing: an absent argument is an absent claim");
+});
+
+test("SH841: every gate declares what it is about, or the reader is silent about it by accident", () => {
+  assert.deepEqual(Object.keys(GATE_COVERS).toSorted(), [...GATES].toSorted(),
+    "a gate missing here would be reported as absent for ever, which is the state this exists to "
+      + "end - and a gate added to GATES with no subject is the way that would happen quietly");
+  assert.equal(GATE_COVERS.js, null,
+    "`js` reads the whole tree - SH770's own note says so - so it is owed by any change at all, and "
+      + "spelling that as a path list would be a floor pretending to be a ceiling");
+  for (const [gate, covers] of Object.entries(GATE_COVERS)) {
+    if (covers === null) continue;
+    assert.ok(covers.length > 0, `${gate} declares an empty subject, which is never owed`);
+  }
+});
+
 
 /**
  * SH798 — the assertion that would have caught a gate with no wrapper.

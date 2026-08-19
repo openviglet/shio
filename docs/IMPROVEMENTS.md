@@ -533,36 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.128 Not a colour, and not nothing either (SH841)
-
-Measured by running the gate that had not been run. `pnpm gates` printed:
-
-    conformance — last run at 77f9042f, 2026-08-19T11:21:44Z — NOT this tree, so not a colour
-
-and between that commit and HEAD:
-
-    20 commits, of which 8 edited cli/src/{convert,theme,propose,vocabulary-theme}.mjs
-
-which are the files the replication scenarios drive. The run came back **123 tests, 123
-pass**, so nothing was broken — and nothing had asked. Two minutes of wall clock, on the
-one gate CI cannot run, over eight commits to the code it exists to judge.
-
-SH770 is right and is not the gap: a stale stamp must be excluded from *both*
-directions, or a stale red blocks a commit over a fixed defect and a stale green reads
-as *this tree is green*. Excluded from both, it reads as **absent** — and absent is
-where the reasoning stops. There is a difference between a gate nobody needed and a gate
-that is owed, and only the second one has evidence: the commits since the stamp touched
-what it covers.
-
-So the verdict set is short by one. Beside red, green and not-this-tree there is
-**owed** — the stamp is stale *and* the diff since it is not empty over the paths that
-gate judges. It is a warning rather than a failure, because a gate needing a packaged
-jar and a running instance cannot be a precondition for a commit, and because the honest
-response is to run it rather than to declare it.
-
-The path list is the design question: `red-suites.json` already names each gate's
-command, and what it does not name is what each gate is *about*.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

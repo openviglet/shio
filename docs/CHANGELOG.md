@@ -1480,6 +1480,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH836** — A reference carries the scope that decides whose data it is, so a guarded name is read against its helper's keys — and a guarded page field reaches the error it could not before.
 - **SH837** — A field drawn inside a guard and declared by nothing is asserted as an error, and reverting the walk-out drops it to a warning rather than removing it — which is what makes it a test.
 - **SH838** — An archetype states its own type size, so all three of the bridge's bars are cleared by a real capture, and a rule that loses its last one is named by the run.
+- **SH841** — A stale stamp whose subject the commits since have touched is reported as OWED with the count, so a gate nobody needed reads differently from one nobody ran.
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 

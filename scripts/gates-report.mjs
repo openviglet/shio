@@ -28,7 +28,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import {
-  CYCLE_EXIT, GATES, clearedGates, comparatorCycle, gateLines, stamps,
+  CYCLE_EXIT, GATES, clearedGates, comparatorCycle, gateLines, owedGates, stamps,
 } from "./gate-stamp.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -51,7 +51,7 @@ const cleared = clearedGates(ROOT);
 // that stands in for a run in progress. That is the one thing this reader can say and neither
 // comparator can — each of those has a gate it must not read.
 process.stdout.write(`the gates, as last run in this tree\n${
-  gateLines(recorded, declared, null, cleared).join("\n")}\n`
+  gateLines(recorded, declared, null, cleared, owedGates(ROOT, recorded)).join("\n")}\n`
   + "  (stamps are local and untracked; a gate with no run here is not a failure)\n");
 
 if (comparatorCycle(recorded)) {

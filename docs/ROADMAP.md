@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
-
-- 📋 **SH841** (deps: —) **A gate whose stamp predates every change to what it covers is reported as absent, never as owed** — Conformance went twenty commits without running, eight of them editing the four files its replication scenarios drive, and every reader called that not a colour. → §XVII.128
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
