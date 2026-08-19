@@ -1308,6 +1308,29 @@ it. Four decisions worth keeping:
   one colour repeated three or more times away from `body` **and** a different colour on `body`,
   which is a real shape for a site with no custom properties and one no archetype here has a content
   reason to grow. The coverage is `theme.test.mjs`'s, deliberately.
+- **The bridge carried nothing, because the palette never reached it (SH845).** SH831–SH840 tuned
+  which extracted row fills which slot; on `www.viglet.org` there were **three** rows to choose from
+  and the source declares **49** custom properties, `--vg-accent`, `--vg-brand`, `--vg-border` among
+  them. All 319 declared properties were reported `variant-only: declared only under @layer theme`,
+  and the three that *were* written came from ranking literals in the utility layer — one of them
+  `#0000`, which then became the replica's page. **Three separate refusals, all reading as one
+  message.** `@layer` was treated as a variant-making at-rule: it orders the cascade and wraps a rule
+  that applies unconditionally, so a palette in one is the source *declaring* it, not a theme nobody
+  asked for. `:root,:host` — what a Tailwind v4 sheet emits — was not among the five selector
+  spellings the root set enumerated, and no enumeration of orderings could have held them all; the
+  rule is stated once instead (**every compound in the list is a root**) and the data is the atoms,
+  for `PAGE_ATOMS` equally. And a **fully transparent literal is a reset, never a palette entry**:
+  `#0000` outranks every real colour on a utility sheet and paints nothing, so it is refused on the
+  recurring half exactly where `isPointer` is — and kept on the declared half, where the source said
+  it. Two at-rule facts per declaration rather than one, since `stack.find` returns the *outermost*
+  and a `@media` inside a `@layer` goes invisible the moment the layer stops counting. Measured
+  before and after on the sheet's shape: **0 declared tokens and 8 refusals → 8 and 0**, with
+  `color.ink`, `color.surface`, `size.radius` and `text.family` all taking the source's values.
+  **`color.accent` still does not**, and that is SH831's documented bound rather than this: the
+  `accent` role is fed by `fill`/`stroke`/`caret-color`/`text-decoration-color`, and a real
+  call-to-action is a `background-color` on a non-page selector. Blast radius of the transparent
+  rule on the corpus, grepped rather than argued: **zero** — no archetype declares a transparent
+  colour at all.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

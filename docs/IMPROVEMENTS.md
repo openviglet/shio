@@ -533,36 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.132 The palette the source already published (SH845)
-
-SH831 built the bridge and it works — `--color-ink` is now `#234652`, the source's text
-colour, where it used to be a hardcoded `#12151a`. What crosses the bridge is the
-problem.
-
-`propose` extracted **three** colour tokens from `www.viglet.org`:
-
-    color.background-1   #0000
-    color.background-2   color-mix(in oklab, var(--vg-accent) 50%, transparent)
-    color.text-1         #234652
-
-The captured stylesheet declares **49** custom properties, and they are a named design
-system, not literals: `--vg-accent`, `--vg-brand`, `--vg-brand-dark`,
-`--vg-brand-light`, `--vg-background`, `--vg-foreground`, `--vg-border`, `--vg-card`.
-Those names map almost one-to-one onto the fourteen the Shio theme reads.
-
-The extractor ranks `color:` occurrences by frequency instead, so the commonest declared
-background in a utility sheet — `#0000`, transparent — becomes `background-1`, and the
-site's actual accent is not extracted at all. `--color-accent` therefore stays at its
-default `#0b5533`, a dark green, on a site whose accent is orange. That single unmapped
-role is most of what a curator sees.
-
-`propose` excluded the real palette deliberately: its report says 319 tokens were *not
-written* as `variant-only: declared only under @layer theme`. The rule is reasonable for
-a utility class and wrong for a `:root` custom property, which is a declaration of
-intent rather than a variant.
-
-Read the declared properties first and rank literals only where none exist.
-
 ### XVII.133 A mapping that cannot say what it could not map (SH846)
 
 Independent of where the tokens come from (SH845), the mapping itself has no floor and
@@ -593,6 +563,30 @@ prints nothing — a curator discovers an unmapped accent by looking at the page
 the loop SH692 exists to close.
 
 Print filled, defaulted and rejected, with the role names.
+
+### XVII.134 The accent no palette can reach (SH847)
+
+SH845 got the source's declared palette across the bridge — `color.ink`,
+`color.surface`, `size.radius` and `text.family` all take the captured values now.
+`color.accent` still does not, on the shape that matters most.
+
+The `accent` role is fed by `fill`, `stroke`, `caret-color` and `text-decoration-color`.
+SH831 said so out loud and called it the weakest pair: *a real site's call-to-action is
+usually a `background-color`, which lands in `background`*. Measured on a
+Tailwind-shaped sheet, `--vg-accent: #ea580c` is read by `.btn { background-color }` —
+role `background`, selector not page-level — so it is refused twice over and
+`--color-accent` stays `#0b5533`, a dark green, on a site whose accent is orange. That
+one slot is most of what a curator sees: it paints every button on the replica.
+
+Two things it must not become. A **synonym table** guessing that `brand` means accent is
+the unverifiable label SH689 spent a task removing, and SH831 refused it by name. And
+the page-level bar on colour is not the thing to relax: SH840 measured what happens when
+reference count decides a colour role.
+
+What is left is evidence nobody has read yet — the selector's own shape. A
+`background-color` on a rule whose selector also sets `color` to the page's *surface* is
+a button: the source is stating a reversal, and a reversal of the page is exactly what
+an accent is. Measure that against the corpus before writing anything.
 
 ## XIX The public site (Block S)
 

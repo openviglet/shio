@@ -56,8 +56,52 @@ export const DEFAULT_MIN_REFS = 3;
  * <p>And the reason this is a list rather than "any selector": a custom property declared under
  * `.dark` or inside a media query is a **variant**, so the same name legitimately has two values and
  * neither is the token. Writing one of them would silently pick a theme.
+ *
+ * <h3>SH845 — atoms, because the list could only ever be a list of the orderings somebody typed</h3>
+ *
+ * <p>This was a set of whole normalized selectors, and it held `:root,html` and `html,:root` — the
+ * two spellings of one selector, enumerated. It did not hold `:root,:host`, which is what a Tailwind
+ * v4 sheet emits and therefore what a large share of the modern web declares its palette on. Nothing
+ * about that omission is visible from the set: the failure is a token silently reported as a variant.
+ * So the rule is stated once — <b>every compound in the list must be a root</b> — and the data is the
+ * atoms. A list mixing a root with anything else is still not a root: `:root,.dark` declares a variant
+ * in the half that matters.</p>
  */
-const ROOT_SELECTORS = new Set([":root", "html", ":where(:root)", ":root,html", "html,:root"]);
+const ROOT_ATOMS = new Set([":root", "html", ":host", ":where(:root)", ":where(html)"]);
+
+/** Whether every compound in a selector list is a root. See {@link ROOT_ATOMS}. */
+function isRootSelector(selector) {
+  return everyCompoundIn(selector, ROOT_ATOMS);
+}
+
+function everyCompoundIn(selector, atoms) {
+  const parts = normalizeSelector(selector).split(",").filter(Boolean);
+  return parts.length > 0 && parts.every((part) => atoms.has(part));
+}
+
+/**
+ * Whether an at-rule makes what it wraps a **variant** (SH845).
+ *
+ * <p>`@media (prefers-color-scheme: dark)` around a `:root` block is the case {@link ROOT_ATOMS}
+ * exists for: the same name has two values, neither is the token, and writing one picks a theme
+ * nobody asked for. `@layer` is not that. It orders the cascade and wraps a rule that applies
+ * unconditionally, so `@layer theme { :root { --brand: #ea580c } }` is the source **declaring its
+ * palette** — the strong case at the top of this file, arriving in the wrapper the commonest CSS
+ * toolchain now puts it in.</p>
+ *
+ * <p>Measured on `www.viglet.org`: 319 custom properties, every one of them refused as
+ * `variant-only: declared only under @layer theme`, while `propose` wrote three colour tokens ranked
+ * out of literals — one of them `#0000`, which then became the replica's page. Read as an exclusion
+ * rule it was doing its job; read as an outcome it threw away the entire named palette and kept a
+ * transparent utility class.</p>
+ *
+ * <p>Stated as *`@layer` and nothing else* rather than as a list of the conditional at-rules, so an
+ * at-rule this scanner has never seen keeps today's behaviour. Two values under one name is the
+ * failure that cannot be undone downstream; a token left unwritten is reported and can be.</p>
+ */
+function isVariantAtRule(head) {
+  return !/^@layer\b/i.test(String(head ?? ""));
+}
 
 /** Properties whose value is a colour, grouped by the role the property implies. */
 const COLOR_ROLES = {
@@ -137,8 +181,15 @@ const OTHER_GROUPS = [
  * <p>Single-pass and character-driven rather than regex-driven, so there is no backtracking to be
  * pathological about: the cost is linear in the file's length, full stop.
  *
- * @returns {{declarations: Array<{selector: string, property: string, value: string, atRule: string|null}>,
- *            rules: number, bytes: number}}
+ * <p>SH845 — a declaration carries **two** facts about the at-rules it sits under, because one string
+ * cannot answer both questions. `atRule` is the outermost, which is what a report names when it says
+ * where a variant was found; `conditional` is the innermost one that makes what it wraps a variant
+ * ({@link isVariantAtRule}), which is what every rule below actually asks. They were one field, and
+ * `stack.find` returning the outermost meant a `@media` nested inside a `@layer` was invisible the
+ * moment `@layer` stopped counting.</p>
+ *
+ * @returns {{declarations: Array<{selector: string, property: string, value: string, atRule: string|null,
+ *            conditional: string|null}>, rules: number, bytes: number}}
  */
 export function scanCss(css) {
   const text = String(css ?? "");
@@ -155,8 +206,10 @@ export function scanCss(css) {
     if (!raw) return;
     const colon = splitDeclaration(raw);
     if (!colon) return;
-    const atRule = stack.find((each) => each.startsWith("@")) ?? null;
-    declarations.push({ selector, property: colon.property, value: colon.value, atRule });
+    const ats = stack.filter((each) => each.startsWith("@"));
+    const atRule = ats[0] ?? null;
+    const conditional = ats.findLast(isVariantAtRule) ?? null;
+    declarations.push({ selector, property: colon.property, value: colon.value, atRule, conditional });
   };
 
   while (index < text.length) {
@@ -335,7 +388,7 @@ export function declaredTokens(declarations) {
   const variants = new Map();
   for (const declaration of declarations) {
     if (!declaration.property.startsWith("--")) continue;
-    const inRoot = ROOT_SELECTORS.has(normalizeSelector(declaration.selector)) && !declaration.atRule;
+    const inRoot = isRootSelector(declaration.selector) && !declaration.conditional;
     const into = inRoot ? roots : variants;
     const seen = into.get(declaration.property);
     if (seen) seen.push(declaration);
@@ -354,7 +407,9 @@ export function declaredTokens(declarations) {
       unsure.push({
         name,
         reason: "variant",
-        detail: `also declared under ${variants.get(name).map((each) => each.atRule ?? each.selector).join(" ")}`,
+        // SH845 — the *conditional* at-rule, not the outermost: under `@layer base { @media … }` the
+        // outermost is the layer, which is now the half that is not the reason.
+        detail: `also declared under ${variants.get(name).map(variantOrigin).join(" ")}`,
       });
       continue;
     }
@@ -384,10 +439,15 @@ export function declaredTokens(declarations) {
     unsure.push({
       name,
       reason: "variant-only",
-      detail: `declared only under ${group.map((each) => each.atRule ?? each.selector).join(" ")}`,
+      detail: `declared only under ${group.map(variantOrigin).join(" ")}`,
     });
   }
   return { tokens, unsure };
+}
+
+/** What made one declaration a variant: the conditional at-rule if any, else its selector (SH845). */
+function variantOrigin(declaration) {
+  return declaration.conditional ?? declaration.selector ?? declaration.atRule;
 }
 
 function normalizeSelector(selector) {
@@ -420,8 +480,16 @@ const GROUP_FOR_PROPERTY = new Map([
  * <p>`body { color: var(--ink) }` is a stylesheet saying *this is what this site's text looks like*.
  * `.card h3 { color: var(--brand) }` is not, whatever the count. `*` is here because a reset that
  * sets a colour on everything is making the same statement in the other direction.</p>
+ *
+ * <p>SH845 — atoms rather than orderings, for the reason {@link ROOT_ATOMS} states: this held
+ * `html,body` and `body,html` and would have needed a third entry for `html,body,#root`.</p>
  */
-const PAGE_SELECTORS = new Set([":root", "html", "body", "*", "html,body", "body,html"]);
+const PAGE_ATOMS = new Set([":root", "html", "body", "*", ":host"]);
+
+/** Whether every compound in a selector list makes a declaration the page's. See {@link PAGE_ATOMS}. */
+function isPageSelector(selector) {
+  return everyCompoundIn(selector, PAGE_ATOMS);
+}
 
 /**
  * What a declared token is *used for*, read off the declarations that reference it (SH831).
@@ -476,7 +544,7 @@ function rolesByUse(declarations) {
     if (declaration.property.startsWith("--")) continue;
     const slot = GROUP_FOR_PROPERTY.get(declaration.property);
     if (!slot) continue;
-    const page = PAGE_SELECTORS.has(normalizeSelector(declaration.selector)) && !declaration.atRule;
+    const page = isPageSelector(declaration.selector) && !declaration.conditional;
     const key = slot.role ? `${slot.group} ${slot.role}` : slot.group;
     for (const match of String(declaration.value ?? "").matchAll(VAR_REF)) {
       const seen = counts.get(match[1]) ?? new Map();
@@ -530,7 +598,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     // SH834 — where the literal was, not only how often. `body { font-size: 17px }` is the page
     // saying what its own text is; the same value on a card is one step of a scale, and only the
     // selector separates them. The declared half has carried this since SH831.
-    const page = PAGE_SELECTORS.has(normalizeSelector(declaration.selector)) && !declaration.atRule;
+    const page = isPageSelector(declaration.selector) && !declaration.conditional;
     const existing = buckets.get(key);
     if (existing) {
       existing.refs += 1;
@@ -610,7 +678,8 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
 
 function bucketFor(declaration) {
   const { property, value } = declaration;
-  if (COLOR_ROLES[property] && isColor(value)) {
+  // SH845 — and not when it is fully transparent. See `isTransparent`.
+  if (COLOR_ROLES[property] && isColor(value) && !isTransparent(value)) {
     return { group: "color", role: COLOR_ROLES[property], type: "color" };
   }
   for (const entry of LENGTH_GROUPS) {
@@ -658,6 +727,40 @@ function bucketFor(declaration) {
  */
 function isPointer(value) {
   return /^\s*var\(\s*--[\w-]+\s*(,[\s\S]*)?\)\s*$/.test(String(value ?? ""));
+}
+
+/** `#0000`, `#00000000`, and the zero-alpha spellings of the colour functions. */
+const TRANSPARENT = /^(?:#(?:[0-9a-f]{3}0|[0-9a-f]{6}00)|(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\([^)]*[/,]\s*(?:0|0?\.0+|0%)\s*\))$/i;
+
+/**
+ * A colour that paints nothing (SH845).
+ *
+ * <h3>Why a recurring token can never be one</h3>
+ *
+ * <p>A recurring token's premise is *a literal this stylesheet repeats, therefore this is the site's
+ * palette*. `#0000` repeats more than any real colour on a utility sheet — it is what
+ * `.bg-transparent` and every reset are written with — and it is the one value where repetition
+ * argues the opposite of the premise: a colour declared to be absent is not a decision about what
+ * the site looks like.</p>
+ *
+ * <p>Measured on `www.viglet.org`, where it was ranked `color.background-1` — the site's *page*
+ * background, the first thing the bridge assigns and the largest area on the replica. That is the
+ * defect at its worst: not a wrong colour, an invisible one, on the slot that decides whether the
+ * page reads at all. The same argument as {@link isPointer} one value along, and refused in the same
+ * place for the same reason.</p>
+ *
+ * <p>The source corpus holds <b>no</b> transparent colour at all, in any of its eight archetypes, so
+ * what this refuses there is nothing — measured with a grep rather than asserted, which is the whole
+ * of SH839's correction: a claim of zero cost that a run refutes is worse than no claim.</p>
+ *
+ * <p><b>Only the recurring half.</b> A source that declares `--overlay: transparent` has *said* so,
+ * the token is editable, and refusing it would drop a name the source's own CSS references — which
+ * is the loss SH424 exists to prevent. The rule is about what may be inferred from a count, not
+ * about what a stylesheet is allowed to contain.</p>
+ */
+function isTransparent(value) {
+  const raw = String(value ?? "").trim();
+  return raw.toLowerCase() === "transparent" || TRANSPARENT.test(raw);
 }
 
 // ---------------------------------------------------------------------------------------------

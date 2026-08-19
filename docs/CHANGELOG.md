@@ -1243,6 +1243,7 @@
 - **SH835** — A `dl` of two or more `dt`/`dd` pairs is a third route to SectionFaq, with the rows read from the pairs — where the block used to answer null, not the wrong type the line claimed.
 - **SH839** — A value that is nothing but a var() is refused as a recurring token, and the comment claiming the exemption cost nothing now carries the figure a run produces.
 - **SH840** — A page-level row sorts ahead of a more-referenced one within each half, so the page's own colour takes its slot and the repeated one falls to the next.
+- **SH845** — A layer is not a variant and a root is every compound in the list, so a Tailwind-shaped palette crosses the bridge: 0 declared tokens became 8, and a transparent utility literal no longer paints the page.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

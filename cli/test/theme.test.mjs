@@ -799,3 +799,106 @@ test("SH840: a page-level row outranks a more-referenced one, which is SH831's f
     "and the repeated one is not discarded, it falls to the next slot: the sort decides which of "
       + "several eligible rows fills a slot first, which is why this is not a bar in `admits`");
 });
+
+// --- SH845: the palette the source already published ---
+
+/**
+ * The shape the modern web declares its palette in, and the shape this reader refused.
+ *
+ * <p>A Tailwind v4 sheet emits `@layer theme { :root, :host { … } }`, and both halves of that were
+ * disqualifying: `@layer` counted as a variant-making at-rule, and `:root,:host` was not one of the
+ * five selector spellings the root set happened to hold. Measured on `www.viglet.org` — 319 custom
+ * properties, every one reported as `variant-only`, while the three colour tokens that *were*
+ * written came from ranking literals in the utility layer, the commonest of which is `#0000`.</p>
+ */
+const LAYERED_SHEET = `
+@layer theme, base, utilities;
+@layer theme {
+  :root, :host {
+    --vg-foreground: #234652;
+    --vg-background: #ffffff;
+    --vg-radius: 8px;
+  }
+}
+@layer base {
+  body { color: var(--vg-foreground); background: var(--vg-background) }
+  .card { border-radius: var(--vg-radius) }
+}
+@layer utilities {
+  .bg-none-1 { background-color: #0000 }
+  .bg-none-2 { background-color: #0000 }
+  .bg-none-3 { background-color: #0000 }
+}
+`;
+
+test("SH845: a palette declared under @layer is the source's own, not a variant of somebody's theme", () => {
+  const { tokens, unsure } = declaredTokens(declarationsOf(LAYERED_SHEET));
+
+  assert.deepEqual(unsure, [],
+    "319 of these were reported as `variant-only: declared only under @layer theme` on the run that "
+      + "found this - a layer orders the cascade, it does not make what it wraps conditional");
+  assert.deepEqual(
+    tokens.map((row) => [row.name, row.value]),
+    [["--vg-background", "#ffffff"], ["--vg-foreground", "#234652"], ["--vg-radius", "8px"]],
+  );
+});
+
+test("SH845: a media query inside a layer is still a variant, which one at-rule field could not say", () => {
+  const { tokens, unsure } = declaredTokens(declarationsOf(
+    "@layer theme{:root{--bg:#ffffff}@media(prefers-color-scheme:dark){:root{--bg:#000000}}}",
+  ));
+
+  assert.deepEqual(tokens, [], "the outermost at-rule is the layer, and the layer is now the half "
+    + "that is not the reason - so reading `stack.find` would have written the light value");
+  assert.equal(unsure[0].reason, "variant");
+  assert.match(unsure[0].detail, /also declared under @media/);
+});
+
+test("SH845: a root is every compound in the list, so :root,:host is one and :root,.dark is not", () => {
+  const both = declaredTokens(declarationsOf(":root,:host{--bg:#ffffff}"));
+  const half = declaredTokens(declarationsOf(":root,.dark{--bg:#ffffff}"));
+
+  assert.equal(both.tokens.length, 1, "the spelling a Tailwind v4 sheet emits, which the enumerated "
+    + "set held no entry for - and no enumeration of orderings could have held them all");
+  assert.deepEqual(half.tokens, [], "a list mixing a root with a theme class declares a variant in "
+    + "the half that matters");
+});
+
+test("SH845: a page-level declaration inside a layer still states the page's own colour", () => {
+  const rows = themeFor(LAYERED_SHEET).rows;
+  const row = (name) => rows.find((each) => each.name === name);
+
+  assert.equal(row("--vg-foreground").page, true,
+    "`@layer base { body { color: var(--vg-foreground) } }` is the page saying what its text looks "
+      + "like; a sheet whose every rule sits in a layer would otherwise have no page-level use at all");
+  assert.equal(row("--vg-foreground").role, "text");
+});
+
+test("SH845: a fully transparent literal is a reset, so it is not the site's palette", () => {
+  const rows = themeFor(LAYERED_SHEET).rows;
+
+  assert.deepEqual(rows.filter((row) => row.source === "recurring"), [],
+    "`#0000` written three times in a utility layer outranks every real colour and paints nothing - "
+      + "it was ranked `color.background-1`, the slot the bridge assigns to the replica's page");
+  assert.deepEqual(
+    recurringTokens(declarationsOf(
+      ".a{background-color:rgba(0,0,0,0)}.b{background-color:rgba(0,0,0,0)}.c{background-color:rgba(0,0,0,0)}",
+    )).tokens,
+    [],
+    "the function spellings too, or the rule is one hex form deep",
+  );
+});
+
+test("SH845: the declared palette reaches the theme, and the transparent literal does not", () => {
+  const { mapped, unmapped } = vocabularyTokensFrom(themeFor(LAYERED_SHEET).rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+  const kept = Object.fromEntries(unmapped.map((row) => [row.name, row.value]));
+
+  assert.equal(from["color.ink"], "#234652", "the source's text colour, which the replica used to "
+    + "render with this file's hardcoded #12151a because the token was never written");
+  assert.equal(from["color.surface"], "#ffffff");
+  assert.equal(from["size.radius"], "8px");
+  assert.equal(kept["color.surface-sunk"], VOCABULARY_THEME_TOKENS.color["surface-sunk"].$value,
+    "a slot the source did not state keeps the default and is reported - which is a better artefact "
+      + "than a card painted with a utility class's transparent (P9)");
+});
