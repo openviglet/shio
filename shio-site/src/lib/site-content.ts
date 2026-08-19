@@ -1172,7 +1172,7 @@ export const MODES: Mode[] = [
   {
     name: "Authorable",
     keeps: "The content, as structured fields a curator edits in the console or on the page itself.",
-    offers: "The site's own theme, painted in the source's own colours. The structure is replaced, deliberately — not ruined.",
+    offers: "The site's own theme, in the source's own colours, type and corner radius. The structure is replaced, deliberately — not ruined.",
     pick: "somebody is going to maintain this site, and the model matters more than the pixels.",
     accent: "authorable",
   },

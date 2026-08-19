@@ -159,8 +159,14 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
-**Block Q closed again on 2026-08-19, and this one moved a claim** — the first closure in this
-list that did. SH831 gave the theme an authorable replica is presented with its **colours from
+**Blocks Q and W closed together on 2026-08-19**, on SH835 and SH836, and Q moved the same claim a
+second time: SH834 took the source's **type and corner radius** as well as its colours, so `MODES`'
+authorable row names all three. SH835 gave `classify` a route for an FAQ written as a `<dl>` — a
+capability, not a fix: the block used to answer *I do not know*, which is the answer the other routes
+are worth trusting by. SH836 is a lint reading its own scopes correctly and reaches no page here.
+
+**Block Q closed on 2026-08-19 earlier the same day, and that one moved a claim first** — the first
+closure in this list that did. SH831 gave the theme an authorable replica is presented with its **colours from
 the source**: `convert` reads the palette `propose` already extracted and fills the theme's six
 colour tokens by the role the source uses each one in, naming in the run every one it could not
 fill. So `MODES`' authorable row no longer says only *"the source's styling is replaced"* — it
