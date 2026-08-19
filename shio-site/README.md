@@ -159,6 +159,15 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
+**Q and W closed a third and fourth time on 2026-08-19**, on SH840 and SH838, and neither moved a
+claim here — which is worth one line because the round is the one most likely to look as if it had.
+Every id in it is an instrument turned on this project's own work: SH837 asserted the half of a fix
+nothing distinguished from its absence, SH838 gave a real capture the one admission rule only a
+synthetic stylesheet reached, SH839 corrected a comment claiming a measured cost of zero that a run
+refuted, and SH840 made the colour a page states outright win its slot over one merely repeated. The
+site already said *the source's own colours* and now says it of both halves of the palette rather
+than one, so the copy was right and became true rather than the other way round.
+
 **Blocks Q and W closed together on 2026-08-19**, on SH835 and SH836, and Q moved the same claim a
 second time: SH834 took the source's **type and corner radius** as well as its colours, so `MODES`'
 authorable row names all three. SH835 gave `classify` a route for an FAQ written as a `<dl>` — a
