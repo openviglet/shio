@@ -533,6 +533,37 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.130 The debt a ledger pays with its own prose (SH843)
+
+`assertedIn` counts every `SH<n>` on a line that is not a comment, which is right —
+SH630 built it that way precisely because matching raw text let a *comment* retire a
+debt. What no one asked is what else is not a comment. A named list's reason is a
+**string in an object literal**, so it is code by that rule, and this repository is full
+of named lists whose entries carry a sentence each.
+
+Measured across every suite file, Java and JS:
+
+    832 ids credited anywhere
+      3 whose EVERY credit is a ledger reason field
+        SH253  content-round-trip.test.mjs
+        SH641  handoffs.test.mjs
+        SH842  handoffs.test.mjs
+
+Small, and the third one is the argument: SH842 shipped one iteration ago, its own
+ledger rule says *a batch payment has nothing left to assert and belongs in DEBT*, and
+it never reached DEBT because a `why:` string paid it instead. Silently, in the commit
+that wrote the sentence — which is SH731's failure exactly, reached by a route SH731
+does not cover.
+
+`assertion-debt.test.mjs` already knows the shape: `withoutDeclaration` cuts its *own*
+declaration out of the walk, because its authors knew a list of ids credits them. That
+exclusion was scoped to one file's own list and never generalised.
+
+The fix is not a broader comment rule — a reason field is deliberately not a comment,
+and blanking every string would stop an assertion message paying anything. It is that a
+**declaration** is recognised wherever it is, and the three ids then land in DEBT or
+earn an assertion.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
