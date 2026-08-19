@@ -1241,6 +1241,7 @@
 - **SH833** — theme-heavy grew the markup each of the three unmet classifier bars asks for, so the corpus produces all seven section types and a check names any that lose their last producer.
 - **SH834** — The theme's radius and font stack come from the source too, by a rule per kind of group: a page-level statement for colour, a rank where a group has one role, and a refusal for a scale.
 - **SH835** — A `dl` of two or more `dt`/`dd` pairs is a third route to SectionFaq, with the rows read from the pairs — where the block used to answer null, not the wrong type the line claimed.
+- **SH839** — A value that is nothing but a var() is refused as a recurring token, and the comment claiming the exemption cost nothing now carries the figure a run produces.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

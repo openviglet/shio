@@ -1272,14 +1272,27 @@ it. Four decisions worth keeping:
   that can be taken is the one the page states outright, which is why `recurringTokens` now keeps a
   **page-level bucket below `minRefs`**: that threshold asks *is this value a palette*, and
   `body { font-size: 17px }` is the page stating its own type once, by nature. Measured before it
-  was written — across the whole corpus that exemption admits nothing, since the only page-level
-  literals anywhere are `body { margin: 0 }` and `0` is not a length. `.shio-page` also stopped
+  was written — and **that measurement was wrong, which SH839 is** (below). `.shio-page` also stopped
   hardcoding its font stack: `text.family` is a token now, because the bridge cannot point at a
   literal. `size.measure` and `space.step` are in **no** slot deliberately — a measure is a line
   length almost nothing declares, and a rhythm step is the unit other spacing is a multiple of,
   which the commonest `padding` value is not. A slot the bridge does not name keeps its default
   silently; one it names and cannot fill is reported, and that is the difference between *this theme
   has nowhere to put it* and *the source did not say*.
+- **A recurring token is a literal, never a pointer — and the claim that said otherwise was in the
+  code (SH839).** SH834's exemption shipped with a comment stating its cost was measured at zero, and
+  a run refuted it on that same commit: `theme-heavy`'s `body { font-family: var(--font-body) }` was
+  already being written as `font.family.1 = var(--font-body)`, a `Theme.TOKENS` field whose value is
+  a pointer and which edits into nothing — the source's own token is the one that moves the page. The
+  measurement behind the claim filtered for values holding no `var(`, which is the right filter for a
+  length group (`isLength` refuses one) and the wrong one for `font.family`, whose entry in
+  `OTHER_GROUPS` carries **no value test** and says so two lines up. `bucketFor` refuses a value that
+  is *nothing but* a `var()` now — colour and length already did through their own tests, so this is
+  the one group it changes. **Nothing but, not containing:** `0 1px 2px var(--shadow-color)` stays,
+  because a composed value carries several decisions and happens to interpolate one, and refusing it
+  would lose a real shadow to a rule about a pointer. The corrected figure is in the comment rather
+  than only in a ledger: on that corpus the exemption admits **one** row, `font.size.1 = 17px`, which
+  is the case it exists for.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

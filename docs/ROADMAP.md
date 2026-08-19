@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH839** (deps: —) **A recurring token can now be a var() pointing at another token, and the code claims that admits nothing** — SH834 kept a page-level bucket below minRefs on a measurement that filtered literals, and the font-family group has no value test at all. → §XVII.126
 - 📋 **SH840** (deps: —) **The page's own text colour loses its slot to a card colour the sheet happens to repeat more often** — SH831 made a page-level statement decide a declared token's slot and never applied it to a recurring one, which SH834 gave the same flag and nothing sorts by. → §XVII.127
 
 ## Priority

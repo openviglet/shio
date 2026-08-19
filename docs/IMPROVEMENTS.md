@@ -533,35 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.126 The exemption whose blast radius was measured wrong (SH839)
-
-SH834 let a page-level declaration survive the `minRefs` floor, and its own comment says
-the cost was measured: *"across the whole source corpus this admits **nothing** — the
-only page-level literals anywhere are `body { margin: 0 }`, and `0` is not a length"*.
-Run it today against `theme-heavy`:
-
-    recurring row: font.family.1 = var(--font-body)  refs=1  page=true
-    recurring row: font.size.1   = 17px              refs=1  page=true
-    recurring row: font.weight.1 = 700               refs=4  page=false
-
-The first one is the finding. `body { font-family: var(--font-body) }` was there before
-SH838 added the `font-size`, so the exemption admitted it **on the commit that
-introduced it** and the measurement missed it — because that measurement filtered for
-values matching no `var(`, which is the right filter for a length group and the wrong
-one for `font.family`, whose entry in `OTHER_GROUPS` carries *no value test at all* and
-says so.
-
-So `Theme.TOKENS` now holds a token whose value is a reference to another token:
-`--font-family-1: var(--font-body)`. Nothing renders wrong — `text.family` takes the
-declared row, which sorts first — and a curator opening the field meets a pointer they
-cannot edit into anything.
-
-A recurring token's whole premise is *a literal the sheet repeats*. A `var()` is already
-somebody's token, so the exemption should require a value the group would accept as its
-own kind, which the flattened `GROUP_FOR_PROPERTY` already carries. The second
-deliverable is the comment: a claim of zero blast radius that a run refutes is worse
-than no claim.
-
 ### XVII.127 SH831's own defect, on the other half of the palette (SH840)
 
 Measured on a stylesheet built to ask exactly one question:

@@ -734,3 +734,40 @@ test("SH834: a token used where no group looks is roled by nothing", () => {
     "`background-image` is in no group, and a url() counted as a length would have reached a slot "
       + "expecting one");
 });
+
+// --- SH839: a recurring token is a literal, never a pointer ---
+
+test("SH839: a page-level value that is only a var() is not a token this file may extract", () => {
+  // Measured on `theme-heavy`, where SH834's page-level exemption admitted exactly this and the
+  // comment on that exemption claimed a blast radius of zero. It said so because the measurement
+  // behind it filtered for values holding no `var(` — the right filter for a length group, whose
+  // `isLength` already refuses one, and the wrong one for `font.family`, which has no value test.
+  const rows = themeFor(':root{--font-body:Inter,sans-serif}body{font-family:var(--font-body)}').rows;
+
+  assert.deepEqual(
+    rows.filter((row) => row.source === "recurring").map((row) => row.path), [],
+    "a recurring token's premise is a literal the sheet repeats, and `var(--font-body)` is already "
+      + "somebody's token: writing it produces `--font-family-1: var(--font-body)`, a field whose "
+      + "value is a pointer and which edits into nothing",
+  );
+  assert.deepEqual(rows.map((row) => row.path), ["font.body"],
+    "while the source's OWN token is untouched - it is the one that moves the page");
+});
+
+test("SH839: a value that merely interpolates a var() is still the source's own decision", () => {
+  const shadow = "0 1px 2px var(--shadow-color)";
+  const rows = themeFor(`.a{box-shadow:${shadow}}.b{box-shadow:${shadow}}.c{box-shadow:${shadow}}`).rows;
+
+  assert.deepEqual(rows.map((row) => [row.path, row.value]), [["shadow.1", shadow]],
+    "nothing BUT a var() is refused, not anything containing one - a composed value carries several "
+      + "decisions and happens to interpolate one, and refusing it would lose a real shadow to a "
+      + "rule about a pointer");
+});
+
+test("SH839: the page-level exemption still admits the literal it was written for", () => {
+  const rows = themeFor("body{font-size:17px}").rows;
+
+  assert.deepEqual(rows.map((row) => [row.path, row.value, row.refs]), [["font.size.1", "17px", 1]],
+    "one occurrence, below minRefs, kept on the strength of its selector - narrowing the rule to "
+      + "literals must not narrow it out of existence");
+});

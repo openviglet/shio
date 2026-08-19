@@ -553,10 +553,16 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     // SH834 — `minRefs` asks *is this value a palette*, and a page-level declaration does not have
     // to answer it: `body { font-size: 17px }` is the page stating its own type, once, by nature.
     // Repetition is evidence for a value nobody labelled; a selector that means "everything" is
-    // evidence of a different kind, and the bar for one was never the bar for the other. Measured
-    // before it was written: across the whole source corpus this admits **nothing** — the only
-    // page-level literals anywhere are `body { margin: 0 }`, and `0` is not a length, so no bucket
-    // exists to exempt. The rule is right and its blast radius here is zero.
+    // evidence of a different kind, and the bar for one was never the bar for the other.
+    //
+    // SH839 — this comment used to end *"across the whole source corpus this admits nothing … the
+    // rule is right and its blast radius here is zero"*, and a run refuted it on the very commit
+    // that wrote it. The measurement behind that sentence filtered for values holding no `var(`,
+    // which is the right filter for a length group and the wrong one for `font.family`; the
+    // exemption was already admitting `font.family.1 = var(--font-body)` from `theme-heavy`'s
+    // `body` rule. `bucketFor` refuses a pointer now, so what this admits on that corpus is one
+    // row — `font.size.1 = 17px`, the case the rule exists for. A claim of zero cost that a run
+    // refutes is worse than no claim, which is why the correction is here and not only in a ledger.
     .filter((row) => row.refs >= minRefs || row.page)
     .sort((a, b) => {
       if (a.group !== b.group) return a.group < b.group ? -1 : 1;
@@ -616,11 +622,42 @@ function bucketFor(declaration) {
     // No value test: a font stack and a shadow have no single canonical form worth asserting, and
     // recurrence is the whole evidence anyway — a `box-shadow` written eight times identically is a
     // decision somebody made once.
-    if (entry.properties.includes(property)) {
+    //
+    // SH839 — one exception, and it is the only value a *recurring* token can never be. See
+    // `isPointer`: the colour and length groups already refuse it through their own tests, so this
+    // is where the rule has to be spelled and the only group it changes.
+    if (entry.properties.includes(property) && !isPointer(value)) {
       return { group: entry.group, role: null, type: entry.type };
     }
   }
   return null;
+}
+
+/**
+ * A value that is <b>nothing but</b> a reference to another custom property (SH839).
+ *
+ * <h3>Why a pointer cannot be a recurring token</h3>
+ *
+ * <p>A recurring token's whole premise is *a literal this stylesheet repeats*, extracted so a curator
+ * can change it in one place. A `var(--font-body)` is already somebody's token: writing it into
+ * `Theme.TOKENS` produces `--font-family-1: var(--font-body)`, a field whose value is a pointer and
+ * which edits into nothing — the source's own token is the one that moves the page.</p>
+ *
+ * <p>Measured on `theme-heavy`, where SH834's page-level exemption admitted exactly this and the
+ * comment on that exemption claimed a blast radius of zero. It said so because the measurement behind
+ * it filtered for values holding no `var(` — the right filter for a length group, whose `isLength`
+ * already refuses one, and the wrong one for `font.family`, which has no value test and says so two
+ * lines up.</p>
+ *
+ * <h3>Nothing but, and not merely containing</h3>
+ *
+ * <p>`0 1px 2px var(--shadow-color)` stays a token. It is a value the source composed, most of it
+ * literal, and refusing it would lose a real shadow to a rule about a pointer. The distinction is
+ * exact rather than cautious: a pointer resolves to one other token and carries no decision of its
+ * own, while a composed value carries several and happens to interpolate one.</p>
+ */
+function isPointer(value) {
+  return /^\s*var\(\s*--[\w-]+\s*(,[\s\S]*)?\)\s*$/.test(String(value ?? ""));
 }
 
 // ---------------------------------------------------------------------------------------------
