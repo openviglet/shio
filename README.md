@@ -173,7 +173,10 @@ markup, and `convert` turns it into real Shio posts — fidelity mode for a
 pixel-accurate copy, authorable mode for one a curator can edit. The choice is
 per block, so most pages end up **mixed**: the blocks you accepted become
 sections, and each run of kept markup becomes a section too — movable and
-replaceable, rather than a field the editor cannot reach.
+replaceable, rather than a field the editor cannot reach. An authorable page is
+redrawn with Shio's own vocabulary, and the theme it is presented with takes its
+**colours from the source** — matched by the role the source's stylesheet uses each
+one in, with every colour it could not fill named in the run.
 
 ```bash
 npx @viglet/shio clone https://example.com --max-pages 50 --render --assets

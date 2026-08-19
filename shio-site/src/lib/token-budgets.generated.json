@@ -11,13 +11,13 @@
       "key": "response.manifest",
       "label": "Full manifest",
       "note": "every capability, every limit, a curated endpoint index",
-      "tokens": 2650
+      "tokens": 2820
     },
     {
       "key": "mcp.tools.list.total",
       "label": "Every MCP tool schema",
       "note": "tools/list, re-sent on every turn before any work happens",
-      "tokens": 2500
+      "tokens": 2560
     },
     {
       "key": "benchmark.build-marketing-site.tokens",

@@ -159,6 +159,17 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
+**Block Q closed again on 2026-08-19, and this one moved a claim** — the first closure in this
+list that did. SH831 gave the theme an authorable replica is presented with its **colours from
+the source**: `convert` reads the palette `propose` already extracted and fills the theme's six
+colour tokens by the role the source uses each one in, naming in the run every one it could not
+fill. So `MODES`' authorable row no longer says only *"the source's styling is replaced"* — it
+says the structure is replaced and the colours are the source's, which is a different promise and
+a true one. The rest of the round is invisible here by construction: SH829 and SH830 are the
+agent's digest and the conversion's own warnings, SH832 is a defect (an empty row in a collection
+was drawing its section's own words), and SH833 is the corpus. **The roadmap is empty at this
+commit** — no block holds an open line — so there is nothing this site is waiting on.
+
 **Block F closed on 2026-08-14** with SH45 — API calls metered as a flow, one bucket per
 tenant per UTC day per surface, with a `ShBillingExporter` hook for a closed day. It
 changes no claim on these pages: the site sells the agent surface and the delivery layer,
