@@ -2356,6 +2356,17 @@ only reader of the other direction: a fixture edit that costs the corpus its las
 `SectionHero` sat on that list until the run printed otherwise, which is why it is measured rather
 than reasoned.
 
+**And the same question of the theme bridge's *rules*, which the types check could not ask (SH838).**
+`PALETTE_BRIDGE` admits by three bars — a page-level statement where a group has competing roles, the
+most-used value where it has one, a refusal for a scale — and the corpus reached **two**. The missing
+one fills `text.base` from a `body { font-size }`, and it is not a third branch of one comparison: it
+is the only rule that admits a **recurring** row below `minRefs`, on the strength of its selector
+alone, so the untested path was a whole mechanism. `theme-heavy`'s stylesheet states its own type
+size now, and group M holds `UNREACHED_BRIDGE_RULES` — empty, kept for group L's reason. It reads the
+**written `Theme` post** rather than the run's report: a slot whose value is no longer the vocabulary
+default was filled, which is a fact about the artefact a curator opens. The one thing that reading
+cannot see is a source stating the default's own value, which can only make the list longer.
+
 **Both drivers now have a caller, and that was the half that was missing.** `serve` shipped with the
 loader and was called by nothing, so the sentence above — *a divergence between the tiers is a
 statement about the boundary* — was unfalsifiable: one driver ran, and every claim the corpus made

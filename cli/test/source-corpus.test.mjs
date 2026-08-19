@@ -53,6 +53,9 @@ import { join } from "node:path";
 
 import { INVENTORY_FILE, INVENTORY_VERSION } from "../src/clone.mjs";
 import { PLAN_FILE, SECTION_TYPES } from "../src/propose.mjs";
+import {
+  PALETTE_BRIDGE, VOCABULARY_THEME_SLUG, VOCABULARY_THEME_TOKENS,
+} from "../src/vocabulary-theme.mjs";
 import * as clone from "../src/commands/clone.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import * as propose from "../src/commands/propose.mjs";
@@ -1025,6 +1028,61 @@ describe("SH833: every section type the vocabulary declares has a source that pr
       "a type that has gained a producer must leave UNPRODUCED_TYPES and one that has lost its "
         + "last one must join it - held as a list because a count lets the next fixture spend what "
         + "this one paid, and because a classifier branch no source reaches has never run end to end");
+  });
+});
+
+// -------------------------------------------------------------------------------------------------
+// Group M — which of the theme bridge's admission rules a real capture reaches (SH838)
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Admission rules no archetype reaches, held as a **named list** — group L's device, one file along.
+ *
+ * <p>SH833 asked which section *types* the corpus produces and found four of seven. This asks the
+ * same question of `PALETTE_BRIDGE`'s three `needs` rules, and the answer was **two of three**: the
+ * one that fills `text.base` from a page-level `font-size`, refusing the other four steps of the
+ * scale, was reached by a synthetic stylesheet in `theme.test.mjs` and by nothing that goes through
+ * `clone → propose → convert`. It is also the rule that clears the extractor's bar *differently* —
+ * the only one admitting a recurring row below `minRefs`, on the strength of its selector alone — so
+ * the untested path was a whole mechanism rather than one branch of a comparison.</p>
+ *
+ * <p>Read from the **written Theme post** rather than from the run's report: a slot whose value is
+ * no longer this file's default was filled, which is a fact about the artefact a curator opens. The
+ * one thing that reading cannot see is a source that states the default's own value — honest, rare,
+ * and it can only make this list longer, never shorter.</p>
+ */
+const UNREACHED_BRIDGE_RULES = [];
+
+describe("SH838: every rule the theme bridge admits by is reached by a real capture", () => {
+  test("the corpus names the admission rules it has never exercised, and prints both counts", async () => {
+    const reached = new Set();
+    for (const entry of corpus.filter((each) => each.declaration.propose?.accept === "all")) {
+      const run = await capture(entry, { accept: true });
+      try {
+        const theme = (run.conversion.posts ?? [])
+          .find((post) => post.type === "Theme" && post.url?.endsWith(`/${VOCABULARY_THEME_SLUG}`));
+        if (!theme) continue;
+        const written = JSON.parse(theme.data.TOKENS);
+        for (const [slot, want] of Object.entries(PALETTE_BRIDGE)) {
+          const [family, leaf] = slot.split(".");
+          if (written[family]?.[leaf]?.$value !== VOCABULARY_THEME_TOKENS[family][leaf].$value) {
+            reached.add(want.needs);
+          }
+        }
+      } finally {
+        await run.dispose();
+      }
+    }
+    const rules = [...new Set(Object.values(PALETTE_BRIDGE).map((want) => want.needs))].sort();
+    const missing = rules.filter((rule) => !reached.has(rule)).sort();
+    console.log(`SH838: ${rules.length - missing.length} of ${rules.length} admission rule(s) `
+      + `reached by this corpus${missing.length ? `, missing: ${missing.join(" ")}` : ""}`);
+
+    assert.ok(reached.size, "a run that filled no slot at all would make the comparison vacuous");
+    assert.deepEqual(missing, UNREACHED_BRIDGE_RULES,
+      "a rule that has gained a capture reaching it must leave UNREACHED_BRIDGE_RULES and one that "
+        + "has lost its last must join it - a bar nothing clears end to end is a mechanism nobody "
+        + "has run, whatever a synthetic stylesheet in a unit test says about it");
   });
 });
 

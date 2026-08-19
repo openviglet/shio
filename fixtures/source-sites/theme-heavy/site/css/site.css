@@ -20,7 +20,9 @@
   --font-body: "Fixture Sans", system-ui, sans-serif;
 }
 
-body { margin: 0; color: var(--ink); font-family: var(--font-body) }
+/* The page states its own type size, which is the one step of a scale a stylesheet says
+   outright — every other size here is a heading and belongs to no rank a tool can order. */
+body { margin: 0; color: var(--ink); font-family: var(--font-body); font-size: 17px }
 
 .masthead { background: var(--wash); border-bottom: 1px solid var(--brand) }
 .mainnav { display: flex; gap: 24px; align-items: center; padding: 12px 32px }

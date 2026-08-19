@@ -533,35 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.125 A rule the corpus cannot reach (SH838)
-
-SH834 sets three bars, one per kind of group, and the corpus reaches two of them.
-Measured across every archetype while the task was being designed, the page-level
-declarations are:
-
-    theme-heavy   body { font-family: var(--font-body) }
-    awkward       (none)
-    query-pages   (none)
-    locale-prefixed (none)
-    spa           (none)
-
-So `needs: "rank"` is exercised — `theme-heavy`'s `--radius` and its font stack both
-land — and `needs: "page"` is exercised by the colours. `needs: "page-only"`, which
-fills `text.base` from a `body { font-size }` and refuses the other four steps of the
-scale, is reached by a synthetic stylesheet in `theme.test.mjs` and by nothing that goes
-through `clone → propose → convert`.
-
-This is SH833's shape one file along, and SH833's own rationale is the argument: *until
-a fixture produces it, the branch has never been run end to end*. It is a bar the
-extractor clears differently from the other two — it is the one rule that admits a
-**recurring** row below `minRefs`, on the strength of its selector alone — so the path
-from a page-level literal through `recurringTokens` to a written `Theme.TOKENS` is
-exactly the part no archetype walks.
-
-A `body { font-size: … }` in one archetype closes it, and the check that keeps it closed
-is the harder half: SH833 holds unproduced *types* as a named list, and there is no
-equivalent for an unreached admission **rule**.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
