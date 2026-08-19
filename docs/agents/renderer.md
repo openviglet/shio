@@ -820,7 +820,17 @@ renderer over one body of content at a second address. See the section on it bel
   than the task that filed it: only `if` and `unless` are transparent. `each` and `with` **rebind** the
   context, which is what they are for, and walking out through them reported a row's field as the
   page's — wrong on every listing, SH251's defect inverted. `ShTemplateFieldScannerTest.blocksClose`
-  is what refused the filed version; a test pins the pair directly now. Whether Handlebars.java's
+  is what refused the filed version; a test pins the pair directly now.
+- **And the larger half got its own assertion a task later (SH837)** — SH836 shipped with the false
+  positive asserted and the *error* unasserted, because the lint fixture's one undeclared page field
+  sat outside every guard and its one guarded reference was declared. So the fixture could not tell
+  the fix from its absence on the half that matters, and the suite going 1915 → 1917 with no new
+  failures was consistent with the branch working **and** with nothing reaching it. `strapline` is
+  the case now: drawn inside `{{#if SUMMARY}}`, declared by nothing, reported as an **error** naming
+  the bound post-type. What makes it a test rather than a coincidence is what it does when the
+  walk-out is reverted — it does not vanish, it **drops to a warning**, the weaker claim the CMS
+  makes about a listing whose rows it cannot enumerate. Two branches, one reference, and only the
+  severity says which one it took. Whether Handlebars.java's
   AST would replace all of this is **asserted rather than remembered (SH274)**: on 4.5.3
   `Template#collect` is *deduplicated* — four references to `TEXT` at three scopes return `[TEXT]` —
   `collect(SECTION)` gives only the helper's name, and the structural nodes are in `internal`.

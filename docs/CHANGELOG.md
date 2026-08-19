@@ -1476,6 +1476,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH805** — There is no drain to remove: beforeExit and exit fire a millisecond apart with only stdio alive, and paired runs put the flag's cost at nothing — the seconds were machine variance.
 - **SH806** — Every context was opening a rolling appender in a temp directory of 309,064 entries; a test logback config removes the file, and the assertion boots a context because a plain one cannot see it.
 - **SH836** — A reference carries the scope that decides whose data it is, so a guarded name is read against its helper's keys — and a guarded page field reaches the error it could not before.
+- **SH837** — A field drawn inside a guard and declared by nothing is asserted as an error, and reverting the walk-out drops it to a warning rather than removing it — which is what makes it a test.
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 

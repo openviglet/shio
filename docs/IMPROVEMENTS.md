@@ -533,33 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.124 The half of SH836 nothing asserts (SH837)
-
-SH836 has two halves and they are not the same size. The small one stops a false
-positive: a name inside a guard inside `{{#form}}` was read against the listing's keys
-and reported as declared nowhere. That is asserted, at the lint, and verified by
-reverting the walk-out and watching `label` come back.
-
-The large one is the opposite direction. `isPageScoped()` reads `helperScope` now, so a
-reference guarded at the top level of a layout is the **page's** again and reaches the
-*error* — *the bound post-type declares no such field, so this renders empty on every
-page of that type*. That branch could never fire behind a guard before, and a template
-puts most of its references behind one.
-
-Nothing shows it. `ShTemplateFieldLintTest`'s layout holds exactly one undeclared page
-field, `headline`, and it sits at the top level:
-
-    <p class="byline">{{headline}}</p>          <- reported, always was
-    {{#if SUMMARY}}<p>{{SUMMARY}}</p>{{/if}}    <- guarded, and SUMMARY is declared
-
-So the fixture cannot distinguish the fix from its absence on the half that matters. The
-suite going from 1915 to 1917 with no new failures is consistent with the branch working
-and equally consistent with nothing reaching it.
-
-The assertion is a guarded reference to a field the bound post-type does not declare,
-reported as an **error** naming both — and the scanner-level test above it is not a
-substitute, because what changed is which of the lint's two branches a reference takes.
-
 ### XVII.125 A rule the corpus cannot reach (SH838)
 
 SH834 sets three bars, one per kind of group, and the corpus reaches two of them.

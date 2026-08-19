@@ -75,7 +75,7 @@ class ShTemplateFieldLintTest {
             <html><head><title>{{post.title}}</title><style>{{theme.css}}</style></head>
             <body>
               <h1>{{TITLE}}</h1>
-              {{#if SUMMARY}}<p class="lede">{{SUMMARY}}</p>{{/if}}
+              {{#if SUMMARY}}<p class="lede">{{SUMMARY}}</p><p>{{strapline}}</p>{{/if}}
               <div>{{{BODY}}}</div>
               <img src="{{file_url HERO}}">
               {{#image HERO sizes="50vw"}}<img src="{{url}}" width="{{width}}" height="{{height}}"
@@ -243,7 +243,51 @@ class ShTemplateFieldLintTest {
                         in this fixture are wrong, and a third finding would mean the rule fires \
                         on correct templates.""")
                 .extracting(Finding::field)
-                .containsExactlyInAnyOrder("headline", "nosuchfieldanywhere");
+                .containsExactlyInAnyOrder("headline", "strapline", "nosuchfieldanywhere");
+    }
+
+    /**
+     * SH837 — the half of SH836 that shipped without one.
+     *
+     * <h3>Two halves, and the fixture could only show the small one</h3>
+     *
+     * <p>SH836 stopped a false positive — a name behind a guard inside {@code {{#form}}} read against
+     * the listing's keys — and that was asserted. Its <b>other</b> direction is the larger one:
+     * {@code isPageScoped()} reads {@code helperScope}, so a reference guarded at the top level of a
+     * layout is the page's again and reaches the <em>error</em> branch, which could never fire behind
+     * a guard before. A template puts most of its references behind one.</p>
+     *
+     * <p>This fixture could not tell the fix from its absence there. Its one undeclared page field,
+     * {@code headline}, sat at the top level and was reported either way; the only guarded reference
+     * was {@code SUMMARY}, which is declared. The suite going from 1915 to 1917 with no new failures
+     * was consistent with the branch working and equally consistent with nothing reaching it —
+     * which is the difference between a test and a coincidence.</p>
+     *
+     * <p>{@code strapline} is the case now: guarded by a declared field, undeclared itself, and an
+     * error. Verified by reverting the walk-out, where it drops to the row-scoped branch, finds no
+     * post-type declaring it, and is downgraded to the *warning* that says the CMS cannot settle it —
+     * a weaker claim about a defect the CMS can prove.</p>
+     */
+    @Test
+    @DisplayName("SH837: a guarded reference to an undeclared page field is the same error as a bare one")
+    void aGuardedUndeclaredFieldIsStillAnError() {
+        Finding found = templateFindings().stream()
+                .filter(finding -> "strapline".equals(finding.field()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "a field drawn inside {{#if}} and declared by nothing was not reported"));
+
+        assertThat(found.severity())
+                .as("""
+                        an ERROR, not the warning a row-scoped reference gets: an `{{#if}}` decides \
+                        whether its body renders and changes whose data is in scope not at all, so \
+                        the owner is as known here as it is one line above the guard.""")
+                .isEqualTo("error");
+        assertThat(found.message())
+                .as("and it names both, because the fix is a rename and the reader needs the pair")
+                .contains("strapline")
+                .contains(pageType);
+        assertThat(found.address()).isEqualTo("post:" + siteName + "/layout");
     }
 
     @Test
