@@ -1181,6 +1181,77 @@ test("SH551: a <details> list keeps its summaries, because that is where the que
   );
 });
 
+/**
+ * SH835 — the FAQ shape the classifier could not see.
+ *
+ * <p>Found by running SH833, not by reading `classify`: the `theme-heavy` archetype carried a
+ * plainly-labelled FAQ written as a `<dl>` and the conversion produced no `SectionFaq` at all. The
+ * two existing routes want two or more `<details>`, or two or more repeated *units* whose headings
+ * end in `?` — and `dt`/`dd` are **siblings**, so `repeatedUnits` finds nothing and every rule below
+ * needs units.</p>
+ *
+ * <p>Measured before it was fixed, and it corrects what the task was filed on: the block did not
+ * fall through to `SectionFeatureGrid`, it answered <b>null</b>. That is the honest outcome SH379
+ * designs for — an unrecognised block becomes a `Block*` post-type of its own rather than the
+ * nearest wrong shape — so this is a capability the classifier lacked, not a wrong answer it gave.
+ * A `<dl>` is not a guess either: the element exists to pair a term with its description, which is
+ * the whole of the FAQ shape.</p>
+ */
+test("SH835: an FAQ written as a definition list is read as one, rows and all", () => {
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", "<html><body><main>"
+      + "<section class=hero><h1>Hi</h1><p>Lead copy.</p><a href=/x>Go</a></section>"
+      + "<section class=faq><h2>Questions</h2><dl>"
+      + "<dt>Does the font arrive?</dt><dd>Only if the stylesheet is parseable.</dd>"
+      + "<dt>Is the sprite collected?</dt><dd>It is named by a custom property.</dd>"
+      + "<dt>Can I cancel?</dt><dd>At any time, from the console.</dd>"
+      + "</dl></section></main></body></html>"]]),
+    html: HTML,
+  });
+
+  const faq = proposal.candidates.find((row) => row.type === "SectionFaq");
+  assert.ok(faq, `the definition list is proposed as a FAQ: ${JSON.stringify(proposal.candidates)}`);
+  assert.match(faq.evidence, /3 <dt>\/<dd> pairs/,
+    "the evidence names the shape and counts it, so a reviewer can check the claim against the page "
+      + "rather than take the type name on trust");
+  assert.deepEqual(
+    faq.fields.questions.map((row) => row.question),
+    ["Does the font arrive?", "Is the sprite collected?", "Can I cancel?"],
+  );
+  assert.deepEqual(
+    faq.fields.questions.map((row) => row.answer),
+    ["Only if the stylesheet is parseable.", "It is named by a custom property.",
+      "At any time, from the console."],
+    "a `<dd>` is not a `<p>`, so both fields read empty on every row of a definition list until "
+      + "`unitFields` knew the pair - the same defect SH551 fixed for <details>, one element along",
+  );
+  assert.equal(faq.fields.heading, "Questions",
+    "and the section keeps its own heading, which is not one of the pairs");
+});
+
+test("SH835: one pair is not a list, and a <dt> with no <dd> after it is not a pair", () => {
+  // The bar is two, like the other two routes. A single term-and-description is a definition, and
+  // proposing a FAQ from it would be the guess `classify` returns null rather than make.
+  const faqOf = (rows) => buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", "<html><body><main>"
+      + "<section class=hero><h1>Hi</h1><p>Lead copy.</p><a href=/x>Go</a></section>"
+      + `<section class=faq><h2>Questions</h2><dl>${rows}</dl></section>`
+      + "</main></body></html>"]]),
+    html: HTML,
+  }).candidates.find((row) => row.type === "SectionFaq");
+
+  assert.equal(faqOf("<dt>Only one?</dt><dd>Yes.</dd>"), undefined);
+  assert.equal(
+    faqOf("<dt>First?</dt><dt>Second?</dt><dd>One answer between them.</dd>"), undefined,
+    "HTML lets several terms share a description, and which one owns it is not decidable here - so "
+      + "the first has no <dd> of its own and there is one pair, not two",
+  );
+  assert.ok(faqOf("<dt>First?</dt><dd>Yes.</dd><dt>Second?</dt><dd>Also yes.</dd>"),
+    "and the reader is not vacuous: two complete pairs are a list");
+});
+
 test("SH551: a row field the markup offered and no row carries is a note about this tool", () => {
   // The check that would have caught it. `<cite>` is present on every unit and empty, so `author` is
   // *offered* and produced on no row — which is the shape of the defect above, reachable without

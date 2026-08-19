@@ -620,7 +620,42 @@ export function repeatedUnits(block) {
     }
   };
   visit(block);
-  return best;
+  // SH834's neighbour: a definition list's rows are **siblings**, so the rule above cannot see them.
+  // Only where nothing else was found, which is what makes this additive rather than a second idea
+  // of what a unit is — measured before it was written: `unitsAmong` skips a child with no element
+  // children, so every `dt` and every `dd` is skipped and a block whose only structure is a `<dl>`
+  // answers `[]` today. One definition of a row still reaches `fieldsFor`, which is the property the
+  // three routes to `SectionFaq` have to share.
+  return best.length ? best : definitionPairs(block);
+}
+
+/**
+ * A `<dl>`'s `dt`/`dd` pairs, as units (SH835).
+ *
+ * <p>Each pair is wrapped in a node that is **not in the document**, holding the two real elements as
+ * children. `unitFields` reads a unit through `descendants`, and `take` consumes what it finds, so
+ * the real `dt` and `dd` are the ones marked read and the loss report stays complete — the `<dl>`
+ * itself is not consumed, correctly, since its own class list is styling the conversion drops.</p>
+ *
+ * <p>A `dt` with no `dd` after it is not a pair. HTML allows several `dd`s under one `dt` and several
+ * `dt`s sharing one `dd`; this takes the **first** `dd` following each `dt` and does not try to model
+ * the rest, because a second answer to one question is prose a curator can paste back and a guess
+ * about which `dt` owns a shared `dd` is not.</p>
+ */
+export function definitionPairs(block) {
+  for (const node of [block, ...descendants(block)]) {
+    if (node.tag !== "dl") continue;
+    const children = node.children.filter(isElement);
+    const pairs = [];
+    for (const [at, child] of children.entries()) {
+      if (child.tag !== "dt") continue;
+      const answer = children.slice(at + 1).find((each) => each.tag === "dd" || each.tag === "dt");
+      if (answer?.tag !== "dd") continue;
+      pairs.push({ tag: "div", attrs: {}, children: [child, answer] });
+    }
+    if (pairs.length >= 2) return pairs;
+  }
+  return [];
 }
 
 /**
@@ -672,6 +707,19 @@ export function classify(block, context = {}) {
 
   if (descendants(block).filter((node) => node.tag === "details").length >= 2) {
     return { type: "SectionFaq", evidence: "two or more <details>, which is a disclosure list" };
+  }
+  // SH835 — the third route, with the same standing as the other two. A `<dl>` is not a guess: the
+  // element exists to pair a term with its description, which is the whole of the FAQ shape. Before
+  // this, `theme-heavy`'s plainly-labelled FAQ answered **null** — measured, not assumed: `dt` and
+  // `dd` are siblings, so `repeatedUnits` found nothing and every rule below needs units. `null` is
+  // the honest answer this rule replaces, not a wrong one (SH379 sends it to a `Block*` type of its
+  // own), which is why this is a capability rather than a defect.
+  const pairs = definitionPairs(block);
+  if (pairs.length >= 2) {
+    return {
+      type: "SectionFaq",
+      evidence: `${pairs.length} <dt>/<dd> pairs, which is a definition list`,
+    };
   }
   if (units.length >= 2 && units.every((unit) => /\?\s*$/.test(firstHeadingText(unit) || ""))) {
     return { type: "SectionFaq", evidence: `${units.length} repeated units whose headings are questions` };
@@ -861,6 +909,11 @@ function unitFields(names, unit, take) {
   // viglet.org's home page yielded seven rows, each with an `answer` and no `question`, and the
   // section rendered seven answers to nothing.
   const summary = descendants(unit).find((node) => node.tag === "summary");
+  // SH835 — the third shape a `SectionFaq` row is built from. A `<dl>`'s label is neither a heading
+  // nor a `<summary>`, and its answer is not a `<p>`, so both fields read empty on every row of a
+  // definition list — the same defect SH551 fixed for `<details>`, one element along.
+  const term = descendants(unit).find((node) => node.tag === "dt");
+  const description = descendants(unit).find((node) => node.tag === "dd");
   const paragraph = descendants(unit).find((node) => node.tag === "p");
   const quote = descendants(unit).find((node) => node.tag === "blockquote" || node.tag === "q");
   const cite = descendants(unit).find((node) => node.tag === "cite");
@@ -873,10 +926,10 @@ function unitFields(names, unit, take) {
   // every healthy site, and a note that always fires is the noise SH505's own reasoning calls chrome.
   const offers = {
     title: () => Boolean(heading),
-    question: () => Boolean(heading || summary),
+    question: () => Boolean(heading || summary || term),
     quote: () => Boolean(quote || paragraph),
     author: () => Boolean(cite),
-    answer: () => Boolean(paragraph),
+    answer: () => Boolean(paragraph || description),
     body: () => Boolean(paragraph),
     name: () => Boolean(image?.attrs.alt || link),
     icon: () => Boolean(image),
@@ -893,11 +946,11 @@ function unitFields(names, unit, take) {
     // A heading first, because a hand-written FAQ uses one and a `<details>` may carry both; the
     // `<summary>` is the fallback rather than the rule so a disclosure list with an `<h3>` inside its
     // body is still labelled by the summary a reader clicks.
-    question: () => (heading && text(heading)) || (summary && text(summary)),
+    question: () => (heading && text(heading)) || (summary && text(summary)) || (term && text(term)),
     quote: () => (quote ? text(quote) : paragraph && text(paragraph)),
     author: () => cite && text(cite),
     role: () => null,
-    answer: () => paragraph && text(paragraph),
+    answer: () => (paragraph && text(paragraph)) || (description && text(description)),
     body: () => paragraph && text(paragraph),
     // SH476 decoded the `alt` here, because it is the one field taken from an attribute and stored
     // as prose. SH550 moved the decode into `parseAttrs`, where every attribute crosses out of

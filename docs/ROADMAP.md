@@ -11,8 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH835** (deps: —) **classify does not read an FAQ written as a definition list, which is how most of the web writes one** — It wants two or more details elements, so a dl of dt/dd falls through to SectionFeatureGrid and the questions land in a grid of cards. → §XVII.122
-
 ## Block W — What the replication round left behind (instruments, corpus, and the sweep it owes)
 
 - 📋 **SH836** (deps: —) **A reference wrapped in an if carries that block's scope, so the field lint never asks the helper it is really inside** — rowKeysFor falls through to the listing keys for any name it does not know, so FORM_FIELD_KEYS is unreachable behind a guard and a correct form body warns. → §XVII.123

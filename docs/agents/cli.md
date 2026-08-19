@@ -683,6 +683,25 @@ extraction took the body and dropped the `<summary>`: `question` read `heading &
 `question`**, so the section rendered seven answers to nothing. `question` now falls back to the
 summary — heading first, because a hand-written FAQ uses one and a `<details>` may carry both.
 
+**And a third shape it could not see at all (SH835).** `theme-heavy` carried a plainly-labelled FAQ
+written as a `<dl>` and the conversion produced no `SectionFaq` — found by *running* SH833, not by
+reading `classify`. The reason is structural: `dt` and `dd` are **siblings**, `unitsAmong` skips a
+child with no element children, so `repeatedUnits` answers `[]` and every rule below it needs units.
+Measured before it was fixed, and it corrects what the task was filed on: the block did not fall
+through to `SectionFeatureGrid`, it answered **null** — the honest outcome SH379 designs for, so this
+was a capability the classifier lacked rather than a wrong answer it gave. A `<dl>` is no guess
+either: the element exists to pair a term with its description, which is the whole of the FAQ shape.
+So it is a third route with the same standing as the other two — **a `<dl>` holding two or more
+`dt`/`dd` pairs** — and one definition of *a row* still reaches `fieldsFor`, because `repeatedUnits`
+falls back to `definitionPairs` only where it found nothing, which is additive by measurement rather
+than by intention. Each pair is wrapped in a node that is not in the document and holds the two real
+elements, so `take` consumes the real ones and the loss report stays complete; the `<dl>` itself is
+not consumed, correctly, since its class list is styling the conversion drops. `unitFields` reads
+`dt` for `question` and `dd` for `answer`, which is SH551's defect one element along — both fields
+read empty on every row until it knew the pair. A `dt` with no `dd` after it is not a pair, and one
+pair is not a list: HTML lets several terms share a description and which one owns it is not
+decidable, so that block stays `null`.
+
 **Nothing reported it, and the reason is the template being careful.** `sh-field="questions.N.question"`
 sits inside `{{#if question}}`, which is right — an empty field must not draw an empty heading — and the
 effect is that a field that is *never* filled is indistinguishable from one a curator has not filled

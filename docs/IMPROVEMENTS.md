@@ -533,35 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.122 The FAQ shape the classifier cannot see (SH835)
-
-Found by running SH833, not by reading `classify`. The `theme-heavy` archetype carried a
-plainly-labelled FAQ:
-
-    <section class="faq"><h2>Questions</h2>
-      <dl><dt>Does the font arrive?</dt><dd>Only if …</dd>
-          <dt>Is the sprite collected?</dt><dd>It is named by …</dd></dl>
-
-and the conversion created no `SectionFaq` at all. `classify` offers two routes to that
-type — two or more `<details>`, or two or more repeated units whose headings end in `?`
-— and a `<dl>` is neither: `dt`/`dd` are siblings rather than units, so the block falls
-through to `SectionFeatureGrid` and two questions become two cards. SH833 rewrote the
-fixture as `<details>` to give the type a producer, which was the right fix for that
-task and leaves this one untouched.
-
-The bar is deliberate and it is not what is wrong. `<details>` is *evidence*, and
-`classify`'s standing rule is that a guess wearing a type name is worse than `null` —
-SH379 sends an unrecognised block to a `Block*` post-type of its own rather than forcing
-it into the nearest shape. A `<dl>` is not a guess: the element exists to pair a term
-with its description, which is the whole of the FAQ shape, and `dt`/`dd` are the pairs.
-So the honest addition is a third route with the same standing as the other two — **a
-`<dl>` holding two or more `dt`/`dd` pairs** — and the rows come from the pairs, `dt` to
-`question` and the `dd` after it to `answer`.
-
-Worth checking in the same pass whether the two existing routes agree about what a row
-is, since this one derives them from a shape neither `repeatedUnits` nor `details`
-produces.
-
 ### XVII.123 The scope a guard steals (SH836)
 
 Measured while shipping SH832, in that task's own assertion output.
