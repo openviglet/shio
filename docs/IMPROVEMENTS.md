@@ -589,6 +589,62 @@ promising it. The first is the one worth having — fourteen roles, how many the
 filled, and which kept a default, is the most useful line a conversion could print about
 appearance.
 
+### XVII.137 Lifted out, and not put back (SH850)
+
+SH845's diagnosis was right — the source re-declaring a property later at equal
+specificity is what made every extracted token inert. The repair removes the lifted
+declarations from the kept CSS and prepends a token block. The token block carries the
+handful of roles the theme maps, and **the rest are not written anywhere**.
+
+Measured on the same source, one round apart:
+
+                                        round 4    round 5
+      distinct undefined properties          62        194
+      dangling var() occurrences            231        958
+
+Of the 133 properties lifted out of the captured sheet, **132 are declared nowhere on
+the page, and all 132 are still read by a `var()` in a rule that stayed**. They are
+Tailwind's `@theme` layer — `--color-amber-500`, `--color-blue-400`, `--blur-md`,
+`--animate-spin` — which is what every utility class in the sheet resolves through.
+
+A `var()` with no declaration and no fallback makes its declaration invalid at
+computed-value time, so the element takes the inherited or initial value. That is a
+page-wide loss of colour, blur and animation across the verbatim chrome — the half of a
+mixed page that was previously correct, and the half a curator recognises as the site.
+
+The fix is not to stop lifting. It is to emit **every** lifted declaration in the
+prepended block, in its original order and with its original context, and to keep the
+role mapping as a separate concern layered on top.
+
+The assertion that closes it: no served page has a `var()` the page does not declare.
+
+### XVII.138 The reference nobody counts (SH851)
+
+SH850 is a large visual regression that every instrument passed. `verify` answered `0
+error(s), 2 warning(s)` on both rounds. `diff` reported the same 18 losses. `judge`
+found nothing new. `audit` rendered the page and returned no error. The only thing that
+noticed was a person looking at it and saying it got uglier.
+
+The gap is specific. `appearance` counts **class names** — `classes`, `definedClasses`,
+`unstyledClasses` — which is why SH686 mattered. Nothing counts **custom properties**,
+and a stylesheet built on design tokens carries most of its meaning there: 3,005 `var()`
+calls on this page against 205 class names.
+
+A dangling `var()` is the same defect shape as an unstyled class and it is cheaper to
+detect, because both sides are in the CSS the page already carries. Declared set minus
+referenced set, no rendering and no browser:
+
+    round 4   62 undefined,  231 occurrences
+    round 5  194 undefined,  958 occurrences
+
+A ratio would have failed the round SH845 shipped, and a named list would have said
+which 132.
+
+It belongs beside `unstyledClasses` in `appearance`, with the same treatment: report the
+distinct names, let `verify` grade it, and hold the count. `page-unstyled` already
+exists for one half of the same question — this is the other half, on the half of the
+vocabulary that a modern stylesheet actually uses.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
