@@ -1395,6 +1395,115 @@ class ShPageRenderTest {
                 .noneMatch(finding -> "page-unstyled".equals(finding.rule()));
     }
 
+    /**
+     * SH851 — the instrument SH850 walked past, on the half of a stylesheet nothing was reading.
+     *
+     * <h3>Every gate green while a page lost its colour</h3>
+     *
+     * <p>SH850 took a replica's dangling {@code var()} references from <b>231 to 958</b> and this
+     * service answered {@code 0 error(s), 2 warning(s)} on both rounds — as did {@code diff},
+     * {@code judge} and {@code audit}. The gap is exact: {@code page-unstyled} counts <b>class
+     * names</b>, and that page made 3,005 {@code var()} calls against 205 classes.</p>
+     *
+     * <p>The fixture is the shape a converted site actually has after SH424: a theme declaring the
+     * tokens it needs, and a second page whose stylesheet reads one it does not declare — which is
+     * what a lifted declaration leaves behind when nothing puts the compiled block back.</p>
+     */
+    @Test
+    @DisplayName("SH851: a var() the page never declares is a finding, with the count that says how much")
+    void aDanglingCustomPropertyIsAFinding() {
+        String site = "sh851-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh851Page" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH851_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            // Its own stylesheet and no other, which is the one state in which "nothing declares
+            // this" is knowable rather than advisory — `page-unstyled`'s guard, for its reason.
+            // `--ink` is declared and read; `--brand` and `--radius` are read and were lifted away.
+            published(owner, root, layoutType, layoutTitle, "/l", json("HTML",
+                    "<html><head><style>:root{--ink:#111}"
+                            + ".shio-page{margin:0;color:var(--ink)}"
+                            + ".cta{background:var(--brand);border-radius:var(--radius)}"
+                            + ".mark{color:var(--brand)}"
+                            + ".safe{padding:var(--space,1rem)}</style></head>"
+                            + "<body class=\"shio-page\">{{{TEXT}}}</body></html>"), when);
+            published(owner, root, pageType, "Tokens", "/", json("TEXT",
+                    "<h1 class=\"shio-page\">Still here</h1>"
+                            + "<p class=\"cta mark safe\">Prose enough that this page is not the "
+                            + "empty one, which is a different finding and would confuse this "
+                            + "one.</p>"), when);
+        });
+
+        assertThat(verifyService.verify(site, "page", 100).findings())
+                .filteredOn(finding -> "page-dangling-token".equals(finding.rule()))
+                .as("declared set minus referenced set, off the CSS the page already carries — no "
+                        + "rendering and no browser, which is why this is cheaper than the class "
+                        + "check it sits beside")
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.address()).isEqualTo("post:" + site + "/");
+                    assertThat(finding.message())
+                            .as("the names, so the reader knows which; and the occurrence count "
+                                    + "beside the distinct one, because 194 names is how much of "
+                                    + "the palette went and 958 reads is how much of the page")
+                            .contains("--brand", "--radius", "2 custom propert", "3 time(s)")
+                            .doesNotContain("--space", "--ink");
+                    assertThat(finding.severity())
+                            .as("a warning, for `page-unstyled`'s reason: the premise is provable "
+                                    + "and the consequence is presentational")
+                            .isEqualTo("warning");
+                });
+    }
+
+    @Test
+    @DisplayName("SH851: a page loading a stylesheet this instance never saw is not judged on it either")
+    void anExternalStylesheetMakesTheDanglingListUnknowable() {
+        String site = "sh851x-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh851xPage" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH851X_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            published(owner, root, layoutType, layoutTitle, "/l", json("HTML",
+                    "<html><head><style>.shio-page{color:var(--bs-body-color)}</style>"
+                            + "<link rel=\"stylesheet\" href=\"https://cdn.test/bootstrap.css\">"
+                            + "</head><body class=\"shio-page\">{{{TEXT}}}</body></html>"), when);
+            published(owner, root, pageType, "Bootstrapped", "/", json("TEXT",
+                    "<h1 class=\"shio-page\">Declared elsewhere</h1>"
+                            + "<p class=\"shio-page\">Bootstrap declares --bs-body-color in the "
+                            + "sheet this instance cannot see, and a rule over it would fire on "
+                            + "every site that loads a framework.</p>"), when);
+        });
+
+        assertThat(verifyService.verify(site, "page", 100).findings())
+                .as("the same guard as `page-unstyled` and for the same reason, which is worth an "
+                        + "assertion of its own: a custom property is far MORE likely than a class "
+                        + "to be declared by a framework sheet, since that is what a design-token "
+                        + "framework is")
+                .noneMatch(finding -> "page-dangling-token".equals(finding.rule()));
+    }
+
     /** A published row — the state the SH516 check reads, and the fixture default is DRAFT. */
     private void published(ShSite site, ShFolder folder, ShPostType type, String title, String furl,
                            String data, Instant when) {

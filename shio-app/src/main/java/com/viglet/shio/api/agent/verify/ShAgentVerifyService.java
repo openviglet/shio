@@ -2078,6 +2078,10 @@ public class ShAgentVerifyService {
         // computed from the bytes just rendered, so this is a threshold rather than an analysis.
         emptyPage(check, address, html, findings);
         unstyledPage(check, address, html, findings);
+        // SH851 — the same question on the other half of the vocabulary, and the half a modern
+        // stylesheet actually uses: 3,005 `var()` calls against 205 class names on the replica
+        // where nothing noticed 231 dangling references becoming 958.
+        danglingTokens(check, address, html, findings);
         // SH694 — the same bytes, one question further: not "is this class defined" but "by which
         // sheet", which is what makes a page serving two visual languages sayable.
         twoThemes(check, address, html, findings);
@@ -2245,6 +2249,55 @@ public class ShAgentVerifyService {
                         + "written against class names the theme does not have. "
                         + "GET /api/v2/agent/render?address=" + address
                         + " returns the whole list under appearance.unstyledClasses."));
+    }
+
+    /**
+     * A page reading custom properties its own stylesheet never declares (SH851).
+     *
+     * <h2>The instrument the regression walked past</h2>
+     *
+     * <p>SH850 took a replica's dangling {@code var()} references from <b>231 to 958</b> and every
+     * instrument passed it: this service answered {@code 0 error(s), 2 warning(s)} on both rounds,
+     * {@code diff} reported the same 18 losses, {@code judge} found nothing new, {@code audit}
+     * rendered the page and returned no error. A person looking at it is what noticed.</p>
+     *
+     * <p>{@code page-unstyled} one method up asks the same question about <b>class names</b>, and a
+     * stylesheet built on design tokens keeps most of its meaning elsewhere — 3,005 {@code var()}
+     * calls against 205 classes on that page. A {@code var()} with no declaration and no fallback
+     * is not a wrong value: the declaration is invalid at computed-value time and the element takes
+     * the inherited or initial one, so it is colour, spacing and animation simply gone.</p>
+     *
+     * <h2>The same guard, and the same grade, for the same reasons</h2>
+     *
+     * <p><b>Only when the page loads no external stylesheet</b>, exactly as {@code page-unstyled}:
+     * with one, the missing declaration may be in a sheet this instance has never seen, and the
+     * rule would fire on every site that loads a framework from a CDN. <b>A warning</b>, because the
+     * premise is provable and the consequence is presentational — the line this service's doctrine
+     * draws, applied honestly rather than in the safe direction.</p>
+     *
+     * <p>The occurrence count is in the message beside the distinct one because they are different
+     * sentences: 194 names is how much of the palette went, 958 reads is how much of the page.</p>
+     */
+    private static void danglingTokens(String check, String address, String html,
+                                       List<Finding> findings) {
+        ShHtmlAppearance.Appearance appearance = ShHtmlAppearance.of(html);
+        if (!appearance.externalStylesheets().isEmpty() || appearance.danglingTokens().isEmpty()) {
+            return;
+        }
+        List<String> named = appearance.danglingTokens().stream().limit(6).toList();
+        findings.add(Finding.warning(check, "page-dangling-token", address, null,
+                "This page reads " + appearance.danglingTokens().size()
+                        + " custom propert(ies) its own stylesheet never declares, "
+                        + appearance.danglingTokenRefs() + " time(s), and it loads no other: "
+                        + String.join(", ", named)
+                        + (appearance.danglingTokens().size() > named.size() ? ", …" : "")
+                        + ". A var() with no declaration and no fallback makes its declaration "
+                        + "invalid, so those elements take the inherited or initial value.",
+                "Usually a Theme whose TOKENS and CSS disagree: `shio propose` lifts a declared "
+                        + "custom property into TOKENS and removes it from CSS, so a layout that "
+                        + "emits the CSS without the compiled token block loses every one of them. "
+                        + "GET /api/v2/agent/render?address=" + address
+                        + " returns the whole list under appearance.danglingTokens."));
     }
 
     /** Below this many words, with no heading, link or image, a page has nothing on it. */

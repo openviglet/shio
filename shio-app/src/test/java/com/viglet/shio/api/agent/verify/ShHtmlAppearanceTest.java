@@ -141,4 +141,87 @@ class ShHtmlAppearanceTest {
 
         assertThat(ShHtmlAppearance.of(html, null).unstyledClasses()).isEmpty();
     }
+
+    // --- SH851: the other half of the same question, on the half of the vocabulary that is used ---
+
+    @Test
+    @DisplayName("SH851: a var() the stylesheet never declares is reported, with how often it is read")
+    void aReferenceWithNoDeclarationIsCounted() {
+        // The measurement this closes: SH850 took a replica from 231 dangling references to 958 and
+        // `verify` answered `0 error(s), 2 warning(s)` on both rounds. `appearance` counted class
+        // names — 205 of them — on a page making 3,005 `var()` calls.
+        var appearance = read(":root{--kept:#111}"
+                + ".a{color:var(--gone)}.b{background:var(--gone)}.c{border-color:var(--kept)}",
+                "a");
+
+        assertThat(appearance.danglingTokens())
+                .as("declared set minus referenced set, off the CSS the page already carries — no "
+                        + "rendering and no browser")
+                .containsExactly("--gone");
+        assertThat(appearance.danglingTokenRefs())
+                .as("62 names becoming 194 and 231 reads becoming 958 are different sentences, and "
+                        + "the second is the one that says how much of the page went out")
+                .isEqualTo(2);
+        assertThat(appearance.definedTokens())
+                .as("the denominator, for `definedClasses`' reason: an empty list over a stylesheet "
+                        + "that declares nothing is not a clean page")
+                .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("SH851: a fallback is a declaration the author made at the call site")
+    void aReferenceWithAFallbackIsNotDangling() {
+        var appearance = read(".a{padding:var(--space, 1rem);color:var(--ink,#111)}", "a");
+
+        assertThat(appearance.danglingTokens())
+                .as("counting these would report every defensive stylesheet ever written as broken")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH851: a declaration is a declaration wherever it is read, and reads nest")
+    void aDeclarationSatisfiesEveryReadOfIt() {
+        var appearance = read(":root{--a:#111;--b:var(--a)}.x{color:var(--b)}.y{color:var(--a)}", "x");
+
+        assertThat(appearance.danglingTokens())
+                .as("`--b:var(--a)` declares one and reads the other, and both tests are "
+                        + "independent — a name followed by `:` is a declaration, a name preceded "
+                        + "by `var(` is a reference")
+                .isEmpty();
+        assertThat(appearance.definedTokens()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("SH851: a commented-out reference is not a finding, which is the unsafe direction")
+    void aCommentIsNotARead() {
+        // `definedIn` does not strip comments and is right not to: over-collecting a DECLARATION
+        // can only shorten a finding list. Over-collecting a REFERENCE invents one, so this scan
+        // errs the other way — the two directions are opposite because the questions are.
+        var appearance = read("/* .a{color:var(--never)} */ .a{color:#111}", "a");
+
+        assertThat(appearance.danglingTokens()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH851: with no stylesheet there is nothing to compare, exactly as for classes")
+    void noStylesheetMeansNoTokenClaim() {
+        assertThat(ShHtmlAppearance.of("<html><body>x</body></html>", null).danglingTokens())
+                .isEmpty();
+        assertThat(ShHtmlAppearance.of("<html><body>x</body></html>", null).definedTokens())
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("SH851: the scan terminates on the pathological input the class scan was measured on")
+    void theTokenScanTerminatesOnEscapes() {
+        // SH686's finding, inherited rather than re-learned: `java.util.regex` compiles `(?:A|B)*`
+        // to a recursive loop, so an escape-aware pattern over captured CSS is a StackOverflowError
+        // waiting for somebody else's website. This reuses the same scan, so it inherits the same
+        // answer — asserted, because "it reuses it" is a claim about code and this is about bytes.
+        String css = ":root{--a" + "\\".repeat(40_000) + "!:#111}.x{color:var(--gone)}";
+
+        var appearance = read(css, "x");
+
+        assertThat(appearance.danglingTokens()).containsExactly("--gone");
+    }
 }

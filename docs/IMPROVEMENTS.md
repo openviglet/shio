@@ -533,33 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.138 The reference nobody counts (SH851)
-
-SH850 is a large visual regression that every instrument passed. `verify` answered `0
-error(s), 2 warning(s)` on both rounds. `diff` reported the same 18 losses. `judge`
-found nothing new. `audit` rendered the page and returned no error. The only thing that
-noticed was a person looking at it and saying it got uglier.
-
-The gap is specific. `appearance` counts **class names** — `classes`, `definedClasses`,
-`unstyledClasses` — which is why SH686 mattered. Nothing counts **custom properties**,
-and a stylesheet built on design tokens carries most of its meaning there: 3,005 `var()`
-calls on this page against 205 class names.
-
-A dangling `var()` is the same defect shape as an unstyled class and it is cheaper to
-detect, because both sides are in the CSS the page already carries. Declared set minus
-referenced set, no rendering and no browser:
-
-    round 4   62 undefined,  231 occurrences
-    round 5  194 undefined,  958 occurrences
-
-A ratio would have failed the round SH845 shipped, and a named list would have said
-which 132.
-
-It belongs beside `unstyledClasses` in `appearance`, with the same treatment: report the
-distinct names, let `verify` grade it, and hold the count. `page-unstyled` already
-exists for one half of the same question — this is the other half, on the half of the
-vocabulary that a modern stylesheet actually uses.
-
 ### XVII.139 The two pairs the floor still does not hold (SH852)
 
 SH846 put a contrast floor on the pairs the vocabulary theme paints one on top of the

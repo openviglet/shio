@@ -14,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -244,13 +245,126 @@ public final class ShHtmlAppearance {
                 }
             }
         }
+        Tokens tokens = tokensIn(css);
         return new Appearance(
                 List.copyOf(used),
                 List.copyOf(unstyled),
                 count(STYLE_ATTR, page),
                 imagesWithoutDimensions(page),
                 externalStylesheets(page),
-                defined.size());
+                defined.size(),
+                tokens.dangling(),
+                tokens.danglingRefs(),
+                tokens.declared());
+    }
+
+    /**
+     * The custom properties a stylesheet declares and the ones it reads without declaring (SH851).
+     *
+     * <h2>The half of the vocabulary nothing was counting</h2>
+     *
+     * <p>SH850 was a page-wide visual regression that <b>every</b> instrument passed: {@code verify}
+     * answered {@code 0 error(s), 2 warning(s)} on both rounds, {@code diff} reported the same 18
+     * losses, {@code judge} found nothing new, {@code audit} rendered the page and returned no error.
+     * The only thing that noticed was a person looking at it and saying it had got uglier.</p>
+     *
+     * <p>The gap is exact. This class counts <b>class names</b> — {@code classes},
+     * {@code definedClasses}, {@code unstyledClasses} — and a stylesheet built on design tokens
+     * carries most of its meaning somewhere else: on the replica that found this, <b>3,005</b>
+     * {@code var()} calls against <b>205</b> class names. A dangling {@code var()} is the same defect
+     * shape as an unstyled class and it is cheaper to detect, because both sides are in the CSS the
+     * page already carries — declared set minus referenced set, no rendering and no browser:</p>
+     *
+     * <pre>
+     *   round 4    62 undefined,  231 occurrences
+     *   round 5   194 undefined,  958 occurrences
+     * </pre>
+     *
+     * <h2>Three decisions, each in the direction that under-reports</h2>
+     *
+     * <p><b>A reference carrying a fallback is not dangling.</b> {@code var(--x, 1rem)} is a
+     * declaration the author made at the call site; counting it would report every defensive
+     * stylesheet ever written as broken. <b>Comments are skipped</b>, which {@link #definedIn}
+     * does not bother to do and is right not to: over-collecting a *declaration* can only shorten a
+     * finding list, while over-collecting a *reference* invents one, and a commented-out
+     * {@code var()} would be exactly that. <b>And only what the page carries</b> — a {@code var()}
+     * in a {@code style=} attribute is a real reference this does not see, because the answer would
+     * then depend on markup the declared half was never read from.</p>
+     *
+     * <p>The scan is a scan for {@link #definedIn}'s reason, measured there: {@code java.util.regex}
+     * compiles {@code (?:A|B)*} to a recursive loop, so an escape-aware pattern over captured CSS —
+     * content from somebody else's website — is a {@code StackOverflowError} waiting for a source
+     * with forty thousand backslashes in it. {@link #readIdent} is reused whole, entered one
+     * character in: it takes a single leading hyphen, and a custom property has two.</p>
+     */
+    static Tokens tokensIn(String css) {
+        Set<String> declared = new TreeSet<>();
+        Map<String, Integer> read = new TreeMap<>();
+        if (css == null || css.isBlank()) {
+            return new Tokens(List.of(), 0, 0);
+        }
+        int at = 0;
+        while (at < css.length() - 1) {
+            if (css.charAt(at) == '/' && css.charAt(at + 1) == '*') {
+                int close = css.indexOf("*/", at + 2);
+                at = close < 0 ? css.length() : close + 2;
+                continue;
+            }
+            if (css.charAt(at) != '-' || css.charAt(at + 1) != '-') {
+                at++;
+                continue;
+            }
+            StringBuilder name = new StringBuilder("-");
+            int end = readIdent(css, at + 1, name);
+            if (end == at + 1 || name.length() < 3) {
+                at++;
+                continue;
+            }
+            if (declares(css, end)) {
+                declared.add(name.toString());
+            } else if (insideVar(css, at) && !hasFallback(css, end)) {
+                read.merge(name.toString(), 1, Integer::sum);
+            }
+            at = end;
+        }
+        List<String> dangling = read.keySet().stream().filter(name -> !declared.contains(name))
+                .toList();
+        int occurrences = dangling.stream().mapToInt(read::get).sum();
+        return new Tokens(dangling, occurrences, declared.size());
+    }
+
+    /** What a stylesheet says about its own custom properties. */
+    record Tokens(List<String> dangling, int danglingRefs, int declared) {
+    }
+
+    /** A name followed by a colon is a declaration, whatever else it might have been. */
+    private static boolean declares(String css, int end) {
+        int at = skipSpace(css, end);
+        return at < css.length() && css.charAt(at) == ':';
+    }
+
+    /** A name preceded by `var(` is a reference. Case-insensitive, because CSS keywords are. */
+    private static boolean insideVar(String css, int start) {
+        int at = start - 1;
+        while (at >= 0 && Character.isWhitespace(css.charAt(at))) {
+            at--;
+        }
+        return at >= 3 && css.charAt(at) == '('
+                && "var".equalsIgnoreCase(css.substring(at - 3, at));
+    }
+
+    /** `var(--x, 1rem)` — the author declared a value here, so nothing is missing. */
+    private static boolean hasFallback(String css, int end) {
+        int at = skipSpace(css, end);
+        return at < css.length() && css.charAt(at) == ',';
+    }
+
+    private static int skipSpace(String css, int from) {
+        int at = from;
+        while (at < css.length() && Character.isWhitespace(css.charAt(at))) {
+            at++;
+        }
+        return at;
     }
 
     /** Every class name the markup uses, sorted — the order is observable, so it is total. */
@@ -486,6 +600,7 @@ public final class ShHtmlAppearance {
      */
     public record Appearance(List<String> classes, List<String> unstyledClasses, int inlineStyles,
                              List<String> imagesWithoutSize, List<String> externalStylesheets,
-                             int definedClasses) {
+                             int definedClasses, List<String> danglingTokens, int danglingTokenRefs,
+                             int definedTokens) {
     }
 }

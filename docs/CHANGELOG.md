@@ -1249,6 +1249,7 @@
 - **SH848** — The accent is elected by how much colour a value holds, so a shadcn palette hands over its brand orange, and the surface floor refuses a page at half alpha.
 - **SH849** — The palette and the markup runs reach the report the command actually prints, and a lint holds every formatter parameter to every call site that builds one.
 - **SH850** — A theme reached through a relation now renders as its composed stylesheet, tokens prepended, so the rules SH424 lifted a declaration away from resolve again.
+- **SH851** — A page's own CSS is read for the custom properties it never declares, so verify warns and the appearance hash moves when a stylesheet loses its tokens.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

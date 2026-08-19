@@ -631,6 +631,23 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   seen — and the guard is what makes the same list a finding without inheriting the false positives,
   since the document's own CSS is then the whole of what styles it. It also retires the join that
   was being rebuilt in Python every round and got wrong twice.
+  **`page-dangling-token` (warning) is the same question on the half of a stylesheet that is
+  actually used (SH851)** — SH850 took a replica's dangling `var()` references from **231 to 958**
+  and every instrument passed it: `verify` said `0 error(s), 2 warning(s)` on both rounds, `diff`
+  reported the same 18 losses, `judge` found nothing new, `audit` rendered the page and returned no
+  error. A person looking at it is what noticed. The gap is exact — `appearance` counted **class
+  names**, and that page made **3,005** `var()` calls against **205** classes. So the digest now
+  carries `danglingTokens`, `danglingTokenRefs` and `definedTokens` beside `unstyledClasses`, and
+  `ShHtmlAppearance.tokensIn` computes them the same cheap way: declared set minus referenced set,
+  off the CSS the page already carries, no rendering and no browser. Three decisions, each in the
+  direction that under-reports — a **fallback** (`var(--x, 1rem)`) is a declaration the author made
+  at the call site, **comments are skipped** (over-collecting a declaration shortens a finding list,
+  over-collecting a reference invents one), and only what the page carries is read. Same guard as
+  `page-unstyled` and it matters more here: a design-token framework is *precisely* a sheet that
+  declares custom properties, so an external stylesheet makes the answer unknowable. The counts are
+  in the **appearance hash** for the reason `inlineStyles` is — 231 references becoming 958 is not
+  "six inline styles became seven", it is most of a page's colour and spacing going out, and the
+  regression that motivated this moved no hash anywhere.
   **`checks=delivery` proves a route instead of resolving it (SH141)** — the one group that
   leaves the process. It fetches each published page and each unresolved link from the site's own
   URL through `ShAgentDeliveryProbe`, the single guarded fetch path SH101 built, and turns "the

@@ -492,7 +492,12 @@ public class ShAgentRenderService {
         ShAgentDigest.Appearance look = appearance == null ? null : new ShAgentDigest.Appearance(
                 appearance.classes(), appearance.unstyledClasses(), appearance.inlineStyles(),
                 appearance.imagesWithoutSize(), appearance.externalStylesheets(),
-                appearance.definedClasses());
+                appearance.definedClasses(),
+                // SH851 — beside `unstyledClasses`, which is the half of this question the digest
+                // already answered, and carrying the same three things: which names, how many
+                // reads, and the denominator that says whether the zero means anything.
+                appearance.danglingTokens(), appearance.danglingTokenRefs(),
+                appearance.definedTokens());
         return new ShAgentDigest(source, address, url, status,
                 fields.isEmpty() ? null : List.copyOf(fields),
                 headings, outline.landmarks(), links, images, outline.words(),
@@ -527,7 +532,16 @@ public class ShAgentRenderService {
                 .append(look.inlineStyles()).append('|')
                 .append(String.join(",", new java.util.TreeSet<>(look.imagesWithoutSize()))).append('|')
                 .append(String.join(",", new java.util.TreeSet<>(look.externalStylesheets()))).append('|')
-                .append(look.definedClasses());
+                .append(look.definedClasses()).append('|')
+                // SH851 — in the hash, for the reason the counts above are in it and one degree
+                // stronger: 231 dangling references becoming 958 is not "six inline styles became
+                // seven", it is most of a page's colour, spacing and animation going out. The
+                // regression that motivated this moved no hash anywhere, which is the whole
+                // complaint. Every appearance hash in the instance changes once, as it did when
+                // `definedClasses` was added, and the outline hash beside it does not move at all.
+                .append(String.join(",", new java.util.TreeSet<>(look.danglingTokens()))).append('|')
+                .append(look.danglingTokenRefs()).append('|')
+                .append(look.definedTokens());
         try {
             byte[] hash = MessageDigest.getInstance("SHA-256")
                     .digest(canonical.toString().getBytes(StandardCharsets.UTF_8));

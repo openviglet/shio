@@ -169,9 +169,23 @@ public record ShAgentDigest(String source, String address, String url, Integer s
      * @param definedClasses      class selectors the page's own stylesheets define
      */
     @JsonInclude(Include.NON_NULL)
+    /**
+     * @param danglingTokens     SH851 — custom properties the page's own CSS reads, without a
+     *                           fallback, and never declares. The other half of the question
+     *                           {@code unstyledClasses} asks, on the half of the vocabulary a
+     *                           modern stylesheet actually uses: 3,005 {@code var()} calls against
+     *                           205 class names, on the replica where a change that took dangling
+     *                           references from 231 to 958 shipped as an improvement
+     * @param danglingTokenRefs  how many times those names are read — a distinct count of 62 → 194
+     *                           and an occurrence count of 231 → 958 are different sentences, and
+     *                           the second is the one that says how much of the page went out
+     * @param definedTokens      the denominator, for {@code definedClasses}' reason: a zero list
+     *                           over a stylesheet that declares nothing is not a clean page
+     */
     public record Appearance(List<String> classes, List<String> unstyledClasses, int inlineStyles,
                              List<String> imagesWithoutSize, List<String> externalStylesheets,
-                             int definedClasses) {
+                             int definedClasses, List<String> danglingTokens, int danglingTokenRefs,
+                             int definedTokens) {
     }
 
     /** @param level 1–6 */
