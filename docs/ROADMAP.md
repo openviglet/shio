@@ -9,6 +9,11 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block Q — Replication (an existing site becomes an authorable Shio site)
+
+- 📋 **SH848** (deps: SH845 ✅, SH847 ✅) **Role matching reads a token's name, so a shadcn palette hands over a near-white hover tint and keeps its brand colour** — accent took --vg-accent at oklch(97% 0 0) while the orange sits at --vg-brand, so the theme accent stayed its built-in green a fourth round. → §XVII.135
+- 📋 **SH849** (deps: SH846 ✅) **propose tells the reader that convert says which colour each token filled, and convert prints nothing of the kind** — A conversion writing 65 objects and a whole theme printed 38 lines and no role coverage, so the promise is in the note and not in the run. → §XVII.136
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

@@ -533,6 +533,62 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
+### XVII.135 The same word, two vocabularies (SH848)
+
+SH845 worked: `propose` now lifts **133 declared tokens** where it used to rank three
+literals. What the roles are filled *from* is still wrong, and the reason is that the
+match is by name.
+
+The source is a shadcn-derived palette, where the words mean something specific:
+
+    --vg-accent   oklch(97% 0 0)      near-white, zero chroma — a hover tint
+    --vg-primary  oklch(20.5% 0 0)    near-black neutral
+    --vg-brand    #c2410c / #f97316   the orange on every button
+
+`--color-accent` matched `--vg-accent` on the word and got a hover tint; the brand
+orange sits under a name no generic mapping would guess. `--color-surface` took
+`color-mix(in oklab, var(--vg-accent) 50%, transparent)`, so the page surface is a
+translucent tint of that same near-white — the SH846 floor rejects a fully transparent
+colour and 50% passes it.
+
+Measured on the replica: `--color-accent: #0b5533`, the built-in dark green, unchanged
+across four rounds on a site whose accent is orange. SH847 set out to read the accent
+off the source's buttons and did not reach this one.
+
+Name matching cannot work across vocabularies because the same word is a different role
+in each. What is stable is the **rendered evidence**: the fill of the element the source
+styles as its primary button, the page's own background, its body text colour. Rank
+candidates by that and use the name only to break ties.
+
+The floor belongs on the role, not the value: a surface with meaningful alpha is not a
+surface.
+
+### XVII.136 A note that promises another command's output (SH849)
+
+`shio propose` ends its theme report with a pointer:
+
+> 7 recurring token(s) name the palette … **SH831: `shio convert` reads them, so on an authorable conversion they paint the theme the composed sections render with, and that run says which of its colours each one filled**
+
+`shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a `Theme
+(Shio)` and a `PageLayout`, in **38 lines of output**, none of which name a colour, a
+role, or a token. Grepping the run for `palette`, `role`, `filled`, `defaulted` and
+`rejected` returns nothing.
+
+This is the second half of SH846 — *a mapping states its coverage* — reported as shipped
+by a neighbouring command's prose. The first half did land: the floor exists and
+`--color-surface-sunk` is a real value again rather than a `color-mix`.
+
+It is worth filing separately from SH848 because the failure is not the mapping's. A
+reader who wants to know why the accent is wrong is told where to look, looks, and finds
+an ordinary conversion report. That costs the round it was written to save, and it is
+the shape this project keeps meeting: **the report shipping ahead of the behaviour it
+reports on.**
+
+Either `convert` prints the three counts with their role names, or the note stops
+promising it. The first is the one worth having — fourteen roles, how many the source
+filled, and which kept a default, is the most useful line a conversion could print about
+appearance.
+
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest
