@@ -492,7 +492,7 @@ export function contrastRatio(foreground, background) {
  * that does not survive the round trip above.
  */
 export function declaredTokens(declarations) {
-  const roles = rolesByUse(declarations);
+  const roles = rolesByUse(declarations, pageStatement(declarations).reversals);
   const roots = new Map();
   const variants = new Map();
   for (const declaration of declarations) {
@@ -537,7 +537,15 @@ export function declaredTokens(declarations) {
       // only when something references it in a property some group claims; a token nothing uses
       // has no role, and neither has one used only where no group looks.
       ...(roled
-        ? { group: use.group, role: use.role, refs: use.refs, page: use.page > 0 }
+        ? {
+          group: use.group,
+          role: use.role,
+          refs: use.refs,
+          page: use.page > 0,
+          // SH847 — a reversal is a statement about the page, so it clears the same bar a
+          // page-level use does. `admits` reads this; nothing else about the row changes.
+          ...(use.reversal ? { reversal: true } : {}),
+        }
         : {}),
     });
   }
@@ -647,20 +655,21 @@ function isPageSelector(selector) {
  * `--icon: url("/img/sprite.svg")` read by `background-image` is roled by nothing rather than
  * counted as a length.</p>
  */
-function rolesByUse(declarations) {
+function rolesByUse(declarations, reversals = new Set()) {
   const counts = new Map();
   for (const declaration of declarations) {
     if (declaration.property.startsWith("--")) continue;
-    const slot = GROUP_FOR_PROPERTY.get(declaration.property);
+    const slot = accentIfReversed(GROUP_FOR_PROPERTY.get(declaration.property), declaration, reversals);
     if (!slot) continue;
     const page = isPageSelector(declaration.selector) && !declaration.conditional;
     const key = slot.role ? `${slot.group} ${slot.role}` : slot.group;
     for (const match of String(declaration.value ?? "").matchAll(VAR_REF)) {
       const seen = counts.get(match[1]) ?? new Map();
       const tally = seen.get(key)
-        ?? { group: slot.group, role: slot.role, test: slot.test, refs: 0, page: 0 };
+        ?? { group: slot.group, role: slot.role, test: slot.test, refs: 0, page: 0, reversal: false };
       tally.refs += 1;
       tally.page += page ? 1 : 0;
+      tally.reversal ||= slot.reversal === true;
       seen.set(key, tally);
       counts.set(match[1], seen);
     }
@@ -682,6 +691,138 @@ function rolesByUse(declarations) {
 const byKey = (a, b) => (a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1);
 
 // ---------------------------------------------------------------------------------------------
+// SH847 — the accent, read off the one thing a stylesheet says about it without a name
+// ---------------------------------------------------------------------------------------------
+
+/** The properties whose value is the background a rule paints. */
+const BACKGROUND_PROPERTIES = new Set(["background-color", "background"]);
+
+/** Which rule a declaration belongs to. A selector under two conditions is two rules. */
+const ruleKey = (declaration) =>
+  `${normalizeSelector(declaration.selector)}||${declaration.conditional ?? ""}`;
+
+/** The root custom properties, so one `var()` can be read through. Roots only — a variant's value is not the token. */
+function rootValues(declarations) {
+  const values = new Map();
+  for (const declaration of declarations) {
+    if (!declaration.property.startsWith("--")) continue;
+    if (!isRootSelector(declaration.selector) || declaration.conditional) continue;
+    values.set(declaration.property, declaration.value);
+  }
+  return values;
+}
+
+/**
+ * A value with one chain of `var()` read through, or the value itself.
+ *
+ * <p>Bounded at four hops, which is a loop guard and not a judgement about how deep an alias may go:
+ * `--a: var(--b)` pointing back at `--a` is legal CSS to write and computes to nothing, and this
+ * module must return rather than recurse on a stranger's bytes.</p>
+ */
+function resolveVar(value, values, depth = 0) {
+  const raw = String(value ?? "").trim();
+  const match = /^var\(\s*(--[\w-]+)\s*(?:,([\s\S]*))?\)$/.exec(raw);
+  if (!match || depth > 4) return raw;
+  const next = values.get(match[1]) ?? (match[2] ?? "").trim();
+  return next ? resolveVar(next, values, depth + 1) : raw;
+}
+
+/**
+ * What the page says about itself, and the rules that reverse it (SH847).
+ *
+ * <h2>The accent nothing could reach</h2>
+ *
+ * <p>`COLOR_ROLES` feeds `accent` from `fill`, `stroke`, `caret-color` and `text-decoration-color`.
+ * SH831 shipped that and named it the weakest pair in its own doc: *a real site's call-to-action is
+ * usually a `background-color`, which lands in `background`*. So on a source whose accent is a
+ * button — which is most sources — `--color-accent` kept this file's dark green, the one slot a
+ * curator sees most, because it paints every button on the replica.</p>
+ *
+ * <h2>The evidence, which is the selector's own shape rather than its name</h2>
+ *
+ * <p>Not a synonym table: guessing that `brand` means accent is the unverifiable label SH689 spent a
+ * task removing, and SH831 refused it by name. And not a relaxed page-level bar either — SH840
+ * measured what happens when reference count decides a colour role.</p>
+ *
+ * <p>What was left unread is that a rule can declare a background **and** a text colour together,
+ * and when that text colour is the **page's own surface** the source is stating a reversal: this
+ * element is the page turned inside out. A reversal of the page is what an accent is. It reads the
+ * same on a dark source as on a light one, because it is stated relative to the page rather than in
+ * absolute lightness — measured on both, `.btn{background:var(--accent);color:#0f172a}` on a
+ * `#0f172a` page is caught by the same test as `.btn{…;color:#fff}` on a white one.</p>
+ *
+ * <h2>The one exclusion, which the measurement found rather than the design</h2>
+ *
+ * <p>A reversal whose background is the page's own **ink** is not an accent, it is the page
+ * inverted: `.footer{background:#234652;color:#ffffff}` on a page of `#234652` text passes the
+ * reversal test and is a footer band. Excluded, along with the degenerate case of a background that
+ * is the page's surface. Without it the accent slot took the source's text colour on the very sheet
+ * this task was filed against.</p>
+ *
+ * <h2>What it does on the corpus: nothing, and that is checked</h2>
+ *
+ * <p>No archetype states a page-level background at all, so no reversal can be computed on any of
+ * them and `theme-heavy` keeps taking its accent from `fill` exactly as SH831 wrote it. A signal
+ * that needs the page pair is silent where the page states none, which is the right failure: it
+ * declines rather than guessing from a rule it cannot situate.</p>
+ *
+ * @returns `{surface, ink, reversals}` — the page's two colours, resolved through root custom
+ *          properties, and the rule keys whose background is an accent candidate.
+ */
+export function pageStatement(declarations) {
+  const rows = declarations ?? [];
+  const values = rootValues(rows);
+  const resolved = (declaration) => resolveVar(declaration.value, values);
+  let surface = null;
+  let ink = null;
+  const rules = new Map();
+  for (const declaration of rows) {
+    if (declaration.property.startsWith("--")) continue;
+    const value = resolved(declaration);
+    if (!isColor(value)) continue;
+    const onPage = isPageSelector(declaration.selector) && !declaration.conditional;
+    if (onPage && BACKGROUND_PROPERTIES.has(declaration.property)) surface ??= value;
+    if (onPage && declaration.property === "color") ink ??= value;
+    if (onPage) continue;
+    const rule = rules.get(ruleKey(declaration)) ?? {};
+    if (BACKGROUND_PROPERTIES.has(declaration.property)) rule.background ??= value;
+    if (declaration.property === "color") rule.text ??= value;
+    rules.set(ruleKey(declaration), rule);
+  }
+  const reversals = new Set();
+  if (surface) {
+    for (const [key, rule] of rules) {
+      if (!rule.background || !rule.text || isTransparent(rule.background)) continue;
+      if (!same(rule.text, surface)) continue;
+      // The page inverted is not an accent, and neither is a background that IS the page.
+      if (same(rule.background, surface) || (ink && same(rule.background, ink))) continue;
+      reversals.add(key);
+    }
+  }
+  return { surface, ink, reversals };
+}
+
+/** Two colours a reader would call one. The floor SH846 set, used here as an equality (SH847). */
+function same(one, other) {
+  const ratio = contrastRatio(one, other);
+  return ratio !== null && ratio < 1.5;
+}
+
+/**
+ * A background inside a reversal rule is an `accent`, not a `background` (SH847).
+ *
+ * <p>One substitution, applied at both call sites, so every rule downstream — the ranking, the
+ * admission bar, the bridge's `accent#1` — keeps working unchanged on evidence it already knows how
+ * to weigh. A reversal is what makes a background the call-to-action's colour rather than a
+ * surface's; nothing else about how a colour is counted changes.</p>
+ */
+function accentIfReversed(slot, declaration, reversals) {
+  if (!slot || slot.group !== "color" || slot.role !== "background") return slot;
+  if (!reversals.has(ruleKey(declaration))) return slot;
+  return { ...slot, role: "accent", reversal: true };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Recurring tokens
 // ---------------------------------------------------------------------------------------------
 
@@ -699,9 +840,10 @@ const byKey = (a, b) => (a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1);
  */
 export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {}) {
   const buckets = new Map();
+  const { reversals } = pageStatement(declarations);
   for (const declaration of declarations) {
     if (declaration.property.startsWith("--")) continue;
-    const slot = bucketFor(declaration);
+    const slot = accentIfReversed(bucketFor(declaration), declaration, reversals);
     if (!slot) continue;
     const key = `${slot.group} ${slot.role ?? ""} ${declaration.value}`;
     // SH834 — where the literal was, not only how often. `body { font-size: 17px }` is the page
@@ -712,6 +854,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     if (existing) {
       existing.refs += 1;
       existing.page ||= page;
+      existing.reversal ||= slot.reversal === true;
       existing.properties.add(declaration.property);
     } else {
       buckets.set(key, {
@@ -721,6 +864,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
         value: declaration.value,
         refs: 1,
         page,
+        reversal: slot.reversal === true,
         properties: new Set([declaration.property]),
       });
     }
@@ -740,7 +884,12 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     // `body` rule. `bucketFor` refuses a pointer now, so what this admits on that corpus is one
     // row — `font.size.1 = 17px`, the case the rule exists for. A claim of zero cost that a run
     // refutes is worse than no claim, which is why the correction is here and not only in a ledger.
-    .filter((row) => row.refs >= minRefs || row.page)
+    // SH847 — and a reversal does not have to answer it either, for the same reason and one step
+    // stronger: `minRefs` asks *is this value a palette*, a page-level selector answers *this is
+    // the page's own*, and a reversal answers *this is the element the page turns inside out*. A
+    // site with one button has stated its accent once, and counting is the wrong question to ask
+    // of a labelled statement.
+    .filter((row) => row.refs >= minRefs || row.page || row.reversal)
     .sort((a, b) => {
       if (a.group !== b.group) return a.group < b.group ? -1 : 1;
       if ((a.role ?? "") !== (b.role ?? "")) return (a.role ?? "") < (b.role ?? "") ? -1 : 1;
@@ -778,6 +927,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
       group: row.group,
       ...(row.role ? { role: row.role } : {}),
       page: row.page === true,
+      ...(row.reversal ? { reversal: true } : {}),
       refs: row.refs,
       properties: [...row.properties].sort(),
     });

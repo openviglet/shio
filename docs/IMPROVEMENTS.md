@@ -533,30 +533,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.134 The accent no palette can reach (SH847)
-
-SH845 got the source's declared palette across the bridge — `color.ink`,
-`color.surface`, `size.radius` and `text.family` all take the captured values now.
-`color.accent` still does not, on the shape that matters most.
-
-The `accent` role is fed by `fill`, `stroke`, `caret-color` and `text-decoration-color`.
-SH831 said so out loud and called it the weakest pair: *a real site's call-to-action is
-usually a `background-color`, which lands in `background`*. Measured on a
-Tailwind-shaped sheet, `--vg-accent: #ea580c` is read by `.btn { background-color }` —
-role `background`, selector not page-level — so it is refused twice over and
-`--color-accent` stays `#0b5533`, a dark green, on a site whose accent is orange. That
-one slot is most of what a curator sees: it paints every button on the replica.
-
-Two things it must not become. A **synonym table** guessing that `brand` means accent is
-the unverifiable label SH689 spent a task removing, and SH831 refused it by name. And
-the page-level bar on colour is not the thing to relax: SH840 measured what happens when
-reference count decides a colour role.
-
-What is left is evidence nobody has read yet — the selector's own shape. A
-`background-color` on a rule whose selector also sets `color` to the page's *surface* is
-a button: the source is stating a reversal, and a reversal of the page is exactly what
-an accent is. Measure that against the corpus before writing anything.
-
 ## XIX The public site (Block S)
 
 Turing ships turing.viglet.org and Shio ships a README. The product with the sharpest

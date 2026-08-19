@@ -1245,6 +1245,7 @@
 - **SH840** — A page-level row sorts ahead of a more-referenced one within each half, so the page's own colour takes its slot and the repeated one falls to the next.
 - **SH845** — A layer is not a variant and a root is every compound in the list, so a Tailwind-shaped palette crosses the bridge: 0 declared tokens became 8, and a transparent utility literal no longer paints the page.
 - **SH846** — The pair the theme paints has a floor and the source's half gives way, so a transparent page under near-white text is now two refusals with their ratios instead of two tokens reported as taken.
+- **SH847** — A rule painting the page's own surface as its text is stating a reversal, and a reversal of the page is what an accent is — so a declared button colour reaches color.accent instead of being refused twice over.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

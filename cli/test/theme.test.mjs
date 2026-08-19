@@ -27,6 +27,7 @@ import {
   describeTheme,
   dtcgFor,
   flatten,
+  pageStatement,
   parseColor,
   pathForCustomProperty,
   recurringTokens,
@@ -1015,4 +1016,117 @@ test("SH846: a translucent foreground is judged as it will be seen, not as if it
   assert.equal(contrastRatio("hsl(0 0% 60%)", "hsl(0 0% 100%)").toFixed(2), "2.85",
     "and hsl reads the same as the hex it is, or the floor depends on which spelling the source used");
   assert.equal(contrastRatio("#0b5533", "color-mix(in oklab, red 50%, blue)"), null);
+});
+
+// --- SH847: the accent, read off the reversal a stylesheet states without naming it ---
+
+/**
+ * A source shaped like the one this was filed on: the whole palette in custom properties, the page
+ * stating its own pair, and the call-to-action a `background-color` on a class.
+ */
+const BUTTON_SHEET = `
+  :root{--vg-accent:#ea580c;--vg-bg:#ffffff;--vg-fg:#234652;--vg-card:#f6f8f9}
+  body{background:var(--vg-bg);color:var(--vg-fg)}
+  .btn{background-color:var(--vg-accent);color:#ffffff}
+  .card{background-color:var(--vg-card);color:var(--vg-fg)}
+  .footer{background-color:#234652;color:#ffffff}
+`;
+
+test("SH847: a rule painting the page's own surface as its text is stating the accent", () => {
+  const { surface, ink, reversals } = pageStatement(declarationsOf(BUTTON_SHEET));
+
+  assert.equal(surface, "#ffffff", "read through the custom property, since a modern sheet states "
+    + "its page as `background: var(--vg-bg)` and nothing else");
+  assert.equal(ink, "#234652");
+  assert.deepEqual([...reversals], [".btn||"],
+    "the card is not one - its text is the PAGE's text, so it is a surface and not a reversal; and "
+      + "the footer is the page inverted rather than an accent, which the measurement found and the "
+      + "design did not");
+});
+
+test("SH847: the declared accent reaches the theme, having been refused twice over before", () => {
+  const rows = themeFor(BUTTON_SHEET).rows;
+  const accent = rows.find((row) => row.name === "--vg-accent");
+
+  assert.equal(accent.role, "accent",
+    "roled `background` before this, because `accent` was fed only by fill/stroke/caret-color/"
+      + "text-decoration-color and a real call-to-action is none of those");
+  assert.equal(accent.reversal, true);
+  assert.equal(accent.page, false, "and it is NOT page-level, which was the second refusal");
+
+  const { mapped } = vocabularyTokensFrom(rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+  assert.equal(from["color.accent"], "#ea580c",
+    "the one slot a curator sees most: it paints every button on the replica, and it kept this "
+      + "file's dark green on a site whose accent is orange");
+  assert.equal(from["color.surface"], "#ffffff");
+  assert.equal(from["color.ink"], "#234652");
+});
+
+test("SH847: the signal is stated relative to the page, so a dark source reads the same way", () => {
+  const rows = themeFor(`
+    :root{--bg:#0f172a;--fg:#f1f5f9;--accent:#38bdf8}
+    body{background:var(--bg);color:var(--fg)}
+    .btn{background-color:var(--accent);color:#0f172a}
+    .card{background-color:#1e293b;color:var(--fg)}
+  `).rows;
+  const { mapped } = vocabularyTokensFrom(rows);
+  const from = Object.fromEntries(mapped.map((row) => [row.name, row.value]));
+
+  assert.equal(from["color.accent"], "#38bdf8",
+    "the button's text is the page's surface here too - a test written in absolute lightness would "
+      + "have caught the white-on-orange case and missed this one entirely");
+  assert.equal(from["color.surface"], "#0f172a");
+});
+
+test("SH847: a reversal is a labelled statement, so one button is enough and counting is the wrong question", () => {
+  const { tokens } = recurringTokens(declarationsOf(`
+    body{background:#ffffff;color:#111111}
+    .btn{background-color:#ea580c;color:#ffffff}
+  `));
+
+  assert.deepEqual(tokens.filter((row) => row.role === "accent").map((row) => [row.path, row.value, row.refs]),
+    [["color.accent-1", "#ea580c", 1]],
+    "`minRefs` asks *is this value a palette*; a page-level selector answers *this is the page's "
+      + "own*; a reversal answers *this is the element the page turns inside out*. Three questions, "
+      + "and only the first is about repetition");
+});
+
+test("SH847: a source that states no page background gets no reversals, and the corpus is that source", () => {
+  // Every archetype: none states a page-level background, so `theme-heavy` keeps taking its accent
+  // from `fill` exactly as SH831 wrote it. A signal that needs the page pair declines where the
+  // page states none rather than guessing from a rule it cannot situate.
+  const { surface, reversals } = pageStatement(declarationsOf(`
+    .mark{background:#0b7285;color:#fff}
+    .quote{background:#10243a;color:#fff}
+  `));
+
+  assert.equal(surface, null);
+  assert.deepEqual([...reversals], []);
+});
+
+test("SH847: an alias chain is read through, and a cycle returns instead of recursing", () => {
+  const direct = pageStatement(declarationsOf(
+    ":root{--a:var(--b);--b:#ffffff;--fg:#234652}body{background:var(--a);color:var(--fg)}",
+  ));
+  assert.equal(direct.surface, "#ffffff", "one chain of var() read through, which is what a token "
+    + "layer built on another token layer looks like");
+
+  const cycle = pageStatement(declarationsOf(
+    ":root{--a:var(--b);--b:var(--a)}body{background:var(--a);color:#111111}",
+  ));
+  assert.equal(cycle.surface, null, "legal to write, computes to nothing, and must not recurse on "
+    + "a stranger's bytes");
+});
+
+test("SH847: a reversal under a media query is its own rule, so a variant cannot claim the accent", () => {
+  const { reversals } = pageStatement(declarationsOf(
+    "body{background:#ffffff;color:#111111}"
+      + "@media(min-width:40em){.btn{background-color:#ea580c;color:#ffffff}}",
+  ));
+
+  assert.deepEqual([...reversals], [".btn||@media(min-width:40em)"],
+    "the key carries the condition, so `.btn` inside and outside a query are two rules - the same "
+      + "separation `declaredTokens` makes, since merging them would attribute one's background to "
+      + "the other's text colour");
 });

@@ -1351,6 +1351,27 @@ it. Four decisions worth keeping:
   does not have. And a pair in a colour space `parseColor` does not read (`oklch`, `lab`,
   `color-mix`) is printed as **not checked** rather than passed — refusing it would throw away the
   palette SH845 just repaired, and silence would be indistinguishable from a clean result.
+- **The accent, read off the one thing a stylesheet says about it without a name (SH847).** SH831
+  shipped `accent` fed by `fill`/`stroke`/`caret-color`/`text-decoration-color` and named the gap in
+  its own doc — *a real site's call-to-action is usually a `background-color`* — so on most sources
+  `--color-accent` kept this file's dark green, the one slot a curator sees most because it paints
+  every button. A declared `--vg-accent` was refused **twice**: roled `background`, then failed for
+  not being page-level. **The evidence is the selector's shape, not its name** (SH689 removed the
+  unverifiable label; SH840 measured what relaxing the page bar costs). A rule declaring a background
+  *and* a text colour where that text is the **page's own surface** is stating a reversal — this
+  element is the page turned inside out, which is what an accent is. It reads relative to the page,
+  so a dark source works identically: `.btn{background:var(--accent);color:#0f172a}` on a `#0f172a`
+  page is the same test as white-on-orange, and a rule written in absolute lightness would have
+  caught one and missed the other. **The one exclusion came from the measurement, not the design:** a
+  reversal whose background is the page's own *ink* is a footer band, and without excluding it the
+  accent took the source's text colour on the very sheet the task was filed against. One
+  substitution (`accentIfReversed`) at both call sites, so ranking, admission and the bridge all keep
+  working on evidence they already weigh; a reversal clears the page bar in `admits` and is exempt
+  from `minRefs`, because a site with one button has stated its accent once and counting is the wrong
+  question to ask of a labelled statement. **Corpus movement: zero, and checked** — no archetype
+  states a page-level background, so no reversal is computable on any of them and `theme-heavy` still
+  takes its accent from `fill`. A signal that needs the page pair declines where the page states
+  none, rather than guessing from a rule it cannot situate.
 - **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
   An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
   1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public

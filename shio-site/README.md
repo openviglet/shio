@@ -159,6 +159,18 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
+**Q closed a fifth time on 2026-08-19**, on SH845, SH846 and SH847, and this one did not move a claim
+either — but for the opposite reason to the round below, which is why it gets its own line. `MODES`
+has said *the source's own colours* since SH831, and the round found that on a source built by the
+commonest CSS toolchain the bridge had been carrying almost nothing across: a palette declared inside
+`@layer` was refused as a variant, so three colour tokens ranked out of utility-class literals stood
+in for 319 declared properties, one of them fully transparent. SH846 gave the mapping a floor and a
+third verdict — a slot can now *refuse* what it was offered and print the reason — and SH847 found the
+accent where a stylesheet actually states it, on the buttons. So the copy was already right about the
+kind of value taken and became true about the values; nothing here may claim more than it did, and the
+one claim worth checking next time is that `authorable` says colours, type and corner radius, which
+is still exactly the three the bridge names.
+
 **Q and W closed a third and fourth time on 2026-08-19**, on SH840 and SH838, and neither moved a
 claim here — which is worth one line because the round is the one most likely to look as if it had.
 Every id in it is an instrument turned on this project's own work: SH837 asserted the half of a fix

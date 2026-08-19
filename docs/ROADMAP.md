@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block Q — Replication (an existing site becomes an authorable Shio site)
-
-- 📋 **SH847** (deps: SH845 ✅) **The theme's accent keeps its default green on every source whose call-to-action is a background** — The accent role is fed only by fill, stroke, caret-color and text-decoration-color, so a real button — a background-color on a non-page selector — never reaches it. → §XVII.134
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

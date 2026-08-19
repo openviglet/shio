@@ -391,7 +391,12 @@ function admits(needs, row) {
   if (needs === "page-only") return row.page === true;
   // A recurring row's role is the extractor's own contract, so it is admitted at its own rank
   // whatever the rule; only the *declared* half, whose role is inferred, has to clear `page`.
-  if (needs === "page") return row.source !== "declared" || row.page === true;
+  // SH847 — or a reversal, which is the same *kind* of evidence the page bar asks for. The bar
+  // exists because colour has competing roles and only a statement about the page settles which one
+  // a token has; a rule that paints the page's own surface as its text is such a statement, made
+  // about the element rather than about the page. A declared accent is otherwise refused twice over
+  // — roled `background` and then failed for not being page-level — which is why it never arrived.
+  if (needs === "page") return row.source !== "declared" || row.page === true || row.reversal === true;
   return true;
 }
 
@@ -454,7 +459,12 @@ function paletteByGroup(rows) {
       if ((a.source === "declared") !== (b.source === "declared")) {
         return a.source === "declared" ? -1 : 1;
       }
-      if ((a.page === true) !== (b.page === true)) return a.page === true ? -1 : 1;
+      // SH847 — a reversal ranks with a page-level use, for the reason `admits` states: both are
+      // statements about the page, and the accent role now takes rows from `fill` and from a
+      // reversal alike. A button is what a site's accent is; an SVG fill is one of four properties
+      // that happen to bucket there.
+      const stated = (row) => row.page === true || row.reversal === true;
+      if (stated(a) !== stated(b)) return stated(a) ? -1 : 1;
       if ((a.refs ?? 0) !== (b.refs ?? 0)) return (b.refs ?? 0) - (a.refs ?? 0);
       return a.value < b.value ? -1 : 1;
     });
