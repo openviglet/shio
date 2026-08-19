@@ -1425,3 +1425,153 @@ test("SH853: the names compared are the ones ShThemeTokens will emit, not the on
     "and the stylesheet reads the renamed token, or the theme ships every rule unstyled");
   assert.ok(!/var\(--(color|text|size|space)-/.test(VOCABULARY_THEME_CSS));
 });
+
+// --- SH855: the election, which had a floor and no ranking ---
+
+/**
+ * The shape the accent election was lost on: a Tailwind v4 `:root` carrying the whole colour
+ * catalogue, one entry of which is genuinely used — a status dot painted in twelve places — beside the
+ * site's own brand orange, which paints the two buttons and is read everywhere else as a link colour.
+ *
+ * <p>Both signals a reader would reach for point at the orange: it is referenced more, and it is the
+ * more chromatic. What decided it was `refs` — the count *scoped to the role each token had already
+ * won* — where the brand's twenty references collapse to the four that are fills.</p>
+ */
+const CATALOGUE_SHEET = `
+  :root{
+    --color-emerald-500:oklch(69.6% .17 162.48);
+    --vg-brand:#c2410c;--vg-background:#ffffff;--vg-foreground:oklch(14.5% 0 0);
+    --vg-primary-foreground:oklch(98.5% 0 0)
+  }
+  body{background:var(--vg-background);color:var(--vg-foreground)}
+  .btn{background-color:var(--vg-brand);color:var(--vg-primary-foreground)}
+  .btn-lg{background-color:var(--vg-brand);color:var(--vg-primary-foreground)}
+  a{color:var(--vg-brand)}
+  .nav a{color:var(--vg-brand)}
+  .footer a{color:var(--vg-brand)}
+  .card h3{color:var(--vg-brand)}
+  .lead strong{color:var(--vg-brand)}
+  .tag{color:var(--vg-brand)}
+  .mark{color:var(--vg-brand)}
+  .step b{color:var(--vg-brand)}
+  .quote cite{color:var(--vg-brand)}
+  .footer h4{color:var(--vg-brand)}
+  .field:focus{border-color:var(--vg-brand)}
+  .icon{fill:var(--vg-brand)}
+  .underline{text-decoration-color:var(--vg-brand)}
+  .dot{background-color:var(--color-emerald-500)}
+  .dot-sm{background-color:var(--color-emerald-500)}
+  .badge-ok{background-color:var(--color-emerald-500)}
+  .pill-live{background-color:var(--color-emerald-500)}
+  .status-up{background-color:var(--color-emerald-500)}
+  .chip-yes{background-color:var(--color-emerald-500)}
+  .tick{background-color:var(--color-emerald-500)}
+  .meter-fill{background-color:var(--color-emerald-500)}
+  .gauge{background-color:var(--color-emerald-500)}
+  .spark{background-color:var(--color-emerald-500)}
+  .ok-band{background-color:var(--color-emerald-500)}
+  .legend-ok{background-color:var(--color-emerald-500)}
+`;
+
+test("SH855: the brand wins the accent over a decoration the sheet fills more often", () => {
+  const rows = themeFor(CATALOGUE_SHEET).rows;
+  const brand = rows.find((row) => row.name === "--vg-brand");
+  const emerald = rows.find((row) => row.name === "--color-emerald-500");
+
+  // The measurement, before the ranking: both are admitted, and the count that used to order them
+  // reads the wrong way round. Asserted rather than described, because it is the reason for the rule.
+  assert.equal(brand.role, "accent");
+  assert.equal(emerald.role, "accent");
+  assert.ok(emerald.refs > brand.refs,
+    `the decoration carries ${emerald.refs} fills and the brand ${brand.refs}, which is what the `
+      + "generic ranking asked and is the whole defect: `refs` is scoped to the role the token had "
+      + "already won, so it asks how often a colour is used AS what it was classified as");
+  assert.ok(brand.refsTotal > emerald.refsTotal,
+    `and across every role the brand is read ${brand.refsTotal} times against `
+      + `${emerald.refsTotal} - the count SH855 says to rank by`);
+
+  const { tokens, mapped } = vocabularyTokensFrom(rows);
+  assert.equal(tokens["shio-color"].accent.$value, "#c2410c",
+    "measured on the replica as `--shio-color-accent oklch(69.6% .17 162.48)` on a site whose every "
+      + "button is orange - the fifth round the accent slot has come out wrong");
+  assert.equal(mapped.find((row) => row.name === "shio-color.accent").from, "vg.brand");
+});
+
+test("SH855: the run names the signal that elected the accent, and only for the accent", () => {
+  const { mapped } = vocabularyTokensFrom(themeFor(CATALOGUE_SHEET).rows);
+  const accent = mapped.find((row) => row.name === "shio-color.accent");
+
+  assert.match(accent.elected, /^a fill whose own rule states what goes on top of it, over color\.emerald\.500 /,
+    "`accent#1` names a rank, and the rank was the whole claim - a reader given "
+      + "`color.emerald.500 (accent#1)` has nothing to disagree with (P9)");
+  assert.deepEqual(mapped.filter((row) => row.elected).map((row) => row.name),
+    ["shio-color.accent"],
+    "and the other eight slots carry no such clause: `text#1` and `background#2` ARE their own "
+      + "evidence, and a constant clause on nine lines is the one everybody stops reading (P3)");
+});
+
+test("SH855: a pair is what a call-to-action states and a decoration does not", () => {
+  // The structural fact, isolated: one rule states a fill and what goes on top of it, the other
+  // states a fill. Neither is a reversal - the button's foreground is a token of its own, which is
+  // the case SH848 measured and the reason a reversal could not reach it.
+  const { reversals, paired } = pageStatement(declarationsOf(
+    "body{background:#ffffff;color:#111111}"
+      + ".btn{background-color:#c2410c;color:#3f3f46}"
+      + ".dot{background-color:#059669}",
+  ));
+
+  assert.deepEqual([...reversals], [],
+    "`#3f3f46` is a dark grey of the button's own, nowhere near the page's white, so the equality "
+      + "never holds - and a near-white WOULD hold it, since `same` is SH846's 1.5:1 floor rather "
+      + "than a string compare");
+  assert.deepEqual([...paired], [".btn||"],
+    "the pairing is the reversal with the equality dropped, which is what makes it readable on a "
+      + "sheet whose buttons carry a foreground token of their own");
+});
+
+test("SH855: the pairing is computed where the page states no background, which a reversal cannot be", () => {
+  // Every archetype in the corpus states no page-level background, so SH847's signal is structurally
+  // silent on all of them. This is the half that still answers.
+  const { surface, reversals, paired } = pageStatement(declarationsOf(
+    ".btn{background-color:#c2410c;color:#ffffff}",
+  ));
+
+  assert.equal(surface, null);
+  assert.deepEqual([...reversals], []);
+  assert.deepEqual([...paired], [".btn||"]);
+});
+
+test("SH855: chroma ranks only where nothing else separates two candidates", () => {
+  // Two fills, neither paired, read the same number of times. SH848 made chroma a floor, which is
+  // the right shape for an admission bar and the wrong one for a ranking - before this it broke on
+  // the value string, so which colour became the accent depended on its hex digits.
+  const { mapped } = vocabularyTokensFrom(themeFor(`
+    body{background:#ffffff;color:#111111}
+    .a{background-color:#b45309}
+    .b{background-color:#b45309}
+    .c{background-color:#c2410c}
+    .d{background-color:#c2410c}
+  `).rows);
+
+  assert.ok(chromaOf("#c2410c") > chromaOf("#b45309"));
+  assert.equal(mapped.find((row) => row.name === "shio-color.accent").value, "#c2410c",
+    `#c2410c reads ${chromaOf("#c2410c")} against ${chromaOf("#b45309")}, and sorting on the value `
+      + "would have taken `#b45309` for no reason a reader could name - which is what the ranking "
+      + "did before: two candidates the counts read alike were separated by their hex digits");
+});
+
+test("SH855: a reversal still outranks a pair, so SH847's reading is the one that stands", () => {
+  const { mapped } = vocabularyTokensFrom(themeFor(`
+    body{background:#ffffff;color:#111111}
+    .cta{background-color:#0b7285;color:#ffffff}
+    .badge{background-color:#c2410c;color:#3f3f46}
+    .badge-2{background-color:#c2410c;color:#3f3f46}
+    .badge-3{background-color:#c2410c;color:#3f3f46}
+  `).rows);
+  const accent = mapped.find((row) => row.name === "shio-color.accent");
+
+  assert.equal(accent.value, "#0b7285",
+    "the page turned inside out is the strongest reading there is, and it is stated once against a "
+      + "paired fill stated three times - the order of the signals is the claim, not the counts");
+  assert.match(accent.elected, /^a rule that paints the page inside out, /);
+});

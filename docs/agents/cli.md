@@ -1459,6 +1459,31 @@ it. Four decisions worth keeping:
   other half and the wrong one) — and it reaches `--json` as `palette.collides` and the report as a
   line naming the property, because the residual case the prefix cannot rule out is a source that
   reaches into the namespace deliberately.
+- **A floor is not a ranking, and the accent needed one (SH855).** SH848 made the accent *reachable*
+  and left *which one* to the generic ordering — most-referenced, ties on the value. Measured on the
+  sheet this was filed against, `--shio-color-accent` came out `oklch(69.6% .17 162.48)`,
+  `color.emerald.500`, on a site whose every button is orange: the brand is read **20** times and
+  four of them are fills, while a status dot painted in twelve places carries a **13**, because
+  `refs` is scoped to the role the token already won — it asks how often a colour is used *as what
+  it was classified as*, which is circular where the classification is the question. Both signals a
+  reader would reach for pointed the other way; neither was consulted. **`ACCENT_SIGNALS` is the
+  ranking**, four keys in order, each naming itself: a **reversal** (SH847, the page turned inside
+  out); a **pair** — the rule states this fill *and* what goes on top of it, which is
+  `pageStatement`'s reversal test **with the equality dropped**, and the structural difference
+  between `.btn{background:var(--brand);color:var(--primary-foreground)}` and
+  `.dot{background:var(--emerald)}`; **references across every role** (`refsTotal`, written beside
+  `refs` on both halves of the extractor, always, since a field whose absence means "same as the one
+  above" is an invariant a reader has to be told); and **chroma**, last — SH848's floor is the right
+  shape for an admission bar and the wrong one for a ranking, since `#c2410c` and an emerald both
+  clear it, and as a tie-break it replaces sorting on hex digits. The pairing is a **ranking signal
+  and never an admission one**, so a paired near-white tint is no more eligible than before, and it
+  is computed **where the page states no background** — which is every archetype in the corpus, and
+  exactly where SH847's signal is structurally silent. One comparator answers both questions:
+  `candidateOrder` returns `{order, why}`, the sort takes `order` and the report takes `why`, so
+  `--shio-color-accent #c2410c — vg.brand (accent#1) — elected by a fill whose own rule states what
+  goes on top of it, over color.emerald.500 …`. **The accent alone carries that clause**: for the
+  other eight slots the rank *is* the evidence, and `accent#1` was a rank presented as a claim
+  nobody could refute (P9, P3).
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

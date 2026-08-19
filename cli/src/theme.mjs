@@ -599,6 +599,13 @@ export function declaredTokens(declarations) {
           group: use.group,
           role: use.role,
           refs: use.refs,
+          // SH855 — beside `refs` rather than instead of it: `refs` is the evidence for the *role*
+          // and this is the evidence for the *colour*, and a report that collapsed them could no
+          // longer say that four of twenty references are what made this token an accent. Written
+          // even where the two agree: a field whose absence means "the same as the one above it" is
+          // an invariant a reader has to be told, and the two counts being equal is itself the fact
+          // that a token has one role.
+          refsTotal: use.refsTotal ?? use.refs,
           page: use.page > 0,
           // SH847 — a reversal is a statement about the page, so it clears the same bar a
           // page-level use does. `admits` reads this; nothing else about the row changes.
@@ -607,6 +614,9 @@ export function declaredTokens(declarations) {
           // competing roles, and chroma settles that competition on the value rather than needing a
           // selector to. Carried apart from `reversal` so a report can say which signal answered.
           ...(use.saturated ? { saturated: true } : {}),
+          // SH855 — the rule stated this fill *and* what goes on top of it, which is what a
+          // call-to-action is and what a decoration is not. A ranking signal, never an admission one.
+          ...(use.paired ? { paired: true } : {}),
         }
         : {}),
     });
@@ -717,7 +727,7 @@ function isPageSelector(selector) {
  * `--icon: url("/img/sprite.svg")` read by `background-image` is roled by nothing rather than
  * counted as a length.</p>
  */
-function rolesByUse(declarations, page = { reversals: new Set(), values: new Map() }) {
+function rolesByUse(declarations, page = { reversals: new Set(), paired: new Set(), values: new Map() }) {
   const counts = new Map();
   for (const declaration of declarations) {
     if (declaration.property.startsWith("--")) continue;
@@ -730,18 +740,25 @@ function rolesByUse(declarations, page = { reversals: new Set(), values: new Map
       const tally = seen.get(key)
         ?? {
           group: slot.group, role: slot.role, test: slot.test,
-          refs: 0, page: 0, reversal: false, saturated: false,
+          refs: 0, page: 0, reversal: false, saturated: false, paired: false,
         };
       tally.refs += 1;
       tally.page += onPage ? 1 : 0;
       tally.reversal ||= slot.reversal === true;
       tally.saturated ||= slot.saturated === true;
+      tally.paired ||= slot.paired === true;
       seen.set(key, tally);
       counts.set(match[1], seen);
     }
   }
   const roles = new Map();
   for (const [name, seen] of counts) {
+    // SH855 — how often the source reads this token **at all**, which is not `refs`: `refs` is scoped
+    // to the role that won, and that scoping is what lost the election this task was filed on. The
+    // brand was read twenty times and four of them were fills, so it arrived at the accent slot
+    // carrying a 4 while a status dot painted in twelve places carried a 13. One is the site's colour
+    // and the other is a decoration, and the number that says so is this one.
+    const refsTotal = [...seen.values()].reduce((sum, tally) => sum + tally.refs, 0);
     const ranked = [...seen.entries()].sort((a, b) => {
       // A page-level use outranks any number of element-level ones, in both directions: it decides
       // which role this token has, not only how highly it ranks within one.
@@ -755,7 +772,7 @@ function rolesByUse(declarations, page = { reversals: new Set(), values: new Map
       if (a[1].refs !== b[1].refs) return b[1].refs - a[1].refs;
       return a[0] < b[0] ? -1 : 1;
     });
-    roles.set(name, ranked[0][1]);
+    roles.set(name, { ...ranked[0][1], refsTotal });
   }
   return roles;
 }
@@ -848,9 +865,24 @@ function resolveVar(value, values, depth = 0) {
  * {@link accentFor} falls back on is {@link chromaOf}, which needs no page pair and no colour-space
  * conversion.</p>
  *
- * @returns `{surface, ink, reversals, values}` — the page's two colours, the rule keys whose
- *          background is an accent candidate, and the root custom properties both were resolved
- *          through, so a caller can resolve a `var()` the same way rather than a second way.
+ * <h2>SH855 — the pair without the equality, which is what a button is</h2>
+ *
+ * <p>The reversal test is `background` **and** `color`, where the `color` is the page's own surface.
+ * `paired` is the same test with the equality dropped: a rule that states a fill *and* what goes on
+ * top of it. That is the structural fact the failing case turns on — `.btn{{background:var(--brand);
+ * color:var(--primary-foreground)}}` states both, `.dot{{background:var(--emerald)}}` states one — and
+ * it is the fact SH848's chroma fallback was reaching for by proxy. A decoration is a fill nobody put
+ * anything on; a call-to-action carries a label, so the source had to say what colour the label is.</p>
+ *
+ * <p>It is a **ranking** signal and never an admission one: {@link accentFor}'s floor still decides
+ * what may be an accent at all, so a paired near-white hover tint is no more eligible than before. The
+ * exclusions are the reversal's own, because they are about the background rather than about the
+ * equality: a rule repainting the page's surface or its ink is not styling a call-to-action.</p>
+ *
+ * @returns `{surface, ink, reversals, paired, values}` — the page's two colours, the rule keys whose
+ *          background is an accent candidate, the rule keys that state a fill and its own foreground,
+ *          and the root custom properties all of them were resolved through, so a caller can resolve a
+ *          `var()` the same way rather than a second way.
  */
 export function pageStatement(declarations) {
   const rows = declarations ?? [];
@@ -873,16 +905,21 @@ export function pageStatement(declarations) {
     rules.set(ruleKey(declaration), rule);
   }
   const reversals = new Set();
-  if (surface) {
-    for (const [key, rule] of rules) {
-      if (!rule.background || !rule.text || isTransparent(rule.background)) continue;
-      if (!same(rule.text, surface)) continue;
-      // The page inverted is not an accent, and neither is a background that IS the page.
-      if (same(rule.background, surface) || (ink && same(rule.background, ink))) continue;
-      reversals.add(key);
-    }
+  // SH855 — computed whether or not the page states a surface, which is the half `reversals` cannot
+  // do: the equality needs a page colour to compare against and the pairing needs none. Every
+  // archetype in the corpus states no page-level background, so this is the signal that is *readable*
+  // where the reversal is structurally silent.
+  const paired = new Set();
+  for (const [key, rule] of rules) {
+    if (!rule.background || !rule.text || isTransparent(rule.background)) continue;
+    // The page inverted is not an accent, and neither is a background that IS the page. Both
+    // exclusions are about the background, so both apply to the pairing as well as to the reversal.
+    if (surface && same(rule.background, surface)) continue;
+    if (ink && same(rule.background, ink)) continue;
+    paired.add(key);
+    if (surface && same(rule.text, surface)) reversals.add(key);
   }
-  return { surface, ink, reversals, values };
+  return { surface, ink, reversals, paired, values };
 }
 
 /** Two colours a reader would call one. The floor SH846 set, used here as an equality (SH847). */
@@ -948,7 +985,13 @@ const INTERACTIVE_STATE = /:(?:hover|focus|focus-visible|focus-within|active|tar
  */
 function accentFor(slot, declaration, page) {
   if (!slot || slot.group !== "color" || slot.role !== "background") return slot;
-  if (page.reversals.has(ruleKey(declaration))) return { ...slot, role: "accent", reversal: true };
+  // SH855 — carried on both branches, because the pairing is a fact about the rule and not about
+  // which signal admitted it: a reversal IS a pair, and a report that said otherwise would be
+  // describing the code path rather than the source.
+  const paired = page.paired?.has(ruleKey(declaration)) === true;
+  if (page.reversals.has(ruleKey(declaration))) {
+    return { ...slot, role: "accent", reversal: true, paired };
+  }
   if (isPageSelector(declaration.selector) && !declaration.conditional) return slot;
   if (INTERACTIVE_STATE.test(String(declaration.selector ?? ""))) return slot;
   const value = resolveVar(declaration.value, page.values);
@@ -956,8 +999,72 @@ function accentFor(slot, declaration, page) {
   if (chroma === null || chroma < ACCENT_CHROMA_FLOOR) return slot;
   if (page.surface && same(value, page.surface)) return slot;
   if (page.ink && same(value, page.ink)) return slot;
-  return { ...slot, role: "accent", saturated: true };
+  return { ...slot, role: "accent", saturated: true, paired };
 }
+
+/**
+ * Which of several accent candidates is the site's, in the order the signals are consulted (SH855).
+ *
+ * <h2>The election that skipped the brand</h2>
+ *
+ * <p>`accentFor` decides what may *be* an accent. Nothing decided which one **is**, so the answer fell
+ * to the generic ranking — most-referenced, ties on the value — and that count is scoped to the role
+ * the token won. Measured on the sheet SH855 was filed against:</p>
+ *
+ * <pre>  --color-emerald-500   role=accent  refs=13  refsTotal=16   chroma 0.43
+ *   --vg-brand            role=accent  refs=4   refsTotal=20   chroma 0.71
+ *   --shio-color-accent &lt;- oklch(69.6% .17 162.48)</pre>
+ *
+ * <p>The brand is read twenty times and four of them are fills; a status dot painted in twelve places
+ * carried a 13 and won. Every colour on that page is orange and the replica's buttons came out green.
+ * Both signals a reader would reach for pointed the other way — the brand is referenced more *and* is
+ * the more chromatic — and the ranking consulted neither.</p>
+ *
+ * <h2>Where a colour is used, not what it is</h2>
+ *
+ * <ol>
+ *   <li><b>A reversal</b> (SH847) — the page turned inside out. The strongest reading there is, and
+ *       first for the same reason it is tried first in {@link accentFor}.</li>
+ *   <li><b>A pair</b> — the rule states this fill *and* what goes on top of it. That is the structural
+ *       difference between the button and the dot, and it is what SH848's chroma floor was reaching
+ *       for by proxy: a decoration is a fill nobody put anything on. See {@link pageStatement}.</li>
+ *   <li><b>References, counted across every role</b> — `refsTotal`, not `refs`. The scoping is the
+ *       defect: it asks how often a colour is used *as the thing it was already classified as*, which
+ *       is circular where the classification is what is in question.</li>
+ *   <li><b>Chroma</b>, and only here. SH848 made it a floor, which is the right shape for an
+ *       admission bar and the wrong one for a ranking — `#c2410c` and an emerald are both above it.
+ *       As a tie-break it separates a brand from a tint without ever admitting one on its own.</li>
+ * </ol>
+ *
+ * <p>Each signal names itself, so the ordering and the report come from one array: a run says which
+ * rule fired because the comparator that fired is the thing being printed (P9). Two candidates that
+ * every signal reads alike fall through to the caller's own final key — the value — so two runs over
+ * one capture still agree (P5).</p>
+ */
+export const ACCENT_SIGNALS = Object.freeze([
+  Object.freeze({ why: "reversal", of: (row) => (row.reversal === true ? 1 : 0) }),
+  Object.freeze({ why: "paired", of: (row) => (row.paired === true ? 1 : 0) }),
+  Object.freeze({ why: "references", of: (row) => row.refsTotal ?? row.refs ?? 0 }),
+  Object.freeze({ why: "chroma", of: (row) => chromaOf(row.value) ?? 0 }),
+]);
+
+/**
+ * `{order, why}` for two accent candidates — negative order puts `a` first, `why` names the signal.
+ *
+ * <p>`why` is `null` when no signal separated them, which a caller must not read as "the first one":
+ * it means the pair is decided by whatever key that caller breaks ties on, and the report says so
+ * rather than claiming a signal fired.</p>
+ */
+export function accentOrder(a, b) {
+  for (const signal of ACCENT_SIGNALS) {
+    const [one, other] = [signal.of(a), signal.of(b)];
+    if (one !== other) return { order: other - one, why: signal.why };
+  }
+  return { order: 0, why: null };
+}
+
+/** Whether a row is one of the candidates {@link accentOrder} is about. */
+export const isAccentRow = (row) => row?.group === "color" && row?.role === "accent";
 
 // ---------------------------------------------------------------------------------------------
 // Recurring tokens
@@ -993,6 +1100,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
       existing.page ||= page;
       existing.reversal ||= slot.reversal === true;
       existing.saturated ||= slot.saturated === true;
+      existing.paired ||= slot.paired === true;
       existing.properties.add(declaration.property);
     } else {
       buckets.set(key, {
@@ -1004,9 +1112,23 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
         page,
         reversal: slot.reversal === true,
         saturated: slot.saturated === true,
+        paired: slot.paired === true,
         properties: new Set([declaration.property]),
       });
     }
+  }
+
+  // SH855 — how often the source writes this literal in *any* colour property, which is the same
+  // question `rolesByUse` asks of a declared token one line along. A bucket is group-role-value, so
+  // a brand orange written on two buttons and eleven links is a 2 in the accent bucket; the count
+  // that says it is the site's colour is the sum, and the ranking below needs both.
+  const totals = new Map();
+  for (const row of buckets.values()) {
+    if (row.group !== "color") continue;
+    totals.set(row.value, (totals.get(row.value) ?? 0) + row.refs);
+  }
+  for (const row of buckets.values()) {
+    row.refsTotal = totals.get(row.value) ?? row.refs;
   }
 
   const kept = [...buckets.values()]
@@ -1035,7 +1157,13 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     .sort((a, b) => {
       if (a.group !== b.group) return a.group < b.group ? -1 : 1;
       if ((a.role ?? "") !== (b.role ?? "")) return (a.role ?? "") < (b.role ?? "") ? -1 : 1;
-      if (a.refs !== b.refs) return b.refs - a.refs;
+      // SH855 — the accent is the one role whose rank is a *choice* between colours rather than a
+      // position in a scale, so it is the one role the generic count cannot order. `accentOrder`
+      // consults the count too, third of four.
+      if (isAccentRow(a) && isAccentRow(b)) {
+        const { order } = accentOrder(a, b);
+        if (order !== 0) return order;
+      } else if (a.refs !== b.refs) return b.refs - a.refs;
       return a.value < b.value ? -1 : 1;
     });
 
@@ -1071,7 +1199,10 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
       page: row.page === true,
       ...(row.reversal ? { reversal: true } : {}),
       ...(row.saturated ? { saturated: true } : {}),
+      // SH855 — the same two facts the declared half carries, so `accentOrder` reads one shape.
+      ...(row.paired ? { paired: true } : {}),
       refs: row.refs,
+      refsTotal: row.refsTotal ?? row.refs,
       properties: [...row.properties].sort(),
     });
   }

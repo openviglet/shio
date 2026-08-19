@@ -725,34 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.1 The election that skipped the brand (SH855)
-
-SH848 moved the accent off its hardcoded default and onto a colour the source actually
-declares, and `convert` now says which one and why:
-
-    --shio-color-accent oklch(69.6% .17 162.48) — color.emerald.500 (accent#1)
-
-That is Tailwind's `emerald-500`, a green-teal. Every primary button on `www.viglet.org`
-is orange, and the orange is declared as `--vg-brand: #c2410c / #f97316`.
-
-Both signals a chroma election would use point the other way:
-
-    --color-emerald-500   16 var() references   chroma ~0.17
-    --vg-brand            20 var() references   chroma ~0.19
-
-So the brand is used more and is more chromatic, and it lost. Emerald is genuinely used
-— 16 references, probably a product dot — so this is not a catalogue entry mistaken for
-a choice. It is a real colour of the site, and it is not the site's accent.
-
-What separates them is not a scalar. The brand is the fill of the element the source
-styles as its primary call to action; emerald is a decoration. That is a **structural**
-fact, readable from the rendered page — SH848's filing proposed exactly this and the
-implementation chose a colour-space metric instead.
-
-Rank by where a colour is used, not by what it is: the computed background of the
-highest-prominence button, then the most-referenced non-neutral, with chroma only as a
-tie-break. The report already exists to say which rule fired.
-
 ### XL.2 A floor that cannot read the floor (SH856)
 
 SH852 gave the palette a contrast floor, which is the right guard: a surface and an
@@ -832,3 +804,31 @@ defect that renders perfectly.
 
 So: an overlay whose dismiss behaviour was not captured is dropped, and the run names
 it. `--scripts` remains how a caller asks for the working one.
+
+## XLI A separator written as the character it means, not as the escape for it (SH859)
+
+`Grep` for `accentFor` in `cli/src/theme.mjs` answered `binary file matches (found "\0"
+byte around offset 49715)` and printed nothing. The file is JavaScript. A byte scan
+finds six:
+
+    cli/src/theme.mjs   2    cli/src/convert.mjs           2    ShRenderHelpers.java        2
+    cli/src/diff.mjs    1    cli/src/verify-baseline.mjs   1    static-file.list.page.tsx   2
+
+Every one is a deliberate composite-key separator — a row's fact joined to its delta, a
+post's id to its state, the two ends of the `shio:sections` mark — and the choice is
+right: a separator that cannot occur in a CSS value, a title or a tag is what stops two
+keys colliding, which is a P5 property. What is wrong is the **spelling**. Each holds
+the literal control character where the source could have written a unicode escape
+naming it, and ripgrep classifies a file holding one as binary: it reports that the file
+matched and refuses to print the line. So does `git grep`, and so does GitHub's code
+search.
+
+P4 says files beat APIs because `Edit`, `Write` and `Grep` are an agent's cheapest
+tools. Two of the six are the largest modules in the CLI, and on those the cheapest tool
+silently answers nothing — the shape this project keeps paying for, one instrument
+along. The character is invisible in a diff and in a review too, and a formatter that
+normalised control characters would change a key's identity showing nothing.
+
+The escape is byte-identical at runtime, so the fix is six literals. The instrument
+first (SH338): a lint over every tracked source file, failing on a raw control character
+in one.

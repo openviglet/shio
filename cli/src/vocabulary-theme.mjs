@@ -56,7 +56,9 @@
 // `isColor`, so there is one place that decides what this project calls a colour.
 // SH853 — and the name compiler, so the two `:root` blocks a mixed page carries are compared in the
 // spelling `ShThemeTokens` will actually emit rather than in one this file guessed.
-import { contrastRatio, customPropertyFor, flatten, isTransparent, isTranslucent } from "./theme.mjs";
+import {
+  accentOrder, contrastRatio, customPropertyFor, flatten, isAccentRow, isTransparent, isTranslucent,
+} from "./theme.mjs";
 
 /**
  * The DTCG tree, which is what makes the theme *editable* rather than merely present.
@@ -344,8 +346,9 @@ export const PALETTE_BRIDGE = Object.freeze({
  * @param rows the extracted token rows (`proposal.theme.rows`), each carrying the `group` and — for
  *             colour — the `role` the source uses it in, the `refs` that argued for it, and whether
  *             any of those uses was at page level
- * @returns `{tokens, mapped, unmapped, rejected, unchecked, unheld}` — `mapped` is `{name, from, role, value}`
- *          per slot that took a captured value, `unmapped` the slots that kept this file's default and
+ * @returns `{tokens, mapped, unmapped, rejected, unchecked, unheld}` — `mapped` is
+ *          `{name, from, role, value}` per slot that took a captured value, plus `elected` on the
+ *          accent naming the signal that chose it over the runner-up (SH855), `unmapped` the slots that kept this file's default and
  *          what each looked for, `rejected` (SH846) the slots that were **offered** a value and refused
  *          it, which is a different fact from being offered none. All sorted by name, so two runs over
  *          one capture report identically (P5). A slot the bridge does not name is in none of them: it
@@ -374,7 +377,14 @@ export function vocabularyTokensFrom(rows) {
     const wanted = `${want.role ?? want.group}#${want.rank}`;
     if (row) {
       tokens[family][leaf] = { ...definition, $value: row.value };
-      mapped.push({ name, from: row.path, role: wanted, value: row.value });
+      // SH855 — and which signal put it there, for the accent. A run that named the colour and not
+      // the reason left a reader with nothing to check: the line said `color.emerald.500 (accent#1)`
+      // on a site whose every button is orange, and `accent#1` is not a claim anybody can refute.
+      const elected = electedBy(row, candidates);
+      mapped.push({
+        name, from: row.path, role: wanted, value: row.value,
+        ...(elected ? { elected } : {}),
+      });
     } else if (offered[want.rank - 1]) {
       // Refused, and not merely unfilled: **this slot's own rank** held a row and the floor took it.
       // Asking whether the filter removed anything at all would report `background#2` as refused on
@@ -624,21 +634,67 @@ function paletteByGroup(rows) {
     byKey.set(key, group);
   }
   for (const group of byKey.values()) {
-    group.sort((a, b) => {
-      if ((a.source === "declared") !== (b.source === "declared")) {
-        return a.source === "declared" ? -1 : 1;
-      }
-      // SH847 — a reversal ranks with a page-level use, for the reason `admits` states: both are
-      // statements about the page, and the accent role now takes rows from `fill` and from a
-      // reversal alike. A button is what a site's accent is; an SVG fill is one of four properties
-      // that happen to bucket there.
-      // SH848 — a saturated fill ranks with them, and for the same reason: it is the third way the
-      // competition between a colour's roles is settled by something other than a count.
-      const stated = (row) => row.page === true || row.reversal === true || row.saturated === true;
-      if (stated(a) !== stated(b)) return stated(a) ? -1 : 1;
-      if ((a.refs ?? 0) !== (b.refs ?? 0)) return (b.refs ?? 0) - (a.refs ?? 0);
-      return a.value < b.value ? -1 : 1;
-    });
+    group.sort((a, b) => candidateOrder(a, b).order);
   }
   return byKey;
+}
+
+/**
+ * Which of two candidates fills a slot first, and the key that decided it (SH855).
+ *
+ * <p>One function rather than a comparator plus a paragraph, because the report has to name the key
+ * that fired and a second reading of the same rules is a second place for them to be wrong. The sort
+ * takes `order` and {@link electedBy} takes `why`; neither can drift from the other.</p>
+ *
+ * <p>SH847 — a reversal ranks with a page-level use, for the reason `admits` states: both are
+ * statements about the page, and the accent role takes rows from `fill` and from a reversal alike. A
+ * button is what a site's accent is; an SVG fill is one of four properties that happen to bucket
+ * there. SH848 — a saturated fill ranks with them, and for the same reason: it is the third way the
+ * competition between a colour's roles is settled by something other than a count.</p>
+ */
+function candidateOrder(a, b) {
+  if ((a.source === "declared") !== (b.source === "declared")) {
+    return { order: a.source === "declared" ? -1 : 1, why: "declared" };
+  }
+  const stated = (row) => row.page === true || row.reversal === true || row.saturated === true;
+  if (stated(a) !== stated(b)) return { order: stated(a) ? -1 : 1, why: "stated" };
+  // SH855 — and within the stated half, the accent is elected rather than counted. This is where the
+  // emerald beat the brand: both are declared, both are saturated, and the next key was a reference
+  // count scoped to the role each had already won.
+  if (isAccentRow(a) && isAccentRow(b)) {
+    const elected = accentOrder(a, b);
+    if (elected.order !== 0) return elected;
+  } else if ((a.refs ?? 0) !== (b.refs ?? 0)) {
+    return { order: (b.refs ?? 0) - (a.refs ?? 0), why: "references" };
+  }
+  return { order: a.value < b.value ? -1 : 1, why: null };
+}
+
+/** What each key of {@link candidateOrder} means, in the words the run prints (SH855). */
+const ELECTED_BY = Object.freeze({
+  declared: "a token the source names, over a literal it repeats",
+  stated: "a use the source states, over one a count inferred",
+  reversal: "a rule that paints the page inside out",
+  paired: "a fill whose own rule states what goes on top of it",
+  references: "the most-referenced of them",
+  chroma: "the more chromatic, every other signal reading them alike",
+});
+
+/**
+ * Why this row won its slot, or null where there was nothing to win it against (SH855).
+ *
+ * <p>Answered for the **accent** alone, which is the one slot whose rank is a choice between colours
+ * rather than a position in a scale — the others are `text#1` and `background#2`, where the rank is
+ * the evidence and repeating it on nine lines is the clause everybody stops reading (P3). A slot with
+ * one candidate says so: "elected" over a field of one is the sentence that reads as a decision and
+ * is not one.</p>
+ */
+function electedBy(row, candidates) {
+  if (!isAccentRow(row)) return null;
+  const at = candidates.indexOf(row);
+  const runnerUp = candidates[at + 1];
+  if (!runnerUp) return "the only candidate the source offered";
+  const { why } = candidateOrder(row, runnerUp);
+  return `${ELECTED_BY[why] ?? "its name, every signal reading them alike"}, over `
+    + `${runnerUp.path} ${runnerUp.value}`;
 }

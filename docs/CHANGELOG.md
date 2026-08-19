@@ -1253,6 +1253,7 @@
 - **SH852** — All four painted pairs now have a contrast floor: precedence is first appearance in CONTRAST_PAIRS and a pair may revert only the slot it introduces, every pair is re-judged until a pass moves nothing, and a pair the floor may not fix is reported as `unheld` rather than shipped as two filled slots.
 - **SH853** — The Shio theme's fifteen custom properties are prefixed `--shio-`, so the two `:root` blocks a mixed page carries share no name by construction, and `collidingProperties` reports any a source reaches into anyway instead of leaving `<style>` order to decide.
 - **SH854** — The pair the contrast floor may not fix is now a line in the printed report, and a second wiring rule holds every palette field to being read somewhere other than the literal that forwards it into `--json`.
+- **SH855** — The accent is elected rather than counted: a reversal, then a fill whose own rule states what goes on top of it, then references across every role, then chroma — and the run names which fired.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
@@ -1564,3 +1565,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AM — A build that could not start is not a colour
 
 - **SH828** — The runner reads the log it already keeps and stamps `inconclusive` where no suite ran, so a locked file stops manufacturing a red the ledger must then excuse.
+
+## Block AN — Source the agent's cheapest tool declines to read
+

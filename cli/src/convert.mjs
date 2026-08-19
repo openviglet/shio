@@ -1757,8 +1757,12 @@ export function describeConversion({ document, sections, markup = [], pages = []
         + `${unbridged ? `, and ${unbridged} slot(s) this theme has no source role for` : ""}`,
     );
     for (const row of palette.mapped) {
+      // SH855 — and, for the accent, the signal that elected it. `accent#1` names a rank and the rank
+      // was the whole claim, so a run reporting `color.emerald.500 (accent#1)` on a site whose every
+      // button is orange gave a reader nothing to disagree with. The other eight slots carry no such
+      // clause: their rank *is* the evidence (P3).
       lines.push(`    --${row.name.replace(".", "-")} ${preview(row.value)} — ${row.from} `
-        + `(${row.role})`);
+        + `(${row.role})${row.elected ? ` — elected by ${row.elected}` : ""}`);
     }
     for (const row of rejected) {
       lines.push(
