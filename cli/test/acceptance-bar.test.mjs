@@ -24,6 +24,13 @@ import {
   ACCEPTANCE_FILE, NOTED, acceptanceBars, barFor, classify, readAcceptance, requiredFor,
 } from "../src/acceptance.mjs";
 
+// @scans both reason: two subjects, and neither stripper is right for the other. The kind reader
+// wants CODE — a `kind:` literal is a value the program mints, and a mention in a comment is not one
+// — while the criterion checks read PROSE, because the thing being asserted is what a document
+// claims. Read raw rather than through either: the code half looks only at lines containing `kind:`,
+// which a sentence about kinds does not have, and the prose half asserts phrases no code line
+// carries (SH740).
+
 const source = (path) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
 
 /** Every `kind` the mappers can produce, read off the source that mints them. */
@@ -114,6 +121,45 @@ test("SH865: every mode `judge` can be in declares which instruments its bar res
   assert.deepEqual(requiredFor(bars, "nonesuch"), [],
     "and a mode nothing declares requires nothing, which `judgeRuns` reads as INCONCLUSIVE via the "
       + "unstated-mode branch rather than as a pass");
+});
+
+/**
+ * The criterion's prose home. `acceptance.properties` is the machine-readable half and this is the
+ * other one — outside roadkeep on purpose, since `IMPROVEMENTS.md` holds rationale for *unshipped*
+ * work and SH692's definition of a correct page was deleted the moment SH692 shipped.
+ */
+const CRITERION = () => source("../../docs/agents/replication.md");
+
+test("SH864: the criterion does not claim fidelity is the mode without fields", () => {
+  // The boundary SH864 crossed was this document. It said fidelity *has no editable fields, by
+  // definition — verbatim markup carries no annotations*, and that is a property of the pipeline
+  // rather than of the markup: `sh-field` and `data-shio-prop` are attributes, attributes do not lay
+  // out, and forty of them on a fidelity page cost nothing measurable against a source that varies
+  // against itself by more. A sentence with `by definition` in it is the one nobody re-measures.
+  const text = CRITERION();
+
+  assert.doesNotMatch(text, /no editable fields by definition|carries no annotations/i,
+    "the claim is falsified and must not come back: criteria 6 and 7 apply to whatever a page "
+      + "actually annotates, whichever mode produced its markup");
+  assert.match(text, /attributes do not lay out/,
+    "and the reason is written where the claim was, so the next reader meets the measurement rather "
+      + "than the assumption");
+});
+
+test("SH864: the criterion says where an annotated page's values live, and why not a position", () => {
+  // The task's own last line: *the open design question is where the values live so a write
+  // round-trips, and that is the task, not the demonstration*. A decision nobody wrote down is one
+  // the next round re-opens — which is what six declared closes of this block were made of.
+  const text = CRITERION();
+
+  assert.match(text, /the field is the address/i,
+    "the write path writes `data.<field>` on a post and never creates structure, so the address a "
+      + "round-trip needs is the one every other post already uses");
+  assert.match(text, /re-capture invalidates every address at once/i,
+    "and the rejected alternative is named with the reason it loses, or it is proposed again");
+  assert.match(text, /SH868|its own task/i,
+    "with the implementation filed rather than implied — a decision that reads as done and is not "
+      + "is the `report ahead of its behaviour` shape (SH763, SH849)");
 });
 
 test("SH860: a bar above zero has to be explained where it is written", () => {

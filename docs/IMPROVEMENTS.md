@@ -725,36 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.6 The dichotomy that is not one (SH864)
-
-`docs/agents/replication.md` has said that fidelity *has no editable fields, by
-definition — verbatim markup carries no annotations*. Measured, that is a property of
-the pipeline and not of the markup.
-
-A fidelity replica of `www.viglet.org`, 12 of 12 pages verbatim, was served and
-photographed against the source. Forty `sh-field` / `data-shio-prop` pairs were then
-written onto its kept markup and it was photographed again:
-
-    unchanged, four runs   0.13%  0.31%  0.28%  0.13%
-    after 41 annotations   0.31%
-
-The source animates its own decorations, so it varies against itself by more than the
-annotations could ever cost. **The pixel price of annotating is below this source's
-noise floor.** `shio annotations` then answered `41 of 4 declared field(s) annotated`,
-and `digest` reported every region as `verbatim`, painted by one sheet — criterion 9
-satisfied trivially, because there is only ever one theme on such a page.
-
-So *pixel-perfect and authorable* is not a contradiction: it is a fidelity page with
-attributes on it. Attributes do not lay out.
-
-`propose` already computes the mapping this needs — deriving `heading`, `intro` and
-`features.0.title` from a block is exactly how authorable mode fills a section. The same
-mapping, written as attributes onto the kept markup instead of as values into a new
-post, is the third mode.
-
-The open design question is where the values live so a write round-trips, and that is
-the task, not the demonstration.
-
 ### XL.10 The third mode, and it is the cheap one (SH868)
 
 `propose` already knows, for every candidate, which node became `heading`, which became
@@ -779,3 +749,31 @@ address the Universal Editor speaks.
 
 The trade is real and it is fidelity's own: no typed model, no validation, no reuse
 across pages. Worth stating in the mode's name rather than discovered later.
+
+### XL.12 The substitution an annotated fidelity page needs (SH870)
+
+SH864 decided where the values live: `convert` stores the derived values as ordinary
+fields, the markup stays byte-identical, and at render an element carrying
+`sh-field="heading"` shows `data.heading` **when that field is non-empty**.
+`docs/agents/replication.md` carries the decision and why an address naming a position
+inside the blob loses — an edit invalidates every later offset and a re-capture
+invalidates every address at once.
+
+What is missing is the render half. Today `{{{content}}}` emits the stored markup
+untouched, so a value written through the Universal Editor is stored on the post and
+never shown. That is the *report shipping ahead of its behaviour* shape this project has
+met four times, and here it would be worse than silence: the editor accepts an edit and
+the page denies it.
+
+Three properties the implementation is held to:
+
+- **Byte-identical until edited.** No field, no substitution, so the pixel bar is unmoved.
+- **Not a template language.** `content` is emitted without interpolation on purpose (SH464), and
+  compiling captured markup would read a `{{` in a framework's own output as a directive. One
+  annotated element, one declared field, no expressions.
+- **Degrades rather than corrupts.** A re-capture whose annotation moved stops applying the field
+  instead of writing a value into the wrong element.
+
+The renderer is the one surface holding both halves — the stored markup and the post's
+data — so it belongs there rather than in `convert`, which would have to bake the value
+in and lose the first property.

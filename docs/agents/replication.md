@@ -94,6 +94,39 @@ percentage saturates at 100.00% and stops being a measurement (SH866).
 of them added to a fidelity page cost nothing measurable, and `annotations` counted
 every one (SH864). Criteria 6 and 7 apply to whatever the page actually annotates.
 
+### Where an annotated fidelity page's values live (SH864)
+
+Annotating is free; the open question was where a write goes so it round-trips. A
+fidelity page's content is **one verbatim markup blob** in `Page.content`, and
+`ShPostDraftMergeService` writes `data.<field>` or `data.<collection>[n].<field>` on a
+post and *never* creates structure. So annotating an element and writing to it stores a
+value the page never renders. Two mechanisms answer that, and only one survives.
+
+**Rejected — a markup-position address.** Make `sh-field` name a place inside the blob
+(an offset, or a path like `main>section:nth-child(2)>h1`) and have the merge rewrite the
+markup there. It keeps exactly one copy of the value, and it fails on the two things
+this pipeline does constantly: **an edit invalidates every later offset**, and a
+**re-capture invalidates every address at once**. It also puts an HTML rewriter in the
+write path, operating on bytes a stranger's site produced.
+
+**Taken — the field is the address, and the annotation is the substitution point.**
+`convert` stores the block's derived values as ordinary fields on the post and leaves the
+markup **byte-identical**. At render, an element carrying `sh-field="heading"` has its
+text replaced by `data.heading` *when that field is non-empty*; absent, the source's own
+text renders, so the page is unchanged until somebody edits it and the pixel bar still
+holds. Nothing new addresses anything: the write path is the one every other post uses,
+and re-capture degrades safely — an annotation that moved simply stops being applied
+rather than corrupting a value.
+
+**Not Handlebars.** `content` is emitted `{{{content}}}`, deliberately without
+interpolation (SH464), and compiling captured markup as a template would read a `{{` in
+somebody's JS framework output as a directive. The substitution is bounded: one
+annotated element, one declared field, no expression language.
+
+`propose` already computes the mapping — deriving `heading`, `intro` and
+`features.0.title` from a block is exactly how authorable mode fills a section (SH868).
+The implementation is its own task.
+
 ## What is deliberately out of scope
 
 Naming these is what lets the block close.

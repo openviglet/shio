@@ -11,8 +11,8 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH864** (deps: —) **Fidelity and authorable are treated as exclusive modes, and annotation is orthogonal to which markup is rendered** — 41 sh-field markers added to a fidelity page cost nothing measurable in pixels and annotations counted every one, so a page can be both. → §XL.6
-- 📋 **SH868** (deps: SH864) **The field mapping propose computes is only ever spent extracting values, never stamped onto the markup already there** — The same derivation that fills a section could annotate the kept block in place, which SH864 measured as free in pixels and full in fields. → §XL.10
+- 📋 **SH868** (deps: SH864 ✅) **The field mapping propose computes is only ever spent extracting values, never stamped onto the markup already there** — The same derivation that fills a section could annotate the kept block in place, which SH864 measured as free in pixels and full in fields. → §XL.10
+- 📋 **SH870** (deps: —) **A field on an annotated fidelity page is stored and never rendered, so an edit in the editor changes nothing** — SH864 settled where the values live; nothing yet substitutes one at render, so the write path SH868 needs still ends in a value the page ignores. → §XL.12
 
 ## Priority
 
