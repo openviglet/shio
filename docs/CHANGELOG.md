@@ -1586,3 +1586,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AO — A diff nobody can read
 
 - **SH863** — Line endings are declared in .gitattributes and the working tree was re-materialised once, taking 308 CRLF files to 11 — the eight batch files pinned on purpose and three PNGs.
+
+## Block AP — Interoperating with a CMS Shio does not own (its content model, its editor)
+
