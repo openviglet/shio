@@ -807,28 +807,3 @@ address the Universal Editor speaks.
 
 The trade is real and it is fidelity's own: no typed model, no validation, no reuse
 across pages. Worth stating in the mode's name rather than discovered later.
-
-### XL.11 A round nobody keeps (SH869)
-
-Every instrument in this chain answers about **one** run. `verify` counts today's
-errors, `diff` today's losses, `snapshot` needs a baseline the caller supplies, and
-`judge` now reaches a verdict against a declared bar. None of them remembers yesterday.
-
-The only regression that reached a curator was invisible in every one of those:
-
-    dangling var() occurrences   231  →  958  →  231
-    verify                         0 errors on all three rounds
-    judge                          same findings, same count
-
-It was found because a reader had kept the previous round's number in a scratch file,
-and reported because a curator said the page looked worse. A gate that says *0 errors*
-on the round that quadrupled a defect is not wrong — it is answering a question about
-one run, which is the only question it has.
-
-`judge` is now the right place to fix it, because it already gathers everything: the
-mode, the bar, the finding kinds and counts, the instruments that ran and abstained.
-`--record` writes that as a row; `--since` reads the last one and reports what moved. A
-count that rose is a finding of its own kind, gradable by the same bar file.
-
-This is also the cheapest instrument left. Nothing new is measured — the numbers already
-exist and are thrown away at the end of every run.

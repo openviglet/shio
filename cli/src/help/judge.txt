@@ -1,20 +1,21 @@
 shio judge --site <name> — run the instruments, answer once, name the disagreements
 
-verify, diff and audit run (audit whenever playwright resolves). snapshot is opt-in:
-choosing what to compare pixels with is a judgement. A skipped instrument reads NOT RUN,
-never green. Findings are judged against acceptance.properties: at or below the bar the
-round is ACCEPTED and they print as tasks for later; above it, or unnamed there, they
-HOLD and this exits 1.
+verify, diff and audit run; snapshot is opt-in. A skipped one reads NOT RUN, never green.
+Findings are judged against acceptance.properties: at or below the bar, ACCEPTED and
+printed as tasks for later; above it or unnamed there, they HOLD and this exits 1.
+INCONCLUSIVE means an instrument that bar rests on did not run.
 
   --site <name>        The site to judge (or a bare positional)
   --mode <name>        fidelity or authorable. Read from the plan via diff when not given
-  --fidelity           Hold pixels to 0.00% (--mode fidelity, spelled as a switch)
-  --no-browser         Skip audit even where playwright is installed (--browser forces it)
-  --against <origin>   Also run snapshot against this origin (the source you replicated)
+  --fidelity           --mode fidelity as a switch
+  --record             Append this round to shio/judge-rounds.json
+  --since              What moved since the last recorded round: a count that rose holds it
+  --no-browser         Skip audit; --browser forces it
+  --against <origin>   Also run snapshot against this origin
   --pages <n>          How many pages audit/snapshot look at (default 5)
-  --verbose            Print each instrument's own report underneath the judgement
-  --json               The judgement as JSON, for a pipeline
+  --verbose            Print each instrument's own report too
+  --json               The judgement as JSON
 
 Examples:
-  shio judge --site Acme
+  shio judge --site Acme --since --record
   shio judge --site Acme --against https://acme.example.com --fidelity

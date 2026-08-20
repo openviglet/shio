@@ -1260,6 +1260,7 @@
 - **SH860** — judge answers accepted against a declared bar in acceptance.properties, prints what the bar admitted, and holds a kind the bar does not name — with the build failing on an undeclared one.
 - **SH866** — Two pages of different sizes are scored over the region they share and the run says which side is short by how much, where a size mismatch used to answer a fabricated 100.00%.
 - **SH865** — The mode is read off diff rather than defaulted, and a round is ACCEPTED only when every instrument the mode's bar names actually ran — otherwise INCONCLUSIVE, naming what would settle it.
+- **SH869** — judge --record keeps a round as a row and --since reports what moved, with a count that rose graded by the same bar as any finding and a count that fell reported and never held.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

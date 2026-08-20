@@ -36,10 +36,43 @@
  * did not run is unproven, and a verdict that treats the two the same is the defect this exists to
  * remove (SH589).</p>
  */
+import { dirname, join } from "node:path";
+
 import { INSTALL, browserAvailable } from "../browser.mjs";
 import { acceptanceBars } from "../acceptance.mjs";
 import { describeJudgement, judgeRuns, subjectOf } from "../judge.mjs";
+import {
+  ROUNDS_FILE, appendRound, compareRounds, describeRounds, lastRound, regressions, roundRow,
+} from "../judge-rounds.mjs";
 import { helpText } from "../help.mjs";
+
+/**
+ * The rounds this project has recorded, or null where there is no file (SH869).
+ *
+ * <p>An unreadable file is the same answer as an absent one and never a throw: a corrupted ledger
+ * must not stop the round being judged, since the judgement is the thing somebody needs and the
+ * comparison is the extra. `--record` then writes a fresh file over it, which is the repair.</p>
+ */
+async function readRounds(at, ctx) {
+  try {
+    return JSON.parse(await ctx.fs.readFile(at, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * When this round ran, to the day.
+ *
+ * <p>A date rather than a timestamp: the row is read by a person comparing two rounds, and the hour
+ * adds noise to a diff of the file without answering anything they asked. `ctx.now` is the seam a
+ * test pins, for the reason every clock in this CLI is injected — a fixture whose expected bytes
+ * contain today's date passes only today.</p>
+ */
+function stamp(ctx) {
+  const now = typeof ctx.now === "function" ? ctx.now() : new Date();
+  return now.toISOString().slice(0, 10);
+}
 
 export const HELP = helpText("judge");
 
@@ -109,12 +142,39 @@ export async function run(flags, positionals, ctx) {
   // disagreement would be a whole site judged by the wrong standard (SH245's rule).
   const mode = flags.mode === "fidelity" || flags.mode === "authorable" ? flags.mode
     : flags.fidelity === true ? "fidelity" : modeOf(diff);
-  const judgement = judgeRuns(runs, { bars: acceptanceBars(), mode });
+  const bars = acceptanceBars();
+
+  // SH869 — what moved since the last recorded round, judged with everything else. Read before the
+  // verdict because a risen count is a finding of its own kind: grading it separately would be a
+  // second bar, and the whole argument for `acceptance.properties` is that there is one.
+  const held = flags.since || flags.record
+    ? await readRounds(join(ctx.cwd, ROUNDS_FILE), ctx)
+    : null;
+  const previous = flags.since ? lastRound(held, mode) : null;
+  const moved = flags.since
+    ? compareRounds(previous, roundRow(judgeRuns(runs, { bars, mode }), { site }))
+    : null;
+  if (moved?.rose.length) {
+    runs.push({ name: "rounds", ran: true, exitCode: 1, covered: [], flagged: regressions(moved) });
+  }
+
+  const judgement = judgeRuns(runs, { bars, mode });
+
+  // SH869 — written after the verdict, so a row records what the round actually answered rather
+  // than what it was going to answer before the movement was graded.
+  const row = roundRow(judgement, { site, at: stamp(ctx) });
+  if (flags.record) {
+    const path = join(ctx.cwd, ROUNDS_FILE);
+    await ctx.fs.mkdir(dirname(path), { recursive: true });
+    await ctx.fs.writeFile(path, `${JSON.stringify(appendRound(held, row), null, 2)}\n`, "utf8");
+  }
 
   if (flags.json) {
-    ctx.stdout.write(`${JSON.stringify({ site, ...judgement }, null, 2)}\n`);
+    ctx.stdout.write(`${JSON.stringify({ site, ...judgement, ...(moved ? { moved } : {}) }, null, 2)}\n`);
   } else {
     ctx.stdout.write(describeJudgement(judgement, { site }));
+    if (moved) ctx.stdout.write(describeRounds(moved, { previous }));
+    if (flags.record) ctx.stdout.write(`  recorded: ${ROUNDS_FILE}\n`);
     if (flags.verbose) {
       for (const report of reports) {
         ctx.stdout.write(`\n--- ${report.name} ---\n${report.text}`);

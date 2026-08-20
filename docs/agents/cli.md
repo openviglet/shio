@@ -1611,6 +1611,27 @@ it. Four decisions worth keeping:
   inconclusive too, since `diff` is what would have stated it — the abstention and the guess are the
   same fact from two ends. The line names what would settle it (P6), and `--mode` is the way to state
   what a plan outside this directory cannot.
+- **A round nobody keeps (SH869).** Every instrument in this chain answers about **one** run, and the
+  only regression that reached a curator was invisible in all of them: dangling `var()` occurrences
+  went `231 → 958 → 231` with `verify` reporting **0 errors** on all three rounds and `judge` the
+  same findings at the same count. It was found because somebody had kept the previous number in a
+  scratch file. A gate saying *0 errors* on the round that quadrupled a defect is not wrong — it is
+  answering the only question it has. `judge` is where this belongs because it already gathers
+  everything a comparison needs, so **nothing new is measured**: `judge-rounds.mjs` is a file and a
+  subtraction. `--record` appends a row — mode, verdict, and the finding counts **per kind**, since a
+  total conceals exactly the shape this had (the same number of findings, four times as many
+  occurrences of one); `--since` reads the last row in the same mode and reports what moved. **A
+  count that rose is a finding of its own kind** (`round.regressed`, bar 0), so it is graded by the
+  same bar file rather than by a rule of its own — which is the whole argument for having one bar. A
+  count that **fell** is reported and never holds: a round that fixed something is not a round to
+  refuse, and treating an improvement as a change somebody has to justify is how a ratchet becomes a
+  thing people route around. Three edges the tests pin: a kind absent from the earlier row counts
+  **from zero**, which is the case a subtraction over shared keys would miss and the one most worth
+  catching; two rounds judged in **different modes** are not compared at all, because the bars differ
+  and the difference between their counts is a change of question — `--since` looks back past such a
+  row rather than refusing; and the file is bounded at twenty, oldest off the front. The measurement
+  that says it works is that **both rounds were `accepted`** and the delta is what makes the second a
+  finding.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

@@ -37,12 +37,35 @@ function kindsInSource(text) {
     // A template — `kind: \`verify.${finding.rule ?? "unknown"}\`` — contributes its literal prefix
     // as a family, since the rest is whatever the instrument reported.
     for (const match of line.matchAll(/[`]([a-z][\w-]*)\.\$\{/gi)) kinds.add(`${match[1]}.*`);
+    // SH869 — and `kind: REGRESSED`, which is a constant rather than a literal. Resolved against
+    // this file's own `const NAME = "…"`, because the alternative is inlining the string at the use
+    // site to satisfy a reader — a scan that dictates how the code is written rather than reading
+    // what it says, which is the failure one construct along from SH862's.
+    const named = /\bkind:\s*([A-Z][A-Z0-9_]*)\b/.exec(line);
+    if (named) {
+      const declared = new RegExp(`\\b${named[1]}\\s*=\\s*["']([^"']+)["']`).exec(text);
+      if (declared) kinds.add(declared[1]);
+    }
   }
   return [...kinds].sort();
 }
 
+/**
+ * Every file that mints a `kind`, read together (SH869).
+ *
+ * <p>One file when this was written and two once a round's own movement became a finding. Named as a
+ * list rather than a directory walk, because the question is *where a kind comes from* and a walk
+ * would answer *where the word appears* — which is the over-match SH862 spent a task removing one
+ * scan along. A third minter is a line here, in a diff somebody reads.</p>
+ */
+const MINTERS = ["../src/commands/judge.mjs", "../src/judge-rounds.mjs"];
+
+function kindsMinted() {
+  return [...new Set(MINTERS.flatMap((path) => kindsInSource(source(path))))].sort();
+}
+
 test("SH860: every finding kind `judge` can mint has a line in the bar", () => {
-  const kinds = kindsInSource(source("../src/commands/judge.mjs"));
+  const kinds = kindsMinted();
   const bars = acceptanceBars();
 
   assert.ok(kinds.length >= 5,
@@ -58,7 +81,7 @@ test("SH860: the bar declares nothing `judge` cannot produce", () => {
   // The other direction, and it is the one that rots quietly: a key for a kind nobody mints reads as
   // a criterion being enforced. `snapshot.pixels-differ` is minted as one kind and keyed per mode,
   // so a key is matched when its own name OR its mode-stripped name is a kind.
-  const kinds = new Set(kindsInSource(source("../src/commands/judge.mjs")));
+  const kinds = new Set(kindsMinted());
   const stale = [...acceptanceBars().keys()].filter((key) => {
     // SH865 — `mode.<name>.requires` is not a bar for a kind, it is which instruments a mode's bar
     // rests on. Its own coverage is the test below: every mode `judge` can be in has a line.
