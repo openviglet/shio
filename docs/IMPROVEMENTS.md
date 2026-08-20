@@ -835,6 +835,56 @@ name its kind (`button`, `badge`, `stat`, `heading`) beside the count. And `judg
 should read the rendered pair when playwright resolves, the way SH688 made `audit` run
 unasked, because that pair is where every one of these was visible in one look.
 
+### XL.10 The third mode, and it is the cheap one (SH868)
+
+`propose` already knows, for every candidate, which node became `heading`, which became
+`intro`, and which repeated unit became `features.2.title`. Today that mapping is spent
+one way: read the values out, write them into a new post, render that post through a
+Shio template. Everything hard about replication follows from the last step.
+
+Spend the same mapping the other way — stamp `sh-field` onto the nodes it names and
+**keep the markup** — and SH864's measurement says what you get: the source's own
+pixels, and `41 of 4 declared field(s) annotated`.
+
+What stops being a problem, because each is a consequence of re-rendering through
+another vocabulary: the palette bridge and its elected accent, a generated layout
+branching over types, a hero losing its second button because `SectionHero` declares
+one, an empty collection row drawing an empty card, a stats band with no type to hold
+it. None of them arise when the markup is the source's.
+
+The one thing to build is the write. A curator edits the annotated node; something puts
+the text back. The lazy answer is that **the annotation is the field and the markup is
+the storage** — `content` already holds 84 KB of it, and `sh-field` is already an
+address the Universal Editor speaks.
+
+The trade is real and it is fidelity's own: no typed model, no validation, no reuse
+across pages. Worth stating in the mode's name rather than discovered later.
+
+### XL.11 A round nobody keeps (SH869)
+
+Every instrument in this chain answers about **one** run. `verify` counts today's
+errors, `diff` today's losses, `snapshot` needs a baseline the caller supplies, and
+`judge` now reaches a verdict against a declared bar. None of them remembers yesterday.
+
+The only regression that reached a curator was invisible in every one of those:
+
+    dangling var() occurrences   231  →  958  →  231
+    verify                         0 errors on all three rounds
+    judge                          same findings, same count
+
+It was found because a reader had kept the previous round's number in a scratch file,
+and reported because a curator said the page looked worse. A gate that says *0 errors*
+on the round that quadrupled a defect is not wrong — it is answering a question about
+one run, which is the only question it has.
+
+`judge` is now the right place to fix it, because it already gathers everything: the
+mode, the bar, the finding kinds and counts, the instruments that ran and abstained.
+`--record` writes that as a row; `--since` reads the last one and reports what moved. A
+count that rose is a finding of its own kind, gradable by the same bar file.
+
+This is also the cheapest instrument left. Nothing new is measured — the numbers already
+exist and are thrown away at the end of every run.
+
 ## XLIV The review nobody can do, on the files most worth reviewing (SH863)
 
 `core.autocrlf` is `input` here, so git stores LF and converts nothing on checkout, and
