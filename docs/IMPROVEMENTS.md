@@ -725,34 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.13 A precondition with no door (SH871)
-
-`--annotate` works. Measured on `www.viglet.org`, once its precondition was met by hand:
-
-    pixel, one viewport   2.02%   (authorable was 6.76%)
-    shape                 16 of its 16 headings   (authorable: 18 of 16)
-    editable              14 field(s) on the home page
-    judge                 1 finding, as fidelity
-
-What it costs to get there is the task. The first run reported `92 field(s) annotated in
-place on 11 verbatim page(s)`, printed `requires: Page.<name>` **92 times for 40
-distinct names**, and then refused the whole content write — leaving 18 uploaded assets,
-**zero pages and a 404 home**. It ran only after those 40 were created through `pull`,
-an edit and `push`.
-
-Two things, and the second is the one that stops the mode being usable.
-
-The report repeats itself 2.3×. It is the one output whose entire job is to say what to
-create, and a reader has to `sort -u` it first.
-
-Nothing creates them. The error's `fix` says *add the field to the post-type first (PUT
-/api/v2/post-type/Page)*, forty times. `Theme.TOKENS` has the same shape of precondition
-and answers it with `POST /render/post-types/reconcile`; this has no equivalent.
-`--annotate` already computes the exact list — it can declare them, or name one call
-that does.
-
-Failing on a precondition the run itself can satisfy is the shape SH763 was.
-
 ### XL.14 A field named after a hash, on a type every page shares (SH872)
 
 SH868 proposed that *the annotation is the field and the markup is the storage*. What

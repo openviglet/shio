@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -199,9 +199,15 @@ public class ShAgentDesiredStateService {
                 .map(ShAgentDesiredState.Post::type)
                 .anyMatch(type -> type != null && ShRenderPostTypes.NAMES.contains(type));
         List<String> vocabulary = desired.postTypes() == null ? List.of() : desired.postTypes();
-        if (!vocabulary.isEmpty() || writesTemplates) {
+        // SH871 — the fields the document's own posts need declared, on the same op and for the
+        // same reason: the model before anything written against it. A document that declares them
+        // and writes them is one intention, and splitting it into two calls is what left a
+        // conversion with 18 uploaded assets and no page.
+        Map<String, List<String>> declared = desired.postTypeFields() == null
+                ? Map.of() : desired.postTypeFields();
+        if (!vocabulary.isEmpty() || writesTemplates || !declared.isEmpty()) {
             ops.add(op(ShAgentBatchService.RENDER_PROVISION, null, null, null,
-                    postTypeData(vocabulary)));
+                    postTypeData(vocabulary, declared)));
         }
         // SH439 — `createSite` first, before the folder a post needs. It is the whole flag: the op
         // is `site.upsert`, so an apply creates the site and a *plan* resolves against it too,
@@ -495,7 +501,8 @@ public class ShAgentDesiredStateService {
      * same bytes (P5). Blanks are dropped for {@link #bindingData}'s reason — a value the op would
      * silently skip is one the caller learns about from a later failure.</p>
      */
-    private static tools.jackson.databind.JsonNode postTypeData(List<String> postTypes) {
+    private static tools.jackson.databind.JsonNode postTypeData(List<String> postTypes,
+                                                                Map<String, List<String>> fields) {
         tools.jackson.databind.node.ObjectNode data = tools.jackson.databind.node.JsonNodeFactory
                 .instance.objectNode();
         tools.jackson.databind.node.ArrayNode types = data.putArray("types");
@@ -505,6 +512,25 @@ public class ShAgentDesiredStateService {
                 .distinct()
                 .sorted()
                 .forEach(types::add);
+        // SH871 — same treatment as the list above, and the key is absent when there is nothing to
+        // declare: an empty object in an op row is a diff every run carries for no reader.
+        if (fields.isEmpty()) {
+            return data;
+        }
+        tools.jackson.databind.node.ObjectNode declared = data.putObject("fields");
+        fields.keySet().stream().sorted().forEach(type -> {
+            List<String> names = fields.get(type);
+            if (names == null) {
+                return;
+            }
+            tools.jackson.databind.node.ArrayNode array = declared.putArray(type);
+            names.stream()
+                    .filter(name -> name != null && !name.isBlank())
+                    .map(String::trim)
+                    .distinct()
+                    .sorted()
+                    .forEach(array::add);
+        });
         return data;
     }
 

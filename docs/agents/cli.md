@@ -1682,6 +1682,27 @@ it. Four decisions worth keeping:
   what it always was. **Wholly verbatim pages only**, stated rather than discovered: a mixed page
   splits its kept markup into `SectionMarkup` runs (SH763) and the fields must live on the post
   holding the bytes they annotate, so an offset would first have to be mapped to a run.
+- **A precondition with no door, and the run that can satisfy it (SH871).** `--annotate` works —
+  2.02% pixel difference on `www.viglet.org`, 16 of 16 headings, 14 editable fields on the home
+  page — *once its precondition is met by hand*. The first run reported `92 field(s) annotated in
+  place on 11 verbatim page(s)`, printed `requires: Page.<name>` **92 times for 40 distinct names**,
+  and then refused the whole content write, leaving 18 uploaded assets, **zero pages and a 404
+  home**. It ran only after those 40 were created through `pull`, an edit and `push`. Two defects,
+  and the second is the one that stopped the mode being usable. **The list repeats itself 2.3×**
+  because a name carries the block hash it came from and *a block signature recurring across pages
+  is what made it a candidate* — so the list is now built once per name, while the count beside each
+  page stays per page; both numbers are true and the report says which is which. **And nothing
+  created them.** The `fix` named `POST /api/v2/render/post-types/reconcile`, which repairs the
+  *render* types against a model shipped in this repository and could never have added a name
+  computed from somebody's website — the instruction was wrong for exactly the case that produced
+  the finding (P6). The run already computes the exact list, so it declares it: the document carries
+  `postTypeFields: {Page: [...]}`, which compiles to `render.provision`'s new `data.fields` and
+  appends each as a plain optional `Text` through SH152's additive merge. **Names, never
+  definitions**, one level in from `data.types`' rule: a payload that could carry a widget or
+  `required` would be a second way to change the content model. They therefore leave `requires`
+  entirely — that mechanism means *what the target must already declare*, and forty lines of it
+  would now be forty instructions to do what the next op does. Failing on a precondition the run
+  itself can satisfy is the shape SH763 was.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

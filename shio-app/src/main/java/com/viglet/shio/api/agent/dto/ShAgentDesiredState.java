@@ -91,6 +91,16 @@ import tools.jackson.databind.JsonNode;
  *                failed on a bare instance with {@code allowed: [File, PageLayout, Redirect,
  *                Region, SiteScripts, Theme]}, and passed everywhere it was tried because a
  *                development instance had accumulated the types from an earlier blueprint
+ * @param postTypeFields post-type name → field names this document needs the type to declare,
+ *                added to the {@code render.provision} op above as {@code data.fields} (SH871).
+ *                <b>Names, never definitions</b>, for {@code postTypes}' reason one level in: each
+ *                is appended as a plain optional {@code Text} and nothing existing is changed, so
+ *                a document cannot use this to redefine a field somebody owns. What this closes:
+ *                {@code convert --annotate} stamps a verbatim page's own markup with the fields
+ *                its blocks address, computed from the capture — so their names cannot be shipped
+ *                in any catalogue, and the run that computes them had no way to declare them. It
+ *                named forty, the batch refused the write on the first one, and the conversion
+ *                died having uploaded 18 assets and written no page
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -98,7 +108,17 @@ import tools.jackson.databind.JsonNode;
 public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                   List<Move> moves, boolean prune, String confirm,
                                   boolean createSite, Map<String, String> postTypeLayout,
-                                  boolean scratch, List<String> postTypes) {
+                                  boolean scratch, List<String> postTypes,
+                                  Map<String, List<String>> postTypeFields) {
+
+    /** The ten-field form: every caller before SH871 wrote only fields somebody had declared. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
+                               List<Move> moves, boolean prune, String confirm,
+                               boolean createSite, Map<String, String> postTypeLayout,
+                               boolean scratch, List<String> postTypes) {
+        this(site, folders, posts, moves, prune, confirm, createSite, postTypeLayout, scratch,
+                postTypes, null);
+    }
 
     /** The nine-field form: every caller before SH607 wrote against a model somebody else made. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
@@ -106,7 +126,7 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
                                boolean createSite, Map<String, String> postTypeLayout,
                                boolean scratch) {
         this(site, folders, posts, moves, prune, confirm, createSite, postTypeLayout, scratch,
-                null);
+                null, null);
     }
 
     /** The eight-field form: every caller before SH591 made a site declarable as disposable. */

@@ -189,7 +189,8 @@ public final class ShAgentOps {
                             + "fields an older instance's render types are missing. `data.types` "
                             + "installs "
                             + "SH95 vocabulary types by name (Page, SectionHero) - a bare "
-                            + "instance ships none. Takes no address."));
+                            + "instance ships none. `data.fields` {Type:[name]} appends missing "
+                            + "Text fields to a type that exists. Takes no address."));
 
     private ShAgentOps() {
         // utility

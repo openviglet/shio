@@ -1267,6 +1267,7 @@
 - **SH868** — convert --annotate stamps the mapping onto a wholly verbatim page's own markup and declares the fields it addresses, so the page keeps the source's bytes and gains editable ones.
 - 🗑 **SH875** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, so no authenticated capture was ever attempted.
 - 🗑 **SH874** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, so the measurement it proposed was never run.
+- **SH871** — --annotate declares its own fields: the document's postTypeFields compile to render.provision's data.fields, listed once per name, and no longer as requires lines nobody could satisfy.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

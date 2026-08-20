@@ -310,6 +310,16 @@ export function buildConversion({
       // the two that are not — `Page` and the SH95 sections — shipped only inside a blueprint, so
       // the whole chain failed on a bare instance and passed on every instance anybody tried it on.
       ...(vocabulary.length ? { postTypes: vocabulary } : {}),
+      // SH871 — and the fields THIS capture invented, which no catalogue can ship: a verbatim
+      // page's annotations are named from the block hashes the source produced, so the run that
+      // computes them is the only thing that could ever declare them. Without this the document
+      // named forty preconditions, the batch refused the first write, and the conversion died
+      // having uploaded 18 assets and written no page — a precondition the run itself can satisfy,
+      // which is the shape SH763 was. Absent when nothing was annotated, so a fidelity or an
+      // authorable conversion is the same bytes it was (P5).
+      ...(annotationFields.length
+        ? { postTypeFields: { [PAGE_TYPE]: annotationFields.map((row) => row.field) } }
+        : {}),
       // SH449 — the edge that turns a layout into a rendered page. Written only when there is a
       // layout to bind, so a document that does not need it is the same bytes it was before (P5).
       ...(pages.length ? { postTypeLayout: { [PAGE_TYPE]: generatedLayoutTitle(site) } } : {}),
@@ -1321,6 +1331,9 @@ function composePages(proposal, sectionUrls, markup = new Map(), annotate = fals
   // SH868 — the pages whose kept markup was annotated in place, and how many fields each gained.
   const annotations = [];
   const annotationFields = [];
+  // SH871 — the names already claimed, across every page. See the push below for why the list is
+  // by name and the count beside it is by page.
+  const declaredNames = new Set();
   for (const page of proposal?.pages ?? []) {
     const seen = new Set();
     const cut = [];
@@ -1362,13 +1375,26 @@ function composePages(proposal, sectionUrls, markup = new Map(), annotate = fals
     if (stamped.length) {
       annotations.push({ path: page.path, fields: stamped.length });
       for (const field of stamped) {
+        // SH871 — once per NAME, not once per occurrence. A field name carries the block hash it
+        // came from, and one block signature recurs across pages by construction — that is what
+        // makes it a candidate — so eleven annotated pages turned 40 distinct names into 92 rows
+        // and the report that exists to say what to create printed each of them 2.3 times. The
+        // list is also what `postTypeFields` sends, and a repeated name there is bytes the op
+        // sorts and de-duplicates anyway.
+        if (declaredNames.has(field)) continue;
+        declaredNames.add(field);
         annotationFields.push({
           postType: PAGE_TYPE,
           field,
-          why: "an annotated block on this page addresses it, and a real run refuses a write to a "
-            + "field the post-type does not declare",
-          fix: "POST /api/v2/render/post-types/reconcile adds it and changes nothing else. Until "
-            + "then the page renders exactly as it does now — the annotation is inert, not broken.",
+          why: "an annotated block addresses it, and a real run refuses a write to a field the "
+            + "post-type does not declare",
+          // SH871 — the door this run itself goes through. It used to name `reconcile`, which
+          // repairs the *render* types against a shipped model and could never have added a name
+          // computed from a capture: the instruction was wrong for exactly the case that produced
+          // the finding, and every one of the forty was a step a human had to take by hand.
+          fix: "this run declares it — `postTypeFields` on the document compiles to "
+            + "render.provision's `data.fields`, which appends it to " + PAGE_TYPE + " as a Text "
+            + "field and changes nothing else.",
         });
       }
     }
@@ -2185,8 +2211,11 @@ export function describeConversion({ document, sections, markup = [], pages = []
     lines.push(
       `  ${total} field(s) annotated in place on ${annotations.length} verbatim page(s) — the `
         + "markup is the source's, byte for byte, and an edit to one of these shows through "
-        + `(SH870). ${annotationFields.length} of them must be declared on ${PAGE_TYPE} first, or a `
-        + "write is refused; until then the annotation is inert rather than broken",
+        // SH871 — the two numbers are different and both are true: a name repeats across pages by
+        // construction, because a block signature recurring IS what made it a candidate. Saying
+        // only the total read as forty preconditions being ninety-two.
+        + `(SH870). ${annotationFields.length} distinct field(s), which this run declares on `
+        + `${PAGE_TYPE} before it writes — additively, as Text, changing nothing that is there`,
     );
     for (const row of annotations.slice(0, 3)) {
       lines.push(`    ${row.path} — ${row.fields} field(s)`);

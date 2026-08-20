@@ -129,10 +129,14 @@ export async function run(flags, positionals, ctx) {
   // checking that a new field reached the report had two places to look and no reason to think so.
   const reported = {
     document, sections, markup: markupPosts, pages, verbatim, mixed, extras,
-    // SH868 — the conversion's own requirements beside the proposal's. A page annotated in place
-    // needs its fields declared before an edit to one can be written, and `requires` is the
-    // mechanism SH436 already built for exactly that sentence.
-    requires: [...(proposal.requires ?? []), ...(annotationFields ?? [])],
+    // SH436 — what the target must already declare for this to be appliable, and nothing else.
+    //
+    // SH868 put the annotation fields here too, which was right while nothing created them.
+    // SH871 gave the run a door — `postTypeFields` on the document — so they are no longer a
+    // precondition anybody has to meet, and forty lines of "requires: Page.<hash>Heading" would
+    // now be forty instructions to do what the next line does. They stay in `annotationFields`,
+    // which is where a `--json` caller reads the list.
+    requires: proposal.requires ?? [],
     dropped, kept, declined, emptied, obstructions, annotations, annotationFields, home, unfollowed,
     palette,
   };

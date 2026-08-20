@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,8 @@ import com.viglet.shio.api.agent.verify.ShPostReferenceFields;
 import com.viglet.shio.api.error.ShDataIntegrityProblem;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.render.ShTemplateTitles;
+import com.viglet.shio.api.post.type.ShPostTypeAdminService;
+import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.post.type.ShVocabularyPostTypes;
 import com.viglet.shio.render.ShRenderPostTypes;
@@ -282,6 +285,8 @@ public class ShAgentBatchService {
     private final ShRenderPostTypes shRenderPostTypes;
     /** SH607 — the SH95 vocabulary, so `render.provision` can install what a conversion writes. */
     private final ShVocabularyPostTypes shVocabularyPostTypes;
+    /** SH871 — the additive merge `data.fields` rides, which is SH152's and not a second one. */
+    private final ShPostTypeAdminService shPostTypeAdminService;
     private final ShPostLinks shPostLinks;
     /** SH413 — the same service SH84's listener indexes through, so there is one mapping. */
     private final ShTuringIndexService shTuringIndexService;
@@ -303,6 +308,7 @@ public class ShAgentBatchService {
                                ShTemplateTitles shTemplateTitles,
                                ShRenderPostTypes shRenderPostTypes,
                                ShVocabularyPostTypes shVocabularyPostTypes,
+                               ShPostTypeAdminService shPostTypeAdminService,
                                ShPostLinks shPostLinks,
                                ShTuringIndexService shTuringIndexService) {
         this.siteAccess = siteAccess;
@@ -322,6 +328,7 @@ public class ShAgentBatchService {
         this.shTemplateTitles = shTemplateTitles;
         this.shRenderPostTypes = shRenderPostTypes;
         this.shVocabularyPostTypes = shVocabularyPostTypes;
+        this.shPostTypeAdminService = shPostTypeAdminService;
         this.shPostLinks = shPostLinks;
         this.shTuringIndexService = shTuringIndexService;
     }
@@ -475,8 +482,21 @@ public class ShAgentBatchService {
                         union.putIfAbsent(name, fields);
                     }
                 }
+                // SH871 — and the fields this run would DECLARE, which is the same argument one
+                // level in: a document that declares `Page.b1a2c3dHeading` and then writes it must
+                // plan, or `convert --annotate --dry-run` refuses on every field the same document
+                // creates. Merged into whatever the catalogue said rather than replacing it — a
+                // declaration widens a type, which is all `mergeMissingFields` will do to it.
+                for (Map.Entry<String, List<String>> entry : declaredFields(op.data()).entrySet()) {
+                    Set<String> merged = new LinkedHashSet<>(
+                            union.getOrDefault(entry.getKey(), Set.of()));
+                    merged.addAll(entry.getValue());
+                    union.put(entry.getKey(), merged);
+                }
             }
-            return union.size() == postTypes.size() ? this : new Declared(sites, union);
+            // By content and not by size: the loop above may widen a type already in the map, and a
+            // size comparison would drop exactly the fields a declaration adds.
+            return union.equals(postTypes) ? this : new Declared(sites, union);
         }
 
         private boolean declaresSite(String nameOrId) {
@@ -865,13 +885,22 @@ public class ShAgentBatchService {
         // instance able to render" — asked of a new instance and of an old one.
         boolean alsoReconcile = flag(op.data(), "reconcile");
         List<String> repairs = alsoReconcile ? shRenderPostTypes.reconcile(true) : List.of();
-        if (missing.isEmpty() && repairs.isEmpty() && vocabularyMissing.isEmpty()) {
+        // SH871 — `data.fields` declares field NAMES on a type this instance already has (or that
+        // this same op is about to create), as plain `Text`, adding only what is missing. It exists
+        // because `convert --annotate` computes the exact list of fields a verbatim page's
+        // annotations address and had no door to declare them: the run named forty of them, the
+        // batch refused the write, and 18 assets had already been uploaded. Failing on a
+        // precondition the run itself can satisfy is the shape SH763 was.
+        Map<String, List<String>> declare = declaredFields(op.data());
+        List<String> declarations = plannedDeclarations(declare, vocabularyMissing);
+        if (missing.isEmpty() && repairs.isEmpty() && vocabularyMissing.isEmpty()
+                && declarations.isEmpty()) {
             return new Change(op.op(), address, Change.NOOP,
                     nothingToDo(alsoReconcile, vocabulary), null);
         }
         if (session.dryRun) {
             return new Change(op.op(), address, Change.CREATE,
-                    planned(missing, repairs, vocabularyMissing), null);
+                    planned(missing, repairs, vocabularyMissing, declarations), null);
         }
         if (!missing.isEmpty()) {
             shRenderPostTypes.ensure();
@@ -886,8 +915,168 @@ public class ShAgentBatchService {
             // just created a type that then needs nothing.
             repairs = shRenderPostTypes.reconcile(false);
         }
+        // SH871 — last, because a type this op just provisioned is the one a declaration is most
+        // likely to be about, and the merge reads the live type rather than the catalogue.
+        List<String> added = declareFields(declare);
         return new Change(op.op(), address, Change.CREATE,
-                applied(missing, repairs, vocabularyCreated), null);
+                applied(missing, repairs, vocabularyCreated, added), null);
+    }
+
+    /**
+     * The field names {@code data.fields} asks for, per post-type, validated (SH871).
+     *
+     * <p><b>Names, never definitions</b> — the line SH607 drew for {@code data.types}, one level in.
+     * A declaration here says <em>that</em> a field exists, not what it is: every one is added as a
+     * plain {@code Text}, optional, appended after the highest existing ordinal. A payload that
+     * could carry a widget, {@code required} or {@code widgetSettings} would be a second way to
+     * change the content model — the thing this op is explicitly not.</p>
+     */
+    private static Map<String, List<String>> declaredFields(JsonNode data) {
+        if (data == null || !data.isObject()) {
+            return Map.of();
+        }
+        JsonNode node = data.get("fields");
+        if (node == null || !node.isObject()) {
+            return Map.of();
+        }
+        Map<String, List<String>> byType = new LinkedHashMap<>();
+        for (String key : node.propertyNames()) {
+            JsonNode value = node.get(key);
+            if (key == null || key.isBlank() || value == null || !value.isArray()) {
+                continue;
+            }
+            List<String> names = new ArrayList<>();
+            for (JsonNode each : value) {
+                if (each == null || !each.isString() || each.stringValue().isBlank()) {
+                    continue;
+                }
+                String name = each.stringValue().trim();
+                if (!FIELD_NAME.matcher(name).matches()) {
+                    throw new UndeclarableFieldException(key.trim(), name);
+                }
+                if (!names.contains(name)) {
+                    names.add(name);
+                }
+            }
+            if (!names.isEmpty()) {
+                byType.put(key.trim(), List.copyOf(names));
+            }
+        }
+        return Collections.unmodifiableMap(byType);
+    }
+
+    /**
+     * A field name this can append to a post-type without inventing an escape (SH871).
+     *
+     * <p>It becomes a JSON key, a form control's name and a Handlebars path, so the accepted shape
+     * is the intersection of all three rather than whatever the column would hold. {@code convert}
+     * builds these from a block hash and a role ({@code b1a2c3dHeading}) and cannot produce
+     * anything else; the check is here for every other caller.</p>
+     */
+    private static final Pattern FIELD_NAME = Pattern.compile("[A-Za-z]\\w{0,62}");
+
+    /**
+     * What {@code data.fields} would add, without adding it — the dry run's answer (SH871).
+     *
+     * <p>A type this same op would create resolves against the catalogue rather than against the
+     * database, for {@code Declared.withPostTypesFrom}'s reason: planning a conversion into a bare
+     * instance is the case the whole thing is for, and a plan that refused on a type its own first
+     * op creates is the defect SH153 closed one family along.</p>
+     */
+    private List<String> plannedDeclarations(Map<String, List<String>> declare,
+                                             List<String> beingCreated) {
+        List<String> planned = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : declare.entrySet()) {
+            String type = entry.getKey();
+            if (beingCreated.contains(type)) {
+                Set<String> shipped = shVocabularyPostTypes.fieldNames(type);
+                entry.getValue().stream()
+                        .filter(name -> !shipped.contains(name))
+                        .map(name -> type + "." + name)
+                        .forEach(planned::add);
+                continue;
+            }
+            requireDeclarable(type);
+            shPostTypeAdminService.mergeableFieldNames(textDef(type, entry.getValue()))
+                    .forEach(name -> planned.add(type + "." + name));
+        }
+        return List.copyOf(planned);
+    }
+
+    /** Adds the missing ones and returns what it added, as {@code Type.field} (SH871). */
+    private List<String> declareFields(Map<String, List<String>> declare) {
+        List<String> added = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : declare.entrySet()) {
+            requireDeclarable(entry.getKey());
+            shPostTypeAdminService.mergeMissingFields(textDef(entry.getKey(), entry.getValue()))
+                    .forEach(name -> added.add(entry.getKey() + "." + name));
+        }
+        return List.copyOf(added);
+    }
+
+    /** The def {@code mergeMissingFields} reads: a name and plain {@code Text} fields (SH871). */
+    private static ShPostTypeDef textDef(String type, List<String> fields) {
+        List<ShPostTypeAttrDef> attrs = fields.stream()
+                .map(name -> new ShPostTypeAttrDef(name, name, null, TEXT_WIDGET,
+                        false, false, false, 0, null, null))
+                .toList();
+        return new ShPostTypeDef(type, type, null, null, null, false, null, attrs);
+    }
+
+    /** The widget every declared field gets — see {@link #declaredFields}. */
+    private static final String TEXT_WIDGET = "Text";
+
+    /** Refuses a type nothing can append to, before any of the list is applied. */
+    private void requireDeclarable(String type) {
+        ShPostTypeDef existing = shPostTypeAdminService.get(type).orElse(null);
+        if (existing == null || existing.system()) {
+            throw new UndeclarableTypeException(type, existing != null,
+                    shPostTypeAdminService.list().stream()
+                            .filter(def -> !def.system())
+                            .map(ShPostTypeDef::name)
+                            .sorted()
+                            .toList());
+        }
+    }
+
+    /** A 400: the name would not survive being a field (P6). */
+    public static class UndeclarableFieldException extends ShTeachingException {
+
+        public UndeclarableFieldException(String type, String name) {
+            super(ShProblem.badRequest("undeclarable-field",
+                            "'" + name + "' is not a usable field name")
+                    .withDetail("A field name becomes a JSON key, a form control's name and a "
+                            + "Handlebars path, so it must start with a letter and hold only "
+                            + "letters, digits and underscores (63 max).")
+                    .withFix("Send a name matching [A-Za-z][A-Za-z0-9_]* for " + type + ".")
+                    .withExample("{\"op\":\"render.provision\",\"data\":{\"fields\":{\""
+                            + type + "\":[\"heroHeading\"]}}}"));
+        }
+    }
+
+    /** A 400: nothing here may append a field to that type (P6). */
+    public static class UndeclarableTypeException extends ShTeachingException {
+
+        public UndeclarableTypeException(String type, boolean system, List<String> allowed) {
+            super(ShProblem.badRequest("undeclarable-type",
+                            system
+                                    ? "'" + type + "' is a system post-type"
+                                    : "No post-type named '" + type + "'")
+                    .withDetail(system
+                            ? "A system type is this code's model — adding a field to it would put "
+                                    + "a name in it that nothing here writes or reads."
+                            : "`data.fields` appends to a type that already exists. Create it "
+                                    + "first — with `data.types` when it is an SH95 vocabulary "
+                                    + "type, or PUT /api/v2/post-type/" + type + " when it is "
+                                    + "yours.")
+                    .withAllowed(allowed)
+                    .withDidYouMeanFrom(type)
+                    .withFix(system
+                            ? "Declare the field on a type you own."
+                            : "Add \"" + type + "\" to `data.types`, or create the type first.")
+                    .withExample("{\"op\":\"render.provision\",\"data\":{\"types\":[\"Page\"],"
+                            + "\"fields\":{\"Page\":[\"heroHeading\"]}}}"));
+        }
     }
 
     /**
@@ -909,7 +1098,7 @@ public class ShAgentBatchService {
     }
 
     private static String planned(List<String> missing, List<String> repairs,
-                                  List<String> vocabulary) {
+                                  List<String> vocabulary, List<String> declarations) {
         List<String> parts = new ArrayList<>();
         if (!missing.isEmpty()) {
             parts.add("would create " + String.join(", ", missing));
@@ -920,11 +1109,17 @@ public class ShAgentBatchService {
         if (!repairs.isEmpty()) {
             parts.add("would add " + String.join("; ", repairs));
         }
+        // SH871 — named and not counted, for the reason the repairs above are: a plan an agent
+        // diffs between runs has to say which field appeared, and "40 field(s)" is the report the
+        // task was filed about.
+        if (!declarations.isEmpty()) {
+            parts.add("would declare " + String.join(", ", declarations));
+        }
         return String.join("; ", parts);
     }
 
     private static String applied(List<String> missing, List<String> repairs,
-                                  List<String> vocabulary) {
+                                  List<String> vocabulary, List<String> declarations) {
         List<String> parts = new ArrayList<>();
         if (!missing.isEmpty()) {
             parts.add("created " + String.join(", ", missing));
@@ -934,6 +1129,9 @@ public class ShAgentBatchService {
         }
         if (!repairs.isEmpty()) {
             parts.add("added " + String.join("; ", repairs));
+        }
+        if (!declarations.isEmpty()) {
+            parts.add("declared " + String.join(", ", declarations));
         }
         return parts.isEmpty() ? "nothing to do" : String.join("; ", parts);
     }

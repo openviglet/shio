@@ -759,7 +759,10 @@ renderer over one body of content at a second address. See the section on it bel
   unattended, while reconcile **changes a type the instance already has**. One op rather than a
   tenth name, because a vocabulary is paid for by every caller that reads it (P3). **SH607 added
   `data.types` on the same argument** — the SH95 vocabulary by name, so a conversion can install
-  the `Page` and `Section*` a bare instance does not ship. Detail in
+  the `Page` and `Section*` a bare instance does not ship. **SH871 added `data.fields`** on the
+  same argument again — `{Type: [name]}`, appending each missing name to a type that exists as a
+  plain optional `Text` through SH152's additive merge, which is how `convert --annotate` declares
+  the fields it computed from somebody's markup and no catalogue could ever ship. Detail in
   [post-types.md](post-types.md).
 - **Two URLs per frame, and the pair is the point (SH337)** — the model carries
   `post.url` / `site.url` (the fields as content spells them) *and* `post.canonical` /

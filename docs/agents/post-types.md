@@ -107,6 +107,21 @@ held the four keys `buildConversion` writes: the SH71 starter has `title`/`conte
 `Ace Editor - HTML` — it holds a whole captured page body, so it is code a curator inspects and
 SH191 projects it to an `.html` sidecar rather than inlining a megabyte into the content file.
 
+**And a name no catalogue can ship is `data.fields` on the same op (SH871).** `{Type: [name]}`,
+appended to a type that **already exists** as a plain optional `Text` through
+`mergeMissingFields` — SH152's additive merge, so nothing existing is reordered, rewidgeted or
+removed, and a system type is refused outright. It exists because `shio convert --annotate` names
+its fields from the block hashes a capture produced (`b1a2c3dHeading`), so the run that computes
+them is the only thing that could ever declare them: without it the run named forty preconditions,
+`post.upsert` refused the first write, and the conversion died having uploaded 18 assets and
+written no page. **Names, never definitions** — `postTypes`' rule one level in, because a payload
+carrying a widget or `required` would be a second way to change the content model. `data.fields`
+rather than a sixteenth op name, for `data.reconcile`'s and `data.reindex`'s reason: the op
+vocabulary is paid by every caller that reads it (P3). `Declared.withPostTypesFrom` unions these
+names too, so a **dry run** of the document that declares them resolves — and the names are
+validated *there*, before the first op, which is what makes a bad one refuse the batch whole
+instead of after the assets are up.
+
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
 SH71 bootstrap template. A token with an SH2 site allow-list is **refused** — inventing a site

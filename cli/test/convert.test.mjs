@@ -340,10 +340,46 @@ test("SH868: an annotated page declares what the instance owes before an edit ca
 
   assert.equal(built.annotationFields.length, 4);
   assert.deepEqual([...new Set(built.annotationFields.map((row) => row.postType))], ["Page"]);
-  assert.match(built.annotationFields[0].fix, /post-types\/reconcile/,
+  // SH871 — it used to name `reconcile`, which repairs the *render* types against a shipped model
+  // and could never have added a name computed from a capture. The instruction was wrong for
+  // exactly the case that produced the finding, and the door it names now is the run's own.
+  assert.match(built.annotationFields[0].fix, /postTypeFields/,
     "P6 — the refusal names what would settle it");
   assert.match(describeConversion({ ...built, requires: [] }, {}),
     /4 field\(s\) annotated in place on 1 verbatim page\(s\)/);
+});
+
+test("SH871: the document declares the fields it invented, once each, on the run that invents them", () => {
+  // The measured run named 40 distinct fields as 92 `requires` lines and then refused the whole
+  // content write, leaving 18 uploaded assets, zero pages and a 404 home. Two halves: a name
+  // repeats across pages by construction — a block signature recurring is WHAT made it a
+  // candidate — and nothing on this instance could create a name computed from a capture.
+  const built = verbatimConversion();
+
+  assert.deepEqual(built.document.postTypeFields,
+    { Page: built.annotationFields.map((row) => row.field) },
+    "the exact list the run computed, addressed to the type its posts are of");
+  assert.equal(new Set(built.document.postTypeFields.Page).size,
+    built.document.postTypeFields.Page.length, "once each");
+  assert.match(describeConversion({ ...built, requires: [] }, {}),
+    /distinct field\(s\), which this run declares on Page before it writes/);
+});
+
+test("SH871: a conversion that annotates nothing declares nothing — the same bytes it was", () => {
+  // P5: `postTypeFields` is absent rather than empty on fidelity and on authorable, so the two
+  // modes SH868 did not touch produce byte-identical documents to the ones they produced before.
+  const built = buildConversion({
+    proposal: proposeBuild({
+      inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
+      markup: new Map([["/", VERBATIM_PAGE]]),
+      html: { tokenize, parseAttrs, stripNonMarkup },
+    }),
+    plan: { accepted: [] },
+    site: "Acme",
+    markup: new Map([["/", VERBATIM_PAGE]]),
+  });
+
+  assert.equal("postTypeFields" in built.document, false);
 });
 
 test("SH607: the declaration is sorted and de-duplicated, so one capture converts to one document", () => {
