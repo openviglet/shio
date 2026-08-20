@@ -15,6 +15,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { acceptanceBars } from "../src/acceptance.mjs";
 import { describeJudgement, judgeRuns, subjectOf } from "../src/judge.mjs";
 import * as judge from "../src/commands/judge.mjs";
 
@@ -269,9 +270,98 @@ test("SH589: the command composes the real run functions and does not fork them"
 
   const result = await judge.run({ site: "Acme", checks: "content" }, [], ctx);
 
-  assert.equal(result.verdict, "ok");
+  // SH860 — `accepted` where this said `ok`. The command passes the declared bar now, and the two
+  // words are not synonyms: `ok` is "no instrument said anything", which is the only green available
+  // to a run with no bar, and `accepted` is "every finding is at or below the bar" — a claim about a
+  // criterion, and the one a block can close on. `judgeRuns` with no bar still answers `ok`.
+  assert.equal(result.verdict, "accepted");
+  assert.equal(result.mode, "authorable");
   assert.deepEqual(result.unproven, ["diff", "audit", "snapshot"]);
   assert.ok(seen.some((at) => at.includes("/agent/verify")), `verify was not called: ${seen}`);
-  assert.match(stdout.text, /shio judge: Acme — OK from 1 instrument\(s\), 3 unproven/);
+  assert.match(stdout.text, /shio judge: Acme — ACCEPTED as authorable from 1 instrument\(s\), 3 unproven/);
+  assert.match(stdout.text, /judged against acceptance\.properties as authorable/);
   assert.match(stdout.text, /diff\s+NOT RUN/);
+  assert.match(stdout.text, /accepted is a claim about the 1 instrument\(s\) that ran/,
+    "and it needs that sentence at least as much as `ok` did: it is the word a block closes on, so a "
+      + "reader has to be told which questions were not asked before they close one on it");
+});
+
+test("SH860: the round Block Q kept reopening ends accepted, and holds under fidelity", () => {
+  // Every criterion met and a pixel difference outstanding, which is the state six declared closes
+  // were talked out of. Design equivalence with the source is not an acceptance criterion for
+  // authorable mode; it is fidelity's whole criterion, at 0.00%.
+  const runs = [
+    { name: "verify", ran: true, exitCode: 0, covered: ["/"], flagged: [] },
+    { name: "diff", ran: true, exitCode: 0, covered: ["/"], flagged: [] },
+    {
+      name: "snapshot",
+      ran: true,
+      exitCode: 1,
+      covered: ["/", "/about"],
+      flagged: [
+        { subject: "/", kind: "snapshot.pixels-differ", why: "12.4% different" },
+        { subject: "/about", kind: "snapshot.pixels-differ", why: "9.1% different" },
+      ],
+    },
+  ];
+  const bars = acceptanceBars();
+
+  const authorable = judgeRuns(runs, { bars, mode: "authorable" });
+  assert.equal(authorable.verdict, "accepted");
+  assert.equal(authorable.exitCode, 0);
+  assert.equal(authorable.held.length, 0);
+  assert.deepEqual(authorable.noted.map((row) => row.bar), ["noted", "noted"],
+    "reported, and that is what makes `accepted` an honest word — a finding the bar admitted is one "
+      + "somebody decided to admit, and a reader has to see what they bought");
+  assert.match(describeJudgement(authorable, { site: "VigR7" }),
+    /2 finding\(s\) the bar admits — a task for later, not a reason to hold/);
+
+  const fidelity = judgeRuns(runs, { bars, mode: "fidelity" });
+  assert.equal(fidelity.verdict, "finding");
+  assert.equal(fidelity.exitCode, 1);
+  assert.equal(fidelity.held.length, 2);
+});
+
+test("SH860: a kind the bar does not name holds the round and says which file to write it in", () => {
+  const judgement = judgeRuns([{
+    name: "audit",
+    ran: true,
+    exitCode: 1,
+    covered: ["/"],
+    flagged: [{ subject: "/", kind: "audit.something-new", why: "a shape nobody has ruled on" }],
+  }], { bars: acceptanceBars(), mode: "authorable" });
+
+  assert.equal(judgement.verdict, "finding");
+  assert.equal(judgement.held[0].undeclared, true,
+    "accepting by omission is how a criterion stops meaning anything, so the default is the other "
+      + "way and `acceptance-bar.test.mjs` is what makes it a build failure rather than a release one");
+  assert.match(describeJudgement(judgement), /no bar declares `audit\.something-new`; add one to/);
+});
+
+test("SH860: an instrument that failed without naming a subject is never quietly accepted", () => {
+  // The one signal that is not a per-subject row. A run that exited non-zero for a reason it could
+  // not attribute to a page has said something, and a bar keyed on kinds cannot admit it.
+  const judgement = judgeRuns([
+    { name: "verify", ran: true, exitCode: 2, covered: ["/"], flagged: [] },
+  ], { bars: acceptanceBars(), mode: "authorable" });
+
+  assert.equal(judgement.verdict, "finding");
+  assert.equal(judgement.exitCode, 1);
+});
+
+test("SH860: a caller that passes no bar gets the pre-SH860 verdict unchanged", () => {
+  const runs = [{
+    name: "snapshot",
+    ran: true,
+    exitCode: 1,
+    covered: ["/"],
+    flagged: [{ subject: "/", kind: "snapshot.pixels-differ", why: "12.4% different" }],
+  }];
+  const judgement = judgeRuns(runs);
+
+  assert.equal(judgement.verdict, "finding",
+    "any finding is red without a bar, which is the only honest answer available to a run that has "
+      + "not been told what the criterion is");
+  assert.equal("held" in judgement, false);
+  assert.equal("mode" in judgement, false);
 });

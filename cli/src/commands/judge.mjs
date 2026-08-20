@@ -37,6 +37,7 @@
  * remove (SH589).</p>
  */
 import { INSTALL, browserAvailable } from "../browser.mjs";
+import { acceptanceBars } from "../acceptance.mjs";
 import { describeJudgement, judgeRuns, subjectOf } from "../judge.mjs";
 import { helpText } from "../help.mjs";
 
@@ -99,7 +100,12 @@ export async function run(flags, positionals, ctx) {
     "not asked for — pass --against <origin>; choosing what to compare pixels with would be "
       + "inventing the baseline whose absence is the question"));
 
-  const judgement = judgeRuns(runs);
+  // SH860 — the bar, and which mode it is applied as. Authorable unless the caller says otherwise,
+  // because that is what `propose --accept` produces and what a Block Q round is about; `--fidelity`
+  // is how a caller asks for the 0.00% pixel criterion, which is the one that differs between them.
+  // Said in the report either way (`replication.md`'s second trap: say which mode ran).
+  const mode = flags.fidelity === true ? "fidelity" : "authorable";
+  const judgement = judgeRuns(runs, { bars: acceptanceBars(), mode });
 
   if (flags.json) {
     ctx.stdout.write(`${JSON.stringify({ site, ...judgement }, null, 2)}\n`);
@@ -153,6 +159,11 @@ function fromVerify(run) {
       .filter((finding) => finding.severity !== "warning")
       .map((finding) => ({
         subject: subjectOf(finding.address),
+        // SH860 — the kind the bar is keyed on. `verify.<rule>`, and `acceptance.properties` answers
+        // every one of them through `verify.*`: criterion 1 is about the count of errors and not
+        // about which rule produced one, and per-rule baselines are applied inside `verify` (SH410)
+        // before anything reaches here.
+        kind: `verify.${finding.rule ?? "unknown"}`,
         why: `${finding.rule}${finding.field ? ` (${finding.field})` : ""}`,
       }))
       .filter((row) => row.subject),
@@ -170,16 +181,20 @@ function fromDiff(run) {
     exitCode: comparison.exitCode ?? 0,
     covered: pages.map((page) => page.path),
     flagged: [
+      // SH860 — three kinds, not one, because the bar says different things about them and the
+      // criterion is written per row of its own table: loss the mode does not claim (3), a link that
+      // sends a reader to the source (SH586), and a route the replica does not answer (2).
       ...pages
         .filter((page) => page.lost > 0 || page.wentHome > 0)
         .map((page) => ({
           subject: page.path,
+          kind: page.lost > 0 ? "diff.facts-lost" : "diff.links-went-home",
           why: page.lost > 0
             ? `${page.lost} fact(s) lost`
             : `${page.wentHome} link(s) now point at the source`,
         })),
       ...(comparison.missing ?? []).map((path) => ({
-        subject: path, why: "the replica serves nothing here",
+        subject: path, kind: "diff.page-missing", why: "the replica serves nothing here",
       })),
     ],
   };
@@ -223,7 +238,15 @@ async function browserInstrument(name, asked, pages, site, flags, ctx, reports, 
     ran = true;
     covered.push(path);
     if ((one.result?.exitCode ?? 0) !== 0 || (one.result?.counts?.errors ?? 0) > 0) {
-      flagged.push({ subject: path, why: summarise(name, one.result) });
+      // SH860 — `audit.error` and `snapshot.pixels-differ`. The two are the criterion's opposite
+      // ends: an audit error is an increase over the recorded baseline (criteria 4, 5) and holds any
+      // round, while a pixel difference is fidelity's whole criterion and is not one of authorable's
+      // at all — which is the exclusion that lets a block close.
+      flagged.push({
+        subject: path,
+        kind: name === "audit" ? "audit.error" : "snapshot.pixels-differ",
+        why: summarise(name, one.result),
+      });
     }
   }
   if (!ran) return { name, ran: false, reason: reason ?? "it refused before it looked at a page" };

@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block Q — Replication (an existing site becomes an authorable Shio site)
-
-- 📋 **SH860** (deps: SH589 ✅) **judge reports findings and never says whether the round is accepted, so a block closes on an empty backlog** — Block Q shipped 131 tasks and was declared closed six times, because emptiness was the only available test for doneness. → §XL.5
-
 ## Block AN — Source the agent's cheapest tool declines to read
 
 - 📋 **SH859** (deps: —) **Six source files carry a raw NUL, so ripgrep calls them binary and prints no matching line** — Grep on theme.mjs answered `binary file matches` and no line; the separator is right and the spelling is not, and P4's cheapest tool is silent on the CLI's two largest modules. → §XLI

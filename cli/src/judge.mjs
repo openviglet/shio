@@ -31,7 +31,19 @@
  *
  * <p>Pure. The command owns running the four; everything here is the reconciliation, which is what
  * has to be asserted and what a browser must not be needed to test.</p>
+ *
+ * <h2>SH860 — and none of it was a verdict, because there was no bar</h2>
+ *
+ * <p>This exited 1 on any finding, so every round ended with work outstanding and none ended
+ * *accepted*. Block Q carries 131 shipped entries and has been declared closed and reopened **six**
+ * times: each close was a line count reaching zero and each reopen was the next round finding
+ * something, because emptiness was standing in for doneness. `acceptance.properties` is the bar and
+ * `docs/agents/replication.md` the criterion it encodes; what is here is the join — a finding at or
+ * below its bar is **noted** and printed, one above it **holds**, and a kind the file does not
+ * mention holds too, since accepting by omission is how a criterion stops meaning anything.</p>
  */
+
+import { ACCEPTANCE_FILE, classify } from "./acceptance.mjs";
 
 /**
  * What each instrument answers, and over what.
@@ -60,8 +72,16 @@ export const INSTRUMENTS = {
   },
 };
 
-/** A verdict a subject can carry, worst first. The order *is* the precedence — see `judgeRuns`. */
-export const VERDICTS = ["finding", "unproven", "ok"];
+/**
+ * A verdict a subject can carry, worst first. The order *is* the precedence — see `judgeRuns`.
+ *
+ * <p>SH860 — `accepted` beside `ok`, and they are not synonyms. `ok` was "no instrument said
+ * anything", which is the only green a run with no bar can offer; `accepted` is "every finding is at
+ * or below the declared bar", which is a claim about a criterion and the one a block can close on. A
+ * round with nothing to say is `accepted` too — the bar is met vacuously — so `ok` survives only as
+ * the answer a caller gets when it passes no bar at all.</p>
+ */
+export const VERDICTS = ["finding", "unproven", "accepted", "ok"];
 
 /**
  * One verdict over N instrument runs, and the disagreements behind it.
@@ -74,7 +94,7 @@ export const VERDICTS = ["finding", "unproven", "ok"];
  * @returns {{verdict: string, exitCode: number, instruments: object[], disagreements: object[],
  *   agreed: object[], unproven: string[]}}
  */
-export function judgeRuns(runs) {
+export function judgeRuns(runs, { bars = null, mode = "authorable" } = {}) {
   const instruments = runs.map((run) => ({
     name: run.name,
     ran: Boolean(run.ran),
@@ -87,9 +107,20 @@ export function judgeRuns(runs) {
   const ran = instruments.filter((entry) => entry.ran);
   const unproven = instruments.filter((entry) => !entry.ran).map((entry) => entry.name);
 
-  // Never an average. One red is the verdict, however many greens are standing next to it.
-  const red = ran.some((entry) => entry.exitCode !== 0 || entry.flagged.length > 0);
-  const verdict = red ? "finding" : ran.length ? "ok" : "unproven";
+  // SH860 — every flagged row from every instrument, judged against the declared bar at once. Per
+  // kind rather than per instrument, because the bar is a statement about how many subjects may
+  // carry a finding and not about how many instruments noticed one.
+  const all = ran.flatMap((entry) => entry.flagged.map((row) => ({ ...row, instrument: entry.name })));
+  const { held, noted } = bars ? classify(all, bars, mode) : { held: all, noted: [] };
+
+  // Never an average. One red is the verdict, however many greens are standing next to it — and with
+  // a bar in hand, "red" is a finding the bar does not admit rather than any finding at all. An
+  // instrument's own non-zero exit still counts: it is the one signal that is not a per-subject row,
+  // so a run that failed for a reason it could not attribute to a page is never quietly accepted.
+  const failed = ran.some((entry) => entry.exitCode !== 0 && !entry.flagged.length);
+  const red = held.length > 0 || failed;
+  let verdict = "unproven";
+  if (ran.length) verdict = red ? "finding" : bars ? "accepted" : "ok";
 
   const subjects = new Set();
   for (const entry of ran) for (const row of entry.flagged) subjects.add(row.subject);
@@ -122,6 +153,10 @@ export function judgeRuns(runs) {
     disagreements,
     agreed,
     unproven,
+    // SH860 — which findings the bar admitted, and under which number. Returned as well as printed
+    // for SH576's reason: the corpus asserts it and `--json` is a caller too. Present only where a
+    // bar was passed, so a caller that judges without one gets the pre-SH860 shape unchanged.
+    ...(bars ? { mode, held, noted } : {}),
   };
 }
 
@@ -137,14 +172,44 @@ function bySubject(a, b) {
  * — goes underneath as the evidence for it.</p>
  */
 export function describeJudgement(judgement, { site } = {}) {
-  const { verdict, instruments, disagreements, agreed, unproven } = judgement;
+  const { verdict, instruments, disagreements, agreed, unproven, mode, held, noted } = judgement;
   const ran = instruments.filter((entry) => entry.ran);
   const lines = [
     `shio judge: ${site ?? "the replica"} — ${verdict.toUpperCase()}`
+      + `${mode ? ` as ${mode}` : ""}`
       + ` from ${ran.length} instrument(s)`
       + `${unproven.length ? `, ${unproven.length} unproven (${unproven.join(", ")})` : ""}`
       + `${disagreements.length ? `, ${disagreements.length} disagreement(s)` : ""}`,
   ];
+
+  // SH860 — the bar, said out loud, and the mode with it. `docs/agents/replication.md`'s second trap
+  // is *say which mode ran*: fidelity reaches 0.00% and looks finished, which is exactly why it is
+  // not evidence about the other two, and the bar this run applied differs between them.
+  if (mode) {
+    lines.push(
+      `  judged against ${ACCEPTANCE_FILE} as ${mode} — ${held.length} finding(s) hold this round, `
+        + `${noted.length} at or below the bar`,
+    );
+  }
+  if (held?.length) {
+    lines.push("  HOLDS — above the declared bar, or of a kind the bar does not mention:");
+    for (const row of held) {
+      lines.push(
+        `    ${row.subject}  ${row.kind}  ${row.instrument}: ${row.why}`
+          + `${row.undeclared
+            ? ` — no bar declares \`${row.kind}\`; add one to ${ACCEPTANCE_FILE} or fix this`
+            : ` — bar ${row.bar}`}`,
+      );
+    }
+  }
+  // Printed, always, and this is the half that makes `accepted` an honest word: a finding the bar
+  // admitted is one somebody decided to admit, and a reader has to be able to see what they bought.
+  if (noted?.length) {
+    lines.push(`  ${noted.length} finding(s) the bar admits — a task for later, not a reason to hold:`);
+    for (const row of noted) {
+      lines.push(`    ${row.subject}  ${row.kind}  ${row.instrument}: ${row.why} — bar ${row.bar}`);
+    }
+  }
 
   if (disagreements.length) {
     lines.push(
@@ -187,9 +252,11 @@ export function describeJudgement(judgement, { site } = {}) {
     );
   }
 
-  if (verdict === "ok" && unproven.length) {
+  // SH860 — and `accepted` needs it at least as much as `ok` did: it is the word a block closes on,
+  // so a reader has to be told which questions were not asked before they close one on it.
+  if ((verdict === "ok" || verdict === "accepted") && unproven.length) {
     lines.push(
-      `  ok is a claim about the ${ran.length} instrument(s) that ran. `
+      `  ${verdict} is a claim about the ${ran.length} instrument(s) that ran. `
         + `${unproven.join(", ")} did not, and did not agree — nothing here says the question `
         + "they answer came back clean",
     );

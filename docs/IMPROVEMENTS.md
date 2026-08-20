@@ -725,32 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.5 A verdict needs a bar (SH860)
-
-`shio judge` already has the shape of an acceptance gate: it runs the instruments,
-answers once, and names where they disagreed. What it has no notion of is **a bar**. It
-exits 1 on any finding, so every round ends with work outstanding and none ends
-*accepted*.
-
-The cost is measurable. Block Q has **131 shipped entries** and has been declared closed
-and reopened **six times**. Each close was a line count reaching zero; each reopen was
-the next round finding something. Emptiness was standing in for doneness because nothing
-else was available.
-
-`docs/agents/replication.md` now carries the criterion — ten checkable lines, each
-already produced by an instrument that exists, plus the exclusion that makes the rest
-closable: *design equivalence with the source is not an acceptance criterion for
-authorable mode*. That file is outside roadkeep, deliberately: `IMPROVEMENTS.md` holds
-rationale for unshipped work, so SH692's definition of a correct page was deleted the
-moment SH692 shipped, which is why it never held.
-
-What is left is to make `judge` read it. Thresholds belong in a declared file on
-`token-budgets.properties`' pattern — a value, a comment saying what it protects, and a
-gate that fails on a breach — not a fifth debt ledger; SH594 already counts four.
-
-Then a round can end green, and a finding below the bar is a task for later rather than
-a reason to hold.
-
 ## XLI A separator written as the character it means, not as the escape for it (SH859)
 
 `Grep` for `accentFor` in `cli/src/theme.mjs` answered `binary file matches (found "\0"

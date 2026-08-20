@@ -1558,6 +1558,39 @@ it. Four decisions worth keeping:
   the instance does not run a browser), while "the page carries no behaviour at all" is. A page that
   captured scripts keeps its overlay untouched, and `--scripts` remains how a caller asks for the
   working one. Reported as `obstructions`, per page, wired at both `describeConversion` call sites.
+- **A verdict needs a bar (SH860).** `shio judge` had the shape of an acceptance gate since SH589 —
+  runs the instruments, answers once, names where they disagreed — and no notion of a **bar**. It
+  exited 1 on any finding, so every round ended with work outstanding and none ended *accepted*.
+  Measured: Block Q carries 131 shipped entries and has been declared closed and reopened **six**
+  times; each close was a line count reaching zero and each reopen was the next round finding
+  something, because emptiness was standing in for doneness. `docs/agents/replication.md` holds the
+  criterion in prose (ten checkable lines, and the exclusion that makes the rest closable) and is
+  deliberately outside roadkeep, since `IMPROVEMENTS.md` holds rationale for *unshipped* work and
+  SH692's definition of a correct page was deleted the moment SH692 shipped.
+  [`cli/src/acceptance.properties`](../../cli/src/acceptance.properties) is the machine-readable
+  half, on `token-budgets.properties`' pattern for its reason: a value, a comment saying what it
+  protects, a gate that fails on a breach — **not a fifth debt ledger** (SH594 counts four), because a
+  ledger is where findings accumulate and a bar is where a decision is recorded. A value is a count of
+  subjects or the word `noted`, which is reported on every run and holds none. `judgeRuns` takes
+  `{bars, mode}` and answers **accepted** / **finding** / **unproven**; `classify` counts per kind
+  across every instrument, since the bar is about how many subjects may carry a finding and not about
+  how many instruments noticed one, and when a bar is breached **all** of that kind hold — which
+  subject is over the line is not a fact. **A kind the file does not name holds the round**, and that
+  default is the whole design: accepting by omission is how a criterion stops meaning anything, so
+  `acceptance-bar.test.mjs` reads the `kind:` literals out of `commands/judge.mjs` and fails the
+  **build** on an undeclared one — in both directions, since a key for a kind nobody mints reads as a
+  criterion being enforced. The substance is one line: `snapshot.pixels-differ.authorable = noted`
+  against `…fidelity = 0`. Design equivalence with the source is fidelity's criterion and not
+  authorable's, and applying it to authorable's output is what kept the block open across 131 tasks —
+  that class of finding has no bottom, and `www.viglet.org` declares 49 design tokens where the Shio
+  section theme reads 14. So the exact round six closes were talked out of now ends **ACCEPTED** as
+  authorable and **FINDING** as fidelity, with the admitted findings printed either way under their
+  own heading and the bar that admitted them beside each: `accepted` is only honest if a reader can
+  see what they bought. Two things deliberately still hold: an instrument that exited non-zero without
+  naming a subject (the one signal that is not a per-subject row), and `unproven`, which never fails a
+  build — but the *sentence* SH589 wrote for `ok` now prints for `accepted` too, because that is the
+  word a block closes on. Mode defaults to authorable; `--fidelity` asks for the other, and the report
+  says which either way, `replication.md`'s second trap being *say which mode ran*.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a
