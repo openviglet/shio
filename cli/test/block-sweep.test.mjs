@@ -103,6 +103,13 @@ const SWEEP = {
       + "hand-off reader's line window. Both change what a contributor may write and neither changes "
       + "anything a reader of the product can do; `docs/agents/build.md` is where that lands",
   },
+  W: {
+    swept: false,
+    why: "SH879 asks which SOURCE shapes the corpus can produce — the question SH833 and SH838 ask "
+      + "of this repository's own mechanisms, turned outward. It changes what a contributor may "
+      + "leave unmeasured and nothing a reader of the product can do; `docs/agents/cli.md` group N "
+      + "carries it, and shio-site's README records the closure with the same verdict",
+  },
   AN: {
     swept: false,
     why: "one task about a lint over source bytes (a raw NUL making a file binary to a grep). No "

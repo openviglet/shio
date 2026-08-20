@@ -159,6 +159,14 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
+**W closed again on 2026-08-20**, on SH879 alone, and it changes what a *contributor* may leave
+unmeasured rather than anything a reader of this site can do — the same verdict every instrument row
+in the matrix carries. It is worth one line for what it measured: the two defects the day before it
+were both found by somebody building a site, and the corpus that runs on every commit could not have
+caught either, because no archetype carried a page title of the `Page — Brand` shape both were about.
+Two of seven state any navigation and **one** produces a menu, so a single fixture edit would leave
+that whole path unexercised. A named list watches all three shapes now, in both directions.
+
 **Q closed a seventh time on 2026-08-20**, on SH878 alone, and it moved no claim here either — the
 block was reopened for it the same day, because fixing a blueprint's navigation turned up the same
 defect one surface along. A replica's nav listed every page by the `<title>` written for search;
