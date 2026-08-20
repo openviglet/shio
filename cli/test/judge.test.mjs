@@ -270,20 +270,84 @@ test("SH589: the command composes the real run functions and does not fork them"
 
   const result = await judge.run({ site: "Acme", checks: "content" }, [], ctx);
 
-  // SH860 — `accepted` where this said `ok`. The command passes the declared bar now, and the two
-  // words are not synonyms: `ok` is "no instrument said anything", which is the only green available
-  // to a run with no bar, and `accepted` is "every finding is at or below the bar" — a claim about a
-  // criterion, and the one a block can close on. `judgeRuns` with no bar still answers `ok`.
-  assert.equal(result.verdict, "accepted");
-  assert.equal(result.mode, "authorable");
+  // SH860 made this `accepted` where SH589 said `ok`. SH865 makes it INCONCLUSIVE, and that is the
+  // defect it was filed for: `diff` did not run here, `diff` is what tells `judge` which mode the
+  // round is in, and this run was answering a verdict for a mode it had assumed. A round nobody
+  // proved is not one that passed.
+  assert.equal(result.verdict, "inconclusive");
+  assert.equal(result.mode, null, "unstated rather than defaulted — the instrument that would have "
+    + "said abstained, and guessing is what graded a 12-of-12 fidelity site as authorable");
+  assert.equal(result.exitCode, 1);
   assert.deepEqual(result.unproven, ["diff", "audit", "snapshot"]);
   assert.ok(seen.some((at) => at.includes("/agent/verify")), `verify was not called: ${seen}`);
-  assert.match(stdout.text, /shio judge: Acme — ACCEPTED as authorable from 1 instrument\(s\), 3 unproven/);
-  assert.match(stdout.text, /judged against acceptance\.properties as authorable/);
+  assert.match(stdout.text, /shio judge: Acme — INCONCLUSIVE from 1 instrument\(s\), 3 unproven/);
+  assert.match(stdout.text, /the mode is unstated, because `diff` did not run/);
+  assert.match(stdout.text, /what supplies it: --against <origin> for snapshot/,
+    "P6 — a refusal that does not say what would settle it is one a reader can only guess at");
   assert.match(stdout.text, /diff\s+NOT RUN/);
-  assert.match(stdout.text, /accepted is a claim about the 1 instrument\(s\) that ran/,
-    "and it needs that sentence at least as much as `ok` did: it is the word a block closes on, so a "
-      + "reader has to be told which questions were not asked before they close one on it");
+});
+
+test("SH865: a fidelity round is judged as fidelity, read off diff rather than defaulted", () => {
+  // `convert` had reported `12 of 12 page(s) in fidelity mode` and `judge` answered ACCEPTED as
+  // authorable — the bar that excludes the pixel comparison, on the site that is owed it.
+  const diff = (modes) => ({
+    ran: true,
+    result: { exitCode: 0, pages: [], modes },
+  });
+
+  assert.equal(judge.modeOf(diff({ fidelity: 12, authorable: 0, mixed: 0 })), "fidelity");
+  assert.equal(judge.modeOf(diff({ fidelity: 11, authorable: 0, mixed: 1 })), "authorable",
+    "one authored region means the page is presented by a Shio theme, and the pixel bar is not a "
+      + "test it can pass — which is the exclusion the whole criterion rests on");
+  assert.equal(judge.modeOf(diff({ fidelity: 0, authorable: 3, mixed: 0 })), "authorable");
+  assert.equal(judge.modeOf(diff({ fidelity: 0, authorable: 0, mixed: 0 })), null,
+    "and a run that compared no page states nothing");
+  assert.equal(judge.modeOf({ ran: false, reason: "no inventory" }), null,
+    "null rather than a default: `judgeRuns` reads an unstated mode as an abstention by the "
+      + "instrument that would have stated it, which is exactly what happened");
+});
+
+test("SH865: an abstention by an instrument the mode's bar names is not a pass", () => {
+  const bars = acceptanceBars();
+  const ran = (name) => ({ name, ran: true, exitCode: 0, covered: ["/"], flagged: [] });
+  const missing = (name) => ({ name, ran: false, reason: "not asked for" });
+
+  const fidelity = judgeRuns([ran("verify"), ran("diff"), missing("snapshot")],
+    { bars, mode: "fidelity" });
+  assert.equal(fidelity.verdict, "inconclusive");
+  assert.equal(fidelity.exitCode, 1);
+  assert.deepEqual(fidelity.missing, ["snapshot"],
+    "pixels are fidelity's whole criterion at 0.00%, so a round without them has no evidence about "
+      + "the one thing it is judged on");
+  assert.match(describeJudgement(fidelity),
+    /snapshot did not run, and acceptance\.properties names it as what this mode's bar rests on/);
+
+  const authorable = judgeRuns([ran("verify"), ran("diff"), missing("snapshot")],
+    { bars, mode: "authorable" });
+  assert.equal(authorable.verdict, "accepted");
+  assert.equal(authorable.exitCode, 0);
+  assert.deepEqual(authorable.missing, [],
+    "SH411's split, kept and now declared: an optional browser stays optional exactly where pixels "
+      + "are not the criterion, rather than everywhere");
+});
+
+test("SH865: a finding still outranks an abstention, and no bar leaves SH589's answer alone", () => {
+  const held = judgeRuns([{
+    name: "verify",
+    ran: true,
+    exitCode: 1,
+    covered: ["/"],
+    flagged: [{ subject: "/", kind: "verify.required-field-empty", why: "heading" }],
+  }], { bars: acceptanceBars(), mode: "fidelity" });
+  assert.equal(held.verdict, "finding",
+    "a round with something wrong in it is not merely unproven, whatever else abstained");
+
+  const bare = judgeRuns([{ name: "verify", ran: true, exitCode: 0, covered: ["/"], flagged: [] }]);
+  assert.equal(bare.verdict, "ok");
+  assert.equal(bare.exitCode, 0);
+  assert.equal("missing" in bare, false,
+    "and a caller that passes no bar gets the pre-SH860 function unchanged — the required-instrument "
+      + "rule is a property of the criterion, and there is none without a bar");
 });
 
 test("SH860: the round Block Q kept reopening ends accepted, and holds under fidelity", () => {

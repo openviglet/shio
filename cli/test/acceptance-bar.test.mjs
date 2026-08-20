@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 import {
-  ACCEPTANCE_FILE, NOTED, acceptanceBars, barFor, classify, readAcceptance,
+  ACCEPTANCE_FILE, NOTED, acceptanceBars, barFor, classify, readAcceptance, requiredFor,
 } from "../src/acceptance.mjs";
 
 const source = (path) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
@@ -60,6 +60,9 @@ test("SH860: the bar declares nothing `judge` cannot produce", () => {
   // so a key is matched when its own name OR its mode-stripped name is a kind.
   const kinds = new Set(kindsInSource(source("../src/commands/judge.mjs")));
   const stale = [...acceptanceBars().keys()].filter((key) => {
+    // SH865 — `mode.<name>.requires` is not a bar for a kind, it is which instruments a mode's bar
+    // rests on. Its own coverage is the test below: every mode `judge` can be in has a line.
+    if (/^mode\./.test(key)) return false;
     if (kinds.has(key)) return false;
     const family = `${key.split(".")[0]}.*`;
     if (key === family) return kinds.has(family);
@@ -67,6 +70,27 @@ test("SH860: the bar declares nothing `judge` cannot produce", () => {
   });
 
   assert.deepEqual(stale, []);
+});
+
+test("SH865: every mode `judge` can be in declares which instruments its bar rests on", () => {
+  // The two the criterion names, and `modeOf` answers one of them or null — so an undeclared mode
+  // would make `requiredFor` return `[]` and every abstention pass, which is the defect this closes.
+  const bars = acceptanceBars();
+  for (const mode of ["authorable", "fidelity"]) {
+    const required = requiredFor(bars, mode);
+    assert.ok(required.includes("verify") && required.includes("diff"),
+      `${mode} rests on verify and diff at least: diff is also what tells judge which mode the `
+        + `round is in, so a mode that did not require it could not know itself — read ${required}`);
+  }
+  assert.ok(requiredFor(bars, "fidelity").includes("snapshot"),
+    "and pixels are fidelity's whole criterion at 0.00%, so a fidelity round with no snapshot has "
+      + "no evidence about the one thing it is judged on");
+  assert.equal(requiredFor(bars, "authorable").includes("snapshot"), false,
+    "while authorable does not name it, which is SH411's split kept — an optional browser stays "
+      + "optional exactly where pixels are not the criterion");
+  assert.deepEqual(requiredFor(bars, "nonesuch"), [],
+    "and a mode nothing declares requires nothing, which `judgeRuns` reads as INCONCLUSIVE via the "
+      + "unstated-mode branch rather than as a pass");
 });
 
 test("SH860: a bar above zero has to be explained where it is written", () => {

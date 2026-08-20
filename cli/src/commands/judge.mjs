@@ -100,11 +100,15 @@ export async function run(flags, positionals, ctx) {
     "not asked for — pass --against <origin>; choosing what to compare pixels with would be "
       + "inventing the baseline whose absence is the question"));
 
-  // SH860 — the bar, and which mode it is applied as. Authorable unless the caller says otherwise,
-  // because that is what `propose --accept` produces and what a Block Q round is about; `--fidelity`
-  // is how a caller asks for the 0.00% pixel criterion, which is the one that differs between them.
-  // Said in the report either way (`replication.md`'s second trap: say which mode ran).
-  const mode = flags.fidelity === true ? "fidelity" : "authorable";
+  // SH860 — the bar, and which mode it is applied as. SH865 — **read, not defaulted.** This chose
+  // authorable unless told otherwise, and a run whose own `convert` had just reported `12 of 12
+  // page(s) in fidelity mode` was graded against the bar that excludes pixel comparison — the one
+  // criterion that site was owed. `diff` already derives the mode from the plan and the proposal and
+  // reports how many pages are in each, so the answer is taken from the instrument that computed it
+  // rather than derived a second time: two readers of one question disagree somewhere, and here the
+  // disagreement would be a whole site judged by the wrong standard (SH245's rule).
+  const mode = flags.mode === "fidelity" || flags.mode === "authorable" ? flags.mode
+    : flags.fidelity === true ? "fidelity" : modeOf(diff);
   const judgement = judgeRuns(runs, { bars: acceptanceBars(), mode });
 
   if (flags.json) {
@@ -139,6 +143,27 @@ async function instrument(name, load, flags, positionals, ctx, reports) {
     reports.push({ name, text: text.value });
     return { ran: false, reason: String(error?.message ?? error).split("\n")[0] };
   }
+}
+
+/**
+ * Which mode this round is in, read off `diff`'s own answer — or null where it did not run (SH865).
+ *
+ * <p>`compareCapture` counts the pages in each mode, which is the join of the plan and the proposal
+ * that `resolveModes` makes and `convert` reports as *N of N page(s) in fidelity mode*. **A site is
+ * fidelity only if every page is**: one authored region means the page is presented by a Shio theme,
+ * and the pixel bar is not a test it can pass — which is the exclusion the whole criterion rests on.
+ * A mixed run is therefore authorable, held to its content, its structure and its routes.</p>
+ *
+ * <p><b>Null rather than a default</b>, and that is the fix rather than a detail. Defaulting is what
+ * graded a 12-of-12 fidelity site against the authorable bar; `judgeRuns` reads an unstated mode as
+ * an abstention by the instrument that would have stated it, which is exactly what happened.</p>
+ */
+export function modeOf(diff) {
+  const counted = diff?.ran ? diff.result?.modes : null;
+  if (!counted) return null;
+  const total = Object.values(counted).reduce((sum, count) => sum + count, 0);
+  if (!total) return null;
+  return counted.fidelity === total ? "fidelity" : "authorable";
 }
 
 /** `verify`'s findings carry SH79 addresses; the subject is the path they name. */

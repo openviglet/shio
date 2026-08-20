@@ -755,31 +755,6 @@ post, is the third mode.
 The open design question is where the values live so a write round-trips, and that is
 the task, not the demonstration.
 
-### XL.7 A verdict for the mode that did not run (SH865)
-
-SH860 works: `judge` names the bar file, states the mode, and separates findings that
-hold from findings at or below it. Two things about *which* verdict it reaches.
-
-**It read the wrong mode.** `convert` had just reported `12 of 12 page(s) in fidelity
-mode`, and `judge` answered `ACCEPTED as authorable`. The bar it applied is the one that
-excludes pixel comparison; the bar the site was owed is the one that requires it.
-
-**It said ACCEPTED while the instruments that define that bar abstained.** The run
-reported `2 unproven (diff, snapshot)` and then, correctly and in its own words:
-
-> accepted is a claim about the 2 instrument(s) that ran. diff, snapshot did not, and did not agree — nothing here says the question they answer came back clean
-
-That paragraph is right and it sits under a heading that says ACCEPTED. A reader who
-greps for the verdict gets the opposite of what the prose says. An abstention is not a
-pass, and for fidelity the abstaining instrument is the *only* one that tests the mode.
-
-Two fixes, independent. The mode comes from the plan, which `diff` already derives —
-`judge` should read it there rather than defaulting. And a verdict is `ACCEPTED` only
-when every instrument the mode's bar names has run; otherwise `INCONCLUSIVE`, naming
-which is missing and the flag that supplies it.
-
-`--against` also refused on both instruments here, which is how the abstention happened.
-
 ### XL.9 Magnitude is the axis nothing measures (SH867)
 
 The replica and its source were photographed at one viewport and the difference read

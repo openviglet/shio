@@ -33,6 +33,26 @@ export const ACCEPTANCE_FILE = "acceptance.properties";
  */
 export const NOTED = "noted";
 
+/** The one key shape whose value is a list of instrument names rather than a bar (SH865). */
+const REQUIRES = /^mode\.[a-z]+\.requires$/;
+
+/**
+ * The instruments a mode's bar rests on, or `[]` where the file names none (SH865).
+ *
+ * <p>A verdict of `accepted` is a claim that the criterion was met, and an instrument that did not
+ * run tested nothing. SH589 already said an abstention is never green; what was missing is *which*
+ * abstentions matter, since `unproven` alone must not fail a build — failing on it would make an
+ * optional browser a hard dependency of every run (SH411's split).</p>
+ *
+ * <p>Declaring it per mode is what resolves that: `snapshot` is optional for authorable because
+ * pixels are not that mode's criterion, and it is the whole criterion for fidelity. So the split
+ * survives and a fidelity round without a browser stops reading as accepted.</p>
+ */
+export function requiredFor(bars, mode) {
+  const named = bars?.get(`mode.${mode}.requires`);
+  return Array.isArray(named) ? named : [];
+}
+
 /**
  * `key = value` lines, `#` comments, blanks — the same shape `token-budgets.properties` uses.
  *
@@ -55,6 +75,17 @@ export function readAcceptance(text) {
     if (!key) throw new Error(`${ACCEPTANCE_FILE}:${at + 1}: a value with no key`);
     if (value === NOTED) {
       bars.set(key, NOTED);
+      continue;
+    }
+    // SH865 — the third value shape, and the only key pattern that takes it: which instruments a
+    // mode's bar rests on. A list is spelled out rather than inferred from a comma or a space
+    // anywhere, so a typo in a count is still a refusal rather than a one-element list.
+    if (REQUIRES.test(key)) {
+      const names = value.split(/\s+/).filter(Boolean);
+      if (!names.length) {
+        throw new Error(`${ACCEPTANCE_FILE}:${at + 1}: \`${key}\` names no instrument`);
+      }
+      bars.set(key, names);
       continue;
     }
     if (!/^\d+$/.test(value)) {

@@ -1591,6 +1591,26 @@ it. Four decisions worth keeping:
   build — but the *sentence* SH589 wrote for `ok` now prints for `accepted` too, because that is the
   word a block closes on. Mode defaults to authorable; `--fidelity` asks for the other, and the report
   says which either way, `replication.md`'s second trap being *say which mode ran*.
+- **A verdict for the mode that did not run (SH865).** Two defects in SH860, both about *which*
+  verdict it reaches. **It read the wrong mode:** `convert` had just reported `12 of 12 page(s) in
+  fidelity mode` and `judge` answered `ACCEPTED as authorable` — the bar that excludes the pixel
+  comparison, applied to the one site that is owed it. Defaulting was the cause, so the mode is now
+  **read** rather than assumed: `diff` already derives it from the plan and the proposal and reports
+  how many pages are in each, and `modeOf` takes it from the instrument that computed it rather than
+  deriving it a second time — two readers of one question disagree somewhere, and here the
+  disagreement is a whole site judged by the wrong standard (SH245). A site is fidelity only if
+  **every** page is: one authored region means a page presented by a Shio theme, which the pixel bar
+  is not a test it can pass. **And it said ACCEPTED while the instruments that define that bar
+  abstained:** the run reported `2 unproven (diff, snapshot)` and then, correctly and in its own
+  words, that nothing there says the question they answer came back clean — a paragraph sitting
+  directly under a heading saying ACCEPTED, so a reader who greps for the verdict got the opposite of
+  the prose. `mode.<name>.requires` declares what each bar rests on (`verify diff` for authorable,
+  plus `snapshot` for fidelity), a missing one makes the round **INCONCLUSIVE**, and that exits 1.
+  **SH411's split survives and is now declared rather than global**: an optional browser stays
+  optional exactly where pixels are not the criterion, instead of everywhere. An unstated mode is
+  inconclusive too, since `diff` is what would have stated it — the abstention and the guess are the
+  same fact from two ends. The line names what would settle it (P6), and `--mode` is the way to state
+  what a plan outside this directory cannot.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

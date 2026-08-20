@@ -43,7 +43,7 @@
  * mention holds too, since accepting by omission is how a criterion stops meaning anything.</p>
  */
 
-import { ACCEPTANCE_FILE, classify } from "./acceptance.mjs";
+import { ACCEPTANCE_FILE, classify, requiredFor } from "./acceptance.mjs";
 
 /**
  * What each instrument answers, and over what.
@@ -94,7 +94,7 @@ export const VERDICTS = ["finding", "unproven", "accepted", "ok"];
  * @returns {{verdict: string, exitCode: number, instruments: object[], disagreements: object[],
  *   agreed: object[], unproven: string[]}}
  */
-export function judgeRuns(runs, { bars = null, mode = "authorable" } = {}) {
+export function judgeRuns(runs, { bars = null, mode = null } = {}) {
   const instruments = runs.map((run) => ({
     name: run.name,
     ran: Boolean(run.ran),
@@ -119,8 +119,23 @@ export function judgeRuns(runs, { bars = null, mode = "authorable" } = {}) {
   // so a run that failed for a reason it could not attribute to a page is never quietly accepted.
   const failed = ran.some((entry) => entry.exitCode !== 0 && !entry.flagged.length);
   const red = held.length > 0 || failed;
+
+  // SH865 — the instruments this mode's bar rests on, and the ones that did not run. An unstated
+  // mode counts as missing everything: `judge` reads the mode off `diff`, so not knowing it means
+  // that instrument abstained, which is the same fact from the other end.
+  const required = bars ? requiredFor(bars, mode) : [];
+  const missing = mode
+    ? required.filter((name) => !ran.some((entry) => entry.name === name))
+    : required;
+
   let verdict = "unproven";
-  if (ran.length) verdict = red ? "finding" : bars ? "accepted" : "ok";
+  if (red) verdict = "finding";
+  // A round nobody proved is not one that passed. SH589's `unproven` said this and exited 0, which
+  // was the only honest option while nothing declared *which* abstentions matter; the bar declares
+  // it per mode now, so an optional browser stays optional exactly where pixels are not the
+  // criterion, and stops the fidelity round that has no evidence at all from reading as accepted.
+  else if (bars && (!mode || missing.length)) verdict = "inconclusive";
+  else if (ran.length) verdict = bars ? "accepted" : "ok";
 
   const subjects = new Set();
   for (const entry of ran) for (const row of entry.flagged) subjects.add(row.subject);
@@ -148,7 +163,10 @@ export function judgeRuns(runs, { bars = null, mode = "authorable" } = {}) {
     verdict,
     // The gate. `unproven` alone does not fail a build — it is a statement about coverage, and
     // failing on it would make an optional browser a hard dependency of every run (SH411's split).
-    exitCode: verdict === "finding" ? 1 : 0,
+    // SH865 — and `inconclusive` does, because it is that statement made about an instrument the
+    // mode's own bar names: a round whose criterion nothing tested is not a round that passed. The
+    // split survives in `mode.<name>.requires`, which is where the optionality is now declared.
+    exitCode: verdict === "finding" || verdict === "inconclusive" ? 1 : 0,
     instruments,
     disagreements,
     agreed,
@@ -156,7 +174,7 @@ export function judgeRuns(runs, { bars = null, mode = "authorable" } = {}) {
     // SH860 — which findings the bar admitted, and under which number. Returned as well as printed
     // for SH576's reason: the corpus asserts it and `--json` is a caller too. Present only where a
     // bar was passed, so a caller that judges without one gets the pre-SH860 shape unchanged.
-    ...(bars ? { mode, held, noted } : {}),
+    ...(bars ? { mode, held, noted, required, missing } : {}),
   };
 }
 
@@ -172,7 +190,9 @@ function bySubject(a, b) {
  * — goes underneath as the evidence for it.</p>
  */
 export function describeJudgement(judgement, { site } = {}) {
-  const { verdict, instruments, disagreements, agreed, unproven, mode, held, noted } = judgement;
+  const {
+    verdict, instruments, disagreements, agreed, unproven, mode, held, noted, missing,
+  } = judgement;
   const ran = instruments.filter((entry) => entry.ran);
   const lines = [
     `shio judge: ${site ?? "the replica"} — ${verdict.toUpperCase()}`
@@ -189,6 +209,22 @@ export function describeJudgement(judgement, { site } = {}) {
     lines.push(
       `  judged against ${ACCEPTANCE_FILE} as ${mode} — ${held.length} finding(s) hold this round, `
         + `${noted.length} at or below the bar`,
+    );
+  }
+  // SH865 — and the sentence that used to sit *under* a heading saying ACCEPTED. The run reported
+  // `2 unproven (diff, snapshot)` and then said in its own words that nothing here proves the
+  // question they answer came back clean; a reader who greps for the verdict got the opposite of
+  // what the prose said. It is the verdict now, and this line says what would settle it.
+  if (verdict === "inconclusive") {
+    lines.push(
+      mode
+        ? `  INCONCLUSIVE — ${missing.join(", ")} did not run, and ${ACCEPTANCE_FILE} names `
+          + `${missing.length > 1 ? "them" : "it"} as what this mode's bar rests on. An abstention `
+          + "is not a pass"
+        : "  INCONCLUSIVE — the mode is unstated, because `diff` did not run and that is what says "
+          + "which one this round is in. Pass --mode, or give diff the capture it needs",
+      "  what supplies it: --against <origin> for snapshot, a capture in this directory for diff, "
+        + "--browser for a render — or --mode to state what the plan cannot",
     );
   }
   if (held?.length) {

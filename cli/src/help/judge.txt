@@ -7,7 +7,8 @@ round is ACCEPTED and they print as tasks for later; above it, or unnamed there,
 HOLD and this exits 1.
 
   --site <name>        The site to judge (or a bare positional)
-  --fidelity           Hold pixels to 0.00% (default authorable: not a criterion there)
+  --mode <name>        fidelity or authorable. Read from the plan via diff when not given
+  --fidelity           Hold pixels to 0.00% (--mode fidelity, spelled as a switch)
   --no-browser         Skip audit even where playwright is installed (--browser forces it)
   --against <origin>   Also run snapshot against this origin (the source you replicated)
   --pages <n>          How many pages audit/snapshot look at (default 5)
