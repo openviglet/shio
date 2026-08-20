@@ -9,6 +9,11 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block Q — Replication (an existing site becomes an authorable Shio site)
+
+- 📋 **SH871** (deps: SH868 ✅) **convert --annotate names 40 fields nothing creates, repeats each requires line, and exits 1 on a site with no pages** — The first run left 18 assets, zero pages and a 404 home, and only ran after the 40 were hand-added through pull, edit and push. → §XL.13
+- 📋 **SH872** (deps: SH868 ✅) **The annotated fields land on the shared Page type under block hashes, so most of a page's fields belong to other pages** — Page went from 4 fields to 44 and the home page reports 14 annotated and 30 not editable, 27 of which are another page's blocks. → §XL.14
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
