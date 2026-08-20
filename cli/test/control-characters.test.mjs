@@ -177,14 +177,14 @@ test("SH804: the reader is not vacuous — it finds the two bytes that were actu
     "and the `\\f` in a Windows path, which had been read aloud here several times as "
       + "`testixture-traits.test.mjs` with nobody asking where the f went");
 
-  // SH859 — no file is exempt any more, and this is what says so: the fixture used to name one of
-  // the six and assert the opposite. Both paths here are deliberately not module names — a `.mjs` in
-  // a sentence is what SH792's reader looks for, and a fixture path is not prose about a module.
-  assert.deepEqual(offences("cli/src/joins-on-a-separator", `const key = \`a${NUL}b\`;`),
-    ["cli/src/joins-on-a-separator:1 — U+0000"],
+  // SH859 — no file is exempt any more, and this is what says so: this fixture used to name one of
+  // the six and assert the opposite. SH862 is why it can name one again — the hand-off reader stops
+  // at the prose, so a path handed to a call is an argument rather than a module being written about.
+  assert.deepEqual(offences("cli/src/diff.mjs", `const key = \`a${NUL}b\`;`),
+    ["cli/src/diff.mjs:1 — U+0000"],
     "a file that uses the separator idiom included: the idiom stays and the raw byte does not, "
       + "because a raw one makes ripgrep report `binary file matches` and print nothing");
-  assert.deepEqual(offences("cli/src/anything", "tabs\tand\rnewlines are fine"), [],
+  assert.deepEqual(offences("cli/src/other.mjs", "tabs\tand\rnewlines are fine"), [],
     "and the three a source file may hold stay allowed, or this would report every file");
 });
 

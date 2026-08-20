@@ -561,6 +561,30 @@ verdict for it. That is the first time it fired on a claim being made rather tha
 and it earned a fourth kind — `uncovered`, for a sentence that names a gap instead of asserting
 somebody else fills it. Which is the thing to write when tempted by a hand-off.
 
+**SH862 — the third instance, and it is the window rather than the word.** SH792's trigger is a
+comment line and always was; the *name* was then looked for across the next three lines whatever they
+were, so a sentence about an exemption sitting above a call read that call's argument as the
+instrument being handed to. Measured twice on one commit:
+
+```
+// SH859 — no file is exempt any more, and this is what says so.
+assert.deepEqual(offences("cli/src/diff.mjs", `a${NUL}b`), []);
+```
+
+reported `control-characters.test.mjs -> diff.mjs`, a hand-off nobody wrote — and the author's only
+way out was to **rename the fixture**, which is a workaround the next author cannot read. So the
+window stops at the first line that is not prose: a wrapped sentence continues on the next *comment*
+line, which is where SH789's own name was and the case the window exists for, and a line of code ends
+it. `namedBy` is the whole rule and is fixtured from both sides, including a blank line, since a gap
+between the sentence and the code would otherwise move the defect down one line.
+
+Removing it **dropped a CLAIMS entry**, and that is the finding rather than a side effect:
+`known-debt.test.mjs -> floor-kind.test.mjs` was the reader's own over-match written down. Its
+`SELF` reason said so outright — the name came from a `path:` field on a code line under a sentence
+about a staleness check three tests further down the same file. An entry that exists only because a
+scan over-matched reads exactly like a case somebody triaged, which is what makes this family worth
+the fourth fix rather than the fourth workaround.
+
 ### A hand-off between two instruments is a claim, and it is the one kind nothing verified (SH792)
 
 SH789's defect was not the exclusion and not its reason — both were right. It was the half that

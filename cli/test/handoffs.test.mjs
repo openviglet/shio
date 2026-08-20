@@ -101,11 +101,12 @@ const CLAIMS = {
       + "runs. Verified: cli/src/index.mjs handles `shio help <command>` itself (SH435), so the "
       + "exempted case is genuinely unreachable by the lint's subject",
   },
-  "cli/test/known-debt.test.mjs -> floor-kind.test.mjs": {
-    kind: Kind.SELF,
-    why: "`floor-kind.test.mjs` is the ledger being read, not the cover; the `its own test` the "
-      + "sentence names is three tests down in this same file",
-  },
+  // SH862 removed `cli/test/known-debt.test.mjs -> floor-kind.test.mjs`, and it is worth saying why
+  // rather than leaving a gap: that entry was the reader's own defect written down. Its `SELF`
+  // reason said outright that the name came from *the ledger row being read* — a `path:` field on a
+  // code line under a sentence about a staleness check three tests further down the same file. The
+  // window stops at the prose now, so the reader no longer invents it and there is nothing to
+  // classify. An entry that only existed because a scan over-matched is the shape SH794 named.
   "cli/test/regex-escape.test.mjs -> ShCsrfExemptionLintTest": {
     kind: Kind.UNCOVERED,
     why: "SH794's rule keys off the `@scans` declaration, which only the JS scanners carry, so the "
@@ -212,6 +213,42 @@ const HANDS_OFF = new RegExp(`\\b(?:${[
 /** Another instrument, by the two names this repository gives them. */
 const NAMES_ANOTHER = /\b([A-Z][A-Za-z0-9]*Test|[a-z0-9-]+\.(?:test|conformance)\.mjs|[a-z0-9-]+\.mjs)\b/;
 
+/** How far a wrapped sentence may run past the line that triggered it. */
+const WRAP = 3;
+
+/**
+ * The instrument a hand-off sentence names, or null — reading **prose only** (SH862).
+ *
+ * <h3>The window ran into the code below it</h3>
+ *
+ * <p>The trigger has always been a comment line: {@link isProse} answers that, and it is right. The
+ * *name* was then looked for across the next three lines whatever they were, so a sentence about an
+ * exemption sitting directly above a call whose argument is a path read that argument as the
+ * instrument being handed to. Measured on SH859's commit — twice on one commit:</p>
+ *
+ * <pre>  // SH859 — no file is exempt any more, and this is what says so
+ *   assert.deepEqual(offences("cli/src/diff.mjs", …), …)</pre>
+ *
+ * <p>reported `control-characters.test.mjs -> diff.mjs`, a hand-off nobody wrote: that string is an
+ * argument to the function under test and the assertion says nothing whatever about that module. The
+ * author's only way out was to rename the fixture, which is a workaround the next author cannot read.
+ * SH794 and SH824 are the same shape one construct along — <b>a scan over prose has to say which
+ * construct it reads</b>, and a string handed to a call is not prose.</p>
+ *
+ * <p>So the window stops at the first line that is not prose. A wrapped sentence continues on the
+ * next <em>comment</em> line — which is where SH789's own was, the case the window exists for — and a
+ * line of code ends it.</p>
+ */
+export function namedBy(lines, at) {
+  const window = [];
+  for (let i = at; i < Math.min(at + WRAP, lines.length); i += 1) {
+    if (!isProse(lines[i])) break;
+    window.push(lines[i]);
+  }
+  const named = NAMES_ANOTHER.exec(window.join(" "));
+  return named ? named[1] : null;
+}
+
 const isSuite = (path) => /\.test\.mjs$|\.conformance\.mjs$|Test\.java$|IT\.java$/.test(path);
 
 async function suiteFiles(dir, out = []) {
@@ -242,10 +279,11 @@ async function claimsFound() {
     const self = path.split(/[/\\]/).pop();
     lines.forEach((line, at) => {
       if (!isProse(line) || !HANDS_OFF.test(line)) return;
-      // A wrapped sentence puts the name on the next line, which is where SH789's own was.
-      const named = NAMES_ANOTHER.exec(lines.slice(at, at + 3).join(" "));
-      if (!named || named[1] === self) return;
-      const key = `${relative(ROOT, path).replace(/\\/g, "/")} -> ${named[1]}`;
+      // A wrapped sentence puts the name on the next line, which is where SH789's own was — and only
+      // as far as the prose goes, which is SH862.
+      const named = namedBy(lines, at);
+      if (!named || named === self) return;
+      const key = `${relative(ROOT, path).replace(/\\/g, "/")} -> ${named}`;
       if (!found.has(key)) found.set(key, at + 1);
     });
   }
@@ -263,8 +301,38 @@ test("SH792: every sentence handing a case to another instrument is classified",
       + "does.\nIn `+ actual`: classify it. If it is `hands-off`, GO AND READ the named "
       + "instrument first — that sentence is prose about another module, and the one time nobody "
       + "checked, it was wrong for months while both files stayed green (SH789).\nIn `- expected`: "
-      + "the sentence was reworded or deleted, so drop the entry.",
+      + "the sentence was reworded or deleted, so drop the entry.\n"
+      + "What this reader will NOT report, so you do not have to rename anything to escape it "
+      + "(SH862): a filename on a line of CODE below the sentence. A wrapped sentence continues on "
+      + "the next comment line and a call's argument is not prose, so `f(\"cli/src/x.mjs\", …)` "
+      + "under a comment about an exemption is not a hand-off.",
   );
+});
+
+test("SH862: the name comes from the sentence, not from the code the sentence sits above", () => {
+  // The measured shape, verbatim: a comment about an exemption directly above a call whose argument
+  // is a path. It fired twice on one commit and the only way out was renaming the fixture.
+  const overCode = [
+    "  // SH859 — no file is exempt any more, and this is what says so.",
+    '  assert.deepEqual(offences("cli/src/diff.mjs", `a${NUL}b`), []);',
+  ];
+  assert.equal(namedBy(overCode, 0), null,
+    "a string handed to a call is an argument, and the assertion says nothing whatever about that "
+      + "module — SH794 and SH824 are the same over-match one construct along");
+
+  // And the case the window exists for, which SH789's own sentence had: the name wrapping onto the
+  // next line OF PROSE. Narrowing that away would trade this defect for the one SH789 found.
+  const wrapped = [
+    "  // this case is covered by",
+    "  // ShAgentCommitOrderTest, which holds a watermark",
+    "  const x = 1;",
+  ];
+  assert.equal(namedBy(wrapped, 0), "ShAgentCommitOrderTest");
+
+  // A blank line between the sentence and the code ends it too — `isProse` is false for both, and
+  // the window has to stop at the first of them or the gap merely moves the problem down one line.
+  assert.equal(namedBy(["  // deliberately not covered", "", '  read("floor-kind.test.mjs");'], 0),
+    null);
 });
 
 test("SH792: a hand-off entry says how its claim was checked, in words a reader can re-run", () => {

@@ -91,6 +91,12 @@ const SWEEP = {
     why: "SH861 — README's replication section and shio-site's /replicate phases carry `judge`, the "
       + "declared bar, and the exclusion that looking like the source is not authorable mode's test",
   },
+  AI: {
+    swept: false,
+    why: "two tasks about scans matching outside the construct they read — a regex bound and a "
+      + "hand-off reader's line window. Both change what a contributor may write and neither changes "
+      + "anything a reader of the product can do; `docs/agents/build.md` is where that lands",
+  },
   AN: {
     swept: false,
     why: "one task about a lint over source bytes (a raw NUL making a file binary to a grep). No "

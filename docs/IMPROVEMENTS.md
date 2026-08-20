@@ -725,32 +725,60 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-## XLIII A fixture path is not prose about another module (SH862)
+### XL.6 The dichotomy that is not one (SH864)
 
-SH792 reads every sentence that names another instrument and asks whether the claim was
-checked, because a suite excusing itself by naming another file is the thing that rots.
-The rule is right and its subject is a *claim*. What it matches is a **filename**.
+`docs/agents/replication.md` has said that fidelity *has no editable fields, by
+definition — verbatim markup carries no annotations*. Measured, that is a property of
+the pipeline and not of the markup.
 
-Measured on SH859's commit: rewriting a fixture as
+A fidelity replica of `www.viglet.org`, 12 of 12 pages verbatim, was served and
+photographed against the source. Forty `sh-field` / `data-shio-prop` pairs were then
+written onto its kept markup and it was photographed again:
 
-    offences("cli/src/diff.mjs", `const key = \`a${NUL}b\`;`)
+    unchanged, four runs   0.13%  0.31%  0.28%  0.13%
+    after 41 annotations   0.31%
 
-failed the build with `cli/test/control-characters.test.mjs -> diff.mjs` — a hand-off
-nobody wrote. The string is an *argument* and the test asserts nothing whatever about
-that module. Renaming the fixture to a path with no extension cleared it, and that is a
-workaround: the next author writes the obvious fixture and meets the same wall, having
-read nothing about why.
+The source animates its own decorations, so it varies against itself by more than the
+annotations could ever cost. **The pixel price of annotating is below this source's
+noise floor.** `shio annotations` then answered `41 of 4 declared field(s) annotated`,
+and `digest` reported every region as `verbatim`, painted by one sheet — criterion 9
+satisfied trivially, because there is only ever one theme on such a page.
 
-This is SH794's family exactly — *a bare word in a prose scan matches inside any
-identifier a sentence names* — one construct along, and SH824 is the third instance.
-Three is enough to be worth a rule rather than a fourth fixture: a scan over prose has
-to say which **construct** it reads, and a string handed to a call is not prose.
+So *pixel-perfect and authorable* is not a contradiction: it is a fidelity page with
+attributes on it. Attributes do not lay out.
 
-The discriminator is at hand. `source-text.mjs` already strips code for the scans that
-want prose only; what SH792 needs is the opposite half — a filename inside a quoted
-argument is code, and one in a comment or a sentence is the subject. Whichever way it is
-drawn, the reader should name the shape it refuses, because this one refused a correct
-fixture and called it `hands-off`.
+`propose` already computes the mapping this needs — deriving `heading`, `intro` and
+`features.0.title` from a block is exactly how authorable mode fills a section. The same
+mapping, written as attributes onto the kept markup instead of as values into a new
+post, is the third mode.
+
+The open design question is where the values live so a write round-trips, and that is
+the task, not the demonstration.
+
+### XL.7 A verdict for the mode that did not run (SH865)
+
+SH860 works: `judge` names the bar file, states the mode, and separates findings that
+hold from findings at or below it. Two things about *which* verdict it reaches.
+
+**It read the wrong mode.** `convert` had just reported `12 of 12 page(s) in fidelity
+mode`, and `judge` answered `ACCEPTED as authorable`. The bar it applied is the one that
+excludes pixel comparison; the bar the site was owed is the one that requires it.
+
+**It said ACCEPTED while the instruments that define that bar abstained.** The run
+reported `2 unproven (diff, snapshot)` and then, correctly and in its own words:
+
+> accepted is a claim about the 2 instrument(s) that ran. diff, snapshot did not, and did not agree — nothing here says the question they answer came back clean
+
+That paragraph is right and it sits under a heading that says ACCEPTED. A reader who
+greps for the verdict gets the opposite of what the prose says. An abstention is not a
+pass, and for fidelity the abstaining instrument is the *only* one that tests the mode.
+
+Two fixes, independent. The mode comes from the plan, which `diff` already derives —
+`judge` should read it there rather than defaulting. And a verdict is `ACCEPTED` only
+when every instrument the mode's bar names has run; otherwise `INCONCLUSIVE`, naming
+which is missing and the flag that supplies it.
+
+`--against` also refused on both instruments here, which is how the abstention happened.
 
 ## XLIV The review nobody can do, on the files most worth reviewing (SH863)
 

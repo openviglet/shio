@@ -1554,6 +1554,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AI — Scans that match outside the construct they are about
 
 - **SH824** — A fixture pins the escape to the annotation's own arguments, verified by reverting the line and watching it go red; SH352 comes off the silent debt.
+- **SH862** — The hand-off reader takes the instrument's name from the sentence and stops at the first line that is not prose, so a path handed to a call is an argument again rather than a claim.
 
 ## Block AJ — A scope a scan cannot leave, since four have now left theirs
 
