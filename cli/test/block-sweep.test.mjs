@@ -105,7 +105,11 @@ const SWEEP = {
   },
   W: {
     swept: false,
-    why: "SH879 asks which SOURCE shapes the corpus can produce — the question SH833 and SH838 ask "
+    why: "SH879 and SH880, both instruments about this project's own reading of itself - which "
+      + "source shapes the corpus can produce, and which branch of the generated layout any render "
+      + "has ever reached. SH880 found a live defect doing it, and the defect was invisible in "
+      + "exactly the direction an outward surface cannot describe: a nav that renders either way. "
+      + "SH879 asks which SOURCE shapes the corpus can produce — the question SH833 and SH838 ask "
       + "of this repository's own mechanisms, turned outward. It changes what a contributor may "
       + "leave unmeasured and nothing a reader of the product can do; `docs/agents/cli.md` group N "
       + "carries it, and shio-site's README records the closure with the same verdict",
