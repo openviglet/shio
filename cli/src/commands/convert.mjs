@@ -77,8 +77,11 @@ export async function run(flags, positionals, ctx) {
     // and a whole theme printed 38 lines naming no colour, no role and no token. Enumerating by
     // hand is what makes that silent, and `report-wiring.test.mjs` is what stops the next one:
     // every parameter the formatter destructures must be passed at every call site it has.
-    document, stale, sections, pages, verbatim, mixed, extras, dropped, kept, declined, home,
-    unfollowed, palette,
+    // SH857 — `emptied` is the fourth outcome of the same pass, and it is here rather than only in
+    // the builder's return for the reason the two comments above give: this list is enumerated by
+    // hand, so a field nobody names here is computed, formatted and printed to nobody.
+    document, stale, sections, pages, verbatim, mixed, extras, dropped, kept, declined, emptied,
+    home, unfollowed, palette,
     // The builder's verbatim `SectionMarkup` posts. Renamed on the way out because `markup` is
     // already taken above by the *capture's* markup cache — two different things one word apart,
     // which is the other half of why this field never reached the report.
@@ -121,7 +124,7 @@ export async function run(flags, positionals, ctx) {
   // checking that a new field reached the report had two places to look and no reason to think so.
   const reported = {
     document, sections, markup: markupPosts, pages, verbatim, mixed, extras,
-    requires: proposal.requires, dropped, kept, declined, home, unfollowed, palette,
+    requires: proposal.requires, dropped, kept, declined, emptied, home, unfollowed, palette,
   };
 
   if (typeof flags.out === "string" && flags.out) {

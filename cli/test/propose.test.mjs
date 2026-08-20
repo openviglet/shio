@@ -320,6 +320,70 @@ test("repeated units become the repeat field's rows", () => {
 });
 
 /**
+ * SH857's measured shape: units that carry **text** — which is what `classify` requires before it
+ * proposes a collection at all — inside an element no `pick` rule in `unitFields` reads. A `<span>`
+ * is the commonest: three cards of `<div><span>…</span></div>` are three repeated units with text,
+ * and `title`, `body` and `icon` come from a heading, a paragraph and an image.
+ */
+const SPAN_CARDS = "<main><section><h2>Ask a question, get an answer</h2>"
+  + "<div><span>Search the docs and the API</span></div>"
+  + "<div><span>Ask in the console and get a reply</span></div>"
+  + "</section></main>";
+
+test("SH857: a repeated unit that fills no field is not written as a row", () => {
+  // One unit of the three holds its text where nothing reads it. The other two are ordinary cards.
+  const [block] = blocksOf(tree(
+    "<main><section><h2>Features and what they do</h2>"
+      + "<div><h3>Fast</h3><span>Very quick indeed</span></div>"
+      + "<div><h3>Safe</h3><span>Quite safe as well</span></div>"
+      + "<div><h3> </h3><span>Nothing readable in this one at all</span></div>"
+      + "</section></main>",
+  ));
+  const { fields, emptyRows, consumed } = fieldsFor("SectionFeatureGrid", block);
+
+  assert.deepEqual(fields.features, [{ title: "Fast" }, { title: "Safe" }],
+    "the same seam SH684 closed one level up, at the row's granularity: a candidate whose required "
+      + "field cannot be filled is declined rather than written");
+  assert.equal(emptyRows, 1);
+
+  assert.equal([...consumed].filter((node) => node.tag === "h3").length, 2,
+    "two of the three, because the dropped unit is NOT consumed: `lossFor` is the complement of "
+      + "what was consumed, so a unit marked read and then dropped would be absent from `fields` and "
+      + "from `loss` at once — silent in the one artefact whose job is to be trusted about exactly "
+      + "what a conversion throws away");
+});
+
+test("SH857: a collection every unit of which is empty is absent rather than a list of nothing", () => {
+  const [block] = blocksOf(tree(SPAN_CARDS));
+  const { fields, emptyRows } = fieldsFor("SectionFeatureGrid", block);
+
+  assert.deepEqual(fields, { heading: "Ask a question, get an answer" },
+    "measured on the replica as `heading` plus `features [ {}, {} ]`, drawing two grey rectangles "
+      + "under the heading. SH506's rule one field along: `{{#if features}}` guards the list, so an "
+      + "empty array and a missing key render identically and only one of them is a value a curator "
+      + "has to notice and delete");
+  assert.equal(emptyRows, 2);
+});
+
+test("SH857: the dropped rows are counted in the proposal's own notes", () => {
+  const html = SPAN_CARDS.replace(
+    "</section>",
+    "<div><span>Read the reference for every field</span></div></section>",
+  );
+  const proposal = buildProposal({
+    inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
+    markup: new Map([["/", html]]),
+    html: HTML,
+  });
+  const note = proposal.notes.find((each) => each.includes("produced no field value"));
+
+  assert.ok(note, `the count has to be somewhere a reader looks: ${JSON.stringify(proposal.notes)}`);
+  assert.match(note, /^3 repeated unit\(s\) across 1 candidate\(s\)/,
+    "a reader who counts three units in the capture and none in the proposal has to be able to "
+      + "find out why here rather than by diffing the two");
+});
+
+/**
  * SH476 — the measured case, and the round trip that says the escape happens exactly once.
  *
  * <p>The source spelled `rerank &amp; media models`, which a reader sees as `rerank & media models`.

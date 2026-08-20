@@ -164,6 +164,11 @@ export function buildConversion({
   // nothing but chrome.
   const kept = [];
   const declined = [];
+  // SH857 — the fourth outcome, and the only one that is about a *row* rather than a field. Held
+  // here rather than left to `propose` alone because a proposal is a file: one written before this
+  // guard existed, or edited by hand, still carries `features: [{}, {}]`, and re-running `convert`
+  // is what a curator looking at two empty cards will reach for.
+  const emptied = [];
   const sections = accepted
     .map((entry) => byId.get(entry.block))
     // An accepted candidate always has a type — `propose --accept` refuses a typeless one, whose
@@ -173,7 +178,7 @@ export function buildConversion({
       url: `${SECTIONS_FOLDER}/${row.id}`,
       type: row.type,
       folder: SECTIONS_FOLDER,
-      data: withoutChrome(row, chrome, dropped, kept, declined),
+      data: withoutEmptyRows(withoutChrome(row, chrome, dropped, kept, declined), row, emptied),
     }))
     // SH684 — `null` is a decline, and the block behind it stays verbatim: `composePages` is handed
     // the urls that were written, so a section missing from this list is one its page keeps as
@@ -339,6 +344,11 @@ export function buildConversion({
     // of sections would read that as a block the capture never held.
     ...(declined.length
       ? { declined: declined.sort((a, b) => (a.section < b.section ? -1 : 1)) }
+      : {}),
+    // SH857 — the rows this run refused to write, so the count of cards on the replica and the count
+    // of units in the capture can be reconciled from the report rather than by looking at the page.
+    ...(emptied.length
+      ? { emptied: emptied.sort((a, b) => (`${a.section}${a.field}` < `${b.section}${b.field}` ? -1 : 1)) }
       : {}),
     // SH584 — the bound the operator chose, joined to the pages this run is writing. Returned and
     // not only printed, for SH576's reason one line up: the corpus asserts it, and `--json` is a
@@ -514,6 +524,57 @@ function withoutChrome(row, chrome, dropped, kept, declined) {
     dropped.push({ section: row.id, field, value });
   }
   return data;
+}
+
+/**
+ * One section's data with every all-blank collection row removed (SH857).
+ *
+ * <h3>The card with nothing in it</h3>
+ *
+ * <p>Measured on a replica: `post:VigR7/sections/bcb58dcbb` carried `heading` and
+ * `features: [{}, {}]`, and the page drew two grey rectangles under the heading. SH832 is what made
+ * it visible rather than what caused it — before that, an empty row resolved `{{TEXT}}` up the
+ * context chain, borrowed its parent's title, and drew a card repeating the section heading: wrong,
+ * and it looked populated.</p>
+ *
+ * <h3>Why here and in `propose`, and NOT in the layout</h3>
+ *
+ * <p>The rationale proposed the layout as the cheaper side. It is the wrong side, for a reason the
+ * layout itself states forty lines up: a row is addressed by its **position** —
+ * `sh-field="features.{{@index}}.title"`, which `ShPostDraftMergeService` resolves into
+ * `data.features[0].title`. A layout that skipped a row would renumber every row after it, so a
+ * curator editing the third card through the Universal Editor would write into the second. Filtering
+ * has to happen where the array is *written*, or not at all — and Handlebars cannot express "this row
+ * has something in it" without a helper, the capability set being closed by SH183.</p>
+ *
+ * <p>So `propose` stops deriving the row and this stops writing one it is handed anyway. Both, because
+ * a proposal is a file that outlives the run that wrote it.</p>
+ */
+function withoutEmptyRows(data, row, emptied) {
+  if (!data) return data;
+  const out = {};
+  for (const [field, value] of Object.entries(data)) {
+    if (!Array.isArray(value)) {
+      out[field] = value;
+      continue;
+    }
+    const rows = value.filter((each) => !isBlankRow(each));
+    if (rows.length !== value.length) {
+      emptied.push({ section: row.id, field, rows: value.length - rows.length, type: row.type });
+    }
+    // Absent rather than `[]`, which is `withoutChrome`'s own rule for a field: `{{#if features}}`
+    // guards the whole list, so an empty array and a missing key render identically and only one of
+    // them is a value a curator has to notice and delete.
+    if (rows.length) out[field] = rows;
+  }
+  return out;
+}
+
+/** A row map no value of which says anything — the shape that renders as an empty card (SH857). */
+function isBlankRow(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.values(value).every((each) =>
+    each === undefined || each === null || String(each).trim() === "");
 }
 
 /**
@@ -1675,6 +1736,7 @@ function scriptsPost(scripts, site) {
 export function describeConversion({ document, sections, markup = [], pages = [], verbatim = 0,
                                      mixed = 0, extras,
                                      requires = [], dropped = [], kept = [], declined = [],
+                                     emptied = [],
                                      home = null, unfollowed = null, palette = null },
                                    options = {}) {
   const lines = [];
@@ -1873,6 +1935,21 @@ export function describeConversion({ document, sections, markup = [], pages = []
     );
     for (const row of declined.slice(0, 3)) {
       lines.push(`    ${row.section} (${row.type}) required: ${row.fields.join(", ")}`);
+    }
+  }
+  // SH857 — the row that said nothing, and the count is the point: the capture holds three repeated
+  // units and the replica draws two cards, and without this line the only way to learn why is to open
+  // the section in the console. `propose` reports the same fact about its own derivation; this reports
+  // it about the file it was handed, which is not always the same file that command wrote.
+  if (emptied.length) {
+    const total = emptied.reduce((sum, row) => sum + row.rows, 0);
+    lines.push(
+      `  ${total} collection row(s) not written — every field of the row was empty, so the layout `
+        + "would draw a card with nothing in it. Filtering at render would renumber the rows after "
+        + "it and misaddress `features.N.title`, so the drop is here, where the array is written",
+    );
+    for (const row of emptied.slice(0, 3)) {
+      lines.push(`    ${row.section}.${row.field} (${row.type}) — ${row.rows} row(s)`);
     }
   }
   // SH584 — the bound this run inherited, in the run that inherits it. Said here rather than left

@@ -52,6 +52,58 @@ test("SH618: a conversion that did what it promised reports no break", () => {
   assert.match(describeProposalDiff(result), /matches the proposal/);
 });
 
+test("SH857: a collection every row of which is blank is not a promise the artefact broke", () => {
+  // `convert` refuses to write such a row — the layout draws one card per row and a row with nothing
+  // in it is a grey rectangle — so the proposal promises a field the correct artefact does not carry.
+  // Before this, that read as `incomplete, missing features` against a conversion that was right.
+  const proposal = {
+    candidates: [{
+      id: "b1",
+      type: "FeatureGrid",
+      fields: { heading: "Ask a question, get an answer", features: [{}, { title: "  " }] },
+    }],
+    pages: [{ path: "/", title: "Home", blocks: ["b1"] }],
+  };
+  const plan = { accepted: [{ block: "b1", type: "FeatureGrid" }] };
+  const result = compare(
+    {
+      "/sections/b1": { data: { heading: "Ask a question, get an answer" } },
+      "/": { data: { sections: ["/sections/b1"] } },
+    },
+    plan,
+    proposal,
+  );
+
+  assert.equal(result.sections[0].status, "ok");
+  assert.deepEqual(result.sections[0].missing, [],
+    "a blank row is `{}` or a row whose every value is whitespace - the same test `convert` applies "
+      + "before writing, asked of the promise so the two cannot disagree");
+  assert.equal(result.broken, 0);
+});
+
+test("SH857: a collection with one row that says something is still promised", () => {
+  const proposal = {
+    candidates: [{
+      id: "b1",
+      type: "FeatureGrid",
+      fields: { heading: "Features", features: [{}, { title: "Fast" }] },
+    }],
+    pages: [{ path: "/", title: "Home", blocks: ["b1"] }],
+  };
+  const result = compare(
+    {
+      "/sections/b1": { data: { heading: "Features" } },
+      "/": { data: { sections: ["/sections/b1"] } },
+    },
+    { accepted: [{ block: "b1", type: "FeatureGrid" }] },
+    proposal,
+  );
+
+  assert.deepEqual(result.sections[0].missing, ["features"],
+    "the exemption is `every`, not `any`: one row with a value is a collection the artefact owes, "
+      + "and widening it to `some` would stop scoring the case the check exists for");
+});
+
 test("SH618: a section the plan accepted and the write never made is named", () => {
   const result = compare({
     "/sections/b1": { data: { HEADLINE: "hi", CTA: "go" } },

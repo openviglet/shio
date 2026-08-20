@@ -1513,6 +1513,29 @@ it. Four decisions worth keeping:
   could not fire is not a signal that was right. SH848's stated bound — *"nor is it a reversal, the
   button's text is a token of its own"* — is corrected in its own test, the way SH848 corrected
   SH847's.
+- **The row with nothing in it (SH857).** Measured: `post:VigR7/sections/bcb58dcbb` held `heading
+  "Ask a question, get an answer"` and `features [ {}, {} ]`, and the page drew two grey rectangles
+  under the heading. SH832 **uncovered** this rather than caused it — before it, an empty row resolved
+  `{{TEXT}}` up the context chain, borrowed its parent's title and drew a card repeating the section
+  heading: wrong, and it looked populated. The units were real (`classify` needs *repeated units with
+  text* before it proposes a collection at all) and their text was inside a `<span>`, which no `pick`
+  rule in `unitFields` reads. **The same seam SH684 closed one level up, at the row's granularity**: a
+  candidate whose required field cannot be filled is declined rather than written. Now `fieldsFor`
+  drops a row every declared field of which is blank, counts them as `emptyRows`, and `propose` says
+  so — and the dropped unit is deliberately **not** consumed, since `lossFor` is the complement of
+  what was consumed and a unit marked read then dropped would be absent from `fields` and from `loss`
+  at once. A collection left with no rows is **absent**, not `[]`, on SH506's rule one field along.
+  `convert` holds the same guard (`withoutEmptyRows`, a fourth outcome beside `dropped`/`kept`/
+  `declined`, wired at both call sites per SH849) because a proposal is a file that outlives the run
+  that wrote it: re-running `convert` is what a curator looking at two empty cards reaches for. And
+  `shio diff` stops promising such a field — `fieldsOf` exempts a collection whose **every** row is
+  blank, or a correct conversion reads as `incomplete, missing features`. **Not in the layout, which
+  the rationale proposed as the cheaper side.** A row is addressed by position —
+  `sh-field="features.{{@index}}.title"`, which `ShPostDraftMergeService` resolves into
+  `data.features[0].title` — so a layout that skipped a row would renumber every row after it and a
+  curator editing the third card through the Universal Editor would write into the second. Filtering
+  belongs where the array is *written*, and Handlebars cannot express "this row has something in it"
+  without a helper, the capability set being closed since SH183.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

@@ -725,35 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.3 The row with nothing in it (SH857)
-
-SH832 was right and it uncovered this. Before it, an empty row borrowed its parent's
-title and drew a card repeating the section heading — wrong, and it looked populated.
-Now the same row draws a card with nothing in it, and a curator sees two grey rectangles
-under a heading.
-
-The stored value is exactly that:
-
-    post:VigR7/sections/bcb58dcbb
-      heading  "Ask a question, get an answer"
-      features [ {}, {} ]
-
-Two rows, each an empty object. `propose` derived them because the source block had two
-repeated units — *"3 repeated units, each with text"* is its own reason for proposing a
-`SectionFeatureGrid` — and then no field of either unit produced a value. The rows were
-written regardless, and the layout draws one `<li class="shio-card">` per row.
-
-This is the same seam SH684 closed one level up: a candidate whose required field cannot
-be filled is declined rather than written. A row is the same case at the row's
-granularity, and it has no guard.
-
-Either side can hold it and the layout is the cheaper one. `propose` cannot always know
-whether a row will render — a row carrying only an `icon` is legitimately thin — but a
-row where **every** declared field is empty draws a box and nothing else, on any type.
-Skip it, and let `propose` report how many it dropped so the count is not silent.
-
-`shio diff` should also stop scoring an empty row as a row.
-
 ### XL.4 The overlay that cannot be dismissed (SH858)
 
 The replica serves `www.viglet.org`'s cookie banner, painted correctly, fixed over the

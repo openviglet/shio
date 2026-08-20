@@ -80,6 +80,65 @@ test("SH417: an accepted candidate becomes one section post, in DRAFT", () => {
   );
 });
 
+test("SH857: a proposal that promises an empty row is not written as one", () => {
+  // A proposal is a file, and this one was written before the guard in `propose` existed — which is
+  // the state every replica already converted is in, and re-running `convert` is what a curator
+  // looking at two empty cards will reach for. The measured post, verbatim.
+  const rows = (features) => candidate("b1a2", {
+    type: "SectionFeatureGrid",
+    fields: { heading: "Ask a question, get an answer", features },
+  });
+  const built = buildConversion({
+    proposal: {
+      candidates: [
+        rows([{}, {}]),
+        { ...rows([{ title: "Fast" }, {}, { title: "Cheap", body: "Really" }]), id: "c3d4" },
+      ],
+    },
+    plan: {
+      accepted: [
+        { block: "b1a2", type: "SectionFeatureGrid" },
+        { block: "c3d4", type: "SectionFeatureGrid" },
+      ],
+    },
+    site: "Acme",
+  });
+  const data = Object.fromEntries(built.document.posts.map((post) => [post.url, post.data]));
+
+  assert.deepEqual(data[`${SECTIONS_FOLDER}/b1a2`], { heading: "Ask a question, get an answer" },
+    "the layout draws one `<li class=\"shio-card\">` per row, so two empty rows are two grey "
+      + "rectangles under a heading");
+  assert.deepEqual(data[`${SECTIONS_FOLDER}/c3d4`].features,
+    [{ title: "Fast" }, { title: "Cheap", body: "Really" }],
+    "and the drop is per row: a collection with one empty row among three keeps the other two. It "
+      + "renumbers them, which is exactly why this happens where the array is WRITTEN — filtering at "
+      + "render would renumber against the stored array instead, and `sh-field=\"features.N.title\"` "
+      + "resolves into `data.features[N]`, so a curator editing the third card would write the second");
+  assert.deepEqual(built.emptied, [
+    { section: "b1a2", field: "features", rows: 2, type: "SectionFeatureGrid" },
+    { section: "c3d4", field: "features", rows: 1, type: "SectionFeatureGrid" },
+  ]);
+});
+
+test("SH857: the rows it refused to write are in the report, not only in the return", () => {
+  const built = buildConversion({
+    proposal: {
+      candidates: [candidate("b1a2", {
+        type: "SectionFeatureGrid",
+        fields: { heading: "Ask a question, get an answer", features: [{}, {}] },
+      })],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionFeatureGrid" }] },
+    site: "Acme",
+  });
+  const report = describeConversion({ ...built, requires: [] }, {});
+
+  assert.match(report, /2 collection row\(s\) not written/,
+    "SH849's rule, and this is the fourth outcome of the same pass: a field the builder returns "
+      + "that no call site names reaches no reader at all");
+  assert.match(report, /b1a2\.features \(SectionFeatureGrid\) — 2 row\(s\)/);
+});
+
 test("SH607: the declaration is sorted and de-duplicated, so one capture converts to one document", () => {
   // P5: two candidates of one type produce one name, and the order is the sort's rather than the
   // plan's. `--out` writes this to disk and a human diffs two runs of it, so a set whose order came

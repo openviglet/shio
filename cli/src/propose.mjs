@@ -803,14 +803,40 @@ export function fieldsFor(type, block, origin = null, paths = null) {
 
   const units = spec.repeats ? repeatedUnits(block) : [];
   const offered = new Set();
+  // SH857 — a row that produced no value at all, which the layout draws as a card with nothing in it.
+  let emptyRows = 0;
   if (spec.repeats && units.length) {
-    fields[spec.repeats.field] = units.map((unit) => {
-      const row = unitFields(spec.repeats.of, unit, take);
+    const rows = [];
+    for (const unit of units) {
+      const row = unitFields(spec.repeats.of, unit);
       // SH551 — the union across rows: one row offering a `<summary>` is enough to make a `question`
-      // empty on all of them a drop rather than a source with no labels.
+      // empty on all of them a drop rather than a source with no labels. Taken from **every** unit,
+      // including one that is about to be dropped: what the markup offered is a fact about the
+      // source, and reading it only off the surviving rows would make SH551's check quieter the
+      // worse the extraction went.
       for (const name of row.offered) offered.add(name);
-      return row.values;
-    });
+      // SH857 — the same seam SH684 closed one level up, at the row's granularity: a candidate whose
+      // required field cannot be filled is declined rather than written, and a row no field of which
+      // could be filled is a `<li class="shio-card">` with nothing inside it. SH832 is what made it
+      // visible — before it, an empty row borrowed its parent's title and drew a card repeating the
+      // section heading, which was wrong AND looked populated.
+      if (spec.repeats.of.every((name) => blank(row.values[name]))) {
+        emptyRows += 1;
+        // And NOT consumed, which is the half that keeps the report true: `lossFor` is computed as
+        // the complement of what the fields took, so a unit marked consumed and then dropped would
+        // be gone from `fields` and from `loss` both — silent in the one artefact whose job is to be
+        // trusted about exactly that. Unconsumed, its elements, its behaviour and its classes are
+        // reported as the loss they are, and any prose in it is still eligible for the section's own
+        // `intro` or `body` below, which is where that text belongs if it belongs anywhere.
+        continue;
+      }
+      take(unit);
+      rows.push(row.values);
+    }
+    // Absent rather than `[]` when every row went, for SH506's reason one field along: a reader gets
+    // "this section has no collection" rather than an offer of an empty one. The section is then a
+    // heading and its prose, which is what the source's block actually said.
+    if (rows.length) fields[spec.repeats.field] = rows;
   }
 
   const prose = descendants(block)
@@ -838,7 +864,7 @@ export function fieldsFor(type, block, origin = null, paths = null) {
     fields.image = image.attrs.src ?? "";
     take(image);
   }
-  return { fields, consumed, offered: [...offered].sort(byText) };
+  return { fields, consumed, offered: [...offered].sort(byText), emptyRows };
 }
 
 /**
@@ -900,7 +926,15 @@ export function sourceRelative(href, origin, paths = null) {
   return paths && paths.has(normalizePath(target.pathname)) ? relative : value;
 }
 
-function unitFields(names, unit, take) {
+/**
+ * One repeated unit's row values, and which fields its markup offered.
+ *
+ * <p>SH857 — it no longer marks the unit consumed. That decision moved to {@link fieldsFor}, which is
+ * the only place that knows whether the row survived: a unit consumed here and dropped there would
+ * be absent from `fields` and from `loss` at once, and the loss report is computed as the complement
+ * of what was consumed precisely so that it cannot under-report.</p>
+ */
+function unitFields(names, unit) {
   const out = {};
   const heading = descendants(unit).find((node) => /^h[1-6]$/.test(node.tag));
   // SH551 — a `<details>` is exactly two parts and its label is a `<summary>`, not a heading. The
@@ -969,7 +1003,6 @@ function unitFields(names, unit, take) {
     if (value) out[name] = value;
     if (offers[name]?.()) offered.push(name);
   }
-  take(unit);
   return { values: out, offered };
 }
 
@@ -1304,6 +1337,25 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     );
   }
 
+  // SH857 — the rows that mapped to nothing and are not written. Counted rather than left silent,
+  // because the dropped row is the one case where the artefact and the source disagree about how many
+  // units there are: a reader who counts three cards in the capture and two in the proposal has to be
+  // able to find out why here rather than by diffing. And it is a claim about the **extractor** in
+  // SH551's sense — the source repeated a shape and no `pick` rule in `unitFields` could read it.
+  const dropped = [...candidates.values()]
+    .filter((row) => row.emptyRows)
+    .sort((a, b) => byText(a.id, b.id));
+  if (dropped.length) {
+    const total = dropped.reduce((sum, row) => sum + row.emptyRows, 0);
+    notes.push(
+      `${total} repeated unit(s) across ${dropped.length} candidate(s) produced no field value at `
+        + "all and are NOT written as rows: every declared field of the row came back empty, so the "
+        + "row would render as a card with nothing in it — which is what it did before this was "
+        + "dropped, under a heading, twice. The unit's own content is in that candidate's `loss`: "
+        + `${dropped.slice(0, 4).map((row) => `${row.type} — ${row.emptyRows} row(s), candidate ${row.id}`).join("; ")}`,
+    );
+  }
+
   // SH580 — the candidates whose fields would carry less than half their own text. The walk in
   // `blocksOf` already declined to descend into these, because splitting them would keep no more, so
   // this is the residue: blocks the vocabulary matches and mostly cannot hold. Said out loud because
@@ -1546,7 +1598,7 @@ function describe(block, guess, index, origin, capturedPaths) {
       ...(postType ? { postType } : {}),
     };
   }
-  const { fields, consumed, offered } = fieldsFor(guess.type, block, origin, capturedPaths);
+  const { fields, consumed, offered, emptyRows } = fieldsFor(guess.type, block, origin, capturedPaths);
   const missing = missingRequired(guess.type, fields);
   return {
     type: guess.type,
@@ -1565,6 +1617,11 @@ function describe(block, guess, index, origin, capturedPaths) {
     // `buildProposal`'s row mapping): it is the input to one check inside this module, and a
     // per-candidate list on the artefact would be bytes every reader pays for and none reads.
     offered,
+    // SH857 — how many repeated units mapped to nothing and were dropped. Serialized only where it
+    // is not zero, because that is the whole of what a reader can act on: a count of zero on every
+    // healthy candidate is the clause nobody reads, and a *non*-zero one says the source repeated a
+    // shape this vocabulary has no field for — which is a claim about the extractor.
+    ...(emptyRows ? { emptyRows } : {}),
   };
 }
 

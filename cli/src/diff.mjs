@@ -611,13 +611,33 @@ export function compareProposal({ plan, proposal, held, sectionsFolder, pagesFol
   return { sections, pages, broken };
 }
 
-/** A candidate's promised field names, whichever shape the proposal recorded them in. */
+/**
+ * A candidate's promised field names, whichever shape the proposal recorded them in.
+ *
+ * <p>SH857 — a collection every row of which is blank is <b>not</b> promised. `convert` refuses to
+ * write such a row, because the layout draws one card per row and a row with nothing in it is a grey
+ * rectangle; so a proposal carrying `features: [{}, {}]` — which is what a run before that guard
+ * produced, and what a hand-edited plan may still say — would be scored `incomplete`, `missing
+ * features`, against an artefact that is correct. The promise a reader can hold the artefact to is
+ * the field that had something to store.</p>
+ */
 function fieldsOf(candidate) {
   const fields = candidate?.fields;
   if (Array.isArray(fields)) {
     return fields.map((f) => (typeof f === "string" ? f : f?.name)).filter(Boolean).sort();
   }
-  return fields && typeof fields === "object" ? Object.keys(fields).sort() : [];
+  if (!fields || typeof fields !== "object") return [];
+  return Object.entries(fields)
+    .filter(([, value]) => !(Array.isArray(value) && value.length && value.every(isBlankRow)))
+    .map(([name]) => name)
+    .sort();
+}
+
+/** A row map no value of which says anything — `convert`'s own test, asked of the promise (SH857). */
+function isBlankRow(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.values(value).every((each) =>
+    each === undefined || each === null || String(each).trim() === "");
 }
 
 /** `sections` is a list on the wire and may arrive as one string; both are one page's composition. */
