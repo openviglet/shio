@@ -1265,6 +1265,8 @@
 - **SH864** — Annotation is orthogonal to mode, and the values live in ordinary fields substituted at render — so the address stays a field name where an offset would die on the next edit or re-capture.
 - **SH870** — An annotated element shows the post's own field, substituted into the value before a template sees it — and markup with nothing to substitute is returned byte-for-byte rather than parsed.
 - **SH868** — convert --annotate stamps the mapping onto a wholly verbatim page's own markup and declares the fields it addresses, so the page keeps the source's bytes and gains editable ones.
+- 🗑 **SH875** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, so no authenticated capture was ever attempted.
+- 🗑 **SH874** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, so the measurement it proposed was never run.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
@@ -1589,3 +1591,5 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AP — Interoperating with a CMS Shio does not own (its content model, its editor)
 
+- 🗑 **SH877** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, with the tenant it depended on never sought.
+- 🗑 **SH876** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, before the run it depended on was ever made.
