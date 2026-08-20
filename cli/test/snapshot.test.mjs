@@ -18,6 +18,8 @@ import { test } from "node:test";
 import {
   compareShapes,
   compareSnapshots,
+  describeAgainst,
+  describeGeometry,
   describeShapes,
   describe as describeResult,
   pageTarget,
@@ -127,6 +129,67 @@ test("a pixel comparison finding zero differing pixels is 'same'", () => {
     compare: () => ({ ratio: 0, diff: Buffer.from("EMPTY") }),
   });
   assert.equal(result.status, "same");
+});
+
+/** The measured pair: a replica 4091px tall against a source 6076px, identical where they overlap. */
+const SHORTER = {
+  before: { width: 1280, height: 6076 },
+  after: { width: 1280, height: 4091 },
+  compared: { width: 1280, height: 4091 },
+};
+
+test("SH866: two pages of different heights are scored over what they have in common", () => {
+  // The comparator used to answer `ratio: 1` for any size mismatch and stop, so the one page a
+  // reader most needs scored — a replica a third shorter than its source — read `100.00% of pixels`:
+  // nothing matched, of a page whose first screen is identical. A fabricated magnitude is the number
+  // a caller builds a threshold on, which is the objection `compareSnapshots` already makes of the
+  // byte path two branches down.
+  const result = compareSnapshots(Buffer.from("X"), Buffer.from("Y"), {
+    compare: () => ({ ratio: 0, diff: Buffer.from("EMPTY"), geometry: SHORTER }),
+  });
+
+  assert.equal(result.ratio, 0, "the overlap is what was compared, and it matched");
+  assert.equal(result.status, "changed",
+    "and the two pages are NOT the same, which has to be said here because the ratio no longer says "
+      + "it — a replica two thousand pixels short answering `same` is the defect this fix would "
+      + "otherwise have introduced at the other end");
+  assert.deepEqual(result.geometry, SHORTER);
+});
+
+test("SH866: the clause says what was compared and which side is short", () => {
+  assert.equal(describeGeometry(SHORTER),
+    "compared over 1280×4091 — the replica is 1,985px shorter",
+    "two numbers a reader can act on, against one that says only `different`");
+  assert.equal(describeGeometry(SHORTER, { source: "the baseline", replica: "this run" }),
+    "compared over 1280×4091 — this run is 1,985px shorter",
+    "each label carries its own article: a template prepending `the` produced `the this run is` on "
+      + "this function's first measurement");
+
+  const taller = { ...SHORTER, after: { width: 1280, height: 8000 } };
+  assert.match(describeGeometry(taller), /the source is 1,924px shorter/,
+    "and the reading is one-directional the way `compareShapes` is: a replica TALLER than its "
+      + "source has gained something — a Shio layout composing a nav the source built in script — "
+      + "which sends a reader somewhere else entirely");
+
+  assert.equal(describeGeometry({ ...SHORTER, after: SHORTER.before }), null,
+    "and two pages of one size have nothing to say, so the ordinary case gains no clause");
+  assert.equal(describeGeometry(undefined), null, "nor does the byte path, which knows none of it");
+});
+
+test("SH866: the row a reader takes away carries the region the percentage is of", () => {
+  const line = describeAgainst([{
+    width: 1280,
+    status: "changed",
+    ratio: 0.0676,
+    resolution: "pixel",
+    geometry: SHORTER,
+    sourcePath: "a.png",
+    replicaPath: "b.png",
+  }], { source: "https://x.test/", page: "post:VigR7/" });
+
+  assert.match(line, /6\.76% of pixels \(pixel\)\s+compared over 1280×4091 — the replica is 1,985px shorter/,
+    "a percentage without its region is a claim about a whole page that was not compared — which is "
+      + "the same objection SH443 made of `worst 100.00%` on the line above it");
 });
 
 test("the summary line names the resolution of the claim it is making", () => {

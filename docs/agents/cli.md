@@ -1994,6 +1994,22 @@ is the second kind. Six decisions:
   sixteen editable tokens beside its own list of nine). Now `N differing (unmeasured)` and **no**
   percentage, with three cases rather than two: nothing measured it, measured and non-zero, measured
   and zero — only the first is unmeasured.
+- **And the third 100.00% was the comparator's own (SH866).** `pixelmatch` refuses two images of
+  different sizes, so the wrapper answered `ratio: 1` and stopped — a fabricated magnitude, which is
+  the objection this file makes twice above. Measured on one replica against its source, minutes
+  apart: `1280x4091 vs 1280x6076 → 100.00%` and, cropped to one viewport, `1280x900 vs 1280x900 →
+  6.76%`. *Nothing matched*, said the first, of a page whose first screen is 93% identical — and it
+  saturates **precisely where the instrument matters**, since a replica the same height as its source
+  is one already close enough to trust while one a third shorter is the case a reader most needs
+  scored. Now the **overlapping region** is compared, cropped top-left because the two share an origin
+  and diverge downwards, and the geometry rides on the result: `0.00% of pixels — compared over
+  1280×4091 — the replica is 1,985px shorter`. Two numbers a reader can act on against one that says
+  only *different*. **Two things it must not become.** Two pages of different sizes are `changed`
+  however well their overlap matches — the ratio no longer carries that, so `compareSnapshots` says
+  it, or a replica two thousand pixels short would report `same`. And the reading is one-directional
+  the way `compareShapes` is: a replica *taller* than its source has gained something, which sends a
+  reader somewhere else entirely, so the clause names which side is short rather than only by how
+  much.
 - **The comparator has real coverage now, and did not before (SH444).** `pixelmatch` and `pngjs` were
   in no lockfile, so every test here injected `compare` or ran the byte path *by absence* — the wiring
   between this command and the two helpers was never executed. Declaring them at the root turned

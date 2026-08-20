@@ -115,10 +115,17 @@ export function compareSnapshots(before, after, tools = {}) {
   const pixel = tools.compare ? tools.compare(before, after) : null;
   if (pixel) {
     return {
-      status: pixel.ratio > 0 ? "changed" : "same",
+      // SH866 — two pages of different sizes are **changed** however well their overlap matches, and
+      // that has to be said here because the ratio no longer says it. The comparator scores the
+      // common region now, so a replica two thousand pixels shorter than its source can answer 0.00%
+      // — which is true of the part that exists and is the wrong answer to "did this page change".
+      status: pixel.ratio > 0 || resized(pixel.geometry) ? "changed" : "same",
       ratio: pixel.ratio,
       diff: pixel.diff ?? null,
       resolution: "pixel",
+      // What was compared, and what the two actually were. Absent from the byte path, which knows
+      // none of it — and absent rather than zeroed, for the reason `ratio` is null there.
+      ...(pixel.geometry ? { geometry: pixel.geometry } : {}),
     };
   }
   return {
@@ -129,6 +136,47 @@ export function compareSnapshots(before, after, tools = {}) {
     diff: null,
     resolution: "bytes",
   };
+}
+
+/** Whether the two images this geometry describes are different sizes (SH866). */
+export function resized(geometry) {
+  if (!geometry?.before || !geometry?.after) return false;
+  return geometry.before.width !== geometry.after.width
+    || geometry.before.height !== geometry.after.height;
+}
+
+/**
+ * The sentence a percentage over a common region owes its reader (SH866).
+ *
+ * <p>Two numbers rather than one, which is the whole shape of the fix: *what was compared* and *what
+ * was left out*. `6.76% of pixels` alone is a claim about a page, and it is a claim about the top 900
+ * rows of one — a reader who is not told cannot tell that from a full-page reading, and the old
+ * `100.00%` at least had the virtue of being obviously wrong.</p>
+ *
+ * <p>Names which side is short, because that is the actionable half. A replica shorter than its
+ * source has lost content; a replica *taller* has gained it — a Shio layout composing a nav the
+ * source built in script, which is the same one-directional reading `compareShapes` makes — and the
+ * two send a reader to different places.</p>
+ *
+ * <p>Each label carries its own article, rather than the template supplying one: the ordinary mode's
+ * sides are `the baseline` and `this run`, and a template that prepended `the` produced
+ * <i>the this run is 1,985px shorter</i> on the first measurement of this function.</p>
+ *
+ * @returns a clause, or null where the two are the same size and there is nothing to say
+ */
+export function describeGeometry(geometry, { source = "the source", replica = "the replica" } = {}) {
+  if (!resized(geometry)) return null;
+  const { before, after, compared } = geometry;
+  const parts = [`compared over ${compared.width}×${compared.height}`];
+  const short = (axis, one, other) => {
+    if (one === other) return null;
+    const by = Math.abs(one - other).toLocaleString("en-US");
+    return `${one < other ? replica : source} is ${by}px ${axis}`;
+  };
+  const shorter = short("shorter", after.height, before.height);
+  const narrower = short("narrower", after.width, before.width);
+  for (const each of [shorter, narrower]) if (each) parts.push(each);
+  return parts.join(" — ");
 }
 
 function sameBytes(a, b) {
@@ -257,7 +305,11 @@ export function describeAgainst(rows, { source, page, limit } = {}) {
     const magnitude = row.ratio === null
       ? (row.status === "same" ? "identical bytes" : "differs (bytes only — no magnitude)")
       : `${(row.ratio * 100).toFixed(2)}% of pixels`;
+    // SH866 — and over what. The percentage is a reading of the two pages' common region now, so a
+    // row that does not say the region is making a claim about a whole page it did not compare.
+    const over = describeGeometry(row.geometry);
     lines.push(`  ${row.width}px  ${magnitude} (${row.resolution})`
+      + (over ? `  ${over}` : "")
       + (row.diffPath ? `  diff → ${row.diffPath}` : ""));
   }
   if (rows.length > shown) lines.push(`  … ${rows.length - shown} more width(s)`);
@@ -303,7 +355,12 @@ export function describe(result, { slug, path, diffPath } = {}) {
   }
   const magnitude = result.ratio === null ? "" : ` — ${(result.ratio * 100).toFixed(2)}% of pixels`;
   const diff = diffPath ? `, diff → ${diffPath}` : "";
-  return `shio snapshot: ${slug} CHANGED${magnitude} (${result.resolution})${where}${diff}`;
+  // SH866 — in the ordinary mode the two sides are the same page at two moments, so a size change is
+  // the page having grown or shrunk. `baseline`/`this run` rather than source/replica: nobody else's
+  // site is involved here, and calling the older picture a `source` would say there was.
+  const over = describeGeometry(result.geometry, { source: "the baseline", replica: "this run" });
+  return `shio snapshot: ${slug} CHANGED${magnitude} (${result.resolution})`
+    + `${over ? ` — ${over}` : ""}${where}${diff}`;
 }
 
 /**

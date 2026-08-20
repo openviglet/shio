@@ -400,6 +400,9 @@ async function against(resolved, { slug, dir, widths, admin, flags, browser }, c
       sourcePath: paths.source,
       replicaPath: paths.replica,
       diffPath,
+      // SH866 — what the percentage was measured over, and how the two pages differ in size. The
+      // row is what `--json` hands a caller, so a number without its region reaches one there too.
+      ...(result.geometry ? { geometry: result.geometry } : {}),
       ...(shapes ? { shapes } : {}),
     });
   }
@@ -659,15 +662,56 @@ async function comparator(ctx) {
   return (before, after) => {
     const a = PNG.sync.read(Buffer.from(before));
     const b = PNG.sync.read(Buffer.from(after));
-    // Different dimensions is a change by definition, and pixelmatch refuses to compare them —
-    // so it is answered here rather than thrown.
-    if (a.width !== b.width || a.height !== b.height) {
-      return { ratio: 1, diff: null };
-    }
-    const diff = new PNG({ width: a.width, height: a.height });
-    const pixels = match(a.data, b.data, diff.data, a.width, a.height, { threshold: 0.1 });
-    return { ratio: pixels / (a.width * a.height), diff: PNG.sync.write(diff) };
+    // SH866 — the **overlapping region**, where this used to answer `ratio: 1` and stop.
+    //
+    // pixelmatch refuses two images of different sizes, and answering 1 for that case was a
+    // fabricated number of the kind `compareSnapshots` refuses two branches down (*a fabricated
+    // magnitude is exactly the number a caller would build a threshold on*). Measured on one replica
+    // against its source, minutes apart:
+    //
+    //     full page   1280x4091 vs 1280x6076   100.00% of pixels
+    //     viewport    1280x900  vs 1280x900      6.76% of pixels
+    //
+    // Nothing had matched, said the first, of a page whose first screen is 93% identical. And it
+    // saturates precisely where the instrument matters: a replica the same height as its source is
+    // one already close enough to trust, while one a third shorter is the case a reader most needs
+    // scored. `100.00%` then reads as a catastrophe and sends them looking for one.
+    const width = Math.min(a.width, b.width);
+    const height = Math.min(a.height, b.height);
+    const geometry = {
+      before: { width: a.width, height: a.height },
+      after: { width: b.width, height: b.height },
+      compared: { width, height },
+    };
+    // No overlap at all: 1 is exact here rather than fabricated, since there is no common pixel.
+    if (!width || !height) return { ratio: 1, diff: null, geometry };
+    const diff = new PNG({ width, height });
+    const pixels = match(
+      cropped(PNG, a, width, height).data,
+      cropped(PNG, b, width, height).data,
+      diff.data, width, height, { threshold: 0.1 },
+    );
+    return { ratio: pixels / (width * height), diff: PNG.sync.write(diff), geometry };
   };
+}
+
+/**
+ * The top-left `width` × `height` of an image, or the image itself where it is already that (SH866).
+ *
+ * <p>Top-left because a page is laid out from the top: the two images share an origin and diverge
+ * further down, which is what makes the overlap the comparable part. Cropping from the centre or the
+ * bottom would align a replica's header with a source's body and report a difference that is only
+ * this function's arithmetic.</p>
+ */
+function cropped(PNG, image, width, height) {
+  if (image.width === width && image.height === height) return image;
+  const out = new PNG({ width, height });
+  const stride = width * 4;
+  for (let y = 0; y < height; y += 1) {
+    const from = y * image.width * 4;
+    image.data.copy(out.data, y * stride, from, from + stride);
+  }
+  return out;
 }
 
 async function optional(name) {

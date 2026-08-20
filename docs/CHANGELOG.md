@@ -1258,6 +1258,7 @@
 - **SH857** — A repeated unit that fills no field is dropped by propose and by convert, counted in both reports, and no longer promised by diff — not filtered at render, where it would renumber the rows.
 - **SH858** — An overlay on a page that captured no script is cut out of the kept markup and named per page; a page that captured one keeps its banner exactly as it was.
 - **SH860** — judge answers accepted against a declared bar in acceptance.properties, prints what the bar admitted, and holds a kind the bar does not name — with the build failing on an undeclared one.
+- **SH866** — Two pages of different sizes are scored over the region they share and the run says which side is short by how much, where a size mismatch used to answer a fabricated 100.00%.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
