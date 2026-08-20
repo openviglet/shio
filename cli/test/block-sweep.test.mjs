@@ -115,8 +115,13 @@ const SWEEP = {
       + "carries it, and shio-site's README records the closure with the same verdict",
   },
   J: {
-    swept: false,
-    why: "SH881 lists a post-type both section packages already carried, and adds the check that "
+    swept: true,
+    why: "SH884 - `docs-shio`'s blueprints page says an applied section package arrives editable on "
+      + "the page, page title and description included, which is a thing a curator can now do and "
+      + "could not before. SH881 owed no sweep on its own (a post-type both packages already "
+      + "carried, and the check that holds a directory against its manifest); it is recorded here "
+      + "rather than in a second entry because a block declares one verdict. The old reason: "
+      + "SH881 lists a post-type both section packages already carried, and adds the check that "
       + "holds a package's directory against its manifest. What a reader of the product can do is "
       + "unchanged - an applied package installs one more type it was always meant to - and no "
       + "outward surface states a package's post-type count as a promise; `docs/agents/"
