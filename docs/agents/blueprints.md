@@ -471,6 +471,45 @@ somebody else's change is the one a later reader will misattribute.
 `ShBlueprintApplyTest` bends one **on purpose** to prove a mismatch is reported, so every later apply
 in that class meets it. This assertion was written there first and failed on exactly that.
 
+### The navigation the package already carried and never used (SH873)
+
+Found by **authoring** rather than replicating — the second task shape SH603 asked for, and the
+first thing it surfaced. Building a pharmacy site from `marketing-site` produced a menu reading
+*Contato, Farmacêutico responsável — Farmácia Vitalis, Farmácia Vitalis, Produtos — Farmácia
+Vitalis*: five pages, six entries, alphabetical, the home page buried in the middle under its own
+brand name. The nav was
+
+```
+{{#query type="Page" sort="title" limit="20"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}
+```
+
+and `title` is also what the layout puts in `<title>`, so **one string served two audiences with
+opposite needs** — a search result wants the brand appended, a menu wants two words. `sort="title"`
+was the only ordering available and every page was an entry.
+
+**The fix was built three blocks earlier.** SH382's `{{#menu title=}}` renders a curated menu out of
+ordinary `Menu`/`MenuItem` content, and its javadoc enumerates this defect as its own reason for
+existing: *"a label that differs from the page title, groups that are not folders, an ordering that
+is editorial, entries that leave the site, a page deliberately left out"*. Both packages even
+**carried `Menu.json` and `MenuItem.json` in their `post-types/` directory** — and neither manifest
+listed them, so nothing provisioned the types and no layout could have used one. The one place a new
+user meets Shio's navigation was demonstrating the shape SH382 exists to replace.
+
+So the two types join both manifests, each package ships a `Primary` menu with short-labelled items
+in editorial order, and the layout renders `{{#menu}}` with SH381's `{{#if url}}` branch — which
+costs one `{{#if}}` and gives a curator a group heading for free. **No model change**, and that is
+the decision: `Page.navLabel`/`navOrder` would be a *second* navigation mechanism competing with the
+one that already has a helper, a lint rule (SH382's `MenuItem` pointing nowhere) and console
+support.
+
+Not extended to `convert`'s generated layout, which carries the same query (SH575): a replica has no
+authored menu, and building one from a captured `<nav>` is a different task from this one.
+
+**Measured: `build-marketing-site` 3928 tokens against a 3800 ceiling**, raised to 4000 with the
+reason beside the number. Two more post-types and four more posts is five more ops in the apply's
+report — SH518's lever argument, unchanged — and the alternative costs a curator four writes and a
+re-publish on every site, which no budget counts. Ratio 2.79x against an unmoved baseline.
+
 ## What an applied package may do, stated once (SH643)
 
 A blueprint provisions post-types and writes pages **under the credentials of whoever applies it**.

@@ -38,6 +38,8 @@
   },
   "postTypes": [
     "post-types/Page.json",
+    "post-types/Menu.json",
+    "post-types/MenuItem.json",
     "post-types/SectionCta.json",
     "post-types/SectionFaq.json",
     "post-types/SectionFeatureGrid.json",

@@ -1269,6 +1269,7 @@
 - 🗑 **SH874** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, so the measurement it proposed was never run.
 - **SH871** — --annotate declares its own fields: the document's postTypeFields compile to render.provision's data.fields, listed once per name, and no longer as requires lines nobody could satisfy.
 - **SH872** — The annotated text stays in the markup that carries it, so Page keeps its four fields on a site of any size and a key its own markup annotates is declared by that markup.
+- **SH873** — Both section packages ship a curated Primary menu and render it, so the nav carries short labels in editorial order instead of every page's SEO title alphabetically.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

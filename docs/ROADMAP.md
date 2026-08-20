@@ -11,8 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH873** (deps: —) **A page's nav label is its title, so an SEO title becomes the menu and every page is listed alphabetically** — Building a pharmacy site from a blueprint produced a menu reading Contato, Farmacêutico responsável — Farmácia Vitalis, Farmácia Vitalis, Produtos — Farmácia Vitalis. → §XL.15
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

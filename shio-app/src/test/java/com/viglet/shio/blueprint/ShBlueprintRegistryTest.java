@@ -136,9 +136,38 @@ class ShBlueprintRegistryTest {
         for (String name : List.of("marketing-site", "landing")) {
             assertThat(registry.require(name).postTypeNames())
                     .as(name)
-                    .containsExactly("Page", "SectionCta", "SectionFaq", "SectionFeatureGrid",
-                            "SectionHero", "SectionLogoWall", "SectionRichText",
-                            "SectionTestimonial");
+                    // SH873 — `Menu` and `MenuItem` sat in both packages' `post-types/` directory
+                    // and in neither manifest, so nothing provisioned them and neither layout could
+                    // have used one. Their nav was `{{#query type="Page" sort="title"}}`, which is
+                    // the shape SH382's helper exists to replace: a page's title is written for
+                    // search and became the menu entry, and every page was one, alphabetically.
+                    .containsExactly("Page", "Menu", "MenuItem", "SectionCta", "SectionFaq",
+                            "SectionFeatureGrid", "SectionHero", "SectionLogoWall",
+                            "SectionRichText", "SectionTestimonial");
+        }
+    }
+
+    @Test
+    @DisplayName("SH873: and each ships a curated menu, so the nav is not the page titles")
+    void sectionPackagesShipACuratedMenu() {
+        // The assertion that would have caught it, at the boundary it crossed: the package a new
+        // user applies. Building a pharmacy site from `marketing-site` produced a menu reading
+        // `Contato, Farmacêutico responsável — Farmácia Vitalis, Farmácia Vitalis, Produtos —
+        // Farmácia Vitalis` — the SEO title of every page, sorted alphabetically, home in the
+        // middle under its own brand name.
+        for (String name : List.of("marketing-site", "landing")) {
+            ShBlueprint blueprint = registry.require(name);
+            assertThat(blueprint.postTypeNames()).as(name).contains("Menu", "MenuItem");
+            String content = blueprint.content().toString();
+            assertThat(content)
+                    .as("%s renders a curated menu rather than listing every page by title", name)
+                    .contains("{{#menu title=\\\"Primary\\\"}}")
+                    .doesNotContain("{{#query type=\\\"Page\\\" sort=\\\"title\\\"")
+                    // And it ships the menu the layout names, or `{{#menu}}` renders `{{else}}`
+                    // and the package's own nav is empty — a starting point that does not start.
+                    .contains("\"type\":\"Menu\"")
+                    .contains("\"type\":\"MenuItem\"")
+                    .contains("\"title\":\"Primary\"");
         }
     }
 

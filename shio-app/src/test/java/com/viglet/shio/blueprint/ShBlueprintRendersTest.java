@@ -126,5 +126,21 @@ class ShBlueprintRendersTest {
                         + "than an empty <style> — the trap SH280 records for a THEME that names "
                         + "a post the site has not got")
                 .contains("--accent");
+
+        // SH873 — the assertion that would have caught it, at the boundary it crossed: the page a
+        // new user gets from the package. The nav was `{{#query type="Page" sort="title"}}`, so a
+        // page titled for search became the menu entry and every page was one, alphabetically —
+        // measured on a pharmacy site as `Contato, Farmacêutico responsável — Farmácia Vitalis,
+        // Farmácia Vitalis, Produtos — Farmácia Vitalis`. Here, `About Acme` and `Acme` would have
+        // sorted ahead of `Pricing` and put the home page in the middle under the brand name.
+        String nav = html.substring(html.indexOf("<nav"), html.indexOf("</nav>"));
+        assertThat(nav)
+                .as("the labels are the menu's, written for a menu")
+                .contains(">Home<").contains(">Pricing<").contains(">About<")
+                .doesNotContain("About Acme");
+        assertThat(nav.indexOf(">Home<"))
+                .as("and the order is the menu's — editorial, not alphabetical, which is the "
+                        + "second half a page listing has no way to express")
+                .isLessThan(nav.indexOf(">About<"));
     }
 }

@@ -724,31 +724,3 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
-
-### XL.15 The menu that is really a title (SH873)
-
-Found by authoring rather than replicating — the second task shape SH603 asked for, and
-the first thing it surfaced.
-
-The `marketing-site` blueprint's layout builds navigation from the page list:
-
-    {{#query type="Page" sort="title" limit="20"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}
-
-`title` is also what the layout puts in `<title>`, so a page titled for search — *Trocas
-e devoluções — Farmácia Vitalis* — puts that whole string in the menu. A five-page site
-rendered a nav of six entries, alphabetical, each carrying the site name twice.
-
-Both halves are model gaps, not template ones. `Page` declares `title, description,
-content, sections`: **no menu label**, so one string serves two audiences with opposite
-needs — a search result wants the brand appended, a menu wants two words. And **no menu
-order or inclusion**, so `sort="title"` is the only ordering available and every page is
-a menu item: an alphabetical menu opens with *Contato* and buries the home page under
-its own brand name in the middle.
-
-The workaround is to write short titles and accept a worse `<title>`, which is what this
-site did.
-
-`navLabel` and a `navOrder` — or a folder-shaped menu the way the content tree already
-is — are the two smallest fixes. Whichever, `SectionHero`'s own `heading` shows the
-pattern already exists: a page's display string and its identity string are not the same
-field.
