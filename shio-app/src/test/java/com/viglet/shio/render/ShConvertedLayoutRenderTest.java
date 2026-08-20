@@ -389,7 +389,74 @@ class ShConvertedLayoutRenderTest {
             entities.set("sections", MAPPER.createArrayNode().add(ENTITY_URL + "/hero"));
             post(site, root, pageType, "Entities", ENTITY_URL, entities.toString(), when);
         });
+        seedAReplicaWhoseSourceStatedANavigation(body);
     }
+
+    /**
+     * SH880 — the second branch of the nav, on a site of its own.
+     *
+     * <h3>Why a second site rather than a menu on the first one</h3>
+     *
+     * <p>SH878 gave the generated layout two branches: {@code {{#menu title="Primary"}}} over the
+     * menu a capture built from the source's own {@code <nav>}, and the page listing as
+     * {@code {{else}}}. The site above seeds no {@code Menu}, so it renders the fallback — and the
+     * assertion that proved the nav worked read <em>page titles</em> out of it, which is the
+     * fallback's output. Adding a menu there would have made that assertion test nothing, so the
+     * two branches get a page each. It is also the honest split: measured on the source corpus, one
+     * archetype produces a menu and five state no navigation at all.</p>
+     *
+     * <h3>What only a render can say about it</h3>
+     *
+     * <p>{@code {{#menu}}} resolves a post by <b>title</b>, anywhere in the site, and requires it to
+     * carry a non-empty {@code items}. A conversion writes the menu into {@code /menu} and the pages
+     * into {@code /}, and no render had ever crossed that: a template assertion in JavaScript proves
+     * the markup was written, and would stay green if the lookup came back empty on a replica's own
+     * folder layout, if {@code Menu} were never provisioned, or if the helper's name were misspelled
+     * — every one of which renders as the fallback, which looks like a working nav.</p>
+     */
+    private void seedAReplicaWhoseSourceStatedANavigation(String body) {
+        menuSiteName = "sh880-" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite site = new ShSite();
+            site.setName(menuSiteName);
+            site.setDate(when);
+            site.setOwner("admin");
+            site.setPostTypeLayout("{\"Page\":\"" + LAYOUT_TITLE + "\"}");
+            entityManager.persist(site);
+
+            ShFolder root = folder(site, null, menuSiteName, when);
+            ShFolder menu = folder(site, root, "menu", when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType pageType = postType("Page", (byte) 0, when);
+            ShPostType menuType = postType("Menu", (byte) 0, when);
+            ShPostType menuItemType = postType("MenuItem", (byte) 0, when);
+
+            post(site, menu, layoutType, LAYOUT_TITLE, "/theme/layout",
+                    json("HTML", "<!doctype html><html><head><title>{{post.title}}</title>"
+                            + "</head><body>\n" + body + "\n</body></html>"), when);
+
+            // The titles a capture reads off each page's own `<title>`, which is what the fallback
+            // would draw — and what SH873 and SH878 are both about. The menu's labels are the
+            // source's own, and the two disagree on purpose.
+            post(site, root, pageType, "Northwind & Co", "/",
+                    json("title", "Northwind & Co"), when);
+            post(site, root, pageType, "About & contact - Northwind & Co", ABOUT_URL,
+                    json("title", "About & contact - Northwind & Co"), when);
+
+            post(site, menu, menuItemType, "Home", "/menu/home",
+                    "{\"label\":\"Northwind & Co\",\"target\":[\"/\"]}", when);
+            post(site, menu, menuItemType, "About", "/menu/about",
+                    "{\"label\":\"About\",\"target\":[\"" + ABOUT_URL + "\"]}", when);
+            post(site, menu, menuType, "Primary", "/menu/primary",
+                    "{\"title\":\"Primary\",\"items\":[\"/menu/home\",\"/menu/about\"]}", when);
+        });
+    }
+
+    /** SH880 — the second replica's about page, whose title and menu label deliberately differ. */
+    private static final String ABOUT_URL = "/about";
+
+    private String menuSiteName;
 
     /**
      * SH476 — the other half of the seam, and the reason it is asserted here rather than in the CLI.
@@ -496,6 +563,40 @@ class ShConvertedLayoutRenderTest {
                         + "edits a page is a control people misclick, which is the same argument "
                         + "`{{#translations}}` makes for ordering a switcher by locale")
                 .isLessThan(html.indexOf(">Vocabulary<"));
+        // SH880 — and this site is the FALLBACK branch, which is what those page titles are. Said
+        // out loud because it stopped being the only branch: SH878 put `{{#menu}}` in front of this
+        // listing, and a reader of the assertion above cannot tell which of the two produced it.
+        assertThat(html)
+                .as("this replica's capture stated no navigation, so `{{#menu}}` finds nothing and "
+                        + "`{{else}}` draws the page listing — the shape five of the seven corpus "
+                        + "archetypes have")
+                .doesNotContain("/menu/");
+    }
+
+    @Test
+    @DisplayName("SH880: a replica whose source stated a menu renders THAT, in the source's order")
+    void aReplicaWithAMenuRendersTheMenu() {
+        // The assertion that would have caught it, at the boundary only the JVM can reach:
+        // `{{#menu}}` resolves a post by title, anywhere in the site, and needs a non-empty `items`.
+        // A conversion writes the menu into `/menu` and the pages into `/`, and no render had ever
+        // crossed that — every way of getting it wrong renders the fallback, which looks like a
+        // working nav.
+        String html = shPageRenderService.render(menuSiteName, "/", ShPostState.DRAFT).html();
+
+        assertThat(html).contains("<nav class=\"shio-nav\" aria-label=\"Site\">");
+        assertThat(html)
+                .as("the labels are the MENU's, not the pages' — which is the whole of SH873 and "
+                        + "SH878: a page's title is written for search and its menu entry is not")
+                .contains(">About<")
+                .doesNotContain(">About & contact - Northwind & Co<");
+        assertThat(html.indexOf(">Northwind &amp; Co<"))
+                .as("and the order is the menu's, which is the source's own — alphabetically "
+                        + "`About` would come first, and that is precisely what the fallback did")
+                .isLessThan(html.indexOf(">About<"));
+        assertThat(html)
+                .as("each entry links to the page its MenuItem targets, resolved through the "
+                        + "helper rather than spelled in the template")
+                .contains("href=\"" + ABOUT_URL + "\"");
     }
 
     /**

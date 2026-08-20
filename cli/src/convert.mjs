@@ -117,7 +117,17 @@ export const PAGES_FOLDER = "/";
 /** Where the menu a source states about itself is written (SH878). */
 export const MENU_FOLDER = "/menu";
 
-/** The `Menu` post's title, which is the string `{{#menu title=}}` in the layout looks up. */
+/**
+ * The `Menu` post's title, which is the string `{{#menu title=}}` in the layout looks up.
+ *
+ * <p><b>Spelled twice on purpose, and pinned rather than interpolated (SH880).</b>
+ * {@link PAGE_BODY_HTML} is a <em>cross-language contract</em>: `ShConvertedLayoutRenderTest`
+ * slices it out of this file's bytes between two backticks, so a `${…}` inside it reaches the JVM
+ * uninterpolated. Writing the title as an interpolation shipped a layout asking for a menu called
+ * `${MENU_TITLE}`, which matches nothing and renders the `{{else}}` fallback — a working-looking
+ * nav, with every JavaScript assertion green because in JavaScript the literal interpolates. The
+ * two spellings are held equal by `convert.test.mjs`, which is the cheap half of the pair.</p>
+ */
 export const MENU_TITLE = "Primary";
 
 /** The two post-types a curated menu is made of, shared with the SH95 vocabulary. */
@@ -818,7 +828,7 @@ export const WRAPPER_ROLES = Object.freeze(["shio-container", "shio-stack", "shi
  * would be a worse defect than the one it fixes. The same shape `SectionTestimonial.quotes` already
  * uses on the React side — annotate without drawing — for the same reason.</p>
  */
-export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-label="Site"><ul>{{#menu title="${MENU_TITLE}"}}<li>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{else}}{{#query type="Page" sort="title" limit="50"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}{{/menu}}</ul></nav>{{/unless}}
+export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-label="Site"><ul>{{#menu title="Primary"}}<li>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{else}}{{#query type="Page" sort="title" limit="50"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}{{/menu}}</ul></nav>{{/unless}}
 {{#if content}}{{{content}}}{{/if}}
 {{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
 {{#if content}}<div hidden sh-field="title">{{title}}</div>{{/if}}

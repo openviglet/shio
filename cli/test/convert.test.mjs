@@ -26,7 +26,7 @@ import { test } from "node:test";
 
 import {
   CAPTURED_STYLE_HTML, CAPTURED_THEME_URL, LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER,
-  PAGE_BODY_HTML,
+  MENU_TITLE, PAGE_BODY_HTML,
   VOCABULARY_CLASSES, WRAPPER_ROLES, buildConversion, describeConversion, pageBodyFor,
   sectionFieldsOf, withResolvedFileFields,
 } from "../src/convert.mjs";
@@ -2652,6 +2652,20 @@ test("SH575: the generated layout emits a navigation, over the site's own pages"
   // branch is the ordinary case rather than a safety net.
   assert.match(nav[1], /\{\{#menu title="Primary"\}\}[\s\S]*\{\{else\}\}[\s\S]*\{\{#query type="Page"/,
     "the source's own menu first, the page listing only where it stated none");
+});
+
+test("SH880: the layout literal carries no interpolation, because the JVM reads its bytes", () => {
+  // Found by SH880's own render on its first run. `PAGE_BODY_HTML` is a cross-language contract —
+  // `ShConvertedLayoutRenderTest` slices it out of convert.mjs between two backticks (SH245), so a
+  // `${…}` in it reaches the JVM as the four characters `${x}`. SH878 wrote the menu's title as an
+  // interpolation, which shipped a layout asking for a menu called `${MENU_TITLE}`: it matches
+  // nothing, `{{else}}` draws the page listing, and the page looks like a site with a working nav.
+  // Every assertion in this file stayed green, because here the literal interpolates.
+  assert.equal(PAGE_BODY_HTML.includes("${"), false,
+    "an interpolation here is invisible to the reader that matters — it is correct in this "
+      + "language and a literal in the other one");
+  assert.match(PAGE_BODY_HTML, new RegExp(`\\{\\{#menu title="${MENU_TITLE}"\\}\\}`),
+    "and the two spellings agree: the title the layout looks up is the title the Menu post carries");
 });
 
 test("SH878: a source that states its own navigation is replicated saying what it said", () => {

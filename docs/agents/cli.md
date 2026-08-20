@@ -1865,6 +1865,21 @@ it. Four decisions worth keeping:
 
   The report prints **both** numbers — entries written and links the source stated — because the
   difference is what a reader checks: a bare count of items reads as everything the source had.
+- **The layout literal is a cross-language contract, so it carries no interpolation (SH880).** The
+  nav had two branches and only one was ever *rendered*: `ShConvertedLayoutRenderTest`'s replica
+  seeds no `Menu`, so `{{else}}` drew the page listing and the assertion that proved the nav worked
+  read **page titles** out of it — the fallback's own output, green whichever branch produced it.
+  Giving that gap a render found a live defect **in SH878's own commit**: `PAGE_BODY_HTML` is sliced
+  out of `convert.mjs` between two backticks (SH245), so `${MENU_TITLE}` reached the JVM as four
+  literal characters and the shipped layout asked for a menu called `${MENU_TITLE}`. It matches
+  nothing, the fallback renders, and the page looks like a site with a working nav — with every
+  JavaScript assertion green, because in JavaScript the literal interpolates. Two things landed:
+  the title is spelled literally with `convert.test.mjs` holding the two spellings equal and
+  refusing any `${` in the literal at all, and the render suite gained **a second replica** whose
+  capture stated a navigation. Two branches, two fixtures — which is also the honest split, since
+  one corpus archetype produces a menu and five state no navigation. What only the render can say is
+  that the helper resolves a `Menu` in `/menu` while the pages are in `/`; no render had crossed
+  that, and every way of getting it wrong renders the fallback.
 - **The one address the grammar does not spell, unwritten (SH576).** `post:<site>/` is a site's home
   page — the address form SH433 exists for *because* SH79 does not spell it. A source that answers
   `/` gives the conversion one for free; a source that does not gave it **nothing, and nothing is

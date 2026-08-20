@@ -769,3 +769,22 @@ The distinction the entries below turn on is between a fixture that *exercises* 
 and one that merely *does not fail on it*. A capability with one producer is one edit
 away from having none, and the run that removes the last one is the run that reports
 nothing at all.
+
+## XLVIII The half only the JVM can assert, asserted for the old branch
+
+`ShConvertedLayoutRenderTest`'s own docstring states the rule this family is about: a
+template that compiled and listed nothing would pass every check in JavaScript, so the
+JVM renders the generated layout and reads what came out. That rule is right and it has
+a failure mode of its own — the rendered assertion is about whichever branch the fixture
+happens to reach, and a branch added later is covered by nothing while the test stays
+green.
+
+The sections here are about that shape rather than about any one branch. A template
+assertion in JS proves the markup was written; a render assertion in Java proves it
+resolved. When a template gains a branch, the second one does not follow automatically,
+and nothing reports the gap: the suite renders one page and finds what it expected,
+because what it expected is what the other branch also produces.
+
+The distinction worth holding is between a fixture that reaches a branch and a fixture
+that cannot tell which branch it reached. The second is the dangerous one — it passes
+for the wrong reason, and it passes just as loudly.
