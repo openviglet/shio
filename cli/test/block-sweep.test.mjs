@@ -129,13 +129,14 @@ const SWEEP = {
   },
   K: {
     swept: true,
-    why: "SH882 and SH883 - `docs-shio`'s replication page names `shio annotations` where it had "
+    why: "SH882, SH883 and SH885 - `docs-shio`'s replication page names `shio annotations` where it had "
       + "only told a reader to count props by hand, and says what the check now reports and what it "
       + "no longer "
       + "fails on. It is one of the few instrument fixes that IS an outward claim: the check is the "
       + "one a reader runs to decide whether a replica is authorable. SH883 narrowed what counts as "
       + "drawn and changed no sentence there - the page describes what the check reports, not how "
-      + "it decides",
+      + "it decides, and SH885 is the same: it corrects the denominator, and the sentence that "
+      + "sends a reader to the command is true either way",
   },
   AN: {
     swept: false,
