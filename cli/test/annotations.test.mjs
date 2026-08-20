@@ -131,6 +131,45 @@ test("SH882: DRAWN is asked of the stored value, and only that gates", () => {
   assert.match(describeAnnotations(drawn, {}), /1 declared field\(s\) are DRAWN on this page/);
 });
 
+test("SH883: a one-token value has to BE something on the page, not merely occur in it", () => {
+  // The assertion that would have caught it, at the boundary it crossed: the first live run of
+  // SH882 against a `marketing-site` site. `SectionFeatureGrid.columns` holds the string "3", the
+  // served page carried no `data-shio-columns` at all, and it came back DRAWN — because that one
+  // character occurs somewhere in several thousand. Beside two findings that were real, which is
+  // the worst place for a false one.
+  const html = `<html><body data-shio-post="g" data-shio-post-type="Grid">`
+    + `<h2 data-shio-prop="heading">Why Acme</h2><p>Three reasons, stated plainly.</p>`
+    + `</body></html>`;
+  const model = { fields: new Map([["Grid", ["heading", "columns", "intro"]]]), html };
+
+  const report = joinDeclared(scanAnnotations(html), {
+    ...model,
+    values: new Map([["g", { heading: "Why Acme", columns: "3", intro: "Three reasons, stated plainly." }]]),
+  });
+
+  assert.deepEqual(report.posts[0].missing, ["columns", "intro"]);
+  assert.deepEqual(report.posts[0].rendered, ["intro"],
+    "`intro` is several words and is on the page; `columns` is one token that is nowhere an "
+      + "element's content, and a length threshold would be a number nothing derives");
+});
+
+test("SH883: a one-token value IS drawn where it is a whole text node or attribute", () => {
+  // The other direction, and it is the one that matters for the finding this check exists to make:
+  // narrowing a rule until it reports nothing is the failure mode of every fix to a false positive.
+  const html = `<html><head><title>Acme</title></head>`
+    + `<body data-shio-post="p" data-shio-post-type="Page">`
+    + `<img src="/hero.png" alt="Bolt"></body></html>`;
+  const report = joinDeclared(scanAnnotations(html), {
+    fields: new Map([["Page", ["title", "icon"]]]),
+    html,
+    values: new Map([["p", { title: "Acme", icon: "Bolt" }]]),
+  });
+
+  assert.deepEqual(report.posts[0].rendered, ["icon", "title"],
+    "an element's own text and a value drawn into an attribute are both drawn — SH503's two "
+      + "forms, which is the pair data-shio-prop and data-shio-prop-attr exist for");
+});
+
 test("SH882: a value carrying its own annotations is not an uncuratable field", () => {
   // `--annotate` stamps `sh-field` onto the blocks inside a verbatim page's `content` (SH868), so
   // the markup is drawn AND its editable parts are declared. Calling the whole blob uncuratable is

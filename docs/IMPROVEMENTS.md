@@ -838,3 +838,26 @@ which of the two fired.
 What makes it worth its own family rather than a wording fix is the second half: the
 count also drives the exit code, so a mode whose pages legitimately draw none of those
 fields fails the gate every time it is run, forever.
+
+## LI Evidence a coincidence can supply
+
+SH882 gave `shio annotations` a thing it had never had: evidence. A declared field
+counts as drawn when its stored value can be found in the served page, which replaced a
+sentence that asserted the same thing from the post-type alone.
+
+Evidence has a failure mode an assertion does not, and it arrived on the first live run.
+A value of `"3"` is found in almost any page, so the check reported a field as drawn on
+a page that does not draw it — and the report is now more convincing than the claim it
+replaced, which is the direction that costs a reader something.
+
+The sections here are about what a match has to be before it is evidence. The rule the
+first cut used — a non-empty string, found as a substring of the page's collapsed words
+— is right for the population it was written against (a heading, a paragraph, a whole
+markup blob) and wrong for the one it was not: a scalar short enough to occur by
+accident.
+
+A threshold on length would work and is the shape this repository keeps refusing,
+because the number is not derivable from anything. What is derivable is the difference
+between a value that *is* an element's content and one that merely appears inside the
+page — and an annotation attaches to an element whose content is the field, which is
+what makes that distinction the one the instrument is actually about.

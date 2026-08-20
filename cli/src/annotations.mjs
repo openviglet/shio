@@ -234,10 +234,24 @@ export function joinDeclared(scan, {
  * one field a verbatim page certainly draws. Collapsing both sides to their visible words is what
  * makes the comparison about the page rather than about jsoup.</p>
  *
- * <p>Substring rather than a parse, for `ShAnnotatedFields`' reason inverted: a false positive here
- * costs one field reported as drawn when it is a coincidence, and a parse of every page for every
- * field costs the command its whole budget. The population is a post's own declared fields, which
- * is single digits.</p>
+ * <p>Substring rather than a parse, for `ShAnnotatedFields`' reason inverted: a parse of every page
+ * for every field costs the command its whole budget, and the population is a post's own declared
+ * fields, which is single digits.</p>
+ *
+ * <h3>A coincidence is not evidence (SH883)</h3>
+ *
+ * <p>That comment used to end *a false positive here costs one field reported as drawn when it is a
+ * coincidence*, and the guard was against a non-string. On the first live run a
+ * `SectionFeatureGrid` reported `columns` as DRAWN: the value is the string `"3"`, the page carried
+ * no `data-shio-columns` at all, and the match was that character occurring somewhere in several
+ * thousand. Beside two findings that were real, which is the worst place for a false one.</p>
+ *
+ * <p>A length threshold closes it and is a number nothing derives. What does derive is the thing an
+ * annotation attaches to: an element whose <b>content</b> is the field. So a value of <b>one
+ * token</b> has to be a complete text node or a complete attribute value, and only a value of
+ * several may match as a substring — which is what keeps a whole markup blob answering correctly,
+ * the case a fidelity page turns on. `"3"` fails the first; `Acme` passes it on
+ * {@code <title>Acme</title>}.</p>
  */
 function drawn(data, field, html) {
   const value = data && typeof data === "object" ? data[field] : null;
@@ -249,7 +263,34 @@ function drawn(data, field, html) {
   // EVERY block inside was stamped — a block the proposal derived no field for is not annotated and
   // should not be, and this join has no way to tell those apart.
   if (value.includes(`${FIELD_ATTR}=`)) return false;
-  return words(html).includes(words(value));
+  const wanted = words(value);
+  if (!wanted) return false;
+  // SH883 — one token has to BE something on the page, not merely occur in it.
+  return wanted.includes(" ") ? words(html).includes(wanted) : contentsOf(html).has(wanted);
+}
+
+/**
+ * Every complete text node and attribute value on the page, collapsed (SH883).
+ *
+ * <p>What a one-token value is compared against. Both, because a field is drawn as an element's
+ * text or into one of its attributes — SH503's two forms, which is the same pair `data-shio-prop`
+ * and `data-shio-prop-attr` exist for — and a value drawn into `alt` or `href` is drawn.</p>
+ */
+function contentsOf(html) {
+  const contents = new Set();
+  const source = String(html ?? "");
+  // Attribute values, either quoting — the same regex trade `clone.mjs` documents: linear, and a
+  // `>` inside a quoted value ends a tag.
+  for (const match of source.matchAll(/=\s*"([^"]*)"|=\s*'([^']*)'/g)) {
+    const value = words(match[1] ?? match[2] ?? "");
+    if (value) contents.add(value);
+  }
+  // Text nodes: whatever sits between one tag's close and the next tag's open.
+  for (const match of source.matchAll(/>([^<]*)</g)) {
+    const value = words(match[1]);
+    if (value) contents.add(value);
+  }
+  return contents;
 }
 
 /** The authoring attribute a stored value carries where its own parts were made editable (SH868). */

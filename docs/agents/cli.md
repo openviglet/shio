@@ -2745,6 +2745,21 @@ Without values the split cannot be made, and everything stays in `missing` repor
 the join proves — declared, and not annotated. The instrument under-reports where it could not look,
 which is the direction SH410's rule points.
 
+**And evidence has a failure mode an assertion does not (SH883).** SH882's own comment predicted it
+— *a false positive here costs one field reported as drawn when it is a coincidence* — and guarded
+against a non-string. On the **first live run**, against a `marketing-site` site applied and
+published, a `SectionFeatureGrid` reported `columns` as DRAWN: the value is the string `"3"`, the
+served page carried no `data-shio-columns` anywhere, and the match was that one character occurring
+in several thousand. It arrived beside two findings that were real, which is the worst place for a
+false one — the report is now more convincing than the claim it replaced. A length threshold closes
+it and is a number nothing derives; what does derive is **the thing an annotation attaches to**, an
+element whose *content* is the field. So a value of one token must be a **complete text node or a
+complete attribute value**, and only a multi-word value may match as a substring — which is what
+keeps a whole markup blob answering correctly, the case a fidelity page turns on. `"3"` fails the
+first; `Acme` passes it on `<title>Acme</title>`, and a value drawn into `alt` passes it too, which
+is SH503's second form and had to be kept. The narrowing is asserted **in both directions**, because
+reporting nothing is how a fix to a false positive usually fails.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

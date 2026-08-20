@@ -219,6 +219,7 @@
 - **SH642** — The triage did not produce the expected verdicts. Every one of the 88 is already named by a suite file and 63 within a dozen lines of an assertion - none is silent, none is named only in source - so the verdict for the population is neither EARNS nor DOES NOT: the test exists and does not carry the id where the reader can see it. That is a different debt from the original 35, which have nothing standing behind them, and one figure mispriced both. REVEALED is now a map from id to the file that names it, which is the verdict and the payment instruction at once, split into the 63 that are a one-line move and the 25 named in a class docstring.
 - **SH169** — The render digest hashed every section page to the hash of nothing; /agent/render now composes each referenced section title and fields into the outline, in declared order.
 - **SH882** — DRAWN is decided by looking for the stored value in the served page, and only that gates; a value carrying its own annotations is not an uncuratable field.
+- **SH883** — A one-token value counts as drawn only where it is a whole text node or attribute value, so a coincidental character stops being evidence and the two real findings survive.
 
 ## Block I — Content as files (SH74)
 
