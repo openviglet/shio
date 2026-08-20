@@ -82,10 +82,17 @@ a later block rather than a reason to hold the release.
 | 9 | Regions appear in declared order, **one theme in force per region** | `shio digest` regions |
 | 10 | The palette report names every slot: filled, refused, or defaulted | `shio convert` (SH849) |
 
-**Fidelity mode adds one and drops several.** It is accepted at a **0.00% pixel bar**
-against the source, and it has no editable fields by definition — verbatim markup
-carries no annotations, so criteria 6 and 7 do not apply to it. That is the documented
-property, not a defect.
+**Fidelity mode adds one.** It is accepted at a pixel bar against the source — but
+**not 0.00%**: `www.viglet.org` animates its own decorations and varies against
+*itself* across four identical runs at 0.13%, 0.31%, 0.28%, 0.13%. The bar is the
+source's own run-to-run band, measured in the same session, and a reading inside it
+is a pass. Compare a viewport, not the full page: where the two differ in height the
+percentage saturates at 100.00% and stops being a measurement (SH866).
+
+**Fidelity is not the mode without fields.** That was written here and it is false:
+`sh-field` and `data-shio-prop` are attributes, and attributes do not lay out. Forty
+of them added to a fidelity page cost nothing measurable, and `annotations` counted
+every one (SH864). Criteria 6 and 7 apply to whatever the page actually annotates.
 
 ## What is deliberately out of scope
 

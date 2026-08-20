@@ -17,6 +17,8 @@
 
 - 📋 **SH864** (deps: —) **Fidelity and authorable are treated as exclusive modes, and annotation is orthogonal to which markup is rendered** — 41 sh-field markers added to a fidelity page cost nothing measurable in pixels and annotations counted every one, so a page can be both. → §XL.6
 - 📋 **SH865** (deps: SH860 ✅) **judge answered ACCEPTED as authorable for an all-fidelity site, with both mode-defining instruments not run** — A 12-of-12 fidelity replica was graded against the wrong bar while diff and snapshot abstained, and the verdict still read accepted. → §XL.7
+- 📋 **SH866** (deps: —) **snapshot answers 100.00% whenever the two pages differ in height, which is exactly when the number is needed** — A replica 4091px tall against a source 6076px scored 100.00%, and the same pair cropped to one viewport scored 6.76%. → §XL.8
+- 📋 **SH867** (deps: SH687 ✅) **diff counts what a page lost and never names what kind of thing it was, so a missing button reads as a link** — One viewport lost an eyebrow badge, a secondary CTA, a whole stats bar and half the hero's type scale, all reported as external links 15 to 9. → §XL.9
 
 ## Priority
 

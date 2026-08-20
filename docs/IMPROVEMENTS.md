@@ -780,6 +780,61 @@ which is missing and the flag that supplies it.
 
 `--against` also refused on both instruments here, which is how the abstention happened.
 
+### XL.8 A percentage that means nothing at 100 (SH866)
+
+Two comparisons of the same replica against the same source, minutes apart:
+
+    full page   1280x4091 vs 1280x6076   100.00% of pixels
+    viewport    1280x900  vs 1280x900      6.76% of pixels
+
+The full-page reading is an artefact of the size mismatch, not a measurement. Nothing
+can align a 4091-pixel image with a 6076-pixel one, so every pixel counts as differing
+and the answer saturates. The honest reading of that page is that its first screen is
+**93% identical** and it is 2,000 pixels shorter.
+
+The saturation lands precisely where the instrument matters. A replica that matches its
+source in height is one already close enough to trust; one that is a third shorter is
+the case a reader most needs scored, and that is the case the number refuses to
+describe.
+
+Worse, it is silent about why. `100.00%` reads as *nothing matched* — a total failure of
+the conversion — when what happened is that content is missing further down. A reader
+who takes it at face value looks for a catastrophe and finds a page whose chrome is
+pixel-correct.
+
+Report the height delta as its own fact, compare the overlapping region, and say which
+of the two was cropped. Where the difference is structural, a percentage over a common
+region plus `shorter by 1,985px` is two numbers a reader can act on, against one that
+says only *different*.
+
+### XL.9 Magnitude is the axis nothing measures (SH867)
+
+The replica and its source were photographed at one viewport and the difference read
+directly. Everything below is visible in that pair and in none of the instruments'
+output.
+
+| source | replica |
+|---|---|
+| eyebrow pill "● Open Source Platform" | absent |
+| hero at ~56px over three lines, "Enterprise Intelligence" in brand colour | ~32px, two lines, all dark |
+| two buttons: "Explore Products →" and "Read the Docs" | one, and it is green |
+| stats bar — 3 / 100% / Apache 2.0 / Self-hosted | absent |
+| card copy in full | truncated at "connect any…" |
+
+What the instruments said about that page: `verify` **0 errors**; `diff` `external
+links: 15 → 9 (-6)`; `judge` **11 findings, all `diff.facts-lost`**. A secondary call to
+action and a four-cell statistics band were both counted as links.
+
+SH687 gave the appearance surface **order** and **attribution**. This is the third axis:
+**magnitude** — how prominent a thing is, and what kind of thing it was. A heading at
+half its source's size is not a fact lost; it is not a fact at all, and nothing reports
+it.
+
+Two moves, and the first is cheap. `diff` already knows the block a loss came from —
+name its kind (`button`, `badge`, `stat`, `heading`) beside the count. And `judge`
+should read the rendered pair when playwright resolves, the way SH688 made `audit` run
+unasked, because that pair is where every one of these was visible in one look.
+
 ## XLIV The review nobody can do, on the files most worth reviewing (SH863)
 
 `core.autocrlf` is `input` here, so git stores LF and converts nothing on checkout, and

@@ -1,3 +1,50 @@
+# SH863 — line endings are declared here, not left to whoever cloned the repository.
+#
+# `core.autocrlf` is a *per-machine* setting, so a repository that declares nothing gets a different
+# answer per contributor. On the machine this was measured on it is `input`: git stores LF and
+# converts nothing on checkout, so a file a Windows editor created keeps CRLF on disk for ever while
+# the index holds LF. **308 of 1864 tracked files** were in that state, `cli/src/convert.mjs` and
+# `cli/src/diff.mjs` — two of the largest modules in the CLI — among them.
+#
+# The cost is the review. A one-character change to `convert.mjs` reported:
+#
+#     git diff --stat                      cli/src/convert.mjs | 4172 ++++----
+#     git diff --stat --ignore-cr-at-eol   cli/src/convert.mjs |    2 +-
+#
+# Four thousand changed lines with the real one somewhere inside them, and `git blame` crediting
+# every line to whoever last saved the file. The warning git printed on each such commit — *CRLF will
+# be replaced by LF the next time Git touches it* — had been printing long enough to be furniture.
+#
+# `text=auto` lets git detect binary and leave it alone; `eol=lf` is what makes the working tree the
+# same on every machine rather than depending on the clone's own config.
+
+* text=auto eol=lf
+
+# The two kinds that are not LF, and one of them would break.
+#
+# A Windows batch file is read by `cmd.exe`, which is entitled to care about the carriage return —
+# a `goto` label or a line continuation can behave differently without it. `run-commit.cmd` and
+# `install-roadkeep.cmd` are how this project commits and installs its own tooling, so this is not
+# the place to find out. Shell scripts are the opposite and take LF from the rule above.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Named rather than left to detection. `text=auto` would almost certainly classify these correctly —
+# it looks for a NUL in the first 8000 bytes — but "almost certainly" over a font or an image is a
+# corrupted file nobody notices until it is served, and the cost of the line is nothing.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.jar binary
+*.zip binary
+
 shio-app/src/main/resources/public/js/dist linguist-vendored
 shio-app/src/main/resources/public/css linguist-vendored
 docs linguist-vendored
