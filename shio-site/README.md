@@ -159,6 +159,15 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
+**Q closed a seventh time on 2026-08-20**, on SH878 alone, and it moved no claim here either — the
+block was reopened for it the same day, because fixing a blueprint's navigation turned up the same
+defect one surface along. A replica's nav listed every page by the `<title>` written for search;
+it is now the menu the **source** states, built from the `<nav>` entries the capture already
+recorded in source order. `CLONE_STEPS` describes capture and convert and says nothing about
+navigation, and `MODES` is about what a mode keeps rather than about what its chrome says, so
+neither is now untrue — which is the honest reason and not a shrug: the copy here is deliberately
+about the trade a mode makes, and a replica's menu is below the level it describes.
+
 **Q closed a sixth time on 2026-08-20**, on SH871, SH872 and SH873, and it moved no claim — because a
 round three closures ago had already moved the one it would have. `MODES` has carried **Annotated
 fidelity** as a third mode since SH864 measured it, saying *the source's own markup, byte for byte*
