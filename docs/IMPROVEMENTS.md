@@ -756,24 +756,25 @@ SH864 decided where the values live: `convert` stores the derived values as ordi
 fields, the markup stays byte-identical, and at render an element carrying
 `sh-field="heading"` shows `data.heading` **when that field is non-empty**.
 `docs/agents/replication.md` carries the decision and why an address naming a position
-inside the blob loses — an edit invalidates every later offset and a re-capture
-invalidates every address at once.
+inside the blob loses.
 
 What is missing is the render half. Today `{{{content}}}` emits the stored markup
-untouched, so a value written through the Universal Editor is stored on the post and
-never shown. That is the *report shipping ahead of its behaviour* shape this project has
-met four times, and here it would be worse than silence: the editor accepts an edit and
-the page denies it.
+untouched, so a value written through the Universal Editor is stored and never shown —
+the *report ahead of its behaviour* shape, and here worse than silence: the editor
+accepts an edit and the page denies it.
 
-Three properties the implementation is held to:
+**The walk already exists and that is the trap.** `ShRegionComposer.annotateEditable`
+selects `[sh-field]` over the *whole composed document* to stamp `data-shio-prop`.
+Substituting there would also rewrite every **section** region, whose text the template
+already produced from that same field — so a helper's output would be overwritten by the
+raw value. The substitution has to be scoped to the elements SH868 stamps onto kept
+markup, which means the two tasks share one marker and SH868's half decides it. Sequence
+them together.
+
+Three properties it is held to:
 
 - **Byte-identical until edited.** No field, no substitution, so the pixel bar is unmoved.
 - **Not a template language.** `content` is emitted without interpolation on purpose (SH464), and
-  compiling captured markup would read a `{{` in a framework's own output as a directive. One
-  annotated element, one declared field, no expressions.
+  compiling captured markup would read a framework's `{{` as a directive.
 - **Degrades rather than corrupts.** A re-capture whose annotation moved stops applying the field
-  instead of writing a value into the wrong element.
-
-The renderer is the one surface holding both halves — the stored markup and the post's
-data — so it belongs there rather than in `convert`, which would have to bake the value
-in and lose the first property.
+  instead of writing into the wrong element.
