@@ -9,6 +9,14 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block AI — Scans that match outside the construct they are about
+
+- 📋 **SH862** (deps: —) **The hand-off scan reads a fixture path as a claim, so naming any .mjs file in a test's prose fails the build** — It fired twice on one commit over `offences("cli/src/diff.mjs", …)`, which asserts nothing about diff.mjs and is an argument to the function under test. → §XLIII
+
+## Block AO — A diff nobody can read
+
+- 📋 **SH863** (deps: —) **60 of 188 tracked .mjs files are CRLF on disk against an LF index, so a one-line edit diffs as the whole file** — A one-character change to convert.mjs reported 4172 changed lines; the same diff with --ignore-cr-at-eol reported 2. → §XLIV
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

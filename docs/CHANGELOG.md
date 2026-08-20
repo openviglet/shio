@@ -1574,3 +1574,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AN — Source the agent's cheapest tool declines to read
 
 - **SH859** — The six composite-key separators are escapes rather than raw bytes, so no source file is binary to a grep — and the lint refuses a raw NUL everywhere instead of allow-listing six files.
+
+## Block AO — A diff nobody can read
+

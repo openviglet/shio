@@ -724,3 +724,59 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
+
+## XLIII A fixture path is not prose about another module (SH862)
+
+SH792 reads every sentence that names another instrument and asks whether the claim was
+checked, because a suite excusing itself by naming another file is the thing that rots.
+The rule is right and its subject is a *claim*. What it matches is a **filename**.
+
+Measured on SH859's commit: rewriting a fixture as
+
+    offences("cli/src/diff.mjs", `const key = \`a${NUL}b\`;`)
+
+failed the build with `cli/test/control-characters.test.mjs -> diff.mjs` — a hand-off
+nobody wrote. The string is an *argument* and the test asserts nothing whatever about
+that module. Renaming the fixture to a path with no extension cleared it, and that is a
+workaround: the next author writes the obvious fixture and meets the same wall, having
+read nothing about why.
+
+This is SH794's family exactly — *a bare word in a prose scan matches inside any
+identifier a sentence names* — one construct along, and SH824 is the third instance.
+Three is enough to be worth a rule rather than a fourth fixture: a scan over prose has
+to say which **construct** it reads, and a string handed to a call is not prose.
+
+The discriminator is at hand. `source-text.mjs` already strips code for the scans that
+want prose only; what SH792 needs is the opposite half — a filename inside a quoted
+argument is code, and one in a comment or a sentence is the subject. Whichever way it is
+drawn, the reader should name the shape it refuses, because this one refused a correct
+fixture and called it `hands-off`.
+
+## XLIV The review nobody can do, on the files most worth reviewing (SH863)
+
+`core.autocrlf` is `input` here, so git stores LF and converts nothing on checkout, and
+a file a Windows editor created keeps CRLF on disk for ever. `.gitattributes` declares
+three `linguist-vendored` paths and **no** `text` rule, so nothing normalises and
+nothing complains.
+
+Measured while shipping SH859, whose change to `convert.mjs` was one character:
+
+    git diff --stat                       cli/src/convert.mjs | 4172 ++++----
+    git diff --stat --ignore-cr-at-eol    cli/src/convert.mjs |    2 +-
+
+A scan of the tracked tree puts it at **60 of 188** `.mjs` files, `convert.mjs` and
+`diff.mjs` — two of the largest modules in the CLI — among them.
+
+The cost is not cosmetic and it is not the bytes. A reviewer opening that commit sees
+four thousand changed lines and cannot find the one; `git blame` attributes every line
+to whoever last saved the file in an editor that rewrote the endings; and the warning
+git prints on each commit (*CRLF will be replaced by LF*) has been printing for long
+enough to be furniture. It is the same failure this project keeps naming from other
+directions — an instrument whose output nobody can act on stops being read — and it
+lands on the review step, which is the one place a second pair of eyes was supposed to
+help.
+
+The fix is a `text=auto eol=lf` rule and one `git add --renormalize .`, which is a large
+diff **once** and by intent, on a commit whose message says so. What needs care is the
+ordering against anything else in flight, and that the vendored paths keep their
+exemption.

@@ -172,14 +172,21 @@ function shipCommits() {
  * pass on the run after it — a gate nobody can satisfy while they are doing the work it asks for,
  * which is the shape people learn to skip. What is being asked is whether the sweep happened, and an
  * edit in the tree is an edit that happened.</p>
+ *
+ * <p><b>And the range starts one commit early, which this reader found by failing on itself.</b> The
+ * first draft asked `sha..HEAD` and Block S — finished by SH861, whose own commit carries the
+ * `shio-site` edits — came back `moved: nothing`. A block whose sweep lands **in** its closing commit
+ * is the best case there is, and a rule that only counts what came after it would fail precisely the
+ * blocks that got it right.</p>
  */
 function movedSince(sha) {
   const pending = git(["status", "--porcelain", "--", ...SURFACES]) ?? "";
+  const from = git(["rev-parse", "--verify", `${sha}^`])?.trim() ? `${sha}^` : sha;
   return SURFACES.filter((path) => {
     if (pending.split("\n").some((line) => line.slice(3).replace(/"/g, "").startsWith(path))) {
       return true;
     }
-    const log = git(["log", "--format=%H", `${sha}..HEAD`, "--", path]);
+    const log = git(["log", "--format=%H", `${from}..HEAD`, "--", path]);
     return Boolean(log?.trim());
   });
 }
