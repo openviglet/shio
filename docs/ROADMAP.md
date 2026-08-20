@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AO — A diff nobody can read
-
-- 📋 **SH863** (deps: —) **60 of 188 tracked .mjs files are CRLF on disk against an LF index, so a one-line edit diffs as the whole file** — A one-character change to convert.mjs reported 4172 changed lines; the same diff with --ignore-cr-at-eol reported 2. → §XLIV
-
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH864** (deps: —) **Fidelity and authorable are treated as exclusive modes, and annotation is orthogonal to which markup is rendered** — 41 sh-field markers added to a fidelity page cost nothing measurable in pixels and annotations counted every one, so a page can be both. → §XL.6

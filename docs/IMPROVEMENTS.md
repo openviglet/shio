@@ -884,32 +884,3 @@ count that rose is a finding of its own kind, gradable by the same bar file.
 
 This is also the cheapest instrument left. Nothing new is measured — the numbers already
 exist and are thrown away at the end of every run.
-
-## XLIV The review nobody can do, on the files most worth reviewing (SH863)
-
-`core.autocrlf` is `input` here, so git stores LF and converts nothing on checkout, and
-a file a Windows editor created keeps CRLF on disk for ever. `.gitattributes` declares
-three `linguist-vendored` paths and **no** `text` rule, so nothing normalises and
-nothing complains.
-
-Measured while shipping SH859, whose change to `convert.mjs` was one character:
-
-    git diff --stat                       cli/src/convert.mjs | 4172 ++++----
-    git diff --stat --ignore-cr-at-eol    cli/src/convert.mjs |    2 +-
-
-A scan of the tracked tree puts it at **60 of 188** `.mjs` files, `convert.mjs` and
-`diff.mjs` — two of the largest modules in the CLI — among them.
-
-The cost is not cosmetic and it is not the bytes. A reviewer opening that commit sees
-four thousand changed lines and cannot find the one; `git blame` attributes every line
-to whoever last saved the file in an editor that rewrote the endings; and the warning
-git prints on each commit (*CRLF will be replaced by LF*) has been printing for long
-enough to be furniture. It is the same failure this project keeps naming from other
-directions — an instrument whose output nobody can act on stops being read — and it
-lands on the review step, which is the one place a second pair of eyes was supposed to
-help.
-
-The fix is a `text=auto eol=lf` rule and one `git add --renormalize .`, which is a large
-diff **once** and by intent, on a commit whose message says so. What needs care is the
-ordering against anything else in flight, and that the vendored paths keep their
-exemption.

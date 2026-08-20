@@ -25,6 +25,34 @@ and the string literal does not compile: Java takes `\0`. JavaScript and TypeScr
 escape, preferred over `\0` there because `\0` followed by a digit is a legacy-octal error under
 strict mode.
 
+### A one-line edit diffs as the whole file (SH863)
+`core.autocrlf` is a **per-machine** setting, so a repository that declares nothing gets a different
+answer per contributor. This one declared nothing: on a machine with `input`, git stores LF and
+converts nothing on checkout, so a file a Windows editor created kept CRLF on disk for ever while the
+index held LF. **308 of 1864 tracked files** were in that state. Measured on a one-character change:
+
+```
+git diff --stat                      cli/src/convert.mjs | 4172 ++++----
+git diff --stat --ignore-cr-at-eol   cli/src/convert.mjs |    2 +-
+```
+
+`.gitattributes` now declares `* text=auto eol=lf`, with `*.cmd`/`*.bat` pinned to CRLF (`cmd.exe` is
+entitled to care, and `run-commit.cmd` is how this project commits) and the image, font and archive
+types named `binary` rather than left to detection.
+
+**The declaration alone changes nothing already on disk.** An attribute applies at checkout, so the
+working tree has to be re-materialised once:
+
+```
+git status --porcelain          # must be empty — this discards anything uncommitted
+git rm --cached -r . && git reset --hard
+```
+
+That took 308 down to 11, and every one of the 11 is correct: eight `.cmd`/`.bat` pinned on purpose,
+and three `.png` where a `0D 0A` byte pair is a coincidence. Both gates were re-run afterwards, since
+297 files' bytes changed — Java 1927/0, `pnpm test` green — and the same one-character edit then
+reported `2 +-`.
+
 ### Optimistic Locking on Startup
 `ShPostTypeImport` sets explicit IDs on `ShPostTypeAttr` via `setId()`. With cascade persist, Hibernate treats these as detached. Solution: use `ShAssignableUuidGenerator` (like Turing's `TurAssignableUuidGenerator`) that allows pre-assigned IDs.
 
