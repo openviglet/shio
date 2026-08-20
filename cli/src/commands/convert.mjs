@@ -81,7 +81,7 @@ export async function run(flags, positionals, ctx) {
     // the builder's return for the reason the two comments above give: this list is enumerated by
     // hand, so a field nobody names here is computed, formatted and printed to nobody.
     document, stale, sections, pages, verbatim, mixed, extras, dropped, kept, declined, emptied,
-    obstructions, annotations, annotationFields, home, unfollowed, palette,
+    obstructions, annotations, annotationFields, home, unfollowed, palette, menu,
     // The builder's verbatim `SectionMarkup` posts. Renamed on the way out because `markup` is
     // already taken above by the *capture's* markup cache — two different things one word apart,
     // which is the other half of why this field never reached the report.
@@ -139,6 +139,10 @@ export async function run(flags, positionals, ctx) {
     requires: proposal.requires ?? [],
     dropped, kept, declined, emptied, obstructions, annotations, annotationFields, home, unfollowed,
     palette,
+    // SH878 — the menu built from the source's own navigation, beside every other decision this
+    // run made. Named here because this list is enumerated by hand, which is what SH849 records as
+    // the way a computed, formatted and tested field reaches no reader at all.
+    menu,
   };
 
   if (typeof flags.out === "string" && flags.out) {

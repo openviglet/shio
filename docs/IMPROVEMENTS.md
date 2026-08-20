@@ -747,30 +747,3 @@ looking at the replica.
 The address skips five numbers because each of them was declared and dropped by a
 shipped block, and an entry citing one still exists: reusing an address would make that
 entry cite this.
-
-### XLVI.1 The menu that is really a title, one surface along (SH878)
-
-SH873 found a blueprint's nav rendering every page's SEO title, alphabetically, and
-replaced it with SH382's `{{#menu}}` over curated `Menu`/`MenuItem` content. The
-converted layout carries the same query, and nothing about the replication path was
-looked at while the authoring one was fixed:
-
-    {{#unless content}}<nav class="shio-nav" aria-label="Site"><ul>
-    {{#query type="Page" sort="title" limit="50"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}
-    </ul></nav>{{/unless}}
-
-Three facts, each read off the shipped code rather than argued. `PAGE_BODY_HTML` in
-`convert.mjs` is that markup. `titleOf(page)` returns `page.title`, which the capture
-takes from the document's own `<title>` — so a replicated page is titled *Trocas e
-devolucoes - Farmacia Vitalis* exactly as the pharmacy site was. And `{{#unless
-content}}` scopes it to pages with no verbatim markup, so it is the **authorable** mode
-that gets it: a fidelity page keeps the source's own nav and receives none from Shio.
-
-The blueprint's answer does not transfer. A replica has no authored menu, and inventing
-`MenuItem` posts from nothing would be a guess. What it does have is the source's own
-`<nav>`, which `clone` already records in the inventory — so the fix is probably to
-build the menu from what the source's navigation says, falling back to the query only
-where a capture found none.
-
-Measure first: convert a real multi-page source in authorable mode and read the nav it
-draws.

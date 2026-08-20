@@ -11,8 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 💭 **SH878** (deps: —) **An authorable replica's generated nav lists every page by its captured &lt;title&gt;, written for search** — SH873 measured this on a blueprint and fixed it there; the same query is the layout convert writes, over titles taken from each page's own &lt;title&gt; tag. → §XLVI.1
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

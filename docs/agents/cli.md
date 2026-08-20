@@ -1840,6 +1840,31 @@ it. Four decisions worth keeping:
   a template that compiled and listed nothing would pass every check in JavaScript, so
   `ShConvertedLayoutRenderTest` renders the seeded replica and reads the sibling pages' friendly URLs
   off the page — and reads the verbatim and mixed pages to confirm they get none.
+- **The nav says what the source said, and the page listing is the fallback (SH878).** SH575's third
+  decision above — `sort="title"` — was right about *ordering* and carried a label nobody chose:
+  a page's `title` is the capture's reading of its own `<title>`, written for search. SH873 measured
+  the shape on a blueprint; measured here on `theme-heavy`, the one corpus archetype with a real
+  `<nav>`, a source whose menu says **Northwind & Co** then **About** was replicated as
+  **About & contact** then **Northwind & Co** — one label wrong, the order inverted, and neither
+  visible to a reader who had not seen the source. The capture had the answer the whole time:
+  `inventory.navigation` is `<nav>`/`[role=navigation]` only (SH432 drew that boundary so a footer's
+  privacy policy is not a menu item), deduped, **in source order**, each row carrying `on` — how many
+  captured pages it appears on. So `convert` writes a `Menu` of `MenuItem`s from it and the layout
+  renders `{{#menu title="Primary"}}`. Three decisions, and the first is the one that does the work:
+  - **`on` is the inclusion rule**, which is SH432's own argument reused rather than a new one — *a
+    link on every page is a menu, a link on one page is a link*. A row is an item when it appears on
+    every page the conversion wrote, which on the measured archetype admits the two real entries and
+    drops two decoys (a body link reading *Read about us*, and a second *Home*) that no rule about
+    labels or positions would have separated.
+  - **The page listing survives as `{{else}}`**, and that is why this differs from SH873's blueprint
+    fix: a package ships its own menu, and a capture may state none — **five of the seven corpus
+    archetypes have no `<nav>` at all**. The fallback is the ordinary case, not a safety net.
+  - **An external entry is left out** rather than given an `href`. `MenuItem.href` exists for it and
+    SH382's lint refuses a row setting both, but a replica pointing off-site from its primary menu is
+    a decision a person makes, not one a capture implies.
+
+  The report prints **both** numbers — entries written and links the source stated — because the
+  difference is what a reader checks: a bare count of items reads as everything the source had.
 - **The one address the grammar does not spell, unwritten (SH576).** `post:<site>/` is a site's home
   page — the address form SH433 exists for *because* SH79 does not spell it. A source that answers
   `/` gives the conversion one for free; a source that does not gave it **nothing, and nothing is

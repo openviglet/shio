@@ -113,6 +113,16 @@ export const generatedLayoutTitle = (site) => `${site} (layout)`;
  * translation into that shape rather than a new one, which is why the names are its names.</p>
  */
 export const PAGES_FOLDER = "/";
+
+/** Where the menu a source states about itself is written (SH878). */
+export const MENU_FOLDER = "/menu";
+
+/** The `Menu` post's title, which is the string `{{#menu title=}}` in the layout looks up. */
+export const MENU_TITLE = "Primary";
+
+/** The two post-types a curated menu is made of, shared with the SH95 vocabulary. */
+export const MENU_TYPE = "Menu";
+export const MENU_ITEM_TYPE = "MenuItem";
 export const PAGE_TYPE = "Page";
 
 /**
@@ -211,6 +221,10 @@ export function buildConversion({
 
   // SH584 — computed here rather than in the report, because `--json` and the corpus read it too.
   const unfollowed = unfollowedTargets(inventory, pages);
+  // SH878 — the menu the source states about itself, before the vocabulary is computed: the two
+  // types it needs have to reach `postTypes` or the write is refused on a type nobody provisioned,
+  // which is SH607's defect met one post-type family later.
+  const menu = menuPosts(inventory, pages);
 
   const extras = [];
   // The Redirect post-type has to exist on the target before a `--home` redirect can be written,
@@ -277,6 +291,9 @@ export function buildConversion({
     // same — a post-type this document writes and does not provision is the refusal SH607 fixed for
     // the other ten, met one type later.
     ...(markupPosts.length ? [MARKUP_TYPE] : []),
+    // SH878 — the two the menu is made of, named for the same reason `SectionMarkup` is: this
+    // document writes posts of them and nothing else would provision them.
+    ...(menu ? [MENU_TYPE, MENU_ITEM_TYPE] : []),
   ].sort((a, b) => (a < b ? -1 : 1));
   if (pages.length) {
     // SH549 — the captured stylesheet, reaching only the pages that carry verbatim markup. Named
@@ -287,11 +304,17 @@ export function buildConversion({
     posts.push(pageLayout(markup, site, theme, capturedFor, sectionFieldsOf(vocabulary)));
     extras.push("PageLayout");
   }
+  // SH878 — after the layout that names the menu, which is the order every other pair here uses.
+  if (menu) posts.push(...menu.posts);
 
   const folders = [
     SECTIONS_FOLDER,
     ...(pages.length ? [PAGES_FOLDER] : []),
     ...(extras.length ? [THEME_FOLDER] : []),
+    // SH878 — its own folder, so a curator editing the menu is not hunting for four posts among
+    // the pages. Written only where there is a menu, so a capture that stated none is the same
+    // bytes it was (P5).
+    ...(menu ? [MENU_FOLDER] : []),
   ];
   return {
     document: {
@@ -368,6 +391,11 @@ export function buildConversion({
     // not only printed, for SH576's reason one line up: the corpus asserts it, and `--json` is a
     // caller too.
     ...(unfollowed ? { unfollowed } : {}),
+    // SH878 — how many entries the menu took from the source's own navigation, and how many rows
+    // the capture recorded. Both, because the difference is the report: a source stating six
+    // entries of which two are site-wide is a menu of two and a reader has to be able to see that
+    // the other four were considered.
+    ...(menu ? { menu: { items: menu.items, stated: (inventory?.navigation ?? []).length } } : {}),
     // SH831 — which of the theme's colours took a captured value and which kept a default. Present
     // only where the theme was written: a fidelity conversion never renders this theme, and reporting
     // a palette nothing paints with would be a note about an artefact that is not on the site.
@@ -440,6 +468,92 @@ function unfollowedTargets(inventory, pages) {
     refs: outstanding.reduce((total, row) => total + row.refs, 0),
     first: outstanding.slice(0, 3).map((row) => row.path),
   };
+}
+
+/**
+ * The menu the source states about itself, as `Menu` and `MenuItem` posts (SH878).
+ *
+ * <h3>What was being drawn instead, and what the source had said</h3>
+ *
+ * <p>The generated layout listed every `Page` by {@code title}, alphabetically — and a page's title
+ * is the capture's reading of the document's own {@code <title>}, which is written for search.
+ * SH873 measured that shape on a blueprint; measured here on the {@code theme-heavy} archetype, a
+ * source whose menu says <b>Northwind &amp; Co</b> then <b>About</b> was replicated as
+ * <b>About &amp; contact</b> then <b>Northwind &amp; Co</b>: one label wrong, the order inverted,
+ * and nothing about either visible to a reader who had not seen the source.</p>
+ *
+ * <p>The capture had the answer the whole time. {@code inventory.navigation} is
+ * {@code <nav>}/{@code [role=navigation]} only (SH432 drew that boundary so a privacy policy in a
+ * footer is not a menu item), deduped, <b>in source order</b>, and each row carries {@code on} —
+ * how many captured pages it appears on.</p>
+ *
+ * <h3>`on` is the inclusion rule, and it is SH432's own argument</h3>
+ *
+ * <p>"A link on every page is a menu, a link on one page is a link" is why that count exists, so a
+ * row is an item when it appears on <b>every page this capture kept markup for</b>. On the measured
+ * archetype that admits the two real entries and drops two decoys — a body link reading
+ * {@code Read about us} and a second {@code Home} — which no rule about labels or positions would
+ * have separated.</p>
+ *
+ * <p>An entry is written only where its target is a page this conversion actually wrote. An
+ * external one is left out rather than given an `href`: {@code MenuItem.href} exists for exactly
+ * that and SH382's lint refuses a row setting both, but a replica pointing off-site from its
+ * primary menu is a decision a person makes, not one a capture implies.</p>
+ *
+ * @returns `{posts, items}` — the posts to write and how many entries the menu holds; `null` where
+ *          the source stated no navigation, which is five of the seven corpus archetypes
+ */
+function menuPosts(inventory, pages) {
+  const rows = Array.isArray(inventory?.navigation) ? inventory.navigation : [];
+  if (!rows.length || !pages.length) return null;
+  const byUrl = new Map(pages.map((page) => [normalizeUrl(page.url), page.url]));
+  const items = [];
+  const taken = new Set();
+  for (const row of rows) {
+    const label = typeof row?.label === "string" ? row.label.trim() : "";
+    const href = typeof row?.href === "string" ? row.href.split("?")[0] : "";
+    // Site-wide, by the count SH432 built for this question. `pages.length` and not the capture's
+    // own page count: a page nobody wrote is not a page the menu can be site-wide across.
+    if (!label || !href || Number(row.on) < pages.length || row.external) continue;
+    const target = byUrl.get(normalizeUrl(href));
+    if (!target) continue;
+    const slug = slugOf(label) || `item-${items.length + 1}`;
+    if (taken.has(slug)) continue;
+    taken.add(slug);
+    items.push({
+      url: `${MENU_FOLDER}/${slug}`,
+      type: MENU_ITEM_TYPE,
+      folder: MENU_FOLDER,
+      data: { label, target: [target] },
+    });
+  }
+  if (!items.length) return null;
+  return {
+    posts: [
+      ...items,
+      {
+        url: `${MENU_FOLDER}/primary`,
+        type: MENU_TYPE,
+        folder: MENU_FOLDER,
+        // Source order, which is the one ordering a source states outright. `sort` would be this
+        // function inventing an editorial decision the capture already recorded.
+        data: { title: MENU_TITLE, items: items.map((item) => item.url) },
+      },
+    ],
+    items: items.length,
+  };
+}
+
+/** A label as a friendly-URL segment — the same alphabet SH79's addresses accept. */
+function slugOf(label) {
+  return String(label)
+    // `\p{M}` and not a codepoint range typed as characters: a combining-mark range written
+    // literally is invisible in a diff and one editor's normalisation away from matching nothing.
+    .normalize("NFD").replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
 }
 
 /**
@@ -704,7 +818,7 @@ export const WRAPPER_ROLES = Object.freeze(["shio-container", "shio-stack", "shi
  * would be a worse defect than the one it fixes. The same shape `SectionTestimonial.quotes` already
  * uses on the React side — annotate without drawing — for the same reason.</p>
  */
-export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-label="Site"><ul>{{#query type="Page" sort="title" limit="50"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}</ul></nav>{{/unless}}
+export const PAGE_BODY_HTML = `{{#unless content}}<nav class="shio-nav" aria-label="Site"><ul>{{#menu title="${MENU_TITLE}"}}<li>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{else}}{{#query type="Page" sort="title" limit="50"}}<li><a href="{{link}}">{{title}}</a></li>{{/query}}{{/menu}}</ul></nav>{{/unless}}
 {{#if content}}{{{content}}}{{/if}}
 {{#unless content}}<div class="shio-container"><h1 class="shio-page-title" sh-field="title">{{title}}</h1></div>{{/unless}}
 {{#if content}}<div hidden sh-field="title">{{title}}</div>{{/if}}
@@ -1953,7 +2067,8 @@ export function describeConversion({ document, sections, markup = [], pages = []
                                      requires = [], dropped = [], kept = [], declined = [],
                                      emptied = [], obstructions = [],
                                      annotations = [], annotationFields = [],
-                                     home = null, unfollowed = null, palette = null },
+                                     home = null, unfollowed = null, palette = null,
+                                     menu = null },
                                    options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
@@ -2212,6 +2327,17 @@ export function describeConversion({ document, sections, markup = [], pages = []
         + "this crawl did not follow, so they will verify as `page-link-broken`: raise --depth and "
         + "capture again, or accept them with shio verify --accept. It is a bound this run chose, "
         + `not damage the replica caused (first: ${unfollowed.first.join(" ")})`,
+    );
+  }
+  // SH878 — the menu the source stated, and how much of what it stated became one. Both numbers,
+  // because the difference is the whole report: an entry left out was considered and dropped for a
+  // reason a reader can check, and a bare count of items reads as everything the source had.
+  if (menu) {
+    lines.push(
+      `  menu: ${menu.items} entry(ies) from the source's own navigation, in ITS order, of `
+        + `${menu.stated} link(s) it recorded — an entry is one that appears on every page `
+        + "captured, which is what separates a menu from a link (SH432). Written as a Menu of "
+        + "MenuItems a curator can relabel, reorder or delete",
     );
   }
   for (const post of document.posts.slice(0, limit)) {

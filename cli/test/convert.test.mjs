@@ -1444,7 +1444,17 @@ test("SH830: the layout branches for the types the conversion created, and for n
   // authorable-only conversion has to lose the branch and keep the section.
   const authorable = pageBodyFor(sectionFieldsOf(["Page", "SectionRichText"]));
   assert.ok(!authorable.includes("{{#if html}}"), "no SectionMarkup, so nothing declares `html`");
-  assert.ok(!authorable.includes("{{else}}"), "and the branch went with it, opener and closer");
+  // SH878 — counted rather than absent. This used to read `!includes("{{else}}")`, which was a
+  // true statement about the whole template only while the markup branch was the only thing in it
+  // that branched; the nav's `{{#menu}}` now falls back to a page listing where a source stated no
+  // navigation, and that `{{else}}` has nothing to do with SectionMarkup.
+  assert.equal((authorable.match(/\{\{else\}\}/g) ?? []).length, 2,
+    "and the markup branch went with it, opener and closer — the two left are both the nav's");
+  assert.match(authorable,
+    /\{\{#menu title="Primary"\}\}<li>\{\{#if url\}\}[\s\S]*?\{\{else\}\}[\s\S]*?\{\{\/if\}\}<\/li>\{\{else\}\}[\s\S]*?\{\{\/menu\}\}/,
+    "which two: a row with no url is a group heading — see SH381 for that convention, and it is "
+      + "why a curator nesting a menu later needs no template change — and a menu that resolves "
+      + "to nothing falls back to the page listing");
   assert.match(authorable, /<section class="shio-section"[\s\S]*<\/section>/,
     "while the arm that draws a composed section survives - dropping it would render every "
       + "authorable page empty, which is a far worse defect than the warning this removes");
@@ -2637,6 +2647,74 @@ test("SH575: the generated layout emits a navigation, over the site's own pages"
   assert.match(nav[0], /aria-label="Site"/,
     "and the landmark `audit` reported missing, named — two navs on one page is the case an "
       + "accessible name exists for");
+  // SH878 — the query is the FALLBACK now, and this test's fixture is what reaches it: a capture
+  // whose source stated no navigation. Five of the seven corpus archetypes are that shape, so the
+  // branch is the ordinary case rather than a safety net.
+  assert.match(nav[1], /\{\{#menu title="Primary"\}\}[\s\S]*\{\{else\}\}[\s\S]*\{\{#query type="Page"/,
+    "the source's own menu first, the page listing only where it stated none");
+});
+
+test("SH878: a source that states its own navigation is replicated saying what it said", () => {
+  // The measurement, at the boundary it crossed. On the `theme-heavy` archetype — the one corpus
+  // source with a real <nav> — the replica used to render `About & contact` then `Northwind & Co`:
+  // both labels the pages' own <title>, alphabetically, against a source whose menu says
+  // `Northwind & Co` then `About`. One label wrong, the order inverted, and neither visible to a
+  // reader who had not seen the source.
+  const built = buildConversion({
+    proposal: proposeBuild({
+      inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Northwind & Co" }] },
+      markup: new Map([["/", VERBATIM_PAGE]]),
+      html: { tokenize, parseAttrs, stripNonMarkup },
+    }),
+    plan: { accepted: [] },
+    site: "Acme",
+    markup: new Map([["/", VERBATIM_PAGE]]),
+    inventory: {
+      navigation: [
+        { label: "Northwind & Co", href: "/", on: 1, occurrences: 1, external: false },
+        // Site-wide but off-site: `MenuItem.href` exists for it and SH382's lint refuses a row
+        // setting both, but a replica pointing off-site from its primary menu is a decision a
+        // person makes rather than one a capture implies.
+        { label: "Careers", href: "https://jobs.example.com", on: 1, occurrences: 1, external: true },
+        // On one page of one, so site-wide — but no page was written at this address.
+        { label: "Pricing", href: "/pricing", on: 1, occurrences: 1, external: false },
+      ],
+    },
+  });
+
+  const items = built.document.posts.filter((post) => post.type === "MenuItem");
+  assert.deepEqual(items.map((item) => item.data.label), ["Northwind & Co"],
+    "the source's own label, and only the entry whose target this conversion actually wrote");
+  assert.deepEqual(items[0].data.target, ["/"]);
+  const menu = built.document.posts.find((post) => post.type === "Menu");
+  assert.deepEqual(menu.data, { title: "Primary", items: ["/menu/northwind-co"] },
+    "in the source's order, which is the one ordering a source states outright");
+  assert.deepEqual(built.menu, { items: 1, stated: 3 },
+    "and the report carries both numbers: two entries were considered and dropped, which a bare "
+      + "count of items would read as everything the source had");
+  assert.ok(built.document.postTypes.includes("Menu")
+    && built.document.postTypes.includes("MenuItem"),
+    "provisioned, or the write is refused on a type nobody created (SH607)");
+  assert.ok(built.document.folders.some((folder) => folder.path === "/menu"));
+});
+
+test("SH878: a source that states no navigation writes no menu, and keeps the page listing", () => {
+  // P5, and the ordinary case: five of the seven corpus archetypes have no <nav> at all, so the
+  // document a capture without one produces is the same bytes it produced before.
+  const built = buildConversion({
+    proposal: proposeBuild({
+      inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
+      markup: new Map([["/", VERBATIM_PAGE]]),
+      html: { tokenize, parseAttrs, stripNonMarkup },
+    }),
+    plan: { accepted: [] },
+    site: "Acme",
+    markup: new Map([["/", VERBATIM_PAGE]]),
+  });
+
+  assert.equal(built.menu, undefined);
+  assert.equal(built.document.posts.some((post) => post.type === "Menu"), false);
+  assert.equal(built.document.folders.some((folder) => folder.path === "/menu"), false);
 });
 
 test("SH575: and only on a page with no verbatim markup, or fidelity would carry two navs", () => {
