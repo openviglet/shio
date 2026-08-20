@@ -1263,6 +1263,7 @@
 - **SH869** — judge --record keeps a round as a row and --since reports what moved, with a count that rose graded by the same bar as any finding and a count that fell reported and never held.
 - **SH867** — A page's body carries a per-kind census, so a lost stats bar reports as list items rather than as six links — and an older capture is migrated to one rather than refused or read as zero.
 - **SH864** — Annotation is orthogonal to mode, and the values live in ordinary fields substituted at render — so the address stays a field name where an offset would die on the next edit or re-capture.
+- **SH870** — An annotated element shows the post's own field, substituted into the value before a template sees it — and markup with nothing to substitute is returned byte-for-byte rather than parsed.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

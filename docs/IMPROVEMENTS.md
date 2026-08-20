@@ -749,32 +749,3 @@ address the Universal Editor speaks.
 
 The trade is real and it is fidelity's own: no typed model, no validation, no reuse
 across pages. Worth stating in the mode's name rather than discovered later.
-
-### XL.12 The substitution an annotated fidelity page needs (SH870)
-
-SH864 decided where the values live: `convert` stores the derived values as ordinary
-fields, the markup stays byte-identical, and at render an element carrying
-`sh-field="heading"` shows `data.heading` **when that field is non-empty**.
-`docs/agents/replication.md` carries the decision and why an address naming a position
-inside the blob loses.
-
-What is missing is the render half. Today `{{{content}}}` emits the stored markup
-untouched, so a value written through the Universal Editor is stored and never shown —
-the *report ahead of its behaviour* shape, and here worse than silence: the editor
-accepts an edit and the page denies it.
-
-**The walk already exists and that is the trap.** `ShRegionComposer.annotateEditable`
-selects `[sh-field]` over the *whole composed document* to stamp `data-shio-prop`.
-Substituting there would also rewrite every **section** region, whose text the template
-already produced from that same field — so a helper's output would be overwritten by the
-raw value. The substitution has to be scoped to the elements SH868 stamps onto kept
-markup, which means the two tasks share one marker and SH868's half decides it. Sequence
-them together.
-
-Three properties it is held to:
-
-- **Byte-identical until edited.** No field, no substitution, so the pixel bar is unmoved.
-- **Not a template language.** `content` is emitted without interpolation on purpose (SH464), and
-  compiling captured markup would read a framework's `{{` as a directive.
-- **Degrades rather than corrupts.** A re-capture whose annotation moved stops applying the field
-  instead of writing into the wrong element.

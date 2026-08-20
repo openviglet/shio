@@ -824,6 +824,26 @@ renderer over one body of content at a second address. See the section on it bel
   in"*, and that had it backwards — `./TEXT` is the one spelling whose scope is not in doubt, and a
   **bare** `TEXT` is the ambiguous one, resolved up the context chain. It is `REPORTED` now, which is
   what keeps the lint seeing the generated layout after SH832 respelled it.
+- **The edit that was stored and never shown (SH870)** — SH864 decided where an annotated fidelity
+  page's values live: **the field is the address**. `ShPostDraftMergeService` writes `data.<field>`
+  on the post exactly as it does everywhere else, so the write path needed nothing; what was missing
+  is the render half. A fidelity page's markup is stored verbatim, so a value written through the
+  Universal Editor landed in the post and the page went on showing the source's own text — the editor
+  accepting an edit the page denies, which is worse than refusing it. `ShRenderModel` now fills an
+  annotated element's text from the post's own field before a template ever sees the value.
+  **In the model and not in `ShRegionComposer`, which is what scopes it**: that class already selects
+  `[sh-field]` — over the *whole composed document* — so substituting there would rewrite every
+  **section** region too, whose text the template already produced from that same field, sometimes
+  through a helper, and the rendered value would be overwritten by the raw one. Doing it to the
+  field's *value* reaches only this post's data and only a field whose own value carries the
+  annotation. Four properties, each asserted: **byte-identical until edited** — a value equal to the
+  source's text, or no value at all, returns the string untouched and never parses, because parsing
+  normalises markup and annotating would then move pixels, which is the measurement SH864 rests on;
+  **the value is text**, so a field carrying `<script>` is escaped rather than parsed — one annotated
+  element, one declared field, no expression language, and `content` is still emitted `{{{content}}}`
+  without interpolation (SH464); **a collection path is left alone**, since `features.0.title`
+  addresses a row the section's own template draws; and **an unannotated block is verbatim**, the
+  annotation being the substitution point. SH868 is the half that stamps the annotations on.
 - **A reference carries two scopes, because a guard is not an owner (SH836)** — the scanner hands each
   reference the **innermost** block, which is right for *where it is written* and is what
   `ShTemplateFieldLint` was asking `rowKeysFor` about. That `switch` answers `FORM_FIELD_KEYS` for

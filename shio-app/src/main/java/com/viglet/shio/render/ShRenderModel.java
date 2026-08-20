@@ -135,7 +135,7 @@ public class ShRenderModel {
         // Resolved once: both frames need it now that SH337 projects the site's origin, and
         // the folder walk below is not free.
         ShSite site = siteOf(post);
-        Map<String, Object> model = new LinkedHashMap<>(fieldsOf(post));
+        Map<String, Object> model = new LinkedHashMap<>(substituteAnnotated(fieldsOf(post)));
         model.put("post", postFrame(post, site));
         model.put("site", siteFrame(site, scripts));
         model.put("theme", themeFrame(theme, themeTitle));
@@ -183,6 +183,94 @@ public class ShRenderModel {
             return fields;
         }
         return fields;
+    }
+
+    /**
+     * A verbatim field's annotated elements, showing the post's own fields (SH870).
+     *
+     * <h2>The write that was stored and never shown</h2>
+     *
+     * <p>SH864 measured that annotating a fidelity page is free — {@code sh-field} and
+     * {@code data-shio-prop} are attributes, and attributes do not lay out — and decided where an
+     * annotated page's values live: <b>the field is the address</b>. {@link ShPostDraftMergeService}
+     * writes {@code data.<field>} and never creates structure, so an edit through the Universal
+     * Editor lands in the post's data exactly as it does everywhere else. What was missing is this
+     * half: the page's markup is stored verbatim, so the value was written and the page went on
+     * showing the source's own text. The editor accepted an edit and the page denied it.</p>
+     *
+     * <h2>Here rather than in the composer, which is what scopes it</h2>
+     *
+     * <p>{@code ShRegionComposer.annotateEditable} already selects {@code [sh-field]} — over the
+     * <b>whole composed document</b>. Substituting there would also rewrite every <em>section</em>
+     * region, whose text the template already produced from that same field, sometimes through a
+     * helper: the rendered value would be overwritten by the raw one. Doing it to the field's
+     * <em>value</em> before a template ever sees it is scoped by construction — only this post's
+     * data, only a field whose own value carries the annotation.</p>
+     *
+     * <h2>Byte-identical until edited, and that is a guard rather than a hope</h2>
+     *
+     * <p>Parsing and re-serialising normalises markup, so a page with nothing to substitute must not
+     * be parsed at all — otherwise annotating would move pixels, which is the property SH864
+     * measured. So the walk runs only where a substitution will actually apply, and returns the
+     * original string byte-for-byte otherwise. Once a curator HAS edited, the serialisation is
+     * jsoup's; the page has changed by then, and by their instruction.</p>
+     *
+     * <h2>Not a template language</h2>
+     *
+     * <p>{@code content} is emitted {@code {{{content}}}} without interpolation on purpose (SH464).
+     * Compiling captured markup would read a {@code &#123;&#123;} in a framework's own output as a
+     * directive. This is one annotated element, one declared field, and no expression: the value is
+     * set as <b>text</b>, so a value carrying markup is escaped rather than parsed.</p>
+     */
+    private Map<String, Object> substituteAnnotated(Map<String, Object> fields) {
+        Map<String, Object> out = null;
+        for (Map.Entry<String, Object> entry : fields.entrySet()) {
+            if (!(entry.getValue() instanceof String markup)
+                    || !markup.contains(ShRegionComposer.FIELD_ATTR + "=")) {
+                continue;
+            }
+            String rewritten = substituteInto(markup, fields);
+            if (rewritten == null) {
+                continue;
+            }
+            if (out == null) {
+                out = new LinkedHashMap<>(fields);
+            }
+            out.put(entry.getKey(), rewritten);
+        }
+        return out == null ? fields : out;
+    }
+
+    /**
+     * One verbatim value with its annotated elements filled in, or null where nothing applies.
+     *
+     * <p>Null rather than the input, so {@link #substituteAnnotated} can tell "nothing to do" from
+     * "done" without comparing strings — and so the untouched case never allocates a parse.</p>
+     */
+    private String substituteInto(String markup, Map<String, Object> fields) {
+        org.jsoup.nodes.Document document = org.jsoup.Jsoup.parseBodyFragment(markup);
+        boolean applied = false;
+        for (org.jsoup.nodes.Element element
+                : document.select("[" + ShRegionComposer.FIELD_ATTR + "]")) {
+            String name = element.attr(ShRegionComposer.FIELD_ATTR).trim();
+            // A path into a collection is not this: those rows are the section's own data and its
+            // template renders them. Only a flat key, which is what a verbatim block's annotation is.
+            if (name.isEmpty() || name.indexOf('.') >= 0) {
+                continue;
+            }
+            Object value = fields.get(name);
+            if (!(value instanceof String text) || text.isBlank()) {
+                continue;
+            }
+            // The source's own text is what an unedited field renders, so a value equal to it is not
+            // an edit and must not cost a re-serialisation.
+            if (text.equals(element.text())) {
+                continue;
+            }
+            element.text(text);
+            applied = true;
+        }
+        return applied ? document.body().html() : null;
     }
 
     /**
