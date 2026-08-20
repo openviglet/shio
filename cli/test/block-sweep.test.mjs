@@ -122,6 +122,13 @@ const SWEEP = {
       + "outward surface states a package's post-type count as a promise; `docs/agents/"
       + "blueprints.md` carries it, and the one historical count there now says it is historical",
   },
+  K: {
+    swept: true,
+    why: "SH882 - `docs-shio`'s replication page names `shio annotations` where it had only told a "
+      + "reader to count props by hand, and says what the check now reports and what it no longer "
+      + "fails on. It is one of the few instrument fixes that IS an outward claim: the check is the "
+      + "one a reader runs to decide whether a replica is authorable",
+  },
   AN: {
     swept: false,
     why: "one task about a lint over source bytes (a raw NUL making a file binary to a grep). No "
