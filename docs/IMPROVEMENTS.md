@@ -788,3 +788,51 @@ because what it expected is what the other branch also produces.
 The distinction worth holding is between a fixture that reaches a branch and a fixture
 that cannot tell which branch it reached. The second is the dangerous one — it passes
 for the wrong reason, and it passes just as loudly.
+
+## XLIX A package carries what its manifest does not list
+
+A blueprint is two things at once — a directory of files and a manifest naming which of
+them an apply reads — and nothing holds the two together. A file that no key lists is
+carried, shipped, kept byte-identical by a generator, and installs nothing.
+
+That is not automatically wrong: `emit.mjs` writes the whole SH95 vocabulary into both
+section packages on purpose, and says why. What is wrong is that the reason it gives is
+about **provisioning** — *a site that received the full vocabulary can grow a
+testimonial section next month* — and a carried file that no manifest lists provisions
+nothing, so the benefit the comment claims is not delivered by the arrangement that
+claims it.
+
+The sections here are about that gap. It is the second time it has produced a defect:
+SH873 found `Menu` and `MenuItem` sitting in both packages' `post-types/` and in neither
+manifest, so the navigation mechanism a package needed was one nothing could install,
+and both packages listed a page query instead.
+
+The general question is which of the two artefacts is authoritative. A manifest that
+must list everything on disk makes the directory the truth and the manifest a derived
+index; a directory that may hold more than the manifest reads makes the manifest the
+truth and the extra files dead weight a generator keeps refreshing. Both are defensible
+and the repository has never chosen, which is why the same defect can arrive twice.
+
+### XLIX.1 The third file, which SH873 walked past (SH881)
+
+Measured over all six packages by comparing what each directory holds against what its
+manifest names. Four are exact. `landing` and `marketing-site` each carry one file no
+key lists — `post-types/SectionMarkup.json`, byte-identical to the catalogue's copy —
+and neither package writes a post of that type, so nothing fails today.
+
+`Menu` and `MenuItem` were in exactly that position until SH873, and that one did fail:
+the navigation mechanism both packages needed was a type nothing could install, so both
+drew a page listing instead. SH873 added the two it needed and swept up nothing else,
+which is how the third survived it.
+
+Two answers, and the repository has never chosen between them:
+
+**List it.** The directory is the truth and the manifest a derived index; a package
+carries the whole vocabulary so a curator can add a section later, and that only works
+if the type is installed. Costs one more provision in every apply of both packages.
+
+**Stop carrying it.** The manifest is the truth; `emit.mjs` writes a per-package subset
+and the dead file goes. Costs a generator that has to know what each package uses.
+
+Measure first, because the first answer is not free: `build-marketing-site` is at 3928
+of a 4000 ceiling, and a provisioned type is bytes in the apply's report.

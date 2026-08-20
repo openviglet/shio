@@ -9,6 +9,10 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block J — Blueprints (appliable starting points, and the packages that carry them)
+
+- 💭 **SH881** (deps: —) **Both section packages carry SectionMarkup.json and neither manifest lists it, so nothing installs the type** — The same shape SH873 found with Menu and MenuItem, still on disk after it: emit writes the whole vocabulary and the manifests provision ten of eleven. → §XLIX.1
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
