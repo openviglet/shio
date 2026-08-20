@@ -12,7 +12,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH864** (deps: —) **Fidelity and authorable are treated as exclusive modes, and annotation is orthogonal to which markup is rendered** — 41 sh-field markers added to a fidelity page cost nothing measurable in pixels and annotations counted every one, so a page can be both. → §XL.6
-- 📋 **SH867** (deps: SH687 ✅) **diff counts what a page lost and never names what kind of thing it was, so a missing button reads as a link** — One viewport lost an eyebrow badge, a secondary CTA, a whole stats bar and half the hero's type scale, all reported as external links 15 to 9. → §XL.9
 - 📋 **SH868** (deps: SH864) **The field mapping propose computes is only ever spent extracting values, never stamped onto the markup already there** — The same derivation that fills a section could annotate the kept block in place, which SH864 measured as free in pixels and full in fields. → §XL.10
 
 ## Priority

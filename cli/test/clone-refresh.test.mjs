@@ -25,7 +25,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { INVENTORY_FILE } from "../src/clone.mjs";
+import { INVENTORY_FILE, INVENTORY_VERSION } from "../src/clone.mjs";
 import * as clone from "../src/commands/clone.mjs";
 import { load } from "../../fixtures/source-sites/corpus.mjs";
 
@@ -120,7 +120,10 @@ test("SH592: a capture records what the server said about asking again", async (
     // The version is deliberately unmoved: these fields are additive and optional, and SH592's own
     // rule is that a bump is a migration or a refusal. A bump here would have made every capture in
     // existence need one to gain a field none of its readers wants.
-    assert.equal(inventory.version, 5, "an additive optional field is not a version bump");
+    assert.equal(inventory.version, INVENTORY_VERSION,
+      "an additive optional field is not a version bump. Read against the constant rather than a "
+        + "literal: what this pins is that `refresh` writes what `clone` writes, and a bump that IS "
+        + "earned — SH867's census — should move both together rather than fail here");
   } finally {
     await space.dispose();
   }
@@ -321,7 +324,10 @@ test("SH611: a capture records an asset's validators, or the next refresh cannot
           + "nobody can avoid",
       );
     }
-    assert.equal(inventory.version, 5, "an additive optional field is not a version bump");
+    assert.equal(inventory.version, INVENTORY_VERSION,
+      "an additive optional field is not a version bump. Read against the constant rather than a "
+        + "literal: what this pins is that `refresh` writes what `clone` writes, and a bump that IS "
+        + "earned — SH867's census — should move both together rather than fail here");
   } finally {
     await space.dispose();
   }

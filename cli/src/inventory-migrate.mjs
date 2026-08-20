@@ -70,20 +70,24 @@ export function migrateInventory(inventory, markup = new Map()) {
   const migrated = [];
   const blocked = [];
   const pages = (inventory.pages ?? []).map((page) => {
-    if (typeof page?.assets?.own === "number" && typeof page.assets?.head === "number") {
-      return page;
-    }
+    const hasAssets = typeof page?.assets?.own === "number" && typeof page.assets?.head === "number";
+    // SH867 — the census is the second field this walk brings forward, and it is asked about
+    // separately: a version-5 row has the asset split and no census, so testing only the first would
+    // return it unchanged and leave `diff` unable to say what kind of thing a page lost.
+    const hasElements = page?.elements && typeof page.elements === "object";
+    if (hasAssets && hasElements) return page;
     const html = markup.get(page?.path);
     if (!html) {
       blocked.push(page?.path ?? "(unnamed)");
       return page;
     }
     // The same functions the capture ran, against the same bytes the capture stored. Nothing is
-    // estimated: `countAssets` is where the three-way split is defined, so a migrated row and a
-    // freshly captured one are computed by one rule and cannot disagree (P5, SH245's lesson).
+    // estimated: `countAssets` is where the three-way split is defined and `scanPage` is where the
+    // census is, so a migrated row and a freshly captured one are computed by one rule and cannot
+    // disagree (P5, SH245's lesson).
     const doc = scanPage(html, page.url ?? page.path ?? "/");
     migrated.push(page.path);
-    return { ...page, assets: countAssets(doc.assets) };
+    return { ...page, assets: countAssets(doc.assets), elements: doc.elements };
   });
 
   return {

@@ -39,7 +39,7 @@
  * the second, because the wrong shape did not crash here: it scored, plausibly, as a total lost.
  */
 
-import { addressablePath } from "./clone.mjs";
+import { ELEMENT_KINDS, addressablePath } from "./clone.mjs";
 import { VERBATIM } from "./regions.mjs";
 
 /**
@@ -59,7 +59,11 @@ export function comparePage(declared, produced, mode = "fidelity") {
   assertComparable(declared, "declared");
   assertComparable(produced, "produced");
   const claimsVerbatim = claimsVerbatimFacts(mode, produced);
-  const rows = FACTS.map((fact) => {
+  // SH867 — the element facts are scored only where both sides carry a census. Omitted rather than
+  // read as zero: a version-5 row has none, and zero would say the source had no headings at all, so
+  // a replica that kept every one of them would report a gain.
+  const census = hasCensus(declared, produced);
+  const rows = FACTS.filter((fact) => census || !fact.census).map((fact) => {
     const was = fact.of(declared) ?? 0;
     const now = fact.of(produced) ?? 0;
     return {
@@ -274,6 +278,26 @@ const FACTS = [
     why: "the SH95 vocabulary has no form section, so a source's form is not among the candidates "
       + "a reviewer can accept",
   },
+  // SH867 — the census, one fact per kind. What a replica lost used to be reported only in the
+  // vocabulary this table happened to count, so a viewport that lost a secondary call to action and
+  // a four-cell statistics band reported `external links: 15 → 9` — a stats bar is list items and a
+  // call to action is an anchor, and counted as links both are six of one number.
+  //
+  // `verbatimOnly`, deliberately, and it is the conservative direction rather than the timid one: an
+  // authorable page is redrawn with the section vocabulary, so a stats bar with no section type to
+  // hold it is a loss the *reviewer accepted*, and scoring it as damage would fire on every working
+  // conversion. The row is printed either way — SH577's rule that a shortfall the mode does not claim
+  // is still counted, still printed, and still says how far short — which is the whole deliverable
+  // here: the reviewer is told a stats bar went, not that six links did.
+  ...ELEMENT_KINDS.map((kind) => ({
+    name: kind === "listItem" ? "list items" : `${kind}s`,
+    of: (page) => page.elements?.[kind] ?? 0,
+    // Marks this row as one only a capture carrying a census can answer. See `hasCensus`.
+    census: true,
+    verbatimOnly: true,
+    why: "an authorable page composes its own structure from the section vocabulary, so the source's "
+      + "count of these is not a promise it makes — a fidelity page keeps the markup and does make it",
+  })),
 ];
 
 /**
@@ -340,7 +364,23 @@ function assertComparable(page, side) {
         + "  note: a capture written before SH581 is version 4 — re-run `shio clone`.",
     );
   }
+  // SH867 — a census that is present and is not an object is a shape nothing wrote, and scoring it
+  // would read `undefined` for every kind. Its ABSENCE is not refused, which is the rule SH592
+  // established after two full recaptures: a version bump is a migration where the new field can be
+  // computed from what is on disk, and a refusal only where it genuinely cannot. This one can —
+  // `migrateInventory` recomputes it with the same `scanPage` the capture ran — so a row without one
+  // is a row this leaves uncompared on those facts rather than one it turns away.
+  if (page?.elements !== undefined && typeof page.elements !== "object") {
+    throw new Error(
+      `shio diff: the ${side} side carries an element census that is not an object (SH867).`,
+    );
+  }
 }
+
+/** Whether both sides of a comparison carry the census the element facts are scored from (SH867). */
+const hasCensus = (declared, produced) =>
+  Boolean(declared?.elements && typeof declared.elements === "object")
+  && Boolean(produced?.elements && typeof produced.elements === "object");
 
 /** Below this share of the source's text, a page has lost prose rather than whitespace. */
 export const TEXT_FLOOR = 0.6;

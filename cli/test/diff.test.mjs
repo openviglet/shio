@@ -19,7 +19,7 @@ import { test } from "node:test";
 
 import { buildInventory, countAssets, countLinks, INVENTORY_FILE, scanPage } from "../src/clone.mjs";
 import {
-  compareCapture, comparePublished, describeDiff, describePublishedDiff,
+  compareCapture, comparePage, comparePublished, describeDiff, describePublishedDiff,
 } from "../src/diff.mjs";
 import * as diff from "../src/commands/diff.mjs";
 import { norm } from "./support/paths.mjs";
@@ -55,9 +55,75 @@ function inventoryOf(html) {
       assets: countAssets(doc.assets),
       forms: doc.forms.length,
       textChars: doc.textChars,
+      // SH867 â€” from `scanPage` for the reason the two above are: a fixture that builds the row its
+      // own way cannot see the defect the row exists to catch.
+      elements: doc.elements,
     }],
   };
 }
+
+/** SH867's measured viewport: a badge, a hero, two calls to action and a four-cell stats bar. */
+const VIEWPORT = `<html lang="en"><head><title>Home</title></head><body>
+  <span class="eyebrow">Open Source Platform</span>
+  <h1>Enterprise Intelligence</h1>
+  <p>${"Copy that reads like a page a person wrote. ".repeat(4)}</p>
+  <a class="btn" href="/products">Explore Products</a><a class="btn" href="/docs">Read the Docs</a>
+  <ul class="stats"><li>3</li><li>100%</li><li>Apache 2.0</li><li>Self-hosted</li></ul>
+  </body></html>`;
+
+/** What the replica served: one call to action, no stats bar, no badge. */
+const VIEWPORT_LOST = `<html lang="en"><head><title>Home</title></head><body>
+  <h1>Enterprise Intelligence</h1>
+  <p>${"Copy that reads like a page a person wrote. ".repeat(4)}</p>
+  <a class="btn" href="/products">Explore Products</a>
+  </body></html>`;
+
+test("SH867: a stats bar that went is named as list items, not absorbed into a link count", () => {
+  // The measurement: `verify` 0 errors, `diff` `external links: 15 → 9`, `judge` eleven findings all
+  // of one kind — for a viewport that lost a badge, a secondary CTA and a four-cell statistics band.
+  // A stats bar is list items and a call to action is an anchor, so counted as links both are six of
+  // one number, and a reviewer told six links are missing looks for six links.
+  const declared = inventoryOf(VIEWPORT).pages[0];
+  const produced = { ...inventoryOf(VIEWPORT_LOST).pages[0] };
+  const compared = comparePage(declared, produced, "fidelity");
+  const moved = compared.rows.filter((row) => row.delta !== 0).map((row) => row.fact);
+
+  assert.ok(moved.includes("list items"),
+    `the stats bar has to be nameable, or the reviewer is told about links: ${moved.join(", ")}`);
+  assert.deepEqual(
+    compared.rows.find((row) => row.fact === "list items"),
+    { fact: "list items", declared: 4, produced: 0, delta: -4, claimed: true },
+    "and a fidelity page claims it: the markup is what that mode keeps");
+});
+
+test("SH867: the census names what markup can decide, and does not guess at the rest", () => {
+  const source = scanPage(VIEWPORT, "https://x.test/");
+
+  assert.deepEqual(source.elements, { heading: 1, listItem: 4 },
+    "a heading is a heading in any stylesheet and an `<li>` is one of a set. An eyebrow badge is a "
+      + "`<span>` some CSS makes a pill and half a type scale is a computed font size — both need "
+      + "the rendered pair, and a census that guessed at them would report a `<span>` count that "
+      + "moves with every wrapper anybody adds");
+  assert.equal(source.elements.button, undefined,
+    "and `<a class=btn>` is an anchor: this deliberately does not read a class name as a role, "
+      + "which is the unverifiable label SH689 spent a task removing");
+});
+
+test("SH867: a capture with no census is not scored on those facts, and never as zero", () => {
+  // A version-5 row. Reading a missing census as `0` would say the source had no headings at all,
+  // so a replica that kept every one of them would report a gain — SH578 and SH581's failure shape.
+  const declared = { ...inventoryOf(VIEWPORT).pages[0] };
+  const produced = { ...inventoryOf(VIEWPORT_LOST).pages[0] };
+  delete declared.elements;
+  delete produced.elements;
+  const compared = comparePage(declared, produced, "fidelity");
+
+  assert.deepEqual(compared.rows.filter((row) => row.fact === "list items"), [],
+    "omitted rather than zeroed — and `migrateInventory` brings such a row forward from the markup "
+      + "it already stored, which is why this is not a refusal (SH592)");
+  assert.ok(compared.rows.some((row) => row.fact === "internal links"),
+    "while every fact the row CAN answer is still scored");
+});
 
 /** The produced side as `shio diff` builds it: scanned, then split by the rule the capture used. */
 function scannedAt(html, url) {
@@ -102,8 +168,10 @@ test("SH522: a page that lost its content is named fact by fact", async () => {
   const [page] = result.pages;
   assert.deepEqual(
     page.rows.filter((row) => row.delta < 0).map((row) => row.fact).sort(),
-    ["body assets", "internal links"],
-    "the hero image and every link the nav and footer carried",
+    ["body assets", "images", "internal links"],
+    "the hero image and every link the nav and footer carried — and SH867's census names the image "
+      + "as an image rather than only as one of the page's references, which is the whole point of "
+      + "that fact: `body assets` is a count of URLs and `images` is a count of pictures",
   );
   assert.equal(page.text.lost, true, "and the prose, which is the fact SH520 removed and every "
     + "instrument called a success");
@@ -388,7 +456,10 @@ test("SH577: an authorable page's chrome is not a loss, and the count is still o
       + "nav and footer links and its hero image, on a page composed from the vocabulary that "
       + "exists to drop them");
     assert.equal(result.lost, 0);
-    assert.equal(result.byDesign, 2, "internal links and assets — counted, not discarded");
+    assert.equal(result.byDesign, 3,
+      "internal links, assets and — since SH867 — the image, as a picture rather than as a URL. "
+        + "Counted, not discarded: an authorable page composes its own structure, so none of the "
+        + "three is a promise it makes, and all three stay on the report");
     assert.equal(result.pages[0].mode, "authorable");
     // The number stays visible, because it is the number SH575's missing navigation was read off. A
     // fact removed from the report is a fact nobody can find.
@@ -431,8 +502,9 @@ test("SH577: the mode is per page, because a page is not one mode (SH520)", asyn
   const result = await diff.run({ site: "Acme" }, [], ctx);
 
   assert.deepEqual(result.modes, { fidelity: 1, mixed: 0, authorable: 1 });
-  assert.equal(result.lost, 2, "the fidelity page is still judged on every fact — its links and "
-    + "its image really are gone, and nothing in the plan says they were meant to be");
+  assert.equal(result.lost, 3, "the fidelity page is still judged on every fact — its links and "
+    + "its image really are gone, and nothing in the plan says they were meant to be. Three since "
+    + "SH867, which counts the picture as a picture as well as as a reference");
   assert.equal(result.exitCode, 1);
 });
 

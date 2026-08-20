@@ -74,8 +74,13 @@ const LIMIT = 20;
  * <p>**5 since SH581**, on the same terms as 4 and for the same reason: that bump added `head` beside
  * `own` so `shio diff` can score a page's body against a layout that owns the head, and this group
  * still reads only `path` and the capture's top-level `assets` array. Tracked, not acted on.</p>
+ *
+ * <p>**6 since SH867**, third on those terms: a per-kind element census so `shio diff` can say what
+ * kind of thing a page lost rather than reporting a stats bar as six links. This group reads neither
+ * field, and tracking it is still the cheaper error — a reader left at 5 warns that every capture
+ * `shio clone` now writes is newer than it understands, about a field it never opens.</p>
  */
-export const READS_VERSION = 5;
+export const READS_VERSION = 6;
 
 /**
  * Lints a replication's coverage against the capture it came from.

@@ -71,8 +71,16 @@ import { FETCH_CALL, URL_CALL, kindForUrl } from "./clone-assets.mjs";
  * scored for SH578's exact reason, one axis along: a version-4 row has no `head`, reading it as `0`
  * says every one of the source's favicons and its manifest lives in the page's body, and the
  * shortfall that produces — measured at **-28 on one page** — is not a loss the replica suffered.
+ *
+ * <p>**6 since SH867**, which adds a fact rather than splitting one: a per-kind census of the page's
+ * own elements. What a replica lost was reported only in the vocabulary `scanPage` happened to
+ * count, so a viewport that lost an eyebrow badge, a secondary call to action **and a four-cell
+ * statistics band** reported `external links: 15 → 9`. A stats bar is list items and a call to action
+ * is an anchor; counted as links, both are six of one number. Refused rather than scored for the
+ * reason above: a version-5 row has no census, and reading a missing count as `0` would report every
+ * heading and every button on the source as lost on a page that kept them all.</p>
  */
-export const INVENTORY_VERSION = 5;
+export const INVENTORY_VERSION = 6;
 
 /** Where the inventory lives: beside `content-base.json`, which is the other derived snapshot. */
 export const INVENTORY_FILE = "shio/.shio/source-inventory.json";
@@ -642,6 +650,50 @@ function assetKind(tag, url, attrs) {
  * navigation would put a privacy policy in a site's primary menu, and the whole value of this
  * section is that it is the menu **as the source spells it**.
  */
+/**
+ * What kind of thing an element is, in the vocabulary a **reader** would use (SH867).
+ *
+ * <h3>The measurement</h3>
+ *
+ * <p>One viewport of a replica lost an eyebrow badge, a secondary call to action, a four-cell
+ * statistics band and half the hero's type scale. `verify` reported **0 errors**; `diff` reported
+ * `external links: 15 → 9`; `judge` reported eleven findings, all of one kind. A call to action is an
+ * anchor and a stats bar is a list of them, so counted as links both are six of one number — and a
+ * reviewer told six links are missing looks for six links.</p>
+ *
+ * <h3>What markup can and cannot decide, stated rather than blurred</h3>
+ *
+ * <p>These four are **structural**: an `<h2>` is a heading in any stylesheet, a `<button>` is a
+ * control, an `<li>` is one of a set, an `<img>` is a picture. The other two symptoms are not, and
+ * this deliberately does not guess at them — an *eyebrow badge* is a `<span>` some CSS makes a pill,
+ * and *half the type scale* is a computed font size. Both need the rendered pair, which is SH867's
+ * second move and is not this one; a census that guessed at them would report a `<span>` count that
+ * moves with every wrapper anybody adds.</p>
+ *
+ * <p>A `role` wins over the tag, because that is the author saying what the thing is: `<a
+ * role="button">` is a control however it is spelled, and `role="presentation"` on a list is the
+ * author saying its items are not a set.</p>
+ */
+export function elementKind(name, attrs = {}) {
+  const role = String(attrs.role ?? "").trim().toLowerCase();
+  if (role === "presentation" || role === "none") return null;
+  if (role === "button" || role === "heading" || role === "img") {
+    return role === "img" ? "image" : role;
+  }
+  if (name === "button") return "button";
+  if (name === "input") {
+    const type = String(attrs.type ?? "").trim().toLowerCase();
+    return type === "submit" || type === "button" || type === "reset" ? "button" : null;
+  }
+  if (/^h[1-6]$/.test(name)) return "heading";
+  if (name === "li") return "listItem";
+  if (name === "img") return "image";
+  return null;
+}
+
+/** The kinds a census may hold, sorted — the facts `diff` scores and the order it prints them in. */
+export const ELEMENT_KINDS = Object.freeze(["button", "heading", "image", "listItem"]);
+
 export function scanPage(html, pageUrl) {
   const doc = {
     lang: null,
@@ -661,6 +713,8 @@ export function scanPage(html, pageUrl) {
     // into the inventory so **every** crawl says how often it was right, on the operator's own
     // source rather than on ours.
     selfLabelled: 0,
+    // SH867 — what kinds of thing the page's body is made of. See `elementKind`.
+    elements: {},
   };
   let navDepth = 0;
   let form = null;
@@ -798,6 +852,11 @@ export function scanPage(html, pageUrl) {
       continue;
     }
     const attrs = parseAttrs(token.attrs);
+    // SH867 — the census, before the switch and outside the head. See `ELEMENT_KINDS`.
+    if (!inHead) {
+      const kind = elementKind(name, attrs);
+      if (kind) doc.elements[kind] = (doc.elements[kind] ?? 0) + 1;
+    }
     // SH515 — the `url()` calls in a `style` **attribute**, which are markup and are not a
     // stylesheet, so neither pass above saw them. `background-image:url('img/about-us.png')` is how
     // a hero image reaches a page that has no `<img>` for it, and the rewriter has always rebased
@@ -1429,6 +1488,10 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       assets: countAssets(doc.assets),
       forms: doc.forms.length,
       textChars: doc.textChars,
+      // SH867 — always written, including as an empty object, and that is what the version bump is
+      // for: absent means *a reader older than 6 wrote this row*, and a reader that filled it in as
+      // zero would report every heading on the source as lost. `{}` means the page has none.
+      elements: doc.elements,
       ...(doc.baseHref ? { baseHref: doc.baseHref } : {}),
       // SH477 — how many of this page's link labels held a decorative mark that named itself. Only
       // when non-zero and NOT an `INVENTORY_VERSION` bump, on SH592's reading: nothing consumes it,

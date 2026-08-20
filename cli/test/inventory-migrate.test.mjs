@@ -93,7 +93,10 @@ test("SH592: a page already carrying the split is not recomputed", () => {
   const mixed = {
     version: 3,
     pages: [
-      { path: "/kept", assets: { own: 9, head: 9, style: 9 } },
+      // SH867 — carrying **both** derived fields, which is what "already right" now means: a row
+      // with the asset split and no census is a version-5 row, and leaving it alone would let `diff`
+      // read a missing census as a page with no headings at all.
+      { path: "/kept", assets: { own: 9, head: 9, style: 9 }, elements: { heading: 9 } },
       { path: "/old", assets: 4 },
     ],
   };
@@ -101,6 +104,22 @@ test("SH592: a page already carrying the split is not recomputed", () => {
 
   assert.deepEqual(migrated, ["/old"]);
   assert.deepEqual(inventory.pages[0].assets, { own: 9, head: 9, style: 9 });
+  assert.deepEqual(inventory.pages[0].elements, { heading: 9 });
+});
+
+test("SH867: a version-5 row has the asset split and no census, and is brought forward", () => {
+  // The case the walk would have returned unchanged had it kept asking about `assets` alone — the
+  // shape every capture written between SH581 and SH867 has.
+  const five = {
+    version: 5,
+    pages: [{ path: "/", url: "https://x.test/", assets: { own: 3, head: 1, style: 1 } }],
+  };
+  const { inventory, migrated } = migrateInventory(five, new Map([["/", PAGE_HTML]]));
+
+  assert.deepEqual(migrated, ["/"]);
+  assert.deepEqual(inventory.pages[0].elements, scanPage(PAGE_HTML, "https://x.test/").elements,
+    "computed by the same `scanPage` the capture runs, against the same bytes it stored — so a "
+      + "migrated row and a freshly captured one cannot disagree (P5, SH245)");
 });
 
 test("SH592: a version below the floor is refused BY FIELD, because the crawl is not on disk", () => {

@@ -1632,6 +1632,31 @@ it. Four decisions worth keeping:
   row rather than refusing; and the file is bounded at twenty, oldest off the front. The measurement
   that says it works is that **both rounds were `accepted`** and the delta is what makes the second a
   finding.
+- **What kind of thing a page lost (SH867).** One viewport lost an eyebrow badge, a secondary call to
+  action, a four-cell statistics band and half the hero's type scale. `verify` said **0 errors**;
+  `diff` said `external links: 15 → 9`; `judge` said eleven findings, all of one kind. A stats bar is
+  list items and a call to action is an anchor, so counted as links both are six of one number — and
+  a reviewer told six links are missing looks for six links. `scanPage` now keeps a **per-kind census
+  of the page's body** (`elementKind`: button, heading, listItem, image), `diff` scores one fact per
+  kind, and the stats bar reports as `list items: 4 → 0`. **The rationale's first move was wrong
+  about the mechanism** — it says *`diff` already knows the block a loss came from*, and `diff`
+  compares counts, not blocks; the census is what makes the kind knowable at all. **What markup can
+  and cannot decide is stated rather than blurred:** an `<h2>` is a heading in any stylesheet and an
+  `<li>` is one of a set, while an eyebrow badge is a `<span>` some CSS makes a pill and half a type
+  scale is a computed font size. Those two need the rendered pair, which is SH867's *second* move and
+  is not this one — and a census that guessed at them would report a `<span>` count that moves with
+  every wrapper anybody adds. A `role` wins over the tag (the author saying what the thing is) and a
+  **class name never does**, which is SH689's unverifiable label. The facts are `verbatimOnly`,
+  deliberately: an authorable page composes its own structure, so a stats bar with no section type to
+  hold it is a loss the *reviewer accepted*, and scoring it as damage would fire on every working
+  conversion — the row still prints, which is SH577's rule and the whole deliverable here.
+  **`INVENTORY_VERSION` 6, as a migration and not a refusal.** SH578 and SH581 refused older captures
+  and cost two full recaptures; SH592's rule is that a bump is a migration where the new field can be
+  computed from what is on disk and a refusal only where it cannot. This one can —
+  `migrateInventory` recomputes it with the same `scanPage` the capture ran — so a version-5 row is
+  brought forward, and a row that still has no census is left **uncompared on those facts** rather
+  than read as zero, which would say the source had no headings at all and report a gain on a replica
+  that kept every one.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

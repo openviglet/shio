@@ -755,34 +755,6 @@ post, is the third mode.
 The open design question is where the values live so a write round-trips, and that is
 the task, not the demonstration.
 
-### XL.9 Magnitude is the axis nothing measures (SH867)
-
-The replica and its source were photographed at one viewport and the difference read
-directly. Everything below is visible in that pair and in none of the instruments'
-output.
-
-| source | replica |
-|---|---|
-| eyebrow pill "● Open Source Platform" | absent |
-| hero at ~56px over three lines, "Enterprise Intelligence" in brand colour | ~32px, two lines, all dark |
-| two buttons: "Explore Products →" and "Read the Docs" | one, and it is green |
-| stats bar — 3 / 100% / Apache 2.0 / Self-hosted | absent |
-| card copy in full | truncated at "connect any…" |
-
-What the instruments said about that page: `verify` **0 errors**; `diff` `external
-links: 15 → 9 (-6)`; `judge` **11 findings, all `diff.facts-lost`**. A secondary call to
-action and a four-cell statistics band were both counted as links.
-
-SH687 gave the appearance surface **order** and **attribution**. This is the third axis:
-**magnitude** — how prominent a thing is, and what kind of thing it was. A heading at
-half its source's size is not a fact lost; it is not a fact at all, and nothing reports
-it.
-
-Two moves, and the first is cheap. `diff` already knows the block a loss came from —
-name its kind (`button`, `badge`, `stat`, `heading`) beside the count. And `judge`
-should read the rendered pair when playwright resolves, the way SH688 made `audit` run
-unasked, because that pair is where every one of these was visible in one look.
-
 ### XL.10 The third mode, and it is the cheap one (SH868)
 
 `propose` already knows, for every candidate, which node became `heading`, which became
