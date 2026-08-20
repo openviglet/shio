@@ -121,6 +121,14 @@ vocabulary is paid by every caller that reads it (P3). `Declared.withPostTypesFr
 names too, so a **dry run** of the document that declares them resolves — and the names are
 validated *there*, before the first op, which is what makes a bad one refuse the batch whole
 instead of after the assets are up.
+**Its first caller lasted one task, and that is the finding rather than an accident (SH872).**
+`convert --annotate` declaring forty names per capture was solving a problem SH868 had created by
+storing the annotated text on `Page` at all — the type every page shares, which went from 4 fields
+to 44 on an eleven-page replica. The storage is the markup again, so a conversion declares nothing
+and `data.fields` keeps the job it is actually right for: **widening a type you own without a
+`PUT`**, which upserts and would revert a field somebody added. What replaces the declaration is a
+rule rather than a model change — `ShAnnotatedFields`, asked by `verify` and by the SH168 check:
+a key annotated by the post's own markup is declared by that markup.
 
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the

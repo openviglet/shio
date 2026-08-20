@@ -58,6 +58,7 @@ import com.viglet.shio.post.type.ShPostFieldFlags;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.render.ShAnnotatedFields;
 import com.viglet.shio.render.ShPageRenderService;
 import com.viglet.shio.render.ShPreviewLinks;
 import com.viglet.shio.render.ShRenderPostTypes;
@@ -2834,8 +2835,12 @@ public class ShAgentVerifyService {
         // the File type produced on a replica of its own assets.
         boolean system = post.getShPostType() != null && post.getShPostType().getSystem() == 1;
         String typeName = name(post.getShPostType());
+        // SH872 — a key this post's OWN markup annotates is declared by that markup, which is the
+        // storage SH868 proposed. Without it a curator's first edit through the Universal Editor
+        // turns an annotated page red here, on every annotated block they touch.
+        Set<String> annotated = ShAnnotatedFields.of(data);
         for (String key : data.propertyNames()) {
-            if (!allowed.contains(key)) {
+            if (!allowed.contains(key) && !annotated.contains(key)) {
                 findings.add(Finding.error(check, "unknown-field", address, key,
                         "This post stores '" + key + "', which post-type '" + typeName
                                 + "' does not declare, so nothing renders or delivers it.",

@@ -47,6 +47,7 @@ import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.post.type.ShVocabularyPostTypes;
+import com.viglet.shio.render.ShAnnotatedFields;
 import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.render.ShTemplateValidator;
 import com.viglet.shio.render.ShTemplateValidator.ShTemplateProblem;
@@ -2020,10 +2021,15 @@ public class ShAgentBatchService {
             // key would make such a type unusable rather than making the model better.
             return null;
         }
+        // SH872 — a key annotated by the markup THIS WRITE carries is declared by that markup, the
+        // storage SH868 proposed and SH870 renders. Read off the op's own data rather than the
+        // stored row: a `shio push` of a content file whose page a curator has edited sends both
+        // halves at once, and grandfathering would only cover the second push.
+        Set<String> annotated = ShAnnotatedFields.of(data);
         List<String> unknown = new ArrayList<>();
         for (String key : data.propertyNames()) {
             boolean grandfathered = stored != null && stored.has(key);
-            if (!allowed.contains(key) && !grandfathered) {
+            if (!allowed.contains(key) && !grandfathered && !annotated.contains(key)) {
                 unknown.add(key);
             }
         }

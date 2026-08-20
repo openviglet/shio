@@ -725,30 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.14 A field named after a hash, on a type every page shares (SH872)
-
-SH868 proposed that *the annotation is the field and the markup is the storage*. What
-shipped stores the values in **fields on `Page`**, named from the captured block's id.
-
-Two consequences, both measured on an eleven-page replica.
-
-`Page` went from **4 fields to 44**, and `Page` is the type every page in the instance
-uses. `shio annotations post:VigAnn/` answers `14 of 44 declared field(s) annotated, 30
-NOT editable`, and its missing list names `b425bd805Heading`, `b6d312963Intro`,
-`b770bb901Heading` — blocks that live on *other* pages. Thirty findings on a page with
-nothing wrong with it, and the count grows with every page captured: an eleven-page site
-puts ~40 fields on the type and each page uses about a quarter of them.
-
-`b1083a9abHeading` is also a name no curator can read, and it is derived from the
-block's markup — so a re-capture after the source changes a class produces a new id, a
-new field, and an orphan beside it.
-
-Neither is fatal and both are addressable without abandoning the approach: a per-page
-type, or a single map-shaped field the annotation indexes into, or field names derived
-from the block's own heading the way `proposePostType` already names a type. What is not
-addressable is leaving it — `annotations` is the instrument that says whether a page is
-authorable, and this makes it report thirty false findings on every page.
-
 ### XL.15 The menu that is really a title (SH873)
 
 Found by authoring rather than replicating — the second task shape SH603 asked for, and

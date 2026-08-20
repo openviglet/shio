@@ -310,16 +310,11 @@ export function buildConversion({
       // the two that are not — `Page` and the SH95 sections — shipped only inside a blueprint, so
       // the whole chain failed on a bare instance and passed on every instance anybody tried it on.
       ...(vocabulary.length ? { postTypes: vocabulary } : {}),
-      // SH871 — and the fields THIS capture invented, which no catalogue can ship: a verbatim
-      // page's annotations are named from the block hashes the source produced, so the run that
-      // computes them is the only thing that could ever declare them. Without this the document
-      // named forty preconditions, the batch refused the first write, and the conversion died
-      // having uploaded 18 assets and written no page — a precondition the run itself can satisfy,
-      // which is the shape SH763 was. Absent when nothing was annotated, so a fidelity or an
-      // authorable conversion is the same bytes it was (P5).
-      ...(annotationFields.length
-        ? { postTypeFields: { [PAGE_TYPE]: annotationFields.map((row) => row.field) } }
-        : {}),
+      // SH871 put the annotated names here as `postTypeFields`, because SH868 had made each of
+      // them a field on `Page`. SH872 gave the values back to the markup they came from, so a
+      // conversion declares nothing per capture and this key is gone — the op it compiled to
+      // (`render.provision`'s `data.fields`) stays, as the door an agent widens a type of its own
+      // through without a `PUT` that would clobber somebody's field.
       // SH449 — the edge that turns a layout into a rendered page. Written only when there is a
       // layout to bind, so a document that does not need it is the same bytes it was before (P5).
       ...(pages.length ? { postTypeLayout: { [PAGE_TYPE]: generatedLayoutTitle(site) } } : {}),
@@ -1330,9 +1325,10 @@ function composePages(proposal, sectionUrls, markup = new Map(), annotate = fals
   const obstructions = [];
   // SH868 — the pages whose kept markup was annotated in place, and how many fields each gained.
   const annotations = [];
-  const annotationFields = [];
-  // SH871 — the names already claimed, across every page. See the push below for why the list is
-  // by name and the count beside it is by page.
+  // SH871/SH872 — the distinct names, across every page. A name carries the block hash it came
+  // from and one block signature recurs across pages by construction — that is what made it a
+  // candidate — so eleven annotated pages address 40 distinct names in 92 places. Both numbers are
+  // true: this is the first, and `annotations` above carries the second per page.
   const declaredNames = new Set();
   for (const page of proposal?.pages ?? []) {
     const seen = new Set();
@@ -1374,29 +1370,12 @@ function composePages(proposal, sectionUrls, markup = new Map(), annotate = fals
     const stamped = Object.keys(annotated.fields);
     if (stamped.length) {
       annotations.push({ path: page.path, fields: stamped.length });
-      for (const field of stamped) {
-        // SH871 — once per NAME, not once per occurrence. A field name carries the block hash it
-        // came from, and one block signature recurs across pages by construction — that is what
-        // makes it a candidate — so eleven annotated pages turned 40 distinct names into 92 rows
-        // and the report that exists to say what to create printed each of them 2.3 times. The
-        // list is also what `postTypeFields` sends, and a repeated name there is bytes the op
-        // sorts and de-duplicates anyway.
-        if (declaredNames.has(field)) continue;
-        declaredNames.add(field);
-        annotationFields.push({
-          postType: PAGE_TYPE,
-          field,
-          why: "an annotated block addresses it, and a real run refuses a write to a field the "
-            + "post-type does not declare",
-          // SH871 — the door this run itself goes through. It used to name `reconcile`, which
-          // repairs the *render* types against a shipped model and could never have added a name
-          // computed from a capture: the instruction was wrong for exactly the case that produced
-          // the finding, and every one of the forty was a step a human had to take by hand.
-          fix: "this run declares it — `postTypeFields` on the document compiles to "
-            + "render.provision's `data.fields`, which appends it to " + PAGE_TYPE + " as a Text "
-            + "field and changes nothing else.",
-        });
-      }
+      // SH872 — the names, once each, and nothing more. SH871 emitted a `requires`-shaped row per
+      // name because SH868 had made each of them a field on `Page`; the storage is the markup
+      // again, so there is nothing for the instance to declare and a row saying so would be a
+      // requirement that is not one. Kept as a list because `--json` has a reader and "which
+      // blocks did this page make editable" is the question `shio annotations` asks live.
+      for (const field of stamped) declaredNames.add(field);
     }
     // SH858 — the overlays whose dismiss behaviour this capture does not hold. Counted per page, so
     // the report names the pages rather than a total nobody can locate.
@@ -1431,11 +1410,15 @@ function composePages(proposal, sectionUrls, markup = new Map(), annotate = fals
         // accepted anything on. It is what `{{#if content}}` in the head asks to decide whether this
         // page needs the captured stylesheet, and a fidelity replica is byte-identical to before.
         ...(composed.content === null ? {} : { content: composed.content }),
-        // SH868 — the values the annotations in that markup address. Each holds the element's own
-        // text, so nothing renders differently until a curator edits one: `ShRenderModel`
-        // substitutes only where the field DIFFERS from what the markup says (SH870), which is what
-        // keeps annotating free in pixels.
-        ...annotated.fields,
+        // SH872 — and NOT the annotated values. SH868 proposed that the annotation is the field and
+        // the markup is the storage, then wrote each element's own text into a key on `Page` as
+        // well — which put a field per captured block on the type every page in the instance
+        // shares: 4 fields became 44, and `shio annotations` reported 30 of them NOT editable on
+        // the home page, 27 belonging to other pages' blocks. The text is already in `content`,
+        // and `ShRenderModel` substitutes only where a stored value DIFFERS from what the markup
+        // says (SH870) — so an unedited annotation storing nothing is not a gap, it is the whole
+        // mechanism. A curator's edit stores the one key they touched, and `ShAnnotatedFields`
+        // is what stops the two readers of the model calling it undeclared.
       },
     });
   }
@@ -1446,13 +1429,11 @@ function composePages(proposal, sectionUrls, markup = new Map(), annotate = fals
     markup: markupPosts.sort((a, b) => (a.url < b.url ? -1 : 1)),
     obstructions: obstructions.sort((a, b) => (a.path < b.path ? -1 : 1)),
     annotations: annotations.sort((a, b) => (a.path < b.path ? -1 : 1)),
-    // SH868 — what the target instance must declare before an edit to an annotated block can be
-    // written. A real run **refuses** an undeclared field (`ShAgentBatchService`), so a page stamped
-    // with annotations nothing declares would offer a curator a field the write turns away — the
-    // inverse of the defect SH870 closed, and no better. Named on SH436's own mechanism rather than
-    // a new one, so the operator sees the cost and decides: one field per annotated block, on the
-    // `Page` type the whole instance shares.
-    annotationFields: annotationFields.sort((a, b) => (a.field < b.field ? -1 : 1)),
+    // SH872 — the distinct fields this run's markup makes editable, as names. It was a list of
+    // `requires` rows (SH868) and then a list this run declared (SH871), and it is neither now:
+    // the markup that carries the annotation is the storage, so the instance is owed nothing and
+    // there is no post-type to name. Sorted for the reason every other list here is (P5).
+    annotationFields: [...declaredNames].sort((a, b) => (a < b ? -1 : 1)),
   };
 }
 
@@ -2214,8 +2195,8 @@ export function describeConversion({ document, sections, markup = [], pages = []
         // SH871 — the two numbers are different and both are true: a name repeats across pages by
         // construction, because a block signature recurring IS what made it a candidate. Saying
         // only the total read as forty preconditions being ninety-two.
-        + `(SH870). ${annotationFields.length} distinct field(s), which this run declares on `
-        + `${PAGE_TYPE} before it writes — additively, as Text, changing nothing that is there`,
+        + `(SH870). ${annotationFields.length} distinct field(s), stored in the markup that `
+        + `carries them (SH872) — ${PAGE_TYPE} gains nothing and declares nothing`,
     );
     for (const row of annotations.slice(0, 3)) {
       lines.push(`    ${row.path} — ${row.fields} field(s)`);

@@ -847,6 +847,14 @@ renderer over one body of content at a second address. See the section on it bel
   without interpolation (SH464); **a collection path is left alone**, since `features.0.title`
   addresses a row the section's own template draws; and **an unannotated block is verbatim**, the
   annotation being the substitution point. SH868 is the half that stamps the annotations on.
+  **SH872 made "no value at all" the ordinary case rather than the first one.** A conversion no
+  longer writes the element's text into a key beside the markup — the text is in the markup, which
+  is the storage SH868 proposed — so the only stored value an annotated page ever holds is one a
+  curator typed. That is what `ShAnnotatedFields` exists for: `verify`'s `unknown-field` and the
+  batch's SH168 check would both call that key undeclared, and the rule they ask instead is **a key
+  annotated by the post's own markup is declared by that markup**. Scoped to a string this same
+  post stores and to a flat name — the same boundary `substituteInto` draws one step along — so it
+  cannot be used to put an arbitrary key past the model.
 - **A reference carries two scopes, because a guard is not an owner (SH836)** — the scanner hands each
   reference the **innermost** block, which is right for *where it is written* and is what
   `ShTemplateFieldLint` was asking `rowKeysFor` about. That `switch` answers `FORM_FIELD_KEYS` for

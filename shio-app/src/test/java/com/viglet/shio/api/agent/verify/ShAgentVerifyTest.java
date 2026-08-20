@@ -177,6 +177,24 @@ class ShAgentVerifyTest {
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/needs-target"), null, null, null),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/broken-links"), null, null, null),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/fine"), null, null, null)));
+
+        // SH872 — an annotated verbatim page after a curator has edited one of its blocks. The
+        // stored key is not on the post-type and never will be: the name comes from a block hash a
+        // capture produced. Two keys on one page, so the assertion is about which of them is
+        // reported rather than about whether the rule ran at all.
+        tx.executeWithoutResult(status -> run(
+                new Op(ShAgentBatchService.POST_UPSERT, post("/annotated"), postTypeName, base,
+                        data(Map.of("headline", "Annotated",
+                                "body", "<h1 sh-field=\"b1a2c3dHeading\">Source text</h1>",
+                                "b1a2c3dHeading", "What the curator typed")))));
+        tx.executeWithoutResult(status -> entityManager
+                .createQuery("update ShPostUnified p set p.data = :data where p.furl = :furl")
+                .setParameter("data", "{\"headline\":\"Annotated\","
+                        + "\"body\":\"<h1 sh-field=\\\"b1a2c3dHeading\\\">Source text</h1>\","
+                        + "\"b1a2c3dHeading\":\"What the curator typed\","
+                        + "\"strayKey\":\"nothing annotates this\"}")
+                .setParameter("furl", base + "/annotated")
+                .executeUpdate());
     }
 
     private void run(Op... ops) {
@@ -277,6 +295,24 @@ class ShAgentVerifyTest {
             assertThat(finding.severity()).isEqualTo(ShAgentReport.ERROR);
             // P6: a finding an agent cannot act on has spent tokens to produce a feeling.
             assertThat(finding.fix()).contains("post.upsert");
+        });
+    }
+
+    @Test
+    @DisplayName("SH872: a key the post's own markup annotates is not an unknown field")
+    void aMarkupAnnotatedKeyIsNotAnUnknownField() {
+        // The assertion that would have caught it, at the boundary it crossed. SH872 gives the
+        // annotated values back to the markup that carries them, so `Page` stops gaining a field
+        // per captured block — and a curator's first edit through the Universal Editor then stores
+        // a key the type does not declare. `unknown-field` is an ERROR, so without this rule an
+        // annotated replica goes red on every block anybody touches.
+        assertThat(findings("content", "unknown-field")).singleElement().satisfies(finding -> {
+            assertThat(finding.field())
+                    .as("the stray key is reported and the annotated one is not — the rule is "
+                            + "still live, which is what makes the silence about the other key mean "
+                            + "something")
+                    .isEqualTo("strayKey");
+            assertThat(finding.address()).isEqualTo(post("/annotated"));
         });
     }
 

@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH872** (deps: SH868 ✅) **The annotated fields land on the shared Page type under block hashes, so most of a page's fields belong to other pages** — Page went from 4 fields to 44 and the home page reports 14 annotated and 30 not editable, 27 of which are another page's blocks. → §XL.14
 - 📋 **SH873** (deps: —) **A page's nav label is its title, so an SEO title becomes the menu and every page is listed alphabetically** — Building a pharmacy site from a blueprint produced a menu reading Contato, Farmacêutico responsável — Farmácia Vitalis, Farmácia Vitalis, Produtos — Farmácia Vitalis. → §XL.15
 
 ## Priority

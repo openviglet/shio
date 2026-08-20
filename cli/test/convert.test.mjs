@@ -274,17 +274,22 @@ test("SH868: strip the annotations and the bytes are the source's, which is what
 test("SH868: each field is named for the block it came from, because one post holds many", () => {
   const built = verbatimConversion();
   const page = built.document.posts.find((post) => post.type === "Page");
-  const stamped = Object.keys(page.data).filter((name) => /Heading$|Subheading$|CtaLabel$/.test(name));
+  const stamped = built.annotationFields;
 
   assert.equal(stamped.length, 4);
   assert.equal(new Set(stamped).size, 4,
     "a wholly verbatim page is ONE post holding many blocks, so two heroes both deriving `heading` "
       + "would collide — the name carries the block, which is unique by construction and traceable "
       + "back to the candidate a reviewer read (SH380)");
-  assert.equal(page.data[stamped.find((name) => name.endsWith("Subheading"))],
-    "An agent-native CMS for people who would rather not click at all.",
-    "and the value is the element's own text, so nothing renders differently until it is edited — "
-      + "`ShRenderModel` substitutes only where the field DIFFERS from the markup (SH870)");
+  // SH872 — the name is in the MARKUP, and the value with it. This used to read the value back off
+  // a key on `page.data`, which is the storage that put 44 fields on the type every page shares.
+  const subheading = stamped.find((name) => name.endsWith("Subheading"));
+  assert.match(page.data.content, new RegExp(`sh-field="${subheading}"`));
+  assert.match(page.data.content,
+    /An agent-native CMS for people who would rather not click at all\./,
+    "and the element's own text is where it always was, so nothing renders differently until it is "
+      + "edited — `ShRenderModel` substitutes only where a stored value DIFFERS from the markup "
+      + "(SH870), and there is no stored value until a curator makes one");
 });
 
 test("SH868: a page that accepted a section keeps exactly what it kept before", () => {
@@ -332,54 +337,40 @@ test("SH868: the third mode is asked for, so plain fidelity is byte-for-byte wha
     "and no invented field: a fidelity page's data is what it always was");
 });
 
-test("SH868: an annotated page declares what the instance owes before an edit can be written", () => {
-  // A real run refuses a write to a field the post-type does not declare, so a page stamped with
-  // annotations nothing declares would offer a curator a field the write turns away — the inverse of
-  // the defect SH870 closed, and no better. SH436's mechanism says it rather than a new one.
+test("SH872: an annotated page adds no field to the type every page in the instance shares", () => {
+  // The measured defect: `Page` went from 4 fields to 44 on an eleven-page replica, because SH868
+  // wrote each annotated block's text into a key on it. `shio annotations post:VigAnn/` then
+  // answered `14 of 44 declared field(s) annotated, 30 NOT editable` — 27 of the thirty being
+  // other pages' blocks. Thirty findings on a page with nothing wrong with it.
   const built = verbatimConversion();
+  const page = built.document.posts.find((post) => post.type === "Page");
 
+  assert.deepEqual(Object.keys(page.data).sort(), ["content", "title"],
+    "the page's data is a fidelity page's data — the annotations are in the markup, which is the "
+      + "storage SH868 proposed and then did not use");
   assert.equal(built.annotationFields.length, 4);
-  assert.deepEqual([...new Set(built.annotationFields.map((row) => row.postType))], ["Page"]);
-  // SH871 — it used to name `reconcile`, which repairs the *render* types against a shipped model
-  // and could never have added a name computed from a capture. The instruction was wrong for
-  // exactly the case that produced the finding, and the door it names now is the run's own.
-  assert.match(built.annotationFields[0].fix, /postTypeFields/,
-    "P6 — the refusal names what would settle it");
+  assert.equal(built.annotationFields.every((name) => typeof name === "string"), true,
+    "names, not `requires` rows: the instance is owed nothing, so a row shaped like a requirement "
+      + "would be a requirement that is not one");
+  assert.equal("postTypeFields" in built.document, false,
+    "and nothing to declare per capture — SH871's key is gone, its op is not");
   assert.match(describeConversion({ ...built, requires: [] }, {}),
     /4 field\(s\) annotated in place on 1 verbatim page\(s\)/);
-});
-
-test("SH871: the document declares the fields it invented, once each, on the run that invents them", () => {
-  // The measured run named 40 distinct fields as 92 `requires` lines and then refused the whole
-  // content write, leaving 18 uploaded assets, zero pages and a 404 home. Two halves: a name
-  // repeats across pages by construction — a block signature recurring is WHAT made it a
-  // candidate — and nothing on this instance could create a name computed from a capture.
-  const built = verbatimConversion();
-
-  assert.deepEqual(built.document.postTypeFields,
-    { Page: built.annotationFields.map((row) => row.field) },
-    "the exact list the run computed, addressed to the type its posts are of");
-  assert.equal(new Set(built.document.postTypeFields.Page).size,
-    built.document.postTypeFields.Page.length, "once each");
   assert.match(describeConversion({ ...built, requires: [] }, {}),
-    /distinct field\(s\), which this run declares on Page before it writes/);
+    /stored in the markup that carries them \(SH872\) — Page gains nothing and declares nothing/);
 });
 
-test("SH871: a conversion that annotates nothing declares nothing — the same bytes it was", () => {
-  // P5: `postTypeFields` is absent rather than empty on fidelity and on authorable, so the two
-  // modes SH868 did not touch produce byte-identical documents to the ones they produced before.
-  const built = buildConversion({
-    proposal: proposeBuild({
-      inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
-      markup: new Map([["/", VERBATIM_PAGE]]),
-      html: { tokenize, parseAttrs, stripNonMarkup },
-    }),
-    plan: { accepted: [] },
-    site: "Acme",
-    markup: new Map([["/", VERBATIM_PAGE]]),
-  });
+test("SH872: the annotated value stays exactly where the source put it", () => {
+  // The half that makes storing nothing correct rather than lossy: the element's own text is in
+  // `content` already, and `ShRenderModel` substitutes only where a stored value DIFFERS from it
+  // (SH870). So an unedited annotation storing nothing is the mechanism, not a gap.
+  const built = verbatimConversion();
+  const page = built.document.posts.find((post) => post.type === "Page");
 
-  assert.equal("postTypeFields" in built.document, false);
+  for (const name of built.annotationFields) {
+    assert.match(page.data.content, new RegExp(`sh-field="${name}"`));
+    assert.equal(name in page.data, false);
+  }
 });
 
 test("SH607: the declaration is sorted and de-duplicated, so one capture converts to one document", () => {

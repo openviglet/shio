@@ -1703,6 +1703,23 @@ it. Four decisions worth keeping:
   entirely — that mechanism means *what the target must already declare*, and forty lines of it
   would now be forty instructions to do what the next op does. Failing on a precondition the run
   itself can satisfy is the shape SH763 was.
+- **The markup was the storage all along, and SH868 did not use it (SH872).** SH868's own proposal
+  is *the annotation is the field and the markup is the storage*; what shipped also wrote each
+  element's text into a key on `Page` — **the type every page in the instance uses**. Measured on an
+  eleven-page replica: `Page` went from **4 fields to 44**, and `shio annotations post:VigAnn/`
+  answered `14 of 44 declared field(s) annotated, 30 NOT editable`, naming `b425bd805Heading` and
+  `b6d312963Intro` — blocks living on *other* pages. Thirty findings on a page with nothing wrong
+  with it, growing with every page captured, from the one instrument that says whether a page is
+  authorable. So a conversion stores nothing: the text is already in `content`, and `ShRenderModel`
+  substitutes only where a stored value **differs** from what the markup says (SH870) — an unedited
+  annotation storing nothing is the mechanism, not a gap. `Page` stays at four fields on a site of
+  any size, and `postTypeFields` goes with it. What is left is the curator's *edit*, which
+  `ShPostDraftMergeService` stores under a key nothing declares: `ShAnnotatedFields` is the one rule
+  both readers of the model ask instead — **a key annotated by the post's own markup is declared by
+  that markup** — so `verify`'s `unknown-field` (an *error*) and the batch's SH168 check stop
+  calling a curator's first edit a defect. Bounded on purpose: the key has to be addressed by an
+  `sh-field` attribute in a string that same post stores, so it is not "a post carrying markup may
+  store anything".
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

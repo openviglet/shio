@@ -471,6 +471,43 @@ class ShAgentBatchTest {
                 .isEqualTo(Change.UPDATE);
     }
 
+    @Test
+    @DisplayName("SH872: a key this write's own markup annotates is declared by that markup")
+    void aMarkupAnnotatedKeyIsDeclared() {
+        // The assertion that would have caught it, at the boundary it crossed. SH868 kept the
+        // annotated values off the post-type by writing a field per captured block onto `Page`,
+        // which put 44 fields on the type every page in the instance shares. SH872 gives the
+        // storage back to the markup — and a curator's edit through the Universal Editor then
+        // stores a key the type does not declare, so a `shio push` of the content file that edit
+        // produced would meet SH168 and be refused. It is the markup that declares it.
+        String base = "/an-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base));
+
+        Op edited = new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/page",
+                postTypeName, base, objectMapper.valueToTree(Map.of(
+                        "headline", "<h1 sh-field=\"b1a2c3dHeading\">Source text</h1>",
+                        "b1a2c3dHeading", "What the curator typed")));
+
+        assertThat(only(run(false, edited)).action()).isEqualTo(Change.CREATE);
+    }
+
+    @Test
+    @DisplayName("SH872: and a key no markup annotates is still the SH168 refusal it always was")
+    void anUnannotatedKeyIsStillRefused() {
+        // The bound, stated: the rule is not "a post carrying markup may store anything". The key
+        // has to be addressed by an sh-field attribute in a string this same write carries.
+        String base = "/an-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base));
+
+        Op smuggled = new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/page",
+                postTypeName, base, objectMapper.valueToTree(Map.of(
+                        "headline", "<h1 sh-field=\"b1a2c3dHeading\">Source text</h1>",
+                        "somethingElse", "not annotated anywhere")));
+
+        assertThatThrownBy(() -> run(false, smuggled))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class);
+    }
+
     // --- SH170: the batch surface can make a site ---
 
     @Test
