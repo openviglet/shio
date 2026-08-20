@@ -812,3 +812,29 @@ must list everything on disk makes the directory the truth and the manifest a de
 index; a directory that may hold more than the manifest reads makes the manifest the
 truth and the extra files dead weight a generator keeps refreshing. Both are defensible
 and the repository has never chosen, which is why the same defect can arrive twice.
+
+## L An instrument that says RENDERED about what it never looked for
+
+`shio annotations` answers one question — is this page authorable — and it is the
+instrument SH465 and SH475 both shipped past. Its summary line is what a reader acts on,
+and its exit code is what a gate acts on.
+
+The join it makes is `declared minus annotated`. Nothing in it asks whether a field was
+drawn. The sentence it prints about the result says it was:
+
+    N declared field(s) are RENDERED and not editable
+
+That is true of the population SH465 found — a collection row that draws with no
+`sh-post` and no `sh-field`, which looks finished and cannot be curated — and it is a
+claim about every other member of the same set, made without evidence. A field the
+template never draws lands in exactly the same count and is described the same way.
+
+The sections here are about the gap between what a check computes and what its message
+says it computed. It is the shape Block W's round found a dozen times in this project's
+own instruments, met once more in the one an *operator* reads: SH790 is the nearest
+relative — a guard naming allocation when the cause was a sentence, which now computes
+which of the two fired.
+
+What makes it worth its own family rather than a wording fix is the second half: the
+count also drives the exit code, so a mode whose pages legitimately draw none of those
+fields fails the gate every time it is run, forever.

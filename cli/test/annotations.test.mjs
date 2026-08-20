@@ -94,9 +94,61 @@ test("SH588: a declared field that renders without an annotation is the finding"
 
   const text = describeAnnotations(report, { target: "post:Acme/" });
   assert.match(text, /row-2\s+\(Feature\)\s+1\/3\s+missing: alt, icon/);
-  assert.match(text, /3 declared field\(s\) are RENDERED and not editable/);
+  // SH882 — the headline says what the join proved, and the join proved `declared minus
+  // annotated`. It used to read `3 declared field(s) are RENDERED and not editable` with no values
+  // supplied at all, which is a claim about the page made from the post-type alone.
+  assert.match(text, /3 declared with no annotation/);
+  assert.equal(text.includes("RENDERED"), false);
+  assert.match(text, /3 more are declared and neither drawn nor annotated/,
+    "with no values there is nothing to call drawn, and the report says so rather than guessing");
   // Both forms per field, because "which of these is an attribute" is what the hand count missed.
   assert.match(text, /icon\s+@src/);
+});
+
+test("SH882: DRAWN is asked of the stored value, and only that gates", () => {
+  // Measured on a verbatim page before this: `4 declared field(s) are RENDERED and not editable`,
+  // and none of the four appeared anywhere in the served bytes. `joinDeclared` computes `declared
+  // minus annotated` and nothing in it ever asked whether a field was drawn — the word was carried
+  // by the message alone. The count is also the exit code, so `--annotate`'s own mode failed this
+  // gate on every run, permanently, naming fields the page is right not to draw.
+  const values = new Map([["page-1", { title: "Acme", summary: "Never drawn anywhere" }]]);
+  const report = joinDeclared(scanAnnotations(GRID), { ...MODEL, values, html: GRID });
+
+  assert.deepEqual(report.posts[0].missing, ["summary"]);
+  assert.deepEqual(report.posts[0].rendered, [],
+    "`summary` is declared, has a value, and that value is not on the page — so it is not drawn "
+      + "and it is not this page's defect");
+  assert.equal(report.rendered, 0);
+
+  const drawn = joinDeclared(scanAnnotations(GRID), {
+    ...MODEL,
+    html: GRID,
+    values: new Map([["page-1", { title: "Acme", summary: "One" }]]),
+  });
+  assert.deepEqual(drawn.posts[0].rendered, ["summary"],
+    "and a value the page does show, with no annotation on it, is SH465's finding — which is what "
+      + "the word RENDERED was always meant to be about");
+  assert.match(describeAnnotations(drawn, {}), /1 declared field\(s\) are DRAWN on this page/);
+});
+
+test("SH882: a value carrying its own annotations is not an uncuratable field", () => {
+  // `--annotate` stamps `sh-field` onto the blocks inside a verbatim page's `content` (SH868), so
+  // the markup is drawn AND its editable parts are declared. Calling the whole blob uncuratable is
+  // the same overstatement one level in — and it is what kept the mode red: every annotated
+  // replica exited 1 forever, on the one field the mode exists to draw.
+  const html = `<html><body data-shio-post="v" data-shio-post-type="Page">`
+    + `<h1 data-shio-prop="b1a2c3dHeading">Start in an afternoon</h1></body></html>`;
+  const report = joinDeclared(scanAnnotations(html), {
+    fields: new Map([["Page", ["title", "content"]]]),
+    html,
+    values: new Map([["v", {
+      title: "Home",
+      content: '<h1 sh-field="b1a2c3dHeading">Start in an afternoon</h1>',
+    }]]),
+  });
+
+  assert.deepEqual(report.posts[0].rendered, []);
+  assert.equal(report.rendered, 0, "so the mode stops failing its own instrument");
 });
 
 test("SH588: more annotations than declared fields is expected, not a finding", () => {
@@ -164,14 +216,16 @@ test("SH588: the command exits 1 on a field that renders and is not editable", a
         return json([{ name: "Page", fields: [{ name: "title" }, { name: "summary" }] }]);
       }
       if (at.includes("/agent/read")) {
-        return json([]);
+        // SH882 — the read carries the values now, and this is what makes the exit code an
+        // observation: `summary` has a value and the page shows it, with no annotation on it.
+        return json([{ id: "p", type: "Page", data: { title: "x", summary: "drawn here" } }]);
       }
       return {
         ok: true,
         status: 200,
         async text() {
           return `<body data-shio-post="p" data-shio-post-type="Page">`
-            + `<h1 data-shio-prop="title">x</h1></body>`;
+            + `<h1 data-shio-prop="title">x</h1><p>drawn here</p></body>`;
         },
       };
     },
@@ -181,10 +235,13 @@ test("SH588: the command exits 1 on a field that renders and is not editable", a
 
   assert.equal(result.exitCode, 1);
   assert.equal(result.missing, 1);
+  // SH882 — and the exit code is this, not `missing`: the page shows the value and nothing
+  // annotates it. `missing` alone gated on every field a template merely does not draw.
+  assert.equal(result.rendered, 1);
   // The preview, with the editor on — the annotations are a property of this instance's render and
   // a public front end has no reason to carry them.
   assert.ok(calls.some((at) => at.includes("editor=true")), `no editor=true in ${calls.join(" ")}`);
-  assert.match(stdout.text, /1 NOT editable/);
+  assert.match(stdout.text, /1 declared field\(s\) are DRAWN on this page and not editable/);
 });
 
 /**

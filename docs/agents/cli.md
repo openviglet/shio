@@ -2720,6 +2720,31 @@ browser**, unlike `audit` — the annotations come off `ShRegionComposer`, so th
 `?editor=true` already returns, and paying for Chromium to answer a question settled before any
 script runs would make the cheapest check in the chain the most expensive to run.
 
+**And it said RENDERED about what it never looked for (SH882).** The join is `declared minus
+annotated`; nothing in it asked whether a field was **drawn**, and the sentence it printed about the
+result said it was. Measured by running it over a verbatim page: *`4 declared field(s) are RENDERED
+and not editable`*, and none of the four appears anywhere in the served bytes. True of SH465's
+population and a claim about every other member of the same set. The count is also the **exit code**,
+so `--annotate`'s own mode — a page that declares the vocabulary's fields and draws the source's
+markup instead — failed this gate on every run, permanently, naming fields the page is right not to
+draw. Three things changed:
+- **`rendered` is decided by looking.** A declared field is drawn when its **stored value** appears
+  in the served HTML — the value and never the name, since a field name never occurs in rendered
+  output, which is why the old claim could not have been checked even in principle. Compared as
+  visible words on both sides, because an `Ace Editor - HTML` field holds a fragment the renderer
+  re-serialises and byte equality would answer *not drawn* for the one field a verbatim page
+  certainly draws.
+- **The read widened from the unresolved posts to all of them**, since the same `/agent/read` answer
+  carries `data`. One call, longer list — the cost of asking honestly was nothing.
+- **A value carrying its own `sh-field` is not an uncuratable field.** `--annotate` stamps the
+  blocks inside `content` (SH868), so the markup is drawn *and* its editable parts are declared. What
+  it deliberately does not ask is whether **every** block inside was stamped: a block the proposal
+  derived no field for is not annotated and should not be, and this join cannot tell those apart.
+
+Without values the split cannot be made, and everything stays in `missing` reported as the one thing
+the join proves — declared, and not annotated. The instrument under-reports where it could not look,
+which is the direction SH410's rule points.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

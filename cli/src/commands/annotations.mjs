@@ -56,14 +56,20 @@ export async function run(flags, positionals, ctx) {
   const html = await fetchPage(url, resolved.preview ? admin : null, ctx);
   const scan = scanAnnotations(html);
 
-  const [fields, types] = await Promise.all([
+  const [fields, docs] = await Promise.all([
     declaredFields(admin, ctx),
     // Only the page's own owner carries `data-shio-post-type`; a section's post has to be
     // resolved. One batched read, because N sections asking one at a time is the cost `/agent/read`
     // exists to remove.
-    resolveTypes(agent, scan),
+    //
+    // SH882 — and it reads EVERY post on the page now, not only the ones whose type is unknown,
+    // because the same answer carries the values. `declared minus annotated` is all this could
+    // compute before, and the sentence it printed about the result said RENDERED — a claim it had
+    // nothing to check. A field is drawn when its stored value is on the page, and the value comes
+    // from here.
+    readPosts(agent, scan),
   ]);
-  const report = joinDeclared(scan, { fields, types });
+  const report = joinDeclared(scan, { fields, types: docs.types, values: docs.values, html });
 
   if (flags.json) {
     ctx.stdout.write(`${JSON.stringify({ target, url, ...report }, null, 2)}\n`);
@@ -84,8 +90,12 @@ export async function run(flags, positionals, ctx) {
   // resolves what it is asked, so an unresolved type means the page renders `sh-post` for a post
   // this instance cannot read — a dangling annotation, and a finding in its own right. Reported
   // separately from `missing` so the exit code never says which one it was; the report does.
+  // SH882 — `rendered` and not `missing`. The old count included every declared field the template
+  // does not draw, so `--annotate`'s own mode failed this gate on every run, permanently, naming
+  // fields the page is right not to draw. What gates is what was observed: the page shows this
+  // value and a curator cannot touch it.
   const unchecked = report.unresolved > 0;
-  return { target, url, ...report, exitCode: report.missing > 0 || unchecked ? 1 : 0 };
+  return { target, url, ...report, exitCode: report.rendered > 0 || unchecked ? 1 : 0 };
 }
 
 /** `?editor=true`, added without disturbing a query the caller already wrote. */
@@ -125,7 +135,12 @@ async function declaredFields({ baseUrl, user, password }, ctx) {
 }
 
 /**
- * Post id → post-type name, for the owners the page did not name a type for.
+ * Post id → its post-type name and its stored data, for every owner the page names.
+ *
+ * <p>SH882 widened it from the owners whose type the page did <em>not</em> carry to all of them,
+ * because the same answer carries the values — and a value is the only way to ask whether a
+ * declared field is drawn. It is the same call with a longer list, which is why the cost of
+ * asking honestly turned out to be nothing.</p>
  *
  * <h3>The instrument could not read the type it had just drawn (SH685)</h3>
  *
@@ -148,25 +163,33 @@ async function declaredFields({ baseUrl, user, password }, ctx) {
  * property of the endpoint nothing here asserts, and this defect is what betting on an unasserted
  * property of that response looks like.
  */
-async function resolveTypes(client, scan) {
-  const unknown = scan.posts.filter((row) => !row.type).map((row) => `id:${row.post}`);
+async function readPosts(client, scan) {
+  const addresses = scan.posts.map((row) => `id:${row.post}`);
   const types = new Map();
-  if (!unknown.length) return types;
+  const values = new Map();
+  if (!addresses.length) return { types, values };
   let docs = [];
   try {
-    docs = await client.read(unknown, { ids: true });
+    docs = await client.read(addresses, { ids: true });
   } catch {
     // Silent, and the report says `NOT checked` for every row it could not resolve. A read that
     // failed is not evidence that a page is annotated, and it is not evidence that it is not.
-    return types;
+    //
+    // SH882 — and it is not evidence that a field is drawn either, which is why `values` comes back
+    // empty rather than partial: with no values every declared field stays in `missing` and none is
+    // claimed as DRAWN. The instrument under-reports where it could not look, which is the
+    // direction SH410's rule points.
+    return { types, values };
   }
   for (const doc of Array.isArray(docs) ? docs : []) {
     // `doc.id` and nothing else. The address fallback is gone: it is the wrong key by construction
     // (canonical, not the one asked for) and having it there is what made a broken join look like a
     // working one — every miss read as "this post has no type" rather than as "I asked wrongly".
-    if (doc?.id && doc?.type) types.set(String(doc.id), doc.type);
+    if (!doc?.id) continue;
+    if (doc.type) types.set(String(doc.id), doc.type);
+    if (doc.data && typeof doc.data === "object") values.set(String(doc.id), doc.data);
   }
-  return types;
+  return { types, values };
 }
 
 /** Site name → public base URL, from the context pack's `sites` section (as `shio audit`). */

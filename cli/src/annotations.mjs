@@ -159,15 +159,34 @@ function parsePairs(value) {
  * the count that means something is the count of declared fields with <i>no</i> annotation.</p>
  *
  * @param {object} scan `scanAnnotations`'s output
- * @param {{types: Map<string,string>, fields: Map<string,string[]>}} model
+ * <h3>Drawn is asked, not assumed (SH882)</h3>
+ *
+ * <p>`missing` is `declared minus annotated`, which is an honest name for what it computes and was
+ * being <b>described</b> as something else: *N declared field(s) are RENDERED and not editable*.
+ * That sentence is true of SH465's population — a collection row that draws with no `sh-post` and
+ * no `sh-field` — and it was a claim about every other member of the same set, made without
+ * evidence. Measured on a verbatim page: four fields reported as RENDERED, none of them anywhere in
+ * the served bytes.</p>
+ *
+ * <p>So `rendered` is the subset the page actually draws, decided by looking: a declared field
+ * whose <b>stored value</b> appears in the HTML. That is the one worth an exit code — the page
+ * shows it and a curator cannot touch it. The rest is a field the template does not draw, which is
+ * `shio verify`'s `unused-field` question at the template and not this page's defect. Without
+ * `values` the split cannot be made and everything stays in `missing`, reported as the one thing
+ * this join can prove: declared, and not annotated.</p>
+ *
+ * @param {{types: Map<string,string>, fields: Map<string,string[]>,
+ *   values: Map<string,object>, html: string}} model
  *   `types` maps a post id to its post-type name; `fields` maps a post-type name to the field names
  *   it declares. A post whose type is unknown is reported as unresolved rather than as complete —
  *   "we could not check this" and "this is fine" are different answers (SH410's rule, one surface
- *   along).
+ *   along). `values` maps a post id to its stored data, and with `html` is what decides `rendered`.
  * @returns {{posts: object[], orphans: object[], declared: number, annotated: number,
- *   missing: number, unresolved: number}}
+ *   missing: number, rendered: number, unresolved: number}}
  */
-export function joinDeclared(scan, { types = new Map(), fields = new Map() } = {}) {
+export function joinDeclared(scan, {
+  types = new Map(), fields = new Map(), values = new Map(), html = "",
+} = {}) {
   const posts = scan.posts.map((row) => {
     const type = row.type ?? types.get(row.post) ?? null;
     const declared = type && fields.has(type) ? [...fields.get(type)] : null;
@@ -185,6 +204,9 @@ export function joinDeclared(scan, { types = new Map(), fields = new Map() } = {
       // Every declaration, both forms, kept for a reader who has to go and look at one.
       forms: row.fields,
       missing,
+      // SH882 — of those, the ones the page can be seen to draw. Empty where nothing supplied the
+      // values, which is the honest answer and not zero findings.
+      rendered: missing.filter((field) => drawn(values.get(row.post), field, html)),
     };
   });
 
@@ -194,8 +216,48 @@ export function joinDeclared(scan, { types = new Map(), fields = new Map() } = {
     declared: posts.reduce((total, row) => total + row.declared.length, 0),
     annotated: posts.reduce((total, row) => total + row.annotated.length, 0),
     missing: posts.reduce((total, row) => total + row.missing.length, 0),
+    rendered: posts.reduce((total, row) => total + row.rendered.length, 0),
     unresolved: posts.filter((row) => !row.resolved).length,
   };
+}
+
+/**
+ * Whether this post's stored value for `field` can be seen on the page (SH882).
+ *
+ * <p>The value and not the field name: a name never appears in rendered output, which is why the
+ * old claim could not have been checked even in principle. Strings only, and non-empty — a number
+ * or a boolean drawn into a page is indistinguishable from the same characters occurring anywhere
+ * else, and a blank value is drawn as nothing.</p>
+ *
+ * <p><b>Markup is compared as its text.</b> An `Ace Editor - HTML` field holds a fragment the
+ * renderer re-serialises, so byte equality is the wrong test and would answer *not drawn* for the
+ * one field a verbatim page certainly draws. Collapsing both sides to their visible words is what
+ * makes the comparison about the page rather than about jsoup.</p>
+ *
+ * <p>Substring rather than a parse, for `ShAnnotatedFields`' reason inverted: a false positive here
+ * costs one field reported as drawn when it is a coincidence, and a parse of every page for every
+ * field costs the command its whole budget. The population is a post's own declared fields, which
+ * is single digits.</p>
+ */
+function drawn(data, field, html) {
+  const value = data && typeof data === "object" ? data[field] : null;
+  if (typeof value !== "string" || !value.trim()) return false;
+  // SH882 — a value carrying annotations of its own is not an uncuratable field. `--annotate`
+  // stamps `sh-field` onto the blocks inside a verbatim page's `content` (SH868), so the markup is
+  // drawn AND its editable parts are declared; calling the whole blob uncuratable is the same
+  // overstatement this task is about, one level in. What it deliberately does not ask is whether
+  // EVERY block inside was stamped — a block the proposal derived no field for is not annotated and
+  // should not be, and this join has no way to tell those apart.
+  if (value.includes(`${FIELD_ATTR}=`)) return false;
+  return words(html).includes(words(value));
+}
+
+/** The authoring attribute a stored value carries where its own parts were made editable (SH868). */
+const FIELD_ATTR = "sh-field";
+
+/** Visible words, collapsed — the form both sides of the comparison are reduced to. */
+function words(value) {
+  return String(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -206,11 +268,15 @@ export function joinDeclared(scan, { types = new Map(), fields = new Map() } = {
  * form, are the ones the format makes impossible to skip.</p>
  */
 export function describeAnnotations(report, { target } = {}) {
-  const { posts, orphans, declared, annotated, missing, unresolved } = report;
+  const { posts, orphans, declared, annotated, missing, rendered = 0, unresolved } = report;
   const lines = [
     `shio annotations: ${posts.length} post(s) on ${target ?? "the page"} — `
       + `${annotated} of ${declared} declared field(s) annotated`
-      + `${missing ? `, ${missing} NOT editable` : ""}`
+      // SH882 — the headline says what the join proves. `NOT editable` was a verdict on a set that
+      // includes every field the template simply does not draw, and on a verbatim page that is all
+      // of them: the count read as four defects on a page with none.
+      + `${missing ? `, ${missing} declared with no annotation` : ""}`
+      + `${rendered ? ` (${rendered} of them DRAWN on the page)` : ""}`
       + `${unresolved ? `, ${unresolved} whose type this could not resolve` : ""}`,
   ];
   for (const row of posts) {
@@ -246,11 +312,20 @@ export function describeAnnotations(report, { target } = {}) {
         + "curator can fill it, and one field may be drawn twice (its text and its href)",
     );
   }
-  if (missing) {
+  // SH882 — two sentences, because they are two findings and only one of them is this page's.
+  if (rendered) {
     lines.push(
-      `  ${missing} declared field(s) are RENDERED and not editable. Rendering is not annotation: `
-        + "a collection row that draws with no sh-post and no sh-field looks finished and cannot "
-        + "be curated (SH465, SH475)",
+      `  ${rendered} declared field(s) are DRAWN on this page and not editable. Rendering is not `
+        + "annotation: a collection row that draws with no sh-post and no sh-field looks finished "
+        + "and cannot be curated (SH465, SH475)",
+    );
+  }
+  if (missing - rendered > 0) {
+    lines.push(
+      `  ${missing - rendered} more are declared and neither drawn nor annotated, which is not a `
+        + "defect on this page: a verbatim replica declares the vocabulary's fields and draws the "
+        + "source's own markup instead. Whether a template should draw one is `shio verify`'s "
+        + "unused-field, asked of the template",
     );
   }
   return `${lines.join("\n")}\n`;
