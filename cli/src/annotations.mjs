@@ -189,7 +189,14 @@ export function joinDeclared(scan, {
 } = {}) {
   const posts = scan.posts.map((row) => {
     const type = row.type ?? types.get(row.post) ?? null;
-    const declared = type && fields.has(type) ? [...fields.get(type)] : null;
+    // SH885 — the post-type's fields AND the ones this post's own markup declares. One rule,
+    // `ShAnnotatedFields`, which the two Java readers of the content model have asked since SH872
+    // and this one did not: a key annotated by the post's own markup is declared by that markup.
+    // Without it an `--annotate` replica reads `7 of 4` — six of the seven annotations are block
+    // fields the type stopped carrying when SH872 gave the storage back to the markup.
+    const declared = type && fields.has(type)
+      ? [...new Set([...fields.get(type), ...markupDeclared(values.get(row.post))])]
+      : null;
     const annotated = [...new Set(row.fields.map((entry) => entry.field))].sort();
     const missing = declared
       ? declared.filter((field) => !annotated.includes(field)).sort()
@@ -295,6 +302,34 @@ function contentsOf(html) {
 
 /** The authoring attribute a stored value carries where its own parts were made editable (SH868). */
 const FIELD_ATTR = "sh-field";
+
+/**
+ * The field names a post's own stored markup declares (SH885) — `ShAnnotatedFields`, on this side.
+ *
+ * <p>SH872 gave an annotated page's values back to the markup that carries them, and answered the
+ * question that left with a rule: <b>a key annotated by the post's own markup is declared by that
+ * markup</b>. `ShAnnotatedFields` is that rule, and `ShAgentVerifyService` and
+ * `ShAgentBatchService` have both asked it since. This reader computes the same thing about the
+ * same model and did not, so a `--annotate` replica read <b>7 of 4</b>: six of the seven
+ * annotations are block fields the type stopped carrying.</p>
+ *
+ * <p>Deliberately the same shape as the Java one, down to the flat-name rule — a path into a
+ * collection is the section's own data and its template renders it — because two implementations of
+ * one rule are two things that can disagree, and this is the surface that has to move to the
+ * other's answer rather than the other way round.</p>
+ */
+function markupDeclared(data) {
+  const names = new Set();
+  if (!data || typeof data !== "object") return names;
+  for (const value of Object.values(data)) {
+    if (typeof value !== "string" || !value.includes(`${FIELD_ATTR}=`)) continue;
+    for (const match of value.matchAll(new RegExp(`${FIELD_ATTR}\\s*=\\s*["']([^"']+)["']`, "g"))) {
+      const name = match[1].trim();
+      if (name && !name.includes(".")) names.add(name);
+    }
+  }
+  return names;
+}
 
 /** Visible words, collapsed — the form both sides of the comparison are reduced to. */
 function words(value) {

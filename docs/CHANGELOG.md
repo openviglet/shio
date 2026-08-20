@@ -220,6 +220,7 @@
 - **SH169** — The render digest hashed every section page to the hash of nothing; /agent/render now composes each referenced section title and fields into the outline, in declared order.
 - **SH882** — DRAWN is decided by looking for the stored value in the served page, and only that gates; a value carrying its own annotations is not an uncuratable field.
 - **SH883** — A one-token value counts as drawn only where it is a whole text node or attribute value, so a coincidental character stops being evidence and the two real findings survive.
+- **SH885** — The CLI reader asks SH872's rule too, so a key the post's own markup annotates counts as declared and an annotated replica reads 7 of 10 instead of 7 of 4.
 
 ## Block I — Content as files (SH74)
 

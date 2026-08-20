@@ -170,6 +170,44 @@ test("SH883: a one-token value IS drawn where it is a whole text node or attribu
       + "forms, which is the pair data-shio-prop and data-shio-prop-attr exist for");
 });
 
+test("SH885: a key the post's own markup annotates is declared by that markup", () => {
+  // The assertion that would have caught it, at the boundary it crossed: an `--annotate` replica,
+  // measured live. It read `7 of 4 declared field(s) annotated` — six of the seven annotations are
+  // block fields, and `Page` declares none of them because SH872 gave the storage back to the
+  // markup and the type stopped gaining one per captured block. `ShAnnotatedFields` is the rule
+  // that settles what those keys are and both Java readers of the model ask it; this one did not.
+  const html = `<html><body data-shio-post="v" data-shio-post-type="Page">`
+    + `<h1 data-shio-prop="b8f8ff577Heading">Start in an afternoon</h1>`
+    + `<p data-shio-prop="b261c2590Intro">Copy the source wrote.</p>`
+    // The converted layout's hidden declaration of the page's own title (SH766), which is why a
+    // real annotated replica reports `title` annotated and this fixture has to as well.
+    + `<div hidden data-shio-prop="title">Home</div></body></html>`;
+  const content = '<h1 sh-field="b8f8ff577Heading">Start in an afternoon</h1>'
+    + '<p sh-field="b261c2590Intro">Copy the source wrote.</p>';
+  const report = joinDeclared(scanAnnotations(html), {
+    fields: new Map([["Page", ["title", "description", "sections", "content"]]]),
+    html,
+    values: new Map([["v", { title: "Home", content }]]),
+  });
+
+  assert.deepEqual(report.posts[0].declared,
+    ["b261c2590Intro", "b8f8ff577Heading", "content", "description", "sections", "title"],
+    "the type's four and the two this page's own markup declares, sorted the way every list here "
+      + "is (P5) — the denominator a reader consults to answer whether the page is authorable");
+  assert.equal(report.declared, 6);
+  assert.equal(report.annotated, 3);
+  assert.deepEqual(report.posts[0].missing, ["content", "description", "sections"],
+    "and the block fields leave `missing`, because they are declared and annotated both");
+  // The flat-name rule, the same one the Java side draws: a path into a collection is the
+  // section's own data and its template renders it.
+  const nested = joinDeclared(scanAnnotations(html), {
+    fields: new Map([["Page", ["title"]]]),
+    html,
+    values: new Map([["v", { content: '<li sh-field="features.0.title">Fast</li>' }]]),
+  });
+  assert.deepEqual(nested.posts[0].declared, ["title"]);
+});
+
 test("SH882: a value carrying its own annotations is not an uncuratable field", () => {
   // `--annotate` stamps `sh-field` onto the blocks inside a verbatim page's `content` (SH868), so
   // the markup is drawn AND its editable parts are declared. Calling the whole blob uncuratable is

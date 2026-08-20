@@ -883,3 +883,24 @@ the layout, which several tasks have done, but by running the instrument that ex
 answer exactly this question against a site the package had just built. The check had
 been unable to say it — its verdict was a sentence rather than a measurement until SH882
 — so the gap survived every round that looked at these packages.
+
+## LIII One rule about what a field is, asked on two surfaces
+
+SH872 gave the annotated values back to the markup that carries them, and the question
+that left — a curator's edit stores a key no post-type declares — was answered with a
+rule: **a key annotated by the post's own markup is declared by that markup.**
+`ShAnnotatedFields` is that rule, and the two readers of the content model on the Java
+side both ask it.
+
+The CLI has its own reader of the same model, and it was not told. The sections here are
+about the shape that leaves behind: a rule stated once, enforced where it was written,
+and silently absent from the other surface that computes the same thing.
+
+It is not the drift SH673 names, where two copies of a fact disagree. There is one fact
+and one implementation; what is missing is a *caller*. That is harder to see, because
+the surface that never asks does not contradict anything — it simply answers a narrower
+question and prints the answer with the same confidence.
+
+What makes it worth a family rather than a line is that the symptom does not look like a
+missing rule. It looks like arithmetic: a count over a denominator that no longer means
+what the reader assumes, on the one mode the rule exists for.

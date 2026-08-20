@@ -2760,6 +2760,19 @@ first; `Acme` passes it on `<title>Acme</title>`, and a value drawn into `alt` p
 is SH503's second form and had to be kept. The narrowing is asserted **in both directions**, because
 reporting nothing is how a fix to a false positive usually fails.
 
+**And the denominator was the post-type's alone (SH885).** Measured end to end for the first time —
+a `theme-heavy` capture converted with `--annotate`, published, and asked — the run came back
+**exit 0**, which is what SH882 and SH883 were for, and read `7 of 4 declared field(s) annotated`.
+Six of the seven are block fields (`b8f8ff577Heading` and its siblings), and `Page` declares none of
+them: SH872 gave the storage back to the markup and the type stopped gaining one per captured block.
+`ShAnnotatedFields` is the rule that settles what those keys are — *a key annotated by the post's
+own markup is declared by that markup* — and both Java readers of the content model have asked it
+since. This one did not. It does now, with the same flat-name boundary, and the same replica reads
+**7 of 10**. Worth stating as a shape rather than a fix: **there is one rule and one implementation,
+and what was missing was a caller.** That is harder to see than the drift SH673 names, because the
+surface that never asks contradicts nothing — it answers a narrower question and prints the answer
+with the same confidence, and the symptom looks like arithmetic.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a
