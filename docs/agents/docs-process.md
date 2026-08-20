@@ -381,6 +381,43 @@ which reads as progress.
 a decision written 88 times without evidence is a list wearing prose; the measurement is what makes
 each entry actionable, and it took one script rather than a day of reading.
 
+## The sweep nobody asked for, and the reader that now asks (SH861)
+
+**Block Q finished with one of three surfaces moved.** The upkeep rule names `docs-shio`,
+`shio-site` and `README.md`; `COVERAGE.md` was brought up to date and the other two were not — and
+the asymmetry has a cause worth keeping: **the one that moved is the one a gate asked about.**
+SH799's queue ceiling failed the build at six unnamed ids, so the coverage half became a build
+problem and got done. Nothing asked about the other two, so nothing happened to them, and what they
+said was a replication story ending at *convert*: no acceptance criterion, no `shio judge`, and no
+mention that looking like the source is deliberately not one of authorable mode's tests — the
+sentence that let the block close after six false closes.
+
+`cli/test/block-sweep.test.mjs` is the reader. For every block the ledger records and the roadmap no
+longer declares a heading for — which is what `roadkeep block drop` leaves behind — it asks whether
+the three surfaces moved since that block's own last ship, and it holds each recently finished block
+to a **declaration**: `swept: true` with what moved, or `swept: false` with why no outward surface
+describes what the block changed. The first is verified against `git log`; the second is verified by
+nothing, which is why it must carry a reason a reader can disagree with. That is `handoffs.test.mjs`'
+division — the classification is written down and the half that can rot is checked.
+
+Three measurements shaped it, and each is the kind of thing only a run says:
+
+- **The ledger is not newest-first under a heading.** Reading a block's ids in file order reported
+  Block Q as finishing on SH829, thirty-one entries before the one that closed it. The log's order is
+  the authority; the file's is not.
+- **One `git log`, not one per id.** A `-S` pickaxe per ledger entry — three hundred searches over
+  the whole history — ran past two minutes without finishing. One diff of one file answers the same
+  question.
+- **The window is a session, not a month.** At forty commits it named nine blocks, seven of them
+  instrument rounds finished a fortnight ago whose sweep nobody was ever going to write. That is the
+  shape SH642's 88 triaged entries took, and none of them moved. Twelve names the blocks that closed
+  in the session doing the asking, which is the only moment the answer is cheap. What falls out of the
+  window is not forgiven — the declaration stays whether or not the block is still in scope.
+
+And the working tree counts as movement, deliberately: a sweep and the ship that closes the block are
+one commit, so a reader that only looked at history would fail on the run *before* that commit and
+pass on the run after — a gate nobody can satisfy while doing the work it asks for.
+
 ## Block K's sweep — what the four surfaces actually needed (2026-08-10)
 
 Recorded because the sweep's value is in the *verdicts*, not in the edits, and three of the four

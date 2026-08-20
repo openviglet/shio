@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block S — The public site (shio.viglet.org)
-
-- 📋 **SH861** (deps: —) **Block Q finished and its closing round reaches no outward surface: shio-site and README predate the bar** — The block-completion sweep names docs-shio, shio-site and README.md, and only the coverage matrix moved when Q closed. → §XLII
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

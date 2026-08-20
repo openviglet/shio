@@ -179,10 +179,20 @@ redrawn with Shio's own vocabulary, and the theme it is presented with takes its
 source's stylesheet uses each one in, with everything it could not fill named in
 the run.
 
+Then `judge` says whether the round is **done**. It runs the instruments, answers
+once, and holds the answer to a declared bar: a finding at or below it prints as
+a task for later, one above it fails. The bar's own point is what it leaves
+*out* — **looking like the source is not a test an authorable replica has to
+pass**. It is presented by Shio's theme on purpose, so it is held to its content,
+its structure and its routes, and `--fidelity` is how you ask for the pixel
+comparison instead.
+
 ```bash
 npx @viglet/shio clone https://example.com --max-pages 50 --render --assets
 npx @viglet/shio propose --accept all
 npx @viglet/shio convert
+npx @viglet/shio publish --all   # drafts until you say so
+npx @viglet/shio judge           # ACCEPTED, or what holds it
 ```
 
 See [shio.viglet.org/replicate](https://shio.viglet.org/replicate).
@@ -298,7 +308,8 @@ browser, edge runtimes, Next.js server components, Astro, Vue, Svelte), and
 `@viglet/shio-react-sdk` adds React hooks and components on top.
 
 **Can it replicate an existing website?**
-Yes — `shio clone` / `propose` / `convert`. See
+Yes — `shio clone` / `propose` / `convert` / `publish` / `judge`, and `judge` is
+the one that tells you when to stop. See
 [shio.viglet.org/replicate](https://shio.viglet.org/replicate).
 
 ## Contributing

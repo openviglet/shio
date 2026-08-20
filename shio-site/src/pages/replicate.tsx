@@ -67,7 +67,7 @@ export function ReplicatePage() {
                   <span className="text-primary">prove</span>
                 </>
               }
-              description="Four commands, and each one makes a promise the next depends on. They are separate on purpose: a single button that crawled a stranger's site and wrote content into yours would be the surprise the whole design forbids."
+              description="Five commands, and each one makes a promise the next depends on. They are separate on purpose: a single button that crawled a stranger's site and wrote content into yours would be the surprise the whole design forbids."
             />
 
             <ol className="space-y-5">

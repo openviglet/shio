@@ -1101,7 +1101,7 @@ export const AGENT_LATER = [
   },
 ];
 
-/* ── /replicate — capture, propose, convert, prove ───────────────────────── */
+/* ── /replicate — capture, propose, convert, prove, accept ──────────────── */
 
 export interface Phase {
   verb: string;
@@ -1145,6 +1145,14 @@ export const PHASES: Phase[] = [
     promise:
       "A fact the replica gained is never a failure; a lost one exits 1. Every artefact carries the identity of what declared it, so nothing is guessed or re-fetched.",
   },
+  {
+    verb: "judge",
+    title: "Accept",
+    command: "shio judge --site example",
+    what: "Runs the instruments, answers once, and names where two of them disagreed — which is where every real finding of this work came from. Then it holds that answer to a written bar: a finding at or below it prints as a task for later, one above it fails, and a kind the bar does not name fails too.",
+    promise:
+      "A round can end ACCEPTED, which is not the same as ending empty. What the bar leaves out is the point: looking like the source is not a test an authorable replica has to pass — it is presented by Shio's theme on purpose, so it answers for its content, its structure and its routes. `--fidelity` is how you ask for the pixel comparison instead.",
+  },
 ];
 
 export interface Mode {
@@ -1172,7 +1180,7 @@ export const MODES: Mode[] = [
   {
     name: "Authorable",
     keeps: "The content, as structured fields a curator edits in the console or on the page itself.",
-    offers: "The site's own theme, in the source's own colours, type and corner radius. The structure is replaced, deliberately — not ruined.",
+    offers: "The site's own theme, in the source's own colours, type and corner radius. The structure is replaced, deliberately — not ruined, and not judged against the source's own pixels.",
     pick: "somebody is going to maintain this site, and the model matters more than the pixels.",
     accent: "authorable",
   },
@@ -1508,7 +1516,7 @@ export const PILLARS: Pillar[] = [
     iconClass: "from-[#7c2d12] to-[#fb923c]",
     title: "Replication",
     description:
-      "Point it at a site that already exists and get one a curator can edit — capture, convert, prove.",
+      "Point it at a site that already exists and get one a curator can edit — capture, convert, prove, and a verdict that says when to stop.",
     anchor: "/replicate",
   },
   {
