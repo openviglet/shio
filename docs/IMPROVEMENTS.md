@@ -725,32 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-### XL.4 The overlay that cannot be dismissed (SH858)
-
-The replica serves `www.viglet.org`'s cookie banner, painted correctly, fixed over the
-content, with **Decline** and **Accept analytics** buttons and a close cross. None of
-them do anything: measured on the served page, zero `onclick` or `addEventListener` in
-that region and **no `<script src>` anywhere**.
-
-`clone` predicted it in the exact words — *"the replica will render and not respond — a
-handler, a toggle, **a modal that will not close**"* — and predicting a defect is not
-the same as it being acceptable. This one is not cosmetic. It is a permanent obstruction
-of the page's own content, and every reader meets it.
-
-`propose` already recognises the category. Its own reason for not proposing these blocks
-is that *"an overlay is painted over the page rather than part of it"*. An overlay is
-chrome **whose entire purpose is behaviour** — it exists to appear, be answered, and go
-away. Keeping its markup and dropping its script keeps the one part that has no value
-alone.
-
-There is a second reason beyond appearance: a consent banner that cannot record consent
-is not a consent banner. Shipping one that looks functional and stores nothing is worse
-than shipping none, and SH421 already treats a dropped site script as a compliance
-defect that renders perfectly.
-
-So: an overlay whose dismiss behaviour was not captured is dropped, and the run names
-it. `--scripts` remains how a caller asks for the working one.
-
 ### XL.5 A verdict needs a bar (SH860)
 
 `shio judge` already has the shape of an acceptance gate: it runs the instruments,

@@ -385,7 +385,7 @@ export function blocksOf(root, excluded = []) {
   const blocks = node.children.filter((child) => isElement(child) && !isInline(child));
   const content = [...pageHeader(root, main), ...blocks].filter((block) => {
     const why = notContent(block);
-    if (why) excluded.push({ tag: block.tag, why });
+    if (why) excluded.push(exclusion(block, why));
     return !why;
   });
   return content.flatMap((block, index) => descend(block, index === 0, excluded, 0));
@@ -435,7 +435,7 @@ function descend(block, first, excluded, depth) {
   // block the walk left whole would name an exclusion that changed nothing.
   for (const kid of kids) {
     const why = notContent(kid);
-    if (why) excluded.push({ tag: kid.tag, why });
+    if (why) excluded.push(exclusion(kid, why));
   }
   return inside.flatMap((kid, index) => descend(kid, first && index === 0, excluded, depth + 1));
 }
@@ -458,8 +458,29 @@ const NON_CONTENT = new Set(["script", "style", "link", "meta", "noscript", "tem
 /** Why a block is not a candidate, or `null` when it is one. */
 function notContent(block) {
   if (NON_CONTENT.has(block.tag)) return `a <${block.tag}> is behaviour or markup plumbing`;
-  return isOverlay(block) ? "an overlay is painted over the page rather than part of it" : null;
+  return isOverlay(block) ? OVERLAY_WHY : null;
 }
+
+/**
+ * The one exclusion reason `convert` acts on rather than only reports (SH858).
+ *
+ * <p>Compared against rather than re-tested, so the sentence a reader sees and the rule a later phase
+ * applies are the same fact. An overlay is the only kind of excluded block whose markup is still
+ * **served** — it is not a candidate, so nothing cut it out of the kept bytes — and the only one whose
+ * entire purpose is behaviour: it exists to appear, be answered, and go away.</p>
+ */
+export const OVERLAY_WHY = "an overlay is painted over the page rather than part of it";
+
+/** One excluded block, as the note reads it and as `convert` cuts it. */
+const exclusion = (node, why) => ({
+  tag: node.tag,
+  why,
+  // SH858 — where it stood, in the coordinates `stripNonMarkup` preserves (SH520): blanked rather
+  // than deleted, so a span into the tree is a span into the page a curator captured.
+  ...(Number.isInteger(node.start) && Number.isInteger(node.end)
+    ? { span: [node.start, node.end] }
+    : {}),
+});
 
 /**
  * The class names that mean "out of flow", as a class rather than as a declaration.
@@ -1231,7 +1252,11 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     if (typeof source !== "string") continue;
     read.push(page.path);
     const tree = buildTree(html.stripNonMarkup(source), html.tokenize, html.parseAttrs);
-    const blocks = blocksOf(tree, excluded);
+    // SH858 — this page's own exclusions, so an overlay's span can be attributed to the page whose
+    // bytes it is in. One shared array could say how many there were and never which page's.
+    const refused = [];
+    const blocks = blocksOf(tree, refused);
+    excluded.push(...refused);
     // SH438 — the page's own blocks, in the order the source had them. `candidates` is keyed by
     // signature, so it can say *which* pages a block is on and never in what order: a candidate is
     // one decision on N pages, which is the whole reason it is cheap to review. This is the other
@@ -1243,7 +1268,17 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     // `convert` needs to cut an accepted block out and keep the rest of the page verbatim. Two
     // integers per block, parallel to `blocks`, and only meaningful together with it.
     const spans = [];
-    composition.push({ path: page.path, title: page.title ?? null, blocks: order, spans });
+    // SH858 — the overlays this page carries, as spans, so `convert` can cut the ones whose dismiss
+    // behaviour was never captured. Serialized only where there are any: a key on every page of every
+    // proposal to say "none" is the clause nobody reads (P3).
+    const overlays = refused
+      .filter((row) => row.why === OVERLAY_WHY && Array.isArray(row.span))
+      .map((row) => row.span)
+      .sort((a, b) => a[0] - b[0]);
+    composition.push({
+      path: page.path, title: page.title ?? null, blocks: order, spans,
+      ...(overlays.length ? { overlays } : {}),
+    });
     blocks.forEach((block, index) => {
       const sig = signature(block);
       const id = idFor(sig);

@@ -189,7 +189,7 @@ export function buildConversion({
   // SH763 — two lists out of one pass: the pages, and the `SectionMarkup` posts their `sections`
   // now name. Kept apart from `sections` above because those are the blocks a reviewer *accepted*,
   // and every count and report in this file means that by the word.
-  const { pages, markup: markupPosts } = composePages(
+  const { pages, markup: markupPosts, obstructions } = composePages(
     proposal, new Set(sections.map((post) => post.url)), markup,
   );
   // SH576 — the one address the grammar does not spell, written when the source gave us none.
@@ -350,6 +350,9 @@ export function buildConversion({
     ...(emptied.length
       ? { emptied: emptied.sort((a, b) => (`${a.section}${a.field}` < `${b.section}${b.field}` ? -1 : 1)) }
       : {}),
+    // SH858 — the overlays cut out because nothing on the page could dismiss them. Returned as well
+    // as printed, for SH576's reason: the corpus asserts it and `--json` is a caller too.
+    ...(obstructions.length ? { obstructions } : {}),
     // SH584 — the bound the operator chose, joined to the pages this run is writing. Returned and
     // not only printed, for SH576's reason one line up: the corpus asserts it, and `--json` is a
     // caller too.
@@ -1307,6 +1310,8 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
   const pages = [];
   const markupPosts = [];
   const taken = new Set();
+  // SH858 — the overlays cut out of the kept markup, per page.
+  const obstructions = [];
   for (const page of proposal?.pages ?? []) {
     const seen = new Set();
     const cut = [];
@@ -1333,7 +1338,12 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
       cut.sort((a, b) => a.span[0] - b.span[0]);
     }
     const sections = cut.map((each) => each.url).filter(Boolean);
-    const body = contentFor({ html: markup.get(page.path), sections, kept, cut });
+    const html = markup.get(page.path);
+    // SH858 — the overlays whose dismiss behaviour this capture does not hold. Counted per page, so
+    // the report names the pages rather than a total nobody can locate.
+    const drop = overlaysToDrop(html, page.overlays, cut);
+    if (drop.length) obstructions.push({ path: page.path, overlays: drop.length });
+    const body = contentFor({ html, sections, kept, cut, drop });
     if (!sections.length && body === null) continue;
     // SH763 — the kept markup, interleaved. `body` is a string when there is one part (a wholly
     // verbatim page, or a split this could not place), and a list of parts when there are more.
@@ -1370,6 +1380,7 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
     // Sorted for the reason every other list here is (P5): two conversions of one capture are the
     // same bytes, whatever order the proposal listed its pages in.
     markup: markupPosts.sort((a, b) => (a.url < b.url ? -1 : 1)),
+    obstructions: obstructions.sort((a, b) => (a.path < b.path ? -1 : 1)),
   };
 }
 
@@ -1476,8 +1487,8 @@ function markupPost(page, index, html, taken) {
  * @param cut the accepted blocks in document order, `{span, url}` — a span is `null` for one the
  *            proposal cannot place
  */
-function contentFor({ html, sections, kept, cut }) {
-  if (!sections.length) return bodyOf(html);
+function contentFor({ html, sections, kept, cut, drop = [] }) {
+  if (!sections.length) return bodyOf(without(html, drop));
   // Everything was accepted: the sections are the page, and there is no remainder. Writing the body
   // here would render every block twice.
   if (!kept) return null;
@@ -1485,7 +1496,49 @@ function contentFor({ html, sections, kept, cut }) {
   // leave that one rendered both as markup and as a section. Refusing the remainder is the honest
   // half-answer, and it is exactly what the previous release wrote.
   if (!cut.length || cut.some((each) => !each.span)) return null;
-  return splitAroundSections(html, cut);
+  return splitAroundSections(html, cut, drop);
+}
+
+/**
+ * The overlay spans on a page that has no behaviour to dismiss them with (SH858).
+ *
+ * <h3>The measurement</h3>
+ *
+ * <p>The replica served `www.viglet.org`'s cookie banner: painted correctly, fixed over the content,
+ * with **Decline** and **Accept analytics** buttons and a close cross, and zero `onclick` or
+ * `addEventListener` in that region on a page carrying **no `&lt;script src&gt;` at all**. `clone`
+ * predicted it in those words — *"the replica will render and not respond — a handler, a toggle, a
+ * modal that will not close"* — and predicting a defect is not the same as it being acceptable. This
+ * one is a permanent obstruction of the page's own content, and every reader meets it.</p>
+ *
+ * <h3>Why an overlay and not chrome in general</h3>
+ *
+ * <p>`propose` already refuses these as candidates, in the words this reads back: *an overlay is
+ * painted over the page rather than part of it*. An overlay is the one kind of chrome **whose entire
+ * purpose is behaviour** — it exists to appear, be answered, and go away — so keeping its markup and
+ * dropping its script keeps the one part that has no value alone. And a consent banner that cannot
+ * record consent is not a consent banner: shipping one that looks functional and stores nothing is
+ * worse than shipping none, which is the reading SH421 already gives a dropped site script.</p>
+ *
+ * <h3>The condition is a script anywhere on the page, and deliberately that coarse</h3>
+ *
+ * <p>Whether *this* overlay's dismiss handler was captured is not decidable from markup — the code is
+ * in a file, minified, and this instance does not run a browser. What is decidable is whether the page
+ * carries any behaviour at all, and a page with none cannot dismiss anything. So a page that captured
+ * scripts keeps its overlay untouched: dropping content from a page that does carry behaviour would be
+ * the over-reach, and `--scripts` remains how a caller asks for the working one.</p>
+ */
+function overlaysToDrop(html, overlays, cut) {
+  if (typeof html !== "string" || !Array.isArray(overlays) || !overlays.length) return [];
+  if (/<script\b/i.test(html)) return [];
+  const inside = cut.map((each) => each.span).filter(Array.isArray);
+  return overlays
+    .filter((span) => Array.isArray(span) && Number.isInteger(span[0]) && Number.isInteger(span[1]))
+    // An overlay standing inside an accepted block is not in the kept markup, and cutting it would
+    // make two spans overlap — which `splitAroundSections` correctly refuses by falling back, losing
+    // the drop and the interleaving together.
+    .filter((span) => !inside.some(([start, end]) => span[0] < end && start < span[1]))
+    .sort((a, b) => a[0] - b[0]);
 }
 
 /** Where the sections go, marked in the bytes before anything is cut out of them (SH693). */
@@ -1524,19 +1577,27 @@ const SECTIONS_MARK = " shio:sections ";
  *
  * @returns the parts, or a single string when the split could not be placed
  */
-function splitAroundSections(html, cut) {
+function splitAroundSections(html, cut, drop = []) {
   if (typeof html !== "string") return bodyOf(html);
   const spans = cut.map((each) => each.span);
+  // SH858 — one ascending walk over both kinds of span, because both address the *original* offsets:
+  // a section's bytes become a mark and an overlay's become nothing. Cutting the overlays in a second
+  // pass would leave every section span past the first hole wrong by the size of the holes before it,
+  // which is the class of bug SH693's own header calls "the footer moved a bit".
+  const marks = [
+    ...spans.map((span) => ({ span, mark: SECTIONS_MARK })),
+    ...drop.map((span) => ({ span, mark: "" })),
+  ].sort((a, b) => a.span[0] - b.span[0]);
   let marked = "";
   let cursor = 0;
-  for (const [start, end] of spans) {
+  for (const { span: [start, end], mark } of marks) {
     // Overlapping, reversed or out-of-range spans are a proposal this cannot cut faithfully. The
     // fallback is the pre-SH693 answer — the remainder in one part — rather than a page missing it.
     if (!Number.isInteger(start) || !Number.isInteger(end)
       || start < cursor || end < start || end > html.length) {
       return bodyOf(without(html, spans));
     }
-    marked += html.slice(cursor, start) + SECTIONS_MARK;
+    marked += html.slice(cursor, start) + mark;
     cursor = end;
   }
   marked += html.slice(cursor);
@@ -1736,7 +1797,7 @@ function scriptsPost(scripts, site) {
 export function describeConversion({ document, sections, markup = [], pages = [], verbatim = 0,
                                      mixed = 0, extras,
                                      requires = [], dropped = [], kept = [], declined = [],
-                                     emptied = [],
+                                     emptied = [], obstructions = [],
                                      home = null, unfollowed = null, palette = null },
                                    options = {}) {
   const lines = [];
@@ -1950,6 +2011,21 @@ export function describeConversion({ document, sections, markup = [], pages = []
     );
     for (const row of emptied.slice(0, 3)) {
       lines.push(`    ${row.section}.${row.field} (${row.type}) — ${row.rows} row(s)`);
+    }
+  }
+  // SH858 — a cut this command makes to the page's *own* bytes, which is the one it most owes a
+  // reader: everything else here is a field. `clone` predicted the shape and predicting a defect is
+  // not the same as it being acceptable, so the line says what was removed and how to keep it.
+  if (obstructions.length) {
+    const total = obstructions.reduce((sum, row) => sum + row.overlays, 0);
+    lines.push(
+      `  ${total} overlay(s) removed from the kept markup on ${obstructions.length} page(s) — a `
+        + "fixed banner or modal on a page that captured NO script cannot be dismissed and no longer "
+        + "records anything, so it obstructs the content forever. Re-capture with shio clone "
+        + "--scripts to keep the working one",
+    );
+    for (const row of obstructions.slice(0, 3)) {
+      lines.push(`    ${row.path} — ${row.overlays} overlay(s)`);
     }
   }
   // SH584 — the bound this run inherited, in the run that inherits it. Said here rather than left

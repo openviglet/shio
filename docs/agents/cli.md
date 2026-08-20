@@ -1536,6 +1536,28 @@ it. Four decisions worth keeping:
   curator editing the third card through the Universal Editor would write into the second. Filtering
   belongs where the array is *written*, and Handlebars cannot express "this row has something in it"
   without a helper, the capability set being closed since SH183.
+- **The overlay that cannot be dismissed (SH858).** The replica served `www.viglet.org`'s cookie
+  banner painted correctly, fixed over the content, with **Decline** and **Accept analytics** buttons
+  and a close cross — and zero `onclick` or `addEventListener` in that region on a page carrying **no
+  `<script src>` at all**. `clone` predicted it in those words (*"a modal that will not close"*) and
+  predicting a defect is not the same as it being acceptable: this one is a permanent obstruction of
+  the page's own content and every reader meets it. Nor is it only cosmetic — a consent banner that
+  cannot record consent is not a consent banner, which is the reading SH421 already gives a dropped
+  site script. **An overlay is the one kind of chrome whose entire purpose is behaviour**, so keeping
+  its markup and dropping its script keeps the one part that has no value alone. SH505 already
+  refuses these as candidates in the sentence this now reads back (`OVERLAY_WHY`, compared against
+  rather than re-tested); what it did not do is record **where**, since an exclusion left the bytes in
+  the page. So `blocksOf` carries a `span` on every exclusion, `propose` records the page's `overlays`
+  (present only when there are any), and `convert`'s `overlaysToDrop` cuts them — with the drop spans
+  merged into `splitAroundSections`' **single ascending walk** beside the section marks, because both
+  address the original offsets and a second pass would leave every later section span wrong by the
+  size of the holes before it. An overlay standing inside an accepted block is skipped: it is not in
+  the kept markup, and overlapping spans make that function fall back and lose the interleaving too.
+  **The condition is "any script on the page", and deliberately that coarse** — whether *this*
+  overlay's handler was captured is not decidable from markup (the code is in a file, minified, and
+  the instance does not run a browser), while "the page carries no behaviour at all" is. A page that
+  captured scripts keeps its overlay untouched, and `--scripts` remains how a caller asks for the
+  working one. Reported as `obstructions`, per page, wired at both `describeConversion` call sites.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

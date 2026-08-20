@@ -81,7 +81,7 @@ export async function run(flags, positionals, ctx) {
     // the builder's return for the reason the two comments above give: this list is enumerated by
     // hand, so a field nobody names here is computed, formatted and printed to nobody.
     document, stale, sections, pages, verbatim, mixed, extras, dropped, kept, declined, emptied,
-    home, unfollowed, palette,
+    obstructions, home, unfollowed, palette,
     // The builder's verbatim `SectionMarkup` posts. Renamed on the way out because `markup` is
     // already taken above by the *capture's* markup cache — two different things one word apart,
     // which is the other half of why this field never reached the report.
@@ -124,7 +124,8 @@ export async function run(flags, positionals, ctx) {
   // checking that a new field reached the report had two places to look and no reason to think so.
   const reported = {
     document, sections, markup: markupPosts, pages, verbatim, mixed, extras,
-    requires: proposal.requires, dropped, kept, declined, emptied, home, unfollowed, palette,
+    requires: proposal.requires, dropped, kept, declined, emptied, obstructions, home, unfollowed,
+    palette,
   };
 
   if (typeof flags.out === "string" && flags.out) {

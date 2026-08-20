@@ -34,8 +34,12 @@ import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
 } from "../src/vocabulary-theme.mjs";
 import * as convert from "../src/commands/convert.mjs";
-import { INVENTORY_FILE, MARKUP_DIR, markupFileFor } from "../src/clone.mjs";
-import { PLAN_FILE, SECTION_REQUIRED, SECTION_TYPES, missingRequired } from "../src/propose.mjs";
+import {
+  INVENTORY_FILE, MARKUP_DIR, markupFileFor, parseAttrs, stripNonMarkup, tokenize,
+} from "../src/clone.mjs";
+import {
+  PLAN_FILE, SECTION_REQUIRED, SECTION_TYPES, buildProposal as proposeBuild, missingRequired,
+} from "../src/propose.mjs";
 import { norm } from "./support/paths.mjs";
 
 // --- the translation ---
@@ -137,6 +141,88 @@ test("SH857: the rows it refused to write are in the report, not only in the ret
     "SH849's rule, and this is the fourth outcome of the same pass: a field the builder returns "
       + "that no call site names reaches no reader at all");
   assert.match(report, /b1a2\.features \(SectionFeatureGrid\) — 2 row\(s\)/);
+});
+
+/**
+ * SH858's measured shape: `www.viglet.org`'s consent banner, which sits at the bottom of every page in
+ * `<div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50 …">` with Decline and Accept buttons
+ * and a close cross, and which the replica served painted, fixed, and inert.
+ */
+const BANNER = '<div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50">'
+  + "<p>We respect your privacy</p><button>Decline</button><button>Accept analytics</button></div>";
+
+const overlayPage = (head = "") => `<html><head><title>Home</title>${head}</head><body><main>`
+  + "<section><h1>Shio</h1><p>An agent-native CMS for people who would rather not click.</p></section>"
+  + `${BANNER}</main></body></html>`;
+
+/** The proposal `propose` writes for it, so the spans are the ones a real run records. */
+const overlayProposal = (html) => proposeBuild({
+  inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
+  markup: new Map([["/", html]]),
+  html: { tokenize, parseAttrs, stripNonMarkup },
+});
+
+test("SH858: an overlay on a page that captured no script is cut out of the kept markup", () => {
+  const html = overlayPage();
+  const proposal = overlayProposal(html);
+  const built = buildConversion({
+    proposal, plan: { accepted: [] }, site: "Acme", markup: new Map([["/", html]]),
+  });
+  const page = built.document.posts.find((post) => post.type === "Page");
+
+  assert.deepEqual(proposal.pages[0].overlays?.length, 1,
+    "`propose` already refuses it as a candidate — *an overlay is painted over the page rather than "
+      + "part of it* — and now records WHERE, because the exclusion left the bytes in the page");
+  assert.equal(page.data.content.includes("Accept analytics"), false,
+    "measured on the replica: zero handlers in that region on a page with no `<script src>` at all, "
+      + "so the banner is a permanent obstruction of the page's own content and every reader meets it");
+  assert.ok(page.data.content.includes("agent-native CMS"),
+    "and the rest of the page is untouched — this is a cut of one region, not of the chrome");
+  assert.deepEqual(built.obstructions, [{ path: "/", overlays: 1 }]);
+});
+
+test("SH858: an overlay on a page that captured a script is left exactly as it was", () => {
+  const html = overlayPage('<script src="/consent.js"></script>');
+  const built = buildConversion({
+    proposal: overlayProposal(html),
+    plan: { accepted: [] },
+    site: "Acme",
+    markup: new Map([["/", html]]),
+  });
+  const page = built.document.posts.find((post) => post.type === "Page");
+
+  assert.ok(page.data.content.includes("Accept analytics"),
+    "whether THIS overlay's dismiss handler was captured is not decidable from markup — the code is "
+      + "in a file, minified, and the instance does not run a browser. What is decidable is whether "
+      + "the page carries any behaviour at all, and dropping content from a page that does would be "
+      + "the over-reach. `--scripts` remains how a caller asks for the working one");
+  assert.equal(built.obstructions, undefined);
+});
+
+test("SH858: the cut is one walk with the section marks, so the interleaving still lands", () => {
+  // Both kinds of span address the ORIGINAL offsets, so cutting the overlay in a second pass would
+  // leave every section span past it wrong by the size of the hole — "the footer moved a bit".
+  const html = "<html><head><title>Home</title></head><body><main>"
+    + "<section><h1>Shio</h1><p>An agent-native CMS for people who would rather not click.</p></section>"
+    + BANNER
+    + "<section><h2>Why</h2><p>Because a console is a poor protocol for an agent to drive.</p></section>"
+    + "</main></body></html>";
+  const proposal = overlayProposal(html);
+  const first = proposal.candidates.find((row) => row.type);
+  const built = buildConversion({
+    proposal,
+    plan: { accepted: [{ block: first.id, type: first.type }] },
+    site: "Acme",
+    markup: new Map([["/", html]]),
+  });
+  const page = built.document.posts.find((post) => post.type === "Page");
+  const kept = [page.data.content ?? "", ...built.markup.map((post) => post.data.html ?? "")].join("");
+
+  assert.deepEqual(built.obstructions, [{ path: "/", overlays: 1 }]);
+  assert.equal(kept.includes("Accept analytics"), false, "the banner is gone from every kept part");
+  assert.ok(page.data.sections?.length,
+    "and the page still composes what it accepted — the fallback for an unplaceable split is the "
+      + "remainder in one part, which would have swallowed the drop as well");
 });
 
 test("SH607: the declaration is sorted and de-duplicated, so one capture converts to one document", () => {

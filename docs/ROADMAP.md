@@ -11,7 +11,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH858** (deps: —) **A consent overlay is kept without the script that dismisses it, so it covers the page forever and records no consent** — The banner is verbatim chrome with Decline and Accept buttons and zero handlers on a page carrying no script src at all. → §XL.4
 - 📋 **SH860** (deps: SH589 ✅) **judge reports findings and never says whether the round is accepted, so a block closes on an empty backlog** — Block Q shipped 131 tasks and was declared closed six times, because emptiness was the only available test for doneness. → §XL.5
 
 ## Block AN — Source the agent's cheapest tool declines to read
