@@ -427,8 +427,9 @@ the one SH396 needs.
 
 ## The generator was on the replication path (SH518)
 
-`shio apply --blueprint marketing-site --site X` wrote everything it promised — eight post-types,
-four folders, thirteen posts, three pages composed of ten sections, every field authorable — and then
+`shio apply --blueprint marketing-site --site X` wrote everything it promised — eight post-types
+*as the package then stood*, four folders, thirteen posts, three pages composed of ten sections,
+every field authorable (SH873 and SH881 have since taken it to eleven) — and then
 `/preview/X/` answered **400, binds no layout for post-type 'Page'**. The generator that writes a
 `Theme` and a `PageLayout` existed, on the **replication** path: `convert` writes both. So a site
 that started from a blueprint could not be looked at inside Shio, and getting one to render meant

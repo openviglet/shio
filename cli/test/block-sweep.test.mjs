@@ -114,6 +114,14 @@ const SWEEP = {
       + "leave unmeasured and nothing a reader of the product can do; `docs/agents/cli.md` group N "
       + "carries it, and shio-site's README records the closure with the same verdict",
   },
+  J: {
+    swept: false,
+    why: "SH881 lists a post-type both section packages already carried, and adds the check that "
+      + "holds a package's directory against its manifest. What a reader of the product can do is "
+      + "unchanged - an applied package installs one more type it was always meant to - and no "
+      + "outward surface states a package's post-type count as a promise; `docs/agents/"
+      + "blueprints.md` carries it, and the one historical count there now says it is historical",
+  },
   AN: {
     swept: false,
     why: "one task about a lint over source bytes (a raw NUL making a file binary to a grep). No "
