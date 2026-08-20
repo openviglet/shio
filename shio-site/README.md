@@ -159,6 +159,19 @@ This paragraph said SH540 "is all that is left" for a day after it stopped being
 which is the failure mode a backlog note in a README has and the reason each closure
 below gets a line of its own.
 
+**Q closed a sixth time on 2026-08-20**, on SH871, SH872 and SH873, and it moved no claim — because a
+round three closures ago had already moved the one it would have. `MODES` has carried **Annotated
+fidelity** as a third mode since SH864 measured it, saying *the source's own markup, byte for byte*
+and *editable fields on that markup*; this round is what made that sentence cheap to be true. SH871
+gave the run a way to declare the fields it had been naming as forty preconditions nobody could
+meet, and SH872 then removed the need to declare anything: the text stays in the markup that carries
+it, so `Page` keeps its four fields on a site of any size instead of gaining one per captured block.
+Both are the *cost* of a promise this page already made, which is the shape of closure this list has
+seen most often and is still worth a line. SH873 is the one that reaches a reader — the two section
+blueprints ship a curated menu instead of listing every page by its SEO title — and this site makes
+no claim about a blueprint's navigation, so it changes nothing here either. **The roadmap is empty
+again at this commit**, and Block Q is dropped with this sweep.
+
 **Q closed a fifth time on 2026-08-19**, on SH845, SH846 and SH847, and this one did not move a claim
 either — but for the opposite reason to the round below, which is why it gets its own line. `MODES`
 has said *the source's own colours* since SH831, and the round found that on a source built by the
