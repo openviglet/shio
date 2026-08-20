@@ -724,28 +724,3 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
-
-### XL.10 The third mode, and it is the cheap one (SH868)
-
-`propose` already knows, for every candidate, which node became `heading`, which became
-`intro`, and which repeated unit became `features.2.title`. Today that mapping is spent
-one way: read the values out, write them into a new post, render that post through a
-Shio template. Everything hard about replication follows from the last step.
-
-Spend the same mapping the other way — stamp `sh-field` onto the nodes it names and
-**keep the markup** — and SH864's measurement says what you get: the source's own
-pixels, and `41 of 4 declared field(s) annotated`.
-
-What stops being a problem, because each is a consequence of re-rendering through
-another vocabulary: the palette bridge and its elected accent, a generated layout
-branching over types, a hero losing its second button because `SectionHero` declares
-one, an empty collection row drawing an empty card, a stats band with no type to hold
-it. None of them arise when the markup is the source's.
-
-The one thing to build is the write. A curator edits the annotated node; something puts
-the text back. The lazy answer is that **the annotation is the field and the markup is
-the storage** — `content` already holds 84 KB of it, and `sh-field` is already an
-address the Universal Editor speaks.
-
-The trade is real and it is fidelity's own: no typed model, no validation, no reuse
-across pages. Worth stating in the mode's name rather than discovered later.

@@ -1657,6 +1657,31 @@ it. Four decisions worth keeping:
   brought forward, and a row that still has no census is left **uncompared on those facts** rather
   than read as zero, which would say the source had no headings at all and report a gain on a replica
   that kept every one.
+- **The third mode: the source's pixels and editable fields (SH868).** `propose` already knows which
+  node became `heading` and which became `intro`, and that mapping was spent one way — read the
+  values out, write them into a new post, render that post through a Shio template. **Everything
+  hard about replication follows from that last step**: the palette bridge and its elected accent, a
+  generated layout branching over types, a hero losing its second button because `SectionHero`
+  declares one. Spent the other way — `sh-field` stamped onto the node it names, markup kept — the
+  page is the source's, byte for byte, and still editable (SH870 renders the substitution). Measured:
+  strip the attributes back out and the bytes are the source's own body exactly. **Four things it had
+  to get right.** The field name carries the **block** (`b8f8ff577Heading`), because a wholly
+  verbatim page is one post holding many blocks and two heroes both derive `heading` — unique by
+  construction and traceable to the candidate a reviewer read (SH380). The spans are recorded **per
+  page**, not per candidate: `describe` runs once, on the page a signature was first seen, so its
+  offsets would stamp the wrong bytes into every other page carrying that block. The stamps join
+  `contentFor`'s **single ascending walk** beside the section marks and the overlay drops — the first
+  draft rewrote the markup first and silently broke SH858's overlay cut, since inserting an attribute
+  moves every later offset. And the run **declares** what it stamps on SH436's existing `requires`
+  mechanism, because a real run refuses a write to an undeclared field: a page annotated with fields
+  nothing declares would offer a curator a field the write turns away, which is SH870's defect
+  inverted. **It is a flag, and that is the corpus test's doing.** `source-corpus.test.mjs` holds
+  that *fidelity is defined by having no editable field*, and it went red on the run that added this
+  — correctly. Annotating by default would move the mode boundary silently and falsify what the skill
+  file says about `data-shio-prop`; a third mode is `--annotate`, and plain fidelity is byte-for-byte
+  what it always was. **Wholly verbatim pages only**, stated rather than discovered: a mixed page
+  splits its kept markup into `SectionMarkup` runs (SH763) and the fields must live on the post
+  holding the bytes they annotate, so an offset would first have to be mapped to a run.
 - **Computed, formatted, tested — and passed to nobody (SH849).** `propose` ends its theme report
   pointing at the next command: *"`shio convert` reads them … and that run says which of its colours
   each one filled"*. `shio convert --site VigR6 --create-site` then wrote 65 objects, a `Theme`, a

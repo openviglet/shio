@@ -179,6 +179,12 @@ redrawn with Shio's own vocabulary, and the theme it is presented with takes its
 source's stylesheet uses each one in, with everything it could not fill named in
 the run.
 
+There is a third choice. `convert --annotate` stamps the field mapping onto a
+wholly verbatim page's **own markup**, so the page keeps the source's bytes —
+strip the attributes back out and they are identical — and a curator can still
+edit its heading in place. Pixel-perfect and authorable is not a contradiction:
+attributes do not lay out.
+
 Then `judge` says whether the round is **done**. It runs the instruments, answers
 once, and holds the answer to a declared bar: a finding at or below it prints as
 a task for later, one above it fails. The bar's own point is what it leaves

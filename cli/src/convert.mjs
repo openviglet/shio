@@ -144,6 +144,8 @@ export const REDIRECT_TO = "TO";
 export function buildConversion({
   proposal, plan = {}, site, createSite = false, scratch = false, markup = new Map(), home = null,
   inventory = null,
+  // SH868 — the third mode, asked for. Default false so plain fidelity is what it has always been.
+  annotate = false,
 }) {
   const accepted = (plan.accepted ?? []).map((entry) => ({ ...entry }));
   const byId = new Map((proposal?.candidates ?? []).map((row) => [row.id, row]));
@@ -189,8 +191,8 @@ export function buildConversion({
   // SH763 — two lists out of one pass: the pages, and the `SectionMarkup` posts their `sections`
   // now name. Kept apart from `sections` above because those are the blocks a reviewer *accepted*,
   // and every count and report in this file means that by the word.
-  const { pages, markup: markupPosts, obstructions } = composePages(
-    proposal, new Set(sections.map((post) => post.url)), markup,
+  const { pages, markup: markupPosts, obstructions, annotations, annotationFields } = composePages(
+    proposal, new Set(sections.map((post) => post.url)), markup, annotate,
   );
   // SH576 — the one address the grammar does not spell, written when the source gave us none.
   const frontDoor = homePost(pages, site, home);
@@ -353,6 +355,10 @@ export function buildConversion({
     // SH858 — the overlays cut out because nothing on the page could dismiss them. Returned as well
     // as printed, for SH576's reason: the corpus asserts it and `--json` is a caller too.
     ...(obstructions.length ? { obstructions } : {}),
+    // SH868 — the pages annotated in place, and the fields the instance owes before an edit to one
+    // can be written. Both returned, for the reason above and one more: `requirePostTypeFields`
+    // reads the second, so a run that annotates says what it needs rather than failing at the batch.
+    ...(annotations.length ? { annotations, annotationFields } : {}),
     // SH584 — the bound the operator chose, joined to the pages this run is writing. Returned and
     // not only printed, for SH576's reason one line up: the corpus asserts it, and `--json` is a
     // caller too.
@@ -1306,12 +1312,15 @@ function trimPath(path) {
   return `/${String(path).trim().replace(/^\/+/, "").replace(/\/+$/, "")}`;
 }
 
-function composePages(proposal, sectionUrls, markup = new Map()) {
+function composePages(proposal, sectionUrls, markup = new Map(), annotate = false) {
   const pages = [];
   const markupPosts = [];
   const taken = new Set();
   // SH858 — the overlays cut out of the kept markup, per page.
   const obstructions = [];
+  // SH868 — the pages whose kept markup was annotated in place, and how many fields each gained.
+  const annotations = [];
+  const annotationFields = [];
   for (const page of proposal?.pages ?? []) {
     const seen = new Set();
     const cut = [];
@@ -1338,12 +1347,36 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
       cut.sort((a, b) => a.span[0] - b.span[0]);
     }
     const sections = cut.map((each) => each.url).filter(Boolean);
+    // SH868 — the mapping spent the other way, on a page whose markup is all one post's. See
+    // `annotateVerbatim` for why that is the boundary rather than an oversight.
     const html = markup.get(page.path);
+    // SH868 — asked for, never assumed. `source-corpus.test.mjs` holds that *fidelity is defined by
+    // having no editable field*, and it caught this on the run that added it: a page annotated by
+    // default would move the mode boundary silently and falsify what the skill file says about
+    // `data-shio-prop`. This is a **third mode**, so it is a flag — plain fidelity is byte-for-byte
+    // what it was, and `--annotate` is how a caller asks for the source's pixels AND its fields.
+    const annotated = sections.length || !annotate
+      ? { stamps: [], fields: {} }
+      : annotateVerbatim(html, page);
+    const stamped = Object.keys(annotated.fields);
+    if (stamped.length) {
+      annotations.push({ path: page.path, fields: stamped.length });
+      for (const field of stamped) {
+        annotationFields.push({
+          postType: PAGE_TYPE,
+          field,
+          why: "an annotated block on this page addresses it, and a real run refuses a write to a "
+            + "field the post-type does not declare",
+          fix: "POST /api/v2/render/post-types/reconcile adds it and changes nothing else. Until "
+            + "then the page renders exactly as it does now — the annotation is inert, not broken.",
+        });
+      }
+    }
     // SH858 — the overlays whose dismiss behaviour this capture does not hold. Counted per page, so
     // the report names the pages rather than a total nobody can locate.
     const drop = overlaysToDrop(html, page.overlays, cut);
     if (drop.length) obstructions.push({ path: page.path, overlays: drop.length });
-    const body = contentFor({ html, sections, kept, cut, drop });
+    const body = contentFor({ html, sections, kept, cut, drop, stamps: annotated.stamps });
     if (!sections.length && body === null) continue;
     // SH763 — the kept markup, interleaved. `body` is a string when there is one part (a wholly
     // verbatim page, or a split this could not place), and a list of parts when there are more.
@@ -1372,6 +1405,11 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
         // accepted anything on. It is what `{{#if content}}` in the head asks to decide whether this
         // page needs the captured stylesheet, and a fidelity replica is byte-identical to before.
         ...(composed.content === null ? {} : { content: composed.content }),
+        // SH868 — the values the annotations in that markup address. Each holds the element's own
+        // text, so nothing renders differently until a curator edits one: `ShRenderModel`
+        // substitutes only where the field DIFFERS from what the markup says (SH870), which is what
+        // keeps annotating free in pixels.
+        ...annotated.fields,
       },
     });
   }
@@ -1381,6 +1419,14 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
     // same bytes, whatever order the proposal listed its pages in.
     markup: markupPosts.sort((a, b) => (a.url < b.url ? -1 : 1)),
     obstructions: obstructions.sort((a, b) => (a.path < b.path ? -1 : 1)),
+    annotations: annotations.sort((a, b) => (a.path < b.path ? -1 : 1)),
+    // SH868 — what the target instance must declare before an edit to an annotated block can be
+    // written. A real run **refuses** an undeclared field (`ShAgentBatchService`), so a page stamped
+    // with annotations nothing declares would offer a curator a field the write turns away — the
+    // inverse of the defect SH870 closed, and no better. Named on SH436's own mechanism rather than
+    // a new one, so the operator sees the cost and decides: one field per annotated block, on the
+    // `Page` type the whole instance shares.
+    annotationFields: annotationFields.sort((a, b) => (a.field < b.field ? -1 : 1)),
   };
 }
 
@@ -1487,8 +1533,13 @@ function markupPost(page, index, html, taken) {
  * @param cut the accepted blocks in document order, `{span, url}` — a span is `null` for one the
  *            proposal cannot place
  */
-function contentFor({ html, sections, kept, cut, drop = [] }) {
-  if (!sections.length) return bodyOf(without(html, drop));
+function contentFor({ html, sections, kept, cut, drop = [], stamps = [] }) {
+  // SH868 — one walk over the original offsets, because both edits index them: a drop removes bytes
+  // and a stamp inserts an attribute, and applying either first moves the other's addresses. Only
+  // this branch can carry stamps — a page with sections is one `annotateVerbatim` declines.
+  if (!sections.length) {
+    return bodyOf(spliceAll(html, [...drop.map((span) => ({ span, mark: "" })), ...stamps]));
+  }
   // Everything was accepted: the sections are the page, and there is no remainder. Writing the body
   // here would render every block twice.
   if (!kept) return null;
@@ -1539,6 +1590,102 @@ function overlaysToDrop(html, overlays, cut) {
     // the drop and the interleaving together.
     .filter((span) => !inside.some(([start, end]) => span[0] < end && start < span[1]))
     .sort((a, b) => a[0] - b[0]);
+}
+
+/**
+ * The field a verbatim block's annotation names, and it is invented on purpose (SH868).
+ *
+ * <p>A wholly verbatim page is **one post** holding many blocks, so the roles collide: two heroes
+ * both derive `heading`, and one field cannot hold two elements' text. The name therefore carries the
+ * block it came from — `b1a2c3dHeading` — which is unique by construction and traceable back to the
+ * candidate a reviewer read, which is SH380's rule that a token nobody can trace to the source is a
+ * guess. Alphanumeric because it becomes a post-type field name.</p>
+ */
+export const verbatimField = (block, role) =>
+  `${block}${role.charAt(0).toUpperCase()}${role.slice(1)}`;
+
+/**
+ * `sh-field` stamped onto the nodes `propose` derived a value from (SH868).
+ *
+ * <h3>The mapping spent the other way</h3>
+ *
+ * <p>`propose` already knows which node became `heading` and which became `intro`. That mapping is
+ * spent one way today — read the values out, write them into a new post, render that post through a
+ * Shio template — and everything hard about replication follows from the last step: the palette
+ * bridge and its elected accent, a generated layout branching over types, a hero losing its second
+ * button because `SectionHero` declares one. Spend it the other way and the markup is the source's.</p>
+ *
+ * <h3>Wholly verbatim pages only, and that is a boundary rather than an oversight</h3>
+ *
+ * <p>A page with accepted sections splits its kept markup into runs, each a `SectionMarkup` post
+ * (SH763), and the fields have to live on <b>the post holding the bytes they annotate</b> — so an
+ * offset would first have to be mapped to a run. A page with no accepted block is one post and one
+ * span of bytes, which is the case SH864 measured (12 of 12 fidelity) and the one the mode is about.
+ * A mixed page keeps exactly what it kept before.</p>
+ *
+ * <h3>Edits rather than a rewritten string, and that is not a style choice</h3>
+ *
+ * <p>The first draft returned stamped markup, and the overlay drop stopped working: `page.overlays`
+ * and the section spans index the page's **original** bytes, and inserting an attribute moves every
+ * offset after it. So this returns the edits and {@link contentFor} applies them in the same single
+ * ascending walk that marks the sections and cuts the overlays — the rule SH858 already had to
+ * learn, met again one edit kind along.</p>
+ *
+ * @returns `{stamps, fields}` — the insertions to make, and the values those annotations address
+ */
+function annotateVerbatim(html, page) {
+  const spans = [];
+  const fields = {};
+  (page?.blocks ?? []).forEach((block, at) => {
+    const derived = page?.fieldSpans?.[at];
+    if (!derived) return;
+    for (const [role, span] of Object.entries(derived).sort()) {
+      const open = openTagEnd(html, span);
+      if (open === null) continue;
+      const name = verbatimField(block, role);
+      spans.push({ span: [open, open], mark: ` ${FIELD_ATTR}="${name}"` });
+      // The value is the element's own text, so nothing renders differently until a curator edits
+      // it — `ShRenderModel` substitutes only where the field DIFFERS from what the markup says
+      // (SH870), which is what keeps annotating free in pixels.
+      fields[name] = textAt(html, span);
+    }
+  });
+  return { stamps: spans, fields };
+}
+
+/** The attribute `sh-field` is spelled as, shared with the renderer's own constant. */
+const FIELD_ATTR = "sh-field";
+
+/** Where an element's open tag ends, so an attribute can be inserted before the `>`. */
+function openTagEnd(html, [start, end]) {
+  if (typeof html !== "string" || !Number.isInteger(start) || start < 0 || end > html.length) {
+    return null;
+  }
+  const close = html.indexOf(">", start);
+  if (close < 0 || close >= end) return null;
+  // `<img … />` — the attribute goes before the slash, or the markup gains ` sh-field="x"/`.
+  return html[close - 1] === "/" ? close - 1 : close;
+}
+
+/** The element's visible text, collapsed the way `propose` collapsed it when it read the value. */
+function textAt(html, [start, end]) {
+  return html.slice(start, end).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Ascending, so an earlier insertion cannot move a later offset. */
+function spliceAll(html, edits) {
+  // A page with no markup on disk reaches here with `undefined`, which `without` has always guarded
+  // and this inherited responsibility for the moment it replaced that call on the no-sections path.
+  if (typeof html !== "string" || !edits.length) return html;
+  const ordered = [...edits].sort((a, b) => a.span[0] - b.span[0]);
+  let out = "";
+  let cursor = 0;
+  for (const { span: [start, end], mark } of ordered) {
+    if (start < cursor) continue;
+    out += html.slice(cursor, start) + mark;
+    cursor = end;
+  }
+  return out + html.slice(cursor);
 }
 
 /** Where the sections go, marked in the bytes before anything is cut out of them (SH693). */
@@ -1798,6 +1945,7 @@ export function describeConversion({ document, sections, markup = [], pages = []
                                      mixed = 0, extras,
                                      requires = [], dropped = [], kept = [], declined = [],
                                      emptied = [], obstructions = [],
+                                     annotations = [], annotationFields = [],
                                      home = null, unfollowed = null, palette = null },
                                    options = {}) {
   const lines = [];
@@ -2026,6 +2174,22 @@ export function describeConversion({ document, sections, markup = [], pages = []
     );
     for (const row of obstructions.slice(0, 3)) {
       lines.push(`    ${row.path} — ${row.overlays} overlay(s)`);
+    }
+  }
+  // SH868 — the third mode, said out loud on the run that produces it. A page annotated in place is
+  // the source's own pixels AND a set of editable fields, which the criterion said was a
+  // contradiction until SH864 measured it; a reader has to be told which pages got it and what the
+  // instance owes before an edit can be written.
+  if (annotations.length) {
+    const total = annotations.reduce((sum, row) => sum + row.fields, 0);
+    lines.push(
+      `  ${total} field(s) annotated in place on ${annotations.length} verbatim page(s) — the `
+        + "markup is the source's, byte for byte, and an edit to one of these shows through "
+        + `(SH870). ${annotationFields.length} of them must be declared on ${PAGE_TYPE} first, or a `
+        + "write is refused; until then the annotation is inert rather than broken",
+    );
+    for (const row of annotations.slice(0, 3)) {
+      lines.push(`    ${row.path} — ${row.fields} field(s)`);
     }
   }
   // SH584 — the bound this run inherited, in the run that inherits it. Said here rather than left

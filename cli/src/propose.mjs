@@ -818,9 +818,27 @@ export function fieldsFor(type, block, origin = null, paths = null) {
     return node;
   };
 
+  // SH868 — where each field's text came from, for the fields that came from ONE element.
+  //
+  // The derivation is spent one way today: read the values out, write them into a new post, render
+  // that post through a Shio template. Spending it the other way — stamping `sh-field` onto the
+  // node it names and keeping the markup — is the third mode, and what it needs from here is the
+  // node's span. `stripNonMarkup` blanks rather than deletes (SH520), so a span into the tree is a
+  // span into the page a curator captured, and `convert` can stamp an attribute at it.
+  //
+  // Only the one-element, one-field, text-bearing derivations, which is the shape `ShRenderModel`
+  // substitutes (SH870). `body` joins several paragraphs into one value and `image` is an attribute
+  // rather than text; neither can round-trip through a single element, so neither is recorded — an
+  // annotation nothing can write back to is the read-only marker P6 would have to explain.
+  const spans = {};
+  const stamp = (name, node) => {
+    if (Number.isInteger(node?.start) && Number.isInteger(node?.end)) spans[name] = [node.start, node.end];
+    return node;
+  };
+
   const headings = descendants(block).filter((node) => /^h[1-6]$/.test(node.tag));
   const heading = headings[0];
-  if (heading && spec.fields.includes("heading")) fields.heading = text(take(heading));
+  if (heading && spec.fields.includes("heading")) fields.heading = text(stamp("heading", take(heading)));
 
   const units = spec.repeats ? repeatedUnits(block) : [];
   const offered = new Set();
@@ -865,7 +883,7 @@ export function fieldsFor(type, block, origin = null, paths = null) {
   const lead = prose[0];
   for (const name of ["subheading", "intro"]) {
     if (lead && spec.fields.includes(name) && fields[name] === undefined) {
-      fields[name] = text(take(lead));
+      fields[name] = text(stamp(name, take(lead)));
       break;
     }
   }
@@ -878,14 +896,16 @@ export function fieldsFor(type, block, origin = null, paths = null) {
   if (link && spec.fields.includes("ctaLabel")) {
     fields.ctaLabel = text(link);
     fields.ctaHref = sourceRelative(link.attrs.href ?? "", origin, paths);
-    take(link);
+    // `ctaLabel` only: the label is the anchor's text and `ctaHref` is an attribute of the same
+    // element, which is `sh-field-attr`'s shape rather than this one (SH503).
+    stamp("ctaLabel", take(link));
   }
   const image = descendants(block).find((node) => node.tag === "img" && !consumed.has(node));
   if (image && spec.fields.includes("image")) {
     fields.image = image.attrs.src ?? "";
     take(image);
   }
-  return { fields, consumed, offered: [...offered].sort(byText), emptyRows };
+  return { fields, consumed, offered: [...offered].sort(byText), emptyRows, spans };
 }
 
 /**
@@ -1275,8 +1295,15 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
       .filter((row) => row.why === OVERLAY_WHY && Array.isArray(row.span))
       .map((row) => row.span)
       .sort((a, b) => a[0] - b[0]);
+    // SH868 — where each single-element field's text sits, per block, **in this page's bytes**.
+    //
+    // Parallel to `blocks` and `spans` for their reason, and computed here rather than taken off the
+    // candidate because a candidate is one decision on N pages: `describe` runs once, on the page a
+    // signature was first seen, so its spans index that page's markup and would stamp the wrong
+    // offsets into every other page carrying the same block.
+    const fieldSpans = [];
     composition.push({
-      path: page.path, title: page.title ?? null, blocks: order, spans,
+      path: page.path, title: page.title ?? null, blocks: order, spans, fieldSpans,
       ...(overlays.length ? { overlays } : {}),
     });
     blocks.forEach((block, index) => {
@@ -1287,6 +1314,8 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
         ? [block.start, block.end]
         : null);
       const guess = classify(block, { first: index === 0 });
+      const derived = guess ? fieldsFor(guess.type, block, origin, capturedPaths).spans : null;
+      fieldSpans.push(derived && Object.keys(derived).length ? derived : null);
       const existing = candidates.get(id);
       if (existing) {
         existing.pages.push(page.path);
@@ -1633,7 +1662,7 @@ function describe(block, guess, index, origin, capturedPaths) {
       ...(postType ? { postType } : {}),
     };
   }
-  const { fields, consumed, offered, emptyRows } = fieldsFor(guess.type, block, origin, capturedPaths);
+  const { fields, consumed, offered, emptyRows, spans } = fieldsFor(guess.type, block, origin, capturedPaths);
   const missing = missingRequired(guess.type, fields);
   return {
     type: guess.type,
@@ -1657,6 +1686,11 @@ function describe(block, guess, index, origin, capturedPaths) {
     // healthy candidate is the clause nobody reads, and a *non*-zero one says the source repeated a
     // shape this vocabulary has no field for — which is a claim about the extractor.
     ...(emptyRows ? { emptyRows } : {}),
+    // SH868 — where each single-element field's text sits in the page's own bytes, so a block left
+    // verbatim can be annotated in place. Not serialized on the candidate (see `buildProposal`'s row
+    // mapping): a candidate is one decision on N pages and a span is a fact about ONE of them, so
+    // the composition carries it per page and this is working state.
+    spans,
   };
 }
 

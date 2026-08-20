@@ -81,7 +81,7 @@ export async function run(flags, positionals, ctx) {
     // the builder's return for the reason the two comments above give: this list is enumerated by
     // hand, so a field nobody names here is computed, formatted and printed to nobody.
     document, stale, sections, pages, verbatim, mixed, extras, dropped, kept, declined, emptied,
-    obstructions, home, unfollowed, palette,
+    obstructions, annotations, annotationFields, home, unfollowed, palette,
     // The builder's verbatim `SectionMarkup` posts. Renamed on the way out because `markup` is
     // already taken above by the *capture's* markup cache — two different things one word apart,
     // which is the other half of why this field never reached the report.
@@ -93,6 +93,11 @@ export async function run(flags, positionals, ctx) {
     createSite: Boolean(flags.createSite),
     // SH591 — a replica made to answer a question, declared disposable at the moment it is made.
     scratch: Boolean(flags.scratch),
+    // SH868 — the third mode: the source's own pixels AND editable fields, by stamping the mapping
+    // `propose` already computed onto the markup instead of spending it on a new post. Asked for,
+    // because plain fidelity is defined by having no editable field and a default would move that
+    // boundary without anybody choosing to.
+    annotate: Boolean(flags.annotate),
     // SH449 — the markup cache the proposal was computed from. A page whose blocks nobody accepted
     // is written verbatim, and this is where the bytes come from; without it the fidelity half of
     // the two documented modes has no source and the command falls back to SH438's behaviour.
@@ -124,7 +129,11 @@ export async function run(flags, positionals, ctx) {
   // checking that a new field reached the report had two places to look and no reason to think so.
   const reported = {
     document, sections, markup: markupPosts, pages, verbatim, mixed, extras,
-    requires: proposal.requires, dropped, kept, declined, emptied, obstructions, home, unfollowed,
+    // SH868 — the conversion's own requirements beside the proposal's. A page annotated in place
+    // needs its fields declared before an edit to one can be written, and `requires` is the
+    // mechanism SH436 already built for exactly that sentence.
+    requires: [...(proposal.requires ?? []), ...(annotationFields ?? [])],
+    dropped, kept, declined, emptied, obstructions, annotations, annotationFields, home, unfollowed,
     palette,
   };
 

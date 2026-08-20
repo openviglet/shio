@@ -225,6 +225,127 @@ test("SH858: the cut is one walk with the section marks, so the interleaving sti
       + "remainder in one part, which would have swallowed the drop as well");
 });
 
+/** A page a reviewer accepts nothing on — wholly verbatim, which is what a fidelity round makes. */
+const VERBATIM_PAGE = "<html><head><title>Home</title></head><body><main>"
+  + "<section><h1>Enterprise Intelligence</h1>"
+  + "<p>An agent-native CMS for people who would rather not click at all.</p>"
+  + "<a href=\"/products\">Explore Products</a></section>"
+  + "<section><h2>Why</h2>"
+  + "<p>Because a console is a poor protocol for a coding agent to drive around.</p></section>"
+  + "</main></body></html>";
+
+const verbatimConversion = (html = VERBATIM_PAGE) => buildConversion({
+  proposal: proposeBuild({
+    inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
+    markup: new Map([["/", html]]),
+    html: { tokenize, parseAttrs, stripNonMarkup },
+  }),
+  plan: { accepted: [] },
+  site: "Acme",
+  markup: new Map([["/", html]]),
+  annotate: true,
+});
+
+test("SH868: the mapping propose already computed is stamped onto the markup it kept", () => {
+  // Spent one way today — read the values out, write them into a new post, render that post through
+  // a Shio template — and everything hard about replication follows from the last step. Spent the
+  // other way, the markup is the source's and the fields are still there.
+  const built = verbatimConversion();
+  const page = built.document.posts.find((post) => post.type === "Page");
+
+  assert.match(page.data.content, /<h1 sh-field="[a-z0-9]+Heading">Enterprise Intelligence<\/h1>/,
+    "the node `propose` derived `heading` from, annotated in place");
+  assert.match(page.data.content, /<a href="\/products" sh-field="[a-z0-9]+CtaLabel">/,
+    "and the attribute goes inside the open tag it belongs to, after the ones already there");
+  assert.deepEqual(built.annotations, [{ path: "/", fields: 4 }]);
+});
+
+test("SH868: strip the annotations and the bytes are the source's, which is what keeps it free", () => {
+  // SH864's measurement is that annotating costs nothing in pixels. That holds only if the markup is
+  // otherwise untouched — one inserted attribute per annotated element and nothing else moved.
+  const built = verbatimConversion();
+  const page = built.document.posts.find((post) => post.type === "Page");
+  const bare = page.data.content.replace(/ sh-field="[^"]*"/g, "");
+
+  assert.ok(VERBATIM_PAGE.includes(bare.trim()),
+    `the kept markup must be the source's own bytes with attributes added:\n${bare}`);
+});
+
+test("SH868: each field is named for the block it came from, because one post holds many", () => {
+  const built = verbatimConversion();
+  const page = built.document.posts.find((post) => post.type === "Page");
+  const stamped = Object.keys(page.data).filter((name) => /Heading$|Subheading$|CtaLabel$/.test(name));
+
+  assert.equal(stamped.length, 4);
+  assert.equal(new Set(stamped).size, 4,
+    "a wholly verbatim page is ONE post holding many blocks, so two heroes both deriving `heading` "
+      + "would collide — the name carries the block, which is unique by construction and traceable "
+      + "back to the candidate a reviewer read (SH380)");
+  assert.equal(page.data[stamped.find((name) => name.endsWith("Subheading"))],
+    "An agent-native CMS for people who would rather not click at all.",
+    "and the value is the element's own text, so nothing renders differently until it is edited — "
+      + "`ShRenderModel` substitutes only where the field DIFFERS from the markup (SH870)");
+});
+
+test("SH868: a page that accepted a section keeps exactly what it kept before", () => {
+  // The boundary, stated: a mixed page splits its kept markup into `SectionMarkup` runs (SH763) and
+  // the fields have to live on the post holding the bytes they annotate, so an offset would first
+  // have to be mapped to a run. Not an oversight — the mode is about the wholly verbatim page.
+  const proposal = proposeBuild({
+    inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
+    markup: new Map([["/", VERBATIM_PAGE]]),
+    html: { tokenize, parseAttrs, stripNonMarkup },
+  });
+  const first = proposal.candidates.find((row) => row.type);
+  const built = buildConversion({
+    proposal,
+    plan: { accepted: [{ block: first.id, type: first.type }] },
+    site: "Acme",
+    markup: new Map([["/", VERBATIM_PAGE]]),
+    annotate: true,
+  });
+  const page = built.document.posts.find((post) => post.type === "Page");
+
+  assert.equal(built.annotations, undefined);
+  assert.equal((page.data.content ?? "").includes("sh-field="), false);
+});
+
+test("SH868: the third mode is asked for, so plain fidelity is byte-for-byte what it was", () => {
+  // `source-corpus.test.mjs` holds that *fidelity is defined by having no editable field*, and it
+  // caught this on the run that added it: annotating by default would move the mode boundary
+  // silently and falsify what the skill file says about `data-shio-prop`. A third mode is a flag.
+  const built = buildConversion({
+    proposal: proposeBuild({
+      inventory: { source: "https://x.test/", pages: [{ path: "/", title: "Home" }] },
+      markup: new Map([["/", VERBATIM_PAGE]]),
+      html: { tokenize, parseAttrs, stripNonMarkup },
+    }),
+    plan: { accepted: [] },
+    site: "Acme",
+    markup: new Map([["/", VERBATIM_PAGE]]),
+  });
+  const page = built.document.posts.find((post) => post.type === "Page");
+
+  assert.equal(page.data.content.includes("sh-field="), false);
+  assert.equal(built.annotations, undefined);
+  assert.deepEqual(Object.keys(page.data).sort(), ["content", "title"],
+    "and no invented field: a fidelity page's data is what it always was");
+});
+
+test("SH868: an annotated page declares what the instance owes before an edit can be written", () => {
+  // A real run refuses a write to a field the post-type does not declare, so a page stamped with
+  // annotations nothing declares would offer a curator a field the write turns away — the inverse of
+  // the defect SH870 closed, and no better. SH436's mechanism says it rather than a new one.
+  const built = verbatimConversion();
+
+  assert.equal(built.annotationFields.length, 4);
+  assert.deepEqual([...new Set(built.annotationFields.map((row) => row.postType))], ["Page"]);
+  assert.match(built.annotationFields[0].fix, /post-types\/reconcile/,
+    "P6 — the refusal names what would settle it");
+  assert.match(describeConversion({ ...built, requires: [] }, {}),
+    /4 field\(s\) annotated in place on 1 verbatim page\(s\)/);
+});
+
 test("SH607: the declaration is sorted and de-duplicated, so one capture converts to one document", () => {
   // P5: two candidates of one type produce one name, and the order is the sort's rather than the
   // plan's. `--out` writes this to disk and a human diffs two runs of it, so a set whose order came

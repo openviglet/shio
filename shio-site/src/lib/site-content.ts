@@ -1178,6 +1178,13 @@ export const MODES: Mode[] = [
     accent: "fidelity",
   },
   {
+    name: "Annotated fidelity",
+    keeps: "The source's own markup, byte for byte — strip the annotations back out and they are identical.",
+    offers: "Editable fields on that markup. `convert --annotate` stamps them onto the nodes the proposal already derived, so a curator edits a heading in place.",
+    pick: "the page has to keep looking exactly like it looks, and somebody still has to edit it.",
+    accent: "fidelity",
+  },
+  {
     name: "Authorable",
     keeps: "The content, as structured fields a curator edits in the console or on the page itself.",
     offers: "The site's own theme, in the source's own colours, type and corner radius. The structure is replaced, deliberately — not ruined, and not judged against the source's own pixels.",

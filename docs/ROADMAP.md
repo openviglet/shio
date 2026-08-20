@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block Q — Replication (an existing site becomes an authorable Shio site)
-
-- 📋 **SH868** (deps: SH870 ✅) **The field mapping propose computes is only ever spent extracting values, never stamped onto the markup already there** — The same derivation that fills a section could annotate the kept block in place, which SH864 measured as free in pixels and full in fields. → §XL.10
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
