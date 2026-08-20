@@ -369,6 +369,7 @@
 - **SH679** — The console has a marketplace page: a filterable grid, a detail dialog carrying the package parameters and its README, a dry run, install and uninstall, under Administration because it installs software rather than authoring anything. The opt-ins a package declares are an amber consent panel rather than a badge, since P7 is about the surprise and not the label, and a refusal shows the server teaching sentence rather than a status. Verified in a real browser: the dry run reported nothing was written, and an install put the package on disk.
 - **SH682** — The marketplace install and uninstall are hasRole("ADMIN") on both chains, with the assertion SH677 could not write: a non-admin is refused and the seeded admin is not.
 - **SH881** — Both packages provision SectionMarkup now, and a check holds directory and manifest together both ways; landing already provisioned three unused types, which settled the direction.
+- **SH884** — Both package layouts annotate the page's own title where they draw it and declare description in a hidden element, so a curator can edit the page as well as its sections.
 
 ## Block M — Token economy, measured (SH74)
 

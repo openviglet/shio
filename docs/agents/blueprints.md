@@ -521,6 +521,24 @@ carry, which fails at apply time on somebody else's instance. Six packages, 26 p
 the run prints both counts. Cost measured before the change and after: `build-marketing-site`
 **3928 → 3939**, eleven tokens for one more provision, inside the ceiling SH873 set.
 
+**Every section editable, and the page itself not (SH884).** Both packages have shipped a design
+since SH518 and annotate every section field; the page's own fields were annotated nowhere. Measured
+live on an applied `marketing-site` — `Page | 0/4 | DRAWN: description, title` — so a curator could
+edit a hero's heading and not the title of the page it sits on. Two shapes, and **SH766 settled both
+for the layout `convert` writes**, which is the whole finding: the pattern existed and had not
+reached the packages.
+- **`title` is drawn and reachable.** `<footer><p>{{post.title}}</p></footer>` is visible body
+  content, so it gains `sh-field="title"` where it already draws — an attribute, and no pixel moves.
+- **`description` reaches only the head.** It is `<meta name="description" content="{{post.summary}}">`
+  and nothing else, and an editor cannot attach to a `<meta>`. So a `hidden` element carries the
+  declaration — SH766's *annotate without drawing* — rather than inventing a visible element, which
+  would be a worse defect than the one it fixes.
+
+How it was found is the part worth keeping: not by reading the layout, which several rounds had
+done, but by running `shio annotations` against a site the package had just built. **The check could
+not have said it before SH882** — its verdict was a sentence rather than a measurement — which is
+why the gap survived every round that looked at these packages.
+
 **Measured: `build-marketing-site` 3928 tokens against a 3800 ceiling**, raised to 4000 with the
 reason beside the number. Two more post-types and four more posts is five more ops in the apply's
 report — SH518's lever argument, unchanged — and the alternative costs a curator four writes and a

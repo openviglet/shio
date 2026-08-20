@@ -142,5 +142,19 @@ class ShBlueprintRendersTest {
                 .as("and the order is the menu's — editorial, not alphabetical, which is the "
                         + "second half a page listing has no way to express")
                 .isLessThan(nav.indexOf(">About<"));
+
+        // SH884 — the assertion that would have caught it, at the boundary it crossed: the page a
+        // new user gets from the package. Every SECTION on it was annotated and the page's own
+        // fields were annotated nowhere, so a curator could edit a hero's heading and not the
+        // title of the page it sits on. Measured live: `Page | 0/4 | DRAWN: description, title`.
+        assertThat(html)
+                .as("""
+                        `title` is annotated where the layout already draws it, so the one field \
+                        every page has is editable in place and no pixel moved. `description` \
+                        reaches only <meta>, where an editor cannot attach, so it is declared in a \
+                        hidden element — SH766's rule: annotate without drawing, rather than \
+                        inventing a visible element to make a field reachable.""")
+                .contains("data-shio-prop=\"title\"")
+                .contains("data-shio-prop=\"description\"");
     }
 }

@@ -861,3 +861,25 @@ because the number is not derivable from anything. What is derivable is the diff
 between a value that *is* an element's content and one that merely appears inside the
 page — and an annotation attaches to an element whose content is the field, which is
 what makes that distinction the one the instrument is actually about.
+
+## LII The page's own fields, on the page a package ships
+
+A section's fields are annotated by both section layouts and have been since the
+packages shipped a design. The page's own fields are not, and the difference has never
+been argued — it is what nobody looked at, which is a different thing from a decision.
+
+SH766 settled the same question for the layout `convert` writes, and settled it twice
+over: a field a layout <em>draws</em> is annotated where it draws it, and a field that
+reaches only the document head is declared in a `hidden` element instead — because an
+editor cannot attach to a `<title>` or a `<meta>`, and injecting a visible element to
+make one reachable would be a worse defect than the one it fixes.
+
+The sections here are about that pattern not reaching the packages. The two layouts are
+a starting point a curator is meant to edit, and the first thing anybody edits about a
+page is its title.
+
+What makes it worth stating rather than just fixing is how it was found: not by reading
+the layout, which several tasks have done, but by running the instrument that exists to
+answer exactly this question against a site the package had just built. The check had
+been unable to say it — its verdict was a sentence rather than a measurement until SH882
+— so the gap survived every round that looked at these packages.
