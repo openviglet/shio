@@ -13,6 +13,7 @@
 
 - 📋 **SH871** (deps: SH868 ✅) **convert --annotate names 40 fields nothing creates, repeats each requires line, and exits 1 on a site with no pages** — The first run left 18 assets, zero pages and a 404 home, and only ran after the 40 were hand-added through pull, edit and push. → §XL.13
 - 📋 **SH872** (deps: SH868 ✅) **The annotated fields land on the shared Page type under block hashes, so most of a page's fields belong to other pages** — Page went from 4 fields to 44 and the home page reports 14 annotated and 30 not editable, 27 of which are another page's blocks. → §XL.14
+- 📋 **SH873** (deps: —) **A page's nav label is its title, so an SEO title becomes the menu and every page is listed alphabetically** — Building a pharmacy site from a blueprint produced a menu reading Contato, Farmacêutico responsável — Farmácia Vitalis, Farmácia Vitalis, Produtos — Farmácia Vitalis. → §XL.15
 
 ## Priority
 
