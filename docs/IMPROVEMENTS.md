@@ -752,3 +752,26 @@ normalised control characters would change a key's identity showing nothing.
 The escape is byte-identical at runtime, so the fix is six literals. The instrument
 first (SH338): a lint over every tracked source file, failing on a raw control character
 in one.
+
+## XLII The sweep a finished block owes, and the two surfaces that did not get it (SH861)
+
+Block Q is finished: 136 entries, nothing open, the heading dropped from the roadmap.
+SH860 is what made *finished* mean something other than an empty list — a declared bar,
+a verdict of `accepted`, and a build that fails on a finding kind nobody has ruled on.
+
+The upkeep rule says a block's last task brings three outward surfaces up to date in one
+pass: `docs-shio`, `shio-site` and `README.md`. One of the three moved, and only because
+a gate asked: SH799's queue ceiling failed the build at six unnamed ids, so
+`COVERAGE.md` names SH853–SH858. Nothing asked about the other two.
+
+What they say is a replication story ending at *capture and convert*. Neither mentions
+that a round has an acceptance criterion, that `shio judge` answers it, or that design
+equivalence with the source is deliberately not one of authorable mode's tests — the
+sentence that let the block close after six false closes, and the one a reader deciding
+whether to replicate a site most needs.
+
+The instrument is the deliverable here too (SH338). A sweep that happens because
+somebody remembered is the arrangement that produced six closes. What is missing is a
+reader that asks, when a block reaches zero, whether each of the three surfaces has
+moved since its last ship — a `git log` comparison, which is the read
+`coverage-obligation` already makes one file along.
