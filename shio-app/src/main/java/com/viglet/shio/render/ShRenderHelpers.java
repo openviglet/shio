@@ -1006,13 +1006,13 @@ public class ShRenderHelpers {
                 continue;
             }
             for (ShPostUnified post : shPostUnifiedRepository.findByIdInAndState(ids, state)) {
-                byKey.put(post.getId() + " " + post.getState(), post);
+                byKey.put(post.getId() + "\0" + post.getState(), post);
             }
         }
         // Re-ordered by the window rather than by whatever the `IN` returned: the sort is the
         // listing's contract and a set read gives no order at all.
         return wanted.stream()
-                .map(key -> byKey.get(key.id() + " " + key.state()))
+                .map(key -> byKey.get(key.id() + "\0" + key.state()))
                 .filter(java.util.Objects::nonNull)
                 .toList();
     }

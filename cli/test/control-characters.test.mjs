@@ -69,17 +69,29 @@ const BUILT = ["shio-app/src/main/resources/public/"];
  *
  * <p>`\0` as a composite-key separator — `` `${a}\0${b}` `` and `.join("\0")` — is a deliberate
  * idiom: a byte that cannot occur in the data being joined, so two different pairs can never
- * collide into one key. Six files use it and each is named here rather than the byte being allowed
- * everywhere, so a seventh adoption is a diff somebody reads.</p>
+ * collide into one key. Six files used it, and each was named here rather than the byte being
+ * allowed everywhere, so a seventh adoption was a diff somebody reads.</p>
+ *
+ * <h2>SH859 — the allow-list is gone, and the idiom is not</h2>
+ *
+ * <p>Every one of those six now writes the **escape**, which is byte-identical at runtime, so there
+ * was nothing to trade. What SH804 weighed was whether the byte is *deliberate*; what it did not
+ * weigh is what a raw one costs.</p>
+ *
+ * <p>ripgrep classifies a file holding a NUL as **binary**: it reports that the file matched and
+ * refuses to print the line. So does `git grep`, and so does GitHub's code search. Measured — a
+ * `Grep` for `accentFor` in `cli/src/theme.mjs` answered `binary file matches (found "\0" byte
+ * around offset 49715)` and nothing else, on a 2,000-line JavaScript module. Two of the six were the
+ * largest files in the CLI, and P4 says files beat APIs precisely because `Edit`, `Write` and `Grep`
+ * are an agent's cheapest tools. One of those three was silent on them, and the byte SH804 admitted
+ * is what silenced it.</p>
+ *
+ * <p><b>One trap, and it is why the Java file spells it differently.</b> Java resolves `\uXXXX` in
+ * the **lexer**, before tokenizing, so the unicode escape in Java source puts a real NUL in the token
+ * stream and the string literal does not compile. `"\0"` — an octal escape the parser reads — is the
+ * Java spelling. JavaScript and TypeScript take the unicode escape, which is preferred over `\0`
+ * there because `\0` followed by a digit is a legacy-octal error under strict mode.</p>
  */
-const SEPARATOR = new Set([
-  "cli/src/convert.mjs",
-  "cli/src/diff.mjs",
-  "cli/src/theme.mjs",
-  "cli/src/verify-baseline.mjs",
-  "shio-react/src/app/console/content/static-file.list.page.tsx",
-  "shio-app/src/main/java/com/viglet/shio/render/ShRenderHelpers.java",
-]);
 
 /** Tab, newline and carriage return are the three a source file may hold. */
 const FORBIDDEN = /[\u0001-\u0008\u000B\u000C\u000E-\u001F]/;
@@ -101,12 +113,17 @@ function walk(dir, out = []) {
   return out;
 }
 
-/** Every control byte one file holds that it is not allowed to, as `path:line — U+XXXX`. */
+/**
+ * Every control byte one file holds that it is not allowed to, as `path:line — U+XXXX`.
+ *
+ * <p>SH859 — no file is exempt now, so `relative` is only what the message names. It stays a
+ * parameter rather than being dropped: the caller has it, and a finding that cannot say where it is
+ * is one nobody can act on (P6).</p>
+ */
 export function offences(relative, text) {
   const found = [];
   text.split("\n").forEach((line, at) => {
-    const chars = [...line].filter((ch) => FORBIDDEN.test(ch)
-      || (ch === NUL && !SEPARATOR.has(relative)));
+    const chars = [...line].filter((ch) => FORBIDDEN.test(ch) || ch === NUL);
     for (const ch of new Set(chars)) {
       const code = ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
       found.push(`${relative}:${at + 1} — U+${code}`);
@@ -133,8 +150,12 @@ test("SH804: no source or document holds a control byte no rendering will show y
       + "This is almost always an escape that a layer below resolved: `\\b` becoming a backspace, "
       + "`\\f` in a Windows path becoming a form feed. The line will look right in an editor, in "
       + "`grep`, and in a failure message — `od -c` is what answers (SH804).\n"
-      + "Write the two characters instead. If the byte is deliberate, name the file in SEPARATOR "
-      + "with the reason, in a diff somebody reviews.",
+      + "Write the escape instead. SH859 removed the last exemption: a NUL is a deliberate "
+      + "composite-key separator in six files here and every one of them spells it as an escape, "
+      + "because a raw one makes ripgrep call the whole file binary and print no line at all — the "
+      + "cheapest tool an agent has, silent on the largest files in the CLI (P4).\n"
+      + "JavaScript and TypeScript take the unicode escape; Java takes `\\0`, since its lexer "
+      + "resolves a unicode escape before the parser sees the string.",
   );
 });
 
@@ -156,11 +177,30 @@ test("SH804: the reader is not vacuous — it finds the two bytes that were actu
     "and the `\\f` in a Windows path, which had been read aloud here several times as "
       + "`testixture-traits.test.mjs` with nobody asking where the f went");
 
-  assert.deepEqual(offences("cli/src/diff.mjs", `const key = \`a${NUL}b\`;`), [],
-    "while the declared separator is silent in a file that declares it");
-  assert.deepEqual(offences("cli/src/other.mjs", `const key = \`a${NUL}b\`;`),
-    ["cli/src/other.mjs:1 — U+0000"],
-    "and not in one that does not — a seventh adoption of the idiom is a reviewed diff");
-  assert.deepEqual(offences("cli/src/x.mjs", "tabs\tand\rnewlines are fine"), [],
+  // SH859 — no file is exempt any more, and this is what says so: the fixture used to name one of
+  // the six and assert the opposite. Both paths here are deliberately not module names — a `.mjs` in
+  // a sentence is what SH792's reader looks for, and a fixture path is not prose about a module.
+  assert.deepEqual(offences("cli/src/joins-on-a-separator", `const key = \`a${NUL}b\`;`),
+    ["cli/src/joins-on-a-separator:1 — U+0000"],
+    "a file that uses the separator idiom included: the idiom stays and the raw byte does not, "
+      + "because a raw one makes ripgrep report `binary file matches` and print nothing");
+  assert.deepEqual(offences("cli/src/anything", "tabs\tand\rnewlines are fine"), [],
     "and the three a source file may hold stay allowed, or this would report every file");
+});
+
+test("SH859: no file the walk reads is binary to a grep", () => {
+  // The property the escape buys, asked of the artefact rather than of the rule: ripgrep's own test
+  // for binary is a NUL in the bytes it read, and `git grep` and GitHub's code search agree. Asserted
+  // separately from the byte scan above because it is a different claim — that one is about what a
+  // person can SEE, this one about what a tool can READ, and SH804 had only the first.
+  const binary = [];
+  for (const file of TREES.flatMap((tree) => walk(join(ROOT, tree)))) {
+    const relative = file.slice(ROOT.length).replace(/\\/g, "/");
+    if (BUILT.some((prefix) => relative.startsWith(prefix))) continue;
+    if (readFileSync(file).includes(0)) binary.push(relative);
+  }
+
+  assert.deepEqual(binary, [],
+    "each of these answers `binary file matches` and no line — `Grep` for `accentFor` in "
+      + "cli/src/theme.mjs did exactly that, on a 2,000-line JavaScript module (SH859)");
 });

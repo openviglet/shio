@@ -1323,7 +1323,7 @@ export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {
     if (declaration.property.startsWith("--")) continue;
     const slot = accentFor(bucketFor(declaration), declaration, statement);
     if (!slot) continue;
-    const key = `${slot.group} ${slot.role ?? ""} ${declaration.value}`;
+    const key = `${slot.group}\u0000${slot.role ?? ""}\u0000${declaration.value}`;
     // SH834 — where the literal was, not only how often. `body { font-size: 17px }` is the page
     // saying what its own text is; the same value on a card is one step of a scale, and only the
     // selector separates them. The declared half has carried this since SH831.

@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AN — Source the agent's cheapest tool declines to read
-
-- 📋 **SH859** (deps: —) **Six source files carry a raw NUL, so ripgrep calls them binary and prints no matching line** — Grep on theme.mjs answered `binary file matches` and no line; the separator is right and the spelling is not, and P4's cheapest tool is silent on the CLI's two largest modules. → §XLI
-
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH861** (deps: —) **Block Q finished and its closing round reaches no outward surface: shio-site and README predate the bar** — The block-completion sweep names docs-shio, shio-site and README.md, and only the coverage matrix moved when Q closed. → §XLII

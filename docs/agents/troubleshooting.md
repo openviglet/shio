@@ -5,6 +5,26 @@
 
 ## Common Issues & Solutions
 
+### `Grep` answers `binary file matches` on a source file (SH859)
+ripgrep calls a file **binary** when it holds a NUL byte, and then reports that the file matched
+without printing a line. `git grep` and GitHub's code search agree. Measured here: a `Grep` for
+`accentFor` in `cli/src/theme.mjs` answered `binary file matches (found "\0" byte around offset
+49715)` and nothing else, on a 2,000-line JavaScript module — so the cheapest tool P4 names was
+silent on two of the largest files in the CLI, and an agent cannot grep for an absence.
+
+The cause is an idiom this project uses on purpose and keeps: a composite key joined on a byte that
+cannot occur in the data, so two different pairs can never collide into one (P5). What was wrong is
+writing the byte **raw** rather than as an escape, which is byte-identical at runtime. Six files did;
+SH804 had allow-listed them, having weighed whether the byte was deliberate and not what a raw one
+costs. `control-characters.test.mjs` refuses a raw NUL everywhere now, and a second test asserts the
+property itself — no file the walk reads is binary to a grep.
+
+**The escape differs by language, and that is not a style choice.** Java resolves `\uXXXX` in the
+*lexer*, before tokenizing, so the unicode escape in Java source puts a real NUL in the token stream
+and the string literal does not compile: Java takes `\0`. JavaScript and TypeScript take the unicode
+escape, preferred over `\0` there because `\0` followed by a digit is a legacy-octal error under
+strict mode.
+
 ### Optimistic Locking on Startup
 `ShPostTypeImport` sets explicit IDs on `ShPostTypeAttr` via `setId()`. With cascade persist, Hibernate treats these as detached. Solution: use `ShAssignableUuidGenerator` (like Turing's `TurAssignableUuidGenerator`) that allows pre-assigned IDs.
 

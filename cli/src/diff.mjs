@@ -458,7 +458,7 @@ export function invariantDeltas(pages, { floor = INVARIANT_FLOOR } = {}) {
   for (const page of pages) {
     for (const row of page.rows ?? []) {
       if (!row.delta) continue;
-      const key = `${row.fact} ${row.delta}`;
+      const key = `${row.fact}\u0000${row.delta}`;
       let group = groups.get(key);
       if (!group) {
         group = { fact: row.fact, delta: row.delta, claimed: row.claimed !== false, paths: [] };

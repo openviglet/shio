@@ -1542,7 +1542,7 @@ function overlaysToDrop(html, overlays, cut) {
 }
 
 /** Where the sections go, marked in the bytes before anything is cut out of them (SH693). */
-const SECTIONS_MARK = " shio:sections ";
+const SECTIONS_MARK = "\u0000shio:sections\u0000";
 
 /**
  * The kept markup as **N + 1** parts, one per gap between the accepted blocks (SH693, SH763).

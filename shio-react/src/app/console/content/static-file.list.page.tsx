@@ -541,7 +541,7 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
   }, [item.id])
 
   const dirty = alt !== (item.alt ?? "") || caption !== (item.caption ?? "")
-    || tags.join(" ") !== (item.tags ?? []).join(" ")
+    || tags.join("\u0000") !== (item.tags ?? []).join("\u0000")
 
   const addTag = () => {
     const v = tagDraft.trim()

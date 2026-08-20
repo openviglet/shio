@@ -725,34 +725,6 @@ reported (SH853), a floor refuses a value that cannot serve its role (SH852), an
 What remains is a judgement, and the sections under this heading are about making it
 from evidence a page carries rather than from a property of a colour in isolation.
 
-## XLI A separator written as the character it means, not as the escape for it (SH859)
-
-`Grep` for `accentFor` in `cli/src/theme.mjs` answered `binary file matches (found "\0"
-byte around offset 49715)` and printed nothing. The file is JavaScript. A byte scan
-finds six:
-
-    cli/src/theme.mjs   2    cli/src/convert.mjs           2    ShRenderHelpers.java        2
-    cli/src/diff.mjs    1    cli/src/verify-baseline.mjs   1    static-file.list.page.tsx   2
-
-Every one is a deliberate composite-key separator — a row's fact joined to its delta, a
-post's id to its state, the two ends of the `shio:sections` mark — and the choice is
-right: a separator that cannot occur in a CSS value, a title or a tag is what stops two
-keys colliding, which is a P5 property. What is wrong is the **spelling**. Each holds
-the literal control character where the source could have written a unicode escape
-naming it, and ripgrep classifies a file holding one as binary: it reports that the file
-matched and refuses to print the line. So does `git grep`, and so does GitHub's code
-search.
-
-P4 says files beat APIs because `Edit`, `Write` and `Grep` are an agent's cheapest
-tools. Two of the six are the largest modules in the CLI, and on those the cheapest tool
-silently answers nothing — the shape this project keeps paying for, one instrument
-along. The character is invisible in a diff and in a review too, and a formatter that
-normalised control characters would change a key's identity showing nothing.
-
-The escape is byte-identical at runtime, so the fix is six literals. The instrument
-first (SH338): a lint over every tracked source file, failing on a raw control character
-in one.
-
 ## XLII The sweep a finished block owes, and the two surfaces that did not get it (SH861)
 
 Block Q is finished: 136 entries, nothing open, the heading dropped from the roadmap.
