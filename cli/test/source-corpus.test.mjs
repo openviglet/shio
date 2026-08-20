@@ -1087,6 +1087,79 @@ describe("SH838: every rule the theme bridge admits by is reached by a real capt
 });
 
 // -------------------------------------------------------------------------------------------------
+// Group N — which SOURCE shapes this corpus carries, as against which it exercises (SH879)
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * A page title of the shape a CMS or an SEO plugin appends — `Page - Brand`.
+ *
+ * <p>The separator set is the four a real source uses. Matched with spaces around it on purpose: a
+ * hyphen inside a word is a hyphen, and `Trocas e devolucoes` must not read as two halves.</p>
+ */
+const SEO_TITLE = /\s[-—–|·]\s/;
+
+/**
+ * Source shapes no archetype produces, held as a **named list** — group L's device, one level up.
+ *
+ * <p>SH833 asks which section *types* the corpus produces, and SH838 which of the theme bridge's
+ * *rules* a real capture reaches. Both are questions about a mechanism this repository owns. This
+ * one is about the **source**, and it exists because the two tasks before it were found by a person
+ * building a site rather than by any suite: SH873's blueprint menu of SEO titles and SH878's replica
+ * of the same shape sat in code the whole corpus runs over, every run, green.</p>
+ *
+ * <p>Neither could have been caught. Measured by capture over all seven archetypes: <b>two</b> state
+ * any navigation, <b>one</b> yields an entry site-wide enough to become a menu, and <b>none</b>
+ * carries a title of the `Page - Brand` shape — which is the shape both defects were about.
+ * `query-pages` has a `<nav>` of four pagination links that each appear on one page, correctly
+ * declined by the `on` rule, which is why a nav row is not a producer and this asks about the
+ * inventory rather than about the markup.</p>
+ *
+ * <p><b>Empty, and the one it lost is the measurement.</b> `seo-shaped-title` was on this list when
+ * the check landed — the whole corpus had no page titled the way a CMS titles one. `theme-heavy`'s
+ * `/about` is titled `About &amp; contact - Northwind &amp; Co` now, which is what its source's own
+ * menu already called `About`: the gap between the two is the defect, and the archetype states both
+ * halves of it rather than one. Kept as a list rather than deleted now that it is empty, for
+ * `UNPRODUCED_TYPES`' reason — it is the only reader of the other direction, a fixture edit that
+ * costs the corpus its last producer of a shape.</p>
+ */
+const UNPRODUCED_SOURCE_SHAPES = [];
+
+describe("SH879: every source shape this corpus claims to exercise has an archetype producing it", () => {
+  test("the corpus names the shapes it has never captured, and prints both counts", async () => {
+    const produced = new Set();
+    for (const entry of corpus) {
+      const run = await capture(entry);
+      try {
+        const nav = run.inventory.navigation ?? [];
+        const pages = run.inventory.pages ?? [];
+        if (nav.length) produced.add("stated-navigation");
+        // Site-wide by the count SH432 built for the question, which is the one `convert` asks
+        // before writing a MenuItem. A nav whose every row is on one page produces no menu, so it
+        // is not a producer of this shape however many rows it has.
+        if (nav.some((row) => !row.external && Number(row.on) >= pages.length)) {
+          produced.add("site-wide-navigation");
+        }
+        if (pages.some((page) => typeof page.title === "string" && SEO_TITLE.test(page.title))) {
+          produced.add("seo-shaped-title");
+        }
+      } finally {
+        await run.dispose();
+      }
+    }
+    const shapes = ["seo-shaped-title", "site-wide-navigation", "stated-navigation"];
+    const missing = shapes.filter((shape) => !produced.has(shape)).sort();
+    console.log(`SH879: ${shapes.length - missing.length} of ${shapes.length} source shape(s) `
+      + `produced by this corpus${missing.length ? `, missing: ${missing.join(" ")}` : ""}`);
+
+    assert.ok(produced.size, "a run producing no shape at all would make the comparison vacuous");
+    assert.deepEqual(missing, UNPRODUCED_SOURCE_SHAPES,
+      "a shape that has gained an archetype must leave UNPRODUCED_SOURCE_SHAPES and one that has "
+        + "lost its last must join it - the shape a replica meets in the world is not the shape a "
+        + "fixture was written to have, and the difference is where the last two defects lived");
+  });
+});
+
+// -------------------------------------------------------------------------------------------------
 // Group K — the map itself: a declaration nobody reads is a scenario nobody runs
 // -------------------------------------------------------------------------------------------------
 

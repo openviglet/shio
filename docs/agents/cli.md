@@ -2872,6 +2872,26 @@ size now, and group M holds `UNREACHED_BRIDGE_RULES` — empty, kept for group L
 default was filled, which is a fact about the artefact a curator opens. The one thing that reading
 cannot see is a source stating the default's own value, which can only make the list longer.
 
+**And the same question of the *source*, which neither of those could ask (SH879).** Groups L and M
+ask which of **this repository's** mechanisms a capture reaches. Group N asks which **shapes a real
+site has** the corpus can produce at all — and it exists because the two tasks before it were found
+by a person building a site rather than by any suite: SH873's blueprint menu of SEO titles and
+SH878's replica of the same shape sat in code the whole corpus runs over, every run, green. Measured
+by capture over all seven archetypes: **two** state any navigation, **one** yields an entry site-wide
+enough to become a menu, and **none** carried a title of the `Page — Brand` shape — which is the
+shape both defects were about. Three consequences worth stating:
+
+- **A nav row is not a producer.** `query-pages` has a `<nav>` of four pagination links that each
+  appear on one page, which SH878's `on` rule correctly declines. So the check reads the
+  **inventory** rather than the markup, and asks the same question `convert` asks before it writes a
+  `MenuItem`.
+- **One producer is the interesting number, not zero.** `site-wide-navigation` has exactly one
+  archetype, so a fixture edit is all it would take to leave SH878's whole path unexercised with
+  nothing reporting it — which is the direction `UNPRODUCED_SOURCE_SHAPES` exists to watch.
+- **The fixture states both halves of the defect.** `theme-heavy`'s `/about` is titled
+  `About & contact — Northwind & Co` now, and that source's own menu already calls it `About`. The
+  gap between the two *is* SH878, so the archetype carries the defect rather than a proxy for it.
+
 **Both drivers now have a caller, and that was the half that was missing.** `serve` shipped with the
 loader and was called by nothing, so the sentence above — *a divergence between the tiers is a
 statement about the boundary* — was unfalsifiable: one driver ran, and every claim the corpus made

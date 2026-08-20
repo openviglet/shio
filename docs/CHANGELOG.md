@@ -1513,6 +1513,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH842** — Three ids reach the assertion that would have caught each, and two of the three were not in the file the ledger named — the rate the earlier batches measured, met again.
 - **SH843** — Two ledgers carry the declaration markers, so a reason field stops paying debt, and the real figure went from 102 to 103 with one id earning its assertion and one reaching the list.
 - **SH844** — A gate's subject is the code it exercises, so conformance stops being billed for the other two gates' tests, and a reader refuses a subject that reaches into another's suites.
+- **SH879** — The corpus counts which source shapes it can produce, and theme-heavy states the SEO-shaped title none of the seven carried; site-wide navigation has exactly one producer and the run says so.
 
 ## Block X — What the gate round left, and the first P1 gap it did not touch
 

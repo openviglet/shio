@@ -747,3 +747,25 @@ looking at the replica.
 The address skips five numbers because each of them was declared and dropped by a
 shipped block, and an entry citing one still exists: reusing an address would make that
 entry cite this.
+
+## XLVII The corpus, and the shapes it does not carry
+
+SH833 established the rule for section types: a check names any type that loses its last
+producer, because a vocabulary entry nothing in the corpus can produce is a capability
+nothing exercises. The same question about a **source shape** has no instrument, and the
+last two tasks are what that costs.
+
+Both were found by a person building a site, not by a suite. SH873's menu of SEO titles
+and SH878's replica of the same shape were sitting in code the whole corpus runs over,
+every run, green. Neither could have been caught, because the shape that produces them
+is not in the corpus to be captured.
+
+The sections here are about that gap rather than about any one archetype. What makes it
+worth a family is that the failure is silent in the direction nobody checks: a suite
+over seven archetypes reports seven passes whether the eighth shape is missing or merely
+absent, and the count of archetypes is not the count of shapes.
+
+The distinction the entries below turn on is between a fixture that *exercises* a path
+and one that merely *does not fail on it*. A capability with one producer is one edit
+away from having none, and the run that removes the last one is the run that reports
+nothing at all.
