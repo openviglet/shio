@@ -45,6 +45,7 @@
     "post-types/SectionFeatureGrid.json",
     "post-types/SectionHero.json",
     "post-types/SectionLogoWall.json",
+    "post-types/SectionMarkup.json",
     "post-types/SectionRichText.json",
     "post-types/SectionTestimonial.json"
   ],

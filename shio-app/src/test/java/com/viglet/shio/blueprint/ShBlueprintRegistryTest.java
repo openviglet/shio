@@ -141,9 +141,14 @@ class ShBlueprintRegistryTest {
                     // have used one. Their nav was `{{#query type="Page" sort="title"}}`, which is
                     // the shape SH382's helper exists to replace: a page's title is written for
                     // search and became the menu entry, and every page was one, alphabetically.
+                    // SH881 — and `SectionMarkup`, the third file in the same position, which SH873
+                    // walked past. `landing` provisions three types it writes no post of, so
+                    // carry-and-provision-the-whole-vocabulary was already the rule here and one
+                    // file was the exception to it. `blueprint-manifest.test.mjs` is what holds the
+                    // directory and the manifest together now, in both directions.
                     .containsExactly("Page", "Menu", "MenuItem", "SectionCta", "SectionFaq",
                             "SectionFeatureGrid", "SectionHero", "SectionLogoWall",
-                            "SectionRichText", "SectionTestimonial");
+                            "SectionMarkup", "SectionRichText", "SectionTestimonial");
         }
     }
 

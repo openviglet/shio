@@ -366,6 +366,7 @@
 - **SH678** — shio_marketplace is the twelfth tool: it lists what this instance could install and shows one in detail, and it deliberately cannot install, because MCP tools call services in process and an API token reaching /mcp is barred from /api/v2/marketplace - so an install verb would hand that token what the URL layer denies it. The tool measures 96 tokens and took tools/list to 2493, so the ceiling rose to 2500; the trim came first and found nothing in shio_apply or shio_write, but did find a sentence in the new tool restating another tool schema, which paid 15 of the 93.
 - **SH679** — The console has a marketplace page: a filterable grid, a detail dialog carrying the package parameters and its README, a dry run, install and uninstall, under Administration because it installs software rather than authoring anything. The opt-ins a package declares are an amber consent panel rather than a badge, since P7 is about the surprise and not the label, and a refusal shows the server teaching sentence rather than a status. Verified in a real browser: the dry run reported nothing was written, and an install put the package on disk.
 - **SH682** — The marketplace install and uninstall are hasRole("ADMIN") on both chains, with the assertion SH677 could not write: a non-admin is refused and the seeded admin is not.
+- **SH881** — Both packages provision SectionMarkup now, and a check holds directory and manifest together both ways; landing already provisioned three unused types, which settled the direction.
 
 ## Block M — Token economy, measured (SH74)
 

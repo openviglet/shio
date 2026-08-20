@@ -503,7 +503,22 @@ one that already has a helper, a lint rule (SH382's `MenuItem` pointing nowhere)
 support.
 
 Not extended to `convert`'s generated layout, which carries the same query (SH575): a replica has no
-authored menu, and building one from a captured `<nav>` is a different task from this one.
+authored menu, and building one from a captured `<nav>` is a different task from this one — that is
+SH878, which shipped the day after.
+
+**And SH873 swept up two files of three (SH881).** It added the two post-types it needed and looked
+no further, so `SectionMarkup.json` survived in the same position: carried by both section packages,
+regenerated on every `emit`, named by neither manifest, installed by nothing. The direction was a
+real question with two defensible answers — is the directory authoritative or the manifest? — and one
+measurement settled it: **`landing` already provisions `SectionLogoWall`, `SectionRichText` and
+`SectionTestimonial` and writes a post of none of them.** Carry-and-provision-the-whole-vocabulary
+was already the rule, exactly as `emit.mjs`'s own comment argues (*a site that received the full
+vocabulary can grow a testimonial section next month*), and one file was the exception to it. So it
+is listed, and **`blueprint-manifest.test.mjs` holds the directory and the manifest together in both
+directions** — a carried file no manifest names, and a manifest naming a file the package does not
+carry, which fails at apply time on somebody else's instance. Six packages, 26 post-type files, and
+the run prints both counts. Cost measured before the change and after: `build-marketing-site`
+**3928 → 3939**, eleven tokens for one more provision, inside the ceiling SH873 set.
 
 **Measured: `build-marketing-site` 3928 tokens against a 3800 ceiling**, raised to 4000 with the
 reason beside the number. Two more post-types and four more posts is five more ops in the apply's
