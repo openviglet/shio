@@ -86,6 +86,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -93,6 +94,12 @@ from pathlib import Path
 #: The engine, relative to a roadkeep checkout — the same path :data:`roadkeep.installing.
 #: LAUNCHER` names, restated here for the reason the module docstring gives.
 ENGINE_REL = Path("scripts") / "roadkeep.py"
+
+#: Where `roadkeep install --vendor` puts a pinned engine, relative to the repository root
+#: (RK1193). Restated here rather than imported for this file's standing reason: it runs
+#: before an engine has been found, so it may not import the package that names it, and
+#: `tests/test_launching.py` holds the two spellings together.
+VENDORED = ".roadkeep"
 
 #: The name the plugin is published under, matched against the registry key's
 #: ``<name>@<marketplace>`` left half.
@@ -199,25 +206,147 @@ def _cache_engine() -> Path | None:
 
 
 def _resolve() -> Path | None:
-    """An engine to run, or None. Not the deferral check — that is asked first and separately."""
-    home = os.environ.get("ROADKEEP_HOME")
-    return (
-        (_valid(Path(home)) if home else None)
-        or _valid(_repo_root().parent / "roadkeep")
-        or _cache_engine()
-    )
+    """An engine to run, or None. Not the deferral check — that is asked first and separately.
+
+    ``.roadkeep/`` is second and it is the whole of RK1193 as this file sees it: a copy the
+    project vendored is a copy the project *chose*, so it outranks whatever a sibling clone
+    happens to be today and needs no environment variable to be honoured. Below
+    ``$ROADKEEP_HOME``, which stays the explicit override — a caller who names a tree has said
+    which one they mean, and a pin nobody can step over for one command is a pin that gets
+    deleted instead of used.
+    """
+    return next(iter(_candidates()), None)
+
+
+def _candidates() -> list[Path]:
+    """Every engine this file can reach, in resolution order (RK1214).
+
+    Split out of :func:`_resolve` because *existing* turned out to be the wrong test and a
+    caller that needs the next one has to be able to ask for it. The order is unchanged and is
+    the whole of RK1193 and RK1200 as this file sees them.
+    """
+    home = _expanded(os.environ.get("ROADKEEP_HOME"))
+    found = [
+        _valid(Path(home)) if home else None,
+        _valid(_repo_root() / VENDORED),
+        _valid(_repo_root().parent / "roadkeep"),
+        _cache_engine(),
+    ]
+    return [one for one in found if one is not None]
+
+
+#: Seconds an engine may take to say what it is (RK1214). Generous for a cold import on a slow
+#: disk, and short enough that a caller does not read the probe as a hang.
+PROBE_TIMEOUT = 30
+
+
+def _answers(engine: Path) -> bool:
+    """Whether this engine **runs**, asked by running it — because existing is not that.
+
+    Measured in pportal mid-task: a `section add` that had worked four times in the same minute
+    came back as `ImportError: cannot import name NotOpen from roadkeep.backlog`. The engine
+    resolved was a sibling checkout part-way through a refactor. Nothing was written, and the
+    roadmap was left holding a line whose section did not exist — the gate red, mid-task.
+
+    This file's own rules make that a defect rather than bad luck: *never block a turn*, and a
+    missing roadkeep degrades to unenforced and never to a broken session. **A checkout
+    mid-refactor is not missing.** It is found, chosen, and then it explodes — the failure that
+    rule exists to prevent, arriving through the one door it does not cover.
+
+    `--version` and not an import: this file may not import :mod:`roadkeep` (see the module
+    docstring), and a subprocess is also the only thing that proves the *child* will start,
+    which is what every mode here goes on to spawn.
+    """
+    try:
+        done = subprocess.run(
+            [sys.executable, str(engine), "--version"],
+            capture_output=True,
+            timeout=PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+    return done.returncode == 0
+
+
+def _running() -> Path | None:
+    """The first candidate that answers, or None (RK1214).
+
+    Paid by the two modes that are about to do something a broken engine would half-do: a
+    forwarded verb may **write**, and the server is `execv`'d and cannot be taken back. One
+    probe on a healthy machine, because the first candidate answers.
+
+    Not paid by :func:`_guard`, which is the hot path and needs no probe at all: it writes
+    nothing, so it can simply run a candidate and try the next on any failure.
+    """
+    return next((one for one in _candidates() if _answers(one)), None)
+
+
+#: A variable reference in a settings value, in both spellings a file may carry (RK1200).
+#: Two patterns rather than one conditional group, because this file is read by people
+#: debugging a hook and a back-reference in a regex is not what they should have to parse.
+_BRACED = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+_BARE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _expanded(value: str | None) -> str | None:
+    """``ROADKEEP_HOME`` with its variables resolved, or it unchanged (RK1200).
+
+    The harness passes ``env`` values through **verbatim**, and the spelling a project
+    naturally reaches for is the one ``install`` writes into every hook ``command`` in the very
+    same file::
+
+        "env": { "ROADKEEP_HOME": "${CLAUDE_PROJECT_DIR}/.roadkeep" }
+
+    Measured on an adopting project: the braces arrived intact, ``Path(home)`` named nothing,
+    and resolution fell through to the sibling — a neighbour's working tree, a version ahead
+    and mid-refactor for part of a session, during which the guard denying hand edits of the
+    governed files was running a traceback. Nothing said so at any point, because a second
+    candidate answering is indistinguishable from a project that meant to use it.
+
+    ``CLAUDE_PROJECT_DIR`` is answered from :func:`_repo_root` and not only from the
+    environment, which is the half a plain ``expandvars`` gets wrong: the harness interpolates
+    it into the command line without necessarily exporting it, so the name a settings file
+    writes can be one this process cannot look up — and this file already knows the answer.
+
+    A variable nothing resolves is left **as written** rather than emptied. Both fail, and they
+    fail differently: `${NOPE}/.roadkeep` names nothing and falls through, while an empty
+    expansion is `/.roadkeep`, a path at the filesystem root that could exist and would then be
+    run. The silent-wrong-engine outcome is the one this whole task is about.
+    """
+    if not value:
+        return value
+    known = {"CLAUDE_PROJECT_DIR": str(_repo_root())}
+
+    def answer(match: "re.Match[str]") -> str:
+        name = match.group(1)
+        return known.get(name) or os.environ.get(name) or match.group(0)
+
+    return _BARE.sub(answer, _BRACED.sub(answer, value))
 
 
 def _guard(argv: list[str], payload: bytes | None) -> int:
-    """The hook, which is the caller both of the first two rules are about."""
+    """The hook, which is the caller both of the first two rules are about.
+
+    **Falls through on any failure** (RK1214), and needs no probe to do it safely: `guard`
+    writes nothing and the CLI returns 0 on every path it has, so a non-zero exit here means
+    the engine did not work rather than that the hook decided something. Trying the next
+    candidate is therefore free of the one hazard a retry can carry — there is no half-done
+    write to repeat — and the last word is still 0, which is this file's own rule.
+
+    Optimistic rather than probed, because this is the path that runs on every tool call in
+    every session: a healthy machine pays exactly what it paid before, and only a broken
+    engine pays for a second spawn.
+    """
     if _plugin_is_wired(_repo_root()):
         return 0  # the plugin's own hook already runs; do not double-fire.
-    engine = _resolve()
-    if engine is None:
-        return 0  # unenforced beats broken.
-    return subprocess.run(
-        [sys.executable, str(engine), "guard", *argv], input=payload, check=False
-    ).returncode
+    for engine in _candidates():
+        done = subprocess.run(
+            [sys.executable, str(engine), "guard", *argv], input=payload, check=False
+        )
+        if done.returncode == 0:
+            return 0
+    return 0  # unenforced beats broken, whether none was found or none of them ran.
 
 
 def _serve(argv: list[str]) -> int:
@@ -225,8 +354,12 @@ def _serve(argv: list[str]) -> int:
 
     A wired plugin is not asked about: two ``roadkeep`` servers are two entries the harness
     reads separately, and the one thing an exit here cannot mean is *another copy answers*.
+
+    Probed (RK1214), because `execv` cannot be taken back: a broken engine here replaces this
+    process and the harness reads the exit as a crashed server, in the projects where
+    everything was installed correctly.
     """
-    engine = _resolve()
+    engine = _running()
     if engine is None:
         return _missing()
     # `execv`, so the server owns this process's stdio rather than talking through a pipe to a
@@ -240,9 +373,22 @@ def _missing() -> int:
     Named rather than silent, and it names the two things a caller can do. ASCII, like the line
     it replaces: this file writes to whatever console the environment gave it, and a refusal
     that raises on encoding is a refusal that arrives as a traceback.
+
+    **"None that runs" and not "none on disk"** (RK1214). The two are one sentence here because
+    they are one outcome for this caller, and telling them apart is what the second clause is
+    for: a candidate that exists and does not answer is the case that used to arrive as an
+    `ImportError` from inside somebody's half-refactored checkout, and a message that said
+    *no engine found* over a directory plainly sitting there would send its reader looking for
+    the wrong thing.
     """
+    seen = len(_candidates())
+    found = (
+        f"{seen} candidate(s) on disk, none of which ran"
+        if seen
+        else "no engine found"
+    )
     sys.stderr.write(
-        "roadkeep-launch.py: no engine found: set ROADKEEP_HOME to a roadkeep "
+        f"roadkeep-launch.py: {found}: set ROADKEEP_HOME to a roadkeep "
         "checkout, or put one beside this repository as ../roadkeep\n"
     )
     return 2
@@ -253,8 +399,16 @@ def _forward(argv: list[str]) -> int:
 
     No payload is read here, unlike ``guard``: a stream is readable once and the child is the
     one that wants it, so stdin is inherited and `add --why -` reaches the engine's own reader.
+
+    Probed and never retried (RK1214), which is the split this task turns on: a forwarded verb
+    may **write**, so running one and trying the next on failure could repeat a half-done
+    write — the one hazard `guard`'s fall-through does not have. Asking first costs one spawn
+    on a path a person typed, and it is the path the measured incident came through: a `section
+    add` that had worked four times in the same minute returned an `ImportError` out of a
+    checkout mid-refactor, wrote nothing, and left the roadmap pointing at a section that did
+    not exist.
     """
-    engine = _resolve()
+    engine = _running()
     if engine is None:
         return _missing()
     return subprocess.run([sys.executable, str(engine), *argv], check=False).returncode
