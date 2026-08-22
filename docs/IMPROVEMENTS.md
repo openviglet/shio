@@ -904,3 +904,308 @@ question and prints the answer with the same confidence.
 What makes it worth a family rather than a line is that the symptom does not look like a
 missing rule. It looks like arithmetic: a count over a denominator that no longer means
 what the reader assumes, on the one mode the rule exists for.
+
+## LIV The console adopts the shared bento layer (Block AQ)
+
+Shio and Turing are the same design system's two consumers and they do not look alike.
+All 24 of Shio's ui files are one-line re-exports of the package, so the primitives are
+already shared; what is not shared is the layer above them. Turing's bento redesign -
+the airy hero, the frosted hover-lift card, the mosaic, the scroll-linked save bar - is
+23 components inside that product's tree, and Shio's console has none of it: 40 of its
+43 pages render a console PageHeader, 42 render a flat Card, three carry a sticky save
+bar with no morph. This block does the half that has to happen before a single page
+changes. The package ships the layer; Shio installs it, builds a parallel shell to
+migrate into, declares its surfaces once for the rail and the palette, moves its brand
+orange into a token, and translates the chrome. Four of the twelve tasks are instruments
+rather than features, and they come first for the reason this project files that
+argument every time: a count of what is still console chrome is what says how big this
+is, and a textual render proof is what says a migrated surface is right without asking
+somebody to look at it.
+
+### LIV.1 Count the console chrome before changing any of it (SH886)
+
+Shio's own rule is that when a task says "and whatever a grep turns up", the grep is the
+deliverable and it lands before the fixes. This block is that shape at scale. The
+numbers as they stand: 40 of the 43 console pages import PageHeader, 42 import Card,
+three import the console sticky save bar, and none import a SectionCard or a GridList
+because this console hand-rolls those layouts. Those counts came from a grep run once,
+by hand, and nothing re-runs them. Write the lint that does: walk the console tree,
+classify each page by the chrome it renders, and hold the still-console list as an
+asserted set rather than as a ceiling, so one migrated slice cannot pay for the next. It
+lands red by construction, and its count is what scopes both blocks.
+
+### LIV.2 Install the layer and prove it renders here (SH887)
+
+Shio already depends on the design system and imports its styles from index.css, so the
+mechanism is in place; what is new is the bento subpath and its stylesheet. Add both,
+then render a throwaway page composing a hero, a form section, an entity tile and a list
+mosaic, and look at it. This is deliberately a task rather than a step inside the next
+one. The package's bento layer will have been exercised by exactly one product until
+Shio touches it, and the first consumer of a newly extracted layer is what finds the
+assumptions the extraction carried over - a context that was always present, a token
+that was always defined, a class the other application's global CSS happened to supply.
+
+### LIV.3 A parallel shell, because reversibility is the point (SH888)
+
+The bento shell has no sidebar provider and no breadcrumb bar; Shio's console root
+mounts a SidebarProvider around everything and its PageHeader calls SidebarTrigger.
+Those are not compatible, and any bento component reaching for the sidebar context
+inside the console renders blank. So the migration cannot be done in place, one page at
+a time, without leaving the console broken in the middle. Build the bento route tree
+beside the console one, mounting the package's shell - rail, user menu, back-to-top -
+and let each surface move when its own task ships. Every slice is then independently
+reversible, which across 43 pages is worth more than the temporary cost of two route
+trees.
+
+### LIV.4 Declare each surface once (SH889)
+
+The rail and the command palette both need to know what surfaces exist, what they are
+called, which group they belong to and what privilege they require. Declared twice they
+disagree within a release; declared in the package they would be Turing's. So the
+package supplies a typed entry shape and both components that read it, and Shio supplies
+its own array. Getting this right early matters more than it looks: it is the file every
+one of the fourteen surface tasks in the next block appends to, so a shape settled after
+five of them have shipped is a shape five tasks have to be reopened for.
+
+### LIV.5 The orange belongs in a token (SH890)
+
+Shio's console header draws its icon chip with a hardcoded orange-to-amber gradient
+inside an orange ring, in a component Shio owns. After this block that chip is drawn by
+a shared component, and a hardcoded hue there is one product's colour imposed on the
+other. The package defines a brand accent as tokens; Shio sets it once at the root and
+the tint, the ring and the gradient stops derive from it. Do this before the surfaces
+migrate rather than after, because the alternative is 43 pages of per-call-site colour
+overrides written by somebody who could not find the token.
+
+### LIV.6 The chrome speaks Portuguese too (SH891)
+
+The console ships English and Portuguese and merges its own bundle over the package's
+base translations. The bento chrome adds strings that are the package's rather than
+Shio's: a palette placeholder and its no-results text, the rail labels, the shortcuts
+dialog, and Save and Cancel on the morphing bar. Where the package carries them Shio
+inherits both languages; where it does not, Shio adds them. Either way the object-form
+default convention applies, so a missing key renders as words rather than as an
+identifier, and both locales are updated in the same commit that adds a key.
+
+### LIV.7 One form, two chromes, no forked fields (SH892)
+
+The post editor, the post-type editor and the site editor are the three largest forms in
+this product. The post editor alone builds its schema at runtime from the post type and
+renders fifteen dynamic widgets through a widget map, each reading a widgetSettings
+value the backend can return as the literal string "null". None of that logic changes
+here and none of it should be touched: the package's chrome adapter renders the same
+fields inside frosted sections instead of console cards, decided by a provider at the
+top of the page. Adopt it before the post and post-type surfaces migrate, or a parallel
+route forks the most defect-prone code in the console.
+
+### LIV.8 An accessibility baseline that is checked, not remembered (SH893)
+
+The bento layer's accessibility rules are specific and easy to break by accident:
+icon-only controls need an aria-label, decorative glyphs need aria-hidden with an
+adjacent screen-reader span because a bare SVG's label is not reliably announced, ARIA
+values must be string literals rather than boolean expressions, and every animation must
+sit inside the reduced-motion guard. They held across 118 pages in one product because
+that product's team read one file. Shio has its own lint suite and its own conventions
+and none of them know these rules. Add the checks here rather than assuming a package
+gate covers a consumer's own use of it.
+
+### LIV.9 A lint, since discipline is not an instrument (SH894)
+
+All 24 files under components/ui are one-line re-exports of a design-system component -
+zero forks, which is a better state than the other consumer's and one reached by
+discipline alone. Discipline is what fails first under time pressure, and this block is
+about to put a large shared surface within reach: the moment a bento hero needs one prop
+it does not have, the cheapest path is a local copy. The package emits its export list
+as a build artefact for exactly this. Run the lint in Shio's own CI so a re-declaration
+fails a build and names the import that replaces it, and land it in this block rather
+than after the surfaces move.
+
+### LIV.10 The path to try a package change (SH895)
+
+copy-ds.cmd builds the design system and copies its dist into
+shio/shio-react/node_modules, a path missing the version directory, so it has not
+resolved since the checkout became shio/2026.3. Every task across these two blocks is a
+change that has to be seen in this application before it is published, and there are
+enough of them that publish-and-look is not a workable loop: it is slow, it burns
+versions of a package a second product also installs, and it makes a bad move expensive
+to undo. Replace it with a workspace link or a file: override that resolves the checkout
+rather than a hardcoded directory.
+
+### LIV.11 Cheap textual proof that a surface renders (SH896)
+
+P9 asks for cheap textual proof instead of asking somebody to look, and this project
+already does that for the site renderer with a render digest. The console has nothing
+equivalent, so the evidence that a migrated page is correct is a person opening it.
+Forty-three of those judgements, each by eye and each unrepeatable, is the perception
+loop left open on the largest single change the console has had. Emit a digest of a
+console surface's resolved structure - the chrome it composed, the sections it rendered,
+the classes carrying the frosted surface and the lift - so a slice can be compared
+before and after, and so a difference has a name when there is one.
+
+### LIV.12 The one script that opens a real page (SH897)
+
+e2e/console-check.mjs is the only thing in this repository that drives the console in a
+browser, and every route it knows is a console route. Left as it is, it will run green
+through the whole of the next block while never visiting a single migrated surface,
+which is worse than not running at all: a green check is counted as evidence. Teach it
+the bento route tree, and give it the shape of assertion this migration actually needs -
+that the hero is present, that the frosted card is frosted, and that the save bar
+appears on scroll and not before it.
+
+## LV The curator's console, surface by surface (Block AR)
+
+Forty-three console pages, migrated behind the parallel route the previous block builds,
+in an order chosen by what each slice teaches the next. Home first, because it is cheap
+and it decides whether the redesign reads as real; then sites, which settle the list
+shape for the ten list screens after it; then the content browser, where a curator
+actually spends the day. Posts and post types come next and are the hard ones - the post
+editor carries fifteen dynamic widgets whose field logic must not be rewritten, which is
+what the chrome adapter is for. Admin follows in three slices sized by how alike their
+pages are. The Universal Editor is deliberately late: it is the one surface where
+swapping the shell can break behaviour rather than appearance, because its preview
+bridge reads the chrome around it. The block ends with the three tasks that make a
+migration finished rather than merely done - the cutover itself, the retirement of the
+console shell, and the published documentation, which after the cutover describes a
+product that no longer exists.
+
+### LV.1 Home, the surface that decides whether this reads as real (SH898)
+
+console/home/home.page.tsx is a single page and the first thing a curator sees after
+login. It is also the cheapest possible proof that the shell, the tokens, the
+translations and the digest all work together, which is why it goes first - not because
+of its importance. Compose it from the package's tiles and count tiles rather than from
+Card, put its heading in a BentoHero, and take the first before-and-after digest here.
+If something about the extracted layer is wrong, it is far cheaper to find on one page
+than on the four-page site slice behind it.
+
+### LV.2 Sites, where the list shape is settled (SH899)
+
+Four pages: the site list, new, edit and import. The list is the first of roughly ten
+list screens in this console, and whatever shape it takes is the shape the rest will
+copy, so this slice deserves more attention than its size suggests - what a tile
+carries, what an empty result says, where the New affordance sits, whether a failed load
+offers a retry. Use the package's list page rather than hand-rolling the grid the way
+the console does today. The edit page is the first entity-shell candidate: a site has a
+title, a description and an identity that belongs in a hero rather than in the form.
+
+### LV.3 The content browser, where the day is spent (SH900)
+
+object.children.page.tsx and the two folder pages are the console's main workspace: the
+tree, the listing, the selection, copy and move, and the actions that hang off a row. It
+is the surface a curator has open most of the time, so a half-migrated console shows
+here first and worst. It is also the least entity-shaped screen in the product - a
+browser is neither a detail page nor a mosaic - so this slice is where the shared
+vocabulary either stretches to a real working surface or is found not to, and that is
+much better known before admin than after it.
+
+### LV.4 Posts, the heaviest forms in the product (SH901)
+
+post.edit, post.new and the post-type selector. The editor builds its schema at runtime
+from the post type and renders fifteen dynamic widgets through a widget map, each
+reading widgetSettings that the backend can return as the literal string "null". None of
+that logic changes here and none of it should be touched: the chrome adapter from the
+previous block renders the same fields inside frosted sections. What does change is the
+identity - title, status, schedule - which moves into the hero, and the save bar, which
+becomes the scroll morph. This is the slice most likely to reveal that the adapter needs
+a prop it does not have.
+
+### LV.5 Post types, the editor behind every post (SH902)
+
+Three pages, and the edit page carries the attribute editor: the ordered list of fields,
+their widgets, their settings, and a console sticky save bar with no scroll morph. It is
+the second most visited editor after posts and the one where a curator makes changes
+that reshape every post of that type, so an unambiguous save affordance matters more
+here than elsewhere. Post types are also the one name-keyed surface in the product,
+which means the identity in the hero is a name rather than an id - worth checking
+against the shell's inline-edit behaviour rather than assuming.
+
+### LV.6 The three surfaces where empty is normal (SH903)
+
+Search results, the trash and the static-file list. All three routinely render nothing,
+and all three say so today in their own way with their own layout, because the console
+has no shared empty state. The package has one, and this is the slice that proves it: an
+empty search is not the same message as an empty trash, so the component has to carry a
+title and a description per use rather than one generic line. The static-file list also
+holds the only upload affordance in the console, which is a tile shape no other slice
+exercises.
+
+### LV.7 Identity: users, groups and roles (SH904)
+
+Six pages, three list-and-form pairs, and the clearest case in the product for the
+entity shell: each of these entities has a title, a description and an enabled state,
+which is exactly the identity the shell lifts out of the form and into the hero.
+Migrating them is mostly deletion - the fields that move up stop being form fields, and
+the delete flow the shell owns replaces three hand-rolled dialogs. Take this slice
+before the eleven infrastructure pages, because it is where the shell's assumptions are
+tested against a small, well-understood set of entities.
+
+### LV.8 Infrastructure, eleven pages that are nearly the same page (SH905)
+
+API tokens, auth providers, exchange providers, site webhooks, email configuration and
+tenants: five list-and-form pairs and a settings page. They are the most repetitive
+surface in the console, which is why they come as one slice and why they repay the
+shared list and shell more than anything else here. The risk in a slice this size is
+that it becomes a mechanical sweep with no attention left over, so run the render digest
+between each pair rather than only at the end, and notice when one of them needs
+something the shell does not have instead of working around it eleven times.
+
+### LV.9 Marketplace, the review queue and the activity log (SH906)
+
+Three pages with three bespoke layouts and little in common. The review queue matters
+most: it is the curator's approval surface, the human half of the agent-native design,
+and where a curator goes when they do not trust what an agent did. It should not be the
+last part of the console that still looks like the old one. The activity log and the
+marketplace are both read-mostly surfaces, which is the page shape the package covers
+least well - a hero over a table is not a mosaic - so expect this slice to want a plain
+section rather than tiles, and let it have one.
+
+### LV.10 The Universal Editor, where chrome and behaviour meet (SH907)
+
+editor-sites and visual-editor wrap a preview iframe and a bridge: the editor annotates
+the rendered page with data attributes and the console reads and writes through them.
+Every other slice in this block risks appearance; this one risks behaviour, because the
+bridge depends on what surrounds the frame - the sizing, the scroll container, the
+overlay stacking - and the bento shell changes all three. It is deliberately late in the
+order, so the shell has been exercised by nine slices before it reaches the one surface
+that can break silently. It is also the slice where a digest is least sufficient and a
+real click-through is required.
+
+### LV.11 The last two, and the one nobody navigates to on purpose (SH908)
+
+The GraphiQL page and the not-found page. Both are mostly something the console does not
+control - a third-party editor in one case and nothing at all in the other - which makes
+them the two surfaces where the shell is almost the whole page. The not-found page
+matters more than its content suggests: during a cutover it is where a stale bookmark,
+an old link in an email, or a redirect that has not landed yet puts a user, so it is the
+surface most likely to be seen in the wrong chrome by somebody who did not choose to be
+there.
+
+### LV.12 Make the choice, and make it once (SH909)
+
+With every surface migrated, the console still mounts two route trees, two shells and
+two sets of chrome. The parallel route was chosen for reversibility, and a reversal
+nobody claims becomes a permanent second product: the other console has been in exactly
+this state, with forty pages beside its migrated ones, long enough for it to look
+normal. Make bento the default, redirect the console routes to their bento equivalents
+rather than dropping them so that bookmarks survive, and confirm through the digest and
+the browser check that no route still answers with the old shell.
+
+### LV.13 Retire what nothing renders (SH910)
+
+After the cutover the console shell, its sidebar, its page header and the breadcrumb
+chrome are still declared and still compile, and nothing reaches them. Left there they
+are what the next new page copies, because they are what a grep for an existing pattern
+finds first. They are also Shio's last use of the design system's console-era exports,
+so removing them here is what lets the package deprecate that era without breaking a
+live consumer. Delete them together with the console route tree, and let the duplication
+lint confirm nothing is quietly re-importing what was removed.
+
+### LV.14 The documentation describes the product that was replaced (SH911)
+
+The published end-user documentation walks a curator through the console: where the
+sidebar is, what the header shows, how the breadcrumb works - and it shows all of it in
+screenshots. After the cutover none of that is what a curator sees. This project has
+been here before, with a documentation set that contradicted every block shipped under
+it, and the lesson recorded then was that a docs debt of this shape is noticed by nobody
+working in the code. Take it in the same block as the cutover rather than as a
+follow-up, since a follow-up is what it became last time.

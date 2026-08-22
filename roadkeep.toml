@@ -382,3 +382,8 @@ retired = "🗑"
 # that point at them resolve instead of reading as "in neither file".
 marker = false
 symptom = false
+
+# Acceptance criteria (RK). A non-goal says what is not built; nothing said what would
+# make a block done, so the only test left was a line count reaching zero. Declared at all
+# means governed; both limits stay at their defaults.
+[criteria]

@@ -1604,3 +1604,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 - 🗑 **SH877** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, with the tenant it depended on never sought.
 - 🗑 **SH876** — abandoned: AEM integration is not being pursued: filed and withdrawn on instruction the same day, 2026-08-20, before the run it depended on was ever made.
+
+## Block AQ — The console adopts the shared bento layer (§LIV)
+
+## Block AR — The curator's console, surface by surface (§LV)
+
