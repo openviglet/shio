@@ -20,7 +20,6 @@
 - 📋 **SH892** (deps: viglet-design-system VDS22) **the post, post-type and site editors are the heaviest forms here and a parallel route would fork all three** — The chrome adapter renders one form in either shell, so the field logic is written once. → §LIV.7
 - 📋 **SH893** (deps: SH888) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
 - 📋 **SH894** (deps: viglet-design-system VDS5) **nothing fails when a component is re-declared here instead of imported from the design system** — All 24 ui files are shims by discipline alone, and discipline is not an instrument. → §LIV.9
-- 📋 **SH895** (deps: —) **copy-ds.cmd writes into shio/shio-react, a path without the version directory, so it cannot resolve** — Every task in these two blocks is a package change that has to be tried here before it is published. → §LIV.10
 - 📋 **SH896** (deps: SH886) **no textual proof that a migrated surface renders: the only evidence a page looks right is a person looking** — P9 asks for cheap textual proof, and 43 surfaces judged by eye is the perception loop left open. → §LIV.11
 - 📋 **SH897** (deps: SH888) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
 
@@ -102,12 +101,6 @@
 - **A component re-declared here fails this repository's CI** The export-manifest lint
   runs on every push and names the import that replaces the local copy, and all 24
   existing shims still resolve.
-
-## Done when — SH895
-
-- **A package change can be seen in this console without publishing** One documented
-  command resolves the design-system checkout rather than a path without the version
-  directory, and it works from a clean clone.
 
 ## Done when — SH896
 

@@ -1607,6 +1607,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
+- **SH895** — copy-ds.cmd forwards to the design system's own use:local, which resolves the consumer and the install path instead of hardcoding either, and refuses a push onto a stale tree.
+
 ## Block AR — The curator's console, surface by surface (§LV)
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)

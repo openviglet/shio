@@ -1020,17 +1020,6 @@ as a build artefact for exactly this. Run the lint in Shio's own CI so a re-decl
 fails a build and names the import that replaces it, and land it in this block rather
 than after the surfaces move.
 
-### LIV.10 The path to try a package change (SH895)
-
-copy-ds.cmd builds the design system and copies its dist into
-shio/shio-react/node_modules, a path missing the version directory, so it has not
-resolved since the checkout became shio/2026.3. Every task across these two blocks is a
-change that has to be seen in this application before it is published, and there are
-enough of them that publish-and-look is not a workable loop: it is slow, it burns
-versions of a package a second product also installs, and it makes a bad move expensive
-to undo. Replace it with a workspace link or a file: override that resolves the checkout
-rather than a hardcoded directory.
-
 ### LIV.11 Cheap textual proof that a surface renders (SH896)
 
 P9 asks for cheap textual proof instead of asking somebody to look, and this project
