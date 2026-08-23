@@ -20,6 +20,7 @@
 - 📋 **SH893** (deps: SH888) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
 - 📋 **SH894** (deps: viglet-design-system VDS5) **nothing fails when a component is re-declared here instead of imported from the design system** — All 24 ui files are shims by discipline alone, and discipline is not an instrument. → §LIV.9
 - 📋 **SH897** (deps: SH888) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
+- 📋 **SH915** (deps: —) **the console cannot import the bento layer: the published package has no /bento, so Blocks AQ and AR cannot start** — VDS8 shipped that subpath in 2026.3.3, which is unpublished, so the roadmap names a delivered task as the blocker and the real one is nowhere. → §LIV.13
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
