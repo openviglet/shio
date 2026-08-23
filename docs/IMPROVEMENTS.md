@@ -922,18 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.1 Count the console chrome before changing any of it (SH886)
-
-Shio's own rule is that when a task says "and whatever a grep turns up", the grep is the
-deliverable and it lands before the fixes. This block is that shape at scale. The
-numbers as they stand: 40 of the 43 console pages import PageHeader, 42 import Card,
-three import the console sticky save bar, and none import a SectionCard or a GridList
-because this console hand-rolls those layouts. Those counts came from a grep run once,
-by hand, and nothing re-runs them. Write the lint that does: walk the console tree,
-classify each page by the chrome it renders, and hold the still-console list as an
-asserted set rather than as a ceiling, so one migrated slice cannot pay for the next. It
-lands red by construction, and its count is what scopes both blocks.
-
 ### LIV.2 Install the layer and prove it renders here (SH887)
 
 Shio already depends on the design system and imports its styles from index.css, so the

@@ -620,3 +620,35 @@ Two things that test checks which a pair of `grep`s would not:
   memo that reads the flag without listing it freezes whatever was true on first paint — which is
   `undefined`, and would hide the item on a *multi-tenant* install instead. The gate has to be able
   to change its mind.
+
+## The console-chrome census — what scopes the bento migration (SH886)
+
+`shio-react/test/console-chrome-census.test.mjs` walks `src/app/console/**/*.page.tsx` and files
+each page into one of two eras. The classifier is a single import, and the design system chose it
+deliberately: bento ships as the `@viglet/viglet-design-system/bento` **subpath** rather than
+through the root barrel, so — in `src/bento/index.ts`'s own words — "an import that says
+`@viglet/viglet-design-system/bento` states which era a page belongs to, which is something a
+reviewer and a lint can both see."
+
+At the census's first run: **43 pages, 0 on bento** — 39 on `PageHeader`, 38 on `@/components/ui/card`,
+3 on `StickySaveBar`, 1 on the sidebar provider, and 3 rendering no chrome this reader knows
+(`admin.root.page.tsx` is a bare `Outlet`, `not-found.page.tsx` a `Button`, `visual-editor.page.tsx`
+its own frame). Those last three are console-era **by absence**, and an empty marker list is how
+that is spelled — drop them and the census silently shrinks by three.
+
+**Two of §LIV.1's three opening figures were wrong.** It said 40 pages on `PageHeader` and 42 on
+`Card`; the real numbers are 39 and 38. That grep ran once, by hand, and nothing re-ran it. This is
+the whole argument for the file: a migration scoped by a number nobody recomputes has no end, and a
+*wrong* number is worse than none, because it reads as measured.
+
+**A named list, not a ceiling.** `STILL_CONSOLE` maps every unmigrated page to the chrome it
+renders, so a migration fails the reader *by name* and lands as a diff somebody reviews. A ceiling
+would let one migrated slice pay for leaving the next page alone — the same reason
+`cli/test/assertion-debt.test.mjs` holds a list. Migrating a page means deleting its line and adding
+its name to `MIGRATED`; there is no way to bank progress.
+
+Two guards keep it from going quietly blind. The walk must still find more than 40 pages, or an
+emptied directory would read as a finished migration. And **every probe must match something**: a
+renamed import path would otherwise turn a probe into a permanent zero, retiring that chrome from
+the census rather than from the console — the count would fall with nothing migrated. When the last
+page carrying a probe really is migrated, the probe is deleted in that same diff.

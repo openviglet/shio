@@ -1608,6 +1608,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
 - **SH895** — copy-ds.cmd forwards to the design system's own use:local, which resolves the consumer and the install path instead of hardcoding either, and refuses a push onto a stale tree.
+- **SH886** — A census walks the 43 console pages and holds every unmigrated one by name and by the chrome it renders, so a migrated slice cannot pay for the next: 43 pages, 0 on bento, 39 on PageHeader and 38 on Card — two of the three figures §LIV.1 opened with were wrong, having been grepped once by hand and never recomputed.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

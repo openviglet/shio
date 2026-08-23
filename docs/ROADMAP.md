@@ -11,7 +11,6 @@
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
-- 📋 **SH886** (deps: —) **nothing counts how much console chrome the console still renders, so the migration has no size and no end** — The instrument precedes the fixes: a held list of every page on PageHeader or a bare Card scopes the rest. → §LIV.1
 - 📋 **SH887** (deps: viglet-design-system VDS8) **the console imports no bento component, so two products share a design system and look unrelated** — The layer must render here before a route is built on it, and only the package can ship it. → §LIV.2
 - 📋 **SH888** (deps: SH887) **there is no bento route tree: the console root mounts a SidebarProvider every bento component refuses** — A parallel shell is what makes each surface reversible, which a 43-page migration needs most. → §LIV.3
 - 📋 **SH889** (deps: SH888) **Shio has no nav declaration a rail and a palette can share, so each surface would be listed twice** — The package supplies the schema and both readers; declaring a surface once is what makes them agree. → §LIV.4
@@ -20,7 +19,7 @@
 - 📋 **SH892** (deps: viglet-design-system VDS22) **the post, post-type and site editors are the heaviest forms here and a parallel route would fork all three** — The chrome adapter renders one form in either shell, so the field logic is written once. → §LIV.7
 - 📋 **SH893** (deps: SH888) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
 - 📋 **SH894** (deps: viglet-design-system VDS5) **nothing fails when a component is re-declared here instead of imported from the design system** — All 24 ui files are shims by discipline alone, and discipline is not an instrument. → §LIV.9
-- 📋 **SH896** (deps: SH886) **no textual proof that a migrated surface renders: the only evidence a page looks right is a person looking** — P9 asks for cheap textual proof, and 43 surfaces judged by eye is the perception loop left open. → §LIV.11
+- 📋 **SH896** (deps: SH886 ✅) **no textual proof that a migrated surface renders: the only evidence a page looks right is a person looking** — P9 asks for cheap textual proof, and 43 surfaces judged by eye is the perception loop left open. → §LIV.11
 - 📋 **SH897** (deps: SH888) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
 
 ## Block AR — The curator's console, surface by surface (§LV)
@@ -47,12 +46,6 @@
 - 📋 **SH914** (deps: —) **a post-type's own fields reach Turing folded into text, and numbers and booleans reach it not at all** — A school filtering by level, campus or tuition needs those as typed fields, and the mapper folds prose and drops every number on purpose. → §LVI.1
 
 ## Priority
-
-## Done when — SH886
-
-- **The migration has a number that cannot be gamed** A lint classifies every console
-  page by the chrome it renders and holds the still-console list as an asserted set
-  rather than a ceiling, so one slice cannot pay for the next.
 
 ## Done when — SH887
 

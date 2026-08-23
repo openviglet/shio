@@ -120,6 +120,12 @@ const CLAIMS = {
       + "not, in one of the two directions — the defect SH789 found and fixed. Verified now: "
       + "ShDeclaredRedTest holds both an undeclared-red and an outlived-declaration check",
   },
+  "cli/test/script-paths.test.mjs -> assertion-debt.test.mjs": {
+    kind: Kind.SELF,
+    why: "`REM` lines are cut from its own walk, citing how assertion-debt separates mentioning an "
+      + "id from asserting it — a precedent for the distinction, not a promise that file reads a "
+      + "single `.cmd`. Without the exemption the fix could not document the path it replaced",
+  },
   "cli/test/snapshot.test.mjs -> browser-refusal.test.mjs": {
     kind: Kind.REVERSE,
     why: "this test claims to notice something the other's resolution guard cannot, by using the "
