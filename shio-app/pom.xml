@@ -162,37 +162,25 @@
             <artifactId>hazelcast-all</artifactId>
             <version>4.2.8</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-core</artifactId>
-            <version>3.3.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-parsers</artifactId>
-            <version>3.3.2</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-parser-pdf-module</artifactId>
-            <version>3.3.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-parser-text-module</artifactId>
-            <version>3.3.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-parser-ocr-module</artifactId>
-            <version>3.3.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-parser-microsoft-module</artifactId>
-            <version>3.3.2</version>
-        </dependency>
+        <!--
+          SH916 — the six org.apache.tika artifacts that used to sit here are gone.
+
+          They anticipated an answer Shio did not take. Extracting an attachment's text locally is
+          the obvious design, and the dependencies were added before anybody checked whether Turing
+          already could. SH913 found that it can — `POST /api/ocr/file`, through the same
+          turing-java-sdk this app already indexes with, and strictly more capable, since a scanned
+          page Tika reads as blank comes back with text. Nothing in src/main ever imported Tika.
+
+          Removing them took 23 compile-scope artifacts off the classpath: tika's six, pdfbox's
+          seven, and the four BouncyCastle jars pdfbox pulls for encrypted PDFs. BouncyCastle was
+          transitive from tika-parser-pdf-module and from nothing else (`dependency:tree
+          -Dincludes=org.bouncycastle` named one parent), and no code registers it as a JCE
+          provider, so the JDK's own providers carry TLS and mail exactly as before.
+
+          jai-imageio below is NOT part of this and stays: it is a direct declaration, not a Tika
+          transitive, and its readers are SPI-registered — a JPEG2000 upload needs them to be read
+          at all, which is a use no grep for an import would ever show.
+        -->
         <dependency>
             <groupId>com.github.jai-imageio</groupId>
             <artifactId>jai-imageio-core</artifactId>

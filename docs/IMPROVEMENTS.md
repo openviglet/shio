@@ -1209,32 +1209,6 @@ than as an error anybody sees.
 
 ## LVII What the Turing round left in the build and in a guard
 
-### LVII.1 A parser Shio declared and never called (SH916)
-
-`shio-app/pom.xml` declares six `org.apache.tika` artifacts — core, the parsers POM, and
-the pdf, text, ocr and microsoft modules — plus `jai-imageio-core`. Nothing in
-`src/main/java` imports any of them. The only match for "tika" in main is a sentence in
-`ShTuringTextExtractor` explaining why it is *not* used.
-
-They were a reasonable bet: extracting an attachment's text locally is the obvious way
-to do it, and the dependencies were added before anybody checked whether Turing already
-could. SH913 found that it can, chose `POST /api/ocr/file`, and the bet stayed on the
-classpath.
-
-Measured rather than asserted: `dependency:list` shows **23 compile-scope artifacts**
-under tika, pdfbox, bouncycastle and jai-imageio. They are in every build, every
-container image and every dependency scan this project answers for, and a CVE in any of
-them is a CVE somebody has to triage against code that never runs.
-
-Removing them is not quite a delete, which is why this is a task rather than a tidy-up.
-Two of the transitive families can be needed without being imported: BouncyCastle
-registers as a JCE provider, and `jai-imageio-core` contributes `ImageIO` readers that
-the image-transform path may pick up reflectively for formats the JDK does not decode.
-So the deliverable is: drop the declarations, run the full suite **and** the
-image-transform tests, and confirm no format that worked stops working — or keep
-whichever of the two turns out to be load-bearing, with a line here saying which and
-why.
-
 ### LVII.2 A guard that counts catches where it means decisions (SH917)
 
 `ShSilentCatchInventoryTest` holds a population so that adding a silent catch is a diff

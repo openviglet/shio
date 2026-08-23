@@ -1621,3 +1621,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AT — What the Turing round left in the build and in a guard
 
+- **SH916** — The six org.apache.tika declarations are gone, taking 23 compile-scope artifacts off the classpath — tika's six, pdfbox's seven and the four BouncyCastle jars pdfbox pulls for encrypted PDFs, which dependency:tree confirmed came from tika-parser-pdf-module and nothing else. Nothing in src/main ever imported one; they anticipated the local parse SH913 did not take. ShDeclaredDependencyUseLintTest now fails the next such declaration on the day it is added, and it is opt-in per group rather than a whole-POM sweep, because three shapes here are load-bearing with no import at all — an ImageIO SPI, a JDBC driver named in a URL string, and a Spring starter. jai-imageio is one of those and stays: it is a direct declaration rather than a Tika transitive, and a JPEG2000 upload cannot be read without its SPI readers.

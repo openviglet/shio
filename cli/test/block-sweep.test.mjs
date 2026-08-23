@@ -81,6 +81,16 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AS: {
+    swept: true,
+    why: "SH912, SH913 and SH914 all change what a reader gets out of search, so docs-shio's "
+      + "COVERAGE.md Turing row names each: a failed push retried before it is reported, an "
+      + "attachment's text reaching the index through Turing's OCR, and a post-type field declaring "
+      + "itself indexed with a type so a facet can filter on it. README and shio-site are NOT "
+      + "moved and that is the finding rather than an omission — neither documents Turing "
+      + "configuration at all; the README links the product and shio-site points at the roadmap, "
+      + "so there was no sentence in either that this block made untrue",
+  },
   S: {
     swept: true,
     why: "SH861 is itself an edit to the public site — the /replicate page gained the `judge` phase "

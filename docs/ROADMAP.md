@@ -39,11 +39,8 @@
 - 📋 **SH910** (deps: SH909) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
-## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
-
 ## Block AT — What the Turing round left in the build and in a guard
 
-- 📋 **SH916** (deps: —) **Tika and its PDF stack are declared and used by nothing, so every build and image carries a parser Shio does not call** — SH913 chose Turing's OCR over a local parse, and the six Tika artifacts that anticipated the other answer stayed behind. → §LVII.1
 - 📋 **SH917** (deps: —) **the silent-catch guard counts catch blocks, so one decision written three ways reads as three and a refactor pays it off** — Its turing count went 1 to 9 in a single session, and the honest part of that rise was two decisions, not eight. → §LVII.2
 
 ## Priority
