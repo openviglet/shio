@@ -10,6 +10,7 @@ package com.viglet.shio.api.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -102,12 +103,14 @@ class ShAgentSearchReindexTest {
     private boolean wasEnabled;
     private String wasUrl;
     private String wasDefaultSite;
+    private Duration wasRetryBackoff;
 
     @AfterAll
     void restore() {
         turingProperties.setEnabled(wasEnabled);
         turingProperties.setUrl(wasUrl);
         turingProperties.setDefaultSite(wasDefaultSite);
+        turingProperties.setRetryBackoff(wasRetryBackoff);
     }
 
     @BeforeAll
@@ -115,11 +118,18 @@ class ShAgentSearchReindexTest {
         wasEnabled = turingProperties.isEnabled();
         wasUrl = turingProperties.getUrl();
         wasDefaultSite = turingProperties.getDefaultSite();
+        wasRetryBackoff = turingProperties.getRetryBackoff();
         turingProperties.setEnabled(true);
         // Reachable syntactically, dead in fact. A hostname that does not resolve would make this a
         // DNS test; a closed port on localhost fails fast and for the reason under test.
         turingProperties.setUrl("http://127.0.0.1:1");
         turingProperties.setDefaultSite("Sh413SN");
+        // SH912 — every one of these pushes is *meant* to fail, and since the retry landed each one
+        // waits 1s then 2s before giving up. Seven posts is 21 seconds of a suite sleeping to prove
+        // something this class is not about: the bound is asserted in ShTuringIndexRetryTest, and
+        // what is under test here is that a reindex dispatches at all. Zero keeps the failure fast
+        // for the reason the closed port was chosen in the first place.
+        turingProperties.setRetryBackoff(Duration.ZERO);
 
         String tag = UUID.randomUUID().toString().substring(0, 8);
         siteName = "sh413-" + tag;

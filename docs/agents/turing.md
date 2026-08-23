@@ -143,6 +143,39 @@ call errored — and the middle one is the only one with **no** `frames`, becaus
 completed and Turing refused: nothing of ours threw, so there is no stack to point at
 (SH190: absent beats empty). The other two each have a real exception.
 
+## A failed push is retried before it is reported (SH912)
+
+SH84 recorded the failure and stopped. Nothing acted on the record, and the remedy string told a
+*person* to re-publish — so a thirty-second Turing restart during a publishing session became a
+permanent hole in the index, closed only by whoever next read the diagnostics feed.
+
+`ShTuringIndexListener.sendWithRetries` now attempts a push **`shio.turing.max-attempts` times**
+(default 3), waiting `shio.turing.retry-backoff` (default 1s) before the second and doubling before
+each one after it. Both a clean refusal and a thrown connection error are retried — the restart
+this exists for surfaces as the latter, so retrying only the former would miss the whole case.
+
+**The wait happens on the worker, and re-queueing would be wrong.** A retry sent to the back of the
+queue lets a later de-index overtake the index it is retrying, which leaves a withdrawn page
+searchable — the exact failure the single thread exists to prevent. Blocking the one worker keeps
+the ordering by construction. It costs a publish nothing: the committing thread returned long
+before, and what a long outage does is fill the bounded queue, which is already decided and already
+reported.
+
+**One incident, recorded at exhaustion — never per attempt.** That is what makes a succeeded retry
+*silent*: there is no stale incident sitting in the diagnostics window contradicting an index that
+is in fact current. It is also why an exhausted push leaves one incident rather than three;
+recording inside the loop would coalesce into a single `Incident` with `count() == 3`, which reads
+as three failed publishes rather than one push retried twice. The message carries `(3 attempts)` so
+the bound is visible, and says nothing about attempts when retrying is off.
+
+**A restart does not keep pending retries, deliberately.** The queue is in memory and the retries
+are with it. Persisting them would be a new durability guarantee in the one subsystem that
+purposely makes none — bounded queue, drops on overflow, daemon worker — and a durable store would
+have to survive the same outage it exists for, drain in order, and reconcile against posts that
+changed while it waited. That is a reindex, and a reindex is SH413. What makes the loss acceptable
+is that the index is recoverable from content: the page is still published, the incident still says
+to re-publish, and SH413 covers the general case. The retry absorbs a restart; it is not a queue.
+
 ## What an agent can see: `searchIndexing` in the manifest
 
 The one thing about this subsystem that is *not* a deployment detail is **whether it is on**,

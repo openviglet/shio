@@ -240,7 +240,17 @@ class ShSilentCatchInventoryTest {
             // per publish, and folding by subject would then hide whichever of the two arrived
             // second. Not indexing its body is also the correct outcome, not a degradation: there is
             // no prose in a malformed payload to index.
-            "turing", 1,
+            // 3 since SH912, and both are the "the lint cannot see it" kind rather than swallowed
+            // failures. `ShTuringIndexListener.sendWithRetries` catches the send's RuntimeException
+            // inside the retry loop and records *after* it — deliberately, because recording per
+            // attempt coalesces into one incident carrying count 3, which reads to an operator as
+            // three failed publishes rather than one push retried twice. That is the whole point of
+            // the task, so the recording has to be outside the catch, and the lint keys on the
+            // catch body. And `pause` catches `InterruptedException`, restores the flag and returns
+            // false to stop retrying: a shutdown is not a diagnosis, and the caller then records
+            // whatever the last real attempt actually said rather than inventing an outcome for the
+            // attempts that never ran.
+            "turing", 3,
             // 1 since SH459, and it is the SH385/SH437 kind rather than a degradation: the
             // authentication entry point asks every RequestMappingHandlerMapping whether any
             // controller claims the URI, so that a path none of them serves answers 404 instead of

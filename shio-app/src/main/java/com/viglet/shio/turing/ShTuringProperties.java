@@ -5,6 +5,7 @@
  */
 package com.viglet.shio.turing;
 
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -71,6 +72,24 @@ public class ShTuringProperties {
      * is the case where the distinction starts mattering.
      */
     private String sourceApp = "shio";
+
+    /**
+     * How many times one push is attempted in total, the first included. {@code 1} disables
+     * retrying and restores SH84's behaviour exactly.
+     *
+     * <p>Three, because the failure this exists for is a Turing restart — seconds, not minutes —
+     * and the retries are spent by the single index worker, so a larger bound buys a longer stall
+     * for a case the bounded queue already handles honestly (see {@link ShTuringIndexListener}).</p>
+     */
+    private int maxAttempts = 3;
+
+    /**
+     * The wait before the second attempt, doubled before each attempt after it.
+     *
+     * <p>With the defaults a push that never succeeds occupies the worker for 1s + 2s before it is
+     * given up on. {@code ZERO} retries immediately, which is what the tests use.</p>
+     */
+    private Duration retryBackoff = Duration.ofSeconds(1);
 
     /**
      * Whether a de-index is sent when a post is unpublished.

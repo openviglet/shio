@@ -1207,25 +1207,6 @@ never read. Each is a different kind of gap — a schema decision, a recovery pa
 extraction step — and each is visible only as a search returning the wrong thing rather
 than as an error anybody sees.
 
-### LVI.2 A recorded failure that nothing recovers from (SH912)
-
-SH84 already recognises the state: a push that failed leaves the page published but not
-searchable, and it records an INDEX incident so the diagnostics feed reports it. Nothing
-acts on that record. The remedy string tells a person to re-publish the post, so a
-Turing restart during a publishing session becomes a hole only a human who reads the
-feed will close.
-
-Acceptance:
-- A failed push is retried with backoff, bounded, and the bound is configurable.
-- Ordering survives: publish then unpublish of one post still arrive in that order, which is
-  why SH84's executor is single-threaded in the first place.
-- A retry that succeeds resolves the incident instead of leaving a stale one in the window.
-- A retry that exhausts its attempts leaves exactly one incident, not one per attempt.
-- Turing being unreachable for the whole window never blocks or slows a publish.
-- Restarting Shio either keeps pending retries or the design states plainly that it does not
-  and why that is acceptable.
-- A test drives a failing sender to exhaustion and asserts the incident count.
-
 ### LVI.3 The attachment whose text never arrives (SH913)
 
 Static files are posts in the unified model, so a published attachment already reaches

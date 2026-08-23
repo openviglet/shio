@@ -5,6 +5,7 @@
  */
 package com.viglet.shio.turing;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
@@ -57,6 +58,25 @@ import lombok.extern.slf4j.Slf4j;
  * way. It lands as an {@link ShAgentIncidentLog.Kind#INDEX} incident, so
  * {@code GET /api/v2/agent/diagnostics} and the SH144 change feed report it. A log line is not a
  * surface an agent has (SH103).</p>
+ *
+ * <p><b>And since SH912 it is retried first.</b> SH84 recorded the failure and stopped there, so a
+ * Turing restart mid-publish — seconds — left a page permanently unfindable until somebody read the
+ * feed and re-published by hand. See {@link #sendWithRetries} for the bound and for why the wait
+ * happens on the worker.</p>
+ *
+ * <h2>A restart does not keep pending retries, and that is the design (SH912)</h2>
+ *
+ * <p>The queue is in memory and the retries are in memory with it, so stopping Shio loses both.
+ * Nothing here tries to change that, because persisting them would be a <em>new durability
+ * guarantee in the one subsystem that deliberately makes none</em>: the queue is bounded and drops
+ * on overflow, the worker is a daemon so an unreachable Turing cannot delay a shutdown, and a
+ * dropped change is already reported rather than hidden. A durable retry store would have to
+ * survive the same outage it exists for, be drained in order, and be reconciled against posts that
+ * changed while it waited — which is a reindex, and a reindex is SH413.</p>
+ *
+ * <p>What makes that acceptable is that the index is <b>recoverable from content</b>, and the
+ * incident says so: the page is still published, the remedy is still to re-publish, and SH413's
+ * reindex covers the general case. The retry is here to absorb a restart, not to be a queue.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -163,7 +183,7 @@ public class ShTuringIndexListener {
             // above are: the executor thread never had one, so the incident `run` may record was
             // being written under the default discriminator and filed away from the operator
             // whose site it belongs to. Captured here, on the thread that still has it.
-            executor.execute(ShTenantHandoff.capture(() -> run(item, what, siteId)));
+            executor.execute(ShTenantHandoff.capture(() -> sendWithRetries(item, what, siteId)));
         } catch (java.util.concurrent.RejectedExecutionException e) {
             // The queue is full, which means Turing has been unreachable long enough for publishes
             // to pile up. Dropping is the right call — the alternatives are blocking the editor or
@@ -174,18 +194,85 @@ public class ShTuringIndexListener {
         }
     }
 
-    private void run(TurSNJobItem item, String what, String siteId) {
-        try {
-            if (!indexService.send(item, what)) {
-                // No frame: the SDK completed and Turing refused, so there is no exception of ours
-                // and nothing in Shio to point at. SH190's rule — absent beats empty.
-                incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
-                        "Turing did not accept the job", FIX, null, siteId);
+    /**
+     * Sends, and keeps sending until it works or the bound is spent (SH912).
+     *
+     * <h2>Why the retry sleeps here rather than re-queueing</h2>
+     *
+     * <p>Re-queueing a failed push at the tail would break the one property this whole subsystem is
+     * built around: a publish followed by an unpublish must reach Turing <em>in that order</em>, and
+     * a retry that goes to the back of the queue lets the de-index overtake the index and leaves a
+     * withdrawn page searchable. Waiting on the single worker keeps the ordering by construction,
+     * which is the same reason {@link ShTuringConfig} gives this executor one thread.</p>
+     *
+     * <p>It costs nothing a publish can feel. The committing thread has already returned by the time
+     * this runs; what a long outage does is fill the bounded queue, and that case is already decided
+     * and already reported — the rejection in {@code submit} names what was dropped. So a Turing
+     * that is down for the whole window still never blocks or slows a publish.</p>
+     *
+     * <h2>One incident, at the end</h2>
+     *
+     * <p>Nothing is recorded until the attempts are spent. That is what makes a succeeded retry
+     * silent — there is no stale incident left in the diagnostics window to contradict a working
+     * index — and it is also why an exhausted push leaves <b>one</b> incident rather than one per
+     * attempt. Recording per attempt would coalesce into a single {@code Incident} with a count of
+     * three, which reads as three failed publishes rather than one that was retried twice.</p>
+     */
+    void sendWithRetries(TurSNJobItem item, String what, String siteId) {
+        int attempts = Math.max(1, properties.getMaxAttempts());
+        String refusal = null;
+        RuntimeException error = null;
+
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            try {
+                if (indexService.send(item, what)) {
+                    return;
+                }
+                refusal = "Turing did not accept the job";
+                error = null;
+            } catch (RuntimeException e) {
+                log.warn("Turing indexing errored for {} (attempt {}/{}): {}",
+                        what, attempt, attempts, e.getMessage());
+                refusal = "errored: " + e.getMessage();
+                error = e;
             }
-        } catch (RuntimeException e) {
-            log.warn("Turing indexing errored for {}: {}", what, e.getMessage());
-            incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
-                    "errored: " + e.getMessage(), FIX, ShAgentIncidentFrames.of(e), siteId);
+            if (attempt < attempts && !pause(backoffBefore(attempt + 1, properties.getRetryBackoff()))) {
+                // Interrupted: the JVM is going down, and a shutdown is not a diagnosis. Report
+                // what the last attempt actually said rather than inventing an outcome for the
+                // attempts that never ran.
+                break;
+            }
+        }
+
+        // No frame when Turing merely refused: the SDK completed and nothing of ours threw, so
+        // there is no stack to point at. SH190's rule — absent beats empty.
+        incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
+                attempts == 1 ? refusal : refusal + " (" + attempts + " attempts)",
+                FIX, error == null ? null : ShAgentIncidentFrames.of(error), siteId);
+    }
+
+    /**
+     * The wait before {@code attempt}, doubling from the configured base — pure, so the schedule is
+     * assertable without a clock or a sleeping test.
+     */
+    static Duration backoffBefore(int attempt, Duration base) {
+        if (base == null || base.isZero() || base.isNegative() || attempt < 2) {
+            return Duration.ZERO;
+        }
+        return base.multipliedBy(1L << (attempt - 2));
+    }
+
+    /** @return false when interrupted, which is the signal to stop retrying rather than to log */
+    private static boolean pause(Duration wait) {
+        if (wait.isZero()) {
+            return true;
+        }
+        try {
+            Thread.sleep(wait.toMillis());
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         }
     }
 }
