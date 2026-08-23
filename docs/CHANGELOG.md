@@ -1609,3 +1609,5 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
+## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
+

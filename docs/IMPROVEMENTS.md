@@ -1209,3 +1209,73 @@ been here before, with a documentation set that contradicted every block shipped
 it, and the lesson recorded then was that a docs debt of this shape is noticed by nobody
 working in the code. Take it in the same block as the cutover rather than as a
 follow-up, since a follow-up is what it became last time.
+
+## LVI What Turing's index never receives
+
+Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index
+receives is still narrower than what Shio knows: a post-type's own fields arrive as
+prose or not at all, a push that fails is never retried, and an attachment's text is
+never read. Each is a different kind of gap — a schema decision, a recovery path, an
+extraction step — and each is visible only as a search returning the wrong thing rather
+than as an error anybody sees.
+
+### LVI.2 A recorded failure that nothing recovers from (SH912)
+
+SH84 already recognises the state: a push that failed leaves the page published but not
+searchable, and it records an INDEX incident so the diagnostics feed reports it. Nothing
+acts on that record. The remedy string tells a person to re-publish the post, so a
+Turing restart during a publishing session becomes a hole only a human who reads the
+feed will close.
+
+Acceptance:
+- A failed push is retried with backoff, bounded, and the bound is configurable.
+- Ordering survives: publish then unpublish of one post still arrive in that order, which is
+  why SH84's executor is single-threaded in the first place.
+- A retry that succeeds resolves the incident instead of leaving a stale one in the window.
+- A retry that exhausts its attempts leaves exactly one incident, not one per attempt.
+- Turing being unreachable for the whole window never blocks or slows a publish.
+- Restarting Shio either keeps pending retries or the design states plainly that it does not
+  and why that is acceptable.
+- A test drives a failing sender to exhaustion and asserts the incident count.
+
+### LVI.3 The attachment whose text never arrives (SH913)
+
+Static files are posts in the unified model, so a published attachment already reaches
+the listener and is indexed by title, URL and whatever its data JSON holds. Its bytes
+are never read. For a school publishing its rules, its fee table and its entrance-exam
+notice as PDFs, the document is findable by name and answers nothing — and a chat
+grounded on this site cannot cite a page whose text never arrived.
+
+Acceptance:
+- A published binary's text is extracted and sent in the text field.
+- Extraction runs off the committing thread, for SH84's reason: a slow parse must not become a
+  slow publish.
+- Which media types are extracted is configuration, and an unsupported type indexes as it does
+  today rather than failing the publish.
+- A file too large to parse is skipped with an incident, never an exception.
+- Replacing the file re-extracts, and deleting it de-indexes as it does now.
+- An extraction failure never stops the metadata from being indexed.
+- Reindex (SH413) extracts for already-published files.
+- A test asserts a PDF's body text is searchable and that a corrupt file degrades quietly.
+
+### LVI.1 The fields a facet needs, which the fixed mapping does not send (SH914)
+
+The mapper's own javadoc names this and defers it. The fixed mapping spends Turing's
+standard field names on the facts every post-type has and folds everything else into
+text; it ends by saying a post-type needing a facet of its own is a real request and a
+separate task, needing a TurSNJobAttributeSpec — a decision about the index, not about
+the post. This is that task. Two halves must land together or the facet does not work:
+the value has to leave Shio in a field of its own, and Turing has to know that field's
+type. Numbers and booleans are the sharpest case, since collect() skips them
+deliberately, so a tuition amount or a has-scholarship flag currently arrives in no
+field at all.
+
+Acceptance:
+- A post-type field can be declared as indexed, carrying a Turing field name and a type.
+- The declaration lives with the post-type (SH16), not in a second mapping surface.
+- Declared numbers and booleans arrive typed, and a test asserts a range filter works.
+- Undeclared fields keep folding into text as now, and no existing document changes shape.
+- The absent-is-not-empty invariant still holds, asserted by the existing property test.
+- The field schema is declared to Turing rather than configured by hand in its console.
+- A declaration naming a field the post-type lacks fails at save, not at publish.
+- Reindex (SH413) carries the new fields for already-published posts.

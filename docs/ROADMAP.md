@@ -41,6 +41,12 @@
 - 📋 **SH910** (deps: SH909) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
+## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
+
+- 📋 **SH912** (deps: —) **a failed index push is never retried, so a published page stays unfindable until a human re-publishes** — The incident is recorded and nothing acts on it, which turns a thirty-second Turing restart into a permanent hole in the index. → §LVI.2
+- 📋 **SH913** (deps: —) **a published PDF is indexed by title only, so its text answers no search and grounds no chat answer** — A school publishes its rules and fees as attachments, and the mapper reads a post's data JSON, which never holds a binary's text. → §LVI.3
+- 📋 **SH914** (deps: —) **a post-type's own fields reach Turing folded into text, and numbers and booleans reach it not at all** — A school filtering by level, campus or tuition needs those as typed fields, and the mapper folds prose and drops every number on purpose. → §LVI.1
+
 ## Priority
 
 ## Done when — SH886
