@@ -18,6 +18,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.turing.client.auth.credentials.TurApiKeyCredentials;
 import com.viglet.turing.client.sn.TurSNServer;
 import com.viglet.turing.client.sn.job.TurSNJobAction;
+import com.viglet.turing.client.sn.job.TurSNJobAttributeSpec;
 import com.viglet.turing.client.sn.job.TurSNJobItem;
 import com.viglet.turing.client.sn.job.TurSNJobItems;
 import com.viglet.turing.client.sn.job.TurSNJobUtils;
@@ -104,8 +105,16 @@ public class ShTuringIndexService {
         }
         Map<String, Object> attributes =
                 new HashMap<>(mapper.attributes(post, properties.getSourceApp()));
-        return Optional.of(new TurSNJobItem(TurSNJobAction.CREATE, List.of(snSite.get()),
-                locale(post.getLocale()), attributes));
+        // SH914 — the schema travels with the document. A field whose type Turing does not know is
+        // a field no range filter can use, and a schema kept in Turing's console as well as here is
+        // a schema that will disagree. Empty for a post-type that declares nothing, which is every
+        // post-type until somebody declares one, so the wire shape is unchanged for them.
+        List<TurSNJobAttributeSpec> specs = mapper.specs(post);
+        return Optional.of(specs.isEmpty()
+                ? new TurSNJobItem(TurSNJobAction.CREATE, List.of(snSite.get()),
+                        locale(post.getLocale()), attributes)
+                : new TurSNJobItem(TurSNJobAction.CREATE, List.of(snSite.get()),
+                        locale(post.getLocale()), attributes, specs));
     }
 
     /**

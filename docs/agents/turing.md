@@ -176,6 +176,43 @@ changed while it waited. That is a reindex, and a reindex is SH413. What makes t
 is that the index is recoverable from content: the page is still published, the incident still says
 to re-publish, and SH413 covers the general case. The retry absorbs a restart; it is not a queue.
 
+## A post-type field can declare the Turing field it indexes into (SH914)
+
+The fold into `text` answers "does this word appear". It cannot answer "tuition under 5000", and
+`collect` skips numbers and booleans **on purpose** — a number indexed as prose matches nothing
+useful — so a school filtering by level, campus or tuition had those values in *no field at all*.
+
+**The declaration lives on the attribute**, as three nullable columns on `ShPostTypeAttr`
+(`indexed`, `turing_field`, `turing_type`). The alternative was a list on `ShPostType` naming
+attributes by name, which is what the acceptance's "a declaration naming a field the post-type
+lacks fails at save" implies — and it was rejected. A second surface describing SH16's model is the
+exact thing the mapper's javadoc refuses, and naming a field by string makes the broken state
+**representable**, so it then has to be validated. On the attribute it cannot be written down.
+
+What save-time validation is left is real and narrower, in `ShTuringFieldDeclaration`: an indexed
+field with no type, an unknown type, two fields claiming one Turing name, a name colliding with one
+of `TurSNFieldName`'s own (it would overwrite the title every document depends on), and a
+`turingType` set with `indexed` unset — refused rather than ignored, because ignoring it means a
+facet that never appears and nothing saying why. Judged at **save**, since a broken declaration is
+free until somebody publishes and then costs a document quietly missing the field a facet counts.
+
+**Both halves or neither.** A value in a field of its own *and* a type Turing knows: an untyped
+number is a string that sorts "10" before "9". `ShTuringDocumentMapper.specs` sends a
+`TurSNJobAttributeSpec` per declared field with the job, rather than the schema being configured by
+hand in Turing's console — a schema kept in two places is a schema that disagrees. `ARRAY` and
+`CURRENCY` are deliberately not offerable: multiplicity is already the widget's business, and a
+currency carries a unit this model has nowhere to put.
+
+**Refusing beats coercing.** A `DOUBLE` field holding "ask us" is omitted, not sent as `0` — a `0`
+would make that post answer an "under 5000" filter, a wrong result presented as a right one. The
+same rule keeps absent-is-not-empty intact: a declared field the post left blank is a *missing key*.
+And a declared string still folds into `text` as well, because removing it would make a page stop
+matching a full-text search the day somebody added a facet to it.
+
+**Nothing changes for a post-type that declares nothing** — no spec is sent, the wire shape is
+identical, and `cli/src/post-types-io.mjs` omits all three keys when unset (the one exception to its
+materialize-every-key rule) so no existing `shio/post-types/*.json` churns on the next pull.
+
 ## An attachment's text comes from Turing's OCR, not from a parser here (SH913)
 
 A published PDF used to be indexed by title, URL and whatever its `data` JSON held — its bytes were

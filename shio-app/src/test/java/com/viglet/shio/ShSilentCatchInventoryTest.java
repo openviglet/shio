@@ -260,7 +260,21 @@ class ShSilentCatchInventoryTest {
             // which is the right way round for a population guard to be wrong. (The four: a file
             // that cannot be stat'd, Turing exceeding Shio's own extract-timeout, the interrupt
             // that means shutdown, and the SDK throwing out of the OCR call.)
-            "turing", 7,
+            // 9 since SH914, and both are the shape of the four above: a method whose contract is
+            // to answer rather than throw. `ShTuringDocumentMapper.parsed` returns null for a value
+            // that cannot be the declared type — a DOUBLE field holding "ask us" is omitted rather
+            // than sent as 0, because a 0 would make that post answer an "under 5000" filter, and
+            // the caller's `put` turns that null into an absent key, which is the grounding
+            // contract this mapper exists to hold. `ShTuringFieldDeclaration` catches
+            // IllegalAccessException while reading TurSNFieldName's constants reflectively: a
+            // public static field this JVM refuses to read is not a thing that happens, and
+            // skipping one could only narrow the collision guard, never widen it.
+            //
+            // It was ELEVEN on the first run — three near-identical parse blocks, one per numeric
+            // type. They were collapsed into one generic `parsed` rather than declared, which is
+            // the response this ledger exists to provoke: three copies of one decision read as
+            // three decisions to whoever reviews the population next.
+            "turing", 9,
             // 1 since SH459, and it is the SH385/SH437 kind rather than a degradation: the
             // authentication entry point asks every RequestMappingHandlerMapping whether any
             // controller claims the URI, so that a path none of them serves answers 404 instead of

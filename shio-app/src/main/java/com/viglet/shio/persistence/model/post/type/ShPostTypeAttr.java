@@ -53,6 +53,37 @@ public class ShPostTypeAttr implements Serializable {
     private int ordinal;
     private byte required;
 
+    /**
+     * Whether this field is sent to Turing as a field of its own rather than folded into
+     * {@code text} (SH914).
+     *
+     * <p>A {@link Boolean} and nullable forever: absent is what every attribute written before this
+     * carries, and it reads as {@code false}, so no existing document changes shape. The mapper
+     * folds an undeclared field exactly as SH84 did.</p>
+     */
+    @Column(name = "indexed")
+    private Boolean indexed;
+
+    /**
+     * The Turing field this value lands in, or {@code null} for the attribute's own {@link #name}.
+     *
+     * <p>It exists for the instance whose Turing already has a schema and cannot rename its fields
+     * to match Shio's — not as something an author should normally have to spell.</p>
+     */
+    @Column(name = "turing_field")
+    private String turingField;
+
+    /**
+     * A {@code TurSEFieldType} name — {@code INT}, {@code LONG}, {@code STRING}, {@code TEXT},
+     * {@code DATE}, {@code BOOL}, {@code FLOAT}, {@code DOUBLE}.
+     *
+     * <p>Stored as the enum's <b>name</b> and not its {@code id()}: that id is Turing's wire number,
+     * and persisting it would silently re-point every declaration on this instance if the enum ever
+     * gained a member in the middle.</p>
+     */
+    @Column(name = "turing_type", length = 32)
+    private String turingType;
+
     @OneToMany(mappedBy = "shParentPostTypeAttr", orphanRemoval = true, fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<ShPostTypeAttr> shPostTypeAttrs = new HashSet<>();

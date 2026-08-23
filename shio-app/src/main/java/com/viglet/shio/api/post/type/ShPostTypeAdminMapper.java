@@ -67,6 +67,13 @@ public class ShPostTypeAdminMapper {
                 attr.getIsSummary() == 1,
                 attr.getOrdinal(),
                 attr.getWidgetSettings(),
+                // SH914 — the indexing declaration, delivered exactly as stored. `indexed` stays a
+                // nullable Boolean rather than becoming `false`: the CLI omits a default-valued key,
+                // so materializing false here would make every post-type pulled before this read as
+                // drift on the next pull (P5).
+                attr.getIndexed(),
+                attr.getTuringField(),
+                attr.getTuringType(),
                 attrDefs(attr.getShPostTypeAttrs(), false));
     }
 

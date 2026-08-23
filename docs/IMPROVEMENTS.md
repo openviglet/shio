@@ -1206,25 +1206,3 @@ prose or not at all, a push that fails is never retried, and an attachment's tex
 never read. Each is a different kind of gap — a schema decision, a recovery path, an
 extraction step — and each is visible only as a search returning the wrong thing rather
 than as an error anybody sees.
-
-### LVI.1 The fields a facet needs, which the fixed mapping does not send (SH914)
-
-The mapper's own javadoc names this and defers it. The fixed mapping spends Turing's
-standard field names on the facts every post-type has and folds everything else into
-text; it ends by saying a post-type needing a facet of its own is a real request and a
-separate task, needing a TurSNJobAttributeSpec — a decision about the index, not about
-the post. This is that task. Two halves must land together or the facet does not work:
-the value has to leave Shio in a field of its own, and Turing has to know that field's
-type. Numbers and booleans are the sharpest case, since collect() skips them
-deliberately, so a tuition amount or a has-scholarship flag currently arrives in no
-field at all.
-
-Acceptance:
-- A post-type field can be declared as indexed, carrying a Turing field name and a type.
-- The declaration lives with the post-type (SH16), not in a second mapping surface.
-- Declared numbers and booleans arrive typed, and a test asserts a range filter works.
-- Undeclared fields keep folding into text as now, and no existing document changes shape.
-- The absent-is-not-empty invariant still holds, asserted by the existing property test.
-- The field schema is declared to Turing rather than configured by hand in its console.
-- A declaration naming a field the post-type lacks fails at save, not at publish.
-- Reindex (SH413) carries the new fields for already-published posts.

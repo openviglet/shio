@@ -41,8 +41,6 @@
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 
-- 📋 **SH914** (deps: —) **a post-type's own fields reach Turing folded into text, and numbers and booleans reach it not at all** — A school filtering by level, campus or tuition needs those as typed fields, and the mapper folds prose and drops every number on purpose. → §LVI.1
-
 ## Priority
 
 ## Done when — SH887

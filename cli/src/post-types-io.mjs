@@ -19,9 +19,19 @@ function byOrdinalThenName(a, b) {
   return o !== 0 ? o : String(a.name ?? "").localeCompare(String(b.name ?? ""));
 }
 
-/** Normalize one field into a canonical-key-order object with stable defaults. */
+/**
+ * Normalize one field into a canonical-key-order object with stable defaults.
+ *
+ * SH914's three indexing keys are the exception to "materialize every key with its default", and
+ * deliberately so. Every key above is written out even when it holds the default, which is what
+ * makes two defs comparable by string. Doing that for `indexed` would rewrite **every**
+ * `shio/post-types/*.json` in every repository on the next `pull` — a diff touching every field of
+ * every type, for a feature none of them use. Omitting an unset declaration keeps those files
+ * byte-identical (P5) and costs nothing here, because absent and `false` mean the same thing for
+ * all three: not indexed.
+ */
 function normalizeField(field) {
-  return {
+  const normalized = {
     name: field.name ?? null,
     label: field.label ?? null,
     description: field.description ?? null,
@@ -31,8 +41,18 @@ function normalizeField(field) {
     isSummary: Boolean(field.isSummary),
     ordinal: field.ordinal ?? 0,
     widgetSettings: field.widgetSettings ?? null,
-    fields: (field.fields ?? []).slice().sort(byOrdinalThenName).map(normalizeField),
   };
+  if (field.indexed) {
+    normalized.indexed = true;
+    // Only when it differs from the field's own name — the server resolves an absent one to that,
+    // so writing it always would put a second copy of the name in every declaration.
+    if (field.turingField && field.turingField !== field.name) {
+      normalized.turingField = field.turingField;
+    }
+    if (field.turingType) normalized.turingType = field.turingType;
+  }
+  normalized.fields = (field.fields ?? []).slice().sort(byOrdinalThenName).map(normalizeField);
+  return normalized;
 }
 
 /**

@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
 import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.turing.ShTuringFieldDeclaration;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -127,6 +128,10 @@ public class ShPostTypeAdminService {
         if (existing != null && existing.isManaged() && !codeOwned) {
             throw new ShManagedPostTypeException(name);
         }
+        // SH914 — before anything is written. A Turing declaration that cannot work costs nothing
+        // until a post is published, and then it costs a document quietly missing the field a facet
+        // counts, which is the defect SH914 removes arriving by another road.
+        ShTuringFieldDeclaration.validate(def.fields());
 
         ShPostType postType = existing != null ? existing : newPostType(name);
         postType.setTitle(def.title());
@@ -490,6 +495,11 @@ public class ShPostTypeAdminService {
             attr.setIsTitle((byte) (def.isTitle() ? 1 : 0));
             attr.setIsSummary((byte) (def.isSummary() ? 1 : 0));
             attr.setWidgetSettings(def.widgetSettings());
+            // SH914 — carried verbatim; ShTuringFieldDeclaration has already refused the whole def
+            // if any of it is unusable, so a bad declaration never reaches a row.
+            attr.setIndexed(def.indexed());
+            attr.setTuringField(def.turingField());
+            attr.setTuringType(def.turingType());
             if (def.widget() != null) {
                 ShWidget widget = shWidgetRepository.findFirstByName(def.widget());
                 if (widget == null) {

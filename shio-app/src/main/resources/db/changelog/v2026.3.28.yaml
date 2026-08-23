@@ -1,0 +1,53 @@
+databaseChangeLog:
+  # SH914 — the fields a facet needs, declared on the attribute that has them.
+  #
+  # SH84's mapping spends Turing's standard field names on the facts every post-type has and folds
+  # everything else into `text`. `ShTuringDocumentMapper.collect` then skips numbers and booleans on
+  # purpose — a number indexed as prose matches nothing useful — so a tuition amount or a
+  # has-scholarship flag reached Turing in no field at all. A school filtering by level, campus or
+  # tuition needs those as typed fields, and a full-text fold cannot answer a range query.
+  #
+  # Three columns rather than one mapping table, and on the ATTRIBUTE rather than on the type. The
+  # alternative considered was a list on ShPostType naming attributes by name, which is what the
+  # acceptance's "a declaration naming a field the post-type lacks fails at save" implies. It was
+  # rejected: a second surface describing SH16's model is the exact thing the mapper's own javadoc
+  # refuses, and naming a field by string makes the broken state *representable* so that it has to
+  # be validated. Here it cannot be written down — the declaration lives on the field or nowhere.
+  # What save-time validation is left is real and narrower: an unknown type, two attributes claiming
+  # one Turing name, and a name colliding with a TurSNFieldName standard field.
+  #
+  # All three nullable forever and read as absent, so every attribute that existed before this
+  # indexes exactly as it did: folded into `text`, no document changing shape. Not tenant
+  # discriminators, so no ShTenantBackfillRunner entry. Lower-case `boolean` and `varchar` are the
+  # portable spellings the other columns here use — the upper-case forms are forbidden tokens per
+  # ShLiquibaseChangelogAgnosticTest. SH26: preserve identifier case on PostgreSQL, which does not
+  # propagate through `include`.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh914-post-type-attr-indexed
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShPostTypeAttr
+                columnName: indexed
+      changes:
+        - addColumn:
+            tableName: ShPostTypeAttr
+            columns:
+              - column:
+                  name: indexed
+                  type: boolean
+              # The Turing field this value lands in. Null means "the attribute's own name", which
+              # is the case nobody should have to spell; it exists for the instance whose Turing
+              # already has a schema and cannot rename its fields to match Shio's.
+              - column:
+                  name: turing_field
+                  type: varchar(255)
+              # A TurSEFieldType name — INT, LONG, STRING, TEXT, DATE, BOOL, FLOAT, DOUBLE. Stored
+              # as the enum's name rather than its ordinal id: the id is Turing's wire number and
+              # would silently re-point every declaration if that enum ever reordered.
+              - column:
+                  name: turing_type
+                  type: varchar(32)

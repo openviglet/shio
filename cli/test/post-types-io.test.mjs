@@ -167,3 +167,51 @@ test("a system post-type is never a rename candidate", () => {
   assert.deepEqual(result.renames, []);
   assert.deepEqual(result.probable, []);
 });
+
+/*
+ * SH914 — a post-type field can declare the Turing field it indexes into.
+ *
+ * The keys are the one exception to this file's "materialize every key with its default" rule, and
+ * the reason is the one P5 cares about: writing `indexed: false` on every field would rewrite every
+ * `shio/post-types/*.json` in every repository on the next pull, producing a diff that touches
+ * every field of every type for a feature none of them use.
+ */
+test("SH914: a field that declares nothing serializes exactly as it did before", () => {
+  const before = serializeDef(news);
+  assert.ok(!before.includes("indexed"), "SH914: an undeclared field must not gain a key");
+  assert.ok(!before.includes("turingType"));
+
+  // Explicit falsehood is the same as absence, so a def that spells it out still round-trips clean.
+  const spelled = structuredClone(news);
+  spelled.fields[0].indexed = false;
+  spelled.fields[0].turingType = null;
+  assert.equal(serializeDef(spelled), before,
+    "SH914: `indexed: false` and absent mean the same thing, so the bytes must too");
+});
+
+test("SH914: a declared field carries its type, and its name only when it differs", () => {
+  const school = structuredClone(news);
+  school.fields.push({ name: "tuition", widget: "Text", ordinal: 2, indexed: true, turingType: "DOUBLE" });
+
+  const field = normalizeDef(school).fields.find((f) => f.name === "tuition");
+  assert.equal(field.indexed, true);
+  assert.equal(field.turingType, "DOUBLE");
+  assert.ok(!("turingField" in field),
+    "SH914: the server resolves an absent turingField to the field's own name, so writing it "
+      + "always would put a second copy of the name in every declaration");
+
+  school.fields[2].turingField = "school_tuition";
+  assert.equal(normalizeDef(school).fields.find((f) => f.name === "tuition").turingField,
+    "school_tuition");
+});
+
+test("SH914: a declaration is drift when it changes, and not otherwise", () => {
+  const declared = structuredClone(news);
+  declared.fields[1].indexed = true;
+  declared.fields[1].turingType = "TEXT";
+
+  assert.notEqual(serializeDef(declared), serializeDef(news),
+    "SH914: adding a declaration has to show up as a change, or a pull would hide it");
+  assert.equal(serializeDef(declared), serializeDef(structuredClone(declared)),
+    "SH914: and an unchanged declaration must be byte-identical (P5)");
+});
