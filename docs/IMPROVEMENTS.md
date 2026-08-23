@@ -1008,17 +1008,6 @@ as a build artefact for exactly this. Run the lint in Shio's own CI so a re-decl
 fails a build and names the import that replaces it, and land it in this block rather
 than after the surfaces move.
 
-### LIV.11 Cheap textual proof that a surface renders (SH896)
-
-P9 asks for cheap textual proof instead of asking somebody to look, and this project
-already does that for the site renderer with a render digest. The console has nothing
-equivalent, so the evidence that a migrated page is correct is a person opening it.
-Forty-three of those judgements, each by eye and each unrepeatable, is the perception
-loop left open on the largest single change the console has had. Emit a digest of a
-console surface's resolved structure - the chrome it composed, the sections it rendered,
-the classes carrying the frosted surface and the lift - so a slice can be compared
-before and after, and so a difference has a name when there is one.
-
 ### LIV.12 The one script that opens a real page (SH897)
 
 e2e/console-check.mjs is the only thing in this repository that drives the console in a

@@ -1609,6 +1609,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 - **SH895** — copy-ds.cmd forwards to the design system's own use:local, which resolves the consumer and the install path instead of hardcoding either, and refuses a push onto a stale tree.
 - **SH886** — A census walks the 43 console pages and holds every unmigrated one by name and by the chrome it renders, so a migrated slice cannot pay for the next: 43 pages, 0 on bento, 39 on PageHeader and 38 on Card — two of the three figures §LIV.1 opened with were wrong, having been grepped once by hand and never recomputed.
+- **SH896** — scripts/surface-digest.mjs hashes each console surface's era, its chrome in source order and the frosted-surface classes, and --against a saved survey exits non-zero naming the page and the field that moved: 43 surfaces, 22 distinct digests, 0 on bento. It reads source rather than a rendered page, because the instance runs no browser, and both directions are asserted — stable under reformatting, comments and renamed locals, moving on a swapped component, a reordered header, an era change or a lost lift.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

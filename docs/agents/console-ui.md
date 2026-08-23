@@ -652,3 +652,42 @@ emptied directory would read as a finished migration. And **every probe must mat
 renamed import path would otherwise turn a probe into a permanent zero, retiring that chrome from
 the census rather than from the console — the count would fall with nothing migrated. When the last
 page carrying a probe really is migrated, the probe is deleted in that same diff.
+
+## The surface digest — proving a migrated page without opening it (SH896)
+
+`shio-react/scripts/surface-digest.mjs` is the console's analogue of SH101's render digest, and
+`pnpm --filter shio-react surface:digest` prints one line per surface. It reads **source, not a
+rendered page**: "the instance does not run a browser" is a standing non-goal, and a console page
+resolves a router, three contexts and a service call before it paints, so rendering one to prove it
+composes would mean standing up most of the app — expensive, and flaky in the way a proof must not
+be.
+
+The digest covers three things and nothing else: the **era** (does the page import
+`@viglet/viglet-design-system/bento`), the **chrome it composes in source order**, and the
+**surface classes** §LIV.11 named — the frosted panel and its lift (`backdrop-blur`, `bg-card`,
+`shadow`, `rounded`, `border`, `ring`, …). At the first run: **43 surfaces, 22 distinct digests, 0
+on bento.**
+
+```
+node scripts/surface-digest.mjs --json > before.json
+#   ... migrate a slice ...
+node scripts/surface-digest.mjs --against before.json   # exits 1, naming page and field
+```
+
+**It is not a pixel claim, and the docstring says so.** A matching digest says the same chrome was
+composed in the same order with the same surface vocabulary; it does not say the page looks right.
+The direction it buys is the one that matters across 43 surfaces: when a digest moves, something
+structural moved, and the report names the page and the field.
+
+**Both failure modes are asserted, because they pull against each other.** A digest that moves on
+*everything* — reindenting, a renamed handler, a new comment — is noise, and a reviewer learns
+within a week to re-baseline without reading it, which is worse than no proof because it looks like
+proof. A digest that moves on *nothing* goes green across the migration it exists to witness. So
+`surface-digest.test.mjs` asserts stability under reformatting, comments and renamed locals, **and**
+movement on a swapped component, a reordered header, an era change and a changed surface class.
+Testing the hash function would have caught neither.
+
+One deliberate sharp edge: the sort is **codepoint, never `localeCompare`**. The digest hashes that
+order, so a locale-dependent comparator would hash one page to two values on two machines. The lint
+that asks for `localeCompare` is right about display lists and wrong here; the comparator is stated
+in the file with that reason beside it.
