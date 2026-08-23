@@ -218,6 +218,12 @@ public class ShTuringTextExtractor {
         return ask(path, size);
     }
 
+    /**
+     * one-decision: three catches, one answer — the caller (`ShTuringIndexListener.extractInto`, and
+     * SH413's reindex through `enrich`) records the incident, because it is the one that knows the
+     * post and the site. Timing out, being interrupted and the SDK throwing are three ways for the
+     * same question to come back unanswered, and each returns the same {@link Outcome#FAILED}.
+     */
     private Extraction ask(Path path, long size) {
         Future<TurFileAttributes> pending = calls.submit(() -> ocr.processFile(server(), path.toFile(), false));
         try {

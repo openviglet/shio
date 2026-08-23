@@ -81,6 +81,15 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AT: {
+    swept: false,
+    why: "two tasks about this repository's own build and its own reading of itself — SH916 removed "
+      + "six Tika declarations nothing imported, taking 23 compile-scope artifacts with them, and "
+      + "SH917 made the silent-catch inventory count decisions rather than catch blocks. Both change "
+      + "what a contributor may leave in the POM or write in a handler; neither changes anything a "
+      + "curator or a reader of the product can do. `docs/agents/build.md` carries both, and "
+      + "docs-shio's internal cluster already accounts for instruments of exactly this kind",
+  },
   AS: {
     swept: true,
     why: "SH912, SH913 and SH914 all change what a reader gets out of search, so docs-shio's "

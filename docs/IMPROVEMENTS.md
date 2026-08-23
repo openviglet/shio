@@ -1208,27 +1208,3 @@ extraction step — and each is visible only as a search returning the wrong thi
 than as an error anybody sees.
 
 ## LVII What the Turing round left in the build and in a guard
-
-### LVII.2 A guard that counts catches where it means decisions (SH917)
-
-`ShSilentCatchInventoryTest` holds a population so that adding a silent catch is a diff
-somebody reviews. It works — it fired three times in one session and each time the
-answer improved the code or wrote down a real reason. But the unit it counts is the
-`catch` block, and that is not the unit anybody is reviewing.
-
-Measured on that session: the `turing` count went 1 → 3 → 7 → 11 across SH912, SH913 and
-SH914. Of the ten added, **three were one decision written three times** — a numeric
-parse per type, each `try { … } catch (NumberFormatException) { return null }`.
-Collapsing them into one generic helper took the count to 9 and changed nothing about
-the program's behaviour. That is the right outcome, and it is also the problem: the
-number moved by two for a refactor, so it prices duplication rather than risk.
-
-The other six are one shape too. Each is a method whose *contract* is to answer rather
-than throw — `Extraction.no(...)`, `Optional.empty()`, a null the caller turns into an
-absent key — and the recorder lives in the caller, which the reader cannot follow.
-
-So: let a **method** be classified once, the way `handoffs.test.mjs` classifies a
-sentence. A method declared convert-and-return contributes one entry however many
-catches implement it, and the declaration names the caller that records. The count then
-means "how many places swallow a failure", which is what the header already claims it
-means.

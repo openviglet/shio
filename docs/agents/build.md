@@ -661,6 +661,16 @@ rather than for the code**, which is the worst available way to learn this.
   and why it is safe to keep committing over it.
 
 This is the contract `assertion-debt.test.mjs` uses for its DEBT list and
+`ShSilentCatchInventoryTest` — which since **SH917** counts *decisions* rather than `catch` blocks.
+A method whose comment carries `one-decision:` contributes **one** entry however many catches
+implement it, and the marker has to name who records instead. The reason is a measurement: over
+three tasks the `turing` figure went 1 → 3 → 7 → 11, and three of the ten added were one decision
+written three times — a numeric parse per type, each `try { … } catch (NumberFormatException) {
+return null }`. Collapsing them into one generic helper took the figure to 9 and changed nothing
+about the program, which is the tell: the number was pricing duplication rather than risk. It prints
+both figures on every run (`103 silent catch(es) in 101 decision(s)`), and the recurring shape the
+marker is for is a method contractually unable to throw — every catch converts to a return value and
+the *caller* files the incident, which this reader cannot follow. Also
 `ShSilentCatchInventoryTest` for its inventory: a named list with a reason beside each entry,
 never a ceiling. A ceiling lets one task pay the debt and the next spend it.
 

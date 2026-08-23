@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -274,7 +275,13 @@ class ShSilentCatchInventoryTest {
             // type. They were collapsed into one generic `parsed` rather than declared, which is
             // the response this ledger exists to provoke: three copies of one decision read as
             // three decisions to whoever reviews the population next.
-            "turing", 9,
+            //
+            // 7 since SH917, and NOT because anything was removed: `ShTuringTextExtractor.ask`
+            // carries the `one-decision:` marker, so its three catches — a timeout, an interrupt,
+            // and the SDK throwing — count as the single answer they are. That is the whole of
+            // SH917: this figure now counts decisions rather than catch blocks, so a refactor that
+            // merges two identical handlers no longer looks like paying the debt down.
+            "turing", 7,
             // 1 since SH459, and it is the SH385/SH437 kind rather than a degradation: the
             // authentication entry point asks every RequestMappingHandlerMapping whether any
             // controller claims the URI, so that a path none of them serves answers 404 instead of
@@ -289,7 +296,39 @@ class ShSilentCatchInventoryTest {
 
     private static final Pattern CATCH = Pattern.compile("catch\\s*\\(([^)]*)\\)\\s*\\{");
 
-    private record SilentCatch(String area, String where, String first) {
+    /**
+     * The marker that says a whole method is one decision, however many catches implement it
+     * (SH917).
+     *
+     * <p><b>Why this exists.</b> This reader counted {@code catch} blocks, and that is not the unit
+     * anybody reviews. Measured on the round that produced it: the {@code turing} figure went
+     * 1 → 3 → 7 → 11 across three tasks, and <b>three of the ten added were one decision written
+     * three times</b> — a numeric parse per type, each {@code try { … } catch (NumberFormatException)
+     * { return null }}. Collapsing them into one generic helper took the figure to 9 and changed
+     * nothing about the program. That is the right refactor and it is also the tell: the number
+     * moved by two for a change in shape, so it was pricing duplication rather than risk.</p>
+     *
+     * <p>Placed in the comment or javadoc directly above a method signature, and it must name
+     * <em>who records</em>. The recurring shape here is a method whose contract is to answer rather
+     * than throw — every catch converts to a return value and the caller files the incident, which
+     * this reader cannot follow. One entry per such method makes the count mean "how many places
+     * swallow a failure", which is what the header above has always claimed it means.</p>
+     */
+    private static final String ONE_DECISION = "one-decision:";
+
+    /** A line that opens a method rather than a block: has a paren, takes no keyword. */
+    private static final Pattern METHOD = Pattern.compile(
+            "^\\s*(?:@\\w+\\s+)*(?:public|protected|private|static|final|synchronized|abstract|<[^>]+>|\\s)*"
+                    + "[\\w.<>\\[\\],?\\s]+\\s+(\\w+)\\s*\\([^;]*$");
+
+    private static final Pattern BLOCK_KEYWORD =
+            Pattern.compile("\\b(?:if|for|while|switch|catch|try|else|do|return|new)\\s*\\(");
+
+    /**
+     * @param method the enclosing method's name when the method declares itself one decision, else
+     *               {@code null} — the grouping key, so three catches in one declared method are one
+     */
+    private record SilentCatch(String area, String where, String first, String method) {
     }
 
     private static List<SilentCatch> inventory() {
@@ -324,10 +363,58 @@ class ShSilentCatchInventoryTest {
             boolean records = body.contains("incidentLog") || body.contains(".record(");
             boolean rethrows = Pattern.compile("\\bthrow\\b").matcher(body).find();
             if (!records && !rethrows) {
-                found.add(new SilentCatch(area, relative + ":" + (i + 1), firstLineOf(body)));
+                found.add(new SilentCatch(area, relative + ":" + (i + 1), firstLineOf(body),
+                        oneDecisionMethod(lines, i, relative)));
             }
         }
         return found;
+    }
+
+    /**
+     * The enclosing method's key when it declares itself one decision (SH917), else {@code null}.
+     *
+     * <p>Walks back to the nearest signature at a shallower indent than the {@code catch}, then
+     * reads the comment block directly above it. Indentation again, for {@link #bodyAfter}'s reason:
+     * a parser that got one nested lambda wrong would move a number nobody could explain, and the
+     * declared table below is the assertion rather than the parser.</p>
+     */
+    private static String oneDecisionMethod(List<String> lines, int catchLine, String relative) {
+        String opener = lines.get(catchLine);
+        int catchIndent = opener.length() - opener.stripLeading().length();
+        for (int j = catchLine - 1; j >= 0; j--) {
+            String line = lines.get(j);
+            if (line.isBlank()) {
+                continue;
+            }
+            int indent = line.length() - line.stripLeading().length();
+            if (indent >= catchIndent || BLOCK_KEYWORD.matcher(line).find()) {
+                continue;
+            }
+            Matcher signature = METHOD.matcher(line);
+            if (!signature.find()) {
+                continue;
+            }
+            return declaresOneDecision(lines, j) ? relative + "#" + signature.group(1) : null;
+        }
+        return null;
+    }
+
+    /** Whether the comment block immediately above {@code signatureLine} carries the marker. */
+    private static boolean declaresOneDecision(List<String> lines, int signatureLine) {
+        for (int j = signatureLine - 1; j >= 0; j--) {
+            String line = lines.get(j).strip();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (!line.startsWith("*") && !line.startsWith("/*") && !line.startsWith("//")
+                    && !line.startsWith("@")) {
+                return false;
+            }
+            if (line.contains(ONE_DECISION)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -359,8 +446,20 @@ class ShSilentCatchInventoryTest {
     @Test
     @DisplayName("SH270: the number of silent catch blocks is declared, per package")
     void theInventoryIsDeclared() {
+        List<SilentCatch> all = inventory();
+        // SH917 — one entry per DECISION. A method that declares itself `one-decision:` counts once
+        // however many catches implement it; everything else counts per catch as it always did.
+        Set<String> countedMethods = new java.util.HashSet<>();
         Map<String, Integer> measured = new TreeMap<>();
-        inventory().forEach(silent -> measured.merge(silent.area(), 1, Integer::sum));
+        for (SilentCatch silent : all) {
+            if (silent.method() != null && !countedMethods.add(silent.method())) {
+                continue;
+            }
+            measured.merge(silent.area(), 1, Integer::sum);
+        }
+        int grouped = all.size() - measured.values().stream().mapToInt(Integer::intValue).sum();
+        System.out.printf("SH270: %d silent catch(es) in %d decision(s) — %d folded by SH917's "
+                + "one-decision marker%n", all.size(), all.size() - grouped, grouped);
 
         assertThat(measured)
                 .as("""
@@ -413,5 +512,42 @@ class ShSilentCatchInventoryTest {
                 .hasSize(9)
                 .allSatisfy(where -> assertThat(where)
                         .matches(".*(ShRenderAPI|ShSitesAPI|ShRenderHelpers|ShTemplateValidator).*"));
+    }
+
+    /**
+     * SH917 — the marker folds a method's catches into one, and folds nothing else.
+     *
+     * <p>Both directions, because they are the two ways this can be wrong and only one of them is
+     * loud. A marker that folds <b>nothing</b> leaves the figure counting catch blocks and the task
+     * undone while every number still adds up. A marker that folds <b>everything</b> — a signature
+     * matcher that walks past the method and reaches the class, say — would quietly collapse a whole
+     * file into one entry, and the declared table would be adjusted down to meet it.</p>
+     */
+    @Test
+    @DisplayName("SH917: a declared method counts once, and an undeclared one still counts per catch")
+    void oneDecisionFoldsAMethodAndNothingElse() {
+        List<SilentCatch> all = inventory();
+
+        List<SilentCatch> folded = all.stream().filter(silent -> silent.method() != null).toList();
+        assertThat(folded)
+                .as("SH917: nothing carries the `one-decision:` marker, so this reader is still "
+                        + "counting catch blocks and the task changed nothing")
+                .isNotEmpty();
+        assertThat(folded).allSatisfy(silent -> assertThat(silent.method())
+                .as("a folded entry names the method it belongs to, which is the grouping key")
+                .contains("#"));
+
+        // The one that provoked SH917: three catches, one answer.
+        assertThat(folded.stream().filter(silent -> silent.method().endsWith("#ask")).count())
+                .as("SH917: ShTuringTextExtractor.ask is three catches for one decision — the case "
+                        + "this marker exists for")
+                .isEqualTo(3);
+
+        // And the guard against a matcher that swallows a file: the overwhelming majority of silent
+        // catches are ordinary and must still be counted one apiece.
+        assertThat(all.stream().filter(silent -> silent.method() == null).count())
+                .as("SH917: almost everything folded, which means the signature walk is reaching "
+                        + "past its method — a marker on one method would then hide a whole file")
+                .isGreaterThan(all.size() - 10L);
     }
 }
