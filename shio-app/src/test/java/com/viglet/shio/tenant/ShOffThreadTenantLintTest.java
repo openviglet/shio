@@ -101,7 +101,18 @@ class ShOffThreadTenantLintTest {
             the request thread where the tenant was still bound, and sh_tenant_api_call is \
             deliberately not @TenantId-scoped — it is the global usage catalog, like sh_tenant \
             itself. Binding the context on the timer's thread would change nothing about which \
-            row is written and would add the reuse hazard ShTenantHandoff exists to close.""");
+            row is written and would add the reuse hazard ShTenantHandoff exists to close.""",
+
+            "turing/ShTuringTextExtractor.java",
+            """
+            SH913's OCR worker uploads one file to Turing and reads the answer. Everything \
+            tenant-scoped already happened before the boundary: attachmentOf resolves the path \
+            through ShFileStorageService on the committing thread, precisely because that call \
+            reads the tenant, and what crosses is a java.nio.Path. The far side touches no \
+            repository, opens no session and writes no row — it POSTs bytes and returns a \
+            String — so there is nothing for @TenantId to stamp. Carrying the context anyway \
+            would be inert, and inert ceremony is what makes the next reader think the far \
+            side queries.""");
 
     @Test
     @DisplayName("SH612: every thread boundary either carries the tenant or is declared")

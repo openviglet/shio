@@ -176,6 +176,47 @@ changed while it waited. That is a reindex, and a reindex is SH413. What makes t
 is that the index is recoverable from content: the page is still published, the incident still says
 to re-publish, and SH413 covers the general case. The retry absorbs a restart; it is not a queue.
 
+## An attachment's text comes from Turing's OCR, not from a parser here (SH913)
+
+A published PDF used to be indexed by title, URL and whatever its `data` JSON held — its bytes were
+never read. A school publishing its rules and its fee table as attachments had documents findable
+by name that answered nothing, and a chat grounded on the site could not cite them.
+
+**The fix that would have been a fork:** `tika-core` and `tika-parser-pdf-module` are already
+declared in `shio-app/pom.xml` and, before this, used by nothing. Parsing locally was one import
+away. **Turing already has an OCR API** — `POST /api/ocr/file`, reached by `TurOcr` in the same
+`turing-java-sdk` this package already indexes through — and it is strictly more capable: the engine
+behind it is Turing's configuration, so a scanned document Tika reads as an empty page comes back
+with text. Shio sends the bytes and takes `TurFileAttributes.getContent()`. Same bargain
+`ShTuringIndexService` already made for the wire format: a change to how Turing extracts reaches
+Shio by bumping a version.
+
+`ShTuringTextExtractor.enrich(item, file)` is the one call both index paths share — the
+`AFTER_COMMIT` listener and **SH413's reindex**, which reaches `indexItem`/`send` directly and would
+otherwise re-index an already-published library by name only, which is the defect itself.
+
+**Where each step runs.** `attachmentOf(post)` resolves the path on the **committing thread**:
+`ShFileStorageService.resolve` reads the tenant, and the index worker has none until
+`ShTenantHandoff` restores it. Only a `Path` crosses the boundary — the entity still stops there,
+as everything else does. Extraction then happens on the index worker, before the send.
+
+**The timeout is Shio's, and it has to be.** `TurOcr` hardcodes a **five-minute** socket timeout and
+offers no way to change it. Five minutes would hold the single index worker — the one that keeps
+publish-then-unpublish ordering — and stall every queued change behind one large PDF. So the call is
+made on a worker of its own and waited for with `shio.turing.extract-timeout` (default 60s). On
+expiry the document is indexed with metadata and no text: late text is worth less than a blocked
+queue. The abandoned call is left to TurOcr's own five-minute mark, because cancelling the `Future`
+would not close the socket and waiting for it to is the stall being avoided.
+
+**Every failure still indexes the metadata.** `TOO_LARGE`, `MISSING` and `FAILED` leave the item
+exactly as the committing thread built it and let the send proceed — an attachment findable by name
+beats one not indexed at all, which is what an exception one line before the send would cost.
+`NOT_EXTRACTED` is a configuration answer, not a degradation, and is the one outcome that records
+nothing: reporting it would put every image on the site in the diagnostics window.
+
+Config: `extract-text` (default true — switching indexing on is the consent, and the file is already
+public), `extract-types`, `extract-max-size` (32 MB, `0` for none), `extract-timeout`.
+
 ## What an agent can see: `searchIndexing` in the manifest
 
 The one thing about this subsystem that is *not* a deployment detail is **whether it is on**,

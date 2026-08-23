@@ -6,7 +6,9 @@
 package com.viglet.shio.turing;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -72,6 +74,36 @@ public class ShTuringProperties {
      * is the case where the distinction starts mattering.
      */
     private String sourceApp = "shio";
+
+    /**
+     * Whether a published attachment's text is extracted by Turing's OCR API and indexed (SH913).
+     *
+     * <p>{@code true}, and the consent is switching indexing on: a published file is already public
+     * and already sent to Turing by title and URL, so this adds the one field that makes it answer a
+     * search. It is a switch rather than a constant because extraction is <em>Turing's</em> cost —
+     * the engine behind {@code /api/ocr/file} is its configuration, and an instance whose Turing
+     * bills per page may want the metadata without it.</p>
+     */
+    private boolean extractText = true;
+
+    /** File extensions whose text is asked for. Anything else indexes exactly as it does today. */
+    private List<String> extractTypes = new ArrayList<>(List.of(
+            "pdf", "doc", "docx", "odt", "rtf", "txt", "md",
+            "ppt", "pptx", "odp", "xls", "xlsx", "ods"));
+
+    /**
+     * Bytes above which a file is indexed by metadata alone, with an incident. {@code 0} removes
+     * the limit. Thirty-two megabytes is well past a prospectus and well short of a video.
+     */
+    private long extractMaxSize = 32L * 1024 * 1024;
+
+    /**
+     * How long Shio waits for Turing to read one file before indexing it without text.
+     *
+     * <p>Shio's bound, not the SDK's: {@code TurOcr} hardcodes a five-minute socket timeout, and
+     * five minutes is far too long to hold the single index worker that keeps publish ordering.</p>
+     */
+    private Duration extractTimeout = Duration.ofSeconds(60);
 
     /**
      * How many times one push is attempted in total, the first included. {@code 1} disables

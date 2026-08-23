@@ -100,7 +100,9 @@ class ShTuringIndexRetryTest {
 
     /** Drives the listener's send path directly, which is the whole of what SH912 changed. */
     private void push(ShTuringProperties properties, Sender sender) {
-        new ShTuringIndexListener(properties, sender, null, null, incidents, INLINE)
+        // The extractor and the storage are SH913's and unused on this path: sendWithRetries is
+        // reached directly, which is the whole of what SH912 changed.
+        new ShTuringIndexListener(properties, sender, null, null, incidents, INLINE, null)
                 .sendWithRetries(item(), "index post-1", "site-1");
     }
 
@@ -112,7 +114,7 @@ class ShTuringIndexRetryTest {
         push(properties, sender);
 
         assertThat(sender.attempts.get())
-                .as("a refused push is attempted maxAttempts times in total, the first included")
+                .as("SH912: a refused push is attempted maxAttempts times in total, the first included")
                 .isEqualTo(3);
     }
 
@@ -124,7 +126,7 @@ class ShTuringIndexRetryTest {
         List<ShAgentIncidentLog.Incident> recorded = new ArrayList<>(incidents.recent(10));
         assertThat(recorded).hasSize(1);
         assertThat(recorded.get(0).count())
-                .as("recording inside the retry loop would coalesce to a count of 3, which reads "
+                .as("SH912: recording inside the retry loop would coalesce to a count of 3, which reads "
                         + "as three failed publishes rather than one retried push")
                 .isEqualTo(1);
         assertThat(recorded.get(0).kind()).isEqualTo(ShAgentIncidentLog.Kind.INDEX);
@@ -142,7 +144,7 @@ class ShTuringIndexRetryTest {
 
         assertThat(sender.attempts.get()).isEqualTo(3);
         assertThat(incidents.recent(10))
-                .as("an incident recorded before the retry succeeded would sit in the diagnostics "
+                .as("SH912: an incident recorded before the retry succeeded would sit in the diagnostics "
                         + "window contradicting an index that is in fact current")
                 .isEmpty();
     }
@@ -156,7 +158,7 @@ class ShTuringIndexRetryTest {
         push(properties, sender);
 
         assertThat(sender.attempts.get())
-                .as("a Turing restart surfaces as a thrown connection error, which is the case "
+                .as("SH912: a Turing restart surfaces as a thrown connection error, which is the case "
                         + "this whole task exists for — retrying only a clean refusal would miss it")
                 .isEqualTo(2);
         List<ShAgentIncidentLog.Incident> recorded = new ArrayList<>(incidents.recent(10));
@@ -178,7 +180,7 @@ class ShTuringIndexRetryTest {
         List<ShAgentIncidentLog.Incident> recorded = new ArrayList<>(incidents.recent(10));
         assertThat(recorded).hasSize(1);
         assertThat(recorded.get(0).message())
-                .as("with retrying off the message must not claim a retry that never happened")
+                .as("SH912: with retrying off the message must not claim a retry that never happened")
                 .doesNotContain("attempts");
     }
 

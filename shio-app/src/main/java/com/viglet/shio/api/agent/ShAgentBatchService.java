@@ -34,6 +34,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import com.viglet.shio.turing.ShTuringIndexService;
+import com.viglet.shio.turing.ShTuringTextExtractor;
 import com.viglet.turing.client.sn.job.TurSNJobItem;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
@@ -291,6 +292,7 @@ public class ShAgentBatchService {
     private final ShPostLinks shPostLinks;
     /** SH413 — the same service SH84's listener indexes through, so there is one mapping. */
     private final ShTuringIndexService shTuringIndexService;
+    private final ShTuringTextExtractor shTuringTextExtractor;
 
     public ShAgentBatchService(ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
@@ -311,7 +313,8 @@ public class ShAgentBatchService {
                                ShVocabularyPostTypes shVocabularyPostTypes,
                                ShPostTypeAdminService shPostTypeAdminService,
                                ShPostLinks shPostLinks,
-                               ShTuringIndexService shTuringIndexService) {
+                               ShTuringIndexService shTuringIndexService,
+                               ShTuringTextExtractor shTuringTextExtractor) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -332,6 +335,7 @@ public class ShAgentBatchService {
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shPostLinks = shPostLinks;
         this.shTuringIndexService = shTuringIndexService;
+        this.shTuringTextExtractor = shTuringTextExtractor;
     }
 
     /**
@@ -829,6 +833,11 @@ public class ShAgentBatchService {
                 skipped += 1;
                 continue;
             }
+            // SH913 — a reindex is exactly the case an attachment's text is missing for: the
+            // library was published before extraction existed, so indexing it by name again would
+            // leave it answering nothing. Inline here, unlike the AFTER_COMMIT listener, because
+            // this is a bulk op an agent asked for rather than a publish somebody is waiting on.
+            shTuringTextExtractor.enrich(item.get(), shTuringTextExtractor.attachmentOf(post));
             if (shTuringIndexService.send(item.get(), "index " + post.getId())) {
                 sent += 1;
             } else {

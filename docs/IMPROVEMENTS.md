@@ -1207,26 +1207,6 @@ never read. Each is a different kind of gap — a schema decision, a recovery pa
 extraction step — and each is visible only as a search returning the wrong thing rather
 than as an error anybody sees.
 
-### LVI.3 The attachment whose text never arrives (SH913)
-
-Static files are posts in the unified model, so a published attachment already reaches
-the listener and is indexed by title, URL and whatever its data JSON holds. Its bytes
-are never read. For a school publishing its rules, its fee table and its entrance-exam
-notice as PDFs, the document is findable by name and answers nothing — and a chat
-grounded on this site cannot cite a page whose text never arrived.
-
-Acceptance:
-- A published binary's text is extracted and sent in the text field.
-- Extraction runs off the committing thread, for SH84's reason: a slow parse must not become a
-  slow publish.
-- Which media types are extracted is configuration, and an unsupported type indexes as it does
-  today rather than failing the publish.
-- A file too large to parse is skipped with an incident, never an exception.
-- Replacing the file re-extracts, and deleting it de-indexes as it does now.
-- An extraction failure never stops the metadata from being indexed.
-- Reindex (SH413) extracts for already-published files.
-- A test asserts a PDF's body text is searchable and that a corrupt file degrades quietly.
-
 ### LVI.1 The fields a facet needs, which the fixed mapping does not send (SH914)
 
 The mapper's own javadoc names this and defers it. The fixed mapping spends Turing's

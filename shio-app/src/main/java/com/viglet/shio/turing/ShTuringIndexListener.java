@@ -5,6 +5,7 @@
  */
 package com.viglet.shio.turing;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -97,19 +98,22 @@ public class ShTuringIndexListener {
     private final ShSiteRepository shSiteRepository;
     private final ShAgentIncidentLog incidentLog;
     private final Executor executor;
+    private final ShTuringTextExtractor textExtractor;
 
     public ShTuringIndexListener(ShTuringProperties properties,
                                  ShTuringIndexService indexService,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
                                  ShSiteRepository shSiteRepository,
                                  ShAgentIncidentLog incidentLog,
-                                 Executor shTuringIndexExecutor) {
+                                 Executor shTuringIndexExecutor,
+                                 ShTuringTextExtractor textExtractor) {
         this.properties = properties;
         this.indexService = indexService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shSiteRepository = shSiteRepository;
         this.incidentLog = incidentLog;
         this.executor = shTuringIndexExecutor;
+        this.textExtractor = textExtractor;
     }
 
     /**
@@ -155,13 +159,18 @@ public class ShTuringIndexListener {
         }
         // Built here, on the thread that still has the tenant and the session; only the send is
         // deferred. A plain TurSNJobItem crosses the thread boundary, never the entity.
-        indexService.indexItem(published.get())
-                .ifPresent(item -> submit(item, "index " + event.postId(), event.siteId()));
+        ShPostUnified post = published.get();
+        // SH913 — and the attachment's path is resolved here for the same reason everything else
+        // is: `ShFileStorageService.resolve` reads the tenant, and the executor thread has none
+        // until ShTenantHandoff restores it. A Path is a value; the entity still stops here.
+        Path file = textExtractor.attachmentOf(post);
+        indexService.indexItem(post)
+                .ifPresent(item -> submit(item, "index " + event.postId(), event.siteId(), file));
     }
 
     private void onRemoved(ShPostLifecycleEvent event) {
         indexService.deIndexItem(event.postId(), siteNameOf(event.siteId()), event.locale())
-                .ifPresent(item -> submit(item, "de-index " + event.postId(), event.siteId()));
+                .ifPresent(item -> submit(item, "de-index " + event.postId(), event.siteId(), null));
     }
 
     /** The site's name, read now because the async task must not query. */
@@ -177,13 +186,16 @@ public class ShTuringIndexListener {
      *               it. It is a plain String taken from the event on the committing thread, so
      *               nothing here queries and nothing lazily initialises
      */
-    private void submit(TurSNJobItem item, String what, String siteId) {
+    private void submit(TurSNJobItem item, String what, String siteId, Path file) {
         try {
             // SH612 — and the tenant is the third such value, for exactly the reason the two
             // above are: the executor thread never had one, so the incident `run` may record was
             // being written under the default discriminator and filed away from the operator
             // whose site it belongs to. Captured here, on the thread that still has it.
-            executor.execute(ShTenantHandoff.capture(() -> sendWithRetries(item, what, siteId)));
+            executor.execute(ShTenantHandoff.capture(() -> {
+                extractInto(item, what, siteId, file);
+                sendWithRetries(item, what, siteId);
+            }));
         } catch (java.util.concurrent.RejectedExecutionException e) {
             // The queue is full, which means Turing has been unreachable long enough for publishes
             // to pile up. Dropping is the right call — the alternatives are blocking the editor or
@@ -191,6 +203,36 @@ public class ShTuringIndexListener {
             incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
                     "the indexing queue is full, so this change was not sent", FIX,
                     ShAgentIncidentFrames.of(e), siteId);
+        }
+    }
+
+    /**
+     * Puts Turing's own reading of an attachment into the item's {@code text}, on the worker (SH913).
+     *
+     * <h2>Why the metadata is indexed either way</h2>
+     *
+     * <p>Every outcome but success leaves {@code item} exactly as the committing thread built it and
+     * lets the send proceed. A PDF findable by name is worth a great deal more than a PDF not
+     * indexed at all, so an extraction that failed must never cost the publish its document — which
+     * is what a thrown exception here would do, one line before {@code sendWithRetries}.</p>
+     *
+     * <p>Two of the four failure outcomes are reported and two are not, and the split is SH103's:
+     * {@code TOO_LARGE} and {@code MISSING} are facts an operator can act on — a limit they set and
+     * hit, and bytes that are not on disk under a published post. {@code NOT_EXTRACTED} is a
+     * configuration answer rather than a degradation. {@code FAILED} is reported because "Turing
+     * returned no text" and "we never asked" must not look the same in the diagnostics window.</p>
+     */
+    private void extractInto(TurSNJobItem item, String what, String siteId, Path file) {
+        if (file == null) {
+            return;
+        }
+        ShTuringTextExtractor.Extraction extraction = textExtractor.enrich(item, file);
+        if (extraction.detail() != null) {
+            incidentLog.record(ShAgentIncidentLog.Kind.INDEX, what,
+                    "indexed without its text — " + extraction.detail(),
+                    "The file is searchable by name but its contents answer nothing. Check "
+                            + "Turing's OCR endpoint and `shio.turing.extract-*`, then re-publish.",
+                    null, siteId);
         }
     }
 

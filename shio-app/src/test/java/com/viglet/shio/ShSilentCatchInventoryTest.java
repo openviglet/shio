@@ -250,7 +250,17 @@ class ShSilentCatchInventoryTest {
             // false to stop retrying: a shutdown is not a diagnosis, and the caller then records
             // whatever the last real attempt actually said rather than inventing an outcome for the
             // attempts that never ran.
-            "turing", 3,
+            // 7 since SH913, and all four are one decision rather than four. `ShTuringTextExtractor`
+            // is contractually a method that <em>cannot</em> throw: its caller's next act is to index
+            // the document, and a PDF findable by name is worth far more than a PDF not indexed at
+            // all — so an exception escaping the extractor would cost the publish its document over
+            // a failed text read. Each catch therefore converts to an `Extraction` outcome and the
+            // *caller* records the incident, which is the one place that knows the post and the
+            // site. The lint reads catch bodies and cannot follow a returned value to the recorder,
+            // which is the right way round for a population guard to be wrong. (The four: a file
+            // that cannot be stat'd, Turing exceeding Shio's own extract-timeout, the interrupt
+            // that means shutdown, and the SDK throwing out of the OCR call.)
+            "turing", 7,
             // 1 since SH459, and it is the SH385/SH437 kind rather than a degradation: the
             // authentication entry point asks every RequestMappingHandlerMapping whether any
             // controller claims the URI, so that a path none of them serves answers 404 instead of
