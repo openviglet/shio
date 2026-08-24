@@ -830,3 +830,45 @@ own vacuity test, because an over-broad exemption fails in the direction that re
 migration which never started.
 
 Census after this task: **43 pages, 0 on bento** — `Card` 38 → 35.
+
+## Re-declaring a shared component fails the build (SH894)
+
+The design system emits its export list as `@viglet/viglet-design-system/exports.json` and ships
+`scripts/check-duplicates.mjs` to read it. That gate now runs inside this repository's own JS
+suite — [`test/no-duplicate-components.test.mjs`](../../shio-react/test/no-duplicate-components.test.mjs)
+spawns it — so a component declared here that the package already exports fails `pnpm test` and
+`suites.yml`, and the failure message carries **the import that replaces it**. A check reachable
+only by a second command is a check that runs when somebody remembers.
+
+A one-line re-export shim is the sanctioned pattern and is not a duplicate. A deliberate
+collision is declared in the file itself:
+
+```
+// viglet-ds-allow-duplicate <Name> -- why this one is not the shared one
+```
+
+**The reason is the point.** A gate with no way to say "this one is mine" is a gate somebody
+deletes, and five of the seven findings this gate opened with were exactly that case.
+
+### What the first run found
+
+§LIV.9 argued from "zero forks" across the 24 files in `components/ui`. That was true of
+`components/ui`. Across `src`, which is what the gate scans, there were **seven**:
+
+| Finding | Resolution |
+|---|---|
+| `mode-toggle-sidebar.tsx` | **Deleted.** A fork of `ModeToggleSidebar` sitting beside its own shim — `mode-toggle.tsx` already re-exported the shared one — with zero importers. |
+| `dialog.delete.tsx` | **Shimmed.** 91 lines that had drifted behind the shared dialog, rendered by 18 pages. Same i18n keys, so no text changed; the shared one adds the `blockedBy` branch that says what is still referencing the thing you are deleting. |
+| `AppFooter` | Exempt — fetches Shio's build version; the package's is presentational. |
+| `NavMain` | Exempt — carries SH207's `badge`/`badgeLabel`, which the package's `NavItem` has no field for. Exactly the case §LIV.9 predicted. |
+| `PageHeader` | Exempt — breadcrumbs, tenant switcher, app switcher, language switcher, two breakpoints. SH910 deletes it. |
+| `UserProvider`, `useCurrentUser` | Exempt — typed on `ShCurrentUser` and bound to `ShUserService`; the package's is generic over `VigUser` with `fetchUser` injected. |
+
+### Never pass this gate a positional root
+
+Its argument filter is `i !== manifestFlag + 1`, and `indexOf` returns `-1` when `--manifest` is
+absent — so `manifestFlag + 1` is `0` and **the first positional root is always discarded**.
+`check-duplicates src app` scans only `app`; `check-duplicates no-such-dir` scans `./src` and
+exits 0. `check-duplicates src` masks it exactly, because the argument it drops is the directory
+it then defaults to. The reader here steers with `cwd` and passes no root. **SH919** fixes it
+upstream; the workaround is carried in a consumer, which is the wrong place for it.

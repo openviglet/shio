@@ -1614,6 +1614,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH887** — One page composes 23 of the layer's 35 exports and a reader holds the other 12 against the tasks that own them; looking at it found three carried-over assumptions.
 - **SH890** — The accent is four tokens on :root, verified deriving orange at runtime; the header chip and six duplicated tints now compose it, and the remaining 17 files are named.
 - **SH892** — All three editors wrap sections in the adapter, console still the default; rendering the package found two ways adoption is a silent no-op, and the era classifier's hole.
+- **SH894** — The package's duplicate gate runs inside pnpm test with a planted-duplicate vacuity check; its first run found seven, of which a dead fork was deleted and a drifted 91-line dialog shimmed.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

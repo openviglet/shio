@@ -970,17 +970,6 @@ that product's team read one file. Shio has its own lint suite and its own conve
 and none of them know these rules. Add the checks here rather than assuming a package
 gate covers a consumer's own use of it.
 
-### LIV.9 A lint, since discipline is not an instrument (SH894)
-
-All 24 files under components/ui are one-line re-exports of a design-system component -
-zero forks, which is a better state than the other consumer's and one reached by
-discipline alone. Discipline is what fails first under time pressure, and this block is
-about to put a large shared surface within reach: the moment a bento hero needs one prop
-it does not have, the cheapest path is a local copy. The package emits its export list
-as a build artefact for exactly this. Run the lint in Shio's own CI so a re-declaration
-fails a build and names the import that replaces it, and land it in this block rather
-than after the surfaces move.
-
 ### LIV.12 The one script that opens a real page (SH897)
 
 e2e/console-check.mjs is the only thing in this repository that drives the console in a
@@ -1014,6 +1003,32 @@ Teaching the boot script the same default the provider carries fixes both, and t
 durable form of that is one declaration both read rather than two literals that agree
 today. The assertion is a rendered page: `<html>`'s theme and `<body>`'s ground must not
 contradict, checked where no shell has painted over them.
+
+### LIV.15 The root argument the duplicate gate throws away (SH919)
+
+The design system's `check-duplicates.mjs` parses its arguments like this:
+
+    const manifestFlag = args.indexOf("--manifest")
+    const roots = args.filter((a, i) => !a.startsWith("--") && i !== manifestFlag + 1)
+
+`indexOf` returns `-1` when `--manifest` is absent, so `manifestFlag + 1` is **0** and
+the filter discards argument zero — the first positional root, on every invocation that
+does not pass a manifest. `check-duplicates src app` scans only `app`. `check-duplicates
+no-such-dir-at-all` scans `./src` and exits 0.
+
+It hid perfectly because the documented invocation is `check-duplicates src`, and the
+argument it drops is the same directory it then falls back to. SH894 found it only
+because a vacuity test tried to point the gate at a planted duplicate in a temp
+directory: the gate reported 181 files scanned and a clean tree, and the test read that
+as "a planted duplicate does not fail the gate" — true, and for a reason that had
+nothing to do with the logic under test.
+
+Shio is safe today because `no-duplicate-components.test.mjs` steers with `cwd` and
+never passes a root, with the reason written beside it. That is a workaround carried in
+a consumer, which is the wrong place for it: the next consumer to wire this gate up will
+write the documented invocation and get a gate that reads whatever directory it feels
+like. Fix it upstream, then delete the workaround here and let the test pass a root the
+ordinary way.
 
 ## LV The curator's console, surface by surface (Block AR)
 

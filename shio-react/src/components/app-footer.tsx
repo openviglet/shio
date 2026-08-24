@@ -1,3 +1,7 @@
+// viglet-ds-allow-duplicate AppFooter -- the package's is presentational and takes
+// {logo, productName, version, links} as props; this one *fetches* Shio's build version from
+// ShSystemInfoService and links to Shio's docs and repository. Same name, different job: one
+// renders a footer, the other knows what version this instance is running.
 import { ShSystemInfoService } from "@/services/system/system-info.service"
 import { Layers } from "lucide-react"
 import { useEffect, useState } from "react"

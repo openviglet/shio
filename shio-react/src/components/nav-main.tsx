@@ -1,3 +1,8 @@
+// viglet-ds-allow-duplicate NavMain -- the package's NavItem is {title, url, icon} and has no
+// field for SH207's unread-shaped count, which is the whole reason this one exists: the review
+// queue's badge, and the `badgeLabel` a reader who cannot see a number in a corner depends on.
+// This is exactly the case §LIV.9 predicted — "the moment a component needs one prop it does not
+// have, the cheapest path is a local copy" — so it is written down rather than left to be found.
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import type { Icon } from "@tabler/icons-react"
 import { NavLink, useLocation } from "react-router-dom"

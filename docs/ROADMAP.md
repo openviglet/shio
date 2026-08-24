@@ -15,9 +15,9 @@
 - 📋 **SH889** (deps: SH888) **Shio has no nav declaration a rail and a palette can share, so each surface would be listed twice** — The package supplies the schema and both readers; declaring a surface once is what makes them agree. → §LIV.4
 - 📋 **SH891** (deps: SH888) **bento chrome strings have no Shio translations, so a shared rail and palette would render raw keys** — The package already translates the chrome it owns; what has no keys here are the nav and palette labels Shio itself supplies. → §LIV.6
 - 📋 **SH893** (deps: SH888) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
-- 📋 **SH894** (deps: —) **nothing fails when a component is re-declared here instead of imported from the design system** — All 24 ui files are shims by discipline alone, and discipline is not an instrument. → §LIV.9
 - 📋 **SH897** (deps: SH888) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
 - 📋 **SH918** (deps: —) **the boot splash defaults to light while the app defaults to dark, and body keeps the light ground** — A page outside the console shell then renders near-white text on a near-white body, which is what the bento shell will be. → §LIV.14
+- 📋 **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — A gate that reports a clean tree because it never read the tree you named is worse than no gate. → §LIV.15
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
@@ -61,12 +61,6 @@
 - **An accessibility violation on a bento surface fails a gate here** Icon-only labels,
   the screen-reader spans, string ARIA values and the reduced-motion guard are checked
   in this repository rather than assumed from the package.
-
-## Done when — SH894
-
-- **A component re-declared here fails this repository's CI** The export-manifest lint
-  runs on every push and names the import that replaces the local copy, and all 24
-  existing shims still resolve.
 
 ## Done when — SH897
 

@@ -14,6 +14,11 @@ import { ModeToggle } from "./mode-toggle"
 import { TenantSwitcher } from "./tenant-switcher"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./ui/breadcrumb"
 
+// viglet-ds-allow-duplicate PageHeader -- the package's takes {icon, title, urlBase, children}
+// and renders a title bar. This one renders Shio's breadcrumb trail off BreadcrumbProvider, the
+// tenant switcher, the Viglet app switcher, the language switcher and the user menu, and it has
+// a second layout for the narrow breakpoint. Blocks AQ and AR retire it rather than merge it:
+// SH909 unmounts the console shell and SH910 deletes this file.
 interface MyComponentProps { turIcon?: React.ElementType; title: string; urlBase?: string }
 
 export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title, urlBase }) => {

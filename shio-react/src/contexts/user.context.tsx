@@ -1,3 +1,8 @@
+// viglet-ds-allow-duplicate UserProvider -- typed on Shio's ShCurrentUser and bound to Shio's
+// ShUserService. The package's is generic over VigUser with `fetchUser` injected, so adopting it
+// means changing the type every console page reads off `user`, not swapping an import.
+// viglet-ds-allow-duplicate useCurrentUser -- the accessor for the context above, and it returns
+// that context's value type. It cannot move while the provider does not.
 import type { ShCurrentUser } from "@/models/auth/current-user"
 import { ShUserService } from "@/services/auth/user.service"
 import React from "react"
