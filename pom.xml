@@ -25,7 +25,7 @@
         <revision>2026.3</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-boot.version>4.1.0</spring-boot.version>
+        <spring-boot.version>4.1.1</spring-boot.version>
         <!-- Shared backend platform — external project (github.com/openviglet/viglet-core),
              published to GitHub Packages and versioned independently. -->
         <viglet-core.version>2026.3.11</viglet-core.version>
@@ -202,17 +202,17 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
-                <version>1.6.2</version>
+                <version>1.6.3</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.6.2</version>
+                <version>1.6.3</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
-                <version>20260719</version>
+                <version>20260814</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -232,7 +232,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>33.6.0-jre</version>
+                <version>33.7.1-jre</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
