@@ -219,13 +219,27 @@ public class ShPostUnifiedAPI {
         return shConsolePostReadService.listByFolder(folderId, state);
     }
 
+    /**
+     * SH921 — and when there is nothing here, a 404 that says which of the two reasons it is.
+     *
+     * <p>A read is {@code findByIdAndState}, so a post published without ever being drafted
+     * answers nothing for {@code ?state=draft}. That used to be {@code ResponseEntity.notFound()}
+     * — an empty body, indistinguishable from an id nobody has ever heard of, leaving the caller
+     * to guess between a wrong id, a wrong state and a deleted row. The console guessed too, and
+     * rendered an empty form behind two failed requests.</p>
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ShConsolePost> get(@PathVariable String id,
                                              @RequestParam(name = "state", defaultValue = "PUBLISHED") ShPostState state) {
         shContentAclService.requireRead(id);
         return shConsolePostReadService.get(id, state)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> {
+                    List<ShPostState> available = shConsolePostReadService.statesOf(id);
+                    return available.isEmpty()
+                            ? ShPostStateNotFoundException.noSuchPost(id)
+                            : ShPostStateNotFoundException.wrongState(id, state, available);
+                });
     }
 
     @GetMapping("/{id}/versions")

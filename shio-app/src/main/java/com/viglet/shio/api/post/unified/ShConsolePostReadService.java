@@ -9,6 +9,7 @@
 package com.viglet.shio.api.post.unified;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -58,6 +59,30 @@ public class ShConsolePostReadService {
     @Transactional(readOnly = true)
     public Optional<ShConsolePost> get(String id, ShPostState state) {
         return shPostUnifiedRepository.findByIdAndState(id, state).map(mapper::toConsolePost);
+    }
+
+    /**
+     * Which states this id exists in, ordered, for a 404 that can say why it is one (SH921).
+     *
+     * <p>A read is {@code findByIdAndState}, so an id that exists only as {@code PUBLISHED}
+     * answers nothing for {@code ?state=DRAFT} — and a bare 404 makes that indistinguishable
+     * from an id nobody has ever heard of. The caller has to guess between a wrong id, a wrong
+     * state and a deleted row, and the console guessed too: its post editor rendered an empty
+     * form behind two failed requests.
+     *
+     * <p>Deliberately <b>not</b> a fallback to the sibling state. {@link #written} does that,
+     * because there the caller has just written the row and wants whatever it became; here the
+     * caller named a state, and answering with a different one is a lie a client cannot detect.
+     * The states are reported so the caller can ask again, on purpose.
+     */
+    @Transactional(readOnly = true)
+    public List<ShPostState> statesOf(String id) {
+        return shPostUnifiedRepository.findById(id).stream()
+                .map(ShPostUnified::getState)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
     }
 
     /** The written row, in the console's shape. Falls back to the sibling state when the write moved it. */

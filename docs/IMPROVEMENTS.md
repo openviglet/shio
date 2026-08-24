@@ -948,31 +948,6 @@ write the documented invocation and get a gate that reads whatever directory it 
 like. Fix it upstream, then delete the workaround here and let the test pass a root the
 ordinary way.
 
-### LIV.17 A 404 with nothing in it (SH921)
-
-SH897 taught the browser check the bento route tree, and the first live run failed on
-something else entirely: a `post-edit:File` probe driving `GET
-/api/v2/post-unified/{id}` into a 404.
-
-The id was not invented. `/agent/find` returns static files alongside posts — correctly,
-they are content and they are addressable — as
-`{"type":"File","title":"…woff2","id":"07ff723c…"}`. Following that id is the obvious
-next move, and where it lands depends on which surface you use: `/agent/read` answers
-200 with the file's `FILE`, `SHA256` and `SIZE`; `/api/v2/staticfile/{id}` answers 200;
-`/api/v2/post-unified/{id}` answers **404 with an empty body**.
-
-The 404 is right. A static file is not a post-unified row and should not pretend to be
-one. What is wrong is that it says nothing. P6 is one of the ten laws — every 4xx
-carries `fix`, `allowed`, `didYouMean` or `example` — and this is exactly the case the
-law exists for: a caller who did something reasonable, holding an id a sibling endpoint
-had just handed them, and who now has to guess whether the id is wrong, the state
-parameter is wrong, or the row was deleted. The console guesses too: its post editor
-renders an empty form behind two failed requests.
-
-Answer with a body that names the id's actual kind and the endpoint that serves it. The
-check's own probe list is already fixed — it no longer opens a post editor for a static
-file — so nothing is watching this until the error itself is.
-
 ## LV The curator's console, surface by surface (Block AR)
 
 Forty-three console pages, migrated behind the parallel route the previous block builds,

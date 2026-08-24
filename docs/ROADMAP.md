@@ -12,7 +12,6 @@
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
 - 📋 **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — A gate that reports a clean tree because it never read the tree you named is worse than no gate. → §LIV.15
-- 📋 **SH921** (deps: —) **reading a static file's id through the console's post endpoint answers a bare 404 with no body at all** — P6 says every 4xx teaches, and this one is reached by following an id the find surface just returned. → §LIV.17
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

@@ -653,3 +653,40 @@ as a plan that promises one for a post nobody trashed.
   that service has most reason to explain — was read as an annotation, and the lint failed naming a
   method called `"@Transactional"`. It now skips comment lines, which
   `ShAgentTransactionalOverloadLintTest` had already paid for the lesson on.
+
+## A 404 from `post-unified/{id}` says which of the two it is (SH921)
+
+`GET /api/v2/post-unified/{id}` reads `findByIdAndState`. A post published **without ever being
+drafted** therefore answers nothing for `?state=draft` — and until SH921 that was
+`ResponseEntity.notFound()`: a 404 with **zero bytes**, byte for byte identical to an id nobody
+has ever heard of. The caller was left choosing between a wrong id, a wrong state and a deleted
+row; the console guessed too, and rendered an empty form behind two failed requests.
+
+Two slugs now, because they are two different problems:
+
+| Slug | When | What it carries |
+|---|---|---|
+| `post-state-not-found` | the id exists in other states | `allowed` (the states it has), `didYouMean`, a `fix` naming the working URL and `/versions` |
+| `no-such-post` | nothing anywhere carries the id | a `fix` pointing at `/agent/resolve`, and at `/staticfile/{id}` and `/folder/{id}` for the other kinds |
+
+**It reports the states rather than falling back to one.** `ShConsolePostReadService.written`
+*does* fall back to the sibling state, correctly — there the caller has just written the row and
+wants whatever it became. Here the caller **named** a state, and answering with a different one
+is a lie no client can detect: an editor would show published content in a draft form and save it
+back as an edit nobody made.
+
+### The filed diagnosis was wrong, which is worth more than the fix
+
+SH921 was filed from a browser-check failure on a static file, concluding "a static file is not a
+post-unified row and should not pretend to be one". Asked as `?state=published` **the very same id
+answers 200**. It *is* a post-unified row; it simply has no draft. The defect is general — any
+published-only post — and static files are merely the population where it is always true.
+
+A fix built on the filed premise would have special-cased post-type `File` and left every
+imported or directly-published post with the same silent 404. One `curl` with a different query
+parameter is what separated those two outcomes; the section had been written from the first
+observation rather than the second.
+
+`ShPostStateNotFoundTest` asserts at the boundary the defect crossed — the response body, not the
+service's `Optional` — and was verified by reverting the controller to the bare 404: two of its
+three assertions fail, and the `published` control stays green.
