@@ -1196,3 +1196,33 @@ is the whole point: the day an installed release carries VDS78 it goes red, and 
 three-step instruction to delete the workaround, delete the test, and close SH919's open half.
 
 A comment saying "remove this later" expires silently. A test does not.
+
+## Nothing interactive inside anything else interactive (SH922)
+
+A fourth rule in `bento-a11y.test.mjs`: no interactive element nested in another. `<a><button>`
+is invalid HTML, and browsers resolve it however they like. What it cost a reader was concrete —
+on the static-file list, **two tab stops on every one of 169 rows**, the second announcing nothing
+because only the anchor carried a name.
+
+**SH893's census could not see it, and that is the interesting part.** That reader asks whether an
+icon-only control has an accessible name; here the anchor *had* one. A scan of either element
+alone finds nothing wrong — the defect is in the relationship between them.
+
+### Interactivity is decided by the import, never by the name
+
+The first draft listed `Link` as interactive and reported a second finding in
+`html-editor.widget.tsx` — which was **lucide-react's `Link` icon**, sitting inside a toolbar
+button exactly as it should. `Link` is a router element in one file and a glyph in the next, and
+so is anything a product happens to name twice. Each conditional name now counts only where *that
+file* imports it from something that makes it interactive. `asChild` is excluded too: it means the
+wrapper delegates its element to the child, so there is one element rather than two — missing that
+would report every correct shadcn link-button in the console.
+
+### What the two instruments each found
+
+The browser measured the cost: 169 rows, 169 nested pairs. The source scan found the **second**
+instance, in a detail panel the probe never reached because it sits behind a selection. *A run
+measures what a rule is worth; a scan finds the rest of it.* Both are fixed by the same decision —
+the anchor is the control, so it carries the button's classes and the button goes.
+
+Verified after: 169 rows, **0 nested pairs**, two focusables per row for two real actions.

@@ -105,7 +105,9 @@ const UNNAMED_DEBT = {
   "app/console/content/object.children.page.tsx": ["LayoutGrid", "LayoutGrid", "List", "Search", "Sheet"],
   "app/console/content/post-type.edit.page.tsx": ["Trash2"],
   "app/console/content/post-type.list.page.tsx": ["Pencil", "Trash2"],
-  "app/console/content/static-file.list.page.tsx": ["Download", "Trash2"],
+  // SH922 removed the Download entry: that button lived inside the anchor that already
+  // named it, and the fix was to delete the button rather than to label it.
+  "app/console/content/static-file.list.page.tsx": ["Trash2"],
 }
 
 /**
@@ -228,6 +230,129 @@ test("SH893: the reduced-motion rule works, which the console's own CSS cannot s
     [],
     "SH893: a keyframe the guard names must pass, or the rule refuses every animation and gets"
       + " deleted by the first person who needs one")
+})
+
+/**
+ * SH922 — nothing interactive inside anything else interactive.
+ *
+ * <a><button></a> is invalid HTML, and browsers resolve it however they like. What it costs a
+ * reader is concrete: on the static-file list it was **two tab stops on every one of 169 rows**,
+ * the second announcing nothing, because only the anchor carried a name.
+ *
+ * SH893's census could not see it and the reason is the interesting part. That reader asks
+ * whether an icon-only control has an accessible name; here the anchor *had* one. A scan of
+ * either element on its own finds nothing wrong — the defect is in the relationship.
+ *
+ * ## Interactivity is decided by the import, not by the name
+ *
+ * The first draft listed `Link` as interactive and reported a second finding in
+ * `html-editor.widget.tsx` — which was **lucide-react's `Link` icon**, sitting inside a toolbar
+ * button exactly as it should. `Link` is a router element in one file and a glyph in the next,
+ * and so is anything else a product happens to name twice. So each conditional name is only
+ * interactive when *this file* imports it from somewhere that makes it so.
+ *
+ * `asChild` is excluded: it means the wrapper delegates its element to the child, so there is one
+ * element, not two. Missing that would report every correct shadcn link-button in the console.
+ */
+const ALWAYS_INTERACTIVE = ["a", "button"]
+
+/** Interactive only where the file imports them from something that makes them so. */
+const CONDITIONALLY_INTERACTIVE = {
+  Button: /from "@\/components\/ui\/button"|from "@viglet\/viglet-design-system"/,
+  GradientButton: /from "@viglet\/viglet-design-system"/,
+  Link: /from "react-router-dom"/,
+  NavLink: /from "react-router-dom"/,
+}
+
+function interactiveNames(source) {
+  const names = [...ALWAYS_INTERACTIVE]
+  for (const [name, from] of Object.entries(CONDITIONALLY_INTERACTIVE)) {
+    if (new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*${from.source}`).test(source)) {
+      names.push(name)
+    }
+  }
+  return names
+}
+
+function nestedInteractive() {
+  const map = {}
+  for (const path of sources().sort()) {
+    const source = readFileSync(path, "utf8")
+    const names = interactiveNames(source)
+    const inner = new RegExp(`<(${names.join("|")})[\\s/>]`)
+    for (const tag of names) {
+      for (const element of findElements(source, tag)) {
+        if (element.selfClosing || !element.body) continue
+        if (/asChild/.test(element.attrs)) continue
+        const hit = inner.exec(element.body)
+        if (!hit) continue
+        ;(map[rel(path)] ??= []).push(`${hit[1]} in ${tag}`)
+      }
+    }
+  }
+  for (const list of Object.values(map)) list.sort()
+  return map
+}
+
+test("SH922: no interactive element is nested inside another", () => {
+  const found = nestedInteractive()
+  const total = Object.values(found).reduce((n, list) => n + list.length, 0)
+
+  console.log(`SH922: ${total} nested-interactive shape(s) in ${Object.keys(found).length} file(s)`)
+
+  assert.deepEqual(found, {},
+    "SH922: an interactive element is nested inside another.\n"
+      + "  `<a><button>…</button></a>` is invalid HTML and gives a keyboard reader two tab stops"
+      + " where the page offers one action — the inner one usually announcing nothing, because the"
+      + " outer is the half that got the label.\n"
+      + "  Pick which one is the control. If the destination is a URL, the anchor is the control:"
+      + " give it the button's classes and delete the button. If it needs an onClick, it is a"
+      + " button and there should be no anchor.\n"
+      + "  If the wrapper is delegating its element with `asChild`, this reader already skips it —"
+      + " so a finding here is a real pair of elements.")
+})
+
+test("SH922: interactivity is read from the import, not guessed from the name", () => {
+  // The false positive that shaped this rule: lucide-react exports an icon called `Link`, and a
+  // toolbar button containing one is correct. Reported as a finding, it would have taught the
+  // next reader that the rule is noise.
+  const iconLink = 'import { Link } from "lucide-react"\n'
+  assert.ok(!interactiveNames(iconLink).includes("Link"),
+    "SH922: `Link` imported from lucide-react is an icon and must not count as interactive, or"
+      + " every rich-text toolbar in this console becomes a finding.")
+
+  const routerLink = 'import { Link } from "react-router-dom"\n'
+  assert.ok(interactiveNames(routerLink).includes("Link"),
+    "SH922: `Link` imported from react-router-dom renders an anchor and must count — without it"
+      + " the rule misses the nesting most likely to be written by accident.")
+
+  // And the always-interactive pair is not import-dependent.
+  for (const tag of ALWAYS_INTERACTIVE) {
+    assert.ok(interactiveNames("").includes(tag),
+      `SH922: the plain <${tag}> element must always count as interactive`)
+  }
+})
+
+test("SH922: the rule catches the shape it was written for", () => {
+  // Proved against a sample rather than only against a clean tree, because the population is now
+  // empty — and a rule with nothing left to find is a rule whose next failure is its first.
+  const sample = 'import { Button } from "@/components/ui/button"\n'
+    + '<a href="/x" aria-label="Download"><Button size="icon"><Download /></Button></a>'
+  const names = interactiveNames(sample)
+  const inner = new RegExp(`<(${names.join("|")})[\\s/>]`)
+  const [anchor] = findElements(sample, "a")
+
+  assert.ok(anchor, "SH922: the scanner found no anchor in a sample that plainly contains one")
+  assert.match(inner.exec(anchor.body)?.[1] ?? "", /Button/,
+    "SH922: a Button inside an anchor is no longer detected, which is the exact shape this rule"
+      + " was written for — 169 instances of it on one page.")
+
+  // And the correct alternative must NOT be reported, or the fix has nowhere to go.
+  const fixed = '<a href="/x" aria-label="Download" className="inline-flex"><Download /></a>'
+  const [fixedAnchor] = findElements(fixed, "a")
+  assert.equal(inner.exec(fixedAnchor.body), null,
+    "SH922: an anchor that IS the control is reported as a nesting, so the rule refuses its own"
+      + " remedy")
 })
 
 test("SH893: the reader is not vacuous — and specifically not in the way it was", () => {

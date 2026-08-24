@@ -1627,6 +1627,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
+- **SH922** — The anchor is the control in both places, and a fourth a11y rule holds it; interactivity is resolved through each file's imports, because lucide's Link icon is not react-router's.
+
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 
 - **SH912** — A failed push is retried shio.turing.max-attempts times (3) with a doubling shio.turing.retry-backoff (1s), so a Turing restart no longer leaves a published page unfindable. The wait happens on the single index worker rather than by re-queueing, which keeps publish-then-unpublish ordering by construction, and the incident is recorded once at exhaustion — so a succeeded retry leaves nothing stale in the diagnostics window and an exhausted one leaves one incident rather than three. Pending retries do not survive a restart, deliberately: persisting them would add durability to the one subsystem that makes none, and reconciling a drained queue against changed posts is a reindex, which is SH413.

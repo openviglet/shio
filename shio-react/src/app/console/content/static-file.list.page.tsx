@@ -478,12 +478,19 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
                 <TableCell className="text-muted-foreground">{item.owner ?? "—"}</TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-1">
+                    {/*
+                      SH922 — the anchor IS the control, so it carries the styling and there is
+                      no button inside it. A `<button>` nested in an `<a>` is interactive content
+                      inside interactive content: invalid markup, and on a rendered instance it
+                      was two tab stops on every one of 169 rows, the second announcing nothing
+                      because only the anchor was named. The classes below are what `Button`
+                      variant="ghost" size="icon" was drawing.
+                    */}
                     <a href={service.fileUrl(item)} download={item.fileName ?? undefined}
                       target="_blank" rel="noopener noreferrer"
-                      aria-label={t("staticFile.download")} title={t("staticFile.download")}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      aria-label={t("staticFile.download")} title={t("staticFile.download")}
+                      className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-1 focus-visible:outline-none">
+                      <Download className="h-4 w-4" />
                     </a>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
                       onClick={() => onDelete(item)}>
@@ -656,11 +663,16 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
             <Button variant="outline" size="sm" onClick={() => onCopyUrl(service.fileUrl(item))}>
               <LinkIcon className="mr-2 h-4 w-4" />{t("staticFile.copyUrl")}
             </Button>
+            {/*
+              SH922 — the same shape as the row action, in the detail panel. The browser probe
+              that measured 169 nested pairs never reached this one, because it is behind a
+              selection; the source scan is what found it. That is the division of labour between
+              the two — a run measures what a rule is worth, and a scan finds the rest of it.
+            */}
             <a href={service.fileUrl(item)} download={item.fileName ?? undefined}
-              target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />{t("staticFile.download")}
-              </Button>
+              target="_blank" rel="noopener noreferrer"
+              className="border-input hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-8 items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-1 focus-visible:outline-none">
+              <Download className="mr-2 h-4 w-4" />{t("staticFile.download")}
             </a>
           </div>
           <div className="flex gap-2">
