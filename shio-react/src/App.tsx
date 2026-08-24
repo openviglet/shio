@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom"
+import BentoRootPage from "./app/bento/bento.root.page"
 import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
 import ConsoleRootPage from "./app/console/console.root.page"
 import NotFoundPage from "./app/console/not-found.page"
@@ -34,6 +35,20 @@ function App() {
                 SH888 builds the real parallel route tree; SH909 removes whichever shell loses.
               */}
               <Route path={ROUTES.BENTO_VOCABULARY} element={<BentoVocabularyPage />} />
+              {/*
+                SH888 — the parallel bento route tree. A sibling of the console route and not a
+                child of it: `ConsoleRootPage` mounts a SidebarProvider and its PageHeader calls
+                SidebarTrigger, while the bento shell ships no provider at all, so the two cannot
+                nest. Both stay mounted for the length of Block AR and each surface moves under
+                its own task; SH909 removes whichever shell loses.
+
+                The index is the vocabulary harness — the same component the bare route above
+                renders. Two mounts of one page, which is the cheapest thing that proves the
+                shell wraps real bento content, and SH898 replaces it with the console home.
+              */}
+              <Route path={ROUTES.BENTO} element={<BentoRootPage />}>
+                <Route index element={<BentoVocabularyPage />} />
+              </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
                 <Route index element={<Navigate to={ROUTES.HOME} replace />} />
                 <Route path="home" element={<HomePage />} />

@@ -11,6 +11,7 @@ import { readdirSync, readFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { stripComments as strip } from "./support/source-text.mjs"
 
 /**
  * SH890 — Shio's accent is a token, and every place that still spells it as a hue is named.
@@ -66,22 +67,6 @@ const ORANGE = new RegExp(
   "g",
 )
 
-/**
- * Comments are stripped before the scan, and this is not tidiness: the first run of this reader
- * reported `index.css` as carrying four orange utilities, which were the four the SH890 comment
- * *quotes* while explaining what it replaced. A reader that counts its own explanation makes the
- * explanation unwritable.
- */
-function strip(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .filter((line) => {
-      const text = line.trim()
-      return !text.startsWith("//") && !text.startsWith("*")
-    })
-    .join("\n")
-}
 
 function sources(dir = SRC, found = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

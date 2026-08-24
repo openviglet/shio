@@ -922,18 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.3 A parallel shell, because reversibility is the point (SH888)
-
-The bento shell has no sidebar provider and no breadcrumb bar; Shio's console root
-mounts a SidebarProvider around everything and its PageHeader calls SidebarTrigger.
-Those are not compatible, and any bento component reaching for the sidebar context
-inside the console renders blank. So the migration cannot be done in place, one page at
-a time, without leaving the console broken in the middle. Build the bento route tree
-beside the console one, mounting the package's shell - rail, user menu, back-to-top -
-and let each surface move when its own task ships. Every slice is then independently
-reversible, which across 43 pages is worth more than the temporary cost of two route
-trees.
-
 ### LIV.4 Declare each surface once (SH889)
 
 The rail and the command palette both need to know what surfaces exist, what they are
@@ -1005,6 +993,31 @@ a consumer, which is the wrong place for it: the next consumer to wire this gate
 write the documented invocation and get a gate that reads whatever directory it feels
 like. Fix it upstream, then delete the workaround here and let the test pass a root the
 ordinary way.
+
+### LIV.16 Two user contexts, one per shell (SH920)
+
+SH894 exempted Shio's `UserProvider` from the duplicate gate on good grounds: it is
+typed on `ShCurrentUser` and bound to `ShUserService`, while the package's is generic
+over `VigUser` with `fetchUser` injected. Adopting the package's meant changing the type
+every console page reads off `user`, which is not swapping an import.
+
+SH888 then found what that exemption costs. `BentoUserMenu` calls the **package's**
+`useCurrentUser`, and a local variant of a context is a different context object — so
+the shared menu found no provider and threw, blanking the whole shell behind the error
+boundary. Nothing in `tsc` says so; the first render did. The bento shell therefore
+mounts the package's provider, fed by Shio's service, and Shio's own provider is
+deliberately not also mounted there: nothing under that tree reads it yet, and two
+providers means two fetches of the same endpoint.
+
+That leaves the console tree on one context and the bento tree on the other, which is
+fine exactly until a Block AR task moves a page that calls Shio's `useCurrentUser` — and
+then it throws in the same way, on a surface a curator uses. Every one of the fourteen
+crosses this seam.
+
+Resolve it once rather than fourteen times: either Shio's provider wraps the package's
+and both contexts resolve from one fetch, or `ShCurrentUser` folds into `VigUser` and
+the local provider goes. The second removes an exemption; the first keeps the types the
+console pages already read.
 
 ## LV The curator's console, surface by surface (Block AR)
 

@@ -21,6 +21,12 @@ const RESERVED_TOP_SEGMENTS = new Set([
    * shell's SidebarProvider — the whole reason it is top-level.
    */
   "bento-vocabulary",
+  /*
+   * SH888 — the parallel bento route tree, for the same reason and one more: it is a sibling of
+   * `console`, not a child, because the two shells cannot nest. Reserved here so `/bento/...`
+   * is a route rather than a tenant named "bento".
+   */
+  "bento",
 ]);
 
 function readTenantSegment(): string {
@@ -65,6 +71,12 @@ export const ROUTES = {
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
   /** SH887 — unscoped on purpose: a harness with no tenant, mounted outside the console shell. */
   BENTO_VOCABULARY: "/bento-vocabulary",
+  /**
+   * SH888 — the parallel bento route tree's root. Unscoped like the console's own `CONSOLE`
+   * would be if it were not tenant-prefixed; tenancy under bento arrives with the surfaces
+   * that need it (SH905), not with the shell.
+   */
+  BENTO: "/bento",
 };
 
 // Route patterns (with `:tenant` placeholder) used by React Router for matching.

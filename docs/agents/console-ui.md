@@ -921,3 +921,44 @@ preference, or the test passes over the only case that was ever broken.
 
 Verified in a browser under both OS preferences: `<body>` carries no boot class and paints
 `rgb(10,10,15)` under `html.dark`, where it used to paint `rgb(250,250,250)`.
+
+## The bento route tree, beside the console one (SH888)
+
+`/bento` is a **sibling** of `/console`, not a child.
+[`bento.root.page.tsx`](../../shio-react/src/app/bento/bento.root.page.tsx) mounts the package's
+whole shell — `BentoNavRail` down the left, `BentoUserMenu` in the header, `BentoBackToTop` at
+the corner — and **no provider between them**. `console.root.page.tsx` wraps everything in a
+`SidebarProvider` and its `PageHeader` calls `SidebarTrigger`; the two cannot nest, which is why
+a page-at-a-time migration in place would leave the console broken in the middle of each of 43
+slices. Both trees stay mounted for the length of Block AR, each surface moves under its own
+task, and **SH909** removes whichever shell loses — on the roadmap precisely so the temporary
+state cannot become permanent by nobody deciding.
+
+[`bento-nav.ts`](../../shio-react/src/app/bento/bento-nav.ts) is the product's own map, which the
+package will not hold: "an entry appears when its route does." The rail draws **sections only** —
+it filters `groups` to those carrying an `areaRoute` — so a section without one is invisible,
+silently. `BentoNavItem` exists for the command palette, which SH889 wires; items are declared
+here so the rail and the palette cannot list a surface twice. `fallbackRoute` and `areaRoute`
+point at the **console** paths on purpose: each AR task repoints its own entry, and until then
+the rail takes you to the page that exists.
+
+### Two things that only a render says
+
+**The shared user menu needs the *package's* `UserProvider`.** The shell came up entirely blank
+behind the error boundary with `useCurrentUser must be used within UserProvider`. `BentoUserMenu`
+reads the design system's context, and SH894 established Shio's provider as a deliberate local
+variant — so it is a **different context object** and satisfies nothing. `tsc` is silent (both
+are called `UserProvider`, both take children); so is every import scan. The seam is `fetchUser`,
+and `ShCurrentUser` is structurally assignable to `VigUser`. **SH920** carries the consequence:
+the two trees now mount different user contexts, and all fourteen AR surfaces cross that seam.
+
+**The header is `sticky`, not `fixed`.** `BackendStatusProvider` renders its "server unavailable"
+bar as `sticky top-0 z-50` from `main.tsx`, above this tree in the flow. A fixed header sat on
+top of it and covered the retry button with the avatar — visible only while the backend is down,
+which is exactly when that button matters. Sticky lets both stack.
+
+`test/support/source-text.mjs` now holds the comment stripper these readers need. It has caught
+three of them (SH823, SH890, SH888) the same way: a reader asserting "this file must not say X"
+failing against the paragraph explaining why it does not. That is not incidental here — readers
+in this repository carry their reasoning in prose beside the code, so any such scan runs over a
+file very likely to *discuss* X.
