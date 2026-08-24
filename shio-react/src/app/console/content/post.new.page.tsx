@@ -1,5 +1,5 @@
-import { PageHeader } from "@/components/page-header"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
@@ -14,7 +14,7 @@ import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShPostType } from "@/models/post-type/post-type"
 import { postFormSchema } from "@/models/post-unified/post-unified"
-import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
+import { GradientButton, toast } from "@viglet/viglet-design-system"
 
 const postTypeService = new ShPostTypeService()
 const unifiedService = new ShPostUnifiedService()
@@ -67,7 +67,7 @@ export default function PostUnifiedNewPage() {
   if (!postType) {
     return (
       <>
-        <PageHeader title={t("content.newPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
+        <AdaptivePageHeader icon={IconFileText} title={t("content.newPost")} urlBase={ROUTES.CONTENT_ROOT} />
         <div className="p-6 flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{t("common.loading")}</span>
@@ -80,11 +80,15 @@ export default function PostUnifiedNewPage() {
 
   return (
     <>
-      <PageHeader title={t("content.newPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-      <div className="p-6 space-y-6">
-        <StickySaveBar
-          title={t("content.newPost")}
-          badges={
+      {/* SH901 — one call, for the same 1:2 reason as the editor next door. */}
+      <AdaptivePageHeader
+        icon={IconFileText}
+        eyebrow={t("content.postLabel")}
+        title={t("content.newPost")}
+        urlBase={ROUTES.CONTENT_ROOT}
+        onCancel={navigateBack}
+        loading={isLoading}
+        saveBadges={
             <>
               <BadgeColorful text={postTypeLabel || ""} className="text-xs" />
               <BadgeColorful
@@ -97,7 +101,7 @@ export default function PostUnifiedNewPage() {
               </Badge>
             </>
           }
-          actions={
+        actions={
             <>
               <GradientButton type="button" size="sm" loading={isLoading} onClick={handleSave}>
                 <Save className="size-4" />
@@ -108,11 +112,17 @@ export default function PostUnifiedNewPage() {
               </GradientButton>
             </>
           }
-        />
+      />
+      <div className="p-6 space-y-6">
 
-        <Card>
-          <CardHeader className="pb-2" />
-          <CardContent>
+        {/*
+          SH901 — the same header rule the editor learned in SH892: the adapter's bento branch
+          needs a header child or it falls through to a console card, silently. `content.fields`,
+          not the post's title, because identity belongs to the hero.
+        */}
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader icon={IconFileText} title={t("content.fields")} />
+          <AdaptiveSectionCard.Content>
             {schema.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 This post type has no fields defined.
@@ -125,8 +135,8 @@ export default function PostUnifiedNewPage() {
                 postTypeName={postTypeLabel}
               />
             )}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
       </div>
     </>
   )

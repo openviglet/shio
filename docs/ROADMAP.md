@@ -15,25 +15,18 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH901** (deps: SH892 ✅) **the post editor and the new-post flow are the heaviest forms here, with 15 dynamic widgets inside them** — The widgets must not be rewritten, which is what the chrome adapter exists to make possible. → §LV.4
-- 📋 **SH902** (deps: SH901) **the three post-type pages carry the attribute editor and a console sticky save bar with no scroll morph** — Post types are the one name-keyed surface and the editor a curator returns to most after posts. → §LV.5
+- 📋 **SH902** (deps: SH901 ✅) **the three post-type pages carry the attribute editor and a console sticky save bar with no scroll morph** — Post types are the one name-keyed surface and the editor a curator returns to most after posts. → §LV.5
 - 📋 **SH903** (deps: SH900 ✅) **search, trash and the static-file list are console pages with no empty state, no mosaic and no hero** — These three are where an empty result is normal, which is exactly what the shared empty state is for. → §LV.6
 - 📋 **SH904** (deps: SH899 ✅) **the six user, group and role pages are console forms and lists with identity fields inside the form** — Identity belongs in the hero, so these six are the clearest case for the entity shell. → §LV.7
 - 📋 **SH905** (deps: SH904) **eleven infrastructure admin pages — tokens, providers, webhooks, email, tenants — are console list-and-form pairs** — They are the most repetitive surface here, so a shared list and shell pays for itself most. → §LV.8
 - 📋 **SH906** (deps: SH905) **marketplace, the review queue and the activity log are console pages with bespoke layouts each** — The review queue is the curator's approval surface, and it should not be the last thing that looks old. → §LV.9
-- 📋 **SH907** (deps: SH901) **the Universal Editor pages wrap a preview iframe whose bridge depends on the surrounding chrome** — This is the one surface where a shell swap can break behaviour rather than only appearance. → §LV.10
+- 📋 **SH907** (deps: SH901 ✅) **the Universal Editor pages wrap a preview iframe whose bridge depends on the surrounding chrome** — This is the one surface where a shell swap can break behaviour rather than only appearance. → §LV.10
 - 📋 **SH908** (deps: SH903) **the GraphiQL page and the not-found page are the last two console surfaces and both embed a third-party UI** — A not-found page in the wrong chrome is the most likely place a user lands mid-cutover. → §LV.11
 - 📋 **SH909** (deps: SH906, SH907) **with every surface migrated, two route trees and two chromes are still mounted side by side** — The parallel route was chosen for reversibility, and an unclaimed reversal becomes permanent. → §LV.12
 - 📋 **SH910** (deps: SH909) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
 ## Priority
-
-## Done when — SH901
-
-- **The post editor renders in bento with its widgets untouched** All fifteen widgets
-  and the runtime schema are unchanged, identity moved to the hero, the save bar is the
-  scroll morph, and the widgetSettings guard still holds.
 
 ## Done when — SH902
 

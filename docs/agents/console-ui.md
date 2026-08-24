@@ -1371,3 +1371,43 @@ green to an outline button. With one component serving both chromes, that is a *
 to a console surface this task is not migrating** — the whole point of the arrangement is that
 the console one keeps looking the same. Restored, with the note that the hue is unresolved for
 bento, where a primary action is a tone.
+
+## The heaviest forms, and an adapter that spans a 1:2 mapping (SH901)
+
+The post editor and the new-post flow are the **same components** the console mounts, under the
+chrome provider — 500 lines of save/publish/preview/schedule handling around fifteen dynamic
+widgets, of which the chrome is a header, a save bar and one panel. SH900's rule, applied.
+
+**§LV.4 predicted "the adapter needs a prop it does not have", and it was sharper than a prop.**
+In bento the morph is **one** component: `BentoFormHero` renders the controls in the hero and
+fades a fixed bar in as the hero scrolls away, and the authoring contract forbids composing those
+halves by hand — "two halves that drift". In console chrome the same thing is **two** components
+with no relationship: `PageHeader` and `StickySaveBar`. So `AdaptivePageHeader` absorbed the save
+bar and now spans a 1:2 mapping.
+
+It decides on `onCancel`/`saveBadges`, never on `actions` alone — the content browser passes two
+navigation buttons and must not get a save bar.
+
+The post-type chooser is a **copy**, not an adapter: its `Card`s are clickable choices, whose
+bento counterpart is `BentoTile`. An adapter that turned a panel into a tile would be a different
+component, not a chrome switch.
+
+### SH897's morph check was looking for markup that does not exist
+
+It searched for `[data-bento-save-bar], .bento-save-bar`. **Neither is rendered by anything.**
+`BentoScrollSaveBar` emits `.bento-save-bar-spacer` and wraps the fixed bar in `.bento-fade-in`.
+So the check could not have found a morph on any page, and its report — "no surface carries one
+yet" — was true by construction and would have stayed true after one arrived.
+
+It took a surface actually having a morph for that to become visible. **Give a check its subject
+as early as you can.** Fixed against the package's real markup, and it now distinguishes the two
+answers it exists to tell apart: `morph: ok` on the post editor, `no surface carries one` on the
+home. Verified: `opacity: 0, pointer-events: none` at the top, `opacity: 1, pointer-events: auto`
+after scrolling.
+
+A second wrong answer sat beside it — `checkBentoSurface` returned a `morph` boolean from the
+same invented selectors that nothing read. Removed rather than fixed: a second, wrong answer
+beside the right one is worse than none.
+
+Census after this task: **43 pages, Card 33, PageHeader 36, StickySaveBar 1** — and six pages
+now empty, four of them empty *by migration* rather than by never having had chrome.

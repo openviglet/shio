@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
 /*
  * SH892 — the section chrome comes from the adapter, not from a Card. This is the form the
  * adapter exists for: the schema is built at runtime from the post type and the fields are
@@ -29,7 +29,7 @@ import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { postFormSchema } from "@/models/post-unified/post-unified"
-import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
+import { GradientButton, toast } from "@viglet/viglet-design-system"
 
 const unifiedService = new ShPostUnifiedService()
 const previewService = new ShPreviewTokenService()
@@ -183,7 +183,7 @@ export default function PostUnifiedEditPage() {
   if (!post) {
     return (
       <>
-        <PageHeader title={t("content.editPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
+        <AdaptivePageHeader icon={IconFileText} title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
         <div className="p-6 flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{t("common.loading")}</span>
@@ -194,11 +194,22 @@ export default function PostUnifiedEditPage() {
 
   return (
     <>
-      <PageHeader title={t("content.editPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-      <div className="p-6 space-y-6">
-        <StickySaveBar
-          title={post.title || t("content.editPost")}
-          badges={
+      {/*
+        SH901 — the header and the save bar are one call, because in bento they are one
+        component. `BentoFormHero` owns both halves of the morph and the authoring contract
+        forbids composing them by hand; console chrome has no such pairing, so the adapter spans
+        a 1:2 mapping. Every badge and every action below is exactly what the console rendered.
+      */}
+      <AdaptivePageHeader
+        icon={IconFileText}
+        eyebrow={t("content.postLabel")}
+        title={t("content.editPost")}
+        urlBase={ROUTES.CONTENT_ROOT}
+        saveTitle={post.title || t("content.editPost")}
+        onCancel={navigateBack}
+        loading={isLoading}
+        titleMissing={!post.title}
+        saveBadges={
             <>
               <BadgeColorful text={postTypeName || ""} className="text-xs" />
               <BadgeColorful
@@ -221,7 +232,7 @@ export default function PostUnifiedEditPage() {
               </Badge>
             </>
           }
-          actions={
+        actions={
             <>
               {hasSite && (
                 <GradientButton
@@ -296,7 +307,8 @@ export default function PostUnifiedEditPage() {
               </GradientButton>
             </>
           }
-        />
+      />
+      <div className="p-6 space-y-6">
 
         {/*
           The header is new, and it is not decoration. The adapter's bento branch is entered

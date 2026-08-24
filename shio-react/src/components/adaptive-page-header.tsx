@@ -6,7 +6,8 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { BentoHero, useSectionChrome } from "@viglet/viglet-design-system/bento"
+import { StickySaveBar } from "@viglet/viglet-design-system"
+import { BentoFormHero, BentoHero, useSectionChrome } from "@viglet/viglet-design-system/bento"
 import type React from "react"
 import { PageHeader } from "@/components/page-header"
 
@@ -22,6 +23,28 @@ interface AdaptivePageHeaderProps {
   urlBase?: string
   /** Actions. The console header has no slot for them; the bento hero has `trailing`. */
   actions?: React.ReactNode
+
+  /*
+   * SH901 — the save bar, when the page has one.
+   *
+   * §LV.4 predicted this slice would "reveal that the adapter needs a prop it does not have",
+   * and it is sharper than a prop. In bento the morph is **one** component: `BentoFormHero`
+   * renders the controls in the hero and fades a fixed bar in as the hero scrolls away, and the
+   * authoring contract is explicit that composing those two halves by hand is the mistake —
+   * "they are two halves that drift". In console chrome the same thing is **two** components,
+   * `PageHeader` and `StickySaveBar`, with no relationship between them.
+   *
+   * So one adapter has to span a 1:2 mapping. Give it these and it renders the pair in console
+   * and the single morph in bento; leave them out and it is just a header.
+   */
+  /** Sticky/morph title. Defaults to `title`. */
+  saveTitle?: string
+  saveBadges?: React.ReactNode
+  onCancel?: () => void
+  loading?: boolean
+  saveDisabled?: boolean
+  dirty?: boolean
+  titleMissing?: boolean
 }
 
 /**
@@ -60,10 +83,39 @@ export function AdaptivePageHeader({
   subtitle,
   urlBase,
   actions,
+  saveTitle,
+  saveBadges,
+  onCancel,
+  loading,
+  saveDisabled,
+  dirty,
+  titleMissing,
 }: Readonly<AdaptivePageHeaderProps>) {
   const chrome = useSectionChrome()
+  // A page has a save bar when it gave this adapter something only a save bar takes. `actions`
+  // alone is not enough — the content browser passes two navigation buttons and wants no bar.
+  const hasSaveBar = onCancel !== undefined || saveBadges !== undefined
 
   if (chrome === "bento") {
+    if (hasSaveBar) {
+      return (
+        <BentoFormHero
+          eyebrow={eyebrow}
+          backTo={urlBase}
+          leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
+          title={title}
+          subtitle={subtitle}
+          onCancel={onCancel ?? (() => undefined)}
+          actions={actions}
+          loading={loading}
+          dirty={dirty}
+          titleMissing={titleMissing}
+          saveDisabled={saveDisabled}
+          stickyTitle={saveTitle ?? title}
+          stickyBadges={saveBadges}
+        />
+      )
+    }
     return (
       <BentoHero
         eyebrow={eyebrow}
@@ -79,7 +131,20 @@ export function AdaptivePageHeader({
   return (
     <>
       <PageHeader title={title} turIcon={Icon} urlBase={urlBase} />
-      {actions && <div className="flex items-center justify-end gap-2 px-4 pt-4 md:px-6">{actions}</div>}
+      {hasSaveBar ? (
+        <div className="px-4 pt-4 md:px-6">
+          <StickySaveBar
+            title={saveTitle ?? title}
+            badges={saveBadges}
+            actions={actions}
+            onCancel={onCancel}
+            loading={loading}
+            disabled={saveDisabled}
+          />
+        </div>
+      ) : (
+        actions && <div className="flex items-center justify-end gap-2 px-4 pt-4 md:px-6">{actions}</div>
+      )}
     </>
   )
 }

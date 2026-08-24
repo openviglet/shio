@@ -964,17 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.4 Posts, the heaviest forms in the product (SH901)
-
-post.edit, post.new and the post-type selector. The editor builds its schema at runtime
-from the post type and renders fifteen dynamic widgets through a widget map, each
-reading widgetSettings that the backend can return as the literal string "null". None of
-that logic changes here and none of it should be touched: the chrome adapter from the
-previous block renders the same fields inside frosted sections. What does change is the
-identity - title, status, schedule - which moves into the hero, and the save bar, which
-becomes the scroll morph. This is the slice most likely to reveal that the adapter needs
-a prop it does not have.
-
 ### LV.5 Post types, the editor behind every post (SH902)
 
 Three pages, and the edit page carries the attribute editor: the ordered list of fields,

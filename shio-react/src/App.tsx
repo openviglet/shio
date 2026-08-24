@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom"
 import BentoHomePage from "./app/bento/home/home.page"
 import BentoFolderEditPage from "./app/bento/content/folder.edit.page"
 import BentoFolderNewPage from "./app/bento/content/folder.new.page"
+import BentoPostTypeSelectPage from "./app/bento/content/post-type-select.page"
 import BentoSiteEditPage from "./app/bento/content/site.edit.page"
 import BentoSiteImportPage from "./app/bento/content/site.import.page"
 import BentoSiteListPage from "./app/bento/content/site.list.page"
@@ -9,6 +10,8 @@ import BentoSiteNewPage from "./app/bento/content/site.new.page"
 import BentoRootPage from "./app/bento/bento.root.page"
 import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
 import ObjectChildrenPage from "./app/console/content/object.children.page"
+import PostEditPage from "./app/console/content/post.edit.page"
+import PostNewPage from "./app/console/content/post.new.page"
 import ConsoleRootPage from "./app/console/console.root.page"
 import NotFoundPage from "./app/console/not-found.page"
 import HomePage from "./app/console/home/home.page"
@@ -83,6 +86,34 @@ function App() {
                 />
                 <Route path="content/folder/:folderId/edit" element={<BentoFolderEditPage />} />
                 <Route path="content/folder/:folderId/new-folder" element={<BentoFolderNewPage />} />
+                {/*
+                  SH901 — the post editor and the new-post flow are the SAME components the
+                  console mounts, under the provider. 375 and 133 lines of save/publish/preview/
+                  schedule handling around fifteen dynamic widgets, of which the chrome is a
+                  header, a save bar and one panel: the adapter case, exactly as SH900 framed it.
+                  The post-type chooser is a copy, because its cards are choices rather than
+                  chrome and their bento counterpart is a tile.
+                */}
+                <Route
+                  path="content/post/:postId"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <PostEditPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                <Route
+                  path="content/folder/:folderId/post-type/:postTypeName/new"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <PostNewPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                <Route
+                  path="content/folder/:folderId/post-type-select"
+                  element={<BentoPostTypeSelectPage />}
+                />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
                 <Route index element={<Navigate to={ROUTES.HOME} replace />} />

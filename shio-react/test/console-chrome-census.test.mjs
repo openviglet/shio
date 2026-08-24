@@ -153,8 +153,13 @@ const STILL_CONSOLE = {
   "content/post-type.list.page.tsx": ["PageHeader", "Card"],
   "content/post-type.new.page.tsx": ["PageHeader", "Card"],
   // SH892 — same swap, on the form that builds its schema at runtime. SH901 owns the rest.
-  "content/post.edit.page.tsx": ["PageHeader", "StickySaveBar"],
-  "content/post.new.page.tsx": ["PageHeader", "Card", "StickySaveBar"],
+  /*
+   * SH901 — both empty by migration, the way the content browser is (SH900). The header and
+   * the save bar are one AdaptivePageHeader call and the panel is an AdaptiveSectionCard,
+   * so the page composes no console chrome of its own while still being console-era.
+   */
+  "content/post.edit.page.tsx": [],
+  "content/post.new.page.tsx": [],
   "content/search.page.tsx": ["PageHeader", "Card"],
   // SH892 — same swap; SH899 owns the hero and the list shape around it.
   "content/site.edit.page.tsx": ["PageHeader"],

@@ -3,6 +3,8 @@
   "content.folders": "Folders",
   "content.posts": "Posts",
   "content.postTypes": "Post Types",
+  "content.systemPostTypes": "Built-in types",
+  "content.orInstead": "Or instead",
   "content.newSite": "New Site",
   "content.importSite": "Import Site",
   "content.newFolder": "New Folder",

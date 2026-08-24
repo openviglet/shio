@@ -3,6 +3,8 @@
   "content.folders": "Pastas",
   "content.posts": "Posts",
   "content.postTypes": "Tipos de Post",
+  "content.systemPostTypes": "Tipos internos",
+  "content.orInstead": "Ou, em vez disso",
   "content.newSite": "Novo Site",
   "content.importSite": "Importar Site",
   "content.newFolder": "Nova Pasta",

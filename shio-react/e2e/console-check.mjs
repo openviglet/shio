@@ -137,6 +137,26 @@ async function discoverRoutes(siteName) {
     { name: "bento-root", path: "/bento", bento: true, mustSee: [] },
   ]
 
+  /*
+   * SH901 — the first bento surface that carries a save-bar morph, which is what
+   * `checkSaveBarMorph` has been reporting "no surface carries one yet" about since SH897. The
+   * post editor is the same component the console mounts, under the chrome provider, so this
+   * probe also proves the adapter path end to end on the heaviest form in the product.
+   */
+  // Not a `File`: a static file has no post editor at all, which is the exclusion the
+  // per-type loop below already makes and which SH921 is filed against. Picking the first
+  // entry blindly picked exactly that, and the probe failed on the same defect twice.
+  const anyPost = [...byType.entries()].find(([type]) => type !== "File")?.[1]
+  if (anyPost) {
+    routes.push({
+      name: "bento-post-edit",
+      path: `/bento/content/post/${anyPost.id}`,
+      bento: true,
+      mustSeeFields: true,
+      note: `${anyPost.title} (${anyPost.address})`,
+    })
+  }
+
   for (const [type, post] of byType) {
     /*
      * SH897 — `File` is a static file, and a static file has no post editor.
@@ -244,7 +264,10 @@ async function checkBentoSurface(page) {
       findings.push("the routed page is not inside bento-rail-gutter, so it renders under the rail")
     }
 
-    return { findings, morph: Boolean(document.querySelector("[data-bento-save-bar], .bento-save-bar")) }
+    // SH901 — this used to also return a `morph` boolean, computed from two selectors the
+    // package does not render and read by nothing. `checkSaveBarMorph` is the authority on
+    // the morph; a second, wrong answer sitting beside it is worse than none.
+    return { findings }
   })
 }
 
@@ -253,25 +276,46 @@ async function checkBentoSurface(page) {
  * actually carries one — and says so when none does, rather than returning a quiet pass.
  */
 async function checkSaveBarMorph(page) {
-  const before = await page.evaluate(() =>
-    Boolean(document.querySelector("[data-bento-save-bar], .bento-save-bar")))
-  const scrollable = await page.evaluate(() => document.body.scrollHeight > innerHeight * 1.5)
+  /*
+   * SH901 — the selectors, measured off the package rather than invented.
+   *
+   * SH897 wrote this check against `[data-bento-save-bar], .bento-save-bar`. **Neither exists.**
+   * `BentoScrollSaveBar` renders a `.bento-save-bar-spacer` and wraps the fixed bar in
+   * `.bento-fade-in`; `BentoSaveBar` itself is a `.bento-glass` panel with no id of its own. So
+   * the check could never have found a morph on any page, and its honest-sounding report — "no
+   * surface carries one yet" — would have gone on being true-by-construction after one arrived.
+   *
+   * It took until a surface actually had a morph for that to be visible, which is the whole
+   * argument for giving a check its subject as early as possible.
+   */
+  const state = () => page.evaluate(() => {
+    const spacer = document.querySelector(".bento-save-bar-spacer")
+    const fade = document.querySelector(".bento-fade-in")
+    return {
+      present: Boolean(spacer),
+      // The morph is an opacity fade, not a mount: the bar is in the DOM from the first paint
+      // and `pointer-events: none` until it fades in. Presence proves nothing about visibility.
+      visible: fade ? getComputedStyle(fade).opacity !== "0" : false,
+      scrollable: document.body.scrollHeight > innerHeight + 40,
+    }
+  })
 
-  // SH898 — both reasons, in the order a reader needs them. This used to report only "too short
-  // to scroll" whenever the page was short, which is true and sends the reader to lengthen the
-  // page when the actual answer is that no surface carries a morph yet. The migrated home is
-  // shorter than the harness, so the first surface to arrive made the message misleading.
-  if (!before && !scrollable) {
-    return { ran: false, why: "no surface carries a save-bar morph yet (SH901); this one is also too short to scroll" }
+  const top = await state()
+  if (!top.present) return { ran: false, why: "no surface carries a save-bar morph yet (SH901)" }
+  if (!top.scrollable) {
+    return { ran: false, why: "the surface carries a morph but is too short to scroll at this viewport" }
   }
+
+  const findings = []
+  if (top.visible) findings.push("the save bar is visible before scrolling")
+
   await page.evaluate(() => scrollTo(0, document.body.scrollHeight))
-  await page.waitForTimeout(500)
-  const after = await page.evaluate(() =>
-    Boolean(document.querySelector("[data-bento-save-bar], .bento-save-bar")))
+  await page.waitForTimeout(700)
+  const bottom = await state()
+  if (!bottom.visible) findings.push("the save bar did not appear after scrolling")
   await page.evaluate(() => scrollTo(0, 0))
-  if (!before && !after) return { ran: false, why: "no surface carries a save-bar morph yet (SH901)" }
-  if (before) return { ran: true, findings: ["the save bar is visible before scrolling"] }
-  return { ran: true, findings: [] }
+
+  return { ran: true, findings }
 }
 
 /** Count the widget cards a form rendered, without depending on any one widget's markup. */
