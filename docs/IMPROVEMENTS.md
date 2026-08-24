@@ -944,16 +944,6 @@ its own array. Getting this right early matters more than it looks: it is the fi
 one of the fourteen surface tasks in the next block appends to, so a shape settled after
 five of them have shipped is a shape five tasks have to be reopened for.
 
-### LIV.5 The orange belongs in a token (SH890)
-
-Shio's console header draws its icon chip with a hardcoded orange-to-amber gradient
-inside an orange ring, in a component Shio owns. After this block that chip is drawn by
-a shared component, and a hardcoded hue there is one product's colour imposed on the
-other. The package defines a brand accent as tokens; Shio sets it once at the root and
-the tint, the ring and the gradient stops derive from it. Do this before the surfaces
-migrate rather than after, because the alternative is 43 pages of per-call-site colour
-overrides written by somebody who could not find the token.
-
 ### LIV.6 The chrome speaks Portuguese too (SH891)
 
 The console ships English and Portuguese and merges its own bundle over the package's

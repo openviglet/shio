@@ -110,7 +110,7 @@ export default function AuthProviderPage() {
       <PageHeader title={t("authProvider.title")} turIcon={Fingerprint} urlBase={ROUTES.ADMIN_ROOT} />
       <div className="p-6 max-w-2xl">
         {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-orange-50 dark:bg-orange-950/30 rounded-lg px-4 py-3 mb-6 border">
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.ADMIN_AUTH_PROVIDERS)}>
               <ArrowLeft className="h-4 w-4" />

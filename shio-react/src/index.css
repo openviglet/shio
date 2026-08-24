@@ -10,3 +10,34 @@
  * else; without this line the components mount, pass their tests, and look like unstyled divs.
  */
 @import "@viglet/viglet-design-system/bento.css";
+
+/*
+ * SH890 — Shio's accent, spelled once.
+ *
+ * The design system's preset ships the console's original blue as four source tokens and
+ * derives everything else from them: the chip tint, the ring, the accented label, the solid
+ * fill, the focus ring and both hover steps. VDS23 made that the whole contract — no shared
+ * component names a hue any more — which means a product re-keys its colour here and nowhere
+ * else. Before this, Shio's orange lived as `from-orange-500/10 to-amber-500/10 ring-orange-500/10
+ * text-orange-600 dark:text-orange-400` spelled out at each call site, so the console could only
+ * differ from Turing by forking a component, and a page that wanted the accent had to copy a
+ * class string somebody else had typed.
+ *
+ * These are the exact Tailwind values the console already rendered, so this is a re-key and not
+ * a redesign: orange-500 → amber-500 for the gradient stops, orange-600 for accented text on
+ * light and orange-400 on dark. The derived tokens are declared on `:root` in the preset and are
+ * substituted with the *cascaded* value of the four below — same element, later rule — so
+ * overriding them here re-keys the whole family. Declaring them on a wrapper instead would
+ * re-key only what a utility class mixes inline and leave the rest at the preset's blue, which
+ * reads as a broken component rather than as a partial override. The preset says so; this is the
+ * one place that has to obey it.
+ *
+ * `--vg-brand-*` is a different thing and is deliberately untouched: that is Viglet's corporate
+ * orange from viglet.org, shared by every product's footer and app switcher, not Shio's accent.
+ */
+:root {
+  --vg-accent-from: oklch(70.5% 0.213 47.604); /* orange-500 */
+  --vg-accent-to: oklch(76.9% 0.188 70.08); /* amber-500 */
+  --vg-accent-text: oklch(64.6% 0.222 41.116); /* orange-600 */
+  --vg-accent-text-dark: oklch(75% 0.183 55.934); /* orange-400 */
+}

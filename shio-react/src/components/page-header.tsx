@@ -33,8 +33,11 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4 hidden md:block" />
         <div className="hidden md:flex items-center gap-1">
           {TurIcon && (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-orange-500/10 to-amber-500/10 dark:from-orange-500/20 dark:to-amber-500/20 ring-1 ring-orange-500/10 dark:ring-orange-400/10 mr-1">
-              <TurIcon className="size-4.5! text-orange-600 dark:text-orange-400" />
+            // SH890 — the accent, not an orange. `vg-accent-chip` carries the tint, its dark
+            // twin and the ring colour; `vg-accent-text` carries the glyph and re-points itself
+            // under `.dark`, so neither needs a `dark:` variant here. Re-key in index.css.
+            <div className="vg-accent-chip ring-1 mr-1 flex h-8 w-8 items-center justify-center rounded-lg">
+              <TurIcon className="vg-accent-text size-4.5!" />
             </div>
           )}
           {urlBase ? (
@@ -62,8 +65,11 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
             </button>
           )}
           {TurIcon && (
-            <div className="flex shrink-0 h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-orange-500/10 to-amber-500/10 dark:from-orange-500/20 dark:to-amber-500/20 ring-1 ring-orange-500/10 dark:ring-orange-400/10">
-              <TurIcon className="size-3.5! text-orange-600 dark:text-orange-400" />
+            // SH890 — the same chip at the narrow breakpoint, and now the same two classes.
+            // It was a 150-character class string duplicated verbatim, which is the shape that
+            // drifts: nothing would have failed if one copy had been re-keyed and the other not.
+            <div className="vg-accent-chip ring-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
+              <TurIcon className="vg-accent-text size-3.5!" />
             </div>
           )}
           <span className="text-sm font-semibold truncate">{lastItem?.label ?? title}</span>

@@ -72,7 +72,7 @@ export default function EmailConfigPage() {
       <PageHeader title={t("emailConfig.title")} turIcon={Mail} urlBase={ROUTES.ADMIN_ROOT} />
       <div className="p-6 max-w-2xl">
         {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-orange-50 dark:bg-orange-950/30 rounded-lg px-4 py-3 mb-6 border">
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
           <span className="font-semibold">{t("emailConfig.title")}</span>
           <Button size="sm" onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-1" />

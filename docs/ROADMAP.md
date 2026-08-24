@@ -13,7 +13,6 @@
 
 - 📋 **SH888** (deps: SH887 ✅, SH918) **there is no bento route tree: the console root mounts a SidebarProvider every bento component refuses** — A parallel shell is what makes each surface reversible, which a 43-page migration needs most. → §LIV.3
 - 📋 **SH889** (deps: SH888) **Shio has no nav declaration a rail and a palette can share, so each surface would be listed twice** — The package supplies the schema and both readers; declaring a surface once is what makes them agree. → §LIV.4
-- 📋 **SH890** (deps: —) **the console's orange is spelled as Tailwind gradient classes inside a header component it no longer owns** — A shared component that names a colour makes one product look borrowed; the accent belongs in a token. → §LIV.5
 - 📋 **SH891** (deps: SH888) **bento chrome strings have no Shio translations, so a shared rail and palette would render raw keys** — The package already translates the chrome it owns; what has no keys here are the nav and palette labels Shio itself supplies. → §LIV.6
 - 📋 **SH892** (deps: —) **the post, post-type and site editors are the heaviest forms here and a parallel route would fork all three** — The chrome adapter renders one form in either shell, so the field logic is written once. → §LIV.7
 - 📋 **SH893** (deps: SH888) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
@@ -51,12 +50,6 @@
 - **Every Shio surface is declared once, for both readers** One array against the
   package's entry schema feeds the rail and the palette, and adding a surface in the
   next block is a single-line change.
-
-## Done when — SH890
-
-- **No shared component names an orange, and no page overrides one** The brand accent is
-  a token set once at the root, and the chip tint, the ring and the gradient stops all
-  derive from it.
 
 ## Done when — SH891
 

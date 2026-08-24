@@ -739,3 +739,52 @@ about this one — these are specimen strings naming the components being proved
 in Portuguese. Separating them keeps that lint's `UNTRANSLATED` exemption map short enough to
 stay readable, which is the only thing it has going for it. A migrated Block AR surface goes
 through `t()` like every other page.
+
+## Shio's accent is a token, and the rest is a named debt (SH890)
+
+The console's orange is declared **once**, on `:root` in
+[`src/index.css`](../../shio-react/src/index.css), as the four source tokens VDS23 made the
+whole re-keying contract:
+
+| Token | Value | Was |
+|---|---|---|
+| `--vg-accent-from` | `oklch(70.5% 0.213 47.604)` | `orange-500` |
+| `--vg-accent-to` | `oklch(76.9% 0.188 70.08)` | `amber-500` |
+| `--vg-accent-text` | `oklch(64.6% 0.222 41.116)` | `orange-600` |
+| `--vg-accent-text-dark` | `oklch(75% 0.183 55.934)` | `orange-400` |
+
+Everything else derives from them in the package's preset — the chip tint, the ring, the
+accented label, the solid fill, the focus ring and both hover steps. **Set them on `:root`,
+never on a wrapper.** A custom property substitutes its `var()` references where it is
+*declared*, so the preset's derived tokens resolve against whatever `--vg-accent-from` cascades
+to **on the root element**; a later `:root` rule (this one) re-keys the whole family, and a
+wrapper re-keys only what a utility mixes inline and leaves the rest at the package's blue.
+Verified at runtime rather than argued: with the override in place `--vg-accent-fg` resolves to
+the orange dark-text token under `.dark`, and `vg-accent-chip` paints
+`linear-gradient(… oklab(0.705 0.143615 0.157301 / 0.2), oklab(0.769 …))`.
+
+**How to spell the accent** — none of these need a `dark:` twin, because the tokens carry it:
+
+| You want | Use |
+|---|---|
+| The tinted icon chip with its ring | `vg-accent-chip` + `ring-1` |
+| Accented text or a glyph | `vg-accent-text` |
+| A flat tint behind a bar or panel | `bg-[var(--vg-accent-surface)]` |
+| A filled gradient (primary action) | `vg-accent-solid` |
+
+`--vg-brand-*` is a different token family and is **not** Shio's accent: that is Viglet's
+corporate orange from viglet.org, shared by every product's footer and app switcher.
+
+### The debt, and why it is a list
+
+The grep behind SH890 found **97 orange utilities across 24 files** — orange is Shio's brand,
+so every page that wanted to look like Shio copied a class string. This task converted the two
+things that were shared or duplicated: `page-header.tsx`'s icon chip (a 150-character class
+string written out twice) and the six admin save-bar tints, which were the byte-identical
+`bg-orange-50 dark:bg-orange-950/30` in six files. That leaves **17 files, 61 distinct
+utilities**, held by name in `test/accent-token.test.mjs`.
+
+A named map and not a ceiling, for the reason the chrome census gives: a ceiling lets one
+migrated page fund leaving the next alone. A Block AR migration deletes its file's line in the
+same commit; a page that adds an orange fails by name. `amber` is deliberately not counted —
+that is the semantic warning colour and it means "careful", not "Shio".
