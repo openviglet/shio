@@ -124,9 +124,34 @@ async function discoverRoutes(siteName) {
     // an unknown path, every other probe's "ok" is worth less — a blank page and a
     // working page are the same observation.
     { name: "unknown-route", path: "/console/content/definitely-not-a-route", mustSee: ["404"] },
+    /*
+     * SH897 — the bento route tree. Every route above is a console route, so left alone this
+     * script would run green through the whole of Block AR while never visiting a single
+     * migrated surface — which is worse than not running, because a green check is counted as
+     * evidence.
+     *
+     * `bento: true` sends the probe through `checkBentoSurface`, which reads the frost off
+     * computed style rather than looking for class names. Block AR adds one line here per
+     * migrated surface.
+     */
+    { name: "bento-root", path: "/bento", bento: true, mustSee: [] },
   ]
 
   for (const [type, post] of byType) {
+    /*
+     * SH897 — `File` is a static file, and a static file has no post editor.
+     *
+     * `/agent/find` returns one as `type: "File"` alongside every post, which is correct — it is
+     * content and it is addressable — but the row it points at lives in `/api/v2/staticfile/{id}`
+     * (200) and not in `/api/v2/post-unified/{id}` (404). So this loop was generating a
+     * `post-edit:File` probe that opened a page which cannot exist, and the check failed on a
+     * defect in itself. The curator's route to a file is the static-file list, which `files`
+     * already probes.
+     *
+     * The 404 it drove into is filed as SH921: it carries **no body at all**, where P6 says every
+     * 4xx teaches. That is the finding this probe was worth having.
+     */
+    if (type === "File") continue
     routes.push({
       name: `post-edit:${type}`,
       path: `/console/content/post/${post.id}`,
@@ -148,6 +173,99 @@ async function discoverRoutes(siteName) {
     })
   }
   return { site, routes }
+}
+
+/**
+ * SH897 — what makes a bento surface a *bento* surface, asked of a rendered page.
+ *
+ * ## Why this is not "does the class name appear"
+ *
+ * A source scan already knows which pages import the layer — that is
+ * `console-chrome-census.test.mjs`, and it is cheap and runs everywhere. What it cannot see is
+ * the failure this check exists for: the components mount, the markup carries every `bento-*`
+ * class, and **the stylesheet is not loaded**, so the page renders working, tested, completely
+ * unstyled divs. SH887 found that shape once already; nothing in `tsc`, in an import scan, or in
+ * a unit test says a word about it.
+ *
+ * So each fact below is read off *computed style* wherever a computed style can carry it. A
+ * frosted panel that is not frosted is the whole point.
+ *
+ * ## The three facts, and the one that has no subject yet
+ *
+ * - **the hero is present** — a bento surface leads with its own identity, which is what replaces
+ *   the console's breadcrumb bar.
+ * - **the frosted card is frosted** — `backdrop-filter` is not `none` on a `bento-glass` surface.
+ * - **the save bar appears on scroll and not before** — the morph. `BentoFormHero` composes both
+ *   halves; SH892 deferred it, and SH901/SH902 are the tasks that put one on a real surface.
+ *
+ * The third has no subject on this instance today, and that is **reported rather than passed
+ * over**. This file's own history is the reason: SH238/SH659 found that a probe which skips keeps
+ * `ok: true`, counts toward "N/N probes ok", and leaves the exit code at 0 — so a check nobody is
+ * running reads as coverage. `morph: "no surface carries one yet"` is printed on every run, and
+ * the count moves the day a migrated editor appears.
+ */
+async function checkBentoSurface(page) {
+  return page.evaluate(() => {
+    const findings = []
+
+    const hero = document.querySelector("h1")
+    if (!hero || !hero.innerText.trim()) findings.push("no hero heading on a bento surface")
+
+    /*
+     * Read the frost off computed style, not off the class list — every `bento-*` class is
+     * still in the markup when the stylesheet is absent.
+     *
+     * `backdrop-filter` and nothing else. The first version of this also accepted a non-zero
+     * `border-radius`, and that made it **vacuous**: `rounded-3xl` is a Tailwind class on the
+     * component itself, so the radius is 24px with or without `bento.css`. Verified by deleting
+     * the import and re-running — the page rendered as flat, borderless, unstyled divs, the
+     * screenshot showed it plainly, and this probe said `ok`. With the stylesheet loaded the
+     * value here is `blur(18px) saturate(1.8)`; without it, `none`.
+     */
+    const glass = document.querySelector(".bento-glass, .bento-tile")
+    if (!glass) {
+      findings.push("no frosted surface (.bento-glass/.bento-tile) rendered")
+    } else {
+      const style = getComputedStyle(glass)
+      const frost = style.backdropFilter || style.webkitBackdropFilter || "none"
+      if (frost === "none") {
+        findings.push(
+          "frosted surface has no backdrop-filter — bento.css is not loaded. The components "
+          + "mount and every class name is present, so nothing else in this repository notices.")
+      }
+    }
+
+    // The rail is the shell, and it must not be sitting under a sidebar provider.
+    if (!document.querySelector("nav[aria-label]")) findings.push("no nav rail")
+    if (document.querySelector("[data-slot='sidebar-wrapper'], [data-sidebar]")) {
+      findings.push("a sidebar provider is mounted inside the bento tree")
+    }
+    if (!document.querySelector(".bento-rail-gutter")) {
+      findings.push("the routed page is not inside bento-rail-gutter, so it renders under the rail")
+    }
+
+    return { findings, morph: Boolean(document.querySelector("[data-bento-save-bar], .bento-save-bar")) }
+  })
+}
+
+/**
+ * The save-bar morph: nothing fixed before scrolling, a bar after. Runs only where a surface
+ * actually carries one — and says so when none does, rather than returning a quiet pass.
+ */
+async function checkSaveBarMorph(page) {
+  const before = await page.evaluate(() =>
+    Boolean(document.querySelector("[data-bento-save-bar], .bento-save-bar")))
+  if (!before && !(await page.evaluate(() => document.body.scrollHeight > innerHeight * 1.5))) {
+    return { ran: false, why: "surface is too short to scroll, so the morph cannot be observed" }
+  }
+  await page.evaluate(() => scrollTo(0, document.body.scrollHeight))
+  await page.waitForTimeout(500)
+  const after = await page.evaluate(() =>
+    Boolean(document.querySelector("[data-bento-save-bar], .bento-save-bar")))
+  await page.evaluate(() => scrollTo(0, 0))
+  if (!before && !after) return { ran: false, why: "no surface carries a save-bar morph yet (SH901)" }
+  if (before) return { ran: true, findings: ["the save bar is visible before scrolling"] }
+  return { ran: true, findings: [] }
 }
 
 /** Count the widget cards a form rendered, without depending on any one widget's markup. */
@@ -493,6 +611,15 @@ async function main() {
         probe.fields = await countFields(page)
         if (probe.fields.cards === 0 && probe.fields.inputs === 0) probe.missing.push("<any form field>")
       }
+      if (route.bento) {
+        // SH897 — bento facts, read off the rendered page. `missing` is what already decides
+        // `ok`, so a finding here fails the probe exactly like a missing string does.
+        const surface = await checkBentoSurface(page)
+        probe.missing.push(...surface.findings)
+        const morph = await checkSaveBarMorph(page)
+        probe.morph = morph.ran ? (morph.findings.length ? morph.findings.join("; ") : "ok") : morph.why
+        if (morph.ran) probe.missing.push(...morph.findings)
+      }
       probe.title = (await page.locator("h1, h2").first().innerText().catch(() => "")).trim()
 
       const shot = join(OUT, `${route.name.replace(/[:/]/g, "_")}.png`)
@@ -517,6 +644,9 @@ async function main() {
     console.log(`${mark} ${route.name.padEnd(30)} ${route.path}`)
     for (const t of probe.broken || []) console.log(`       broken text: ${t}`)
     for (const m of probe.missing || []) console.log(`       missing: ${m}`)
+    // SH897 — printed on every run, ok or not. The morph has no subject until a Block AR editor
+    // moves, and a fact nobody prints is a fact nobody notices has stopped being true.
+    if (probe.morph) console.log(`       morph: ${probe.morph}`)
     for (const f of probe.failedRequests.slice(0, 4)) console.log(`       request: ${f}`)
     for (const e of probe.errors.slice(0, 4)) console.log(`       error: ${e.slice(0, 160)}`)
   }

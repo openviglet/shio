@@ -1081,3 +1081,47 @@ dialog and three of the fifteen form widgets, which SH892 exists precisely to av
 locales). The remaining 28 are console pages Block AR rewrites, held by name — each AR task
 deletes its own line. **A shared component may never appear in that list**, and the gate asserts
 it separately: a name missing from one is missing on every page that renders it.
+
+## The one script that opens a real page now opens a bento one (SH897)
+
+`e2e/console-check.mjs` is the only thing in this repository that drives the console **in a
+browser**, and every route it knew was a console route. Left alone it would have run green
+through all of Block AR without visiting a single migrated surface — worse than not running,
+because a green check is counted as evidence. It now probes `/bento`, and Block AR adds one line
+per migrated surface.
+
+A `bento: true` route goes through `checkBentoSurface`, which asks four things of the **rendered
+page**: a hero heading, a frosted surface that is actually frosted, a nav rail, and no sidebar
+provider anywhere inside the tree (plus the rail gutter, without which content renders under the
+fixed rail). Findings go into `probe.missing`, which is what already decides `ok`.
+
+### The frost check was vacuous, and deleting the stylesheet is what proved it
+
+The first version accepted *either* a `backdrop-filter` or a non-zero `border-radius`. That
+second clause made it pass on nothing: `rounded-3xl` is a Tailwind class on the component itself,
+so the radius is 24px whether or not `bento.css` is loaded. Verified by removing the import and
+re-running — the page rendered as flat, borderless, unstyled divs, `bento-root.png` showed it
+plainly, and the probe reported **ok**.
+
+`backdrop-filter` alone now. With the stylesheet: `blur(18px) saturate(1.8)`. Without: `none`.
+**Check a new probe in both directions** — a browser check that cannot fail is the most expensive
+kind of green there is, and this one had to be broken on purpose to find out.
+
+### The morph has no subject yet, and says so
+
+`checkSaveBarMorph` asserts nothing is fixed before scrolling and a bar appears after. No surface
+carries one until SH901/SH902 move an editor, so it prints
+`morph: no surface carries a save-bar morph yet (SH901)` on every run rather than returning a
+quiet pass. That distinction is this file's own history: SH238/SH659 found that a probe which
+skips keeps `ok: true`, counts toward "N/N probes ok", and leaves the exit code at 0.
+
+### What the first live run found, which was not about bento at all
+
+`post-edit:File` failed. `/agent/find` returns static files alongside posts — correctly; they are
+content and they are addressable — but the row lives in `/api/v2/staticfile/{id}` (200), not
+`/api/v2/post-unified/{id}` (**404, empty body**). The probe list no longer opens a post editor
+for a static file, and the bare 404 is filed as **SH921**: P6 says every 4xx teaches, and this
+one is reached by following an id a sibling endpoint just handed you.
+
+**Running it locally:** `SHIO_USER=admin SHIO_PASSWORD=viglet` — the console login is
+`admin`/`viglet`, not the `admin`/`admin` the script defaults to.

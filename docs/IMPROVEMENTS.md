@@ -922,16 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.12 The one script that opens a real page (SH897)
-
-e2e/console-check.mjs is the only thing in this repository that drives the console in a
-browser, and every route it knows is a console route. Left as it is, it will run green
-through the whole of the next block while never visiting a single migrated surface,
-which is worse than not running at all: a green check is counted as evidence. Teach it
-the bento route tree, and give it the shape of assertion this migration actually needs -
-that the hero is present, that the frosted card is frosted, and that the save bar
-appears on scroll and not before it.
-
 ### LIV.15 The root argument the duplicate gate throws away (SH919)
 
 The design system's `check-duplicates.mjs` parses its arguments like this:
@@ -982,6 +972,31 @@ Resolve it once rather than fourteen times: either Shio's provider wraps the pac
 and both contexts resolve from one fetch, or `ShCurrentUser` folds into `VigUser` and
 the local provider goes. The second removes an exemption; the first keeps the types the
 console pages already read.
+
+### LIV.17 A 404 with nothing in it (SH921)
+
+SH897 taught the browser check the bento route tree, and the first live run failed on
+something else entirely: a `post-edit:File` probe driving `GET
+/api/v2/post-unified/{id}` into a 404.
+
+The id was not invented. `/agent/find` returns static files alongside posts — correctly,
+they are content and they are addressable — as
+`{"type":"File","title":"…woff2","id":"07ff723c…"}`. Following that id is the obvious
+next move, and where it lands depends on which surface you use: `/agent/read` answers
+200 with the file's `FILE`, `SHA256` and `SIZE`; `/api/v2/staticfile/{id}` answers 200;
+`/api/v2/post-unified/{id}` answers **404 with an empty body**.
+
+The 404 is right. A static file is not a post-unified row and should not pretend to be
+one. What is wrong is that it says nothing. P6 is one of the ten laws — every 4xx
+carries `fix`, `allowed`, `didYouMean` or `example` — and this is exactly the case the
+law exists for: a caller who did something reasonable, holding an id a sibling endpoint
+had just handed them, and who now has to guess whether the id is wrong, the state
+parameter is wrong, or the row was deleted. The console guesses too: its post editor
+renders an empty form behind two failed requests.
+
+Answer with a body that names the id's actual kind and the endpoint that serves it. The
+check's own probe list is already fixed — it no longer opens a post editor for a static
+file — so nothing is watching this until the error itself is.
 
 ## LV The curator's console, surface by surface (Block AR)
 

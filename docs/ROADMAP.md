@@ -11,9 +11,9 @@
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
-- 📋 **SH897** (deps: SH888 ✅) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
 - 📋 **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — A gate that reports a clean tree because it never read the tree you named is worse than no gate. → §LIV.15
 - 📋 **SH920** (deps: —) **two user contexts now exist and the two shells mount different ones, so a migrated page reads the wrong hook** — Each surface Block AR moves crosses that seam, and the failure is a blank shell rather than a type error. → §LIV.16
+- 📋 **SH921** (deps: —) **reading a static file's id through the console's post endpoint answers a bare 404 with no body at all** — P6 says every 4xx teaches, and this one is reached by following an id the find surface just returned. → §LIV.17
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
@@ -33,12 +33,6 @@
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
 ## Priority
-
-## Done when — SH897
-
-- **The browser check visits bento routes and asserts bento facts** console-check.mjs
-  knows the bento route tree and fails when the hero is missing, the card is not
-  frosted, or the save bar is visible before any scroll.
 
 ## Done when — SH898
 
