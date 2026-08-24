@@ -15,6 +15,9 @@ import PostNewPage from "./app/console/content/post.new.page"
 import PostTypeEditPage from "./app/console/content/post-type.edit.page"
 import PostTypeListPage from "./app/console/content/post-type.list.page"
 import PostTypeNewPage from "./app/console/content/post-type.new.page"
+import SearchPage from "./app/console/content/search.page"
+import StaticFileListPage from "./app/console/content/static-file.list.page"
+import TrashPage from "./app/console/content/trash.page"
 import ConsoleRootPage from "./app/console/console.root.page"
 import NotFoundPage from "./app/console/not-found.page"
 import HomePage from "./app/console/home/home.page"
@@ -142,6 +145,36 @@ function App() {
                   element={
                     <SectionCardChromeProvider chrome="bento">
                       <PostTypeEditPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                {/*
+                  SH903 — the three surfaces where rendering nothing is the normal case. All
+                  adapter surfaces: none of the three creates anything, so `BentoListPage` —
+                  which requires a `newRoute` and renders a create-tile — is the wrong shell for
+                  all of them, and the mosaic §LV.6 asked for is not what these pages are.
+                */}
+                <Route
+                  path="content/search"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <SearchPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                <Route
+                  path="content/trash"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <TrashPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                <Route
+                  path="content/files"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <StaticFileListPage />
                     </SectionCardChromeProvider>
                   }
                 />

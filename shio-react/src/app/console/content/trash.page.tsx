@@ -1,7 +1,9 @@
-import { PageHeader } from "@/components/page-header"
+import { IconTrash } from "@tabler/icons-react"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
@@ -116,61 +118,59 @@ export default function TrashPage() {
 
   return (
     <>
-      <PageHeader title={t("content.trash")} turIcon={Trash2} urlBase={`${ROUTES.CONSOLE}/content`} />
+      <AdaptivePageHeader
+        icon={Trash2}
+        title={t("content.trash")}
+        subtitle={t("content.trashDescription")}
+        urlBase={`${ROUTES.CONSOLE}/content`}
+      />
       <div className="p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">{t("content.trash")}</h2>
-          <p className="text-sm text-muted-foreground">{t("content.trashDescription")}</p>
-        </div>
 
         {!loading && items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Trash2 className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold text-lg mb-1">{t("content.trashEmpty")}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">{t("content.trashEmptyHint")}</p>
-          </div>
+          <AdaptiveEmptyState
+            icon={IconTrash}
+            tone="slate"
+            title={t("content.trashEmpty")}
+            description={t("content.trashEmptyHint")}
+          />
         ) : (
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("common.title")}</TableHead>
-                    <TableHead className="w-40">{t("content.postType")}</TableHead>
-                    <TableHead className="w-48">{t("common.actions")}</TableHead>
+          <AdaptivePanel contentClassName="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("common.title")}</TableHead>
+                  <TableHead className="w-40">{t("content.postType")}</TableHead>
+                  <TableHead className="w-48">{t("common.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((row) => (
+                  <TableRow key={`${row.kind}-${row.id}`}>
+                    <TableCell className="font-medium">
+                      <span className="flex items-center gap-2">
+                        <RowIcon kind={row.kind} />
+                        {row.title}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{row.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => restore(row)}>
+                          <RotateCcw className="mr-2 h-4 w-4" /> {t("content.trashRestore")}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive"
+                          onClick={() => purge(row)}>
+                          <X className="mr-2 h-4 w-4" /> {t("content.trashPurge")}
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((row) => (
-                    <TableRow key={`${row.kind}-${row.id}`}>
-                      <TableCell className="font-medium">
-                        <span className="flex items-center gap-2">
-                          <RowIcon kind={row.kind} />
-                          {row.title}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{row.label}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => restore(row)}>
-                            <RotateCcw className="mr-2 h-4 w-4" /> {t("content.trashRestore")}
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive"
-                            onClick={() => purge(row)}>
-                            <X className="mr-2 h-4 w-4" /> {t("content.trashPurge")}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </AdaptivePanel>
         )}
       </div>
     </>

@@ -1470,3 +1470,60 @@ Census after this task: **43 pages, Card 31, PageHeader 33, Sidebar 1, nine empt
 `console-check` gained three probes rather than one — list, new and edit. The two that carry no
 save bar are the two that caught the header-less defect, which is the argument for probing a
 slice instead of its most interesting page. 25/25 green.
+
+## Three surfaces where empty is normal, and a grep that found thirteen (SH903)
+
+Search, the trash and the static-file list. §LV.6's argument was that all three routinely render
+nothing and each says so in its own way, so the shared empty state is what they are for. Correct,
+and short by a factor of four.
+
+### The grep is the deliverable, and it lands first
+
+SH322's rule applied literally: [`empty-state.test.mjs`](../../shio-react/test/empty-state.test.mjs)
+was written before any of the three fixes, and it found the hand-rolled block in **thirteen** files
+where the section named two. Not because anyone was careless — each was written months apart by
+someone who could not see the other two, each was right in isolation, and **nothing objected**. The
+fourteenth would have gone in the same way.
+
+What it matches is the *pairing* — a centred `py-16` void plus the muted `h-8 w-8` icon chip —
+rather than either half, which is what keeps it off the load spinner and the centred dialogs.
+
+Three are fixed here and the post-type editor's is fixed too, because SH902 had already made that
+page a bento surface and a hand-rolled console void under the frosted shell is that task's defect
+exactly. The other **nine belong to SH904–SH908**, which rewrite those pages wholesale; converting
+their empty states now would touch each file twice and span four tasks in one diff. They are held
+in `STILL_HAND_ROLLED`, **each row naming the task that deletes it** — and the reader fails in both
+directions, so a task that migrates a page and leaves its row behind is caught too. A debt list
+nothing shortens is a list that only grows.
+
+### `BentoListPage` is not what these pages are
+
+§LV.6 asked for a mosaic. The package has one — `BentoListPage` — and it requires a `newRoute` and
+renders a dashed create-tile, because it is built for entity lists. **None of these three creates
+anything**: search finds, the trash restores, the file list uploads from a picker rather than
+navigating to a form. Passing dummy props to satisfy a shell whose central affordance does not
+apply is how a page ends up with a button that goes nowhere. All three took the adapter shape
+instead, and the one surface that genuinely *is* a mosaic — the file grid — got the tile classes
+directly.
+
+### Two failures a source scan could not have produced
+
+The live check found both, and both were mine:
+
+- **`bento-files` had no frosted surface.** `MediaCard` was never a `Card` — it is a hand-rolled
+  `rounded-lg border bg-background` tile, so a grep for console chrome does not find it and the
+  census counted this page as carrying *one* `Card` while it renders a grid of forty. It now
+  carries `bento-tile bento-glass` in bento chrome: the same classes `BentoTile` puts on its own
+  root, not a copy of the look.
+- **`bento-search` had no frosted surface either**, and that one is a real gap rather than a missed
+  conversion. Search has **three** states and the third is the one it opens in: before a query has
+  been run it rendered *nothing at all* below the form. An empty result is normal here — and so is
+  not having asked yet, and the two want different words. "No results for that" on a page nobody
+  has searched reports a failure that did not happen. `content.searchPromptTitle`/`Hint`, both
+  locales.
+
+Neither is visible in `tsc`, in review, or in any reader that reads imports. The probe landed on
+the unsearched state only because it opens the route with no query — **give a check its subject and
+it finds what you did not think to look for**.
+
+Census after this task: **43 pages, Card 28, PageHeader 30, Sidebar 1, twelve empty.**

@@ -41,6 +41,8 @@
   "content.searchDescription": "Pesquisa de texto completo no conteúdo publicado — títulos, resumos e valores dos campos.",
   "content.searchAllSites": "Todos os sites",
   "content.searchNoResults": "Nenhum conteúdo encontrado",
+  "content.searchPromptTitle": "Pesquise nesta instância",
+  "content.searchPromptHint": "Digite um termo acima para encontrar posts em um site ou em todos.",
   "content.searchNoResultsHint": "Tente outro termo ou amplie o escopo para todos os sites.",
   "content.searchResultCount": "{{count}} resultado(s)",
   "content.noSites": "Nenhum site ainda",

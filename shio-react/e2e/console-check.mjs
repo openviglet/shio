@@ -222,6 +222,26 @@ async function discoverRoutes(siteName) {
     })
     routes.push({ name: "bento-post-type-new", path: "/bento/content/post-type/new", bento: true, mustSee: [] })
   }
+
+  /*
+   * SH903 — the three surfaces where rendering nothing is the normal case.
+   *
+   * Probed in **both** chromes on purpose, which none of the earlier bento probes bothered with.
+   * These pages are one component under a provider, so a console regression and a bento one are
+   * the same edit, and a check that only ever opens the bento route would let the console half
+   * break silently for as long as Block AR runs.
+   *
+   * `search` opens with no query, which is its third state — neither results nor an empty result,
+   * just the form. It renders nothing below the form today, and the probe records that rather
+   * than asserting an empty state that is not there (SH924).
+   */
+  for (const [name, path] of [
+    ["search", "/content/search"],
+    ["trash", "/content/trash"],
+    ["files", "/content/files"],
+  ]) {
+    routes.push({ name: `bento-${name}`, path: `/bento${path}`, bento: true, mustSee: [] })
+  }
   for (const t of postTypes.filter((t) => !t.system).slice(0, 3)) {
     routes.push({ name: `post-type-edit:${t.name}`, path: `/console/content/post-type/${t.name}`, mustSee: [t.name] })
     // The create form reads the post-type directly, so it is the control case: when a

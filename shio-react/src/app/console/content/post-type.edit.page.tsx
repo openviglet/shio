@@ -1,3 +1,5 @@
+import { IconStack2 } from "@tabler/icons-react"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
 import { AdaptivePageHeader } from "@/components/adaptive-page-header"
 import { Button } from "@/components/ui/button"
 /*
@@ -701,22 +703,28 @@ function FieldList({ fields, widgets, postTypes, onChange }: {
     onChange(fields.filter((_, i) => i !== index).map((f, i) => ({ ...f, ordinal: i + 1 })))
   }
 
-  // Empty state
+  /*
+   * A post type with no fields yet — the state every newly created type starts in, so this is
+   * the first thing a curator sees after naming one, not an edge case.
+   *
+   * SH903 converted it because SH902 had already made this page a bento surface: a hand-rolled
+   * console void rendering under the frosted shell is the same silent half-migration that task
+   * spent its length on, and this one carried an action, which is why the adapter takes one.
+   */
   if (fields.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="rounded-full bg-muted p-4 mb-4">
-          <Layers className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="font-semibold text-lg mb-1">{t("content.noFields")}</h3>
-        <p className="text-sm text-muted-foreground max-w-sm mb-6">
-          {t("content.noFieldsDescription")}
-        </p>
-        <Button type="button" onClick={addField} className="gap-2">
-          <Plus className="h-4 w-4" />
-          {t("content.addField")}
-        </Button>
-      </div>
+      <AdaptiveEmptyState
+        icon={IconStack2}
+        tone="amber"
+        title={t("content.noFields")}
+        description={t("content.noFieldsDescription")}
+        action={
+          <Button type="button" onClick={addField} className="gap-2">
+            <Plus className="h-4 w-4" />
+            {t("content.addField")}
+          </Button>
+        }
+      />
     )
   }
 

@@ -1,7 +1,9 @@
-import { PageHeader } from "@/components/page-header"
+import { IconSearch } from "@tabler/icons-react"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -60,12 +62,13 @@ export default function SearchPage() {
 
   return (
     <>
-      <PageHeader title={t("content.searchTitle")} turIcon={SearchIcon} urlBase={`${ROUTES.CONSOLE}/content`} />
+      <AdaptivePageHeader
+        icon={SearchIcon}
+        title={t("content.searchTitle")}
+        subtitle={t("content.searchDescription")}
+        urlBase={`${ROUTES.CONSOLE}/content`}
+      />
       <div className="p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">{t("content.searchTitle")}</h2>
-          <p className="text-sm text-muted-foreground">{t("content.searchDescription")}</p>
-        </div>
 
         <form onSubmit={runSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end mb-6">
           <div className="flex-1">
@@ -93,44 +96,61 @@ export default function SearchPage() {
           </Button>
         </form>
 
-        {searched && results.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <SearchIcon className="h-8 w-8 text-muted-foreground" />
+        {/*
+          SH903 — three states, not two, and the third is the one the page opens in.
+
+          Before a query has been run this rendered **nothing at all** below the form: a heading,
+          an input and blank space, which is the shape a broken page has. §LV.6 named search as a
+          surface "where an empty result is normal" and it is more than that — an empty result is
+          normal *and* so is not having asked yet, and the two want different words. "No results
+          for that" on a page nobody has searched is worse than silence; it reports a failure that
+          did not happen.
+
+          The live check found this rather than a reader: `bento-search` opens with no query, so
+          the probe landed on exactly the state that rendered no surface at all.
+        */}
+        {!searched ? (
+          <AdaptiveEmptyState
+            icon={IconSearch}
+            tone="slate"
+            title={t("content.searchPromptTitle")}
+            description={t("content.searchPromptHint")}
+          />
+        ) : results.length === 0 ? (
+          <AdaptiveEmptyState
+            icon={IconSearch}
+            tone="slate"
+            title={t("content.searchNoResults")}
+            description={t("content.searchNoResultsHint")}
+          />
+        ) : (
+          <AdaptivePanel contentClassName="p-0">
+            <div className="px-4 py-2 text-sm text-muted-foreground border-b">
+              {t("content.searchResultCount", { count: total })}
             </div>
-            <h3 className="font-semibold text-lg mb-1">{t("content.searchNoResults")}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">{t("content.searchNoResultsHint")}</p>
-          </div>
-        ) : results.length > 0 ? (
-          <Card>
-            <CardContent className="p-0">
-              <div className="px-4 py-2 text-sm text-muted-foreground border-b">
-                {t("content.searchResultCount", { count: total })}
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("common.title")}</TableHead>
-                    <TableHead className="w-40">{t("content.postType")}</TableHead>
-                    <TableHead>{t("content.url")}</TableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("common.title")}</TableHead>
+                  <TableHead className="w-40">{t("content.postType")}</TableHead>
+                  <TableHead>{t("content.url")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {results.map((post) => (
+                  <TableRow key={post.id} className="cursor-pointer"
+                    onClick={() => navigate(`${ROUTES.CONSOLE}/content/post/${post.id}`)}>
+                    <TableCell className="font-medium">{post.title || "(untitled)"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{post.postType}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-xs">{post.furl}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {results.map((post) => (
-                    <TableRow key={post.id} className="cursor-pointer"
-                      onClick={() => navigate(`${ROUTES.CONSOLE}/content/post/${post.id}`)}>
-                      <TableCell className="font-medium">{post.title || "(untitled)"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{post.postType}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-xs">{post.furl}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        ) : null}
+                ))}
+              </TableBody>
+            </Table>
+          </AdaptivePanel>
+        )}
       </div>
     </>
   )

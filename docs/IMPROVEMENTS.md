@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.6 The three surfaces where empty is normal (SH903)
-
-Search results, the trash and the static-file list. All three routinely render nothing,
-and all three say so today in their own way with their own layout, because the console
-has no shared empty state. The package has one, and this is the slice that proves it: an
-empty search is not the same message as an empty trash, so the component has to carry a
-title and a description per use rather than one generic line. The static-file list also
-holds the only upload affordance in the console, which is a tile shape no other slice
-exercises.
-
 ### LV.7 Identity: users, groups and roles (SH904)
 
 Six pages, three list-and-form pairs, and the clearest case in the product for the

@@ -41,6 +41,8 @@
   "content.searchDescription": "Full-text search across published content — titles, summaries and field values.",
   "content.searchAllSites": "All sites",
   "content.searchNoResults": "No matching content",
+  "content.searchPromptTitle": "Search this instance",
+  "content.searchPromptHint": "Enter a term above to find posts across one site or all of them.",
   "content.searchNoResultsHint": "Try a different term, or widen the scope to all sites.",
   "content.searchResultCount": "{{count}} result(s)",
   "content.noSites": "No sites yet",

@@ -1,7 +1,9 @@
-import { PageHeader } from "@/components/page-header"
+import { IconPhoto } from "@tabler/icons-react"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,6 +23,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
+import { useSectionChrome } from "@viglet/viglet-design-system/bento"
 import { cn } from "@/lib/utils"
 import { ShStaticFileService } from "@/services/static-file/static-file.service"
 import type { ShStaticFileItem, ShStaticFileUsage } from "@/models/static-file/static-file.model"
@@ -213,7 +216,12 @@ export default function StaticFileListPage() {
 
   return (
     <>
-      <PageHeader title={t("staticFile.title")} turIcon={ImageIcon} urlBase={ROUTES.CONTENT_ROOT} />
+      <AdaptivePageHeader
+        icon={ImageIcon}
+        title={t("staticFile.title")}
+        subtitle={t("staticFile.description")}
+        urlBase={ROUTES.CONTENT_ROOT}
+      />
       <div
         className="relative p-6"
         onDrop={onDrop}
@@ -231,11 +239,7 @@ export default function StaticFileListPage() {
 
         {/* Toolbar: title + search + site picker + upload + view toggle */}
         <div className="flex flex-col gap-4 mb-4">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <h2 className="text-lg font-semibold">{t("staticFile.title")}</h2>
-              <p className="text-sm text-muted-foreground">{t("staticFile.description")}</p>
-            </div>
+          <div className="flex items-start justify-end gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Select value={targetSite} onValueChange={setTargetSite}>
                 <SelectTrigger className="w-40">
@@ -311,30 +315,28 @@ export default function StaticFileListPage() {
 
         {/* Upload queue */}
         {uploads.length > 0 && (
-          <Card className="mb-4">
-            <CardContent className="p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{t("staticFile.uploadsTitle")}</span>
-                <Button variant="ghost" size="sm" className="h-6 text-xs"
-                  onClick={() => setUploads((prev) => prev.filter((u) => u.status === "uploading"))}>
-                  {t("staticFile.clearDone")}
-                </Button>
-              </div>
-              {uploads.map((u) => (
-                <div key={u.id} className="flex items-center gap-2 text-sm">
-                  {u.status === "done" && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
-                  {u.status === "error" && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
-                  {u.status === "uploading" && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
-                  <span className="truncate flex-1">{u.name}</span>
-                  <div className="w-32 h-1.5 rounded bg-muted overflow-hidden">
-                    <div className={cn("h-full transition-all",
-                      u.status === "error" ? "bg-destructive" : "bg-orange-500")}
-                      style={{ width: `${u.percent}%` }} />
-                  </div>
+          <AdaptivePanel className="mb-4" contentClassName="p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{t("staticFile.uploadsTitle")}</span>
+              <Button variant="ghost" size="sm" className="h-6 text-xs"
+                onClick={() => setUploads((prev) => prev.filter((u) => u.status === "uploading"))}>
+                {t("staticFile.clearDone")}
+              </Button>
+            </div>
+            {uploads.map((u) => (
+              <div key={u.id} className="flex items-center gap-2 text-sm">
+                {u.status === "done" && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
+                {u.status === "error" && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
+                {u.status === "uploading" && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
+                <span className="truncate flex-1">{u.name}</span>
+                <div className="w-32 h-1.5 rounded bg-muted overflow-hidden">
+                  <div className={cn("h-full transition-all",
+                    u.status === "error" ? "bg-destructive" : "bg-orange-500")}
+                    style={{ width: `${u.percent}%` }} />
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              </div>
+            ))}
+          </AdaptivePanel>
         )}
 
         {loading ? (
@@ -384,15 +386,32 @@ function CategoryChip({ active, label, count, onClick }: {
   )
 }
 
+/**
+ * One file, as a tile.
+ *
+ * SH903 — this is the one surface in the slice that is **already** a mosaic, so it is the one
+ * place the bento layer's tile classes belong rather than a panel. It was never a `Card`: it is a
+ * hand-rolled `rounded-lg border bg-background` container, which is why a grep for console chrome
+ * did not find it and the census counted this page as carrying one `Card` when it renders a grid
+ * of forty. `bento-tile bento-glass` is what `BentoTile` itself puts on its root — the same
+ * classes, not a copy of the look — and the frost is what `checkBentoSurface` reads.
+ *
+ * Not `BentoTile` itself: this tile carries a thumbnail, a hover-revealed selection checkbox and
+ * an aspect-locked preview, none of which that component's children slot expresses.
+ */
 function MediaCard({ item, onOpen, selected, onToggleSelect }: {
   item: ShStaticFileItem; onOpen: () => void; selected: boolean; onToggleSelect: () => void
 }) {
   const image = isImageType(item.contentType)
   const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
+  const chrome = useSectionChrome()
   return (
     <div
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg border bg-background hover:shadow-md transition-all",
+        "group relative flex flex-col overflow-hidden transition-all",
+        chrome === "bento"
+          ? "bento-tile bento-glass rounded-2xl"
+          : "rounded-lg border bg-background hover:shadow-md",
         selected ? "border-orange-400 ring-2 ring-orange-300" : "hover:border-orange-300",
       )}>
       {/* Selection checkbox (always visible when selected, on hover otherwise) */}
@@ -431,8 +450,7 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
   onToggleSelect: (id: string) => void
 }) {
   return (
-    <Card>
-      <CardContent className="p-0">
+    <AdaptivePanel contentClassName="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -502,27 +520,35 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
             ))}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+    </AdaptivePanel>
   )
 }
 
+/**
+ * The two empties this page can render, which is one more than search or the trash has.
+ *
+ * A file list showing nothing means one of two different things, and the difference is the whole
+ * value of the message: **no files at all** (a fresh site — the answer is to upload one) or **a
+ * filter that excluded them** (files exist, the query or the category chip is hiding them — the
+ * answer is to widen it). Telling a curator "no files" while forty sit behind an active chip is
+ * worse than silence, because it reads as data loss.
+ *
+ * `filteredOut` is what tells them apart, and it needs `items` — the unfiltered count — rather
+ * than the filtered one the caller is already rendering. That distinction is the reason this stays
+ * a named component after SH903 moved the markup into `AdaptiveEmptyState`: the shape is shared,
+ * this decision is not.
+ */
 function EmptyState({ items, query, category, t }: {
   items: number; query: string; category: string; t: (key: string) => string
 }) {
   const filteredOut = items > 0 && (query.trim() !== "" || category !== "all")
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="rounded-full bg-muted p-4 mb-4">
-        <ImageIcon className="h-8 w-8 text-muted-foreground" />
-      </div>
-      <h3 className="font-semibold text-lg mb-1">
-        {filteredOut ? t("staticFile.noMatches") : t("staticFile.blankTitle")}
-      </h3>
-      <p className="text-sm text-muted-foreground max-w-sm">
-        {filteredOut ? t("staticFile.noMatchesHint") : t("staticFile.blankDescription")}
-      </p>
-    </div>
+    <AdaptiveEmptyState
+      icon={IconPhoto}
+      tone={filteredOut ? "slate" : "amber"}
+      title={filteredOut ? t("staticFile.noMatches") : t("staticFile.blankTitle")}
+      description={filteredOut ? t("staticFile.noMatchesHint") : t("staticFile.blankDescription")}
+    />
   )
 }
 

@@ -174,14 +174,16 @@ const STILL_CONSOLE = {
    */
   "content/post.edit.page.tsx": [],
   "content/post.new.page.tsx": [],
-  "content/search.page.tsx": ["PageHeader", "Card"],
+  // SH903 — all three empty by migration: AdaptivePageHeader, AdaptivePanel and the shared
+  // AdaptiveEmptyState replace the header, the card and three copies of the "nothing here" void.
+  "content/search.page.tsx": [],
   // SH892 — same swap; SH899 owns the hero and the list shape around it.
   "content/site.edit.page.tsx": ["PageHeader"],
   "content/site.import.page.tsx": ["PageHeader", "Card"],
   "content/site.list.page.tsx": ["PageHeader", "Card"],
   "content/site.new.page.tsx": ["PageHeader", "Card"],
-  "content/static-file.list.page.tsx": ["PageHeader", "Card"],
-  "content/trash.page.tsx": ["PageHeader", "Card"],
+  "content/static-file.list.page.tsx": [],
+  "content/trash.page.tsx": [],
   "graphql/graphql.page.tsx": ["PageHeader"],
   "home/home.page.tsx": ["PageHeader", "Card"],
   "not-found.page.tsx": [],
