@@ -1,5 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom"
 import BentoHomePage from "./app/bento/home/home.page"
+import BentoSiteEditPage from "./app/bento/content/site.edit.page"
+import BentoSiteImportPage from "./app/bento/content/site.import.page"
+import BentoSiteListPage from "./app/bento/content/site.list.page"
+import BentoSiteNewPage from "./app/bento/content/site.new.page"
 import BentoRootPage from "./app/bento/bento.root.page"
 import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
 import ConsoleRootPage from "./app/console/console.root.page"
@@ -49,6 +53,15 @@ function App() {
               */}
               <Route path={ROUTES.BENTO} element={<BentoRootPage />}>
                 <Route index element={<BentoHomePage />} />
+                {/*
+                  SH899 — the site slice. `new` and `import` are declared BEFORE `:siteId`, or
+                  the parameter route matches them first and the editor tries to load a site
+                  called "new" — a 404 behind a form, which is the shape SH921 was about.
+                */}
+                <Route path="content" element={<BentoSiteListPage />} />
+                <Route path="content/site/new" element={<BentoSiteNewPage />} />
+                <Route path="content/site/import" element={<BentoSiteImportPage />} />
+                <Route path="content/site/:siteId" element={<BentoSiteEditPage />} />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
                 <Route index element={<Navigate to={ROUTES.HOME} replace />} />

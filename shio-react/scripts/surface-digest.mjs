@@ -69,8 +69,34 @@ export const CONSOLE_ROOT = join(HERE, "..", "src", "app", "console")
 export const BENTO_ROOT = join(HERE, "..", "src", "app", "bento")
 export const APP_ROOT = join(HERE, "..", "src", "app")
 
-/** A page is bento-era when it imports the subpath; the design system chose that as the marker. */
-const BENTO_IMPORT = /@viglet\/viglet-design-system\/bento/
+/**
+ * A page is bento-era when it imports the subpath — **except for the era-neutral adapter**.
+ *
+ * SH892 taught `console-chrome-census.test.mjs` this exact exclusion and did not teach it here,
+ * and SH899 is where that cost something: the console's own `site.edit.page.tsx` was classified
+ * `bento`, because SH892 gave it `AdaptiveSectionCard`. That component is the one export written
+ * to be used *from a console page* — it renders console cards by default and bento sections under
+ * a provider — and the package exports it from the bento subpath because that is where it lives.
+ *
+ * Two readers answering the same question, one taught and one not. Kept in step by name here
+ * rather than by importing the census's copy: this file is a script the console can run on its
+ * own, and a test that imports a script is a different dependency from a script that imports a
+ * test. `bento-site-slice.test.mjs` asserts both agree.
+ */
+const ERA_NEUTRAL = ["AdaptiveSectionCard", "SectionCardChromeProvider", "useSectionChrome"]
+
+const BENTO_CLAUSE = /import\s*\{([^}]*)\}\s*from\s*["']@viglet\/viglet-design-system\/bento["']/g
+
+function isBentoEra(source) {
+  if (!/@viglet\/viglet-design-system\/bento/.test(source)) return false
+  const clauses = [...source.matchAll(BENTO_CLAUSE)]
+  if (!clauses.length) return true
+  return clauses.some(([, names]) => names
+    .split(",")
+    .map((name) => name.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim())
+    .filter(Boolean)
+    .some((name) => !ERA_NEUTRAL.includes(name)))
+}
 
 /**
  * The chrome vocabulary, both eras. Only these are recorded, and that is what keeps the digest
@@ -135,7 +161,7 @@ function surfaces(source) {
 export function structureOf(source) {
   const composed = elements(source).filter((name) => CHROME.has(name))
   return {
-    era: BENTO_IMPORT.test(source) ? "bento" : "console",
+    era: isBentoEra(source) ? "bento" : "console",
     // Order is kept: a page that renders a hero after its sections is a different page.
     chrome: composed,
     surface: surfaces(source),

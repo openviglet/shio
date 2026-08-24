@@ -105,7 +105,10 @@ interface ShioNavItem extends BentoNavItem {
  */
 const ITEMS: ShioNavItem[] = [
   // Content
-  { id: "sites", titleKey: "content.sites", descriptionKey: "nav.desc.sites", icon: IconFileText, section: "content", tone: "blue", fallbackRoute: `${ROUTES.CONSOLE}/content` },
+  // SH899 — the first entry to move. `bentoNavTarget` prefers `bentoRoute`, so adding this one
+  // line repoints the rail, the palette and every hub at once; `fallbackRoute` stays so the
+  // slice can be reverted without editing anything else.
+  { id: "sites", titleKey: "content.sites", descriptionKey: "nav.desc.sites", icon: IconFileText, section: "content", tone: "blue", bentoRoute: ROUTES.BENTO_CONTENT, fallbackRoute: `${ROUTES.CONSOLE}/content` },
   { id: "search", titleKey: "content.searchTitle", descriptionKey: "nav.desc.search", icon: IconSearch, section: "content", tone: "blue", fallbackRoute: ROUTES.SEARCH },
   { id: "post-types", titleKey: "content.postTypes", descriptionKey: "nav.desc.postTypes", icon: IconForms, section: "content", tone: "indigo", fallbackRoute: ROUTES.POST_TYPE_ROOT },
   { id: "files", titleKey: "staticFile.title", descriptionKey: "nav.desc.files", icon: IconPhoto, section: "content", tone: "blue", fallbackRoute: ROUTES.FILES },

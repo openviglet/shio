@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.2 Sites, where the list shape is settled (SH899)
-
-Four pages: the site list, new, edit and import. The list is the first of roughly ten
-list screens in this console, and whatever shape it takes is the shape the rest will
-copy, so this slice deserves more attention than its size suggests - what a tile
-carries, what an empty result says, where the New affordance sits, whether a failed load
-offers a retry. Use the package's list page rather than hand-rolling the grid the way
-the console does today. The edit page is the first entity-shell candidate: a site has a
-title, a description and an identity that belongs in a hero rather than in the form.
-
 ### LV.3 The content browser, where the day is spent (SH900)
 
 object.children.page.tsx and the two folder pages are the console's main workspace: the

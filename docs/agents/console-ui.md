@@ -1274,3 +1274,51 @@ same sentence on screen twice forty pixels apart. It is `home.overview` now, wit
 
 The badges lost six hardcoded colour strings to `bentoChipClass`, so SH890's re-key reaches them.
 `teal` is not a tone, so `RESTORE` reads violet — the one deliberate visual difference.
+
+## The site slice, and the rule that makes a save bar do something (SH899)
+
+Four surfaces under `/bento/content`: the list (`BentoListPage` + `BentoEntityTile`), the editor
+(`BentoEntityShell` — the first in this console), and create/import (`BentoFormHero`). The four
+console pages are untouched until SH909, which is what makes the slice reversible.
+
+### The defect a run found and nothing else could
+
+`BentoEntityShell` renders its Save as `<GradientButton type="submit" form={formId}>`. That
+submits **an HTML form with that id, and nothing else**. The first draft returned a
+`BentoFormSection` from the render prop with no `<form>` around it — so the page rendered
+perfectly, the hero showed Save Changes and Cancel, and clicking Save issued **no request, logged
+nothing and threw nothing**.
+
+`tsc` cannot see it: `formId` is a string and the shell has no way to check a form with that id
+exists. Typing into a field, clicking Save, reloading and reading the value back is what found it.
+
+**`onUpdate` does not cover this.** The shell calls that when the *hero identity* is edited (type
+→ blur → autosave), so a page can have a working hero and a completely dead body. Every remaining
+Block AR entity editor composes this same pair, so the rule is asserted rather than remembered: a
+shell that names a `formId` must contain a `<form>` with that id **and** a submit handler that
+reaches a service.
+
+### Two era classifiers, one taught
+
+SH892 taught `console-chrome-census.test.mjs` that `AdaptiveSectionCard` is era-neutral — and did
+not teach `surface-digest.mjs`. SH899 is where that cost something: the **console's own**
+`site.edit.page.tsx` came back `bento`, because SH892 had given it the adapter seven tasks
+earlier. Both now hold the same three names, and a test asserts the two lists match — not by
+sharing a module, because the digest is a script the console runs on its own and a script
+importing a test file is the worse dependency.
+
+### What the list settles for the ten that follow
+
+| decision | why |
+|---|---|
+| Actions on the entity, not the row | the console row hid export/edit/view/delete behind `opacity-0 group-hover:opacity-100` — **four actions reachable only by a mouse**. They are `extraActions` on the shell now: focusable and announced. |
+| A failed load is not an empty list | `undefined` means "loading" to the package's gate, so a rejected query must set `[]` **and** an error, or the page spins for ever. The console page rendered its empty state for both. |
+| The filter goes in `headerAction` | `BentoListPage` has no search by design. Dropping it would have been a regression on the console list most likely to grow. |
+| The Sites/Tasks tab strip is gone | `tasks` rendered `content.noPendingTasks` in every state since it was written. A tab that is always empty teaches a curator not to look at tabs. |
+
+`new` and `import` are declared **before** `:siteId`, or the parameter route matches them first
+and the editor tries to load a site called "new".
+
+A third repetition of SH898's lesson, in three of the four files: a section titled with the name
+of one field it contains, or described with the sentence the hero above already says. Both props
+want a string, and the nearest string to hand is almost always one already on screen.

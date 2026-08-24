@@ -77,6 +77,13 @@ export const ROUTES = {
    * that need it (SH905), not with the shell.
    */
   BENTO: "/bento",
+  /**
+   * SH899 — the bento content surfaces. Unscoped like BENTO itself; tenancy under bento arrives
+   * with the surfaces that need it (SH905), not with the ones that do not.
+   */
+  BENTO_CONTENT: "/bento/content",
+  BENTO_SITE_NEW: "/bento/content/site/new",
+  BENTO_SITE_IMPORT: "/bento/content/site/import",
 };
 
 // Route patterns (with `:tenant` placeholder) used by React Router for matching.
