@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
 import { Button } from "@/components/ui/button"
 /*
  * SH892 — the section chrome comes from the adapter, not from a Card. Post types are the one
@@ -59,7 +59,7 @@ import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShWidgetService } from "@/services/widget/widget.service"
 import type { ShPostType, ShPostTypeField } from "@/models/post-type/post-type"
 import type { ShWidget } from "@/models/widget/widget"
-import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
+import { GradientButton, toast } from "@viglet/viglet-design-system"
 import {
   DndContext,
   closestCenter,
@@ -844,11 +844,23 @@ export default function PostTypeEditPage() {
 
   return (
     <>
-      <PageHeader title={t("content.editPostType")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-      <div className="p-6 space-y-6">
-        <StickySaveBar
-          title={t("content.modelPostType", { title: title ?? "" })}
-          actions={
+      {/*
+        SH902 — one call, the 1:2 mapping SH901 established. The hero's title is the post type's
+        **display title**, not its API name: `name` is the key the whole content API, the CLI and
+        the agent surface are keyed on, and renaming it is its own operation (SH117/SH163) —
+        a `PUT` to a new name creates a second type and orphans the first while answering 200.
+        The API name therefore stays a read-only field with its Rename button, below.
+      */}
+      <AdaptivePageHeader
+        icon={IconFileText}
+        eyebrow={t("content.postType")}
+        title={t("content.editPostType")}
+        urlBase={ROUTES.CONTENT_ROOT}
+        saveTitle={t("content.modelPostType", { title: title ?? "" })}
+        onCancel={() => navigate(ROUTES.POST_TYPE_ROOT)}
+        loading={isLoading}
+        saveDisabled={managed}
+        actions={
             <>
               {managed && (
                 <Tooltip>
@@ -888,7 +900,8 @@ export default function PostTypeEditPage() {
               </GradientButton>
             </>
           }
-        />
+      />
+      <div className="p-6 space-y-6">
 
         {managed && (
           <div className="flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50 p-4 text-sm dark:border-violet-900 dark:bg-violet-950/30">

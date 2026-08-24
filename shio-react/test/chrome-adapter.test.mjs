@@ -7,11 +7,13 @@
  * (at your option) any later version.
  */
 import { strict as assert } from "node:assert"
-import { readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { readdirSync, readFileSync } from "node:fs"
+import { dirname, join, relative } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { createElement as h } from "react"
+import { findElements } from "./support/jsx-elements.mjs"
+import { stripComments } from "./support/source-text.mjs"
 import { renderToStaticMarkup } from "react-dom/server"
 import { AdaptiveSectionCard, SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 
@@ -46,6 +48,16 @@ import { AdaptiveSectionCard, SectionCardChromeProvider } from "@viglet/viglet-d
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
+
+/** Every `.tsx` under src — the adapter can be used from a page or a component. */
+function consoleSources(dir = SRC, found = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) consoleSources(path, found)
+    else if (entry.name.endsWith(".tsx")) found.push(path)
+  }
+  return found
+}
 
 /**
  * The caller's markup, pulled out of whatever each chrome rendered around it.
@@ -231,4 +243,41 @@ test("SH892: the reader is not vacuous — it renders the real package, not a st
   assert.equal(typeof AdaptiveSectionCard.StaticHeader, "function",
     "SH892: AdaptiveSectionCard.StaticHeader is not a function, so the compound component's"
       + " shape changed and this file is asserting against a different API than the pages use")
+})
+
+/**
+ * SH902 — every `AdaptiveSectionCard` in this console has a header, or it is not one.
+ *
+ * The rule above proves the *package's* behaviour: a section with no header falls through to the
+ * console card, deliberately, so its content cannot go missing. Nothing asserted that **Shio's
+ * own usages** carry one — and four of them did not.
+ *
+ * The content browser's stats strip, its toolbar and its listing, and the post-type list, are
+ * panels rather than sections: a count, a breadcrumb, a view toggle, a list of rows, under a hero
+ * that already names the page. A header on any of them is noise, so all four were written without
+ * one and all four silently rendered console cards under the bento shell. SH900 introduced three
+ * of them in a single commit, written by the same hand that had documented the no-op eight tasks
+ * earlier.
+ *
+ * `AdaptivePanel` is what those four use now, and **SH923** asks the package for the component it
+ * stands in for. This reader is what stops the mistake being made a fifth time: reach for
+ * `AdaptiveSectionCard` and you must have something to title.
+ */
+test("SH902: no AdaptiveSectionCard in this console is missing its header", () => {
+  const offenders = []
+  for (const path of consoleSources()) {
+    const source = stripComments(readFileSync(path, "utf8"))
+    for (const element of findElements(source, "AdaptiveSectionCard")) {
+      if (element.selfClosing) continue
+      if (/AdaptiveSectionCard\.(Static)?Header/.test(element.body)) continue
+      offenders.push(relative(SRC, path).replace(/\\/g, "/"))
+    }
+  }
+
+  assert.deepEqual(offenders, [],
+    "SH902: an AdaptiveSectionCard has no Header/StaticHeader child, so in bento chrome it falls"
+      + " through to a console card — silently, with no error and nothing visible in review.\n"
+      + "  If the panel has something to title, give it a StaticHeader.\n"
+      + "  If it does not — a stats strip, a toolbar, a bare list under a hero that already names"
+      + " the page — it is not a section. Use `AdaptivePanel` (SH923).")
 })

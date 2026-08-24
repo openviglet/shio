@@ -1632,6 +1632,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH899** — Four surfaces on the package's list page and the first entity shell; a run found the shell's Save submits a form id that had no form, and the digest classifying a console page as bento.
 - **SH900** — The browser is one 965-line component in two chromes rather than a copy, because only four of its lines were chrome; a folder editor is identity-only, so autosaveOnly renders no save button.
 - **SH901** — The two post pages render in either chrome from one component with their widgets untouched; the adapter absorbed the save bar, and SH897's morph check turned out to be looking for markup nothing renders.
+- **SH902** — All three post-type pages adapt, and a header-less AdaptiveSectionCard is now a lint: four panels — three from SH900 — silently rendered console cards under the bento shell.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

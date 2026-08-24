@@ -1,6 +1,6 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
@@ -40,7 +40,13 @@ export default function PostTypeListPage() {
 
   return (
     <>
-      <PageHeader title={t("content.postTypes")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
+      {/* SH902 — header and panel through the adapters; the row list itself is untouched. */}
+      <AdaptivePageHeader
+        icon={IconFileText}
+        eyebrow={t("sidebar.content")}
+        title={t("content.postTypes")}
+        urlBase={ROUTES.CONTENT_ROOT}
+      />
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{t("content.postTypes")}</h2>
@@ -49,8 +55,7 @@ export default function PostTypeListPage() {
             {t("common.create")}
           </Button>
         </div>
-        <Card>
-          <CardContent className="p-0">
+        <AdaptivePanel contentClassName="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -91,8 +96,7 @@ export default function PostTypeListPage() {
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+        </AdaptivePanel>
       </div>
     </>
   )

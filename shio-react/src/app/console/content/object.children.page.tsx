@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { AdaptivePageHeader } from "@/components/adaptive-page-header"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -601,8 +601,7 @@ export default function ObjectChildrenPage() {
       <div className="p-4 md:p-6 space-y-4">
 
         {/* Stats bar */}
-        <AdaptiveSectionCard>
-          <AdaptiveSectionCard.Content className="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">
+        <AdaptivePanel contentClassName="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Folder className="h-4 w-4" />
               <span>{t("content.folderCount", { count: folderCount })}</span>
@@ -611,8 +610,7 @@ export default function ObjectChildrenPage() {
               <FileText className="h-4 w-4" />
               <span>{t("content.postCount", { count: postCount })}</span>
             </div>
-          </AdaptiveSectionCard.Content>
-        </AdaptiveSectionCard>
+        </AdaptivePanel>
 
         {/* Toolbar: New Article | Grid | New Folder | Import || Order | Select | Action in Batch */}
         <div className="flex flex-wrap items-center gap-2">
@@ -703,8 +701,7 @@ export default function ObjectChildrenPage() {
         </div>
 
         {/* Sub-toolbar: breadcrumb path + search/view icons */}
-        <AdaptiveSectionCard>
-          <AdaptiveSectionCard.Content className="flex items-center gap-2 py-2 px-4">
+        <AdaptivePanel contentClassName="flex items-center gap-2 py-2 px-4">
             <div className="flex-1 flex items-center gap-1 text-sm text-muted-foreground overflow-hidden">
               {breadcrumbPath.map((crumb, i) => (
                 <span key={crumb.id} className="flex items-center gap-1 shrink-0">
@@ -729,8 +726,7 @@ export default function ObjectChildrenPage() {
                 <Sheet className="h-4 w-4" />
               </Button>
             </div>
-          </AdaptiveSectionCard.Content>
-        </AdaptiveSectionCard>
+        </AdaptivePanel>
 
         {/* Search bar (toggleable) */}
         {searchOpen && (
@@ -747,8 +743,7 @@ export default function ObjectChildrenPage() {
         )}
 
         {/* Content list */}
-        <AdaptiveSectionCard className="overflow-hidden">
-          <AdaptiveSectionCard.Content className="p-0">
+        <AdaptivePanel className="overflow-hidden" contentClassName="p-0">
             {loading && (
               <div className="px-4 py-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
             )}
@@ -867,8 +862,7 @@ export default function ObjectChildrenPage() {
                 </Button>
               </div>
             )}
-          </AdaptiveSectionCard.Content>
-        </AdaptiveSectionCard>
+        </AdaptivePanel>
 
         {/* Selection info bar */}
         {selectedItems.size > 0 && (

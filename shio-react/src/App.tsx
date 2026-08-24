@@ -12,6 +12,9 @@ import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
 import ObjectChildrenPage from "./app/console/content/object.children.page"
 import PostEditPage from "./app/console/content/post.edit.page"
 import PostNewPage from "./app/console/content/post.new.page"
+import PostTypeEditPage from "./app/console/content/post-type.edit.page"
+import PostTypeListPage from "./app/console/content/post-type.list.page"
+import PostTypeNewPage from "./app/console/content/post-type.new.page"
 import ConsoleRootPage from "./app/console/console.root.page"
 import NotFoundPage from "./app/console/not-found.page"
 import HomePage from "./app/console/home/home.page"
@@ -113,6 +116,34 @@ function App() {
                 <Route
                   path="content/folder/:folderId/post-type-select"
                   element={<BentoPostTypeSelectPage />}
+                />
+                {/*
+                  SH902 — the three post-type pages, all adapter surfaces. `new` before `:name`,
+                  or the editor tries to load a post type called "new".
+                */}
+                <Route
+                  path="content/post-type"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <PostTypeListPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                <Route
+                  path="content/post-type/new"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <PostTypeNewPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                <Route
+                  path="content/post-type/:postTypeName"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <PostTypeEditPage />
+                    </SectionCardChromeProvider>
+                  }
                 />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>

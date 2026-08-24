@@ -1,6 +1,6 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ROUTES } from "@/app/routes.const"
@@ -45,13 +45,17 @@ export default function PostTypeNewPage() {
 
   return (
     <>
-      <PageHeader title={t("content.newPostType")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
+      <AdaptivePageHeader
+        icon={IconFileText}
+        eyebrow={t("content.postType")}
+        title={t("content.newPostType")}
+        urlBase={ROUTES.CONTENT_ROOT}
+      />
       <div className="p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("content.newPostType")}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* SH902 — the hero above says "New Post Type", so this section says what it holds. */}
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader icon={IconFileText} title={t("content.postType")} />
+          <AdaptiveSectionCard.Content>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -106,8 +110,8 @@ export default function PostTypeNewPage() {
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
       </div>
     </>
   )

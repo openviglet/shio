@@ -97,10 +97,22 @@ function isBento(source) {
  * replaces it with. Adding a probe here is how a newly-noticed piece of console chrome enters the
  * census; the map below then has to absorb it, which is the point.
  */
+/*
+ * SH902 — the StickySaveBar probe is gone, on this reader's own instruction.
+ *
+ * Its vacuity check says: "the {id} probe matches no page. Either every page carrying it was
+ * migrated — then delete the probe in the same diff — or its import path was renamed and this
+ * reader has gone blind to a whole layer of chrome while its count went down." It is the first of
+ * the four to reach zero, and it got there by migration: the three pages that rendered a console
+ * sticky save bar pass their save props through `AdaptivePageHeader` now, which renders the pair
+ * in console chrome and the single `BentoFormHero` morph in bento.
+ *
+ * Deleting it is not losing coverage. `chrome-adapter.test.mjs` asserts that no page mounts
+ * `StickySaveBar` directly, which is the same rule from the other side and a stricter one.
+ */
 const CONSOLE_CHROME = [
   ["PageHeader", /@\/components\/page-header/],
   ["Card", /@\/components\/ui\/card/],
-  ["StickySaveBar", /\bStickySaveBar\b/],
   ["Sidebar", /@\/components\/ui\/sidebar|@\/components\/app-sidebar/],
 ]
 
@@ -149,9 +161,11 @@ const STILL_CONSOLE = {
   // SH892 — the Card marker is gone because the section chrome is the adapter now, not
   // @/components/ui/card. The page is still console-era: PageHeader and the console sticky
   // save bar are what SH902 replaces.
-  "content/post-type.edit.page.tsx": ["PageHeader", "StickySaveBar"],
-  "content/post-type.list.page.tsx": ["PageHeader", "Card"],
-  "content/post-type.new.page.tsx": ["PageHeader", "Card"],
+  // SH902 — all three empty by migration: one AdaptivePageHeader call replaces the header
+  // and the save bar, and the panel is an AdaptivePanel.
+  "content/post-type.edit.page.tsx": [],
+  "content/post-type.list.page.tsx": [],
+  "content/post-type.new.page.tsx": [],
   // SH892 — same swap, on the form that builds its schema at runtime. SH901 owns the rest.
   /*
    * SH901 — both empty by migration, the way the content browser is (SH900). The header and

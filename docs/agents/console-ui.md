@@ -1411,3 +1411,62 @@ beside the right one is worse than none.
 
 Census after this task: **43 pages, Card 33, PageHeader 36, StickySaveBar 1** — and six pages
 now empty, four of them empty *by migration* rather than by never having had chrome.
+
+## A header-less section is a console card in both eras (SH902)
+
+The post-type slice — list, new, edit — is three pages, and the migration was meant to be the
+routine one: `AdaptivePageHeader` on all three, the edit page passing `saveTitle`/`onCancel`/
+`loading`/`saveDisabled`, three routes mounted under `SectionCardChromeProvider chrome="bento"`.
+That part was routine. What it found was not.
+
+### `AdaptiveSectionCard` re-skins only when it has a header
+
+The package's own branch is `chrome === "bento" && header`, and the fallback is deliberate: a
+section built some other way falls through to the console card rather than losing its content
+silently (SH892). Correct for the package, and wrong for four of Shio's panels.
+
+The content browser's stats strip, its toolbar and its listing, and the post-type list, are
+**panels, not sections**. They carry a count, a breadcrumb, a view toggle, a list of rows — and
+the hero directly above already names the page, so a header on any of them would be noise. All
+four were written with `AdaptiveSectionCard` and no header, and **all four rendered console cards
+under the bento shell**. Three of them were introduced by SH900, in one commit, by the author who
+had documented the trap two tasks earlier.
+
+It was invisible in review, in `tsc` and in every source scan: the page imports the adapter, so
+the census reads it as migrated, and the era classifier is right to say so. What found it was
+`checkBentoSurface` reading `backdrop-filter` off computed style — `frost: null` on a page that
+looked finished.
+
+[`adaptive-panel.tsx`](../../shio-react/src/components/adaptive-panel.tsx) is the fix: frosted
+container, no header, one implementation instead of four hand-rolled `bento-glass rounded-2xl`
+call sites that drift the moment two of them differ. **SH923** asks the package for the component
+so this can be deleted; the classes are copied from `BentoSaveBar` so the two match today.
+
+`chrome-adapter.test.mjs` now fails any page that mounts a header-less `AdaptiveSectionCard`, and
+`bento-browser.test.mjs`'s SH900 assertion was re-pointed from counting adapters to counting
+panels. That correction is worth more than the count: the old assertion passed on all three
+browser panels while the bento route rendered three console cards. **It counted the seam and
+never asked whether the seam did anything.**
+
+### The name-key question the section raised, answered by looking
+
+§LV.5 flagged it rather than assuming: post types are the one name-keyed surface, so the identity
+in the hero is a name and not an id, and an inline-edit hero that let it be typed over would be a
+rename with no confirmation — P7 exactly. It is not. The hero edits the **display title**; `name`
+stays a read-only input with its own Rename action, which is SH117/SH163 already decided.
+Confirmed in a browser: `apiNameReadOnly: {value: "Page", readOnly: true}`, Rename present, four
+fields, and `morphAtTop: "0"` → `morphAfter: "1"`.
+
+### The first console probe to reach zero
+
+`StickySaveBar` now matches **no page**, and the census's own vacuity rule prescribed what to do:
+*"Either every page carrying it was migrated — then delete the probe in the same diff — or its
+import path was renamed."* It was the first, so the probe is gone. Not lost coverage —
+`chrome-adapter.test.mjs` asserts that no page mounts `StickySaveBar` directly, which is the same
+rule from the other side and a stricter one.
+
+Census after this task: **43 pages, Card 31, PageHeader 33, Sidebar 1, nine empty.**
+
+`console-check` gained three probes rather than one — list, new and edit. The two that carry no
+save bar are the two that caught the header-less defect, which is the argument for probing a
+slice instead of its most interesting page. 25/25 green.

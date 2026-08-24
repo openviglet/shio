@@ -30,7 +30,8 @@
  */
 import { chromium } from "playwright"
 import { mkdir, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const args = process.argv.slice(2)
 const flag = (name, fallback) => {
@@ -41,7 +42,16 @@ const has = (name) => args.includes(`--${name}`)
 
 const BASE = flag("base", process.env.SHIO_CONSOLE_URL || "http://localhost:5173")
 const API = flag("api", process.env.SHIO_URL || "http://localhost:2710")
-const OUT = flag("out", join("e2e", "report"))
+/*
+ * SH902 — anchored to this script rather than to the cwd, which is not tidiness.
+ *
+ * `.gitignore` carries the anchored rule `/shio-react/e2e/report/`, so the default only landed
+ * inside it when the script was run from `shio-react/`. Run from the repo root — which is where
+ * the three gates are run from, and where `run-commit.cmd` stages — it wrote `<root>/e2e/report/`,
+ * outside the ignore, and `git add *` was one command away from committing twenty-five
+ * screenshots. Two cwds, two output paths, one of them silently unignored (P5).
+ */
+const OUT = flag("out", join(dirname(fileURLToPath(import.meta.url)), "report"))
 
 /**
  * A skipped `universal-editor-drive` is a **failure** (SH238/SH659).
@@ -180,6 +190,37 @@ async function discoverRoutes(siteName) {
       mustSeeFields: true,
       note: `${post.title} (${post.address})`,
     })
+  }
+  /*
+   * SH902 — the post-type slice under bento chrome. Three surfaces, one probe each, because the
+   * three fail in different ways and only one of them is visible in a source scan.
+   *
+   * The **list** and **new** pages are the ones that caught SH902's real defect: both were written
+   * with a header-less `AdaptiveSectionCard`, which falls back to a console card in *both* eras
+   * and renders a page that looks finished and is half-migrated. `checkBentoSurface` reads
+   * `backdrop-filter` off computed style, so it sees that and a class-name scan does not.
+   *
+   * The **edit** page is the second surface in the product to carry a save-bar morph, after
+   * SH901's post editor — and the one that answers the question the section's name-key rule
+   * raises: the hero edits the *display title*, while `name` stays a read-only input with its own
+   * Rename action (SH117/SH163). A hero that let the API name be typed over would be a rename
+   * with no confirmation, which is P7 exactly.
+   */
+  const bentoType = postTypes.find((t) => !t.system)
+  if (bentoType) {
+    routes.push({
+      name: "bento-post-type-list",
+      path: "/bento/content/post-type",
+      bento: true,
+      mustSee: [bentoType.name],
+    })
+    routes.push({
+      name: `bento-post-type-edit:${bentoType.name}`,
+      path: `/bento/content/post-type/${bentoType.name}`,
+      bento: true,
+      mustSee: [bentoType.name],
+    })
+    routes.push({ name: "bento-post-type-new", path: "/bento/content/post-type/new", bento: true, mustSee: [] })
   }
   for (const t of postTypes.filter((t) => !t.system).slice(0, 3)) {
     routes.push({ name: `post-type-edit:${t.name}`, path: `/console/content/post-type/${t.name}`, mustSee: [t.name] })

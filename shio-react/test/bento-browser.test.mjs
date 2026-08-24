@@ -66,10 +66,26 @@ test("SH900: the browser is one component with no console chrome of its own", ()
       + " chrome. AdaptivePageHeader is the seam.")
   assert.match(BROWSER, /AdaptivePageHeader/, "SH900: the browser lost its adaptive header")
 
-  const cards = findElements(BROWSER, "AdaptiveSectionCard").filter((el) => !el.selfClosing)
-  assert.ok(cards.length >= 3,
-    `SH900: only ${cards.length} AdaptiveSectionCard(s) in the browser; the three panels — the`
+  /*
+   * SH902 re-pointed this from `AdaptiveSectionCard` to `AdaptivePanel`, and the correction is
+   * worth more than the count. All three of these panels were written here with
+   * `AdaptiveSectionCard` and **no header** — and the package's own branch is
+   * `chrome === "bento" && header`, so a header-less one falls back to the console card in both
+   * eras. The assertion below passed on every one of them while the bento route rendered three
+   * console cards under the frosted shell: it counted the seam and never asked whether the seam
+   * did anything. `checkBentoSurface` reading `backdrop-filter: null` is what found it.
+   *
+   * A panel is not a section. These three carry a count, a breadcrumb and a list of rows, with
+   * the hero directly above naming the page; a header on any of them would be noise.
+   */
+  const panels = findElements(BROWSER, "AdaptivePanel").filter((el) => !el.selfClosing)
+  assert.ok(panels.length >= 3,
+    `SH900/SH902: only ${panels.length} AdaptivePanel(s) in the browser; the three panels — the`
       + " stats strip, the toolbar and the listing — are what the console chrome was.")
+  assert.doesNotMatch(BROWSER, /<AdaptiveSectionCard\b/,
+    "SH902: the browser mounts an AdaptiveSectionCard again. If it has no Header child it renders"
+      + " a console card in bento chrome and nothing says so — use AdaptivePanel, or give it a"
+      + " header and mean it.")
 })
 
 test("SH900: the bento route wraps that same component in the provider", () => {

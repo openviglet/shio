@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.5 Post types, the editor behind every post (SH902)
-
-Three pages, and the edit page carries the attribute editor: the ordered list of fields,
-their widgets, their settings, and a console sticky save bar with no scroll morph. It is
-the second most visited editor after posts and the one where a curator makes changes
-that reshape every post of that type, so an unambiguous save affordance matters more
-here than elsewhere. Post types are also the one name-keyed surface in the product,
-which means the identity in the hero is a name rather than an id - worth checking
-against the shell's inline-edit behaviour rather than assuming.
-
 ### LV.6 The three surfaces where empty is normal (SH903)
 
 Search results, the trash and the static-file list. All three routinely render nothing,
@@ -1064,6 +1054,34 @@ been here before, with a documentation set that contradicted every block shipped
 it, and the lesson recorded then was that a docs debt of this shape is noticed by nobody
 working in the code. Take it in the same block as the cutover rather than as a
 follow-up, since a follow-up is what it became last time.
+
+### LV.16 A frosted panel with nothing to title (SH923)
+
+`AdaptiveSectionCard` re-skins only where it finds a header child — its own line is
+`chrome === "bento" && header`. The fallback is deliberate and right: a section built
+some other way falls through to the console card rather than losing its content silently
+(SH892).
+
+It is wrong for a panel with nothing to title. The content browser's stats strip, its
+toolbar and its listing, and the post-type list, carry a count, a breadcrumb, a view
+toggle and a list of rows; the hero above already names the page, so a heading on any of
+them is noise. All four were written with `AdaptiveSectionCard` and no header, and all
+four rendered **console cards under the bento shell** — the exact no-op SH892
+documented, reproduced three times in one commit by the person who wrote that
+documentation.
+
+Nothing saw it. Not review, not `tsc`, not the census, not the digest.
+`checkBentoSurface` reading `backdrop-filter` off computed style is what found it:
+`frost: null` on a page that looked finished.
+
+The vocabulary has `BentoTile` for a clickable tile, `BentoSection` for a heading plus a
+grid, `BentoFormSection` for a titled form group — and nothing for a frosted container
+with arbitrary content. So each consumer hand-rolls `bento-glass rounded-2xl border`,
+and the moment two choose different radii the product is inconsistent for a reason
+invisible in any diff.
+
+Shio carries `AdaptivePanel` meanwhile, with the classes copied from `BentoSaveBar` so
+they match today. Ask the package for the component, then delete it.
 
 ## LVI What Turing's index never receives
 
