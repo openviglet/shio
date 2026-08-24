@@ -35,8 +35,27 @@ confirmModulesPurge: false
 # and in .npmrc it silently downgrades to the warning it is meant to replace.
 strictPeerDependencies: true
 
+# pnpm 11 refuses a dependency published more recently than `minimumReleaseAge` — a
+# supply-chain guard aimed at a compromised release being pulled in before anybody has
+# looked at it. It is on by default and it is worth keeping.
+#
+# The design system is the one dependency that guard cannot be about (SH915). It is
+# first-party: published from viglet-design-system by the same people, consumed the day
+# it ships precisely because the console is migrating onto it, and never a package a
+# stranger could push to. Waiting a day for it buys nothing and costs the whole of
+# Blocks AQ and AR, whose every task starts by importing `/bento`.
+#
+# Excluded by NAME rather than by name@version, which is the change SH915 made. The
+# pinned form was auto-written by pnpm on each bump and only ever excused the version in
+# front of it: the lockfile-verification pass then rejected the NEXT release, so
+# `pnpm test` and `pnpm run compile:build` stopped before running anything — the dep
+# check happens ahead of every script, not at build time. Pinning also meant this list
+# grew a dead line per release, each one reading like a decision somebody made.
+#
+# Deliberately not `minimumReleaseAge: 0`, which would drop the guard for all 493
+# entries. This is one package, named.
 minimumReleaseAgeExclude:
-  - '@viglet/viglet-design-system@2026.3.2'
+  - '@viglet/viglet-design-system'
 
 # CodeMirror 6 must be a singleton per page: an extension built against one copy
 # of @codemirror/state is unrecognised by another, and the editor dies with

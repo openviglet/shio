@@ -1018,28 +1018,6 @@ the bento route tree, and give it the shape of assertion this migration actually
 that the hero is present, that the frosted card is frosted, and that the save bar
 appears on scroll and not before it.
 
-### LIV.13 Blocks AQ and AR wait on a release, not on a design (SH915)
-
-Nine of Block AQ's twelve tasks were filed against design-system ids, and three of those
-four ids — VDS8, VDS22, VDS23 — have since shipped. Read from this repository they still
-look open, because roadkeep cannot see another project's ledger, so `pick` reports
-"every open task in Block AQ is blocked" and gives a reason that stopped being true.
-
-The reason that is true is smaller and harder to notice. The bento layer exists, it is
-written, and `@viglet/viglet-design-system/bento` is declared in the checkout's own
-`exports`. But the copy installed here is **2026.3.2 from npm**, and it declares no such
-subpath: `require.resolve` fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`. So the first line
-of the first migrated page cannot compile, and any console code written against the
-layer would be green on the machine that pushed a local build over `node_modules` and
-red everywhere else — which is the worst available outcome, because it is CI that finds
-it.
-
-Two things follow. The blocker on SH887, SH890 and SH892 is a **2026.3.3 release to
-npm**, not any design task, and stating it that way is what stops the next session
-re-deriving this. And the same release is what SH895's unmet criterion needs:
-`copy-ds.cmd` correctly refuses to push 2026.3.3's dist over a tree resolved for
-2026.3.2, so even the local escape hatch is shut until the version lands.
-
 ## LV The curator's console, surface by surface (Block AR)
 
 Forty-three console pages, migrated behind the parallel route the previous block builds,
