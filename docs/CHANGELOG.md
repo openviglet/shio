@@ -1623,6 +1623,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH897** — The browser check probes /bento and reads the frost off computed style; its first version passed with bento.css deleted, so it was broken on purpose until it failed.
 - **SH920** — Shio's provider wraps the package's and republishes it as ShCurrentUser, so one mount serves both hooks from one fetch and both shells import the same thing.
 - **SH921** — Two teaching slugs replace the empty 404; and the filed premise was wrong — the id is a post-unified row that has no draft, so the defect is every published-only post, not static files.
+- **SH919 (upstream half)** — VDS78 fixes the parse in the design system and adds two tests that run without --manifest, the branch every existing test avoided.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

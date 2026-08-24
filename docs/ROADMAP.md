@@ -11,7 +11,7 @@
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
-- 📋 **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — A gate that reports a clean tree because it never read the tree you named is worse than no gate. → §LIV.15
+- ⏳ **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — Delete the NO_POSITIONAL_ROOTS workaround once an installed release carries VDS78. → §LIV.15
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

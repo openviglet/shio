@@ -1168,3 +1168,31 @@ not configure it — so the decision was named rather than drifted past.
 **The assertion-debt gate cannot fail on the run before a ship.** It reads the ledger, and `ship`
 is what writes it — so `pnpm test` → `ship` → commit leaves SH527's check to fire on the *next*
 task's run. SH897 was caught that way. Run the JS gate once more after `ship`, before committing.
+
+## The duplicate gate's root argument, and a workaround with an expiry date (SH919/VDS78)
+
+`check-duplicates.mjs` computed the index to skip as `manifestFlag + 1`, and `indexOf` answers
+`-1` when `--manifest` is absent — so `-1 + 1` is `0` and the filter discarded **argument zero**,
+the first positional root, on every invocation without a manifest. `check-duplicates src app`
+scanned only `app`; `check-duplicates no-such-dir` scanned `./src` and exited 0.
+
+It hid twice, and the second reason is the transferable one. The documented call is
+`check-duplicates src`, where the dropped argument is the same directory the default then falls
+back to — so the common case is correct by accident. And **every test in the package's own
+`check-duplicates.test.ts` passes `--manifest`**, which puts the flag at index 1 and makes the
+arithmetic land as intended. The suite exercised only the configuration where the off-by-one
+cancels out. *When a test helper always supplies an optional argument, the branch without it is
+untested by construction.*
+
+Fixed upstream as **VDS78**, with two tests that run without `--manifest` — verified by reverting
+the parse, which fails exactly those two and leaves the other eleven green.
+
+### The workaround expires by assertion, not by comment
+
+Shio spawns the gate from `node_modules`, so the **installed** version decides whether
+`NO_POSITIONAL_ROOTS` is still needed — not a fix in a checkout. `no-duplicate-components.test.mjs`
+therefore asserts the bug is **still present**, which is a strange thing to assert on purpose and
+is the whole point: the day an installed release carries VDS78 it goes red, and its message is the
+three-step instruction to delete the workaround, delete the test, and close SH919's open half.
+
+A comment saying "remove this later" expires silently. A test does not.

@@ -77,7 +77,13 @@ function run(args, cwd = CONSOLE_ROOT) {
  * `check-duplicates src` masks it perfectly, because the argument it drops is the same directory
  * it then defaults to — which is why this was invisible until a test tried to point the gate
  * somewhere. Everything here therefore uses the **default** root and steers with `cwd`, which is
- * the one form that cannot be silently ignored. SH919 tracks the upstream fix.
+ * the one form that cannot be silently ignored.
+ *
+ * **Fixed upstream in VDS78**, with two tests that run without `--manifest` — the branch every
+ * existing test avoided. This workaround stays until an installed release carries that fix:
+ * the gate this suite runs is the one in `node_modules`, so the version here is what decides,
+ * not the version in a checkout. When it lands, delete this constant and pass `src` the ordinary
+ * way; SH919 is the open half that says so.
  */
 const NO_POSITIONAL_ROOTS = []
 
@@ -149,4 +155,50 @@ test("SH894: the gate is not vacuous — a planted duplicate fails it", () => {
   assert.equal(run(["--manifest", manifest], dir).status, 0,
     "SH894: the allow-duplicate comment no longer exempts a name. app-footer, nav-main,"
       + " page-header and the two user-context exports all depend on it.")
+})
+
+/**
+ * SH919 — the workaround's expiry date, expressed as an assertion.
+ *
+ * The gate this suite spawns is the one in `node_modules`, so what decides whether
+ * `NO_POSITIONAL_ROOTS` is still necessary is the **installed** version — not the fix sitting in
+ * a checkout, and not the changelog. VDS78 corrected the parse upstream; until a release carries
+ * it here, passing a root would silently scan a different directory.
+ *
+ * So this asserts the bug is **still present**, which is a strange thing to assert on purpose and
+ * is the point: it is the only shape that fails at the right moment. The day an installed release
+ * carries VDS78 this goes red, and its message is the instruction to delete the workaround and
+ * close SH919's open half. A comment saying "remove this later" expires silently; a test does not.
+ */
+test("SH919: the installed gate still drops a positional root, so the workaround is still needed", () => {
+  const dir = mkdtempSync(join(tmpdir(), "sh919-"))
+  const src = join(dir, "src")
+  mkdirSync(src)
+  // A duplicate in `src`, and a root argument pointing somewhere else entirely. A gate that reads
+  // its argument finds nothing; a gate that drops it scans `./src` and finds the plant.
+  mkdirSync(join(dir, "elsewhere"))
+  writeFileSync(join(src, "planted.tsx"), "export function DialogDelete() { return null }\n")
+
+  const manifest = require_.resolve("@viglet/viglet-design-system/exports.json")
+  const named = run(["elsewhere", "--manifest", manifest], dir)
+
+  // With `--manifest` present the parse is accidentally correct — the flag sits at index 1, so
+  // `manifestFlag + 1` lands on the manifest path as intended. That is exactly why the upstream
+  // suite never caught this. The failing shape is the one WITHOUT it.
+  assert.equal(named.status, 0,
+    "SH919: with --manifest the gate reads its root correctly and must not see a plant in ./src."
+      + " If this failed, the installed gate's parse changed in a way this test does not model.")
+
+  const bare = run(["elsewhere"], dir)
+  const output = `${bare.stdout}${bare.stderr}`
+
+  assert.match(output, /DialogDelete/,
+    "SH919: **the installed duplicate gate now reads the root it is given.** That is VDS78 having"
+      + " arrived, and it is good news — this test has done its job and is now the only thing"
+      + " standing between you and a tidier suite.\n"
+      + "  1. Delete NO_POSITIONAL_ROOTS above and pass `src` the ordinary way.\n"
+      + "  2. Delete this test.\n"
+      + "  3. Close SH919's open half: python .roadkeep/scripts/roadkeep.py ship SH919\n"
+      + "  If instead the gate is failing for some other reason, check that it still resolves"
+      + " from node_modules before assuming the fix landed.")
 })
