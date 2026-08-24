@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.3 The content browser, where the day is spent (SH900)
-
-object.children.page.tsx and the two folder pages are the console's main workspace: the
-tree, the listing, the selection, copy and move, and the actions that hang off a row. It
-is the surface a curator has open most of the time, so a half-migrated console shows
-here first and worst. It is also the least entity-shaped screen in the product - a
-browser is neither a detail page nor a mosaic - so this slice is where the shared
-vocabulary either stretches to a real working surface or is found not to, and that is
-much better known before admin than after it.
-
 ### LV.4 Posts, the heaviest forms in the product (SH901)
 
 post.edit, post.new and the post-type selector. The editor builds its schema at runtime

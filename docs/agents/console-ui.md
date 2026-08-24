@@ -1322,3 +1322,52 @@ and the editor tries to load a site called "new".
 A third repetition of SH898's lesson, in three of the four files: a section titled with the name
 of one field it contains, or described with the sentence the hero above already says. Both props
 want a string, and the nearest string to hand is almost always one already on screen.
+
+## The migration shape depends on the surface (SH900)
+
+SH898 and SH899 migrated by **adding** a surface beside the console one. That is right for a home
+page of 154 lines and four site pages of 100–200. `object.children.page.tsx` is **965 lines** —
+twenty state variables, three view modes, selection, pagination, copy/move — and exactly **four**
+of them were chrome: a `PageHeader` and three `Card`s.
+
+Copying it would have duplicated 960 lines of the most defect-prone code in the console so that
+four could differ, and every fix would then need landing twice until SH909. So the browser is
+written **once**, and the route decides its chrome:
+
+```tsx
+<Route path="content/object/:objectId" element={
+  <SectionCardChromeProvider chrome="bento"><ObjectChildrenPage /></SectionCardChromeProvider>
+} />
+```
+
+`AdaptiveSectionCard` covers the three panels;
+[`AdaptivePageHeader`](../../shio-react/src/components/adaptive-page-header.tsx) covers the
+header — `PageHeader` or `BentoHero`, chosen by `useSectionChrome()`. **A small entity-shaped page
+is worth writing twice, because what changes is its whole structure. A large working surface is
+not, because what changes is its chrome.**
+
+`AdaptivePageHeader` lives in `components/` and not beside a page, deliberately: it imports
+`BentoHero`, a genuinely bento-era name, and keeping that import on this side of the boundary is
+what lets both era classifiers stay honest about the pages that use it.
+
+### A third way to have no chrome
+
+The census now records `content/object.children.page.tsx` as `[]`. The other three empty entries
+(`admin.root`, `not-found`, `visual-editor`) render no chrome because they never did; this one
+reached the same state by **migrating**. It composes no console chrome of its own and is still a
+console-era page — the same component renders bento under the provider.
+
+### A folder is nothing but identity
+
+`ShFolder` is `name` + `description`, both hero fields, so the editor's form body is **empty** —
+precisely the shape that gave SH899 a dead Save button. `autosaveOnly` is the flag the package
+already had: `showSaveSubmit = !(autosaveOnly && !isNew)`. Verified in a browser: **0 save
+buttons, 0 forms**, and the hero's inline edit issues a `PUT` that survives a reload.
+
+### One thing this task nearly changed and should not have
+
+Moving the browser's two site actions into the adaptive header, I restyled `View Site` from its
+green to an outline button. With one component serving both chromes, that is a **visible change
+to a console surface this task is not migrating** — the whole point of the arrangement is that
+the console one keeps looking the same. Restored, with the note that the hue is unresolved for
+bento, where a primary action is a tone.

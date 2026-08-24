@@ -136,7 +136,15 @@ const STILL_CONSOLE = {
   "console.root.page.tsx": ["Sidebar"],
   "content/folder.edit.page.tsx": ["PageHeader", "Card"],
   "content/folder.new.page.tsx": ["PageHeader", "Card"],
-  "content/object.children.page.tsx": ["PageHeader", "Card"],
+  /*
+   * SH900 — an empty list, and the third way to reach one. `admin.root.page.tsx`,
+   * `not-found.page.tsx` and `visual-editor.page.tsx` render no chrome this reader knows
+   * because they never did. The content browser reached the same state by **migrating**:
+   * its header and its three panels go through the adapters now, so the page composes no
+   * console chrome of its own while still being a console-era page — the same component
+   * renders bento under the provider at /bento/content/object/:objectId.
+   */
+  "content/object.children.page.tsx": [],
   "content/post-type-select.page.tsx": ["PageHeader", "Card"],
   // SH892 — the Card marker is gone because the section chrome is the adapter now, not
   // @/components/ui/card. The page is still console-era: PageHeader and the console sticky

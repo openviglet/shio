@@ -1,6 +1,6 @@
-import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -561,15 +561,29 @@ export default function ObjectChildrenPage() {
 
   return (
     <>
-      <PageHeader title={siteName || t("content.browsing")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-      <div className="p-4 md:p-6 space-y-4">
-        {/* Top action bar: View Site + Site Properties */}
-        {siteId && (
-          <div className="flex items-center justify-end gap-2">
+      {/*
+        SH900 — one header for both chromes. The two site-level actions move into it: the console
+        header has no slot, so they render below it as they always did, while the bento hero takes
+        them as `trailing` and puts them beside the title where the save-bar morph expects them.
+      */}
+      <AdaptivePageHeader
+        icon={IconFileText}
+        eyebrow={t("sidebar.content")}
+        title={siteName || t("content.browsing")}
+        urlBase={ROUTES.CONTENT_ROOT}
+        actions={siteId ? (
+          <>
+            {/*
+              The console page's own green, preserved. Moving these two actions into the
+              adaptive header was a chrome change; restyling them would have been a visible
+              change to a console surface this task is not migrating — the whole point of
+              one component in two chromes is that the console one keeps looking the same.
+              The hue itself is unresolved for bento, where a primary action is a tone.
+            */}
             <Button
               variant="default"
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 text-white hover:bg-green-700"
               onClick={handleViewSite}
             >
               <Eye className="mr-2 h-4 w-4" /> {t("content.viewSite")}
@@ -581,12 +595,14 @@ export default function ObjectChildrenPage() {
             >
               <Settings className="mr-2 h-4 w-4" /> {t("content.siteProperties")}
             </Button>
-          </div>
-        )}
+          </>
+        ) : undefined}
+      />
+      <div className="p-4 md:p-6 space-y-4">
 
         {/* Stats bar */}
-        <Card>
-          <CardContent className="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.Content className="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Folder className="h-4 w-4" />
               <span>{t("content.folderCount", { count: folderCount })}</span>
@@ -595,8 +611,8 @@ export default function ObjectChildrenPage() {
               <FileText className="h-4 w-4" />
               <span>{t("content.postCount", { count: postCount })}</span>
             </div>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Toolbar: New Article | Grid | New Folder | Import || Order | Select | Action in Batch */}
         <div className="flex flex-wrap items-center gap-2">
@@ -687,8 +703,8 @@ export default function ObjectChildrenPage() {
         </div>
 
         {/* Sub-toolbar: breadcrumb path + search/view icons */}
-        <Card>
-          <CardContent className="flex items-center gap-2 py-2 px-4">
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.Content className="flex items-center gap-2 py-2 px-4">
             <div className="flex-1 flex items-center gap-1 text-sm text-muted-foreground overflow-hidden">
               {breadcrumbPath.map((crumb, i) => (
                 <span key={crumb.id} className="flex items-center gap-1 shrink-0">
@@ -713,8 +729,8 @@ export default function ObjectChildrenPage() {
                 <Sheet className="h-4 w-4" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Search bar (toggleable) */}
         {searchOpen && (
@@ -731,8 +747,8 @@ export default function ObjectChildrenPage() {
         )}
 
         {/* Content list */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
+        <AdaptiveSectionCard className="overflow-hidden">
+          <AdaptiveSectionCard.Content className="p-0">
             {loading && (
               <div className="px-4 py-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
             )}
@@ -851,8 +867,8 @@ export default function ObjectChildrenPage() {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Selection info bar */}
         {selectedItems.size > 0 && (

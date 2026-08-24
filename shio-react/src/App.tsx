@@ -1,11 +1,14 @@
 import { Navigate, Route, Routes } from "react-router-dom"
 import BentoHomePage from "./app/bento/home/home.page"
+import BentoFolderEditPage from "./app/bento/content/folder.edit.page"
+import BentoFolderNewPage from "./app/bento/content/folder.new.page"
 import BentoSiteEditPage from "./app/bento/content/site.edit.page"
 import BentoSiteImportPage from "./app/bento/content/site.import.page"
 import BentoSiteListPage from "./app/bento/content/site.list.page"
 import BentoSiteNewPage from "./app/bento/content/site.new.page"
 import BentoRootPage from "./app/bento/bento.root.page"
 import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
+import ObjectChildrenPage from "./app/console/content/object.children.page"
 import ConsoleRootPage from "./app/console/console.root.page"
 import NotFoundPage from "./app/console/not-found.page"
 import HomePage from "./app/console/home/home.page"
@@ -13,6 +16,7 @@ import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
 import { AdminRoutes, ContentRoutes, GraphQLRoutes, UniversalEditorRoutes } from "./app/routes"
 import { ROUTES } from "./app/routes.const"
+import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 import { ThemeProvider } from "./components/theme-provider"
 import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
 import { Toaster } from "./components/ui/sonner"
@@ -62,6 +66,23 @@ function App() {
                 <Route path="content/site/new" element={<BentoSiteNewPage />} />
                 <Route path="content/site/import" element={<BentoSiteImportPage />} />
                 <Route path="content/site/:siteId" element={<BentoSiteEditPage />} />
+                {/*
+                  SH900 — the content browser is the SAME component the console mounts, wrapped in
+                  the provider that flips its chrome. 965 lines, of which four were chrome: copying
+                  it the way SH898 and SH899 copied their surfaces would have duplicated the most
+                  defect-prone code in the console so that a header and three panels could differ,
+                  and every fix would then need landing twice until SH909.
+                */}
+                <Route
+                  path="content/object/:objectId"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <ObjectChildrenPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                <Route path="content/folder/:folderId/edit" element={<BentoFolderEditPage />} />
+                <Route path="content/folder/:folderId/new-folder" element={<BentoFolderNewPage />} />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
                 <Route index element={<Navigate to={ROUTES.HOME} replace />} />
