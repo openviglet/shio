@@ -872,3 +872,52 @@ absent — so `manifestFlag + 1` is `0` and **the first positional root is alway
 exits 0. `check-duplicates src` masks it exactly, because the argument it drops is the directory
 it then defaults to. The reader here steers with `cwd` and passes no root. **SH919** fixes it
 upstream; the workaround is carried in a consumer, which is the wrong place for it.
+
+## The theme is declared once, because two things decide it (SH918)
+
+[`src/theme.ts`](../../shio-react/src/theme.ts) holds `SHIO_THEME_STORAGE_KEY`,
+`SHIO_DEFAULT_THEME` and `SHIO_LIGHT_BOOT_CLASS`, and **both readers import it** —
+`vite.config.ts` (which is TypeScript, so it imports the module directly) and `App.tsx`.
+
+Two pieces of code answer "what theme is this", seconds apart, on different objects:
+
+1. The design system's **boot-loader script**, injected into `<head>` by its Vite plugin, runs
+   before any module. It reads `localStorage[storageKey]` and — finding nothing — falls back to
+   `prefers-color-scheme`, then stamps `shio-light-boot` on `<body>`, painting `rgb(250,250,250)`
+   and a salmon radial gradient.
+2. **`ThemeProvider`** stamps `dark`/`light` on `<html>` when React mounts, and every
+   `--background` / `--foreground` token resolves from that.
+
+They disagreed on **every first visit from a light-preference machine**: the boot script honoured
+the OS, the provider hard-coded `dark`. Nothing removed the boot class afterwards, so `<html>`
+said dark over a near-white `<body>` for the whole session.
+
+Two changes, and both are needed:
+
+- **A seed script, injected `head-prepend`** (so it runs before the boot loader), writes the
+  default into storage when nothing is stored. Storage — not a shared constant — because it is
+  the one input *both* readers already consult, which makes agreement structural. The plugin
+  exposes `storageKey` but no `defaultTheme`, so this is the only seam.
+- **`main.tsx` clears the boot class** after React replaces `#root`. Seeding fixes first paint;
+  it does not fix a reader who then toggles to dark, which would leave the light ground behind.
+  The removal sits *inside* the `?loading=1` guard — that mode holds the loader visible on
+  purpose, and stripping the class it is styled with would break the one thing it exists to show.
+
+### Why the reader runs both scripts
+
+Nothing about this defect is visible in either file — the boot script is a string inside a
+plugin, `ThemeProvider` is a component, and the only place they meet is a browser.
+[`test/shio-theme-seed.test.mjs`](../../shio-react/test/shio-theme-seed.test.mjs) pulls the real
+boot script out of the plugin by calling its `transformIndexHtml`, imports the real seed from
+`src/theme.ts`, and runs them in order in `jsdom` with a stubbed `prefers-color-scheme`. Its
+second test removes the seed and asserts the split **comes back** — without that, a green run
+proves only that something passed.
+
+Two things worth stealing from it: **node strips types on import**, so an `.mjs` test can
+`await import("../src/theme.ts")` and exercise the exact text that ships (the first draft scraped
+the source with a regex and got the template's uninterpolated `${…}` placeholders); and jsdom
+implements no media queries at all, so `window.matchMedia` must be stubbed — with the *failing*
+preference, or the test passes over the only case that was ever broken.
+
+Verified in a browser under both OS preferences: `<body>` carries no boot class and paints
+`rgb(10,10,15)` under `html.dark`, where it used to paint `rgb(250,250,250)`.

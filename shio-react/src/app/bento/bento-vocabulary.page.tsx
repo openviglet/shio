@@ -116,13 +116,15 @@ export default function BentoVocabularyPage() {
 
   return (
     /*
-     * `bg-background text-foreground min-h-screen` is not decoration. A page mounted outside a
-     * shell paints its own ground, and looking at this one is what proved why: `<html>` carries
-     * `dark` (ThemeProvider's default) while `<body>` keeps the boot loader's `shio-light-boot`
-     * class and its near-white ground for the whole session — the splash defaults to light when
-     * nothing is stored under `shio-ui-theme`, which is every first visit. Console pages never
-     * notice because the console shell paints over the viewport; this one would have rendered
-     * near-white hero text on a near-white body. SH918 fixes the disagreement itself.
+     * `bg-background text-foreground min-h-screen` is not decoration: a page mounted outside a
+     * shell paints its own ground, because nothing else will.
+     *
+     * Looking at this one is also what found SH918 — `<html>` carried `dark` while `<body>` kept
+     * the boot loader's `shio-light-boot` class and its near-white ground for the whole session,
+     * so the hero rendered white on white. That is fixed at the source now (the splash and the
+     * app read one declaration, and the boot class is cleared once React replaces the splash),
+     * and these classes stay anyway: they were never the fix, and a shell-less page that does
+     * not paint its own ground is one theme change away from the same symptom.
      */
     <main className="bg-background text-foreground mx-auto min-h-screen max-w-6xl space-y-8 p-6">
       <BentoHero

@@ -980,30 +980,6 @@ the bento route tree, and give it the shape of assertion this migration actually
 that the hero is present, that the frosted card is frosted, and that the save bar
 appears on scroll and not before it.
 
-### LIV.14 The two defaults that disagree about the theme (SH918)
-
-SH887 mounted one page outside the console shell and it came up unreadable: a white hero
-title on a near-white ground. The cause is two defaults that were never compared. The
-design system's boot-loader Vite plugin reads `localStorage["shio-ui-theme"]` before
-React runs and, finding nothing — which is every first visit — picks light and stamps
-`shio-light-boot` on `<body>`, painting `rgb(250,250,250)` and a salmon radial gradient.
-`ThemeProvider` in `App.tsx` then defaults to `dark` and stamps `dark` on `<html>`, so
-`--background` resolves near-black and `--foreground` near-white. Nothing removes the
-boot class once React mounts, so the light ground outlives the splash for the whole
-session.
-
-Every console page hides it. `console.root.page.tsx` paints `bg-background` across the
-viewport, so the contradiction sits underneath and no curator has ever seen it. That is
-precisely why it has to be fixed before SH888: the bento shell is a second, parallel
-root, and whatever it forgets to paint shows the boot ground through.
-
-Two candidate fixes and they are not equivalent. Removing the class on mount leaves the
-splash itself the wrong colour on a first visit — a light flash before a dark app.
-Teaching the boot script the same default the provider carries fixes both, and the
-durable form of that is one declaration both read rather than two literals that agree
-today. The assertion is a rendered page: `<html>`'s theme and `<body>`'s ground must not
-contradict, checked where no shell has painted over them.
-
 ### LIV.15 The root argument the duplicate gate throws away (SH919)
 
 The design system's `check-duplicates.mjs` parses its arguments like this:

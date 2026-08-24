@@ -2,17 +2,40 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { vigletBootLoader } from "@viglet/viglet-design-system/vite";
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+import { SHIO_THEME_STORAGE_KEY, shioThemeSeedScript } from "./src/theme";
+
+/**
+ * SH918 — write the console's default theme into storage before anything reads it.
+ *
+ * `head-prepend` and not `head`: the boot loader injects its own `<script>` into `<head>` and
+ * decides the splash's colour from `localStorage[SHIO_THEME_STORAGE_KEY]`, falling back to
+ * `prefers-color-scheme` when nothing is stored. This has to have run by then or the fallback
+ * is what decides, and on a light-preference machine the splash and the app disagree — see
+ * `src/theme.ts` for the whole shape of it.
+ *
+ * The plugin has no `defaultTheme` option, so storage is where the two are taught to agree.
+ * `shio-theme-seed.test.mjs` executes both scripts, in this order, against a real DOM.
+ */
+function shioThemeSeed(): Plugin {
+  return {
+    name: "shio-theme-seed",
+    transformIndexHtml() {
+      return [{ tag: "script", children: shioThemeSeedScript(), injectTo: "head-prepend" }];
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
+    shioThemeSeed(),
     vigletBootLoader({
       title: "Viglet Shio CMS",
       subtitle: "Content Management System",
       color: "#FF6347",
       colorDark: "#e0341b",
       prefix: "shio",
-      storageKey: "shio-ui-theme",
+      storageKey: SHIO_THEME_STORAGE_KEY,
       testFlag: "__SHIO_LOADING_TEST__",
     }),
     react(),
