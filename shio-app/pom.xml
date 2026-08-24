@@ -14,7 +14,7 @@
     <url>https://github.com/openshio/shio</url>
     <packaging>jar</packaging>
     <properties>
-        <spring-boot.version>4.1.0</spring-boot.version>
+        <spring-boot.version>4.1.1</spring-boot.version>
         <!-- Single toggle for the React build (frontend-maven-plugin), mirroring Turing.
              Default false = build the console; pass -Dskip.npm=true to skip it and run
              against a previously-built src/main/resources/public. -->
@@ -199,7 +199,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.6.0-jre</version>
+            <version>33.7.1-jre</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -250,7 +250,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
-            <version>7.1.0</version>
+            <version>7.1.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -308,14 +308,14 @@
        <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>
-            <version>3.2.1</version>
+            <version>3.2.2</version>
         </dependency>
         <!-- Used directly by ShUtils; previously came transitively via the
              now-removed turing-java-sdk. -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20260719</version>
+            <version>20260814</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -624,7 +624,7 @@
             <plugin>
                 <groupId>org.liquibase</groupId>
                 <artifactId>liquibase-maven-plugin</artifactId>
-                <version>5.0.3</version>
+                <version>5.0.4</version>
                 <configuration>
                     <propertyFile>liquibase.properties</propertyFile>
                     <diffChangeLogFile>src/main/resources/db/changelog/v2026.2_update.yaml</diffChangeLogFile>
