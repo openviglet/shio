@@ -75,15 +75,28 @@ test("SH888: the shared user menu needs the package's provider, and nothing else
     "SH888: the user menu rendered nothing even with the package's provider mounted")
 })
 
-test("SH888: the shell mounts the package's UserProvider and not Shio's local variant", () => {
-  assert.match(shellSource, /import \{ UserProvider \} from "@viglet\/viglet-design-system"/,
-    "SH888: the bento shell no longer imports the package's UserProvider. BentoUserMenu reads the"
-      + " package's context and nothing else satisfies it — this is the import that was wrong the"
-      + " first time and blanked the shell.")
-  assert.doesNotMatch(shellSource, /@\/contexts\/user\.context/,
-    "SH888: the bento shell imports Shio's UserProvider. It is a different context object, so it"
-      + " does not satisfy BentoUserMenu — and mounting both means two fetches of the same"
-      + " endpoint. SH920 is where that gets resolved once instead of fourteen times.")
+test("SH888: the shell mounts a provider that satisfies the package's own hook", () => {
+  /*
+   * This assertion used to demand the *package's* `UserProvider` by import path, because when
+   * SH888 shipped that was the only thing which satisfied `BentoUserMenu`. SH920 then removed the
+   * seam rather than living with it — `@/contexts/user.context` now wraps the package's provider
+   * and republishes its value, so one mount serves both hooks from one fetch — and this test went
+   * red on the commit that did it. Which is what it was for: it named the decision instead of
+   * letting the shell quietly go back to a provider that satisfies nothing.
+   *
+   * What has to stay true is narrower than the import path, so that is what it says now.
+   */
+  assert.match(shellSource, /<UserProvider>/,
+    "SH888: the bento shell mounts no user provider at all. BentoUserMenu reads the package's"
+      + " context, and a shell without it renders entirely blank behind the error boundary — no"
+      + " type error, no failed request, nothing in a diff.")
+  assert.match(shellSource, /import \{ UserProvider \} from "@\/contexts\/user\.context"/,
+    "SH888: the shell no longer mounts Shio's provider. Since SH920 that is the one that also"
+      + " mounts the package's — going back to importing the package's here directly would put"
+      + " the two trees on two contexts again, which is what SH920 removed.")
+  assert.doesNotMatch(shellSource, /fetchUser/,
+    "SH888: the shell configures the provider itself again. How a user is fetched is not a"
+      + " shell's business, and a second shell would copy it.")
 })
 
 test("SH888: no sidebar provider anywhere under the bento tree", () => {

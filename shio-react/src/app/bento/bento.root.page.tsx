@@ -6,7 +6,6 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { UserProvider } from "@viglet/viglet-design-system"
 import {
   BentoBackToTop,
   BentoCommandPalette,
@@ -14,13 +13,11 @@ import {
   BentoShortcutsDialog,
   BentoUserMenu,
 } from "@viglet/viglet-design-system/bento"
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Outlet } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
-import { ShUserService } from "@/services/auth/user.service"
+import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
-
-const shUserService = new ShUserService()
 
 /**
  * SH888 — the bento shell, mounted beside the console one rather than replacing it.
@@ -49,25 +46,24 @@ const shUserService = new ShUserService()
  *
  * ## Whose UserProvider, and the thing that made it visible
  *
- * The **package's**, not `@/contexts/user.context`. `BentoUserMenu` calls the design system's own
- * `useCurrentUser`, and SH894 established that Shio's provider is a deliberate local variant —
- * typed on `ShCurrentUser`, bound to `ShUserService`. A local variant of a context is a
- * *different context object*, so the shared menu found no provider and threw
- * `useCurrentUser must be used within UserProvider`, blanking the entire shell behind the error
- * boundary. Nothing in `tsc` says this; the first render did.
+ * Shio's — and since SH920 that is the same thing as the package's, which is the point.
  *
- * The seam the package left is `fetchUser`, so Shio's service feeds the package's provider and
- * `ShCurrentUser` is structurally assignable to `VigUser`. Shio's own provider is deliberately
- * **not** also mounted here: nothing under this tree reads it yet, and a second provider means a
- * second fetch of the same endpoint. The first Block AR surface that needs Shio's user context
- * is where that decision gets made properly — SH920 carries it.
+ * `BentoUserMenu` calls the design system's own `useCurrentUser`, and a local variant of a
+ * context is a *different context object*: the shell's first render came up entirely blank
+ * behind the error boundary with `useCurrentUser must be used within UserProvider`. Nothing in
+ * `tsc` said so — both are named `UserProvider` and both take children.
  *
- * `ReviewPendingProvider` is absent for the same reason. The rail renders **sections only**, so
- * SH207's badge has nowhere to appear until SH889 wires the command palette; mounting the
- * provider now would be a fetch nothing reads.
+ * SH888 worked around it by mounting the package's provider here directly, which left the two
+ * trees on two contexts and put the same trap in front of all fourteen Block AR surfaces.
+ * SH920 removed the seam instead: `@/contexts/user.context` now *wraps* the package's provider
+ * and republishes its value as `ShCurrentUser`, so one mount satisfies both hooks from one
+ * fetch. This file imports Shio's again and needs to know nothing about it.
+ *
+ * `ReviewPendingProvider` is still absent, deliberately. The rail renders **sections only**, so
+ * SH207's badge has nowhere to appear until a hub does; mounting it now would be a fetch nothing
+ * reads.
  */
 export default function BentoRootPage() {
-  const fetchUser = useCallback(() => shUserService.get(), [])
   const groups = useBentoNav()
   const items = useBentoNavItems()
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -100,7 +96,7 @@ export default function BentoRootPage() {
   }, [])
 
   return (
-    <UserProvider fetchUser={fetchUser}>
+    <UserProvider>
         <div className="bg-background text-foreground min-h-svh">
           {/*
             `sticky`, not `fixed`, and `z-40` under the rail's own 40 rather than over everything.

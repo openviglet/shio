@@ -1125,3 +1125,46 @@ one is reached by following an id a sibling endpoint just handed you.
 
 **Running it locally:** `SHIO_USER=admin SHIO_PASSWORD=viglet` — the console login is
 `admin`/`viglet`, not the `admin`/`admin` the script defaults to.
+
+## One user provider, two hooks, one fetch (SH920)
+
+`@/contexts/user.context` no longer implements a provider — it **wraps** the package's and
+republishes its value as `ShCurrentUser`. One mount satisfies both `useCurrentUser` hooks, and
+both shells import Shio's.
+
+**The failure it closes has no type error.** Shio declared its own `UserProvider`/`useCurrentUser`
+pair, and a local variant of a context is a *different context object*. Mounting Shio's around a
+shared component that reads the package's satisfies nothing: `BentoUserMenu` threw and blanked
+the whole bento shell behind the error boundary. `tsc` is silent — both are named `UserProvider`,
+both take children, and the mismatch exists only at runtime in `useContext`. So is every import
+scan. SH888 worked around it by mounting the package's provider in the bento shell alone, which
+put the same trap in front of each of Block AR's **fourteen** surfaces.
+
+**Wrapping, not folding.** `ShCurrentUser` requires `privileges`; `VigUser` leaves it optional,
+and `authorization.service.ts` reads it to decide what a curator may do — folding the types would
+push a guard into a privilege check, the one place a wrong answer is worst.
+
+**What Shio gave up by not implementing it is the good part.** The 24 lines replaced were
+`shUserService.get().then(setUser)`: no catch, so an expired session became an unhandled
+rejection leaving `user` an empty object; and no request sequencing, so two overlapping
+`refreshUser` calls let the slower one win. The package's provider handles both and carries
+`status`/`error`, passed through here.
+
+`VigUserStatus` is declared in the package's context module and **not re-exported from the root
+barrel**, so the type is derived as `ReturnType<typeof useVigCurrentUser>["status"]` — a
+hand-written copy of a three-member union is a copy that goes stale silently.
+
+Measured in a browser: both shells render, no errors, and `/v2/user/current` is requested
+**twice** on each — which is React `StrictMode` double-invoking in dev, not the nesting. Two and
+not four is the number that matters.
+
+### Two process notes this task produced
+
+**SH888's assertion went red on this commit, and that was the point.** It demanded the *package's*
+provider by import path, because that was the only thing which satisfied the menu when it shipped.
+It now asserts the narrower invariant — a provider is mounted, it is Shio's, and the shell does
+not configure it — so the decision was named rather than drifted past.
+
+**The assertion-debt gate cannot fail on the run before a ship.** It reads the ledger, and `ship`
+is what writes it — so `pnpm test` → `ship` → commit leaves SH527's check to fire on the *next*
+task's run. SH897 was caught that way. Run the JS gate once more after `ship`, before committing.

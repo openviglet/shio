@@ -948,31 +948,6 @@ write the documented invocation and get a gate that reads whatever directory it 
 like. Fix it upstream, then delete the workaround here and let the test pass a root the
 ordinary way.
 
-### LIV.16 Two user contexts, one per shell (SH920)
-
-SH894 exempted Shio's `UserProvider` from the duplicate gate on good grounds: it is
-typed on `ShCurrentUser` and bound to `ShUserService`, while the package's is generic
-over `VigUser` with `fetchUser` injected. Adopting the package's meant changing the type
-every console page reads off `user`, which is not swapping an import.
-
-SH888 then found what that exemption costs. `BentoUserMenu` calls the **package's**
-`useCurrentUser`, and a local variant of a context is a different context object — so
-the shared menu found no provider and threw, blanking the whole shell behind the error
-boundary. Nothing in `tsc` says so; the first render did. The bento shell therefore
-mounts the package's provider, fed by Shio's service, and Shio's own provider is
-deliberately not also mounted there: nothing under that tree reads it yet, and two
-providers means two fetches of the same endpoint.
-
-That leaves the console tree on one context and the bento tree on the other, which is
-fine exactly until a Block AR task moves a page that calls Shio's `useCurrentUser` — and
-then it throws in the same way, on a surface a curator uses. Every one of the fourteen
-crosses this seam.
-
-Resolve it once rather than fourteen times: either Shio's provider wraps the package's
-and both contexts resolve from one fetch, or `ShCurrentUser` folds into `VigUser` and
-the local provider goes. The second removes an exemption; the first keeps the types the
-console pages already read.
-
 ### LIV.17 A 404 with nothing in it (SH921)
 
 SH897 taught the browser check the bento route tree, and the first live run failed on

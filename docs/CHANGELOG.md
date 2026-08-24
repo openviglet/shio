@@ -1621,6 +1621,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH891** — Measured: the layer calls 54 keys and 53 already resolved in both locales, so the sweep was one key (home.title); the deliverable is the reader that resolves all 54 through a real i18next.
 - **SH893** — Three rules gated over Shio's own source; the first measurement said 3 unnamed icon controls and the real number was 34, because a regex tag matcher ends at the > inside an arrow prop.
 - **SH897** — The browser check probes /bento and reads the frost off computed style; its first version passed with bento.css deleted, so it was broken on purpose until it failed.
+- **SH920** — Shio's provider wraps the package's and republishes it as ShCurrentUser, so one mount serves both hooks from one fetch and both shells import the same thing.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
