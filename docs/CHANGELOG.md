@@ -1618,6 +1618,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH918** — A seed script injected ahead of the boot loader writes the default both readers consult, and main.tsx clears the stale boot class; jsdom runs both real scripts, and removing the seed brings the split back.
 - **SH888** — /bento mounts the package's rail, user menu and back-to-top beside the console tree with no sidebar provider; the first render found that the shared user menu needs the package's own context.
 - **SH889** — 17 surfaces in one declaration the rail and the palette both read, gated on Shio's own type; the descriptions feed the palette's search, measured in a browser rather than assumed.
+- **SH891** — Measured: the layer calls 54 keys and 53 already resolved in both locales, so the sweep was one key (home.title); the deliverable is the reader that resolves all 54 through a real i18next.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

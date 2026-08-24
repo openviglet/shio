@@ -1,5 +1,6 @@
 {
   "home": {
+    "title": "Home",
     "welcomeTitle": "Welcome to Viglet Shio",
     "welcomeSubtitle": "Your headless CMS at a glance — content, activity, and quick actions.",
     "statSites": "Sites",

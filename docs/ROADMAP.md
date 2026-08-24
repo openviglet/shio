@@ -11,7 +11,6 @@
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
-- 📋 **SH891** (deps: SH888 ✅) **bento chrome strings have no Shio translations, so a shared rail and palette would render raw keys** — The package already translates the chrome it owns; what has no keys here are the nav and palette labels Shio itself supplies. → §LIV.6
 - 📋 **SH893** (deps: SH888 ✅) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
 - 📋 **SH897** (deps: SH888 ✅) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
 - 📋 **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — A gate that reports a clean tree because it never read the tree you named is worse than no gate. → §LIV.15
@@ -35,12 +34,6 @@
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
 ## Priority
-
-## Done when — SH891
-
-- **The bento chrome renders in English and Portuguese** Every chrome string exists in
-  both locale bundles with an object-form default, so a missing key renders as words
-  rather than as an identifier.
 
 ## Done when — SH893
 

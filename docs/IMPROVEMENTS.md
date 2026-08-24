@@ -922,21 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.6 The chrome speaks Portuguese too (SH891)
-
-The console ships English and Portuguese and merges its own bundle over the package's
-base translations. The bento chrome adds strings that are the package's rather than
-Shio's: a palette placeholder and its no-results text, the rail labels, the shortcuts
-dialog, and Save and Cancel on the morphing bar. Where the package carries them Shio
-inherits both languages; where it does not, Shio adds them. Either way the object-form
-default convention applies, so a missing key renders as words rather than as an
-identifier, and both locales are updated in the same commit that adds a key. SH887
-measured which half is which: the proving page rendered `Unsaved changes` under an
-`en-US` browser and `Alterações não salvas` under `pt-BR`, so `registerVigTranslations`
-already wires the package's own bundle into this console's i18n in both languages. What
-is left for Shio is the half the authoring contract says the package will never hold —
-the nav array's own labels, and the palette entries built from it.
-
 ### LIV.8 An accessibility baseline that is checked, not remembered (SH893)
 
 The bento layer's accessibility rules are specific and easy to break by accident:

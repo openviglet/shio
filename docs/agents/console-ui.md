@@ -1000,3 +1000,43 @@ The palette's keybinding is the product's — the package takes `open`/`onOpenCh
 else. Ctrl/Cmd+K toggles, and a bare `/` opens **only when the reader is not already typing**: a
 `/` swallowed inside an input is the one way a search shortcut makes a product worse than not
 having one.
+
+## The bento chrome's strings, and the reader that keeps them resolving (SH891)
+
+**The roadmap line was nearly all wrong, and measuring is what said so.** §LIV.6 was filed as
+"bento chrome strings have no Shio translations, so a shared rail and palette would render raw
+keys", implying a sweep. The layer calls **54** keys. **53 already resolved in both languages** —
+`registerVigTranslations(i18n)` wires the package's own bundle into this console's resources, so
+Shio inherits them. Exactly one did not: `home.title`, the rail's Home button, which the package
+does not carry because a product's home is a product's own word. Added as `Home` / `Início`.
+
+It would not have rendered a raw key either. The rail calls `t("home.title", { defaultValue:
+"Home" })`, so a Portuguese console rendered the English word **Home** — the failure mode worth
+naming, because a raw `home.title` on screen is something anybody reports and an English word in
+a Portuguese UI is something most people scroll past.
+
+So the sweep was not the deliverable.
+[`test/bento-i18n.test.mjs`](../../shio-react/test/bento-i18n.test.mjs) is: the package ships the
+layer, so the set of keys it renders changes **without anything in this repository changing**,
+and the only thing that would otherwise notice is somebody reading the console in Portuguese.
+
+### Two things it does differently, both learned the hard way
+
+**It resolves through a real i18next instance** rather than comparing flattened objects. The
+first draft's model of the merge was wrong: `registerVigTranslations` adds the package's bundle
+**per top-level namespace, and only where the consumer does not already have that namespace** —
+and Shio's bundles are a mix (`common.json` is flat dotted keys, `home.json` nests under a `home`
+object). Whether a flat `"common.cancel"` counts as owning the `common` namespace, and whether
+i18next's `deepFind` then reaches a nested one underneath it, are not questions to answer from
+memory. The test builds an instance, registers the real bundle with the real function, and asks
+`t()`.
+
+**Its key extraction is deliberately broad** — any dotted lowercase literal in `dist/bento.es.js`,
+not anchored on `bento.` or on a `t(` call. The bundle is minified so `t` is a renamed letter;
+and anchoring on the prefix missed 18 of the 54 including the whole `forms.*` group and
+`home.title` itself — the one key that was actually missing. Measured: **54 literals, no false
+positives**, because a bundle that size has no other dotted lowercase strings.
+
+One assertion is worth stealing: `home.title` must read **differently** in the two locales. Its
+fallback was already the English word, so a "translation" that copies the English value restores
+the defect while looking fixed.
