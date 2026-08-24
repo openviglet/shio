@@ -1226,3 +1226,51 @@ measures what a rule is worth; a scan finds the rest of it.* Both are fixed by t
 the anchor is the control, so it carries the button's classes and the button goes.
 
 Verified after: 169 rows, **0 nested pairs**, two focusables per row for two real actions.
+
+## The first migrated surface, and the instruments that could not see it (SH898)
+
+The console home is on the bento shell at `/bento`:
+[`src/app/bento/home/home.page.tsx`](../../shio-react/src/app/bento/home/home.page.tsx). Every
+fetch, service and i18n key is the console page's — what moved is the chrome. `BentoHero` replaces
+`PageHeader` and an `<h2>`, `BentoCountTile` the two counts, `BentoTile` the six quick actions,
+`BentoEmptyState` an activity list with nothing in it.
+
+| surface | era | chrome |
+|---|---|---|
+| `console/home/home.page.tsx` | console | PageHeader, Card ×3 |
+| `bento/home/home.page.tsx` | bento | BentoHero, BentoSection, BentoCountTile, BentoTile, BentoEmptyState |
+
+### What the first migration actually found
+
+`surface-digest.mjs` reported **"No surface moved (43 compared)"** for the whole of this task, and
+it was right: it walked `src/app/console`, nothing there had changed, and the new page was in
+`src/app/bento`. SH888 chose a parallel tree, so **a migration adds a surface rather than editing
+one** — and every instrument that measured "the console directory" was measuring the half that
+does not move. That is what building the first surface is for.
+
+The digest now surveys both trees and keys them under `src/app`. A saved baseline from before
+reports every surface `gone` and every surface `new`; re-take it once.
+
+**The census was not wrong, and now says so.** SH886 expected `MIGRATED` to fill one name at a
+time; under a parallel tree it stays **empty forever**, because a name would appear there only if
+somebody imported bento *into a console page* — the arrangement §LIV.3 says cannot work. Its
+docstring now states that, so the next reader does not wait for a number that will never move.
+Progress is `surface-digest` (era per surface) and `bento-nav.test.mjs` (`n/17` pointing at a
+bento route).
+
+### Three things the page itself decided
+
+**The counts wait rather than answering zero.** `BentoCountTile` takes a `number`, and the obvious
+`?? 0` puts "0 Sites" on the first thing a curator sees after login. Zero is a real answer to that
+question and a wrong one.
+
+**A required prop is not an invitation to repeat the heading.** The first draft gave all six
+action tiles `eyebrow={t("home.quickActions")}`, rendering "QUICK ACTIONS" six times under a
+heading already saying it. They carry the *area* each action leads into instead.
+
+**A section with nothing to add says nothing.** The counts section was titled `home.statSites` —
+the name of one of the two counts in it — and described with the hero's own subtitle, putting the
+same sentence on screen twice forty pixels apart. It is `home.overview` now, with no description.
+
+The badges lost six hardcoded colour strings to `bentoChipClass`, so SH890's re-key reaches them.
+`teal` is not a tone, so `RESTORE` reads violet — the one deliberate visual difference.

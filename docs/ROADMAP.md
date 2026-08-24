@@ -15,8 +15,7 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH898** (deps: SH888 ✅) **the console home is a flat card grid under a console header, and it is the first thing a curator sees** — It is the cheapest surface and the one that decides whether the redesign reads as real. → §LV.1
-- 📋 **SH899** (deps: SH898) **the four site pages hand-roll their list and their forms, with no mosaic and no save-bar morph** — Sites are the entry to every other surface, so the list shape settles here for the ten that follow. → §LV.2
+- 📋 **SH899** (deps: SH898 ✅) **the four site pages hand-roll their list and their forms, with no mosaic and no save-bar morph** — Sites are the entry to every other surface, so the list shape settles here for the ten that follow. → §LV.2
 - 📋 **SH900** (deps: SH899) **the content browser and the two folder pages are the curator's main workspace and still console-shaped** — This is where a curator spends the day, and a half-migrated console is most visible here. → §LV.3
 - 📋 **SH901** (deps: SH892 ✅) **the post editor and the new-post flow are the heaviest forms here, with 15 dynamic widgets inside them** — The widgets must not be rewritten, which is what the chrome adapter exists to make possible. → §LV.4
 - 📋 **SH902** (deps: SH901) **the three post-type pages carry the attribute editor and a console sticky save bar with no scroll morph** — Post types are the one name-keyed surface and the editor a curator returns to most after posts. → §LV.5
@@ -31,12 +30,6 @@
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
 ## Priority
-
-## Done when — SH898
-
-- **The home page is composed from package tiles, with a digest taken** It renders a
-  bento hero and count tiles rather than a flat card grid, and the first
-  before-and-after digest of this block is recorded from it.
 
 ## Done when — SH899
 

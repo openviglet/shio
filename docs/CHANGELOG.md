@@ -1628,6 +1628,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AR — The curator's console, surface by surface (§LV)
 
 - **SH922** — The anchor is the control in both places, and a fourth a11y rule holds it; interactivity is resolved through each file's imports, because lucide's Link icon is not react-router's.
+- **SH898** — The home renders on the bento shell from the package's tiles; taking the digest is what exposed that it and the census both surveyed only the tree a migration does not touch.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

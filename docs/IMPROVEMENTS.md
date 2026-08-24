@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.1 Home, the surface that decides whether this reads as real (SH898)
-
-console/home/home.page.tsx is a single page and the first thing a curator sees after
-login. It is also the cheapest possible proof that the shell, the tokens, the
-translations and the digest all work together, which is why it goes first - not because
-of its importance. Compose it from the package's tiles and count tiles rather than from
-Card, put its heading in a BentoHero, and take the first before-and-after digest here.
-If something about the extracted layer is wrong, it is far cheaper to find on one page
-than on the four-page site slice behind it.
-
 ### LV.2 Sites, where the list shape is settled (SH899)
 
 Four pages: the site list, new, edit and import. The list is the first of roughly ten

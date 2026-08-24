@@ -53,6 +53,22 @@ const byCodepoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
 const HERE = dirname(fileURLToPath(import.meta.url))
 export const CONSOLE_ROOT = join(HERE, "..", "src", "app", "console")
 
+/**
+ * SH898 — the bento tree is surveyed too, and both are keyed under `src/app`.
+ *
+ * The first migrated surface is what found this. SH888 built the bento route tree **beside** the
+ * console one, so a migration adds `src/app/bento/<surface>` and leaves the console page in place
+ * until SH909 removes that tree wholesale. This survey walked `src/app/console` alone, so the
+ * whole of SH898 produced `No surface moved (43 compared)` — a correct answer about a directory
+ * nothing had changed, and a useless one about the migration.
+ *
+ * Keys are now relative to `src/app`, so `console/home/home.page.tsx` and
+ * `bento/home/home.page.tsx` are different surfaces and a saved survey says which era each is. A
+ * baseline taken before this reports every surface `gone` and every surface `new`: re-take it once.
+ */
+export const BENTO_ROOT = join(HERE, "..", "src", "app", "bento")
+export const APP_ROOT = join(HERE, "..", "src", "app")
+
 /** A page is bento-era when it imports the subpath; the design system chose that as the marker. */
 const BENTO_IMPORT = /@viglet\/viglet-design-system\/bento/
 
@@ -142,12 +158,13 @@ export function pages(dir = CONSOLE_ROOT, out = []) {
   return out
 }
 
-/** Every console surface, keyed by its path relative to the console root, in a stable order. */
+/** Every surface in both trees, keyed by its path relative to `src/app`, in a stable order. */
 export function survey() {
   const out = {}
-  for (const file of pages().sort(byCodepoint)) {
+  const files = [...pages(CONSOLE_ROOT), ...pages(BENTO_ROOT)]
+  for (const file of files.sort(byCodepoint)) {
     const source = readFileSync(file, "utf8")
-    const name = relative(CONSOLE_ROOT, file).replace(/\\/g, "/")
+    const name = relative(APP_ROOT, file).replace(/\\/g, "/")
     out[name] = { digest: digestOf(source), ...structureOf(source) }
   }
   return out

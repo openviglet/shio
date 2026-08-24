@@ -255,8 +255,14 @@ async function checkBentoSurface(page) {
 async function checkSaveBarMorph(page) {
   const before = await page.evaluate(() =>
     Boolean(document.querySelector("[data-bento-save-bar], .bento-save-bar")))
-  if (!before && !(await page.evaluate(() => document.body.scrollHeight > innerHeight * 1.5))) {
-    return { ran: false, why: "surface is too short to scroll, so the morph cannot be observed" }
+  const scrollable = await page.evaluate(() => document.body.scrollHeight > innerHeight * 1.5)
+
+  // SH898 — both reasons, in the order a reader needs them. This used to report only "too short
+  // to scroll" whenever the page was short, which is true and sends the reader to lengthen the
+  // page when the actual answer is that no surface carries a morph yet. The migrated home is
+  // shorter than the harness, so the first surface to arrive made the message misleading.
+  if (!before && !scrollable) {
+    return { ran: false, why: "no surface carries a save-bar morph yet (SH901); this one is also too short to scroll" }
   }
   await page.evaluate(() => scrollTo(0, document.body.scrollHeight))
   await page.waitForTimeout(500)

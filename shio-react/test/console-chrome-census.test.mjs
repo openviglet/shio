@@ -162,7 +162,23 @@ const STILL_CONSOLE = {
   "universal-editor/visual-editor.page.tsx": [],
 }
 
-/** Pages already on the bento shell. Empty when this shipped; Blocks AQ and AR move names here. */
+/**
+ * Console pages that themselves import bento. **Expected to stay empty**, and SH898 is why.
+ *
+ * SH886 wrote this list expecting Blocks AQ and AR to move names into it, one per migrated page.
+ * SH888 then chose a different shape: the bento route tree is mounted **beside** the console one,
+ * because `console.root.page.tsx` wraps everything in a `SidebarProvider` that no bento component
+ * can live under. So a migration writes `src/app/bento/<surface>` and leaves the console page
+ * where it is, untouched, until SH909 removes that tree wholesale.
+ *
+ * This reader therefore measures **the console tree's own chrome**, which is a real question and
+ * not the migration's progress. Two other instruments carry that: `surface-digest.mjs` surveys
+ * both trees since SH898 and names each surface's era, and `bento-nav.test.mjs` prints how many of
+ * the seventeen declared surfaces point at a bento route.
+ *
+ * A name would appear here only if somebody imported bento **into a console page**, which is the
+ * arrangement §LIV.3 says cannot work — so this staying empty is the assertion, not a placeholder.
+ */
 const MIGRATED = []
 
 function pages(dir, out = []) {

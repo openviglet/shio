@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom"
+import BentoHomePage from "./app/bento/home/home.page"
 import BentoRootPage from "./app/bento/bento.root.page"
 import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
 import ConsoleRootPage from "./app/console/console.root.page"
@@ -42,12 +43,12 @@ function App() {
                 nest. Both stay mounted for the length of Block AR and each surface moves under
                 its own task; SH909 removes whichever shell loses.
 
-                The index is the vocabulary harness — the same component the bare route above
-                renders. Two mounts of one page, which is the cheapest thing that proves the
-                shell wraps real bento content, and SH898 replaces it with the console home.
+                SH898 — the index is the console home, the first migrated surface. The
+                vocabulary harness keeps its own bare route above, outside every shell, which is
+                where it proves the layer rather than the shell.
               */}
               <Route path={ROUTES.BENTO} element={<BentoRootPage />}>
-                <Route index element={<BentoVocabularyPage />} />
+                <Route index element={<BentoHomePage />} />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
                 <Route index element={<Navigate to={ROUTES.HOME} replace />} />
