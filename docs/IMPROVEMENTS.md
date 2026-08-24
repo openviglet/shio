@@ -922,17 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.8 An accessibility baseline that is checked, not remembered (SH893)
-
-The bento layer's accessibility rules are specific and easy to break by accident:
-icon-only controls need an aria-label, decorative glyphs need aria-hidden with an
-adjacent screen-reader span because a bare SVG's label is not reliably announced, ARIA
-values must be string literals rather than boolean expressions, and every animation must
-sit inside the reduced-motion guard. They held across 118 pages in one product because
-that product's team read one file. Shio has its own lint suite and its own conventions
-and none of them know these rules. Add the checks here rather than assuming a package
-gate covers a consumer's own use of it.
-
 ### LIV.12 The one script that opens a real page (SH897)
 
 e2e/console-check.mjs is the only thing in this repository that drives the console in a

@@ -11,7 +11,6 @@
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
-- 📋 **SH893** (deps: SH888 ✅) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
 - 📋 **SH897** (deps: SH888 ✅) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
 - 📋 **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — A gate that reports a clean tree because it never read the tree you named is worse than no gate. → §LIV.15
 - 📋 **SH920** (deps: —) **two user contexts now exist and the two shells mount different ones, so a migrated page reads the wrong hook** — Each surface Block AR moves crosses that seam, and the failure is a blank shell rather than a type error. → §LIV.16
@@ -34,12 +33,6 @@
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
 ## Priority
-
-## Done when — SH893
-
-- **An accessibility violation on a bento surface fails a gate here** Icon-only labels,
-  the screen-reader spans, string ARIA values and the reduced-motion guard are checked
-  in this repository rather than assumed from the package.
 
 ## Done when — SH897
 

@@ -1040,3 +1040,44 @@ positives**, because a bundle that size has no other dotted lowercase strings.
 One assertion is worth stealing: `home.title` must read **differently** in the two locales. Its
 fallback was already the English word, so a "translation" that copies the English value restores
 the defect while looking fixed.
+
+## The bento accessibility rules, checked rather than remembered (SH893)
+
+The package runs its stories under axe on every push — that covers **the package's** components
+and says nothing about how a consumer composes them.
+[`test/bento-a11y.test.mjs`](../../shio-react/test/bento-a11y.test.mjs) holds three rules over
+Shio's own source:
+
+1. **Icon-only controls need an accessible name.** `aria-label`, `title`, an `sr-only` span, or
+   readable text. A bare `<svg>`'s own label is not reliably announced, and `getByLabelText` will
+   not match it either.
+2. **A state ARIA attribute is a string literal** — `aria-selected={active ? "true" : "false"}`,
+   never `{active}`, never a bare `aria-hidden`. Content attributes (`aria-label` and friends)
+   are excluded: an expression there is correct. This console had **zero** violations when the
+   rule arrived, which is the easiest state to keep and the easiest to lose.
+3. **A keyframe Shio declares is named in the reduced-motion guard.** Zero today — every
+   animation on a bento surface comes from `bento.css`, whose guard the package asserts — so the
+   rule is exercised against synthetic CSS in its own test. A rule whose body is `if (nothing)
+   return` is a rule nobody has ever seen run.
+
+### The measurement had a bug, and it is the reason `jsx-elements.mjs` exists
+
+The first pass reported **3** unnamed icon-only buttons out of 50 and read as almost clean. The
+real number was **34**. `/<Button\b([^>]*?)>/` ends the opening tag at the `>` inside
+`onClick={() => openBrowserAt()}`, so the "body" begins mid-prop and carries the handler's
+identifier — and the check "does the body contain readable text?" answers *yes*, because
+`openBrowserAt` is letters. Two adjacent unnamed buttons in one file, one reported and one not,
+differing only in whether their handler was an arrow.
+
+[`test/support/jsx-elements.mjs`](../../shio-react/test/support/jsx-elements.mjs) scans forward
+tracking brace depth and quotes instead. **Use it for any JSX census here** — a gate that
+under-reports is worse than no gate, because a green run reads as coverage.
+
+### Six fixed, twenty-eight declared
+
+The six in **shared components** are fixed, because the migration keeps them: the permissions
+dialog and three of the fifteen form widgets, which SH892 exists precisely to avoid rewriting
+(`date.widget.tsx` had no i18n at all and gained the hook; `common.clear` is new in both
+locales). The remaining 28 are console pages Block AR rewrites, held by name — each AR task
+deletes its own line. **A shared component may never appear in that list**, and the gate asserts
+it separately: a name missing from one is missing on every page that renders it.

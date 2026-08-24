@@ -1,9 +1,13 @@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import type { WidgetProps } from "./index"
 
 export function DateWidget({ attr, onChange }: WidgetProps) {
+  // SH893 — the clear button is an icon and nothing else, so it needs a name a screen reader can
+  // announce. This was the only one of the fifteen widgets with no i18n in it at all.
+  const { t } = useTranslation()
   const dateStr = attr.dateValue ? new Date(attr.dateValue).toISOString().split("T")[0] : ""
 
   return (
@@ -15,7 +19,7 @@ export function DateWidget({ attr, onChange }: WidgetProps) {
         className="w-auto"
       />
       {dateStr && (
-        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => onChange({ ...attr, dateValue: "" })}>
+        <Button type="button" variant="ghost" size="icon" aria-label={t("common.clear")} className="h-8 w-8" onClick={() => onChange({ ...attr, dateValue: "" })}>
           <X className="h-4 w-4" />
         </Button>
       )}

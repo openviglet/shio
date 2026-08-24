@@ -188,6 +188,7 @@ export function ContentSelectWidget({ attr, onChange }: WidgetProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
+                aria-label={t("common.search")}
                 className="h-7 w-7"
                 onClick={() => openBrowserAt()}
               >
@@ -197,6 +198,7 @@ export function ContentSelectWidget({ attr, onChange }: WidgetProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
+                aria-label={t("common.clear")}
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 onClick={handleClear}
               >
