@@ -1,5 +1,24 @@
 {
   "nav.searchPlaceholder": "Search...",
   "nav.logout": "Logout",
-  "nav.account": "Account"
+  "nav.account": "Account",
+  "nav.desc.section.content": "Sites, pages, files and everything a curator publishes.",
+  "nav.desc.section.administration": "Access, integrations and the record of what changed.",
+  "nav.desc.sites": "Every site, its folders and the content inside them.",
+  "nav.desc.search": "Find a post anywhere, across every site.",
+  "nav.desc.postTypes": "The fields each kind of content carries.",
+  "nav.desc.files": "Images, documents and anything else delivered as bytes.",
+  "nav.desc.trash": "Deleted content, still restorable.",
+  "nav.desc.universalEditor": "Edit a page on the page itself, where a reader sees it.",
+  "nav.desc.admin": "Users, groups and the roles that decide who may do what.",
+  "nav.desc.apiTokens": "Long-lived credentials for agents and integrations.",
+  "nav.desc.tenants": "The organisations sharing this instance.",
+  "nav.desc.authProviders": "Where sign-in is checked when it is not checked here.",
+  "nav.desc.exchangeProviders": "Import and export content between instances.",
+  "nav.desc.emailConfig": "The mail server notifications are sent through.",
+  "nav.desc.webhooks": "Tell another system when content changes.",
+  "nav.desc.marketplace": "Blueprints and section packages to install.",
+  "nav.desc.activity": "Who changed what, and when.",
+  "nav.desc.review": "What an agent did while you were away.",
+  "nav.desc.graphql": "Query the delivery API and read its schema."
 }

@@ -962,3 +962,41 @@ three of them (SH823, SH890, SH888) the same way: a reader asserting "this file 
 failing against the paragraph explaining why it does not. That is not incidental here — readers
 in this repository carry their reasoning in prose beside the code, so any such scan runs over a
 file very likely to *discuss* X.
+
+## Every surface declared once, for both readers (SH889)
+
+[`bento-nav.ts`](../../shio-react/src/app/bento/bento-nav.ts) declares **17 surfaces in 2
+sections**, and the rail *and* the command palette both read it. The rail takes
+`useBentoNav()` (grouped), the palette takes `useBentoNavItems()` (flat). A palette built from
+its own array would look completely fine right up to the release where one of them lists a
+surface the other does not — that is the defect §LIV.4 was filed against.
+
+Get this shape right early: it is the file each of **Block AR's fourteen** surface tasks appends
+to, so a shape settled after five have shipped is a shape five tasks have to be reopened for.
+
+| Field | Whose | Notes |
+|---|---|---|
+| `titleKey` | reused | Always a key the console sidebar already renders — the authoring contract's rule that the same entity in two chromes is the same entity |
+| `descriptionKey` | new (`nav.desc.*`) | No console equivalent: the sidebar shows a label, a palette row and a hub tile show a sentence. `en` + `pt` together |
+| `fallbackRoute` | required | Where the surface lives **today** — a console path, for all 17 |
+| `bentoRoute` | absent until moved | `bentoNavTarget()` prefers it, so **a migration is one line here** |
+| `tone` | grouped by kind | blue content · indigo model · violet delivery · amber identity · slate plumbing — a new entry has an obvious answer rather than a free choice |
+| `requires` | Shio's own | On `ShioNavItem`, not `BentoNavItem`: the package cannot read a feature model and should not try |
+
+`useBentoNav()` is a **hook** because visibility is answered at runtime — `useDiscovery()` is how
+the console learns whether `shio.multi-tenant` is on, and SH46's finding was that an ungated
+tenants entry offers every single-tenant install a page for managing tenants it does not have.
+Verified: the palette lists **16** of 17 on a single-tenant instance.
+
+### What the descriptions are actually for
+
+Not the row text. The palette renders the title plus an external-link marker for anything without
+a `bentoRoute`; `descriptionKey` feeds its **fuzzy search index**. Measured in a browser rather
+than assumed — typing `restorable` (a word that appears only in `nav.desc.trash`) returns
+**Trash**, `credentials` returns **API Tokens**, and a nonsense term returns nothing. That is
+what a description buys, and it is why they are worth writing well.
+
+The palette's keybinding is the product's — the package takes `open`/`onOpenChange` and nothing
+else. Ctrl/Cmd+K toggles, and a bare `/` opens **only when the reader is not already typing**: a
+`/` swallowed inside an input is the one way a search shortcut makes a product worse than not
+having one.

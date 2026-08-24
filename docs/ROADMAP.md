@@ -11,7 +11,6 @@
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
-- 📋 **SH889** (deps: SH888 ✅) **Shio has no nav declaration a rail and a palette can share, so each surface would be listed twice** — The package supplies the schema and both readers; declaring a surface once is what makes them agree. → §LIV.4
 - 📋 **SH891** (deps: SH888 ✅) **bento chrome strings have no Shio translations, so a shared rail and palette would render raw keys** — The package already translates the chrome it owns; what has no keys here are the nav and palette labels Shio itself supplies. → §LIV.6
 - 📋 **SH893** (deps: SH888 ✅) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
 - 📋 **SH897** (deps: SH888 ✅) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
@@ -36,12 +35,6 @@
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
 ## Priority
-
-## Done when — SH889
-
-- **Every Shio surface is declared once, for both readers** One array against the
-  package's entry schema feeds the rail and the palette, and adding a surface in the
-  next block is a single-line change.
 
 ## Done when — SH891
 

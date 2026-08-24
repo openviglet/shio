@@ -162,7 +162,12 @@ test("SH888: Shio's nav declares sections both readers will share", () => {
         + " does not exist renders as the key itself — visible, but only to somebody looking.")
   }
 
-  assert.match(navSource, /items: \[\]/,
-    "SH888: the nav's item lists are populated, which means SH889 landed — good, but then this"
-      + " assertion should move to naming what it expects instead of expecting emptiness.")
+  // SH889 landed and this assertion did what it said it would: it expected empty item lists and
+  // failed the moment they were filled, naming its own replacement. The population is now
+  // `bento-nav.test.mjs`'s subject; what stays here is the shell's own requirement, which is that
+  // the rail can find sections at all.
+  assert.match(navSource, /areaRoute/,
+    "SH888: no section declares an areaRoute, so BentoNavRail filters every one of them out and"
+      + " draws nothing but Home — silently, because a section without a hub route is not an"
+      + " error to the rail, it is simply invisible.")
 })

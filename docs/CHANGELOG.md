@@ -1617,6 +1617,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH894** — The package's duplicate gate runs inside pnpm test with a planted-duplicate vacuity check; its first run found seven, of which a dead fork was deleted and a drifted 91-line dialog shimmed.
 - **SH918** — A seed script injected ahead of the boot loader writes the default both readers consult, and main.tsx clears the stale boot class; jsdom runs both real scripts, and removing the seed brings the split back.
 - **SH888** — /bento mounts the package's rail, user menu and back-to-top beside the console tree with no sidebar provider; the first render found that the shared user menu needs the package's own context.
+- **SH889** — 17 surfaces in one declaration the rail and the palette both read, gated on Shio's own type; the descriptions feed the palette's search, measured in a browser rather than assumed.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 

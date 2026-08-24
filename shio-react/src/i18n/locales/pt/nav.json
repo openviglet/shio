@@ -1,5 +1,24 @@
 {
   "nav.searchPlaceholder": "Pesquisar...",
   "nav.logout": "Sair",
-  "nav.account": "Conta"
+  "nav.account": "Conta",
+  "nav.desc.section.content": "Sites, páginas, arquivos e tudo que um curador publica.",
+  "nav.desc.section.administration": "Acesso, integrações e o registro do que mudou.",
+  "nav.desc.sites": "Todos os sites, suas pastas e o conteúdo dentro delas.",
+  "nav.desc.search": "Encontre um post em qualquer lugar, em todos os sites.",
+  "nav.desc.postTypes": "Os campos que cada tipo de conteúdo carrega.",
+  "nav.desc.files": "Imagens, documentos e tudo mais entregue como bytes.",
+  "nav.desc.trash": "Conteúdo excluído, ainda restaurável.",
+  "nav.desc.universalEditor": "Edite uma página na própria página, onde o leitor a vê.",
+  "nav.desc.admin": "Usuários, grupos e os papéis que decidem quem pode o quê.",
+  "nav.desc.apiTokens": "Credenciais de longa duração para agentes e integrações.",
+  "nav.desc.tenants": "As organizações que compartilham esta instância.",
+  "nav.desc.authProviders": "Onde o login é verificado quando não é verificado aqui.",
+  "nav.desc.exchangeProviders": "Importe e exporte conteúdo entre instâncias.",
+  "nav.desc.emailConfig": "O servidor de e-mail pelo qual as notificações são enviadas.",
+  "nav.desc.webhooks": "Avise outro sistema quando o conteúdo mudar.",
+  "nav.desc.marketplace": "Blueprints e pacotes de seções para instalar.",
+  "nav.desc.activity": "Quem mudou o quê, e quando.",
+  "nav.desc.review": "O que um agente fez enquanto você estava fora.",
+  "nav.desc.graphql": "Consulte a API de entrega e leia seu schema."
 }

@@ -9,14 +9,16 @@
 import { UserProvider } from "@viglet/viglet-design-system"
 import {
   BentoBackToTop,
+  BentoCommandPalette,
   BentoNavRail,
+  BentoShortcutsDialog,
   BentoUserMenu,
 } from "@viglet/viglet-design-system/bento"
-import { useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Outlet } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { ShUserService } from "@/services/auth/user.service"
-import { BENTO_NAV } from "./bento-nav"
+import { useBentoNav, useBentoNavItems } from "./bento-nav"
 
 const shUserService = new ShUserService()
 
@@ -66,6 +68,36 @@ const shUserService = new ShUserService()
  */
 export default function BentoRootPage() {
   const fetchUser = useCallback(() => shUserService.get(), [])
+  const groups = useBentoNav()
+  const items = useBentoNavItems()
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+
+  /*
+   * SH889 — the palette's keybinding is the product's, because the package takes `open` and
+   * `onOpenChange` and nothing else. Ctrl/Cmd+K, and `/` when the reader is not already typing:
+   * a bare `/` inside an input would swallow the character, which is the one way a search
+   * shortcut makes the product worse than not having it.
+   */
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const typing = event.target instanceof HTMLElement
+        && (event.target.isContentEditable
+          || ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName))
+
+      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault()
+        setPaletteOpen((open) => !open)
+      } else if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault()
+        setPaletteOpen(true)
+      }
+    }
+    globalThis.addEventListener("keydown", onKey)
+    return () => globalThis.removeEventListener("keydown", onKey)
+  }, [])
 
   return (
     <UserProvider fetchUser={fetchUser}>
@@ -83,14 +115,26 @@ export default function BentoRootPage() {
             console chrome, and the bento era puts a page's identity in its own hero.
           */}
           <header className="sticky top-0 z-40 flex h-16 items-center justify-end gap-2 px-4">
-            <BentoUserMenu accountRoute={ROUTES.ADMIN_USERS} logoutUrl={ROUTES.LOGOUT} />
+            <BentoUserMenu
+              accountRoute={ROUTES.ADMIN_USERS}
+              logoutUrl={ROUTES.LOGOUT}
+              onOpenShortcuts={() => setShortcutsOpen(true)}
+            />
           </header>
 
-          <BentoNavRail groups={BENTO_NAV} homeRoute={ROUTES.BENTO} />
+          <BentoNavRail groups={groups} homeRoute={ROUTES.BENTO} />
 
           <div className="bento-rail-gutter">
             <Outlet />
           </div>
+
+          {/*
+            Both read the *same* declaration the rail does — that is SH889's whole point. A
+            palette built from its own list is a second place a surface has to be added, and the
+            two disagree within a release rather than at some later reckoning.
+          */}
+          <BentoCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} items={items} />
+          <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} isMac={isMac} />
 
           <BentoBackToTop />
         </div>

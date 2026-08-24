@@ -922,16 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.4 Declare each surface once (SH889)
-
-The rail and the command palette both need to know what surfaces exist, what they are
-called, which group they belong to and what privilege they require. Declared twice they
-disagree within a release; declared in the package they would be Turing's. So the
-package supplies a typed entry shape and both components that read it, and Shio supplies
-its own array. Getting this right early matters more than it looks: it is the file every
-one of the fourteen surface tasks in the next block appends to, so a shape settled after
-five of them have shipped is a shape five tasks have to be reopened for.
-
 ### LIV.6 The chrome speaks Portuguese too (SH891)
 
 The console ships English and Portuguese and merges its own bundle over the package's
