@@ -1,3 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@viglet/viglet-design-system/styles";
+/*
+ * SH887 — the bento layer's stylesheet. A separate entry from `styles` on purpose: the
+ * package ships the layout maths and the CSS as two things so a consumer taking only the
+ * former does not carry frosted surfaces it never renders. Shio renders them, so it takes
+ * both. Every `bento-*` class the layer emits — the grid, the tones, the rail gutter, the
+ * save-bar morph and the reduced-motion guard over all of it — is defined here and nowhere
+ * else; without this line the components mount, pass their tests, and look like unstyled divs.
+ */
+@import "@viglet/viglet-design-system/bento.css";

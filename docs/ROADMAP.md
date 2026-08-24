@@ -11,15 +11,15 @@
 
 ## Block AQ — The console adopts the shared bento layer (§LIV)
 
-- 📋 **SH887** (deps: viglet-design-system VDS8) **the console imports no bento component, so two products share a design system and look unrelated** — The layer must render here before a route is built on it, and only the package can ship it. → §LIV.2
-- 📋 **SH888** (deps: SH887) **there is no bento route tree: the console root mounts a SidebarProvider every bento component refuses** — A parallel shell is what makes each surface reversible, which a 43-page migration needs most. → §LIV.3
+- 📋 **SH888** (deps: SH887 ✅, SH918) **there is no bento route tree: the console root mounts a SidebarProvider every bento component refuses** — A parallel shell is what makes each surface reversible, which a 43-page migration needs most. → §LIV.3
 - 📋 **SH889** (deps: SH888) **Shio has no nav declaration a rail and a palette can share, so each surface would be listed twice** — The package supplies the schema and both readers; declaring a surface once is what makes them agree. → §LIV.4
-- 📋 **SH890** (deps: viglet-design-system VDS23) **the console's orange is spelled as Tailwind gradient classes inside a header component it no longer owns** — A shared component that names a colour makes one product look borrowed; the accent belongs in a token. → §LIV.5
-- 📋 **SH891** (deps: SH888) **bento chrome strings have no Shio translations, so a shared rail and palette would render raw keys** — The console ships English and Portuguese, and chrome the package owns still needs both here. → §LIV.6
-- 📋 **SH892** (deps: viglet-design-system VDS22) **the post, post-type and site editors are the heaviest forms here and a parallel route would fork all three** — The chrome adapter renders one form in either shell, so the field logic is written once. → §LIV.7
+- 📋 **SH890** (deps: —) **the console's orange is spelled as Tailwind gradient classes inside a header component it no longer owns** — A shared component that names a colour makes one product look borrowed; the accent belongs in a token. → §LIV.5
+- 📋 **SH891** (deps: SH888) **bento chrome strings have no Shio translations, so a shared rail and palette would render raw keys** — The package already translates the chrome it owns; what has no keys here are the nav and palette labels Shio itself supplies. → §LIV.6
+- 📋 **SH892** (deps: —) **the post, post-type and site editors are the heaviest forms here and a parallel route would fork all three** — The chrome adapter renders one form in either shell, so the field logic is written once. → §LIV.7
 - 📋 **SH893** (deps: SH888) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
-- 📋 **SH894** (deps: viglet-design-system VDS5) **nothing fails when a component is re-declared here instead of imported from the design system** — All 24 ui files are shims by discipline alone, and discipline is not an instrument. → §LIV.9
+- 📋 **SH894** (deps: —) **nothing fails when a component is re-declared here instead of imported from the design system** — All 24 ui files are shims by discipline alone, and discipline is not an instrument. → §LIV.9
 - 📋 **SH897** (deps: SH888) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
+- 📋 **SH918** (deps: —) **the boot splash defaults to light while the app defaults to dark, and body keeps the light ground** — A page outside the console shell then renders near-white text on a near-white body, which is what the bento shell will be. → §LIV.14
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
@@ -39,12 +39,6 @@
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 
 ## Priority
-
-## Done when — SH887
-
-- **One page in this console renders the whole bento vocabulary** The subpath and its
-  stylesheet are installed, and a hero, a form section, an entity tile and a mosaic all
-  render correctly here rather than only in the other product.
 
 ## Done when — SH888
 

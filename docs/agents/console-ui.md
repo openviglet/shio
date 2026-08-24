@@ -691,3 +691,51 @@ One deliberate sharp edge: the sort is **codepoint, never `localeCompare`**. The
 order, so a locale-dependent comparator would hash one page to two values on two machines. The lint
 that asks for `localeCompare` is right about display lists and wrong here; the comparator is stated
 in the file with that reason beside it.
+
+## The bento layer, installed and proved here (SH887)
+
+`@viglet/viglet-design-system/bento` is now imported by this console, and one page —
+[`src/app/bento/bento-vocabulary.page.tsx`](../../shio-react/src/app/bento/bento-vocabulary.page.tsx)
+at the top-level route `/bento-vocabulary` — composes 23 of the layer's 35 runtime exports.
+It is a **harness, not a surface**: no nav entry, no service, no request, and it is deleted
+when Block AR finishes. `src/index.css` takes `bento.css` as a second import, because the
+package ships the layout maths and the stylesheet as separate entries and a consumer that
+imports only the components gets working, tested, completely unstyled markup.
+
+`test/bento-vocabulary.test.mjs` holds the two halves as **named lists**: what the page
+renders, and what it defers with the task that owns each (the shell to SH888, the nav-driven
+surfaces to SH889, the three whole-screen shapes that own a hero and the save-bar morph to
+SH892/SH899/SH901). Their union must equal the package's runtime export set, read out of the
+shipped `index.d.ts` rather than hardcoded — so a design-system release that adds a component
+fails here by name instead of leaving the harness quietly proving less than it used to.
+
+### The three things looking at it found
+
+**A page outside the console shell must paint its own ground.** `<html>` carries `dark` from
+`ThemeProvider`'s default while `<body>` keeps `shio-light-boot` — the design system's
+boot-loader plugin picks light when nothing is stored under `shio-ui-theme`, which is every
+first visit, and nothing removes the class once React mounts. Every console page hides it by
+painting `bg-background` over the viewport. The harness renders `bg-background text-foreground
+min-h-screen` for that reason and not for decoration; **SH918** fixes the disagreement itself,
+and SH888 depends on it, because a second parallel root inherits exactly this.
+
+**A top-level route needs its segment reserved.** `readTenantSegment()` treats every unreserved
+first path segment as a tenant, so `/bento-vocabulary` would set `TENANT_SEGMENT` to itself and
+prefix every `ROUTES.*` the page links to with a tenant that does not exist. The page still
+renders, which is what makes it worth asserting rather than noticing.
+
+**The package translates its own chrome, in both languages.** Measured, not assumed: the same
+page renders `Unsaved changes` under an `en-US` browser and `Alterações não salvas` under
+`pt-BR`, because `registerVigTranslations(i18n)` wires the package's bundle into this console's
+resources. SH891's roadmap line said the opposite and has been corrected — what is left for
+Shio is the half the authoring contract says the package will never hold: the nav array's own
+labels and the palette entries built from them.
+
+### What it deliberately does not do
+
+Specimen copy lives in `bento-vocabulary.fixture.ts`, not in the `.tsx`. `console-english.test.mjs`
+is right to fail a curator-facing page that hardcodes an English sentence and would be wrong
+about this one — these are specimen strings naming the components being proved, read by nobody
+in Portuguese. Separating them keeps that lint's `UNTRANSLATED` exemption map short enough to
+stay readable, which is the only thing it has going for it. A migrated Block AR surface goes
+through `t()` like every other page.

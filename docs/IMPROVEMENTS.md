@@ -922,17 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.2 Install the layer and prove it renders here (SH887)
-
-Shio already depends on the design system and imports its styles from index.css, so the
-mechanism is in place; what is new is the bento subpath and its stylesheet. Add both,
-then render a throwaway page composing a hero, a form section, an entity tile and a list
-mosaic, and look at it. This is deliberately a task rather than a step inside the next
-one. The package's bento layer will have been exercised by exactly one product until
-Shio touches it, and the first consumer of a newly extracted layer is what finds the
-assumptions the extraction carried over - a context that was always present, a token
-that was always defined, a class the other application's global CSS happened to supply.
-
 ### LIV.3 A parallel shell, because reversibility is the point (SH888)
 
 The bento shell has no sidebar provider and no breadcrumb bar; Shio's console root
@@ -973,7 +962,12 @@ Shio's: a palette placeholder and its no-results text, the rail labels, the shor
 dialog, and Save and Cancel on the morphing bar. Where the package carries them Shio
 inherits both languages; where it does not, Shio adds them. Either way the object-form
 default convention applies, so a missing key renders as words rather than as an
-identifier, and both locales are updated in the same commit that adds a key.
+identifier, and both locales are updated in the same commit that adds a key. SH887
+measured which half is which: the proving page rendered `Unsaved changes` under an
+`en-US` browser and `Alterações não salvas` under `pt-BR`, so `registerVigTranslations`
+already wires the package's own bundle into this console's i18n in both languages. What
+is left for Shio is the half the authoring contract says the package will never hold —
+the nav array's own labels, and the palette entries built from it.
 
 ### LIV.7 One form, two chromes, no forked fields (SH892)
 
@@ -1017,6 +1011,30 @@ which is worse than not running at all: a green check is counted as evidence. Te
 the bento route tree, and give it the shape of assertion this migration actually needs -
 that the hero is present, that the frosted card is frosted, and that the save bar
 appears on scroll and not before it.
+
+### LIV.14 The two defaults that disagree about the theme (SH918)
+
+SH887 mounted one page outside the console shell and it came up unreadable: a white hero
+title on a near-white ground. The cause is two defaults that were never compared. The
+design system's boot-loader Vite plugin reads `localStorage["shio-ui-theme"]` before
+React runs and, finding nothing — which is every first visit — picks light and stamps
+`shio-light-boot` on `<body>`, painting `rgb(250,250,250)` and a salmon radial gradient.
+`ThemeProvider` in `App.tsx` then defaults to `dark` and stamps `dark` on `<html>`, so
+`--background` resolves near-black and `--foreground` near-white. Nothing removes the
+boot class once React mounts, so the light ground outlives the splash for the whole
+session.
+
+Every console page hides it. `console.root.page.tsx` paints `bg-background` across the
+viewport, so the contradiction sits underneath and no curator has ever seen it. That is
+precisely why it has to be fixed before SH888: the bento shell is a second, parallel
+root, and whatever it forgets to paint shows the boot ground through.
+
+Two candidate fixes and they are not equivalent. Removing the class on mount leaves the
+splash itself the wrong colour on a first visit — a light flash before a dark app.
+Teaching the boot script the same default the provider carries fixes both, and the
+durable form of that is one declaration both read rather than two literals that agree
+today. The assertion is a rendered page: `<html>`'s theme and `<body>`'s ground must not
+contradict, checked where no shell has painted over them.
 
 ## LV The curator's console, surface by surface (Block AR)
 

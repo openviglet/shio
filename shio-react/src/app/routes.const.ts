@@ -12,6 +12,15 @@ const RESERVED_TOP_SEGMENTS = new Set([
   "assets",
   "content",
   "console",
+  /*
+   * SH887 — the bento proving page is a top-level route, and every unreserved first segment is
+   * read as a tenant. Without this entry `/bento-vocabulary` resolves TENANT_SEGMENT to
+   * "/bento-vocabulary" and every ROUTES.* the page links to is prefixed with it, so the hero's
+   * back link and the specimen tiles all point into a tenant that does not exist. Reserved
+   * rather than nested under `console`, because the page must not mount inside the console
+   * shell's SidebarProvider — the whole reason it is top-level.
+   */
+  "bento-vocabulary",
 ]);
 
 function readTenantSegment(): string {
@@ -54,6 +63,8 @@ export const ROUTES = {
   ADMIN_WEBHOOKS: scoped(`${consolePath}/admin/webhooks`),
   ADMIN_MARKETPLACE: scoped(`${consolePath}/admin/marketplace`),
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
+  /** SH887 — unscoped on purpose: a harness with no tenant, mounted outside the console shell. */
+  BENTO_VOCABULARY: "/bento-vocabulary",
 };
 
 // Route patterns (with `:tenant` placeholder) used by React Router for matching.

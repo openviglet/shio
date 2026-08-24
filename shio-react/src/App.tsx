@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom"
+import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
 import ConsoleRootPage from "./app/console/console.root.page"
 import NotFoundPage from "./app/console/not-found.page"
 import HomePage from "./app/console/home/home.page"
@@ -22,6 +23,14 @@ function App() {
               <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.CONSOLE} replace />} />
               <Route path={ROUTES.SETUP} element={<SetupPage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+              {/*
+                SH887 — the bento layer's proving page, mounted OUTSIDE the console shell on
+                purpose: `ConsoleRootPage` wraps its Outlet in a `SidebarProvider`, and the bento
+                shell ships no provider at all, so a bento page under the console chrome is a
+                page proved in the era this migration retires. Top-level, no nav entry, no data.
+                SH888 builds the real parallel route tree; SH909 removes whichever shell loses.
+              */}
+              <Route path={ROUTES.BENTO_VOCABULARY} element={<BentoVocabularyPage />} />
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
                 <Route index element={<Navigate to={ROUTES.HOME} replace />} />
                 <Route path="home" element={<HomePage />} />
