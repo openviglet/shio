@@ -14,7 +14,6 @@
 - 📋 **SH888** (deps: SH887 ✅, SH918) **there is no bento route tree: the console root mounts a SidebarProvider every bento component refuses** — A parallel shell is what makes each surface reversible, which a 43-page migration needs most. → §LIV.3
 - 📋 **SH889** (deps: SH888) **Shio has no nav declaration a rail and a palette can share, so each surface would be listed twice** — The package supplies the schema and both readers; declaring a surface once is what makes them agree. → §LIV.4
 - 📋 **SH891** (deps: SH888) **bento chrome strings have no Shio translations, so a shared rail and palette would render raw keys** — The package already translates the chrome it owns; what has no keys here are the nav and palette labels Shio itself supplies. → §LIV.6
-- 📋 **SH892** (deps: —) **the post, post-type and site editors are the heaviest forms here and a parallel route would fork all three** — The chrome adapter renders one form in either shell, so the field logic is written once. → §LIV.7
 - 📋 **SH893** (deps: SH888) **no gate holds the bento a11y baseline here: icon-only labels, string ARIA values, the reduced-motion guard** — Those rules held in one product because one team read one file, and Shio has not read it. → §LIV.8
 - 📋 **SH894** (deps: —) **nothing fails when a component is re-declared here instead of imported from the design system** — All 24 ui files are shims by discipline alone, and discipline is not an instrument. → §LIV.9
 - 📋 **SH897** (deps: SH888) **e2e/console-check.mjs drives console routes only, so a bento surface is unvisited by the one script that clicks** — The check is the only thing that opens a real page, and it would go green across a migration it never saw. → §LIV.12
@@ -25,7 +24,7 @@
 - 📋 **SH898** (deps: SH888) **the console home is a flat card grid under a console header, and it is the first thing a curator sees** — It is the cheapest surface and the one that decides whether the redesign reads as real. → §LV.1
 - 📋 **SH899** (deps: SH898) **the four site pages hand-roll their list and their forms, with no mosaic and no save-bar morph** — Sites are the entry to every other surface, so the list shape settles here for the ten that follow. → §LV.2
 - 📋 **SH900** (deps: SH899) **the content browser and the two folder pages are the curator's main workspace and still console-shaped** — This is where a curator spends the day, and a half-migrated console is most visible here. → §LV.3
-- 📋 **SH901** (deps: SH892) **the post editor and the new-post flow are the heaviest forms here, with 15 dynamic widgets inside them** — The widgets must not be rewritten, which is what the chrome adapter exists to make possible. → §LV.4
+- 📋 **SH901** (deps: SH892 ✅) **the post editor and the new-post flow are the heaviest forms here, with 15 dynamic widgets inside them** — The widgets must not be rewritten, which is what the chrome adapter exists to make possible. → §LV.4
 - 📋 **SH902** (deps: SH901) **the three post-type pages carry the attribute editor and a console sticky save bar with no scroll morph** — Post types are the one name-keyed surface and the editor a curator returns to most after posts. → §LV.5
 - 📋 **SH903** (deps: SH900) **search, trash and the static-file list are console pages with no empty state, no mosaic and no hero** — These three are where an empty result is normal, which is exactly what the shared empty state is for. → §LV.6
 - 📋 **SH904** (deps: SH899) **the six user, group and role pages are console forms and lists with identity fields inside the form** — Identity belongs in the hero, so these six are the clearest case for the entity shell. → §LV.7
@@ -56,12 +55,6 @@
 - **The bento chrome renders in English and Portuguese** Every chrome string exists in
   both locale bundles with an object-form default, so a missing key renders as words
   rather than as an identifier.
-
-## Done when — SH892
-
-- **The three heavy forms render in either chrome, unforked** The chrome adapter is
-  adopted, the fifteen widgets and the runtime schema are unchanged, and the console
-  path still renders as it did.
 
 ## Done when — SH893
 

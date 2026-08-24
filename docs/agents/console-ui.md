@@ -788,3 +788,45 @@ A named map and not a ceiling, for the reason the chrome census gives: a ceiling
 migrated page fund leaving the next alone. A Block AR migration deletes its file's line in the
 same commit; a page that adds an orange fails by name. `amber` is deliberately not counted —
 that is the semantic warning colour and it means "careful", not "Shio".
+
+## The chrome adapter, and its two silent failure modes (SH892)
+
+The post editor, the post-type editor and the site editor wrap their sections in
+`AdaptiveSectionCard` instead of `@/components/ui/card`. The adapter renders a console card
+today and a frosted bento section when a `SectionCardChromeProvider` above it says so, and
+**console is the default** — so adopting it changed nothing visible, and SH899/SH901/SH902 opt
+in by adding a provider rather than by rebuilding 1,600 lines of the most defect-prone code in
+the console.
+
+Two rules, both of which produce a page that compiles, passes every source scan, and does
+nothing. Both were in this task's own first draft, and both were found by *rendering* the built
+package with `react-dom/server` — [`test/chrome-adapter.test.mjs`](../../shio-react/test/chrome-adapter.test.mjs),
+which is the one reader here that renders rather than reads. That is affordable because the
+adapter is a wrapper, not a page: no router, no contexts, no service call, about a millisecond.
+
+**1. A section with no header never re-skins.** The bento branch is entered only when
+`Children.forEach` recognises a `Header`/`StaticHeader` child; anything else falls through to
+the console card, deliberately, so a section built some other way cannot lose its content
+silently. The consequence for a consumer is the opposite of obvious: an adopted section with no
+header is a **no-op** that looks migrated in every import scan. The post editor's card carried
+an empty `CardHeader`, so it gained a real one (`content.fields` — identity stays in the hero).
+
+**2. `Header` and `Content` must be DIRECT children.** `Children.forEach` does not descend. Wrap
+`Content` in anything — `<Tabs>` was this task's first draft for the post-type details card — and
+the bento branch finds a header and no content, and renders an **empty section**: the whole form
+gone, in whatever later commit switches the chrome on, nowhere near the commit that caused it.
+`Tabs` belongs *inside* `Content`.
+
+### The era classifier had a hole this walked through
+
+`console-chrome-census.test.mjs` decided a page's era by "does it import the bento subpath",
+which is what the design system's own source says the subpath is for. `AdaptiveSectionCard` is
+the one export written to be imported from a **console** page, and the package exports it from
+that subpath and nowhere else — so adopting it made all three editors read as *migrated* in a
+single commit, shrinking the debt by three pages nobody had touched. The classifier now excludes
+three names (`AdaptiveSectionCard`, `SectionCardChromeProvider`, `useSectionChrome`) **by name**,
+so a page importing the adapter *and* `BentoHero` is still migrated. The exclusion carries its
+own vacuity test, because an over-broad exemption fails in the direction that reads as a
+migration which never started.
+
+Census after this task: **43 pages, 0 on bento** — `Card` 38 → 35.

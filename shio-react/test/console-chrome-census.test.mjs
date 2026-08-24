@@ -52,8 +52,45 @@ import { fileURLToPath } from "node:url"
 const HERE = dirname(fileURLToPath(import.meta.url))
 const CONSOLE_ROOT = join(HERE, "..", "src", "app", "console")
 
-/** A page belongs to the bento era when, and only when, it imports from the bento subpath. */
-const BENTO_IMPORT = /@viglet\/viglet-design-system\/bento/
+/**
+ * The three exports that are **era-neutral**, and the one hole this classifier had (SH892).
+ *
+ * The rule below — a page is bento-era when it imports the bento subpath — was right about every
+ * export the layer had when SH886 shipped, and wrong about the one whose entire purpose is to be
+ * imported from a console-era page. `AdaptiveSectionCard` renders one form's fields as console
+ * cards *or* as frosted bento sections, decided by a `SectionCardChromeProvider` above it, and
+ * the console branch is the default. That is what lets the post, post-type and site editors — the
+ * three heaviest forms in the product, one of which builds its schema at runtime and renders
+ * fifteen dynamic widgets — be written once instead of forked by a parallel route.
+ *
+ * The package exports it from the bento subpath and nowhere else, because that is where it lives.
+ * So a page adopting the adapter starts matching a pattern that means "migrated" while it is
+ * still a console page in every visible respect: SH892 made all three read as migrated in one
+ * commit, which would have shrunk the debt by three pages nobody had touched.
+ *
+ * Excluded by **name** rather than by loosening the pattern. A page that imports the adapter
+ * *and* `BentoHero` is migrated, and this still says so.
+ */
+const ERA_NEUTRAL = ["AdaptiveSectionCard", "SectionCardChromeProvider", "useSectionChrome"]
+
+/** Every `import … from "@viglet/viglet-design-system/bento"` clause in a source file. */
+const BENTO_CLAUSE = /import\s*\{([^}]*)\}\s*from\s*["']@viglet\/viglet-design-system\/bento["']/g
+
+/**
+ * A page belongs to the bento era when it imports from the bento subpath **something other than
+ * the era-neutral adapter**. A bare `import "…/bento"` with no clause counts as bento: it can
+ * only be there for a side effect the console era does not have.
+ */
+function isBento(source) {
+  if (!/@viglet\/viglet-design-system\/bento/.test(source)) return false
+  const clauses = [...source.matchAll(BENTO_CLAUSE)]
+  if (!clauses.length) return true
+  return clauses.some(([, names]) => names
+    .split(",")
+    .map((name) => name.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim())
+    .filter(Boolean)
+    .some((name) => !ERA_NEUTRAL.includes(name)))
+}
 
 /**
  * The console-era chrome this migration is retiring, each probe naming the thing a bento page
@@ -101,13 +138,18 @@ const STILL_CONSOLE = {
   "content/folder.new.page.tsx": ["PageHeader", "Card"],
   "content/object.children.page.tsx": ["PageHeader", "Card"],
   "content/post-type-select.page.tsx": ["PageHeader", "Card"],
-  "content/post-type.edit.page.tsx": ["PageHeader", "Card", "StickySaveBar"],
+  // SH892 — the Card marker is gone because the section chrome is the adapter now, not
+  // @/components/ui/card. The page is still console-era: PageHeader and the console sticky
+  // save bar are what SH902 replaces.
+  "content/post-type.edit.page.tsx": ["PageHeader", "StickySaveBar"],
   "content/post-type.list.page.tsx": ["PageHeader", "Card"],
   "content/post-type.new.page.tsx": ["PageHeader", "Card"],
-  "content/post.edit.page.tsx": ["PageHeader", "Card", "StickySaveBar"],
+  // SH892 — same swap, on the form that builds its schema at runtime. SH901 owns the rest.
+  "content/post.edit.page.tsx": ["PageHeader", "StickySaveBar"],
   "content/post.new.page.tsx": ["PageHeader", "Card", "StickySaveBar"],
   "content/search.page.tsx": ["PageHeader", "Card"],
-  "content/site.edit.page.tsx": ["PageHeader", "Card"],
+  // SH892 — same swap; SH899 owns the hero and the list shape around it.
+  "content/site.edit.page.tsx": ["PageHeader"],
   "content/site.import.page.tsx": ["PageHeader", "Card"],
   "content/site.list.page.tsx": ["PageHeader", "Card"],
   "content/site.new.page.tsx": ["PageHeader", "Card"],
@@ -138,7 +180,7 @@ function census() {
   for (const file of pages(CONSOLE_ROOT).sort()) {
     const source = readFileSync(file, "utf8")
     const name = relative(CONSOLE_ROOT, file).replace(/\\/g, "/")
-    if (BENTO_IMPORT.test(source)) bento.push(name)
+    if (isBento(source)) bento.push(name)
     else still[name] = CONSOLE_CHROME.filter(([, probe]) => probe.test(source)).map(([id]) => id)
   }
   return { bento: bento.sort(), still }
@@ -199,4 +241,31 @@ test("SH886: the reader is not vacuous — it reads real pages and a classifier 
         + "delete the probe in the same diff — or its import path was renamed and this reader has "
         + "gone blind to a whole layer of chrome while its count went down.")
   }
+})
+
+test("SH892: the era-neutral exclusion excludes one thing and not the layer", () => {
+  const importing = (names) => `import { ${names} } from "@viglet/viglet-design-system/bento"`
+
+  // The whole point: a page may adopt the adapter and stay console-era.
+  assert.equal(isBento(importing("AdaptiveSectionCard")), false,
+    "SH892: the adapter must not mark a page migrated — it is the one export written to be used"
+      + " from a console page, and the three heaviest forms adopted it while still rendering"
+      + " PageHeader and the console save bar.")
+  assert.equal(isBento(importing("AdaptiveSectionCard, SectionCardChromeProvider")), false,
+    "SH892: the provider that chooses the chrome is era-neutral for the same reason")
+
+  // And the exclusion must not have swallowed the classifier. This is the direction that fails
+  // silently: an over-broad exclusion reports every migrated page as console-era for ever, and
+  // the census then reads as a migration that never started rather than one that never finished.
+  assert.equal(isBento(importing("BentoHero")), true,
+    "SH892: a real bento import must still mark a page migrated, or ERA_NEUTRAL has grown into a"
+      + " blanket exemption and this census is measuring nothing")
+  assert.equal(isBento(importing("AdaptiveSectionCard, BentoHero")), true,
+    "SH892: a page that imports the adapter AND real bento chrome is migrated — the exclusion is"
+      + " per name, not per import statement")
+  assert.equal(isBento('import "@viglet/viglet-design-system/bento.css"'), true,
+    "SH892: a clause-less bento import can only be there for a side effect the console era does"
+      + " not have, so it counts")
+  assert.equal(isBento('import { Card } from "@/components/ui/card"'), false,
+    "SH892: a page with no bento import at all is console-era, which is the control")
 })

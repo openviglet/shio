@@ -1,6 +1,19 @@
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+/*
+ * SH892 — the section chrome comes from the adapter, not from a Card.
+ *
+ * `AdaptiveSectionCard` renders this form's fields as a console card today and as a frosted
+ * bento section the moment a `SectionCardChromeProvider` above it says `chrome="bento"`; the
+ * console branch is the package's default, so nothing changes here until SH899 wraps the page.
+ * The point is that the fields below are written once. A parallel bento route that rebuilt this
+ * form would fork it, and this is the smallest of the three forms it would have forked.
+ *
+ * The import is from the bento subpath because that is the only place the package exports the
+ * adapter from — which does NOT make this a bento-era page. `console-chrome-census.test.mjs`
+ * knows about that exception by name.
+ */
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -98,11 +111,9 @@ export default function SiteEditPage() {
     <>
       <PageHeader title={t("content.editSite")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("content.editSite")}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader icon={IconFileText} title={t("content.editSite")} />
+          <AdaptiveSectionCard.Content>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -193,8 +204,8 @@ export default function SiteEditPage() {
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
       </div>
     </>
   )

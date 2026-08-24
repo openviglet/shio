@@ -959,17 +959,6 @@ already wires the package's own bundle into this console's i18n in both language
 is left for Shio is the half the authoring contract says the package will never hold —
 the nav array's own labels, and the palette entries built from it.
 
-### LIV.7 One form, two chromes, no forked fields (SH892)
-
-The post editor, the post-type editor and the site editor are the three largest forms in
-this product. The post editor alone builds its schema at runtime from the post type and
-renders fifteen dynamic widgets through a widget map, each reading a widgetSettings
-value the backend can return as the literal string "null". None of that logic changes
-here and none of it should be touched: the package's chrome adapter renders the same
-fields inside frosted sections instead of console cards, decided by a provider at the
-top of the page. Adopt it before the post and post-type surfaces migrate, or a parallel
-route forks the most defect-prone code in the console.
-
 ### LIV.8 An accessibility baseline that is checked, not remembered (SH893)
 
 The bento layer's accessibility rules are specific and easy to break by accident:

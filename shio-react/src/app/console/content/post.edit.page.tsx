@@ -1,5 +1,16 @@
 import { PageHeader } from "@/components/page-header"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+/*
+ * SH892 — the section chrome comes from the adapter, not from a Card. This is the form the
+ * adapter exists for: the schema is built at runtime from the post type and the fields are
+ * fifteen dynamic widgets rendered through a widget map, each reading a `widgetSettings` value
+ * the backend can return as the literal string "null". None of that is touched here and none of
+ * it should be — a parallel bento route that rebuilt this page would fork the most defect-prone
+ * code in the console. Swapping the wrapper is the whole change.
+ *
+ * Imported from the bento subpath because that is the only entry the package exports the adapter
+ * from; the era classifier in `console-chrome-census.test.mjs` excludes it by name.
+ */
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
@@ -287,9 +298,19 @@ export default function PostUnifiedEditPage() {
           }
         />
 
-        <Card>
-          <CardHeader className="pb-2" />
-          <CardContent>
+        {/*
+          The header is new, and it is not decoration. The adapter's bento branch is entered
+          **only when it recognises a header child** — a section built any other way falls
+          through to the console card so its content cannot go missing silently. The card here
+          previously carried an empty `CardHeader`, so keeping it header-less would have made
+          the whole swap a no-op on the one page it matters most: SH901 would wrap this page in
+          a provider and get a console card back, with every source scan still reporting the
+          adapter adopted. It says `fields` and not the post's title, because identity belongs
+          to the hero and this is the section, not the page.
+        */}
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader icon={IconFileText} title={t("content.fields")} />
+          <AdaptiveSectionCard.Content>
             {/*
               A post whose data holds a field its post-type does not declare (SH176). The
               form cannot render it, so it is named here rather than hidden: hiding a stored
@@ -326,8 +347,8 @@ export default function PostUnifiedEditPage() {
                 postTypeName={postTypeName}
               />
             )}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
       </div>
 
       <PostVersionsDialog
