@@ -30,6 +30,7 @@ import {
   BentoHero,
   BentoHeroIconPicker,
   BentoInlineEdit,
+  BentoPanel,
   BentoSection,
   BentoStatusMarker,
   BentoTile,
@@ -74,7 +75,7 @@ import { COPY, SPECIMENS } from "./bento-vocabulary.fixture"
  *
  * ## What is deliberately not here
  *
- * Twelve of the layer's thirty-five runtime exports are page-level singletons — the shell
+ * Twelve of the layer's thirty-six runtime exports are page-level singletons — the shell
  * (rail, user menu, back-to-top), the nav-driven surfaces (command palette, shortcuts dialog),
  * and the two whole-screen shapes that own a hero and the save-bar morph (`BentoListPage`,
  * `BentoEntityShell`, `BentoFormHero` and the two bars it composes). Rendering a second fixed
@@ -162,6 +163,16 @@ export default function BentoVocabularyPage() {
           ))}
         </ul>
       </BentoFormSection>
+
+      {/*
+        The one container in the layer with no heading, so it is proved by what it does NOT
+        render as much as by what it does. Given padding here because an unpadded box on a
+        proving page reads as a rendering fault rather than as the default it is.
+      */}
+      <BentoPanel contentClassName="flex flex-col gap-1 p-5">
+        <p className="text-sm font-medium">{COPY.panelLabel}</p>
+        <p className="text-sm text-muted-foreground">{COPY.panelBody}</p>
+      </BentoPanel>
 
       <BentoSection
         eyebrow={COPY.sectionEyebrow}

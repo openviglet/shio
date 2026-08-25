@@ -88,6 +88,7 @@ const RENDERED = [
   "BentoEmptyState",
   "BentoEntityTile",
   "BentoFormSection",
+  "BentoPanel",
   "BentoHero",
   "BentoHeroIconPicker",
   "BentoInlineEdit",

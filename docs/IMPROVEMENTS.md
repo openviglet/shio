@@ -922,32 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-### LIV.15 The root argument the duplicate gate throws away (SH919)
-
-The design system's `check-duplicates.mjs` parses its arguments like this:
-
-    const manifestFlag = args.indexOf("--manifest")
-    const roots = args.filter((a, i) => !a.startsWith("--") && i !== manifestFlag + 1)
-
-`indexOf` returns `-1` when `--manifest` is absent, so `manifestFlag + 1` is **0** and
-the filter discards argument zero — the first positional root, on every invocation that
-does not pass a manifest. `check-duplicates src app` scans only `app`. `check-duplicates
-no-such-dir-at-all` scans `./src` and exits 0.
-
-It hid perfectly because the documented invocation is `check-duplicates src`, and the
-argument it drops is the same directory it then falls back to. SH894 found it only
-because a vacuity test tried to point the gate at a planted duplicate in a temp
-directory: the gate reported 181 files scanned and a clean tree, and the test read that
-as "a planted duplicate does not fail the gate" — true, and for a reason that had
-nothing to do with the logic under test.
-
-Shio is safe today because `no-duplicate-components.test.mjs` steers with `cwd` and
-never passes a root, with the reason written beside it. That is a workaround carried in
-a consumer, which is the wrong place for it: the next consumer to wire this gate up will
-write the documented invocation and get a gate that reads whatever directory it feels
-like. Fix it upstream, then delete the workaround here and let the test pass a root the
-ordinary way.
-
 ## LV The curator's console, surface by surface (Block AR)
 
 Forty-three console pages, migrated behind the parallel route the previous block builds,
@@ -963,34 +937,6 @@ bridge reads the chrome around it. The block ends with the three tasks that make
 migration finished rather than merely done - the cutover itself, the retirement of the
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
-
-### LV.16 A frosted panel with nothing to title (SH923)
-
-`AdaptiveSectionCard` re-skins only where it finds a header child — its own line is
-`chrome === "bento" && header`. The fallback is deliberate and right: a section built
-some other way falls through to the console card rather than losing its content silently
-(SH892).
-
-It is wrong for a panel with nothing to title. The content browser's stats strip, its
-toolbar and its listing, and the post-type list, carry a count, a breadcrumb, a view
-toggle and a list of rows; the hero above already names the page, so a heading on any of
-them is noise. All four were written with `AdaptiveSectionCard` and no header, and all
-four rendered **console cards under the bento shell** — the exact no-op SH892
-documented, reproduced three times in one commit by the person who wrote that
-documentation.
-
-Nothing saw it. Not review, not `tsc`, not the census, not the digest.
-`checkBentoSurface` reading `backdrop-filter` off computed style is what found it:
-`frost: null` on a page that looked finished.
-
-The vocabulary has `BentoTile` for a clickable tile, `BentoSection` for a heading plus a
-grid, `BentoFormSection` for a titled form group — and nothing for a frosted container
-with arbitrary content. So each consumer hand-rolls `bento-glass rounded-2xl border`,
-and the moment two choose different radii the product is inconsistent for a reason
-invisible in any diff.
-
-Shio carries `AdaptivePanel` meanwhile, with the classes copied from `BentoSaveBar` so
-they match today. Ask the package for the component, then delete it.
 
 ### LV.19 One page, two answers, and only one of them about Shio (SH927)
 

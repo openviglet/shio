@@ -134,6 +134,10 @@ export const COPY = {
   tonesTitle: "Tones",
   tonesDescription:
     "A tone is a token pair the preset defines; no component in the layer names a colour.",
+  panelLabel: "BentoPanel — a frosted container with no heading of its own",
+  panelBody:
+    "The shape a stats strip, a toolbar or a listing needs. It carries no padding, so the caller"
+    + " decides whether its content reaches the edge.",
   sectionEyebrow: "Content model",
   sectionTitle: "Tiles",
   sectionDescription: "BentoTile and BentoCountTile, spanning in multiples of two.",

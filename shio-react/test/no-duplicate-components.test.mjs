@@ -62,34 +62,18 @@ function run(args, cwd = CONSOLE_ROOT) {
   return spawnSync(process.execPath, [gatePath(), ...args], { cwd, encoding: "utf8" })
 }
 
-/**
- * **Never pass a positional root to this gate.** Its argument parsing is
+/*
+ * SH919 — this used to pass no root at all, and said why at length.
  *
- *   const manifestFlag = args.indexOf("--manifest")           // -1 when absent
- *   const roots = args.filter((a, i) => !a.startsWith("--") && i !== manifestFlag + 1)
- *
- * so with no `--manifest`, `manifestFlag + 1` is **0** and the filter discards argument zero —
- * the first positional root, always. `check-duplicates no-such-dir-at-all` scans `./src` and
- * reports success; `check-duplicates src app` scans only `app`. Measured, not read: a planted
- * duplicate in a temp directory passed as a root came back clean while the gate happily scanned
- * 181 files somewhere else.
- *
- * `check-duplicates src` masks it perfectly, because the argument it drops is the same directory
- * it then defaults to — which is why this was invisible until a test tried to point the gate
- * somewhere. Everything here therefore uses the **default** root and steers with `cwd`, which is
- * the one form that cannot be silently ignored.
- *
- * **Fixed upstream in VDS78**, with two tests that run without `--manifest` — the branch every
- * existing test avoided. This workaround stays until an installed release carries that fix:
- * the gate this suite runs is the one in `node_modules`, so the version here is what decides,
- * not the version in a checkout. When it lands, delete this constant and pass `src` the ordinary
- * way; SH919 is the open half that says so, and `design-system-waits.test.mjs` is what goes red
- * on the day it can be closed.
+ * The gate's argument parsing was `args.filter((a, i) => !a.startsWith("--") && i !== manifestFlag + 1)`
+ * with `manifestFlag` at -1 when `--manifest` was absent, so `manifestFlag + 1` was **0** and the
+ * filter discarded argument zero — the first positional root, always. `check-duplicates src`
+ * masked it perfectly, because the argument it dropped was the same directory it then fell back
+ * to. VDS78 fixed it and 2026.3.5 is the first release that carries the fix, so `src` can be
+ * passed the ordinary way and the reader steers by argument rather than by `cwd`.
  */
-const NO_POSITIONAL_ROOTS = []
-
 test("SH894: no component here re-declares one the design system already exports", () => {
-  const result = run(NO_POSITIONAL_ROOTS)
+  const result = run(["src"])
 
   assert.equal(result.status, 0,
     "SH894: a component declared in this console is already exported by the design system.\n\n"
@@ -102,6 +86,42 @@ test("SH894: no component here re-declares one the design system already exports
       + "The reason is the point. A gate with no way to say \"this one is mine\" is a gate\n"
       + "somebody deletes, and five of the seven findings this gate opened with were exactly\n"
       + "that case.")
+})
+
+/**
+ * SH919 — the gate reads the root it is given, which the test above cannot prove.
+ *
+ * The old parse was `args.filter((a, i) => !a.startsWith("--") && i !== manifestFlag + 1)` with
+ * `manifestFlag` at -1 when `--manifest` was absent, so index 0 — the first positional root — was
+ * discarded on every invocation without a manifest, and the gate fell back to `./src`.
+ *
+ * That is invisible from the assertion above and always will be: it runs in this package, so the
+ * `src` it passes and the `./src` a broken gate falls back to are **the same directory**. It
+ * passes either way. `check-duplicates src` masking the defect perfectly is exactly how the defect
+ * survived to begin with, and passing a root the ordinary way did not change that — it only made
+ * the masking look like a proof.
+ *
+ * So this points the gate at an empty directory with a duplicate planted beside it, which is the
+ * one arrangement where reading the argument and ignoring it give different answers. It is the
+ * assertion that would have caught SH919, rather than the expiry timer that waited for it.
+ */
+test("SH919: the gate scans the root it is given, not the one it would fall back to", () => {
+  const dir = mkdtempSync(join(tmpdir(), "sh919-"))
+  mkdirSync(join(dir, "src"))
+  mkdirSync(join(dir, "elsewhere"))
+  writeFileSync(join(dir, "src", "planted.tsx"), "export function DialogDelete() { return null }\n")
+
+  const result = run(["elsewhere"], dir)
+
+  assert.equal(result.status, 0,
+    "SH919: **the gate is scanning `./src` again instead of the root it was handed.** It found the"
+      + " duplicate planted there while pointed at an empty directory, which means the argument is"
+      + " being dropped — the VDS78 parse has regressed, or a release older than 2026.3.5 got"
+      + " installed.\n"
+      + "  The assertion above cannot see this: it runs in this package, where the `src` it passes"
+      + " and the `./src` a broken gate falls back to are the same directory, so it passes either"
+      + " way.\n"
+      + `  What the gate reported: ${result.stdout}${result.stderr}`)
 })
 
 test("SH894: the gate is reachable and reads a real manifest, not a fallback", () => {

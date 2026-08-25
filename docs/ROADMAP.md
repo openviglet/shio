@@ -9,13 +9,8 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AQ — The console adopts the shared bento layer (§LIV)
-
-- ⏳ **SH919** (deps: —) **the duplicate gate discards its first positional root, so naming a directory scans a different one** — Delete the NO_POSITIONAL_ROOTS workaround once an installed release carries VDS78. → §LIV.15
-
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH923** (deps: —) **the layer has no frosted panel without a heading, so four surfaces silently rendered console cards** — Every consumer needing one hand-rolls it, and the moment two differ the product is inconsistent invisibly. → §LV.16
 - ⏳ **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — The explorer's Monaco workers still fall back to the main thread under the dev server, unreproduced here because mounting the explorer needs a backend. → §LV.19
 - 📋 **SH932** (deps: —) **three components named Adaptive* no longer adapt, and the name is what the next page copies** — Each now has one branch, so the name promises a choice that was deleted and invites a second console era to be written against it. → §LV.22
 - ⏳ **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Collapsing fallbackRoute and bentoRoute into a single route field is the design system's call, since it owns BentoNavItem. → §LV.25

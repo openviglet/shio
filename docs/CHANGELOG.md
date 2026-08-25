@@ -1626,7 +1626,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH897** — The browser check probes /bento and reads the frost off computed style; its first version passed with bento.css deleted, so it was broken on purpose until it failed.
 - **SH920** — Shio's provider wraps the package's and republishes it as ShCurrentUser, so one mount serves both hooks from one fetch and both shells import the same thing.
 - **SH921** — Two teaching slugs replace the empty 404; and the filed premise was wrong — the id is a post-unified row that has no draft, so the defect is every published-only post, not static files.
-- **SH919 (upstream half)** — VDS78 fixes the parse in the design system and adds two tests that run without --manifest, the branch every existing test avoided.
+- **SH919** — The duplicate gate is passed `src` the ordinary way, and a new assertion points it at an empty directory — the one arrangement this package can tell a read root from a fallback.
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
@@ -1655,6 +1655,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH935 (console half)** — Every entry states its route once through a helper that writes both fields, which ends the palette announcing "Opens in console" for sixteen surfaces that have no console to open — and the test that counted migrations was replaced, having gone vacuous at 0/17 while still printing a progress bar.
 - **SH931** — A bento URL now names its tenant with `?tenant=`, and opening it states the mismatch and offers a switch the reader presses rather than performing one.
 - **SH937** — The three lines waiting on a design-system release are a named list with a probe each, so the release that ends one turns the suite red instead of going unnoticed.
+- **SH923** — The frosted panel is the package's `BentoPanel` (VDS79), so nothing in this console decides what one looks like and the copied classes are gone.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

@@ -6,10 +6,9 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { useSectionChrome } from "@viglet/viglet-design-system/bento"
+import { BentoPanel, useSectionChrome } from "@viglet/viglet-design-system/bento"
 import type React from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
 
 interface AdaptivePanelProps {
   children: React.ReactNode
@@ -38,27 +37,27 @@ interface AdaptivePanelProps {
  * It was invisible in review and in `tsc`. What found it was `checkBentoSurface` reading
  * `backdrop-filter` off computed style: `frost: null` on a page that looked finished.
  *
- * ## Why this is local, and what would replace it
+ * ## The frosted half is the package's now (SH923)
  *
- * The bento vocabulary has `BentoTile` (a clickable tile), `BentoSection` (a heading plus a grid)
- * and `BentoFormSection` (a titled form group). None of them is "a frosted container with
- * arbitrary content", so every consumer that needs one will hand-roll
- * `bento-glass rounded-3xl border` — and the moment two of them differ, the product looks
- * inconsistent for a reason nobody can see in a diff.
+ * The bento vocabulary had `BentoTile` (a clickable tile), `BentoSection` (a heading plus a grid)
+ * and `BentoFormSection` (a titled form group), and nothing for "a frosted container with
+ * arbitrary content" — so this file carried `bento-glass rounded-2xl border shadow-md` copied out
+ * of `BentoSaveBar`, with a comment promising the two would be kept in step by hand.
  *
- * One implementation here rather than four at the call sites, and **SH923** asks the package for
- * the component so this can be deleted. The classes below are the ones `BentoSaveBar` uses for
- * the same job, copied deliberately so the two match today.
+ * **VDS79 exports `BentoPanel`** and 2026.3.5 is the first release carrying it, so the copy is
+ * gone and the promise with it. Nothing here decides what a frosted panel looks like any more,
+ * which is the whole point: the next consumer to need one asks the package instead of picking its
+ * own radius.
+ *
+ * What is left is the *adapter*, and only the console branch justifies it. **SH932** is the task
+ * that removes both — the branch and this file's name, which promises a choice the era no longer
+ * offers.
  */
 export function AdaptivePanel({ children, className, contentClassName }: Readonly<AdaptivePanelProps>) {
   const chrome = useSectionChrome()
 
   if (chrome === "bento") {
-    return (
-      <div className={cn("bento-glass rounded-2xl border shadow-md", className)}>
-        <div className={contentClassName}>{children}</div>
-      </div>
-    )
+    return <BentoPanel className={className} contentClassName={contentClassName}>{children}</BentoPanel>
   }
 
   return (

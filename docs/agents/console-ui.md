@@ -1988,6 +1988,21 @@ a tenant was resolved**: `ShVigletTenantResolver` reads the session (set by
 the URL. It kept generated links inside whatever prefix you arrived with, and nothing else. What is
 genuinely lost is sharing a link that names its tenant, which is **SH931**.
 
+### The frosted panel is the package's now (SH923)
+
+`AdaptivePanel` carried `bento-glass rounded-2xl border shadow-md` copied out of `BentoSaveBar`,
+with a comment promising the two would be kept in step by hand. **VDS79 exports `BentoPanel`** and
+2026.3.5 is the first release carrying it, so the copy is gone: nothing in this console decides what
+a frosted panel looks like, and the next consumer that needs one asks the package instead of picking
+its own radius. What is left in `components/adaptive-panel.tsx` is the console fallback branch, and
+**SH932** is the task that removes both it and the file's name.
+
+Adding the export tripped `bento-vocabulary.test.mjs` (SH887), which is the reader that keeps the
+proving page proving the whole layer rather than whatever it composed on the day it was written — a
+new package export is either rendered on that page or declared `DEFERRED` with the task that owns
+it. `BentoPanel` is rendered there, and it is proved by what it does *not* render as much as by what
+it does.
+
 ### `?tenant=` is a claim about intent, and opening it changes nothing (SH931)
 
 A bento URL names its tenant with `?tenant=<name>`. `bento-tenant-link.ts` owns the parameter and
@@ -2016,15 +2031,23 @@ there is — gets neither the banner nor the affordance.
 
 ### What is waiting on a design-system release, and what notices when it arrives (SH937)
 
-Three roadmap lines wait on the same external event. `shio-react/test/design-system-waits.test.mjs`
-holds them as a **named list** — id, what it wants, a probe that answers "is the wait over", and the
-instruction to run when it is. Each goes red on the day its wait ends, which is the shape SH919
-shipped as a one-off and this generalises: the next wait costs a line, not a test file.
+`shio-react/test/design-system-waits.test.mjs` holds the waits as a **named list** — id, what it
+wants, a probe that answers "is the wait over", and the instruction to run when it is. Each goes red
+on the day its wait ends, which is the shape SH919 shipped as a one-off and this generalises: the
+next wait costs a line, not a test file.
+
+**It has been through one release.** 2026.3.5 carried VDS78 and VDS79, and this reader failed three
+times in one run — the version had moved, SH919's wait was over, SH923's wait was over — while
+correctly leaving SH935 alone, which that release deliberately did not address. Both were shipped
+off the back of it. Before it existed, SH919's line read ⏳ for a week after its fix was committed
+upstream, because "has it landed" was three reads across two repositories somebody had to remember
+to do.
 
 Two probes per entry, and the coarse one is the important one. A precise probe reads the installed
 package for the exact thing — SH935's is `fallbackRoute` disappearing from `BentoNavItem`. It can
-under-report, and that is the dangerous direction: SH923 waits on a component **whose name nobody
-has chosen**, so looking for `BentoPanel` misses a release that called it `BentoSurface`. So `PINNED`
+under-report, and that is the dangerous direction: SH923 was waiting on a component **whose name
+nobody had chosen**, so looking for `BentoPanel` would have missed a release calling it
+`BentoSurface`. So `PINNED`
 holds the installed version every entry was measured against and fails when it moves — every wait
 here ends with *a release*, so that one cannot miss. Read the entries, ship what is over, then move
 `PINNED`; moving it first is how a release that ended a wait passes through unnoticed.
