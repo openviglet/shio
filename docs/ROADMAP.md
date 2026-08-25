@@ -24,8 +24,6 @@
 - 📋 **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Sixteen of seventeen entries declare only a fallback that now points into bento, so the field pair records a migration that is over. → §LV.25
 - 📋 **SH936** (deps: —) **nothing tells a curator an agent run is waiting: the pending-review badge has no renderer under the rail** — The count is fetched and the endpoint is cheap, but the rail carries areas rather than screens, so the one ambient signal that approval is owed is gone. → §LV.26
 
-## Block S — The public site (shio.viglet.org)
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

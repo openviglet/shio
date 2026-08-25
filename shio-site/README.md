@@ -184,6 +184,19 @@ in it and the only place `&#8212;` appeared; and three build scripts that write 
 onto the page. `public/marketplace/**` is the one exception left, and SH930 is the task that
 decides it.
 
+**SH930 decided it, and the answer was not the one the exception implied.** That tree republishes
+`shio-app/src/main/resources/blueprints/**` byte for byte, so the sixteen em dashes in it are not
+this site's to rewrite — but reading them split the set, and the split is the rule. Six were
+**sample content**: the body of the first blog post, the FAQ answer on the landing page, the title
+a landing site publishes. That is prose Shio hands a reader on somebody else's marketing site, and
+it is exactly what this rule is about, so it was rewritten and `SH930: sample content …` in
+`scripts/ai-writing.test.mjs` now holds the `content/` tree. Ten were **field help** on `Page`,
+`Menu` and `MenuItem`, plus three blueprint summaries. Those are product chrome a curator reads in
+the console, and the console's own bundles carry **38** more of the same kind: rewriting ten while a
+curator meets thirty-eight on the surrounding screen makes the product less consistent, not more.
+They stay, and if that set is ever taken they go in the same pass. **The rule follows the prose to
+its reader, not to a module.**
+
 **Block S closed again on 2026-08-25**, on SH925, and it is the first closure in this list that
 moved claims rather than checking that none had moved. Five counts on these pages had gone stale
 without anything being able to see it: the matrix said seventeen questions and had eighteen rows,

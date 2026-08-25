@@ -102,8 +102,9 @@ const SWEEP = {
   },
   S: {
     swept: true,
-    why: "SH861 is itself an edit to the public site — the /replicate page gained the `judge` phase "
-      + "and the mode table says an authorable replica is not judged against the source's pixels",
+    why: "SH930 closed it a third time and the sweep is the decision it recorded: the coverage matrix "
+      + "and shio-site's own backlog now say how far the em-dash rule reaches — sample content a "
+      + "blueprint publishes, not the field help a curator reads",
   },
   Q: {
     swept: true,
