@@ -28,13 +28,13 @@
   <text x="192" y="140" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="30" font-weight="800" fill="#f6ece8">Viglet Shio</text>
 
   <!-- Headline. It said "The CMS whose operator is Claude Code / Your agent builds
-       the site. You approve it." — true of one way to use the product, and read by
-       everyone else as a prerequisite. The card is the first thing most people ever
-       see of Shio, so it is the last place that sentence could be left standing. -->
+       the site. You approve it.", which was true of one way to use the product and
+       read by everyone else as a prerequisite. The card is the first thing most
+       people ever see of Shio, so it is the last place that sentence could stand. -->
   <text x="80" y="300" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="#f6ece8">A complete CMS.</text>
   <text x="80" y="378" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="66" font-weight="800" fill="url(#headline)">Agent-ready, not agent-only.</text>
 
-  <text x="80" y="436" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="27" font-weight="500" fill="#c9b6ae">Console, agent, files or API &#8212; four ways in, one content engine.</text>
+  <text x="80" y="436" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="27" font-weight="500" fill="#c9b6ae">Console, agent, files or API: four ways in, one content engine.</text>
 
   <!-- The four doors, as pills. -->
   <g transform="translate(80, 480)" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="21">

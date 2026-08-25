@@ -31,7 +31,7 @@ export function CuratorPage() {
           lead={
             <>
               That sentence is the product. Shio is built so a coding agent can do
-              the work and a person still decides what the world sees &mdash; not as a
+              the work and a person still decides what the world sees, not as a
               policy somebody wrote down, but as mechanisms that are on by default
               and that an eager script cannot switch off on its way past.
             </>
@@ -91,7 +91,7 @@ export function CuratorPage() {
             <SectionHeader
               eyebrow="The lifecycle"
               title="Five states, and only one of them is public"
-              description="A published post is an immutable snapshot sitting beside the editable draft rather than an entry in a long history — which is exactly why the diff, the restore and the preview are cheap enough to be always available."
+              description="A published post is an immutable snapshot sitting beside the editable draft rather than an entry in a long history, which is exactly why the diff, the restore and the preview are cheap enough to be always available."
             />
 
             <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -128,8 +128,8 @@ export function CuratorPage() {
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                   The renderer annotates what it renders, so the visual editor knows
                   which field on which post produced the words under the cursor. You
-                  click the headline on the page and you are editing the headline
-                  &mdash; not hunting for it in a form that looks nothing like the
+                  click the headline on the page and you are editing the headline,
+                  not hunting for it in a form that looks nothing like the
                   result.
                 </p>
                 <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
@@ -230,7 +230,7 @@ export function CuratorPage() {
             <SectionHeader
               eyebrow="In plain words"
               title="Three seats, and you can hold all of them"
-              description="If you take one thing from this page, take this — it is the whole product, and it is the answer to “so what does the CMS actually do now”."
+              description="If you take one thing from this page, take this: it is the whole product, and it is the answer to “so what does the CMS actually do now”."
             />
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -254,7 +254,7 @@ export function CuratorPage() {
 
             <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
               The first seat is the one that is never empty, and this page is what it
-              is holding. The second can stay empty forever &mdash;{" "}
+              is holding. The second can stay empty forever:{" "}
               <a href="/console" className="font-semibold text-primary underline-offset-4 hover:underline">
                 an instance with no agent attached
               </a>{" "}

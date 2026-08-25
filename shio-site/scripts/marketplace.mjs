@@ -106,7 +106,7 @@ function readme(manifest, id) {
       const spec = params[name] ?? {};
       const mark = required.has(name) ? " **(required)**" : "";
       const fallback = spec.default === undefined ? "" : ` Default: \`${spec.default}\`.`;
-      lines.push(`- \`${name}\`${mark} — ${spec.description ?? ""}${fallback}`);
+      lines.push(`- \`${name}\`${mark}: ${spec.description ?? ""}${fallback}`);
     }
     lines.push("");
   }

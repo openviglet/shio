@@ -21,7 +21,7 @@ export function Roles() {
               <span className="text-primary">The API delivers.</span>
             </>
           }
-          description="Three seats over one content engine, each with the surface it is actually good at — and any of them can be empty."
+          description="Three seats over one content engine, each with the surface it is actually good at, and any of them can be empty."
         />
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -59,7 +59,7 @@ export function Roles() {
           One person can hold all three. Most instances start that way: somebody
           creates the site, writes the pages and points a front end at them, and no
           agent is ever issued a token. The seats describe what a surface is{" "}
-          <em>for</em> &mdash; not a staffing requirement.
+          <em>for</em>, not a staffing requirement.
         </p>
       </Container>
     </section>

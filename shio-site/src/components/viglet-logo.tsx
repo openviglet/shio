@@ -30,7 +30,7 @@ const PRODUCT_META: Record<string, { acronym: string; section: string }> = {
   turing: { acronym: "Tu", section: "ES" },
 };
 
-const TEXT_COLOR = "#FFDEAD"; // navajowhite — matches original spec
+const TEXT_COLOR = "#FFDEAD"; // navajowhite, matching the original spec
 
 interface VigletLogoProps {
   readonly identifier: string;
@@ -64,7 +64,7 @@ export function VigletLogo({ identifier, size = 48, glow = false, className }: V
 
   // Proportional helpers (all relative to the reference 280 px design)
   const r = (ratio: number) => Math.round(size * ratio);
-  const borderRadius = Math.max(6, r(0.107)); // 30/280 — min 6 px for legibility
+  const borderRadius = Math.max(6, r(0.107)); // 30/280, min 6 px for legibility
   const borderWidth = Math.max(1, r(0.029)); // 8/280
   const shadow = `0 ${r(0.014)}px ${r(0.029)}px rgba(0,0,0,0.22), 0 ${r(0.021)}px ${r(0.071)}px rgba(0,0,0,0.19)`;
 
@@ -114,7 +114,7 @@ export function VigletLogo({ identifier, size = 48, glow = false, className }: V
 
   // ── Periodic-table layout — full size ───────────────────────────────────
   // Section (DEP/CMS/ES) pinned top-right  ←→  Acronym (Du/Sh/Tu) bottom-left
-  const pad = r(0.089); // 25/280 — uniform padding from all edges
+  const pad = r(0.089); // 25/280, uniform padding on all edges
   return (
     <div
       className={className}
@@ -139,7 +139,7 @@ export function VigletLogo({ identifier, size = 48, glow = false, className }: V
         userSelect: "none",
       }}
     >
-      {/* Section label — top-right, light weight */}
+      {/* Section label: top-right, light weight */}
       <div
         style={{
           fontSize: Math.max(6, r(0.125)),
@@ -153,7 +153,7 @@ export function VigletLogo({ identifier, size = 48, glow = false, className }: V
       >
         {meta.section}
       </div>
-      {/* Acronym — bottom-left, ultra-bold */}
+      {/* Acronym: bottom-left, ultra-bold */}
       <div
         style={{
           fontSize: r(0.46),

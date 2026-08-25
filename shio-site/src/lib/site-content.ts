@@ -62,14 +62,14 @@ export const LAWS: Law[] = [
     id: "P1",
     title: "Agent-first design order",
     gloss:
-      "Every capability lands MCP → files/CLI → REST → console. A console-only feature is incomplete — and the order is about what may not be skipped on the way to shipping, never about who is allowed to operate the CMS.",
+      "Every capability lands MCP → files/CLI → REST → console. A console-only feature is incomplete. The order is about what may not be skipped on the way to shipping, never about who is allowed to operate the CMS.",
     anchor: "#paths",
   },
   {
     id: "P2",
     title: "One call replaces a session",
     gloss:
-      "Discovery is a product feature — a manifest and a context pack — not a documentation problem.",
+      "Discovery is a product feature, not a documentation problem: a manifest and a context pack.",
     anchor: "#one-call",
   },
   {
@@ -97,7 +97,7 @@ export const LAWS: Law[] = [
     id: "P6",
     title: "Errors are instructions",
     gloss:
-      "Every 4xx carries fix, allowed, didYouMean and example — so the retry is the next call, not the next session.",
+      "Every 4xx carries fix, allowed, didYouMean and example, so the retry is the next call, not the next session.",
     anchor: "#errors",
   },
   {
@@ -110,14 +110,14 @@ export const LAWS: Law[] = [
   {
     id: "P8",
     title: "Skipping steps needs appliable units",
-    gloss: "Blueprints — a package that applies — instead of a recipe written in prose.",
+    gloss: "Blueprints, a package that applies, instead of a recipe written in prose.",
     anchor: "#blueprints",
   },
   {
     id: "P9",
     title: "Close the perception loop",
     gloss:
-      "Cheap textual proof — a lint, the routes, a render digest — instead of asking someone to look.",
+      "Cheap textual proof (a lint, the routes, a render digest) instead of asking someone to look.",
     anchor: "#verify",
   },
   {
@@ -164,7 +164,7 @@ export const TRANSCRIPT: TranscriptStep[] = [
   {
     call: "What is this instance, and what can I do to it?",
     tool: "shio_context",
-    result: "model + sitemap + conventions + write vocabulary — 1 call, 1 digest to skip it next time",
+    result: "model + sitemap + conventions + write vocabulary: 1 call, 1 digest to skip it next time",
     law: "P2",
     artefact: {
       label: "the context pack",
@@ -195,7 +195,7 @@ export const TRANSCRIPT: TranscriptStep[] = [
   {
     call: "Write the launch page",
     tool: "Edit  shio/content/acme/launch.md",
-    result: "one file, one post — no API call to author with",
+    result: "one file, one post, and no API call to author with",
     law: "P4",
     artefact: {
       label: "the edit, as a diff",
@@ -229,7 +229,7 @@ export const TRANSCRIPT: TranscriptStep[] = [
   {
     call: "Prove it before a curator looks",
     tool: "shio verify --delivery",
-    result: "ok — 0 errors, 1 warning: hero image has no alt text",
+    result: "ok. 0 errors, 1 warning: hero image has no alt text",
     law: "P9",
     artefact: {
       label: "the proof, before a curator looks",
@@ -288,7 +288,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
   {
     action: "Create the site",
     screen: "Content › Sites › New",
-    result: "a site, its root folder and its home page — nothing else required",
+    result: "a site, its root folder and its home page. Nothing else required",
     artefact: {
       label: "Content › Sites",
       lines: [
@@ -303,7 +303,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
   {
     action: "Shape the model, or keep the one that shipped",
     screen: "Content › Post types",
-    result: "fields, each drawn by one of fifteen widgets — no schema file to write",
+    result: "fields, each drawn by one of fifteen widgets. No schema file to write",
     artefact: {
       label: "Post type › Page",
       lines: [
@@ -318,7 +318,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
   {
     action: "Write the launch page",
     screen: "Content › acme › New › Page",
-    result: "a form built from the type — the same fields, drawn from the same model",
+    result: "a form built from the type: the same fields, drawn from the same model",
     artefact: {
       label: "New Page",
       lines: [
@@ -332,7 +332,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
   {
     action: "Save it",
     screen: "the sticky save bar",
-    result: "status DRAFT — the live site is unchanged, exactly as for an agent write",
+    result: "status DRAFT. The live site is unchanged, exactly as for an agent write",
     artefact: {
       label: "what the instance now holds",
       lines: [
@@ -352,7 +352,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
         "▸ the rendered page, from an expiring,",
         "  single-post token",
         "",
-        "▸ click the headline, type, save —",
+        "▸ click the headline, type, save:",
         "  it is the draft's title field",
       ],
     },
@@ -360,7 +360,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
   {
     action: "Publish it, or schedule it",
     screen: "Publish",
-    result: "an immutable snapshot beside the draft — or a date, and a sweep that fires it",
+    result: "an immutable snapshot beside the draft, or a date and a sweep that fires it",
     artefact: {
       label: "post:acme/launch",
       lines: [
@@ -409,7 +409,7 @@ export const PATHS: UsePath[] = [
     audience: "editors, marketers, anyone who has used a CMS before",
     needs: "a browser and a login",
     body:
-      "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team — in a browser, with no agent, no terminal and no file to hand-edit anywhere in it.",
+      "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team. All in a browser, with no agent, no terminal and no file to hand-edit anywhere in it.",
     surface: ["React console", "Universal Editor", "Preview links"],
     start: { label: "Shio without an agent", href: "/console" },
   },
@@ -421,7 +421,7 @@ export const PATHS: UsePath[] = [
     audience: "anyone who already works with Claude Code or another MCP client",
     needs: "one command to attach it",
     body:
-      "Discovery in one call, content authored as files, blueprints applied as units, a render digest instead of a screenshot. The agent writes drafts and cannot publish them — which is what makes handing it write access reasonable.",
+      "Discovery in one call, content authored as files, blueprints applied as units, a render digest instead of a screenshot. The agent writes drafts and cannot publish them, which is what makes handing it write access reasonable.",
     surface: ["MCP", "shio CLI", "/api/v2/agent"],
     start: { label: "Drive it from Claude Code", href: "/claude-code" },
   },
@@ -433,7 +433,7 @@ export const PATHS: UsePath[] = [
     audience: "teams who would rather review content in a pull request",
     needs: "the CLI and a repo",
     body:
-      "Pull the whole site to disk as front-mattered Markdown, edit it with the editor you already use, push it back through a three-way merge — and put shio apply --check in CI so drift fails a build instead of surprising somebody.",
+      "Pull the whole site to disk as front-mattered Markdown, edit it with the editor you already use, push it back through a three-way merge. Put shio apply --check in CI so drift fails a build instead of surprising somebody.",
     surface: ["shio pull / push", "shio apply --check", "Git"],
     start: { label: "How the projection works", href: "/features/content-as-files" },
   },
@@ -473,7 +473,7 @@ export const USE_CASES: UseCase[] = [
     title: "A team that just wants a CMS",
     who: "a marketing or comms team, no agent anywhere in sight",
     body:
-      "Someone creates the site, defines the types, and the team writes pages in a form and publishes them. Everything an editor touches is the console. The agent surface sits there unused, costing nothing — and the day somebody wants it, no content has to move.",
+      "Someone creates the site, defines the types, and the team writes pages in a form and publishes them. Everything an editor touches is the console. The agent surface sits there unused, costing nothing, and the day somebody wants it, no content has to move.",
     paths: ["console"],
   },
   {
@@ -489,7 +489,7 @@ export const USE_CASES: UseCase[] = [
     title: "An agent does the first build; people keep it",
     who: "a small team with a large site to stand up",
     body:
-      "The agent applies a blueprint, writes forty pages and proves them against the lint — all as drafts. Then it stops being interesting: the people who maintain the site work in the console, and the agent comes back only for the next bulk job.",
+      "The agent applies a blueprint, writes forty pages and proves them against the lint, all as drafts. Then it stops being interesting: the people who maintain the site work in the console, and the agent comes back only for the next bulk job.",
     paths: ["agent", "console"],
   },
   {
@@ -505,7 +505,7 @@ export const USE_CASES: UseCase[] = [
     title: "An old site that has to become an editable one",
     who: "an agency, or whoever inherited the site nobody can change",
     body:
-      "Capture the existing site under robots.txt, review what the crawl proposes, convert it into drafts, and prove by arithmetic that nothing was lost. What you get at the end is content in a model — not a screenshot with a CMS behind it.",
+      "Capture the existing site under robots.txt, review what the crawl proposes, convert it into drafts, and prove by arithmetic that nothing was lost. What you get at the end is content in a model, not a screenshot with a CMS behind it.",
     paths: ["agent", "console"],
   },
   {
@@ -513,7 +513,7 @@ export const USE_CASES: UseCase[] = [
     title: "Many sites, one instance",
     who: "a platform team serving several brands or clients",
     body:
-      "Tenant isolation reaches every surface, including the agent's. Scoped API tokens, roles and groups, webhooks on publish, and an activity log that says who changed what — whether the who was a person or a credential you issued.",
+      "Tenant isolation reaches every surface, including the agent's. Scoped API tokens, roles and groups, webhooks on publish, and an activity log that says who changed what, whether the who was a person or a credential you issued.",
     paths: ["console", "api", "agent"],
   },
 ];
@@ -541,15 +541,15 @@ export const ROLES: Role[] = [
     actor: "The person",
     verb: "creates, and decides",
     description:
-      "Sites, content models, folders, pages, media, publishing, scheduling, the rest of the team — all of it in the console, and none of it needing an agent to have happened first. When there is an agent, this seat also holds the approve button.",
+      "Sites, content models, folders, pages, media, publishing, scheduling, the rest of the team: all of it in the console, and none of it needing an agent to have happened first. When there is an agent, this seat also holds the approve button.",
     surface: ["React console", "Universal Editor", "Preview links"],
   },
   {
     icon: Bot,
     actor: "The agent",
-    verb: "builds — if you want one",
+    verb: "builds, if you want one",
     description:
-      "Discovers the model in one call, authors content as files, applies a blueprint, renders a preview and proves the result — without a browser, a cookie or a click. Its writes are drafts, and its credential cannot publish them.",
+      "Discovers the model in one call, authors content as files, applies a blueprint, renders a preview and proves the result, without a browser, a cookie or a click. Its writes are drafts, and its credential cannot publish them.",
     surface: ["MCP", "shio CLI", "/api/v2/agent"],
   },
   {
@@ -557,7 +557,7 @@ export const ROLES: Role[] = [
     actor: "The delivery API",
     verb: "delivers",
     description:
-      "A framework-agnostic delivery API — REST and GraphQL — with TypeScript SDKs, a React SDK and a Next.js starter that is generated rather than copied. It serves whatever the other two seats agreed on.",
+      "A framework-agnostic delivery API (REST and GraphQL) with TypeScript SDKs, a React SDK and a Next.js starter that is generated rather than copied. It serves whatever the other two seats agreed on.",
     surface: ["REST", "GraphQL", "@viglet/shio-client"],
   },
 ];
@@ -582,7 +582,7 @@ export const MCP_TOOLS = [
   { name: "shio_context", gloss: "model, sitemap and conventions in one call" },
   { name: "shio_find", gloss: "search the tree by address, type or term" },
   { name: "shio_read", gloss: "one post, one folder, one schema" },
-  { name: "shio_write", gloss: "a batch of ops — upsert, move, delete" },
+  { name: "shio_write", gloss: "a batch of ops: upsert, move, delete" },
   { name: "shio_apply", gloss: "converge to a document, or to a blueprint" },
   { name: "shio_publish", gloss: "the separate, explicit act" },
   { name: "shio_assets", gloss: "binaries in and out of the media library" },
@@ -608,10 +608,10 @@ export const CLI_VERBS = [
   { verb: "shio apply", gloss: "a desired-state document; --check is the CI drift guard" },
   { verb: "shio verify", gloss: "the content lint; --delivery adds the route proof" },
   { verb: "shio digest", gloss: "a page's structure, cheap enough to read every turn" },
-  { verb: "shio audit", gloss: "the browser as an instrument — overflow, contrast, dead requests" },
+  { verb: "shio audit", gloss: "the browser as an instrument: overflow, contrast, dead requests" },
   { verb: "shio snapshot", gloss: "a PNG, for whoever has to look" },
   { verb: "shio clone", gloss: "capture an existing site, writing no content" },
-  { verb: "shio report", gloss: "the handoff — what changed, with a preview link each" },
+  { verb: "shio report", gloss: "the handoff: what changed, with a preview link each" },
   { verb: "shio remember", gloss: "the instance memory, so the next session is cheaper" },
 ];
 
@@ -671,7 +671,7 @@ export const GUARDRAILS: Guardrail[] = [
     icon: Eye,
     title: "Draft by default",
     description:
-      "A write lands as a draft. Publishing is a separate, explicit act with its own op — there is no flag that quietly does both.",
+      "A write lands as a draft. Publishing is a separate, explicit act with its own op. No flag quietly does both.",
   },
   {
     icon: GitCompareArrows,
@@ -683,7 +683,7 @@ export const GUARDRAILS: Guardrail[] = [
     icon: Lock,
     title: "Confirm tokens",
     description:
-      "A destructive op is refused once with a token, and accepted only when the token comes back — so no single call deletes anything.",
+      "A destructive op is refused once with a token, and accepted only when the token comes back, so no single call deletes anything.",
   },
   {
     icon: ScrollText,
@@ -727,7 +727,7 @@ export const PROOFS: Proof[] = [
     command: "shio digest",
     title: "The page, as text",
     description:
-      "One page's structure — regions, sections, what each resolved to — cheap enough to read after every edit instead of asking somebody to look.",
+      "One page's structure (regions, sections, what each resolved to), cheap enough to read after every edit instead of asking somebody to look.",
   },
   {
     icon: Radar,
@@ -772,7 +772,7 @@ export const CLONE_STEPS = [
     step: "Capture",
     code: "shio clone https://example.com",
     gloss:
-      "walks one origin under robots.txt and writes an inventory — pages, assets, locales, forms, navigation, third-party scripts — and no content at all.",
+      "walks one origin under robots.txt and writes an inventory (pages, assets, locales, forms, navigation, third-party scripts) and no content at all.",
   },
   {
     step: "Convert",
@@ -800,7 +800,7 @@ export const PACKAGES: Pkg[] = [
   {
     name: "@viglet/shio-client",
     gloss:
-      "Framework-agnostic TypeScript client for the delivery API. Zero runtime dependencies — Node, browser, edge, server components.",
+      "Framework-agnostic TypeScript client for the delivery API. Zero runtime dependencies: Node, browser, edge, server components.",
     href: "https://www.npmjs.com/package/@viglet/shio-client",
   },
   {
@@ -811,7 +811,7 @@ export const PACKAGES: Pkg[] = [
   {
     name: "@viglet/shio-sections",
     gloss:
-      "The page-section vocabulary — one shared language for the agent, the console and the front end.",
+      "The page-section vocabulary: one shared language for the agent, the console and the front end.",
     href: "https://www.npmjs.com/package/@viglet/shio-sections",
   },
   {
@@ -822,7 +822,7 @@ export const PACKAGES: Pkg[] = [
   {
     name: "@viglet/shio-editor-cors",
     gloss:
-      "The Universal Editor bridge — inline editing on any front end that emits the data attributes.",
+      "The Universal Editor bridge: inline editing on any front end that emits the data attributes.",
     href: "https://www.npmjs.com/package/@viglet/shio-editor-cors",
   },
   {
@@ -892,17 +892,17 @@ export const CURATOR_DAY: CuratorMoment[] = [
   {
     when: "09:14",
     title: "You open the page before anyone else can",
-    body: "A preview link opens the real rendered page, from a token that expires and is scoped to that one post — not a staging environment somebody has to keep in sync.",
+    body: "A preview link opens the real rendered page, from a token that expires and is scoped to that one post, not a staging environment somebody has to keep in sync.",
   },
   {
     when: "09:22",
     title: "You fix the headline where you can see it",
-    body: "Inline, on the rendered page itself, through the visual editor — rather than hunting for the field in a form that looks nothing like the result.",
+    body: "Inline, on the rendered page itself, through the visual editor, rather than hunting for the field in a form that looks nothing like the result.",
   },
   {
     when: "09:30",
     title: "You publish, or you schedule it",
-    body: "Publishing is its own act. Or set a date and let the sweep fire it — the same path, so anything listening for a publish hears the identical event.",
+    body: "Publishing is its own act. Or set a date and let the sweep fire it. It is the same path, so anything listening for a publish hears the identical event.",
   },
 ];
 
@@ -935,7 +935,7 @@ export const GATES: Gate[] = [
     icon: GitCompareArrows,
     title: "The plan is the same document as the write",
     mechanism:
-      "Any batch can be sent as a dry run. What comes back is that batch annotated with what each op would change — not a summary of it.",
+      "Any batch can be sent as a dry run. What comes back is that batch annotated with what each op would change, not a summary of it.",
     because:
       "A preview in a different shape from the thing being previewed is a second implementation, and the two drift.",
   },
@@ -976,7 +976,7 @@ export const LIFECYCLE = [
   },
   {
     state: "PUBLISHED",
-    gloss: "An immutable snapshot beside the draft — which is what makes diff and restore cheap.",
+    gloss: "An immutable snapshot beside the draft, which is what makes diff and restore cheap.",
   },
   {
     state: "SCHEDULED",
@@ -1011,7 +1011,7 @@ export const CONSOLE_CAPABILITIES: CapabilityGroup[] = [
       "Sites, created from scratch or imported from a .zip export",
       "Folders, and a tree you move and copy things around in",
       "Posts of any type, with search across the instance",
-      "A trash that restores — deleting and purging are separate acts",
+      "A trash that restores: deleting and purging are separate acts",
     ],
   },
   {
@@ -1019,7 +1019,7 @@ export const CONSOLE_CAPABILITIES: CapabilityGroup[] = [
     title: "The content model",
     items: [
       "Post types built in the browser: add a field, pick a widget, order them",
-      "Fifteen widgets — text, rich text, date, select, file, relator, tabs, code",
+      "Fifteen widgets: text, rich text, date, select, file, relator, tabs, code",
       "Relations between posts, and a content browser to pick them",
       "The types the instance ships with, if you would rather not start empty",
     ],
@@ -1031,7 +1031,7 @@ export const CONSOLE_CAPABILITIES: CapabilityGroup[] = [
       "Draft, preview, publish, schedule, unpublish",
       "Preview links that open the real rendered page from an expiring token",
       "Inline editing on that page through the Universal Editor",
-      "A review queue and an activity log — who changed what, and when",
+      "A review queue and an activity log: who changed what, and when",
     ],
   },
   {
@@ -1049,7 +1049,7 @@ export const CONSOLE_CAPABILITIES: CapabilityGroup[] = [
     items: [
       "Users, groups and roles",
       "External authentication providers, and email configuration",
-      "API tokens, scoped per job — read, preview, write, agent",
+      "API tokens, scoped per job: read, preview, write, agent",
       "Tenants, when one instance serves several brands or clients",
     ],
   },
@@ -1080,7 +1080,7 @@ export const CONSOLE_LIMITS = [
   },
   {
     title: "Screenshots and the browser audit",
-    body: "shio audit and shio snapshot drive a real browser. That stays in the CLI, where the shell already is — an instance that starts a browser per request is a second service to operate, and nothing else about the CMS needs one.",
+    body: "shio audit and shio snapshot drive a real browser. That stays in the CLI, where the shell already is. An instance that starts a browser per request is a second service to operate, and nothing else about the CMS needs one.",
   },
   {
     title: "The file projection and the CI drift check",
@@ -1092,7 +1092,7 @@ export const CONSOLE_LIMITS = [
 export const AGENT_LATER = [
   {
     title: "Nothing moves",
-    body: "The agent reads the same posts, the same types and the same folders the console writes. There is no second store, no export step and no parallel model — law P10 forbids a third contract, and this is what that buys.",
+    body: "The agent reads the same posts, the same types and the same folders the console writes. There is no second store, no export step and no parallel model. Law P10 forbids a third contract, and this is what that buys.",
   },
   {
     title: "Its writes look like drafts, because they are",
@@ -1134,21 +1134,21 @@ export const PHASES: Phase[] = [
     command: "shio propose --site example",
     what: "Reads the capture and reports candidates: for each, the pages it recurs on, the section type it looks like and why, the fields it would carry, and what accepting it would set aside. Accepting writes one line into a plan file.",
     promise:
-      "It applies nothing — no post, no post type, no layout. Review and mutation in one command is the surprise law P7 forbids.",
+      "It applies nothing: no post, no post type, no layout. Review and mutation in one command is the surprise law P7 forbids.",
   },
   {
     verb: "convert",
     title: "Convert",
     command: "shio convert --site example --dry-run",
-    what: "Turns the accepted plan into the desired-state document that `shio apply` already takes, and sends it down that same path. One post per candidate, not per page — the hero that recurs on twelve pages is one section reused.",
+    what: "Turns the accepted plan into the desired-state document that `shio apply` already takes, and sends it down that same path. One post per candidate, not per page: the hero that recurs on twelve pages is one section reused.",
     promise:
-      "Every post lands in DRAFT, and `publish` is absent rather than false — so re-running can never unpublish a page a curator has since published.",
+      "Every post lands in DRAFT, and `publish` is absent rather than false, so re-running can never unpublish a page a curator has since published.",
   },
   {
     verb: "diff",
     title: "Prove",
     command: "shio diff --against capture --site example",
-    what: "Walks the capture's pages, asks the instance for each one, and reads the served bytes with the same scanner that wrote the declared counts. Internal links, external links, assets, forms and prose — arithmetic, not a second opinion.",
+    what: "Walks the capture's pages, asks the instance for each one, and reads the served bytes with the same scanner that wrote the declared counts. Internal links, external links, assets, forms and prose. Arithmetic, not a second opinion.",
     promise:
       "A fact the replica gained is never a failure; a lost one exits 1. Every artefact carries the identity of what declared it, so nothing is guessed or re-fetched.",
   },
@@ -1156,9 +1156,9 @@ export const PHASES: Phase[] = [
     verb: "judge",
     title: "Accept",
     command: "shio judge --site example",
-    what: "Runs the instruments, answers once, and names where two of them disagreed — which is where every real finding of this work came from. Then it holds that answer to a written bar: a finding at or below it prints as a task for later, one above it fails, and a kind the bar does not name fails too.",
+    what: "Runs the instruments, answers once, and names where two of them disagreed, which is where every real finding of this work came from. Then it holds that answer to a written bar: a finding at or below it prints as a task for later, one above it fails, and a kind the bar does not name fails too.",
     promise:
-      "A round can end ACCEPTED, which is not the same as ending empty. What the bar leaves out is the point: looking like the source is not a test an authorable replica has to pass — it is presented by Shio's theme on purpose, so it answers for its content, its structure and its routes. `--fidelity` is how you ask for the pixel comparison instead.",
+      "A round can end ACCEPTED, which is not the same as ending empty. What the bar leaves out is the point: looking like the source is not a test an authorable replica has to pass. It is presented by Shio's theme on purpose, so it answers for its content, its structure and its routes. `--fidelity` is how you ask for the pixel comparison instead.",
   },
 ];
 
@@ -1179,14 +1179,14 @@ export interface Mode {
 export const MODES: Mode[] = [
   {
     name: "Fidelity",
-    keeps: "The source's appearance, exactly — the block's markup is written verbatim into a layout.",
+    keeps: "The source's appearance, exactly: the block's markup is written verbatim into a layout.",
     offers: "No fields. A curator editing “the hero headline” is editing an HTML file.",
     pick: "the page has to keep looking like it looks, and nobody is going to edit it.",
     accent: "fidelity",
   },
   {
     name: "Annotated fidelity",
-    keeps: "The source's own markup, byte for byte — strip the annotations back out and they are identical.",
+    keeps: "The source's own markup, byte for byte: strip the annotations back out and they are identical.",
     offers: "Editable fields on that markup. `convert --annotate` stamps them onto the nodes the proposal already derived, so a curator edits a heading in place.",
     pick: "the page has to keep looking exactly like it looks, and somebody still has to edit it.",
     accent: "fidelity",
@@ -1194,7 +1194,7 @@ export const MODES: Mode[] = [
   {
     name: "Authorable",
     keeps: "The content, as structured fields a curator edits in the console or on the page itself.",
-    offers: "The site's own theme, in the source's own colours, type and corner radius. The structure is replaced, deliberately — not ruined, and not judged against the source's own pixels.",
+    offers: "The site's own theme, in the source's own colours, type and corner radius. The structure is replaced deliberately: not ruined, and not judged against the source's own pixels.",
     pick: "somebody is going to maintain this site, and the model matters more than the pixels.",
     accent: "authorable",
   },
@@ -1212,10 +1212,10 @@ export const MODES: Mode[] = [
 export const MIXED_PAGE = {
   title: "A page is usually both, and that is the point",
   body:
-    "The choice is per block, so most pages end up mixed — the hero accepted, the "
+    "The choice is per block, so most pages end up mixed: the hero accepted, the "
     + "source's header and footer kept. The kept markup is not a leftover: each run of it "
     + "is a section in the page's own list, in the place it stood, so a curator can move "
-    + "it, replace it with a real section, or delete it — from the same control they "
+    + "it, replace it with a real section, or delete it, from the same control they "
     + "compose the rest of the page with. That is how a replica becomes authorable one "
     + "block at a time instead of all at once, and the page keeps the source's stylesheet "
     + "for as long as any of its markup is still there.",
@@ -1225,7 +1225,7 @@ export const MIXED_PAGE = {
 export const CLONE_BOUNDS = [
   {
     title: "One origin, and no further",
-    body: "Every off-host link is recorded and never followed. A seed that redirects off-host is refused, naming the host it actually served — because example.com → www.example.com followed silently files every path under an origin nobody named.",
+    body: "Every off-host link is recorded and never followed. A seed that redirects off-host is refused, naming the host it actually served, because example.com → www.example.com followed silently files every path under an origin nobody named.",
   },
   {
     title: "robots.txt decides, and the answer is recorded",
@@ -1237,11 +1237,11 @@ export const CLONE_BOUNDS = [
   },
   {
     title: "Assets are same-origin, and the rest are named",
-    body: "Mirroring a CDN's bytes into somebody's media library is a licensing decision this tool is not entitled to make — but somebody has to be able to, so the hosts left behind are listed rather than dropped.",
+    body: "Mirroring a CDN's bytes into somebody's media library is a licensing decision this tool is not entitled to make, but somebody has to be able to, so the hosts left behind are listed rather than dropped.",
   },
   {
     title: "Deterministic, so two runs can be diffed",
-    body: "Sequential over a sorted frontier, and no timestamp in the file — --max-pages 50 cuts the same fifty pages every run. The inventory exists to be compared with the next crawl, and a set that moves on its own makes every diff noise.",
+    body: "Sequential over a sorted frontier, and no timestamp in the file: --max-pages 50 cuts the same fifty pages every run. The inventory exists to be compared with the next crawl, and a set that moves on its own makes every diff noise.",
   },
   {
     title: "It is somebody's content",
@@ -1298,7 +1298,7 @@ export interface CompareGroup {
 export const COMPARE_GROUPS: CompareGroup[] = [
   {
     law: "P2",
-    title: "Discovery — what does the agent's first call cost?",
+    title: "Discovery: what does the agent's first call cost?",
     rows: [
       {
         feature: "One call returns the model, the sitemap and the conventions",
@@ -1322,14 +1322,14 @@ export const COMPARE_GROUPS: CompareGroup[] = [
   },
   {
     law: "P4",
-    title: "Authoring — can the agent use its cheapest tools?",
+    title: "Authoring: can the agent use its cheapest tools?",
     rows: [
       {
         feature: "The whole site projected to files, with a three-way merge back",
         cells: ["yes", "export only", "export only", "no", "no"],
       },
       {
-        feature: "Path addressing — no UUID carried between calls",
+        feature: "Path addressing, with no UUID carried between calls",
         cells: ["yes", "partial", "partial", "partial", "partial"],
       },
       {
@@ -1340,7 +1340,7 @@ export const COMPARE_GROUPS: CompareGroup[] = [
   },
   {
     law: "P6",
-    title: "Failure — how expensive is a wrong call?",
+    title: "Failure: how expensive is a wrong call?",
     rows: [
       {
         feature: "Every 4xx carries fix, allowed, didYouMean and example",
@@ -1354,7 +1354,7 @@ export const COMPARE_GROUPS: CompareGroup[] = [
   },
   {
     law: "P7",
-    title: "Safety — what stops a wrong write?",
+    title: "Safety: what stops a wrong write?",
     rows: [
       {
         feature: "Dry run: the plan before the batch, as the same document",
@@ -1372,7 +1372,7 @@ export const COMPARE_GROUPS: CompareGroup[] = [
   },
   {
     law: "P9",
-    title: "Proof — can the agent check its own work?",
+    title: "Proof: can the agent check its own work?",
     rows: [
       {
         feature: "A textual render digest of a page's structure",
@@ -1386,7 +1386,7 @@ export const COMPARE_GROUPS: CompareGroup[] = [
   },
   {
     law: "P3",
-    title: "Economy — is the protocol's cost a number?",
+    title: "Economy: is the protocol's cost a number?",
     rows: [
       {
         feature: "Response token budgets with a ceiling the build enforces",
@@ -1395,8 +1395,8 @@ export const COMPARE_GROUPS: CompareGroup[] = [
     ],
   },
   {
-    law: "—",
-    title: "Operations — whose infrastructure, whose source?",
+    law: "none",
+    title: "Operations: whose infrastructure, whose source?",
     rows: [
       {
         feature: "Self-host on your own database",
@@ -1426,13 +1426,13 @@ export interface Rival {
 export const RIVALS: Rival[] = [
   {
     name: "Contentful",
-    wins: "The enterprise ecosystem — integrations, SLAs, a global CDN you do not operate, and an editor a marketing team already knows how to use.",
+    wins: "The enterprise ecosystem: integrations, SLAs, a global CDN you do not operate, and an editor a marketing team already knows how to use.",
     chooseIt:
       "your buyer is procurement, the content team is large and non-technical, and nobody on staff wants to run a JVM.",
   },
   {
     name: "Sanity",
-    wins: "The best structured-content editing experience in the category — real-time collaboration, a genuinely good query language, and a studio you shape to the model.",
+    wins: "The best structured-content editing experience in the category: real-time collaboration, a genuinely good query language, and a studio you shape to the model.",
     chooseIt:
       "editors are the primary operator and the depth of the editing experience is the thing you are buying.",
   },
@@ -1440,7 +1440,7 @@ export const RIVALS: Rival[] = [
     name: "Strapi",
     wins: "The closest neighbour: open source, self-hosted, Node all the way down, and a plugin ecosystem that fits a JavaScript team's existing habits.",
     chooseIt:
-      "your team is JS end to end, you want self-hosting, and you do not need an agent protocol — it is a shorter path to the same content API.",
+      "your team is JS end to end, you want self-hosting, and you do not need an agent protocol. It is a shorter path to the same content API.",
   },
   {
     name: "WordPress",
@@ -1458,15 +1458,15 @@ export interface Objection {
 export const OBJECTIONS: Objection[] = [
   {
     q: "Do I have to use an agent?",
-    a: "No, and nothing is withheld if you never attach one. A person creates the site, defines the content model, writes and publishes the pages, uploads the media and manages the team — in a React console, with a visual editor that edits the rendered page. Agent-first is the order a capability is *built* in (law P1): MCP, then files and the CLI, then REST, then the console. It is a rule about what may not be skipped on the way to shipping something, not a condition on who is allowed to operate it.",
+    a: "No, and nothing is withheld if you never attach one. A person creates the site, defines the content model, writes and publishes the pages, uploads the media and manages the team. All of it in a React console, with a visual editor that edits the rendered page. Agent-first is the order a capability is *built* in (law P1): MCP, then files and the CLI, then REST, then the console. It is a rule about what may not be skipped on the way to shipping something, not a condition on who is allowed to operate it.",
   },
   {
     q: "Everyone has an MCP server now. Isn't that the same thing?",
-    a: "An MCP server is a transport. Put one over an API designed for a browser and the agent gets that API's protocol quality — the same UUID plumbing, the same 400 with no instruction, the same discovery session. The difference this page is about is what the protocol guarantees underneath, which is why every row above is a property you can test rather than a feature you can be told about.",
+    a: "An MCP server is a transport. Put one over an API designed for a browser and the agent gets that API's protocol quality: the same UUID plumbing, the same 400 with no instruction, the same discovery session. The difference this page is about is what the protocol guarantees underneath, which is why every row above is a property you can test rather than a feature you can be told about.",
   },
   {
     q: "Our editors will never open a terminal. Is the console a second-class citizen?",
-    a: "It is the surface the product is judged on by everyone who is not an agent, and it carries the whole ordinary job: sites, folders, post types with fifteen field widgets, a media library, search, a trash that restores, publishing and scheduling, users, groups, roles and tokens. Four things genuinely live on the command line — capturing an existing site, applying a blueprint, the browser audit and the file projection — and each is named on the console page rather than left for you to discover.",
+    a: "It is the surface the product is judged on by everyone who is not an agent, and it carries the whole ordinary job: sites, folders, post types with fifteen field widgets, a media library, search, a trash that restores, publishing and scheduling, users, groups, roles and tokens. Four things genuinely live on the command line (capturing an existing site, applying a blueprint, the browser audit and the file projection), and each is named on the console page rather than left for you to discover.",
   },
   {
     q: "Java and Spring, in 2026?",
@@ -1474,7 +1474,7 @@ export const OBJECTIONS: Objection[] = [
   },
   {
     q: "What happens to my front end?",
-    a: "Nothing — it is headless. REST and GraphQL, a zero-dependency TypeScript client, a React SDK and a shared section vocabulary. The built-in renderer exists so a site can exist before a front end does, and so a draft has something to preview.",
+    a: "Nothing: it is headless. REST and GraphQL, a zero-dependency TypeScript client, a React SDK and a shared section vocabulary. The built-in renderer exists so a site can exist before a front end does, and so a draft has something to preview.",
   },
   {
     q: "Is the agent going to publish something embarrassing?",
@@ -1514,7 +1514,7 @@ export const PILLARS: Pillar[] = [
     iconClass: "from-[#b45309] to-[#facc15]",
     title: "Blueprints",
     description:
-      "Appliable units instead of prose recipes — post types, folders, content and carried files, converged in one transaction.",
+      "Appliable units instead of prose recipes: post types, folders, content and carried files, converged in one transaction.",
     anchor: "/features/blueprints",
   },
   {
@@ -1522,7 +1522,7 @@ export const PILLARS: Pillar[] = [
     iconClass: "from-[#9f1239] to-[#fb7185]",
     title: "Render and prove",
     description:
-      "Pages, layouts, regions and a section vocabulary — with a digest, a lint and an audit that make a page checkable without a screenshot.",
+      "Pages, layouts, regions and a section vocabulary, with a digest, a lint and an audit that make a page checkable without a screenshot.",
     anchor: "/features/rendering",
   },
   {
@@ -1530,7 +1530,7 @@ export const PILLARS: Pillar[] = [
     iconClass: "from-[#7c2d12] to-[#fb923c]",
     title: "Replication",
     description:
-      "Point it at a site that already exists and get one a curator can edit — capture, convert, prove, and a verdict that says when to stop.",
+      "Point it at a site that already exists and get one a curator can edit: capture, convert, prove, and a verdict that says when to stop.",
     anchor: "/replicate",
   },
   {
@@ -1555,11 +1555,11 @@ export SHIO_PASSWORD=...`;
 
 // Kept under ~54 columns: these render in a half-width figure that scrolls
 // rather than wraps, and a line past the fold reads as truncated.
-export const BRIDGE_INSTALL = `# No plugin, any MCP client — the CLI is
+export const BRIDGE_INSTALL = `# No plugin, any MCP client: the CLI is
 # the stdio bridge.
 claude mcp add shio -- npx -y @viglet/shio mcp
 
-# POST /mcp — JSON-RPC 2.0, revision 2025-06-18.
+# POST /mcp speaks JSON-RPC 2.0, rev 2025-06-18.
 # GET /mcp is a deliberate 405: this server
 # sends nothing unprompted.`;
 
@@ -1577,15 +1577,15 @@ export const PLUGIN_PARTS: PluginPart[] = [
     items: [
       {
         name: "shio-site",
-        gloss: "Building and changing pages — addressing, apply, draft-then-publish, moves",
+        gloss: "Building and changing pages: addressing, apply, draft-then-publish, moves",
       },
       {
         name: "shio-content-model",
-        gloss: "Post types and widgets as code — pull/push, the DSL, the traps",
+        gloss: "Post types and widgets as code: pull/push, the DSL, the traps",
       },
       {
         name: "shio-verify",
-        gloss: "Checking work before handing it over — the lint's severities, digests, incidents",
+        gloss: "Checking work before handing it over: the lint's severities, digests, incidents",
       },
     ],
   },
@@ -1595,7 +1595,7 @@ export const PLUGIN_PARTS: PluginPart[] = [
     items: [
       {
         name: "/shio-start [site]",
-        gloss: "Reads the instance — model, sitemap, blueprints, lint state — and stops",
+        gloss: "Reads the instance (model, sitemap, blueprints, lint state) and stops",
       },
       {
         name: "/shio-blueprint <name> <site>",
@@ -1627,7 +1627,7 @@ export const PLUGIN_PARTS: PluginPart[] = [
 export const PLUGIN_RULES = [
   "Content is addressed by path, never by a UUID carried between calls.",
   "shio_apply before shio_write: a statement re-runs safely, a script does not.",
-  "dryRun first, always. Read the plan — a delete line is a stop-and-ask.",
+  "dryRun first, always. Read the plan: a delete line is a stop-and-ask.",
   "Writes land in DRAFT. Publishing is a separate, explicit step.",
 ];
 
@@ -1649,13 +1649,13 @@ export const FIRST_CALLS: FirstCall[] = [
   {
     step: "What is here, and how do I write to it?",
     call: "GET /agent/context?include=all,manifest,ops",
-    gets: "The content model, the sitemap, the conventions and every op with the keys it takes — plus a digest, so session N+1 can skip this.",
+    gets: "The content model, the sitemap, the conventions and every op with the keys it takes, plus a digest, so session N+1 can skip this.",
     cost: "one call",
   },
   {
     step: "Change something",
     call: "POST /agent/batch  { dryRun: true, ops: [...] }",
-    gets: "The plan first: what each op would change. Then the same document without dryRun — and it lands as a draft.",
+    gets: "The plan first: what each op would change. Then the same document without dryRun, and it lands as a draft.",
     cost: "reviewable",
   },
 ];
@@ -1678,7 +1678,7 @@ export const TOKEN_SCOPES: TokenScope[] = [
   {
     scope: "AGENT",
     reads: "published + drafts",
-    writes: "the agent surface only — /api/v2/agent/** and /mcp",
+    writes: "the agent surface only: /api/v2/agent/** and /mcp",
     agent: true,
   },
 ];
@@ -1711,20 +1711,20 @@ export const RESOURCES: ResourceCard[] = [
   {
     icon: ScrollText,
     title: "Documentation",
-    description: "Install, model, author, deliver — the end-user documentation set.",
+    description: "Install, model, author, deliver: the end-user documentation set.",
     href: LINKS.docs,
   },
   {
     icon: TerminalSquare,
     title: "The CLI on npm",
-    description: "@viglet/shio — init, pull, push, verify, clone, and the MCP bridge.",
+    description: "@viglet/shio: init, pull, push, verify, clone, and the MCP bridge.",
     href: LINKS.cli,
   },
   {
     icon: FileStack,
     title: "The concept spec",
     description:
-      "SH74 — the agent-native CMS: the protocol design, the tool surface and a worked example.",
+      "SH74, the agent-native CMS: the protocol design, the tool surface and a worked example.",
     href: LINKS.spec,
   },
   {

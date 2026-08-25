@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 // Kept under ~52 columns: this renders in a half-width figure that scrolls
 // rather than wraps, and a line past the fold reads as truncated.
 const CONTEXT_CALL = `# One call. The model, the sitemap,
-# the conventions and the write vocabulary
-# — plus a digest, to skip it next time.
+# the conventions and the write vocabulary,
+# plus a digest to skip it next time.
 
 GET /api/v2/agent/context?include=all,manifest,ops
 
@@ -22,14 +22,14 @@ export function OneCall() {
     <section id="one-call" className="border-y border-border bg-muted/40 py-20">
       <Container>
         <SectionHeader
-          eyebrow="P2 + P3 — discovery and its price"
+          eyebrow="P2 + P3 &middot; discovery and its price"
           title={
             <>
               Discovery is a feature,{" "}
               <span className="text-primary">and it has a price</span>
             </>
           }
-          description="Most CMSs make an agent crawl a REST surface to learn what exists. Shio answers that in one call — and the cost of every answer is a ceiling the build refuses to exceed."
+          description="Most CMSs make an agent crawl a REST surface to learn what exists. Shio answers that in one call, and the cost of every answer is a ceiling the build refuses to exceed."
         />
 
         <div className="grid items-start gap-8 lg:grid-cols-[0.95fr_1.05fr] [&>*]:min-w-0">
@@ -48,7 +48,7 @@ export function OneCall() {
                 The same job, over an API designed for a browser
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Each task is benchmarked twice — once on the agent surface, once on the
+                Each task is benchmarked twice: once on the agent surface, once on the
                 id-keyed REST path an agent would otherwise have to drive. The build
                 asserts the agent path stays <em>at least</em> this much cheaper.
               </p>
@@ -98,7 +98,7 @@ export function OneCall() {
               </table>
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 Those last two are floors the suite enforces, not the best number
-                anyone has seen &mdash; a falling ratio means the baseline improved or
+                anyone has seen. A falling ratio means the baseline improved or
                 the protocol regressed, and both are worth knowing.
               </p>
             </div>
@@ -107,7 +107,7 @@ export function OneCall() {
           <div className="rounded-2xl border border-border bg-card p-6">
             <h3 className="text-sm font-bold">The ceiling on what a call may cost</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Not a best case &mdash; a limit. A response that grows past one of these
+              Not a best case: a limit. A response that grows past one of these
               fails the build the same way a broken test does.
             </p>
 
@@ -141,8 +141,8 @@ export function OneCall() {
             <p className="mt-6 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
               <LawChip id="P3" /> Every number on this page is generated at build time
               from{" "}
-              <span className="font-mono text-foreground">{TOKEN_BUDGETS.source}</span>{" "}
-              &mdash; the one file the test suite asserts against. A renamed key fails
+              <span className="font-mono text-foreground">{TOKEN_BUDGETS.source}</span>,
+              the one file the test suite asserts against. A renamed key fails
               this build rather than quietly dropping a bar, because a figure on a
               marketing page that has drifted from the build is worse than no figure.
             </p>

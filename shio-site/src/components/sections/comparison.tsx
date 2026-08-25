@@ -40,7 +40,7 @@ export function Comparison() {
               <span className="text-primary">Few were designed for the caller.</span>
             </>
           }
-          description="The axis is agent-operability, not feature count. On everything else — an ecosystem, hosted scale, an editor everyone already knows — the alternatives are strong, and pretending otherwise would make this table worthless."
+          description="The axis is agent-operability, not feature count. On everything else (an ecosystem, hosted scale, an editor everyone already knows) the alternatives are strong, and pretending otherwise would make this table worthless."
         />
 
         <TableScroll fadeClassName="from-muted/40" className="rounded-xl border border-border bg-card">

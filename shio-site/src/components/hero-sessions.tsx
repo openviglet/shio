@@ -11,13 +11,13 @@ const TABS: { id: Tab; label: string; icon: typeof Bot; caption: string }[] = [
     id: "console",
     label: "A person builds it",
     icon: MousePointerClick,
-    caption: "Six screens. One page, published — and no agent involved.",
+    caption: "Six screens. One page, published, and no agent involved.",
   },
   {
     id: "agent",
     label: "An agent builds it",
     icon: Bot,
-    caption: "Six calls. The same page, as a draft — and you still decide.",
+    caption: "Six calls. The same page, as a draft, and you still decide.",
   },
 ];
 

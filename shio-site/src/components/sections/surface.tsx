@@ -9,14 +9,14 @@ export function Surface() {
     >
       <Container>
         <SectionHeader
-          eyebrow="P1 + P10 — the surface"
+          eyebrow="P1 + P10 &middot; the surface"
           title={
             <>
               Eleven tools, six resources,{" "}
               <span className="text-primary">and no second contract</span>
             </>
           }
-          description="MCP is a shape over the delivery API and the console services — never a parallel semantic. Whatever the agent can do here it can also do from the CLI and over REST, in that order, by law."
+          description="MCP is a shape over the delivery API and the console services, never a parallel semantic. Whatever the agent can do here it can also do from the CLI and over REST, in that order, by law."
         />
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] [&>*]:min-w-0">
@@ -56,7 +56,7 @@ export function Surface() {
 
             <p className="mt-5 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
               <LawChip id="P10" /> Hand-rolled rather than pulled from a vendor SDK,
-              and the reason is written down with a date on it &mdash; the premise is
+              and the reason is written down with a date on it, and the premise is
               re-checked on a schedule and a test fails the build when it expires.
               <span className="ml-1">
                 <a

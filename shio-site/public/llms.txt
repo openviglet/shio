@@ -6,25 +6,25 @@
 > projected to files for a repository workflow; and REST/GraphQL delivery with
 > TypeScript SDKs. Same posts, same drafts, same publish act behind all four.
 > Agent-first is the order a capability is built in (law P1), not a condition of use.
-> Shio hosts no model and no prompts — it is the substrate an external agent drives.
+> Shio hosts no model and no prompts: it is the substrate an external agent drives.
 
 ## Read the Markdown, not the HTML
 
-Every route on this site is also published as Markdown at `<path>.md` — the same content,
+Every route on this site is also published as Markdown at `<path>.md`: the same content,
 converted from the same render, with the navigation and the footer left out. Across the
 eleven routes that is 80 KB of Markdown against 597 KB of HTML.
 
 - `/` → https://shio.viglet.org/index.md
 - any other route → append `.md`, e.g. https://shio.viglet.org/features/rendering.md
-- https://shio.viglet.org/manifest.json — the routes, their twins and their sizes, in the
+- https://shio.viglet.org/manifest.json: the routes, their twins and their sizes, in the
   shape `/api/v2/agent/manifest` uses
 
 ## Pages on this site
 
-- [/](https://shio.viglet.org/): what Shio is — the four ways in, six deployment shapes,
+- [/](https://shio.viglet.org/): the four ways in, six deployment shapes,
   then one section per design law
-- [/console](https://shio.viglet.org/console): the traditional path — everything the
-  React console does on its own, the four capabilities that live on the CLI instead, and
+- [/console](https://shio.viglet.org/console): the traditional path in full, with everything
+  the React console does on its own, the four capabilities that live on the CLI instead, and
   what changes if an agent is attached later
 - [/claude-code](https://shio.viglet.org/claude-code): install the plugin or the bare MCP
   bridge, the three calls a session opens with, and the AGENT token scope
@@ -47,11 +47,11 @@ eleven routes that is 80 KB of Markdown against 597 KB of HTML.
 
 ## Start here
 
-- Manifest first: `GET /api/v2/agent/manifest` — capabilities, limits and a curated
-  endpoint index. Unshipped capabilities are reported `false`, never omitted; where a
+- Manifest first. `GET /api/v2/agent/manifest` returns capabilities, limits and a
+  curated endpoint index. Unshipped capabilities are reported `false`, never omitted; where a
   capability lives elsewhere, `elsewhere` names the command to use instead.
-- Then one call for everything else: `GET /api/v2/agent/context?include=all,manifest,ops`
-  — the content model, the sitemap, the conventions and the write vocabulary, with a
+- Then one call for everything else: `GET /api/v2/agent/context?include=all,manifest,ops`,
+  returning the content model, the sitemap, the conventions and the write vocabulary, with a
   digest so a later session can skip re-reading it.
 
 ## Attach it to Claude Code
@@ -76,23 +76,23 @@ this server sends nothing unprompted.
 
 ## Endpoints an agent uses
 
-- `GET /api/v2/agent/manifest` — capabilities, limits, a curated endpoint index
-- `GET /api/v2/agent/context` — model, sitemap, conventions, write vocabulary, digest
-- `GET /api/v2/agent/find` · `GET /api/v2/agent/read` — search and read
-- `POST /api/v2/agent/batch` — the write vocabulary; `dryRun` plans instead of applying
-- `GET /api/v2/agent/verify` · `GET /api/v2/agent/render` — the lint and the render digest
+- `GET /api/v2/agent/manifest`: capabilities, limits, a curated endpoint index
+- `GET /api/v2/agent/context`: model, sitemap, conventions, write vocabulary, digest
+- `GET /api/v2/agent/find` · `GET /api/v2/agent/read`: search and read
+- `POST /api/v2/agent/batch`: the write vocabulary; `dryRun` plans instead of applying
+- `GET /api/v2/agent/verify` · `GET /api/v2/agent/render`: the lint and the render digest
 - `GET /api/v2/agent/changes` · `GET /api/v2/agent/diagnostics` · `/api/v2/agent/memory`
-- `GET /api/v2/cda/**` — the delivery API; `POST /api/graphql` for the GraphQL shape
-- `POST /mcp` — the same capabilities over MCP
+- `GET /api/v2/cda/**`: the delivery API; `POST /api/graphql` for the GraphQL shape
+- `POST /mcp`: the same capabilities over MCP
 
 ## Addresses
 
-- `post:<site>/<friendly-url>` — a post. A site's home page is `post:<site>/`.
-- `folder:<site>/<name-chain>` — a folder, by the names the console shows, never by id.
-- `site:<name>` — the site itself.
-- `id:<uuid>` — reads only. Writes take `post:` and `folder:` alone.
+- `post:<site>/<friendly-url>` is a post. A site's home page is `post:<site>/`.
+- `folder:<site>/<name-chain>` is a folder, by the names the console shows, never by id.
+- `site:<name>` is the site itself.
+- `id:<uuid>` reads only. Writes take `post:` and `folder:` alone.
 
-## CLI — @viglet/shio
+## CLI (@viglet/shio)
 
 `shio init` · `shio pull|push [--content]` · `shio apply [--check|--blueprint]` ·
 `shio verify [--delivery|--strict]` · `shio digest` · `shio audit <page>` ·
@@ -101,29 +101,29 @@ this server sends nothing unprompted.
 
 ## Packages
 
-- `@viglet/shio` — the CLI, and the MCP stdio bridge
-- `@viglet/shio-client` — framework-agnostic delivery client, zero runtime dependencies
-- `@viglet/shio-react-sdk` — hooks and render components over that core
-- `@viglet/shio-sections` — the page-section vocabulary shared by agent, console and front end
-- `@viglet/create-shio-app` — generates a Next.js App Router site wired to a site's content
-- `@viglet/shio-editor-cors` — the Universal Editor bridge for inline editing
+- `@viglet/shio`: the CLI, and the MCP stdio bridge
+- `@viglet/shio-client`: framework-agnostic delivery client, zero runtime dependencies
+- `@viglet/shio-react-sdk`: hooks and render components over that core
+- `@viglet/shio-sections`: the page-section vocabulary shared by agent, console and front end
+- `@viglet/create-shio-app`: generates a Next.js App Router site wired to a site's content
+- `@viglet/shio-editor-cors`: the Universal Editor bridge for inline editing
 
 ## The ten design laws
 
 A feature that breaks one is wrong even if it was requested.
 
-- P1 Agent-first design order — every capability lands MCP → files/CLI → REST → console.
+- P1 Agent-first design order: every capability lands MCP → files/CLI → REST → console.
   It orders how a capability ships, never who may operate the CMS: the console is a full
   CMS on its own, and an instance with no agent token issued is an ordinary headless CMS.
-- P2 One call replaces a session — discovery is a product feature, not a docs problem.
-- P3 Tokens are a measured budget — a token regression fails the build.
-- P4 Files beat APIs for authoring — Edit, Write and Grep are the cheapest tools.
-- P5 Determinism over cleverness — stable ordering, path addressing, idempotent writes.
-- P6 Errors are instructions — every 4xx carries fix, allowed, didYouMean, example.
-- P7 Never surprise the curator — draft-default, dry-run, explicit publish, confirm tokens.
-- P8 Skipping steps needs appliable units — blueprints, not prose recipes.
-- P9 Close the perception loop — cheap textual proof instead of asking someone to look.
-- P10 Compose, don't fork — MCP is a shape over the delivery API, never a third contract.
+- P2 One call replaces a session: discovery is a product feature, not a docs problem.
+- P3 Tokens are a measured budget: a token regression fails the build.
+- P4 Files beat APIs for authoring: Edit, Write and Grep are the cheapest tools.
+- P5 Determinism over cleverness: stable ordering, path addressing, idempotent writes.
+- P6 Errors are instructions: every 4xx carries fix, allowed, didYouMean, example.
+- P7 Never surprise the curator: draft-default, dry-run, explicit publish, confirm tokens.
+- P8 Skipping steps needs appliable units: blueprints, not prose recipes.
+- P9 Close the perception loop: cheap textual proof instead of asking someone to look.
+- P10 Compose, don't fork: MCP is a shape over the delivery API, never a third contract.
 
 ## Links
 
@@ -132,4 +132,4 @@ A feature that breaks one is wrong even if it was requested.
 - The design laws: https://github.com/openviglet/shio/blob/HEAD/agents.md
 - The concept spec: https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH74-agent-native-cms.md
 - Roadmap: https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md
-- Sibling product — enterprise search: https://turing.viglet.org
+- Sibling product, enterprise search: https://turing.viglet.org

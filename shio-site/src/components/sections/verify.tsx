@@ -16,14 +16,14 @@ export function Verify() {
     <section id="verify" className="border-y border-border bg-muted/40 py-20">
       <Container>
         <SectionHeader
-          eyebrow="P9 &mdash; the perception loop"
+          eyebrow="P9 &middot; the perception loop"
           title={
             <>
               The agent cannot see the page.{" "}
               <span className="text-primary">So the page describes itself.</span>
             </>
           }
-          description="Asking someone whether it looks right is the round trip that makes an agent slow. Four instruments replace it — three of them text, and the fourth deliberately for a person."
+          description="Asking someone whether it looks right is the round trip that makes an agent slow. Four instruments replace it: three of them text, and the fourth deliberately for a person."
         />
 
         <div className="grid items-start gap-8 lg:grid-cols-[1fr_1fr] [&>*]:min-w-0">
@@ -52,7 +52,7 @@ export function Verify() {
               a project that decided otherwise.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              The warnings do not vanish either &mdash;{" "}
+              The warnings do not vanish either:{" "}
               <span className="font-mono text-foreground">shio report</span> restates
               them as open questions in the handoff a curator reads.
             </p>

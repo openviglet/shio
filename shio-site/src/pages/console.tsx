@@ -41,7 +41,7 @@ export function ConsolePage() {
           lead={
             <>
               Create the site, shape the content model, write the pages, upload the
-              media, publish or schedule it, and add the rest of the team &mdash; in a
+              media, publish or schedule it, and add the rest of the team. All in a
               browser, with no terminal, no YAML and no agent anywhere in the
               picture. Nothing on this page needs a capability the console does not
               have.
@@ -76,7 +76,7 @@ export function ConsolePage() {
                   <span className="text-primary">in six screens</span>
                 </>
               }
-              description="The landing page shows a coding agent doing this same job in six calls. It is the same content model, the same drafts and the same publish act — which is the whole point of showing both."
+              description="The landing page shows a coding agent doing this same job in six calls. It is the same content model, the same drafts and the same publish act, which is the whole point of showing both."
             />
 
             <div className="mx-auto max-w-2xl">
@@ -87,8 +87,8 @@ export function ConsolePage() {
               Note where the draft appears. A person's write lands in{" "}
               <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">DRAFT</code>{" "}
               exactly as an agent's does, and publishing is a separate, deliberate act
-              in both cases. The safety on this product is not a leash for the agent
-              &mdash; it is how the content lifecycle works.
+              in both cases. The safety on this product is not a leash for the agent.
+              It is how the content lifecycle works.
             </p>
           </Container>
         </section>

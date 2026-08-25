@@ -8,7 +8,7 @@ const FACTS = [
     icon: Server,
     title: "Spring Boot 4, Java 21",
     description:
-      "One JVM service. The content engine, the agent gateway, the MCP server and the renderer are the same process — nothing to orchestrate on day one.",
+      "One JVM service. The content engine, the agent gateway, the MCP server and the renderer are the same process. Nothing to orchestrate on day one.",
   },
   {
     icon: Database,
@@ -20,7 +20,7 @@ const FACTS = [
     icon: Users,
     title: "Multi-tenant, if you need it",
     description:
-      "Tenant isolation reaches every surface, including the agent's. The agent path is not a privilege escalation — the same scopes apply on all of them.",
+      "Tenant isolation reaches every surface, including the agent's. The agent path is not a privilege escalation: the same scopes apply on all of them.",
   },
 ];
 
@@ -76,7 +76,7 @@ export function SelfHost() {
               className="mt-2 border-border bg-card text-foreground"
             />
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              The bridge speaks stdio, so it works from any MCP client &mdash; and the
+              The bridge speaks stdio, so it works from any MCP client, and the
               agent's first call is the manifest, which tells it everything this
               particular instance can do.
             </p>

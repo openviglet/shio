@@ -26,7 +26,7 @@ export function Laws() {
             has a section on this page that shows it rather than claims it.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-[#a89189]">
-            They govern how the product is <em>built</em> &mdash; what a feature must
+            They govern how the product is <em>built</em>: what a feature must
             reach before it can ship. None of them is a condition on how you use it: a
             team that never attaches an agent gets every capability the ten laws
             forced into existence.

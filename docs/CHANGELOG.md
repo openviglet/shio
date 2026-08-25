@@ -1431,6 +1431,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - 🗑 **SH540** — abandoned: Provar as afirmacoes do site com uma instancia Shio viva e trabalho de infraestrutura e de demo publica, nao do produto, entao sai do backlog e o site segue com o conteudo roteirizado.
 - **SH861** — README and shio-site carry judge, the declared bar and the exclusion authorable mode rests on — and a reader now asks every recently finished block whether its sweep was owed and paid.
 - **SH925** — The site's prose is linted against the AI-writing checklist, and five counts it published are now read back from the surface each describes.
+- **SH929** — 262 em dashes left the site in four spellings, and the lint that had exempted them now refuses every one a reader could be handed.
 
 ## Block T — End-user documentation, round two (the curator's half)
 

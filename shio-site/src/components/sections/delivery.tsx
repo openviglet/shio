@@ -10,7 +10,7 @@ const shio = createShioClient({
   token: process.env.SHIO_CDA_TOKEN,
 });
 
-// Zero runtime dependencies — Node, browser, edge, server components.
+// Zero runtime dependencies: Node, browser, edge, server components.
 const page = await shio.post("acme", "launch");`;
 
 export function Delivery() {
@@ -36,8 +36,8 @@ export function Delivery() {
                 npm create @viglet/shio-app
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                Scaffolds a Next.js App Router site already wired to a site's content
-                &mdash; and with <span className="font-mono">--blueprint</span>, its
+                Scaffolds a Next.js App Router site already wired to a site's content,
+                and with <span className="font-mono">--blueprint</span>, its
                 content half in the same command.
               </p>
             </div>

@@ -10,7 +10,7 @@ export function Pillars() {
         <SectionHeader
           eyebrow="The product"
           title={<>Six capabilities, reachable from every door</>}
-          description="Each of these got its CLI verb and its MCP tool before it got a console screen — which is the design order, not a restriction. What a capability is reachable from is a separate question, and the answer is: all four ways in."
+          description="Each of these got its CLI verb and its MCP tool before it got a console screen, which is the design order, not a restriction. What a capability is reachable from is a separate question, and the answer is: all four ways in."
         />
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

@@ -88,7 +88,7 @@ export function SiteNav() {
     >
       <Container className="flex h-16 items-center gap-4">
         <div className="flex shrink-0 items-center gap-2.5">
-          <a href="/" className="text-base" aria-label="Viglet Shio — home">
+          <a href="/" className="text-base" aria-label="Viglet Shio home">
             <Logo className="hidden sm:inline-flex" />
             <Logo showWord={false} className="sm:hidden" />
           </a>
@@ -115,8 +115,8 @@ export function SiteNav() {
             The differentiator gets a pill of its own rather than a dropdown row.
             It used to read "Claude Code first", which was the site's whole
             positioning problem in two words: true of the build order, and read
-            as a prerequisite. It now says what it is — a plugin you can install
-            — and the console sits above it in the first group.
+            as a prerequisite. It now says what it is, a plugin you can install,
+            and the console sits above it in the first group.
           */}
           <a
             href="/claude-code"
@@ -132,7 +132,7 @@ export function SiteNav() {
                 <ChevronDown className="size-3.5 transition-transform group-data-[state=open]:rotate-180" />
               </DropdownMenuTrigger>
               {/* Radix returns focus to the trigger on close, and that focus()
-                  scrolls the top-of-page trigger back into view — cancelling the
+                  scrolls the top-of-page trigger back into view, cancelling the
                   native hash jump to the section just clicked. */}
               <DropdownMenuContent
                 align="start"

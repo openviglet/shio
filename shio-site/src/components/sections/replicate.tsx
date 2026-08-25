@@ -22,7 +22,7 @@ export function Replicate() {
             <span className="text-primary">already have</span>
           </h2>
           <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Not a mirror &mdash; a site a curator can edit. The capture reads the pages,
+            Not a mirror: a site a curator can edit. The capture reads the pages,
             the conversion derives the content model from them, and the proof says
             whether the replica serves what the source did.
           </p>
@@ -51,7 +51,7 @@ export function Replicate() {
             One origin, and every off-host link recorded rather than followed.{" "}
             <span className="font-mono text-foreground">robots.txt</span> is obeyed, and
             a capture taken with <span className="font-mono">--ignore-robots</span>{" "}
-            records that in the inventory &mdash; so it can never later be mistaken for
+            records that in the inventory, so it can never later be mistaken for
             one taken with permission. A ceiling marks the capture{" "}
             <span className="font-mono">PARTIAL</span>: there are no silent caps,
             because a bounded capture read as a complete one is the failure the whole

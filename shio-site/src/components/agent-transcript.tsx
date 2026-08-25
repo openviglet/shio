@@ -147,7 +147,7 @@ export function AgentTranscript({ className }: { className?: string }) {
           <span className="size-2.5 rounded-full bg-[#7dd3a0]/70" />
         </span>
         <span className="ml-1 font-mono text-xs font-semibold text-[#b39c94]">
-          claude &mdash; shio (MCP)
+          claude &middot; shio (MCP)
         </span>
         <span className="rounded-full border border-white/12 px-2 py-0.5 font-mono text-[0.65rem] font-bold tracking-wide text-[#a89189] uppercase">
           scripted

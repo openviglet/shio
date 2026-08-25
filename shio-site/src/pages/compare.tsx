@@ -80,7 +80,7 @@ export function ComparePage() {
             <>
               Comparing content types and delivery APIs produces a tie, because
               everyone has those. The axis where the products actually differ is
-              agent-operability &mdash; and every row below is a question with an
+              agent-operability, and every row below is a question with an
               answer you can test rather than a feature you can be told about.
             </>
           }
@@ -149,7 +149,7 @@ export function ComparePage() {
                           className="px-4 py-2.5 text-left"
                         >
                           <span className="flex items-center gap-2 text-xs font-bold tracking-wide uppercase">
-                            {group.law !== "—" && <LawChip id={group.law} />}
+                            {group.law !== "none" && <LawChip id={group.law} />}
                             {group.title}
                           </span>
                         </th>
@@ -190,7 +190,7 @@ export function ComparePage() {
                 honest answer is "you can build it", the cell says so.
               </p>
               <p className="mt-3">
-                This reflects 2026.3 &mdash; verify against current vendor documentation
+                This reflects 2026.3, so verify against current vendor documentation
                 before deciding. If a row here is wrong,{" "}
                 <span className="font-medium text-foreground">
                   it is a bug and we want the correction.
@@ -236,7 +236,7 @@ export function ComparePage() {
               <h3 className="text-sm font-bold">And the case against Shio, stated plainly</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 If nobody on the project is going to drive it with an agent, most of what
-                this page argues is worth nothing to you &mdash; you are buying a
+                this page argues is worth nothing to you: you are buying a
                 self-hosted headless CMS with a smaller ecosystem than the four above and
                 a JVM to run. The protocol is the product. Judge it on whether that is the
                 thing you need.

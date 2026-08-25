@@ -9,7 +9,7 @@ export function Resources() {
         <SectionHeader
           eyebrow="Start here"
           title="Read it before you run it"
-          description="The design is written down — including the parts that are unfinished, and the ones that were deliberately not built."
+          description="The design is written down, including the parts that are unfinished, and the ones that were deliberately not built."
         />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

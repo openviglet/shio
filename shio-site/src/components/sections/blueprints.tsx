@@ -6,7 +6,7 @@ export function Blueprints() {
     <section id="blueprints" className="py-20">
       <Container>
         <SectionHeader
-          eyebrow="P8 &mdash; skipping steps"
+          eyebrow="P8 &middot; skipping steps"
           title={
             <>
               A recipe is prose.{" "}

@@ -23,6 +23,10 @@
 - 📋 **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — A check that is red locally and green in CI is one people stop reading, and this one is red for the environment rather than the code. → §LV.19
 - 📋 **SH928** (deps: SH926 ✅) **findElements silently drops a container whose body holds self-closing children of the same tag** — Measured: it returns 48 of App.tsx's 50 Route elements, and the two it loses are the parents, so children read as top-level. → §LV.20
 
+## Block S — The public site (shio.viglet.org)
+
+- 📋 **SH930** (deps: —) **the marketplace pages republish blueprint copy the site's em-dash rule does not reach** — Sixteen em dashes in the shipped blueprints' field help and sample content reach shio.viglet.org, and those same strings are what a curator reads in the console. → §LVIII.2
+
 ## Priority
 
 ## Done when — SH909

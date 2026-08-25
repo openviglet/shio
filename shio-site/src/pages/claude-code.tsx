@@ -43,7 +43,7 @@ export function ClaudeCodePage() {
             <>
               Shio is built to be operated by a coding agent, so the distance between
               running an instance and having the agent do something is the number
-              that matters. It is one install and three calls &mdash; and the first
+              that matters. It is one install and three calls, and the first
               call is the instance telling the agent what it can do.
             </>
           }
@@ -87,7 +87,7 @@ export function ClaudeCodePage() {
                   </span>
                   The plugin
                 </h3>
-                <CodeBlock caption="claude — the marketplace route" code={PLUGIN_INSTALL} />
+                <CodeBlock caption="claude, the marketplace route" code={PLUGIN_INSTALL} />
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   The plugin's MCP server runs the CLI's own stdio bridge through{" "}
                   <span className="font-mono text-foreground">npx</span>, so there is
@@ -105,7 +105,7 @@ export function ClaudeCodePage() {
                 <CodeBlock caption="any MCP client" code={BRIDGE_INSTALL} />
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   Same server, no marketplace. You get the eleven tools and six
-                  resources and none of the skills or commands &mdash; which is the
+                  resources and none of the skills or commands, which is the
                   right trade if you are wiring Shio into something that is not
                   Claude Code.
                 </p>
@@ -120,7 +120,7 @@ export function ClaudeCodePage() {
             <SectionHeader
               eyebrow="Step two"
               title="A session that starts already knowing Shio"
-              description="Instead of spending its first ten calls discovering the instance. The skills load when the work calls for them rather than on every turn — a schema you pay for each turn is a schema you pay for whether you use it or not."
+              description="Instead of spending its first ten calls discovering the instance. The skills load when the work calls for them rather than on every turn: a schema you pay for each turn is a schema you pay for whether you use it or not."
             />
 
             <div className="grid gap-5 md:grid-cols-3 [&>*]:min-w-0">
@@ -186,9 +186,9 @@ export function ClaudeCodePage() {
             </ol>
 
             <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
-              <LawChip id="P2" /> The same three exist as MCP tools &mdash;{" "}
+              <LawChip id="P2" /> The same three are also MCP tools:{" "}
               <span className="font-mono text-foreground">shio_context</span>,{" "}
-              <span className="font-mono text-foreground">shio_write</span> &mdash; and as
+              <span className="font-mono text-foreground">shio_write</span>. And
               resources a client can read directly:{" "}
               <span className="font-mono text-foreground">shio://manifest</span>,{" "}
               <span className="font-mono text-foreground">shio://context</span>,{" "}
@@ -260,7 +260,7 @@ export function ClaudeCodePage() {
                 The invariant this exists to hold
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                The agent path is never a privilege escalation &mdash; and since{" "}
+                The agent path is never a privilege escalation, and since{" "}
                 <span className="font-mono text-foreground">AGENT</span> exists, it is not
                 a privilege <em>superset</em> either. It reads like a preview token,
                 because an agent works on drafts; it writes on{" "}
@@ -317,7 +317,7 @@ export function ClaudeCodePage() {
                     <span className="font-semibold text-foreground">
                       It does not make MCP the only door.
                     </span>{" "}
-                    Every capability lands on MCP, the CLI and REST &mdash; in that order,
+                    Every capability lands on MCP, the CLI and REST, in that order and
                     by law. A reader who does not use Claude Code loses the skills and the
                     slash commands, and nothing else. <LawChip id="P1" />
                   </p>

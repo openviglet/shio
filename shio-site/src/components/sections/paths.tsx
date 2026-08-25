@@ -24,7 +24,7 @@ export function Paths() {
               <span className="text-primary">It is the same CMS underneath.</span>
             </>
           }
-          description="These are not tiers, and not a migration path you commit to once. They are four surfaces over one content engine — the same posts, the same drafts, the same publish act — and a site can be worked on through all four in the same week."
+          description="These are not tiers, and not a migration path you commit to once. They are four surfaces over one content engine (the same posts, the same drafts, the same publish act), and a site can be worked on through all four in the same week."
         />
 
         <div className="grid gap-5 md:grid-cols-2">
@@ -77,7 +77,7 @@ export function Paths() {
         <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
           The design laws below say every capability lands on the agent surface first.
           That is a rule about the order things are <em>built</em> in, so nothing ends up
-          reachable only by a mouse &mdash; it has never been a rule about who is allowed
+          reachable only by a mouse. It has never been a rule about who is allowed
           to operate the CMS.
         </p>
       </Container>

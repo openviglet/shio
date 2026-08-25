@@ -49,7 +49,7 @@ export function SiteFooter() {
           <div>
             <Logo className="text-[#f6ece8]" />
             <p className="mt-3 max-w-xs text-sm leading-relaxed">
-              An open-source headless CMS with four ways in &mdash; a full console, a
+              An open-source headless CMS with four ways in: a full console, a
               coding agent, files in your repository, and the delivery API. Same
               content, same drafts, same publish button.
             </p>
@@ -78,7 +78,7 @@ export function SiteFooter() {
         </div>
         <div className="mt-12 flex flex-col justify-between gap-2 border-t border-[#241a17] pt-6 text-xs text-[#7a6660] sm:flex-row">
           <span>
-            &copy; {new Date().getFullYear()} Viglet Shio &mdash;{" "}
+            &copy; {new Date().getFullYear()} Viglet Shio &middot;{" "}
             <a href={LINKS.license} target="_blank" rel="noreferrer" className="hover:text-[#f6ece8]">
               Apache 2.0
             </a>

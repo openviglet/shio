@@ -141,7 +141,7 @@ const manifest = {
     builtAt: new Date().toISOString(),
   },
   startHere:
-    "Every route has a Markdown twin at <path>.md — fetch that instead of the HTML. " +
+    "Every route has a Markdown twin at <path>.md. Fetch that instead of the HTML. " +
     "/llms.txt is the whole product in one file.",
   routes: index,
   product: {
@@ -183,5 +183,5 @@ writeFileSync(
 console.log(
   `\nprerendered ${routes.length} route(s), each with a Markdown twin.` +
     ` ${Math.round(mdBytes / 1024)} KB of Markdown against ${Math.round(htmlBytes / 1024)} KB of HTML` +
-    ` — ${Math.round((1 - mdBytes / htmlBytes) * 100)}% smaller.`
+    `, ${Math.round((1 - mdBytes / htmlBytes) * 100)}% smaller.`
 );

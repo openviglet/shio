@@ -21,6 +21,13 @@
 //     law, and the Markdown size pair was typed twice and disagreed with itself and with the
 //     build. Each rule below reads the claim back against the surface it is about.
 //
+//   * **The em dash.** SH929, and the one rule here that is a house-style decision rather than a
+//     defect: this site does not use the mark at all. SH925 wrote the opposite into this file —
+//     "em dashes are house style and a lint against them would rewrite the voice" — and that was
+//     the wrong call. It is the loudest tell in machine-written English, and a page whose whole
+//     argument is that an agent built the site cannot afford to read as though one wrote the copy.
+//     262 of them were in the published prose when the rule landed.
+//
 // Source lints, like `site-claims.test.mjs` beside them: properties of the repository rather
 // than of a rendered DOM.
 
@@ -29,6 +36,12 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+
+// The one stripper this repository has, rather than a second one (SH740 owns the question of
+// what counts as code). The em-dash rule is the only one here that needs it: a mark in a note
+// between contributors is not something a reader is handed, and holding those to a rule about
+// published copy would churn a hundred comments for nobody.
+import { code } from "../../cli/test/support/source-text.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -46,16 +59,59 @@ function proseFiles() {
           ? [join(dir, e.name)]
           : [],
     );
-  return [
-    ...walk("src/pages"),
-    ...walk("src/components/sections"),
-    "src/components/hero-sessions.tsx",
-    "src/lib/site-content.ts",
-    "src/lib/feature-content.ts",
-    "src/entry-server.tsx",
-    "public/llms.txt",
-  ].map((path) => ({ path: path.replaceAll("\\", "/"), text: read(path) }));
+  return [...walk("src"), ...PAGES, ...SCRIPTS].map((path) => ({
+    path: path.replaceAll("\\", "/"),
+    // What the phrase list reads. A page's comments are prose somebody reads, so they are in;
+    // a build script's are notes about an instrument, and holding those to a rule about
+    // marketing vocabulary reports "robust against a bleeding-edge Vite" as puffery.
+    text: SCRIPTS.includes(path) ? code(read(path)) : read(path),
+    // What the em-dash rule reads. A flat file is prose end to end; a module is prose only
+    // where it is not a comment, plus every code sample it carries — see `emitted`.
+    published: /\.(txt|svg|html)$/.test(path) ? read(path) : emitted(read(path)),
+  }));
 }
+
+/**
+ * A module's published half: its code, plus the body of every template literal in it.
+ *
+ * <p>`code()` is line-oriented and drops any line starting with `//`, which is right for a
+ * comment and wrong for a **code sample**: `delivery.tsx` renders a snippet whose third line is
+ * `// Zero runtime dependencies ...`, and that line is on the landing page. The source scan came
+ * back clean while `dist/index.html` still carried the mark, which is how the gap was found.</p>
+ *
+ * <p>Adding the template bodies back is stateless, which is SH630's rule, and conservative in the
+ * safe direction: a stray backtick can only pair wrongly and hand the scan *more* text, never
+ * less. Measured at zero false positives across this package.</p>
+ */
+function emitted(body) {
+  const templates = body.match(/`[^`]*`/g) ?? [];
+  return `${code(body)}\n${templates.join("\n")}`;
+}
+
+/**
+ * The published surfaces that are not under `src/`, named one by one rather than walked.
+ *
+ * <p>SH929 found four of them the hard way, by grepping `dist/` after the source scan came back
+ * clean. The template's `og:description` reaches every page (the prerender patches the title and
+ * the description meta, and not that one), the social card is an SVG with text in it, and three
+ * build scripts write strings straight onto the page: the manifest's `startHere`, the four notes
+ * under the token chart, and the line each marketplace README is built from.</p>
+ *
+ * <p>Named rather than walked because the rest of `scripts/` is instruments, and a test file that
+ * has to quote the mark it forbids is not a page anybody reads.</p>
+ *
+ * <p><b>`public/marketplace/**` is deliberately outside all of this (SH930).</b> It is generated
+ * from `shio-app/src/main/resources/blueprints/**` and republishes those bytes rather than
+ * restating them, which is the whole design of that channel. Sixteen em dashes live there, in
+ * field help a curator also reads in the console, so moving them is a decision about the product
+ * and not about this page. It is a named exception here so that it stays a decision.</p>
+ */
+const PAGES = ["public/llms.txt", "public/og.svg", "index.html"];
+const SCRIPTS = [
+  "scripts/prerender.mjs",
+  "scripts/token-budgets.mjs",
+  "scripts/marketplace.mjs",
+];
 
 /*
  * The whole file is scanned, comments and all, rather than the string literals picked out of
@@ -80,9 +136,11 @@ const ARTEFACTS = [
 
 /**
  * Section B, reduced to what a grep may decide alone: the phrases that are a tell on their own
- * rather than by density. The judgement calls — the rule of three, negative parallelism, em
- * dashes — are deliberately absent. Em dashes are this site's house style and a lint against
- * them would rewrite the voice; a lint that fires on good writing gets switched off.
+ * rather than by density. The judgement calls — the rule of three, negative parallelism — are
+ * deliberately absent, because a lint that fires on good writing gets switched off.
+ *
+ * The em dash was in that sentence until SH929 and is now its own rule below, which is a
+ * different kind of thing: not a tell to weigh, a mark this site does not use.
  */
 const MANNERISMS = [
   /\b(serves|stands|functions) as an? /i,
@@ -135,6 +193,38 @@ test("SH925: the copy is free of the phrases that are a tell on their own", () =
     "the AI-writing checklist's Section B, on the phrases a grep may judge alone. The fix is "
       + "never a synonym: say the specific thing, or cut the sentence. If a hit is genuinely "
       + `the right word here, say so in this file rather than working around it.\n  ${found.join("\n  ")}`,
+  );
+});
+
+/**
+ * SH929 — the em dash, in both spellings a page can carry.
+ *
+ * No en dash on the list, and that is a measurement rather than an oversight: there were none in
+ * the copy, so the rule is one character in four spellings instead of a judgement about numeric
+ * ranges. Reported with the line, all of them at once, because the fix is a reading pass and a
+ * lint that surfaces one occurrence per run turns that into 262 runs.
+ *
+ * Written as an escape rather than as the character, so this file can be scanned by itself and
+ * so the numeric entities are visible: `&#8212;` was the fourth spelling, and it was the one in
+ * the social card, where nothing else was looking.
+ */
+const EM_DASH = new RegExp(["\\u2014", "&mdash;", "&#8212;", "&#x2014;"].join("|"), "i");
+
+test("SH929: the published copy carries no em dash", () => {
+  const found = [];
+  for (const { path, published } of proseFiles()) {
+    for (const [index, line] of published.split("\n").entries()) {
+      if (EM_DASH.test(line)) found.push(`  ${path}: ${line.trim().slice(0, 96)}`);
+    }
+  }
+  assert.deepEqual(
+    found.length,
+    0,
+    "SH929: this site does not use the em dash. It is the loudest tell in machine-written "
+      + "English, and the page argues that an agent built the site.\n\nThe replacement is not a "
+      + "comma. The mark is standing in for a parenthesis, a colon, a semicolon or a full stop, "
+      + "and it hides which — so read the sentence, write what it was asking for, and cut the "
+      + `aside where it was carrying nothing.\n\n${found.length} occurrence(s):\n${found.join("\n")}`,
   );
 });
 
@@ -232,7 +322,7 @@ test("SH925: llms.txt states the ten design laws by the names the site gives the
   assert.equal(laws.length, 10, `LAWS should carry the ten design laws; found ${laws.length}`);
 
   for (const [, id, title] of laws) {
-    const stated = new RegExp(`^- ${id} ([^—]+?)\\s*—`, "m").exec(LLMS);
+    const stated = new RegExp(`^- ${id} ([^:]+?)\\s*:`, "m").exec(LLMS);
     assert.ok(stated, `llms.txt does not state ${id}`);
     assert.equal(
       stated[1],

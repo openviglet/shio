@@ -80,7 +80,7 @@ const CEILINGS = [
   {
     key: "response.manifest.check",
     label: "Capability check",
-    note: "manifest?include=features,limits — what a session opens with",
+    note: "manifest?include=features,limits: what a session opens with",
   },
   {
     key: "response.manifest",
@@ -95,7 +95,7 @@ const CEILINGS = [
   {
     key: "benchmark.build-marketing-site.tokens",
     label: "Build a site, end to end",
-    note: "the whole task, measured to the verify — not to a page a person opened",
+    note: "the whole task, measured to the verify, not to a page a person opened",
   },
 ];
 

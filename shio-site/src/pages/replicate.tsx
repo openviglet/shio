@@ -33,7 +33,7 @@ export function ReplicatePage() {
           lead={
             <>
               Four verbs turn a site that exists into one a curator can edit. Not a
-              mirror and not a screenshot &mdash; a content model derived from the
+              mirror and not a screenshot, but a content model derived from the
               pages themselves, with a review step you cannot skip and arithmetic at
               the end that says whether anything was lost.
             </>
@@ -168,7 +168,7 @@ export function ReplicatePage() {
                 Because the one that tried was measured. An authorable replica of a real
                 site rendered <span className="font-mono text-[#f6ece8]">1,066,436</span>{" "}
                 bytes, <span className="font-mono text-[#f6ece8]">99%</span> of it the
-                captured stylesheet &mdash; roughly 2,894 rules meeting nineteen class
+                captured stylesheet: roughly 2,894 rules meeting nineteen class
                 attributes, with not one source class surviving. Carrying the source's
                 classes through recovers about seven of the twenty-two that style a single
                 heading; the rest sit on wrapper elements a generated layout does not
@@ -206,7 +206,7 @@ export function ReplicatePage() {
                     about <span className="font-mono text-foreground">294</span> tokens
                     and sixty pages costs about{" "}
                     <span className="font-mono text-foreground">295</span>. What grows is
-                    a path per page, not a candidate per page &mdash; the per-block
+                    a path per page, not a candidate per page, and the per-block
                     implementation an author naturally writes would have produced 240
                     candidates for the same site. <LawChip id="P3" />
                   </p>
@@ -218,7 +218,7 @@ export function ReplicatePage() {
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     <span className="font-mono text-foreground">discards:</span> is what
-                    the section genuinely cannot hold &mdash; an{" "}
+                    the section genuinely cannot hold: an{" "}
                     <span className="font-mono">&lt;iframe&gt;</span>, an{" "}
                     <span className="font-mono">onclick</span>, an id an anchor targets.
                     That is damage, and a reviewer should weigh it.{" "}
@@ -236,7 +236,7 @@ export function ReplicatePage() {
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     A source's CSS <em>contains</em> its palette, its type scale and its
                     spacing rhythm, so a conversion that only appends the file throws all
-                    of it away &mdash; and the replica then looks right and cannot be
+                    of it away, and the replica then looks right and cannot be
                     changed. Eight groups are lifted into the theme's design tokens, and
                     the report is honest about which ones are real: a declared custom
                     property is genuinely editable, while a literal repeated twenty-three
@@ -254,7 +254,7 @@ export function ReplicatePage() {
                 <div className="rounded-xl border border-border bg-card p-5">
                   <h3 className="text-sm font-bold">The loss is computed, never listed</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    It is the complement of what the fields consumed &mdash; the only
+                    It is the complement of what the fields consumed, and the only
                     definition that cannot <em>under</em>-report, and under-reporting is
                     the one failure this artefact must not have.
                   </p>
@@ -302,11 +302,11 @@ export function ReplicatePage() {
               {[
                 {
                   t: "It is not a mirror.",
-                  d: "A mirror is bytes. What comes out here is a content model — post types with typed fields, sections a curator edits, a theme and the scripts — which is why the review step exists at all.",
+                  d: "A mirror is bytes. What comes out here is a content model (post types with typed fields, sections a curator edits, a theme and the scripts), which is why the review step exists at all.",
                 },
                 {
                   t: "It is not a pixel comparison.",
-                  d: "shio diff is arithmetic over declared and produced facts. If you want pixels, shio snapshot is that and says so — and it hands the picture to a person, because that is the one judgement a digest cannot make.",
+                  d: "shio diff is arithmetic over declared and produced facts. If you want pixels, shio snapshot is that and says so, and it hands the picture to a person, because that is the one judgement a digest cannot make.",
                 },
                 {
                   t: "It is not a migration button.",

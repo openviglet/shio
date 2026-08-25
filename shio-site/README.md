@@ -77,7 +77,7 @@ with the depth pages in [`src/lib/feature-content.ts`](src/lib/feature-content.t
 What stays in [`src/components/sections/`](src/components/sections/) is a section's
 own heading and lead, because those are written against the layout they sit in.
 
-Three rules for editing any of it:
+Four rules for editing any of it:
 
 - **Every claim is about a real surface.** A route, a tool name, a flag or an
   error body that appears there is the one the build produces. `docs/agents/` is
@@ -91,13 +91,23 @@ Three rules for editing any of it:
   two of them had been typed, and both were a measurement taken three tasks
   before the ceiling they quoted moved.
 - **Prose gets the writing pass, and part of it is a lint.** Run the `ai-writing`
-  skill over anything you write here before handing it over — the tells worth
+  skill over anything you write here before handing it over: the tells worth
   catching are density and inflation, and no grep sees those.
   [`scripts/ai-writing.test.mjs`](scripts/ai-writing.test.mjs) is the half that
   can be automated: the checklist's copy-paste artefacts, the phrases that are a
-  tell on their own, and five counts read back from the surface each describes.
-  Em dashes are house style here and the lint deliberately says nothing about
-  them.
+  tell on their own, five counts read back from the surface each describes, and
+  the em dash.
+- **This site does not use the em dash**, in any of its four spellings: the
+  character, `&mdash;`, `&#8212;` and `&#x2014;`. SH929 removed 262 of them. It is
+  the loudest tell in machine-written English, and a page whose argument is that
+  an agent built the site cannot afford to read as though one wrote the copy.
+  What replaces it is never a comma by default. The mark stands in for a
+  parenthesis, a colon, a semicolon or a full stop, and it hides which, so read
+  the sentence and write what it was already asking for. The lint reads code
+  rather than raw files, which leaves a note between contributors alone; what it
+  will not let past is anything a reader is handed, a comment inside a rendered
+  code sample included. The one exception it names out loud is
+  `public/marketplace/**`, which republishes another module's bytes (SH930).
 
 ## The Markdown twins
 
@@ -158,6 +168,21 @@ The job needs the `GH_PKG_TOKEN` secret, the same one `publish-docker.yml` uses
 for that repository.
 
 ## Backlog
+
+**SH929, the same day**, reversed a call SH925 had made in writing. That file counted the em
+dash, decided it was house style and wrote the exemption into the lint. It is not house style:
+it is the loudest tell in machine-written English, and a page whose argument is that an agent
+built the site is the last place that can afford it. 262 came out, in four spellings, and the
+rewrite was a reading pass rather than a substitution, because the mark stands in for four
+different stops and hides which. Two things are worth carrying from it. The source scan came
+back clean while `dist/` still had one, because `code()` drops any line starting with `//` and
+the landing page renders a code sample whose third line is a comment; the lint now reads every
+template-literal body as well. And four published surfaces were outside every file list the
+site had: the Vite template's `og:description`, which reaches every page because the prerender
+patches the title and the description meta and not that one; the social card, an SVG with text
+in it and the only place `&#8212;` appeared; and three build scripts that write strings straight
+onto the page. `public/marketplace/**` is the one exception left, and SH930 is the task that
+decides it.
 
 **Block S closed again on 2026-08-25**, on SH925, and it is the first closure in this list that
 moved claims rather than checking that none had moved. Five counts on these pages had gone stale

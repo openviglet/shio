@@ -6,7 +6,7 @@ const FIELDS = [
   { key: "title / detail", gloss: "what went wrong, in words the caller can log" },
   { key: "didYouMean", gloss: "the near miss, when the mistake was a typo" },
   { key: "allowed", gloss: "the closed set, so the next call is a choice not a guess" },
-  { key: "fix", gloss: "the instruction — what to do instead, in one sentence" },
+  { key: "fix", gloss: "the instruction: what to do instead, in one sentence" },
   { key: "example", gloss: "a call that would have worked, ready to send" },
 ];
 
@@ -16,7 +16,7 @@ export function Errors() {
       <Container>
         <div className="grid items-center gap-10 lg:grid-cols-[1fr_1fr] [&>*]:min-w-0">
           <div>
-            <Eyebrow>P6 &mdash; failure</Eyebrow>
+            <Eyebrow>P6 &middot; failure</Eyebrow>
             <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
               A 400 that costs one retry,{" "}
               <span className="text-primary">not one session</span>
@@ -43,7 +43,7 @@ export function Errors() {
             </p>
           </div>
 
-          <CodeBlock caption="400 — and what to do about it" code={TEACHING_ERROR} />
+          <CodeBlock caption="400, and what to do about it" code={TEACHING_ERROR} />
         </div>
       </Container>
     </section>

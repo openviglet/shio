@@ -20,7 +20,7 @@ export function CuratorHalf() {
 
       <Container>
         <div className="mx-auto mb-12 max-w-2xl text-center">
-          <Eyebrow>P7 &mdash; the curator&rsquo;s half</Eyebrow>
+          <Eyebrow>P7 &middot; the curator&rsquo;s half</Eyebrow>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
             An agent with write access to your site.{" "}
             <span className="text-gradient">What stops it?</span>

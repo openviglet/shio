@@ -5,8 +5,8 @@ import { HeroSessions } from "@/components/hero-sessions";
 import { LINKS } from "@/lib/site-content";
 
 const PROMISES = [
-  "A full console — no agent required",
-  "Drafts by default — nothing publishes itself",
+  "A full console, no agent required",
+  "Drafts by default: nothing publishes itself",
   "Self-hosted, your database, open source",
 ];
 
@@ -32,7 +32,7 @@ export function Hero() {
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#c9b6ae]">
             Write the pages yourself in the console, hand the work to Claude Code,
             keep the content as files in your repository, or read it all through
-            REST and GraphQL. Four ways in, one content engine &mdash; and the same
+            REST and GraphQL. Four ways in, one content engine, and the same
             drafts, previews and publish button behind every one of them.
           </p>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#a89189]">
