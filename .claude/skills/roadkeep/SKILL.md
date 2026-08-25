@@ -657,7 +657,20 @@ stderr). **Ready is not implementable**: the tiers rank by id, so add `--designe
 you asked to *execute* and not to plan — it sets aside the markers `[markers] undesigned`
 names, and says how many. Without it the answer still tells you, in the same sentence that
 names the tier, that the line it chose has its design to write — which is a `section add`,
-not a commit. **Two workers in one checkout need `--claim`**, on `brief` as well as on
+not a commit. **A pick you cannot execute is a write, not a workaround**: where what is
+left of a line needs something *present* — a controller on the desk, two consoles to
+measure against each other — the file has a slot for it, and until it is written the same
+line comes back every call, because every tier is a function of the file. `add --requires
+<word>` states it, `amend <id> --requires …` adds it to a line already there, and the word
+is one `[requirements] declared` names — `declare` writes neither, so a project opting in
+declares the vocabulary once. Then `pick` sets those lines aside for a caller that did not
+say it has them, **names** each with what it is missing, and still counts them ready: what
+narrows is the offer, never the truth. A caller that does have the thing passes `--have
+<word>`, repeatable, on `pick` and `brief` alike — which is the whole difference from
+`defer`, a pause being symmetric and taking the line away from the person who could have
+finished it. So the honest end of an impossible pick is the requirement written and the id
+handed over, never a fifth identical answer worked around in silence.
+**Two workers in one checkout need `--claim`**, on `brief` as well as on
 `pick`: every tier is a function of the file, so a second caller reading an unchanged
 backlog is handed the line the first one took — most confidently by the in-progress tier,
 a 🛠 line being evidence somebody started. `--claim` answers *and* moves the marker to
