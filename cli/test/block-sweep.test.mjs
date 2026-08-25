@@ -81,6 +81,18 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AQ: {
+    swept: false,
+    why: "seventeen tasks adopting the shared bento layer, and almost all of them are instruments "
+      + "rather than surfaces — a page census, a surface digest, an era classifier, an i18n reader, "
+      + "the duplicate gate, and the provider wiring that lets one form render in two shells. They "
+      + "change what a contributor may write and nothing a curator or an agent can do. The block's "
+      + "two outward consequences, the move from `/console` to `/bento` and the Ctrl/Cmd+K palette, "
+      + "are already carried by docs-shio's administration guide, including the note that old "
+      + "addresses redirect; they arrived with Block AR's surface work rather than with this "
+      + "block's closing line, which was SH919 deleting a test workaround once the design system "
+      + "shipped VDS78",
+  },
   AT: {
     swept: false,
     why: "two tasks about this repository's own build and its own reading of itself — SH916 removed "

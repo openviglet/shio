@@ -11,7 +11,7 @@ import { BentoEmptyState, useSectionChrome, type BentoTone } from "@viglet/vigle
 import type React from "react"
 import { cn } from "@/lib/utils"
 
-interface AdaptiveEmptyStateProps {
+interface EmptyStateProps {
   /** Tabler icon, as `BentoEmptyState` takes it. Rendered in both chromes. */
   icon: TablerIcon
   /** Bento only: the tone driving the icon chip's gradient. The console block is monochrome. */
@@ -26,7 +26,24 @@ interface AdaptiveEmptyStateProps {
 }
 
 /**
- * SH903 — the "nothing here" block, in either chrome, written once.
+ * SH903 — the "nothing here" block, written once.
+ *
+ * ## The one of the three that really does still branch (SH932)
+ *
+ * SH932 renamed three `Adaptive*` components on the grounds that none of them adapted any more.
+ * That was true of two. This one has a **live** second branch, and the reason is worth stating
+ * because it is not the reason the name suggested.
+ *
+ * It is not choosing between two *eras*. The console era is gone. It is choosing between **inside
+ * the shell and outside it**: `not-found.page.tsx` is mounted at App.tsx's bare `*`, for a path
+ * under neither shell and therefore under no `SectionCardChromeProvider`, so `useSectionChrome()`
+ * answers with its `console` default and this renders the plain block. That route is permanent —
+ * a 404 for an unknown path cannot be inside a shell that only covers known ones — so the branch
+ * is not migration debt waiting to be deleted.
+ *
+ * `EmptyState` rather than `AdaptiveEmptyState` all the same. *Adaptive* invited the next reader
+ * to conclude there is a console chrome to render into, and the cheapest way to honour that
+ * reading is to write one back.
  *
  * ## Three copies of the same twelve lines, and why that was the defect
  *
@@ -55,14 +72,14 @@ interface AdaptiveEmptyStateProps {
  * component that accepts `className` like any other, so the console branch is unchanged in
  * appearance and the call sites stop having to know which era they are in.
  */
-export function AdaptiveEmptyState({
+export function EmptyState({
   icon: Icon,
   tone,
   title,
   description,
   action,
   className,
-}: Readonly<AdaptiveEmptyStateProps>) {
+}: Readonly<EmptyStateProps>) {
   const chrome = useSectionChrome()
 
   if (chrome === "bento") {

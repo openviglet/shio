@@ -26,7 +26,7 @@ import { stripComments } from "./support/source-text.mjs"
  * drift". In console chrome the same thing is **two** components with no relationship:
  * `PageHeader` and `StickySaveBar`.
  *
- * So `AdaptivePageHeader` absorbed the save bar. One call in the page; a pair in console, a
+ * So `PageHero` absorbed the save bar. One call in the page; a pair in console, a
  * single morph in bento.
  *
  * ## And a check that could never have found what it was looking for
@@ -45,12 +45,12 @@ const SRC = join(HERE, "..", "src")
 const read = (p) => stripComments(readFileSync(join(SRC, p), "utf8"))
 const EDIT = read("app/console/content/post.edit.page.tsx")
 const NEW = read("app/console/content/post.new.page.tsx")
-const ADAPTER = read("components/adaptive-page-header.tsx")
+const ADAPTER = read("components/page-hero.tsx")
 const CHECK = stripComments(readFileSync(join(HERE, "..", "e2e", "console-check.mjs"), "utf8"))
 
 test("SH901: the post pages compose one header call, not a header and a save bar", () => {
   for (const [name, source] of [["post.edit", EDIT], ["post.new", NEW]]) {
-    assert.match(source, /AdaptivePageHeader/, `SH901: ${name} lost its adaptive header`)
+    assert.match(source, /PageHero/, `SH901: ${name} lost its adaptive header`)
     assert.doesNotMatch(source, /<StickySaveBar/,
       `SH901: ${name} renders StickySaveBar directly again. In bento the hero and the bar are one`
         + " component and the authoring contract forbids composing the halves by hand — a page"

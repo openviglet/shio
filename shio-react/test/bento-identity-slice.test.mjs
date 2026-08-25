@@ -109,7 +109,7 @@ test("SH904: the user editor is not on the entity shell, and the reason is in th
       + " commits on blur — against a user that is either the login key (renamed by tabbing away)"
       + " or a full name that has to be split back into two columns. Neither is a rename a curator"
       + " asked for, which is P7. It stays an adapter page.")
-  assert.match(editor, /AdaptivePageHeader/,
+  assert.match(editor, /PageHero/,
     "SH904: the user editor lost its adaptive header, so it cannot follow the chrome at all.")
 
   const model = readFileSync(join(SRC, "models", "auth", "user.ts"), "utf8")

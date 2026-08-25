@@ -9,7 +9,7 @@
 import { BentoFormHero, BentoHero } from "@viglet/viglet-design-system/bento"
 import type React from "react"
 
-interface AdaptivePageHeaderProps {
+interface PageHeroProps {
   /** Tabler icon component, rendered as the hero's `leading`. */
   icon?: React.ElementType
   title: string
@@ -45,8 +45,7 @@ interface AdaptivePageHeaderProps {
 }
 
 /**
- * SH900 — one page header that renders in either chrome, the way `AdaptiveSectionCard` does for
- * sections.
+ * SH900 — one page hero for every surface that has one, rather than a copy per page.
  *
  * ## Why this exists rather than a second copy of the content browser
  *
@@ -66,20 +65,22 @@ interface AdaptivePageHeaderProps {
  * and is worth writing twice. A large working surface gets the adapter, because the thing being
  * migrated is its chrome and nothing else.
  *
- * ## What SH910 left of it
+ * ## What SH910 left of it, and why it is no longer called Adaptive (SH932)
  *
- * The console branch is gone with the shell that rendered it, so this no longer chooses between
- * two chromes — it maps this product's header props onto the package's `BentoHero` and
- * `BentoFormHero`, which is still worth one place rather than twenty-two. The name outlived the
- * branching; renaming it touches the four readers that encode Block AR's two-era model
- * (`console-chrome-census`, `chrome-adapter`, `surface-digest`, `outside-shell-chrome`), so it is
- * **SH932** rather than a rename smuggled into a deletion.
+ * The console branch went with the shell that rendered it, so this chooses nothing about chrome.
+ * It maps this product's header props onto the package's `BentoHero` and `BentoFormHero` — a 1:2
+ * mapping, on whether the page gave it something only a save bar takes — which is still worth one
+ * place rather than twenty-four.
  *
- * It stays in `components/` for the reason it was put there: those readers decide a page's era
- * from its imports, and keeping the `BentoHero` import on this side of the boundary is what lets
- * them stay honest about the pages.
+ * The name outlived the branching, and a wrapper called *Adaptive* tells the next reader there is
+ * a chrome to choose. The cheapest way to honour that reading is to write the branch back, which
+ * is how a retired era returns one page at a time. `PageHero` says what it renders instead.
+ *
+ * It stays in `components/` for the reason it was put there: the readers that encode Block AR's
+ * two-era model decide a page's era from its imports, and keeping the `BentoHero` import on this
+ * side of the boundary is what lets them stay honest about the pages.
  */
-export function AdaptivePageHeader({
+export function PageHero({
   icon: Icon,
   title,
   eyebrow,
@@ -93,7 +94,7 @@ export function AdaptivePageHeader({
   saveDisabled,
   dirty,
   titleMissing,
-}: Readonly<AdaptivePageHeaderProps>) {
+}: Readonly<PageHeroProps>) {
   // A page has a save bar when it gave this adapter something only a save bar takes. `actions`
   // alone is not enough — the content browser passes two navigation buttons and wants no bar.
   const hasSaveBar = onCancel !== undefined || saveBadges !== undefined

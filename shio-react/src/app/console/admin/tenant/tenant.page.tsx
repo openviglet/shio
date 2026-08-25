@@ -1,4 +1,4 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { PageHero } from "@/components/page-hero"
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -88,7 +88,7 @@ export default function TenantPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={Building2}
         title={t("tenantAdmin.title")}
         eyebrow={t("admin.title")}

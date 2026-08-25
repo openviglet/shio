@@ -1656,6 +1656,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH931** — A bento URL now names its tenant with `?tenant=`, and opening it states the mismatch and offers a switch the reader presses rather than performing one.
 - **SH937** — The three lines waiting on a design-system release are a named list with a probe each, so the release that ends one turns the suite red instead of going unnoticed.
 - **SH923** — The frosted panel is the package's `BentoPanel` (VDS79), so nothing in this console decides what one looks like and the copied classes are gone.
+- **SH932** — The three adapters are `PageHero`, `Panel` and `EmptyState`; two had no chrome branch left and the third branches on inside-versus-outside the shell, which is permanent.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

@@ -1,7 +1,7 @@
 import { IconRobot } from "@tabler/icons-react"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ROUTES } from "@/app/routes.const"
@@ -132,11 +132,11 @@ export default function ReviewListPage() {
         SH906 — the curator's approval surface, and the one §LV.9 says must not be the last thing
         that still looks old. It is also the shape that section predicted the package covers least
         well: a hero over a list of expandable sessions, which is not a mosaic and should not be
-        made into one. `AdaptivePanel` rather than `AdaptiveSectionCard` because the panel has no
+        made into one. `Panel` rather than `AdaptiveSectionCard` because the panel has no
         header — the hero above already names the page, and a header-less section card renders a
         console card in both eras (SH902).
       */}
-      <AdaptivePageHeader
+      <PageHero
         icon={Bot}
         title={t("review.title")}
         eyebrow={t("admin.title")}
@@ -151,14 +151,14 @@ export default function ReviewListPage() {
       />
       <div className="p-6">
         {sessions.length === 0 ? (
-          <AdaptiveEmptyState
+          <EmptyState
             icon={IconRobot}
             tone="violet"
             title={t("review.blankTitle")}
             description={t("review.blankDescription")}
           />
         ) : (
-          <AdaptivePanel contentClassName="p-0 divide-y">
+          <Panel contentClassName="p-0 divide-y">
               {sessions.map((session) => {
                 const expanded = session.session in open
                 const detail = open[session.session]
@@ -280,7 +280,7 @@ export default function ReviewListPage() {
                   </div>
                 )
               })}
-          </AdaptivePanel>
+          </Panel>
         )}
       </div>
 

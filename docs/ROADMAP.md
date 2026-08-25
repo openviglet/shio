@@ -12,8 +12,8 @@
 ## Block AR — The curator's console, surface by surface (§LV)
 
 - ⏳ **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — The explorer's Monaco workers still fall back to the main thread under the dev server, unreproduced here because mounting the explorer needs a backend. → §LV.19
-- 📋 **SH932** (deps: —) **three components named Adaptive* no longer adapt, and the name is what the next page copies** — Each now has one branch, so the name promises a choice that was deleted and invites a second console era to be written against it. → §LV.22
 - ⏳ **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Collapsing fallbackRoute and bentoRoute into a single route field is the design system's call, since it owns BentoNavItem. → §LV.25
+- 📋 **SH938** (deps: —) **the census calls ten pages console-era because their bento imports arrive through a one-line seam** — Block AR's progress is read off that number, and it says nothing is migrated while ten surfaces render frosted bento and nothing else. → §LV.28
 
 ## Priority
 

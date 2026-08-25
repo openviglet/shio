@@ -157,7 +157,7 @@ test("SH905: every card in the six editors has a header, so the adapter can re-s
    * `AdaptiveSectionCard` re-skins only when it finds a Header child — its branch is
    * `chrome === "bento" && header` — so a header-less one renders a console card in *both* eras
    * and nothing says so. All eleven of these pages' cards had a real `CardHeader`, which is why
-   * this slice took `AdaptiveSectionCard` where SH902's panels needed `AdaptivePanel`. If a later
+   * this slice took `AdaptiveSectionCard` where SH902's panels needed `Panel`. If a later
    * edit drops a header, this is the difference between noticing and not.
    */
   const editors = [
@@ -175,7 +175,7 @@ test("SH905: every card in the six editors has a header, so the adapter can re-s
     assert.equal(opens, headers,
       `SH905: ${rel} has ${opens} AdaptiveSectionCard(s) and ${headers} header(s). One without a`
         + " header renders a console card under the bento shell in silence (SH902) — give it a"
-        + " header, or use AdaptivePanel and mean it.")
+        + " header, or use Panel and mean it.")
     assert.doesNotMatch(source, /@\/components\/ui\/card/,
       `SH905: ${rel} imports Card again, so that panel cannot follow the chrome provider.`)
   }

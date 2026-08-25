@@ -12,9 +12,9 @@ import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -98,7 +98,7 @@ export default function GraphiQLPage() {
     }
 
     const header = (
-        <AdaptivePageHeader
+        <PageHero
             icon={IconBrandGraphql}
             title={t("graphql.title")}
             eyebrow={t("admin.title")}
@@ -111,7 +111,7 @@ export default function GraphiQLPage() {
             <>
                 {header}
                 <div className="p-6">
-                    <AdaptiveEmptyState
+                    <EmptyState
                         icon={IconKey}
                         tone="violet"
                         title={t("graphql.noTokensTitle")}
@@ -151,7 +151,7 @@ export default function GraphiQLPage() {
               this console uses, which is the one visible change on that surface.
             */}
             <div className="px-4 pt-4 md:px-6">
-                <AdaptivePanel contentClassName="flex flex-wrap items-center gap-3 p-3">
+                <Panel contentClassName="flex flex-wrap items-center gap-3 p-3">
                     <Label htmlFor="gql-token" className="text-sm font-medium whitespace-nowrap">
                         {t("graphql.token")}
                     </Label>
@@ -178,7 +178,7 @@ export default function GraphiQLPage() {
                             {t("graphql.noToken")}
                         </span>
                     )}
-                </AdaptivePanel>
+                </Panel>
             </div>
 
             <div className="min-h-0 flex-1 p-4 md:px-6">

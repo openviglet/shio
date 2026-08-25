@@ -1,4 +1,4 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { PageHero } from "@/components/page-hero"
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
@@ -61,7 +61,7 @@ export default function PostUnifiedNewPage() {
   if (!postType) {
     return (
       <>
-        <AdaptivePageHeader icon={IconFileText} title={t("content.newPost")} urlBase={ROUTES.CONTENT_ROOT} />
+        <PageHero icon={IconFileText} title={t("content.newPost")} urlBase={ROUTES.CONTENT_ROOT} />
         <div className="p-6 flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{t("common.loading")}</span>
@@ -75,7 +75,7 @@ export default function PostUnifiedNewPage() {
   return (
     <>
       {/* SH901 — one call, for the same 1:2 reason as the editor next door. */}
-      <AdaptivePageHeader
+      <PageHero
         icon={IconFileText}
         eyebrow={t("content.postLabel")}
         title={t("content.newPost")}

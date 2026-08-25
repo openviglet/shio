@@ -64,7 +64,7 @@ export default function BentoPostTypeSelectPage() {
   return (
     <main className="mx-auto max-w-7xl space-y-8 px-6 pb-12">
       {/*
-        SH908 — `BentoHero`, not `AdaptivePageHeader`, and this was a crash rather than a style
+        SH908 — `BentoHero`, not `PageHero`, and this was a crash rather than a style
         choice. This page lives in the bento tree and is mounted with **no**
         `SectionCardChromeProvider`, so the adapter answered with its console default: `PageHeader`
         → `SidebarTrigger` → `useSidebar()`, which throws where no `SidebarProvider` exists — and

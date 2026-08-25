@@ -1,4 +1,4 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { PageHero } from "@/components/page-hero"
 /*
  * SH892 — the section chrome comes from the adapter, not from a Card. This is the form the
  * adapter exists for: the schema is built at runtime from the post type and the fields are
@@ -173,7 +173,7 @@ export default function PostUnifiedEditPage() {
   if (!post) {
     return (
       <>
-        <AdaptivePageHeader icon={IconFileText} title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
+        <PageHero icon={IconFileText} title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
         <div className="p-6 flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{t("common.loading")}</span>
@@ -190,7 +190,7 @@ export default function PostUnifiedEditPage() {
         forbids composing them by hand; console chrome has no such pairing, so the adapter spans
         a 1:2 mapping. Every badge and every action below is exactly what the console rendered.
       */}
-      <AdaptivePageHeader
+      <PageHero
         icon={IconFileText}
         eyebrow={t("content.postLabel")}
         title={t("content.editPost")}

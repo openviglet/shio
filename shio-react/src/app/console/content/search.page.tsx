@@ -1,7 +1,7 @@
 import { IconSearch } from "@tabler/icons-react"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -56,7 +56,7 @@ export default function SearchPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={SearchIcon}
         title={t("content.searchTitle")}
         subtitle={t("content.searchDescription")}
@@ -104,21 +104,21 @@ export default function SearchPage() {
           the probe landed on exactly the state that rendered no surface at all.
         */}
         {!searched ? (
-          <AdaptiveEmptyState
+          <EmptyState
             icon={IconSearch}
             tone="slate"
             title={t("content.searchPromptTitle")}
             description={t("content.searchPromptHint")}
           />
         ) : results.length === 0 ? (
-          <AdaptiveEmptyState
+          <EmptyState
             icon={IconSearch}
             tone="slate"
             title={t("content.searchNoResults")}
             description={t("content.searchNoResultsHint")}
           />
         ) : (
-          <AdaptivePanel contentClassName="p-0">
+          <Panel contentClassName="p-0">
             <div className="px-4 py-2 text-sm text-muted-foreground border-b">
               {t("content.searchResultCount", { count: total })}
             </div>
@@ -143,7 +143,7 @@ export default function SearchPage() {
                 ))}
               </TableBody>
             </Table>
-          </AdaptivePanel>
+          </Panel>
         )}
       </div>
     </>

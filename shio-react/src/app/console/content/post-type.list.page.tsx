@@ -1,5 +1,5 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -35,7 +35,7 @@ export default function PostTypeListPage() {
   return (
     <>
       {/* SH902 — header and panel through the adapters; the row list itself is untouched. */}
-      <AdaptivePageHeader
+      <PageHero
         icon={IconFileText}
         eyebrow={t("sidebar.content")}
         title={t("content.postTypes")}
@@ -49,7 +49,7 @@ export default function PostTypeListPage() {
             {t("common.create")}
           </Button>
         </div>
-        <AdaptivePanel contentClassName="p-0">
+        <Panel contentClassName="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -90,7 +90,7 @@ export default function PostTypeListPage() {
                 )}
               </TableBody>
             </Table>
-        </AdaptivePanel>
+        </Panel>
       </div>
     </>
   )

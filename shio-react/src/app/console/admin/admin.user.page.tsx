@@ -1,5 +1,5 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -47,7 +47,7 @@ export default function AdminUserPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={IconShieldCog}
         title={isNew ? t("admin.newUser") : t("admin.editUser")}
         eyebrow={t("admin.users")}
@@ -55,7 +55,7 @@ export default function AdminUserPage() {
         urlBase={ROUTES.ADMIN_ROOT}
       />
       <div className="p-6">
-        <AdaptivePanel contentClassName="p-6">
+        <Panel contentClassName="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -139,7 +139,7 @@ export default function AdminUserPage() {
                 </div>
               </form>
             </Form>
-        </AdaptivePanel>
+        </Panel>
       </div>
     </>
   )

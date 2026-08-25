@@ -1341,12 +1341,12 @@ written **once**, and the route decides its chrome:
 ```
 
 `AdaptiveSectionCard` covers the three panels;
-[`AdaptivePageHeader`](../../shio-react/src/components/adaptive-page-header.tsx) covers the
+[`PageHero`](../../shio-react/src/components/page-hero.tsx) covers the
 header — `PageHeader` or `BentoHero`, chosen by `useSectionChrome()`. **A small entity-shaped page
 is worth writing twice, because what changes is its whole structure. A large working surface is
 not, because what changes is its chrome.**
 
-`AdaptivePageHeader` lives in `components/` and not beside a page, deliberately: it imports
+`PageHero` lives in `components/` and not beside a page, deliberately: it imports
 `BentoHero`, a genuinely bento-era name, and keeping that import on this side of the boundary is
 what lets both era classifiers stay honest about the pages that use it.
 
@@ -1382,7 +1382,7 @@ widgets, of which the chrome is a header, a save bar and one panel. SH900's rule
 In bento the morph is **one** component: `BentoFormHero` renders the controls in the hero and
 fades a fixed bar in as the hero scrolls away, and the authoring contract forbids composing those
 halves by hand — "two halves that drift". In console chrome the same thing is **two** components
-with no relationship: `PageHeader` and `StickySaveBar`. So `AdaptivePageHeader` absorbed the save
+with no relationship: `PageHeader` and `StickySaveBar`. So `PageHero` absorbed the save
 bar and now spans a 1:2 mapping.
 
 It decides on `onCancel`/`saveBadges`, never on `actions` alone — the content browser passes two
@@ -1415,7 +1415,7 @@ now empty, four of them empty *by migration* rather than by never having had chr
 ## A header-less section is a console card in both eras (SH902)
 
 The post-type slice — list, new, edit — is three pages, and the migration was meant to be the
-routine one: `AdaptivePageHeader` on all three, the edit page passing `saveTitle`/`onCancel`/
+routine one: `PageHero` on all three, the edit page passing `saveTitle`/`onCancel`/
 `loading`/`saveDisabled`, three routes mounted under `SectionCardChromeProvider chrome="bento"`.
 That part was routine. What it found was not.
 
@@ -1437,7 +1437,7 @@ the census reads it as migrated, and the era classifier is right to say so. What
 `checkBentoSurface` reading `backdrop-filter` off computed style — `frost: null` on a page that
 looked finished.
 
-[`adaptive-panel.tsx`](../../shio-react/src/components/adaptive-panel.tsx) is the fix: frosted
+[`panel.tsx`](../../shio-react/src/components/panel.tsx) is the fix: frosted
 container, no header, one implementation instead of four hand-rolled `bento-glass rounded-2xl`
 call sites that drift the moment two of them differ. **SH923** asks the package for the component
 so this can be deleted; the classes are copied from `BentoSaveBar` so the two match today.
@@ -1610,11 +1610,11 @@ So the slice divides by what each half actually is:
   identity is name + description + enabled, which the entity shell handles well — but their
   *bodies* are the substance: a vendor property map, a scope and site picker, an event set, a
   provisioning flow. The shell's value is lifting identity out of a form, and on a 300-line token
-  form that is three fields of twelve. `AdaptivePageHeader` gives the same morph at a fraction of
+  form that is three fields of twelve. `PageHero` gives the same morph at a fraction of
   the risk (SH900's rule).
 
 Every card in all six had a real `CardHeader`, so this slice took `AdaptiveSectionCard` where
-SH902's header-less panels needed `AdaptivePanel` — and a lint now holds that, because a sweep this
+SH902's header-less panels needed `Panel` — and a lint now holds that, because a sweep this
 size is exactly where SH902's defect gets reintroduced eleven times.
 
 ### The page that needed something — and needed the opposite
@@ -1663,7 +1663,7 @@ is the page shape the package covers least well — a hero over a table is not a
 to let them have a plain section rather than tiles.
 
 They did. The review queue is a list of expandable agent sessions and the activity log is an audit
-table; both take `AdaptivePageHeader` + `AdaptivePanel` and stay exactly the shape they were. An
+table; both take `PageHero` + `Panel` and stay exactly the shape they were. An
 audit log is read down a column, and turning it into a mosaic would trade a readable column for a
 grid of cards saying the same thing worse. The marketplace is the one that genuinely is a mosaic,
 so its grid stayed a grid.
@@ -1684,7 +1684,7 @@ DOM walk finds. This is a thing that *looks* interactive and is not one — no n
 walk, and it renders identically to a working control. The tile is a real `<button>` now, inside
 the panel rather than instead of it.
 
-The assertion holds the property rather than the fix: no `AdaptivePanel` in that grid may carry
+The assertion holds the property rather than the fix: no `Panel` in that grid may carry
 `onClick`. Wrapping it in a button, making it a link, or giving the panel real button semantics all
 pass; a div with a handler does not.
 
@@ -1756,8 +1756,8 @@ something the console does not control", and the second one matters more than it
 suggests: during a cutover it is where a stale bookmark or a redirect that has not landed puts
 somebody who did not choose to be there.
 
-The explorer is the adapter case (SH900's rule): `AdaptivePageHeader`, the token toolbar as an
-`AdaptivePanel`, the no-tokens void as the shared `AdaptiveEmptyState` — the last row in SH903's
+The explorer is the adapter case (SH900's rule): `PageHero`, the token toolbar as an
+`Panel`, the no-tokens void as the shared `EmptyState` — the last row in SH903's
 `STILL_HAND_ROLLED`, now empty. Its body is GraphiQL, which is nobody's chrome.
 
 **Its bento route is the one Block AR route not declared in `App.tsx`.** The page is `lazy()` so
@@ -1774,16 +1774,17 @@ tree, or at `App.tsx`'s bare `*`, blanks the application behind the error bounda
 
 That is why the not-found page has rendered no chrome since SH180, and **nothing recorded it**. The
 census called it "console-era by absence", which reads as an accident of size rather than a
-constraint. So the obvious migration — give it an `AdaptivePageHeader` like the other thirteen
+constraint. So the obvious migration — give it an `PageHero` like the other thirteen
 surfaces — is a white screen on the one route that matters most.
 
 [`outside-shell-chrome.test.mjs`](../../shio-react/test/outside-shell-chrome.test.mjs) is the
 instrument, and it asks the question of **every** component `App.tsx` mounts outside the console
 shell — 44 of them — rather than of the one that was found. It caught a second, transitive form in
-the same run: `AdaptivePageHeader`'s console branch *is* `PageHeader`, so a page composing the
-adapter with no `SectionCardChromeProvider` above it carries the same crash one file away. **It
+the same run: at the time, `AdaptivePageHeader`'s console branch **was** `PageHeader`, so a page
+composing the adapter with no `SectionCardChromeProvider` above it carried the same crash one file
+away. (SH910 deleted that branch and SH932 re-pointed the probe — see below.) **It
 found one on its first run**: `bento/content/post-type-select.page.tsx`, shipped by SH901, rendering
-`AdaptivePageHeader` at a bento route with no provider — `/bento/content/folder/:id/post-type-select`
+`PageHero` at a bento route with no provider — `/bento/content/folder/:id/post-type-select`
 was a blank page. It renders `BentoHero` now; a bento-only page has no second chrome to adapt to.
 
 ### The not-found page renders in whatever chrome the path implies
@@ -1988,13 +1989,44 @@ a tenant was resolved**: `ShVigletTenantResolver` reads the session (set by
 the URL. It kept generated links inside whatever prefix you arrived with, and nothing else. What is
 genuinely lost is sharing a link that names its tenant, which is **SH931**.
 
+### The adapters stopped adapting, and stopped being called Adaptive (SH932)
+
+`AdaptivePageHeader`, `AdaptivePanel` and `AdaptiveEmptyState` are `PageHero`, `Panel` and
+`EmptyState`. The name was the defect: a wrapper called *Adaptive* tells the next reader there is a
+chrome to choose, and the cheapest way to honour that reading is to write the branch back — which is
+how a retired era returns one page at a time.
+
+**The premise was right about two of the three, and SH932 measured the third rather than inheriting
+it.** `PageHero` has no chrome branch at all: SH910 deleted it, and what is left maps this product's
+header props onto `BentoHero` or `BentoFormHero` depending on whether the page wants a save bar.
+`Panel`'s console branch was **dead** — every call site is under a `chrome="bento"` provider,
+including the one that looked like an exception, since `not-found.page.tsx` composes it inside its
+`if (bento)` arm — so the branch is gone and the file is a seam, not an adapter.
+
+`EmptyState` still branches, and **not between eras**. It chooses between inside the shell and
+outside it: `not-found.page.tsx` is mounted at `App.tsx`'s bare `*`, under no provider, so
+`useSectionChrome()` answers with its `console` default. That route is permanent — a 404 for an
+unknown path cannot live inside a shell that only covers known ones — so the branch is not
+migration debt.
+
+That correction reached an instrument. `outside-shell-chrome.test.mjs` carried a transitive probe
+built on "`AdaptivePageHeader`'s console branch *is* `PageHeader`", which SH910 had made false, so
+it was guarding a crash that could no longer happen — the exact rot that file's own SH910 note warns
+about, one component along. It now holds a named `CHROME_BRANCHING` list and asserts each entry
+still reads the hook, so the list cannot rot into names that branch on nothing. Proven by removing
+the hook from `not-found.page.tsx` and watching it fail.
+
+One collision worth knowing: `static-file.list.page.tsx` already had a local `EmptyState` deciding
+*which message* an empty file list shows — filtered-out versus genuinely blank. It is
+`FilesEmptyState` now, named for the surface rather than the shape.
+
 ### The frosted panel is the package's now (SH923)
 
-`AdaptivePanel` carried `bento-glass rounded-2xl border shadow-md` copied out of `BentoSaveBar`,
+`Panel` carried `bento-glass rounded-2xl border shadow-md` copied out of `BentoSaveBar`,
 with a comment promising the two would be kept in step by hand. **VDS79 exports `BentoPanel`** and
 2026.3.5 is the first release carrying it, so the copy is gone: nothing in this console decides what
 a frosted panel looks like, and the next consumer that needs one asks the package instead of picking
-its own radius. What is left in `components/adaptive-panel.tsx` is the console fallback branch, and
+its own radius. What is left in `components/panel.tsx` is the console fallback branch, and
 **SH932** is the task that removes both it and the file's name.
 
 Adding the export tripped `bento-vocabulary.test.mjs` (SH887), which is the reader that keeps the
@@ -2115,9 +2147,9 @@ rendered *before* this task fell out of the same walk — `tenant-gateway.tsx` a
 ### The premise was slightly wrong, and that is where the work was
 
 §LV.13 says the shell and its page header "stay declared and nothing reaches them". True of the
-shell; **not** true of the header. `AdaptivePageHeader`'s console branch rendered `PageHeader`
+shell; **not** true of the header. `PageHero`'s console branch rendered `PageHeader`
 plus `StickySaveBar`, so deleting the file meant collapsing that branch — which is what made this
-a change to twenty-two live pages' chrome rather than a pure deletion. `AdaptivePanel` was left
+a change to twenty-two live pages' chrome rather than a pure deletion. `Panel` was left
 alone on purpose: **SH923** asks the package for the frosted panel that retires it, and renaming
 what SH923 will delete is work thrown away. **SH932** carries the names, which no longer describe
 what those components do.

@@ -1,4 +1,4 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { PageHero } from "@/components/page-hero"
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -83,7 +83,7 @@ export default function EmailConfigPage() {
         would have been SH899's dead button one more time. This page's Save is an `onClick`, so it
         goes in `actions`, and there is exactly one of it.
       */}
-      <AdaptivePageHeader
+      <PageHero
         icon={Mail}
         title={t("emailConfig.title")}
         eyebrow={t("admin.title")}

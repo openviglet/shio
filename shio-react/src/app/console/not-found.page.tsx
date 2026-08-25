@@ -2,9 +2,9 @@ import { IconError404 } from "@tabler/icons-react"
 import { useSectionChrome } from "@viglet/viglet-design-system/bento"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/app/routes.const"
 
@@ -29,7 +29,7 @@ import { ROUTES } from "@/app/routes.const"
  * a stale `/bento/…` link lands in the bento shell and is offered the bento home, a `/console/…`
  * one keeps the sidebar it was already in.
  *
- * **The header is rendered only in bento, and that is not a style choice.** `AdaptivePageHeader`'s
+ * **The header is rendered only in bento, and that is not a style choice.** `PageHero`'s
  * console branch is `PageHeader`, which calls `SidebarTrigger` → `useSidebar()`, which *throws*
  * outside a `SidebarProvider`. This page is also mounted at App.tsx's bare `*` route — outside
  * every shell, for a path that is not under `/console` or `/bento` at all — so a console header
@@ -59,17 +59,17 @@ export default function NotFoundPage() {
   if (bento) {
     return (
       <>
-        <AdaptivePageHeader
+        <PageHero
           icon={IconError404}
           eyebrow="404"
           title={t("common.notFoundTitle")}
           subtitle={t("common.notFoundDescription")}
         />
         <div className="p-6">
-          <AdaptivePanel contentClassName="flex flex-col items-center gap-4 p-8 text-center">
+          <Panel contentClassName="flex flex-col items-center gap-4 p-8 text-center">
             {path}
             {back}
-          </AdaptivePanel>
+          </Panel>
         </div>
       </>
     )
@@ -78,7 +78,7 @@ export default function NotFoundPage() {
   return (
     <div className="py-8">
       <h1 className="text-center text-2xl font-semibold">404</h1>
-      <AdaptiveEmptyState
+      <EmptyState
         icon={IconError404}
         title={t("common.notFoundTitle")}
         description={

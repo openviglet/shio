@@ -1,7 +1,7 @@
 import { IconHistory } from "@tabler/icons-react"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -59,7 +59,7 @@ export default function ActivityListPage() {
         package covers least well. It stays a table: an audit log is read down a column, and a
         mosaic of tiles is the wrong instrument for "what changed, by whom, when".
       */}
-      <AdaptivePageHeader
+      <PageHero
         icon={History}
         title={t("activity.title")}
         eyebrow={t("admin.title")}
@@ -74,14 +74,14 @@ export default function ActivityListPage() {
       />
       <div className="p-6">
         {items.length === 0 ? (
-          <AdaptiveEmptyState
+          <EmptyState
             icon={IconHistory}
             tone="slate"
             title={t("activity.blankTitle")}
             description={t("activity.blankDescription")}
           />
         ) : (
-          <AdaptivePanel contentClassName="p-0">
+          <Panel contentClassName="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -108,7 +108,7 @@ export default function ActivityListPage() {
                   ))}
                 </TableBody>
               </Table>
-          </AdaptivePanel>
+          </Panel>
         )}
       </div>
     </>

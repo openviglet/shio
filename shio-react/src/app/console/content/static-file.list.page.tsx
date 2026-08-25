@@ -1,7 +1,7 @@
 import { IconPhoto } from "@tabler/icons-react"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -210,7 +210,7 @@ export default function StaticFileListPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={ImageIcon}
         title={t("staticFile.title")}
         subtitle={t("staticFile.description")}
@@ -309,7 +309,7 @@ export default function StaticFileListPage() {
 
         {/* Upload queue */}
         {uploads.length > 0 && (
-          <AdaptivePanel className="mb-4" contentClassName="p-3 space-y-2">
+          <Panel className="mb-4" contentClassName="p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{t("staticFile.uploadsTitle")}</span>
               <Button variant="ghost" size="sm" className="h-6 text-xs"
@@ -330,13 +330,13 @@ export default function StaticFileListPage() {
                 </div>
               </div>
             ))}
-          </AdaptivePanel>
+          </Panel>
         )}
 
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
-          <EmptyState items={items.length} query={query} category={category} t={t} />
+          <FilesEmptyState items={items.length} query={query} category={category} t={t} />
         ) : view === "grid" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {filtered.map((item) => (
@@ -444,7 +444,7 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
   onToggleSelect: (id: string) => void
 }) {
   return (
-    <AdaptivePanel contentClassName="p-0">
+    <Panel contentClassName="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -514,7 +514,7 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
             ))}
           </TableBody>
         </Table>
-    </AdaptivePanel>
+    </Panel>
   )
 }
 
@@ -529,15 +529,16 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
  *
  * `filteredOut` is what tells them apart, and it needs `items` — the unfiltered count — rather
  * than the filtered one the caller is already rendering. That distinction is the reason this stays
- * a named component after SH903 moved the markup into `AdaptiveEmptyState`: the shape is shared,
- * this decision is not.
+ * a named component after SH903 moved the markup into `EmptyState`: the shape is shared,
+ * this decision is not. Named for the surface rather than the shape (SH932), because the shared
+ * component it wraps is called `EmptyState` now and one name cannot mean both.
  */
-function EmptyState({ items, query, category, t }: {
+function FilesEmptyState({ items, query, category, t }: {
   items: number; query: string; category: string; t: (key: string) => string
 }) {
   const filteredOut = items > 0 && (query.trim() !== "" || category !== "all")
   return (
-    <AdaptiveEmptyState
+    <EmptyState
       icon={IconPhoto}
       tone={filteredOut ? "slate" : "amber"}
       title={filteredOut ? t("staticFile.noMatches") : t("staticFile.blankTitle")}

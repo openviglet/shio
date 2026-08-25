@@ -1,7 +1,7 @@
 import { IconTrash } from "@tabler/icons-react"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -112,7 +112,7 @@ export default function TrashPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={Trash2}
         title={t("content.trash")}
         subtitle={t("content.trashDescription")}
@@ -121,14 +121,14 @@ export default function TrashPage() {
       <div className="p-6">
 
         {!loading && items.length === 0 ? (
-          <AdaptiveEmptyState
+          <EmptyState
             icon={IconTrash}
             tone="slate"
             title={t("content.trashEmpty")}
             description={t("content.trashEmptyHint")}
           />
         ) : (
-          <AdaptivePanel contentClassName="p-0">
+          <Panel contentClassName="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -164,7 +164,7 @@ export default function TrashPage() {
                 ))}
               </TableBody>
             </Table>
-          </AdaptivePanel>
+          </Panel>
         )}
       </div>
     </>

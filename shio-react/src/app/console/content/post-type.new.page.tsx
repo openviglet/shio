@@ -1,4 +1,4 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { PageHero } from "@/components/page-hero"
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,7 +38,7 @@ export default function PostTypeNewPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={IconFileText}
         eyebrow={t("content.postType")}
         title={t("content.newPostType")}

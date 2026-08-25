@@ -1,7 +1,7 @@
 import { IconPackage } from "@tabler/icons-react"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -163,7 +163,7 @@ export default function MarketplaceListPage() {
         SH906 — the marketplace is the one of these three that genuinely is a mosaic, so its
         grid stays a grid. The refresh moves into the hero beside the filters it belongs with.
       */}
-      <AdaptivePageHeader
+      <PageHero
         icon={Package}
         title={t("marketplace.title")}
         eyebrow={t("admin.title")}
@@ -208,7 +208,7 @@ export default function MarketplaceListPage() {
       {catalogue && <SourceNote source={catalogue.source} />}
 
       {items.length === 0 && !loading ? (
-        <AdaptiveEmptyState
+        <EmptyState
           icon={IconPackage}
           tone="blue"
           title={t("marketplace.empty")}
@@ -225,7 +225,7 @@ export default function MarketplaceListPage() {
               inside interactive things, and this is a thing that looks interactive and is not one.
               The panel carries the chrome; the button carries the behaviour.
             */
-            <AdaptivePanel
+            <Panel
               key={item.id}
               className="cursor-pointer transition-colors hover:border-primary"
               contentClassName="p-0"
@@ -255,7 +255,7 @@ export default function MarketplaceListPage() {
                   ))}
                 </div>
               </button>
-            </AdaptivePanel>
+            </Panel>
           ))}
         </div>
       )}

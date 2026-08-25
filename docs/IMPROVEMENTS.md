@@ -962,31 +962,6 @@ people learn to skim**, which is the state SH579 exists to prevent one level up.
 make the workers resolve in dev, or teach the probe the difference and print which
 server answered.
 
-### LV.22 The adapters stopped adapting, and kept the name (SH932)
-
-`AdaptivePageHeader` chose between a console header plus a sticky save bar and the bento
-hero morph. SH910 deleted the console branch, so it now maps this product's header props
-onto `BentoHero` and `BentoFormHero` and nothing else. `AdaptivePanel` and
-`AdaptiveEmptyState` are one task behind it: SH923 asks the package for the frosted
-panel that would retire the first, and the second's console branch is in the same
-position the header's was.
-
-The name is the problem rather than the indirection. A wrapper that maps twenty-two call
-sites onto two package components earns its file; a wrapper called *Adaptive* tells the
-next reader there is a chrome to choose, and the cheapest way to honour that is to write
-the branch back.
-
-It was left out of SH910 deliberately, and the reason is worth keeping. Four readers
-encode Block AR's two-era model by name — `console-chrome-census`, `chrome-adapter`,
-`surface-digest` and `outside-shell-chrome` — and `console-chrome-census` decides a
-page's *era* from whether it imports the bento subpath, with `AdaptiveSectionCard`
-excluded by name as era-neutral. Renaming the components moves that exclusion list, the
-census keys and the digest's classifier in one diff. That is a coordinated pass over the
-instruments, and smuggling it into a deletion is how one of the four ends up quietly
-classifying nothing.
-
-Do it after SH923, so the panel is retired rather than renamed twice.
-
 ### LV.25 Two route fields that no longer differ (SH935)
 
 `bento-nav.ts` gives every surface a `fallbackRoute` — where it lived — and an optional
@@ -1011,6 +986,32 @@ Collapse the pair to one `route`, drop the marker rule or re-derive it from some
 true, and let the test assert the single field. The package owns `BentoNavItem`, so the
 shape change is a conversation with it rather than a local edit — which is why this is a
 task and not a cleanup.
+
+### LV.28 What the era census actually measures (SH938)
+
+`console-chrome-census` decides a page's era from whether it imports the bento subpath,
+with three package names excluded as era-neutral. It reports **23 console pages, 0 on
+bento**, and that number is the one Block AR's progress is read from.
+
+It is wrong about at least ten of them. Every page that composes `Panel` is mounted
+under `SectionCardChromeProvider chrome="bento"` — the content browser, search, the
+trash, the file list, the post-type list, the review, activity and marketplace lists,
+the admin user page, the GraphQL explorer. They render frosted bento surfaces and
+nothing else. The census calls them console-era because their bento imports arrive
+through `@/components/panel` rather than directly, and it calls them "no chrome" because
+they render none of the console probes either. Both halves are true and the conclusion
+is not.
+
+`Panel` is what makes the misreading possible, and after SH932 it is a pure
+pass-through: one JSX line onto `BentoPanel` with identical props. Deleting it and
+letting the ten call sites import `BentoPanel` would fix the classification as a side
+effect — which is exactly why it was kept out of SH932. Moving Block AR's headline
+number from "0 on bento" to "10 on bento" is a claim about how far the migration got,
+and it deserves its own diff rather than arriving inside a rename.
+
+Decide which the census should measure: where a page's chrome comes from, or which
+chrome it renders. The second is the useful question and the first is what it currently
+answers.
 
 ## LVI What Turing's index never receives
 

@@ -1,4 +1,4 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { PageHero } from "@/components/page-hero"
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -100,7 +100,7 @@ export default function AuthProviderPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={Fingerprint}
         title={t("authProvider.title")}
         eyebrow={t("admin.title")}

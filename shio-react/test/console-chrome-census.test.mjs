@@ -110,7 +110,7 @@ function isBento(source) {
  * migrated — then delete the probe in the same diff — or its import path was renamed and this
  * reader has gone blind to a whole layer of chrome while its count went down." It is the first of
  * the four to reach zero, and it got there by migration: the three pages that rendered a console
- * sticky save bar pass their save props through `AdaptivePageHeader` now, which renders the pair
+ * sticky save bar pass their save props through `PageHero` now, which renders the pair
  * in console chrome and the single `BentoFormHero` morph in bento.
  *
  * Deleting it is not losing coverage. `chrome-adapter.test.mjs` asserts that no page mounts
@@ -141,8 +141,8 @@ const CONSOLE_CHROME = [
  * those pages were deleted with the console route tree, because a bento surface had replaced them.
  *
  * The twenty-three that remain are the adapter pages. They are console-*era* by directory and by
- * import, and they render no console chrome: their header is `AdaptivePageHeader`, their panels
- * are `AdaptiveSectionCard`/`AdaptivePanel`, and every one of them is mounted under `/bento`.
+ * import, and they render no console chrome: their header is `PageHero`, their panels
+ * are `AdaptiveSectionCard`/`Panel`, and every one of them is mounted under `/bento`.
  *
  * Keep the shape. A page migrated to bento is deleted from here, not decremented from a total, and
  * a new console page added on the old chrome has to be written in here, in a diff somebody reads —
@@ -159,7 +159,7 @@ const STILL_CONSOLE = {
   "admin/admin.user.page.tsx": [],
   // SH905 — the six infrastructure editors, empty by migration. Every card in them had a
   // real CardHeader, which is why this slice took AdaptiveSectionCard where SH902's
-  // header-less panels needed AdaptivePanel.
+  // header-less panels needed Panel.
   "admin/api-token/api-token.page.tsx": [],
   "admin/auth-provider/auth-provider.page.tsx": [],
   "admin/email-config/email-config.page.tsx": [],
@@ -180,21 +180,21 @@ const STILL_CONSOLE = {
   // SH892 — the Card marker is gone because the section chrome is the adapter now, not
   // @/components/ui/card. The page is still console-era: PageHeader and the console sticky
   // save bar are what SH902 replaces.
-  // SH902 — all three empty by migration: one AdaptivePageHeader call replaces the header
-  // and the save bar, and the panel is an AdaptivePanel.
+  // SH902 — all three empty by migration: one PageHero call replaces the header
+  // and the save bar, and the panel is an Panel.
   "content/post-type.edit.page.tsx": [],
   "content/post-type.list.page.tsx": [],
   "content/post-type.new.page.tsx": [],
   // SH892 — same swap, on the form that builds its schema at runtime. SH901 owns the rest.
   /*
    * SH901 — both empty by migration, the way the content browser is (SH900). The header and
-   * the save bar are one AdaptivePageHeader call and the panel is an AdaptiveSectionCard,
+   * the save bar are one PageHero call and the panel is an AdaptiveSectionCard,
    * so the page composes no console chrome of its own while still being console-era.
    */
   "content/post.edit.page.tsx": [],
   "content/post.new.page.tsx": [],
-  // SH903 — all three empty by migration: AdaptivePageHeader, AdaptivePanel and the shared
-  // AdaptiveEmptyState replace the header, the card and three copies of the "nothing here" void.
+  // SH903 — all three empty by migration: PageHero, Panel and the shared
+  // EmptyState replace the header, the card and three copies of the "nothing here" void.
   "content/search.page.tsx": [],
   "content/static-file.list.page.tsx": [],
   "content/trash.page.tsx": [],

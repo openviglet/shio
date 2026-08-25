@@ -1,4 +1,4 @@
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { PageHero } from "@/components/page-hero"
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -102,7 +102,7 @@ export default function SiteWebhookPage() {
 
   return (
     <>
-      <AdaptivePageHeader
+      <PageHero
         icon={Webhook}
         title={t("siteWebhook.title")}
         eyebrow={t("admin.title")}

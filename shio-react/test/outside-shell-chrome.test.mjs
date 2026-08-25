@@ -34,7 +34,7 @@ import { stripComments } from "./support/source-text.mjs"
  * `not-found.page.tsx` is mounted in **three** places — inside the console shell, inside the bento
  * shell (this task), and at the bare `*` for a path under neither. It rendered no chrome at all
  * from SH180 until now, and the census recorded that as "console-era by absence" without a word
- * about the reason. So the obvious migration — give it an `AdaptivePageHeader` like the other
+ * about the reason. So the obvious migration — give it an `PageHero` like the other
  * thirteen surfaces in Block AR — is a crash on the one route that matters most, and the
  * information that would have stopped it existed nowhere.
  *
@@ -143,36 +143,63 @@ test("SH908: nothing mounted outside the shell needs a provider only the shell m
       + "  Take what you need as a prop, or render the surface inside the shell.")
 })
 
-/**
- * The transitive half, which the import check above cannot see.
+/*
+ * SH932 — the transitive half, and the premise it used to run on.
  *
- * `AdaptivePageHeader`'s console branch *is* `PageHeader`, so a page that composes the adapter
- * carries the same crash — it just carries it one file away, where a grep for the import finds
- * nothing. Under a `SectionCardChromeProvider chrome="bento"` that branch is unreachable and the
- * adapter is exactly the right thing to use. Mounted with no provider — App.tsx's bare `*`, which
- * is a path under neither shell — console is the default and the branch is the one that runs.
+ * This was written about `AdaptivePageHeader`: its console branch *was* `PageHeader`, so a page
+ * composing the adapter outside a bento provider carried `PageHeader → SidebarTrigger →
+ * useSidebar()` one file away, where a grep for the import found nothing. SH910 deleted that
+ * branch and SH932 renamed what was left to `PageHero`, which maps onto `BentoHero` and
+ * `BentoFormHero` and nothing else. **Composing it outside the shell is now harmless**, so the
+ * probe that named it was guarding a crash that cannot happen — the exact shape the SH910 note
+ * above warns about, one component along.
  *
- * So: outside the shell and outside a bento provider, a page composing the adapter has to decide
- * for itself, which means reading `useSectionChrome()`.
+ * The *class* outlives the instance again, and it has a new instance. `EmptyState` is the one
+ * component here that still reads `useSectionChrome()` and renders two different things — not
+ * between two eras, but between inside the shell and outside it, which is permanent. A page
+ * mounted outside every shell gets the `console` default whether or not it thought about it, so
+ * the rule is that such a page must **decide**: read the chrome, or compose nothing that branches
+ * on it.
  */
-test("SH908: an unprovided page composing the adapter reads the chrome rather than assuming it", () => {
+const CHROME_BRANCHING = [
+  ["@/components/empty-state", "EmptyState — renders the plain block outside the shell"],
+]
+
+test("SH932: an unprovided page composing a chrome-branching component decides, rather than assuming", () => {
   const undecided = []
 
   for (const [name, { file, bento }] of mountedOutsideTheShell()) {
     if (bento) continue
     const source = stripComments(readFileSync(file, "utf8"))
-    if (!/adaptive-page-header/.test(source)) continue
-    if (/useSectionChrome\s*\(/.test(source)) continue
-    undecided.push(name)
+    for (const [module, why] of CHROME_BRANCHING) {
+      if (!source.includes(module)) continue
+      if (/useSectionChrome\s*\(/.test(source)) continue
+      undecided.push(`${name} → ${why}`)
+    }
   }
 
   assert.deepEqual(undecided, [],
-    "SH908: this component composes AdaptivePageHeader, is mounted outside the console shell, and"
-      + " is not wrapped in SectionCardChromeProvider chrome=\"bento\" — so it gets the console"
-      + " default, whose branch renders PageHeader → SidebarTrigger → useSidebar(), which throws"
-      + " with no provider above it.\n"
-      + "  Either wrap the route in the bento provider, or read `useSectionChrome()` and render the"
-      + " header only when it answers \"bento\", as not-found.page.tsx does.")
+    "SH932: this component composes something that branches on chrome, is mounted outside the"
+      + " console shell, and is not wrapped in SectionCardChromeProvider chrome=\"bento\" — so it"
+      + " silently takes the `console` default rather than choosing it.\n"
+      + "  That default is correct outside a shell and wrong to arrive at by accident: the page"
+      + " renders one of two layouts and nothing in it says which, so the next edit tunes the"
+      + " branch nobody is looking at.\n"
+      + "  Either wrap the route in the bento provider, or read `useSectionChrome()` and render"
+      + " each arm deliberately, as not-found.page.tsx does.")
+})
+
+test("SH932: the branching list names components that actually branch", () => {
+  // Without this the list rots into names that no longer read the hook, and the test above then
+  // asks its question about nothing — which is how the premise it replaced survived SH910.
+  for (const [module, why] of CHROME_BRANCHING) {
+    const file = join(SRC, `${module.replace("@/", "")}.tsx`)
+    assert.ok(existsSync(file), `SH932: ${module} is listed as chrome-branching and does not exist`)
+    assert.match(readFileSync(file, "utf8"), /useSectionChrome\s*\(/,
+      `SH932: ${module} is listed as chrome-branching (${why}) and no longer reads the chrome.`
+        + " Either it stopped branching — drop the entry — or the hook was renamed and every"
+        + " reader that greps for it is now reporting a clean tree.")
+  }
 })
 
 test("SH908: the reader is not vacuous — it finds the routes and the chrome it forbids", () => {

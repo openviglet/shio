@@ -38,7 +38,7 @@ import { stripComments } from "./support/source-text.mjs"
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
-const ADAPTER = join(SRC, "components", "adaptive-empty-state.tsx")
+const ADAPTER = join(SRC, "components", "empty-state.tsx")
 
 /** The hand-rolled void: a centred `py-16` column, and the muted icon chip inside it. */
 const HAND_ROLLED_VOID = /\bpy-16\b[^"]*\btext-center\b/
@@ -71,7 +71,7 @@ const MUTED_ICON_CHIP = /\bh-8 w-8 text-muted-foreground\b/
  *
  * They named SH909 because the console originals were untouched and would go with the route tree.
  * They did: the five files are deleted, the bento lists beside them use the shared
- * `AdaptiveEmptyState`, and this debt is **empty**.
+ * `EmptyState`, and this debt is **empty**.
  *
  * Empty is the interesting state for a held list, because it is the one where somebody deletes the
  * reader. Do not. The rule it enforces — nobody writes the `py-16 text-center` void a second time —
@@ -110,8 +110,8 @@ test("SH903: nobody hand-rolls the empty state a second time", () => {
     offenders.filter((f) => !(f in STILL_HAND_ROLLED)),
     [],
     "SH903: these pages draw their own empty state — a centred py-16 void with a muted 8x8 icon"
-      + " chip, which is the markup AdaptiveEmptyState exists to hold once. Use"
-      + " <AdaptiveEmptyState icon title description action />: it renders this block in console"
+      + " chip, which is the markup EmptyState exists to hold once. Use"
+      + " <EmptyState icon title description action />: it renders this block in console"
       + " chrome and BentoEmptyState in bento, so the page also stops being one that looks"
       + " finished while rendering console markup under the bento shell.")
 

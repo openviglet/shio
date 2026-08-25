@@ -264,7 +264,7 @@ test("SH892: the reader is not vacuous — it renders the real package, not a st
  * of them in a single commit, written by the same hand that had documented the no-op eight tasks
  * earlier.
  *
- * `AdaptivePanel` is what those four use now, and **SH923** asks the package for the component it
+ * `Panel` is what those four use now, and **SH923** asks the package for the component it
  * stands in for. This reader is what stops the mistake being made a fifth time: reach for
  * `AdaptiveSectionCard` and you must have something to title.
  */
@@ -284,5 +284,5 @@ test("SH902: no AdaptiveSectionCard in this console is missing its header", () =
       + " through to a console card — silently, with no error and nothing visible in review.\n"
       + "  If the panel has something to title, give it a StaticHeader.\n"
       + "  If it does not — a stats strip, a toolbar, a bare list under a hero that already names"
-      + " the page — it is not a section. Use `AdaptivePanel` (SH923).")
+      + " the page — it is not a section. Use `Panel` (SH923).")
 })

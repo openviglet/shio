@@ -1,6 +1,6 @@
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
-import { AdaptivePanel } from "@/components/adaptive-panel"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -37,7 +37,7 @@ export default function EditorSitesPage() {
         SH907 — the site picker is an ordinary surface and takes the ordinary treatment. The
         *editor* it navigates to is the one this task is really about, and it is not here.
       */}
-      <AdaptivePageHeader
+      <PageHero
         icon={IconLayersIntersect}
         title={t("universalEditor.title")}
         eyebrow={t("sidebar.content")}
@@ -49,14 +49,14 @@ export default function EditorSitesPage() {
         <div>
           <h3 className="text-sm font-semibold mb-2">{t("universalEditor.selectSite")}</h3>
           {sites.length === 0 ? (
-            <AdaptiveEmptyState
+            <EmptyState
               icon={IconLayersIntersect}
               tone="blue"
               title={t("universalEditor.noSites")}
               description={t("universalEditor.noSitesDescription")}
             />
           ) : (
-            <AdaptivePanel contentClassName="p-0 divide-y">
+            <Panel contentClassName="p-0 divide-y">
                 {sites.map((site) => (
                   <button
                     type="button"
@@ -76,12 +76,12 @@ export default function EditorSitesPage() {
                     <Pencil className="h-4 w-4 text-muted-foreground shrink-0" />
                   </button>
                 ))}
-            </AdaptivePanel>
+            </Panel>
           )}
         </div>
 
         {/* External URL */}
-        <AdaptivePanel contentClassName="p-4 space-y-2">
+        <Panel contentClassName="p-4 space-y-2">
             <Label htmlFor="external-url" className="flex items-center gap-2">
               <ExternalLink className="h-4 w-4" /> {t("universalEditor.openUrl")}
             </Label>
@@ -98,7 +98,7 @@ export default function EditorSitesPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">{t("universalEditor.urlHint")}</p>
-        </AdaptivePanel>
+        </Panel>
       </div>
     </>
   )

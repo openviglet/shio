@@ -84,7 +84,7 @@ test("SH907: the editor stays h-screen and owns its own frame", () => {
     "SH907: the visual editor no longer sizes itself to the viewport. If its height now comes from"
       + " a parent, it has become a fact about whatever shell mounts it — which is the coupling"
       + " §LV.10 warned about and the reason this page is routed outside the shell.")
-  assert.doesNotMatch(EDITOR, /AdaptivePageHeader|AdaptiveSectionCard|AdaptivePanel/,
+  assert.doesNotMatch(EDITOR, /PageHero|AdaptiveSectionCard|Panel/,
     "SH907: the visual editor grew adaptive chrome. It renders neither era's chrome on purpose —"
       + " that is what makes the bridge's environment identical in both — so a chrome adapter here"
       + " means the frame is now surrounded by something that changes between eras.")
@@ -92,9 +92,9 @@ test("SH907: the editor stays h-screen and owns its own frame", () => {
 
 test("SH907: the site picker is an ordinary surface and got the ordinary treatment", () => {
   for (const [what, pattern] of [
-    ["adaptive header", /AdaptivePageHeader/],
-    ["adaptive panels", /AdaptivePanel/],
-    ["the shared empty state", /AdaptiveEmptyState/],
+    ["adaptive header", /PageHero/],
+    ["adaptive panels", /Panel/],
+    ["the shared empty state", /EmptyState/],
   ]) {
     assert.match(PICKER, pattern,
       `SH907: the editor site picker lost ${what}. It is a list of sites with a hero above it —`

@@ -1,6 +1,6 @@
 import { IconStack2 } from "@tabler/icons-react"
-import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
 import { Button } from "@/components/ui/button"
 /*
  * SH892 — the section chrome comes from the adapter, not from a Card. Post types are the one
@@ -712,7 +712,7 @@ function FieldList({ fields, widgets, postTypes, onChange }: {
    */
   if (fields.length === 0) {
     return (
-      <AdaptiveEmptyState
+      <EmptyState
         icon={IconStack2}
         tone="amber"
         title={t("content.noFields")}
@@ -852,7 +852,7 @@ export default function PostTypeEditPage() {
         a `PUT` to a new name creates a second type and orphans the first while answering 200.
         The API name therefore stays a read-only field with its Rename button, below.
       */}
-      <AdaptivePageHeader
+      <PageHero
         icon={IconFileText}
         eyebrow={t("content.postType")}
         title={t("content.editPostType")}

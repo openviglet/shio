@@ -36,15 +36,15 @@ test("SH906: the curator's approval surface follows the chrome", () => {
    * curator's half of the agent-native design — where they go when they do not trust what an
    * agent did — and the last place a half-migrated console should show.
    */
-  assert.match(REVIEW, /AdaptivePageHeader/,
+  assert.match(REVIEW, /PageHero/,
     "SH906: the review queue renders a console PageHeader again, so the curator's approval surface"
       + " is the one page that still looks like the old console under the bento shell.")
   assert.doesNotMatch(REVIEW, /@\/components\/ui\/card/,
     "SH906: the review queue imports Card again — a raw Card is a panel that cannot follow the"
       + " provider, so the session list renders console chrome in bento.")
-  assert.match(REVIEW, /AdaptivePanel/,
+  assert.match(REVIEW, /Panel/,
     "SH906: the session list lost its adaptive panel. It has no header — the hero above names the"
-      + " page — so it is AdaptivePanel and not AdaptiveSectionCard (SH902).")
+      + " page — so it is Panel and not AdaptiveSectionCard (SH902).")
 })
 
 test("SH906: a hero and a section heading do not say the same thing twice", () => {
@@ -78,7 +78,7 @@ test("SH906: a catalogue tile is a button, not a div that listens for clicks", (
    * property rather than the fix: wrapping it in a button, making it a link, or giving the card
    * real button semantics all pass.
    */
-  const clickable = findElements(MARKETPLACE, "AdaptivePanel").filter((el) => /onClick=/.test(el.raw))
+  const clickable = findElements(MARKETPLACE, "Panel").filter((el) => /onClick=/.test(el.raw))
   assert.deepEqual(clickable.map((el) => el.raw.slice(0, 60)), [],
     "SH906: a marketplace tile carries onClick on the panel itself. A div with a handler is not"
       + " focusable and not announced — put the handler on a real <button> inside the panel.")
