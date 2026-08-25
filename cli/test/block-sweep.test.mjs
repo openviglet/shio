@@ -81,6 +81,17 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AR: {
+    swept: true,
+    why: "the console cutover block, and the sweep is docs-shio: COVERAGE.md now names SH927 and "
+      + "SH935 beside the four this block's instruments row already carried, so every id it shipped "
+      + "is accounted for in its cluster. README and shio-site are NOT moved and that is the finding "
+      + "rather than an omission — the README mentions the console only as a pointer to "
+      + "docs/agents/console-ui.md and shio-site does not describe the console at all, so neither "
+      + "carries a sentence this block made untrue. The user-facing half — /console becoming "
+      + "/bento, the command palette, the tenant switch and the pending-review count — was "
+      + "already carried by the administration guide as those tasks shipped",
+  },
   AQ: {
     swept: false,
     why: "seventeen tasks adopting the shared bento layer, and almost all of them are instruments "

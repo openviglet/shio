@@ -938,31 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.25 Two route fields that no longer differ (SH935)
-
-`bento-nav.ts` gives every surface a `fallbackRoute` — where it lived — and an optional
-`bentoRoute` — where it moved. `bentoNavTarget()` prefers the second, which made a
-migration one line: add `bentoRoute`, and the rail, the palette and every hub follow.
-
-That worked, and SH909 ended it in a way the file has not caught up with. Repointing
-`ROUTES.CONSOLE` at `/bento` moved every constant the fallbacks are built from, so
-`fallbackRoute: ROUTES.SEARCH` is now `/bento/content/search`. Only `sites` ever
-declared a `bentoRoute`; the other sixteen entries resolve, through the fallback, to
-exactly the path a `bentoRoute` would have named. The preference still runs and can no
-longer prefer anything.
-
-Two things follow, and the second is the reason to file this rather than leave it
-tidy-looking. The palette renders an external-link marker for any entry **without** a
-`bentoRoute`, so sixteen migrated surfaces are marked as if they led out of bento — a
-wrong signal drawn from a field that has stopped meaning what it says. And
-`bento-nav.test.mjs` asserts that every entry keeps the route it moved *from*, which was
-reversibility insurance for a migration that has shipped.
-
-Collapse the pair to one `route`, drop the marker rule or re-derive it from something
-true, and let the test assert the single field. The package owns `BentoNavItem`, so the
-shape change is a conversation with it rather than a local edit — which is why this is a
-task and not a cleanup.
-
 ## LVI What Turing's index never receives
 
 Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index

@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AR — The curator's console, surface by surface (§LV)
-
-- ⏳ **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Collapsing fallbackRoute and bentoRoute into a single route field is the design system's call, since it owns BentoNavItem. → §LV.25
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
