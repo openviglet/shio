@@ -29,6 +29,8 @@ import TenantPage from "./app/console/admin/tenant/tenant.page"
 import ActivityListPage from "./app/console/admin/activity/activity.list.page"
 import MarketplaceListPage from "./app/console/admin/marketplace/marketplace.list.page"
 import ReviewListPage from "./app/console/admin/review/review.list.page"
+import EditorSitesPage from "./app/console/universal-editor/editor-sites.page"
+import VisualEditorPage from "./app/console/universal-editor/visual-editor.page"
 import ObjectChildrenPage from "./app/console/content/object.children.page"
 import PostEditPage from "./app/console/content/post.edit.page"
 import PostNewPage from "./app/console/content/post.new.page"
@@ -73,6 +75,24 @@ function App() {
                 SH888 builds the real parallel route tree; SH909 removes whichever shell loses.
               */}
               <Route path={ROUTES.BENTO_VOCABULARY} element={<BentoVocabularyPage />} />
+              {/*
+                SH907 — the Universal Editor is mounted OUTSIDE the bento shell, and this is the
+                one route in Block AR placed by measurement rather than by pattern.
+
+                `visual-editor.page.tsx` is `flex flex-col h-screen`: it owns the viewport, draws
+                its own toolbar and splits the rest between a preview iframe and a properties
+                panel. Inside the shell it is 100vh *plus* the shell's 64px `sticky top-0` header,
+                so — measured in a browser at 1600x1000 — the iframe's top moves from 81 to 137
+                and its bottom goes from 992 (visible) to 1048 (**below the fold**), while two
+                sticky bars stack at the top of the page.
+
+                §LV.10 predicted exactly this: "the bridge depends on what surrounds the frame —
+                the sizing, the scroll container, the overlay stacking — and the bento shell
+                changes all three". The answer is not to fight the shell with a taller container;
+                it is that a surface owning the viewport has no chrome to migrate. It renders the
+                same in both eras because it renders neither era's chrome.
+              */}
+              <Route path="/bento/universal-editor/:siteId" element={<VisualEditorPage />} />
               {/*
                 SH888 — the parallel bento route tree. A sibling of the console route and not a
                 child of it: `ConsoleRootPage` mounts a SidebarProvider and its PageHeader calls
@@ -291,6 +311,10 @@ function App() {
                 <Route
                   path="admin/marketplace"
                   element={<SectionCardChromeProvider chrome="bento"><MarketplaceListPage /></SectionCardChromeProvider>}
+                />
+                <Route
+                  path="universal-editor"
+                  element={<SectionCardChromeProvider chrome="bento"><EditorSitesPage /></SectionCardChromeProvider>}
                 />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>

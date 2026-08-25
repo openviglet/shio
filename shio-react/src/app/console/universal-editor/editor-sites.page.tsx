@@ -1,7 +1,8 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ROUTES } from "@/app/routes.const"
@@ -35,28 +36,30 @@ export default function EditorSitesPage() {
 
   return (
     <>
-      <PageHeader title={t("universalEditor.title")} turIcon={IconLayersIntersect} urlBase={ROUTES.UNIVERSAL_EDITOR} />
+      {/*
+        SH907 — the site picker is an ordinary surface and takes the ordinary treatment. The
+        *editor* it navigates to is the one this task is really about, and it is not here.
+      */}
+      <AdaptivePageHeader
+        icon={IconLayersIntersect}
+        title={t("universalEditor.title")}
+        eyebrow={t("sidebar.content")}
+        subtitle={t("universalEditor.description")}
+        urlBase={ROUTES.CONTENT_ROOT}
+      />
       <div className="p-6 space-y-6">
-        <div>
-          <h2 className="text-lg font-semibold">{t("universalEditor.title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("universalEditor.description")}</p>
-        </div>
-
-
         {/* Sites */}
         <div>
           <h3 className="text-sm font-semibold mb-2">{t("universalEditor.selectSite")}</h3>
           {sites.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <IconLayersIntersect className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-semibold text-lg mb-1">{t("universalEditor.noSites")}</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mb-6">{t("universalEditor.noSitesDescription")}</p>
-            </div>
+            <AdaptiveEmptyState
+              icon={IconLayersIntersect}
+              tone="blue"
+              title={t("universalEditor.noSites")}
+              description={t("universalEditor.noSitesDescription")}
+            />
           ) : (
-            <Card>
-              <CardContent className="p-0 divide-y">
+            <AdaptivePanel contentClassName="p-0 divide-y">
                 {sites.map((site) => (
                   <button
                     type="button"
@@ -76,14 +79,12 @@ export default function EditorSitesPage() {
                     <Pencil className="h-4 w-4 text-muted-foreground shrink-0" />
                   </button>
                 ))}
-              </CardContent>
-            </Card>
+            </AdaptivePanel>
           )}
         </div>
 
         {/* External URL */}
-        <Card>
-          <CardContent className="p-4 space-y-2">
+        <AdaptivePanel contentClassName="p-4 space-y-2">
             <Label htmlFor="external-url" className="flex items-center gap-2">
               <ExternalLink className="h-4 w-4" /> {t("universalEditor.openUrl")}
             </Label>
@@ -100,8 +101,7 @@ export default function EditorSitesPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">{t("universalEditor.urlHint")}</p>
-          </CardContent>
-        </Card>
+        </AdaptivePanel>
       </div>
     </>
   )

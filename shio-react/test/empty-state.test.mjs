@@ -73,7 +73,6 @@ const STILL_HAND_ROLLED = {
   "app/console/admin/site-webhook/site-webhook.list.page.tsx": "SH909",
   "app/console/admin/tenant/tenant.list.page.tsx": "SH909",
   "app/console/graphql/graphql.page.tsx": "SH908",
-  "app/console/universal-editor/editor-sites.page.tsx": "SH907",
 }
 
 /** Every `.tsx` under `src/`, minus the adapter itself — it is allowed to hold the markup once. */

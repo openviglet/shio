@@ -196,7 +196,9 @@ const STILL_CONSOLE = {
   "graphql/graphql.page.tsx": ["PageHeader"],
   "home/home.page.tsx": ["PageHeader", "Card"],
   "not-found.page.tsx": [],
-  "universal-editor/editor-sites.page.tsx": ["PageHeader", "Card"],
+  // SH907 — empty by migration. `visual-editor.page.tsx` below is empty for the other reason:
+  // it owns the viewport and draws its own frame, which is why it routes outside the shell.
+  "universal-editor/editor-sites.page.tsx": [],
   "universal-editor/visual-editor.page.tsx": [],
 }
 

@@ -1699,3 +1699,52 @@ rather than remembered.
 
 Census after this task: **43 pages, Card 18, PageHeader 20, Sidebar 1, twenty-two empty** — and
 47/47 live probes.
+
+## A surface that owns the viewport has no chrome to migrate (SH907)
+
+§LV.10 put this slice late on purpose: "every other slice in this block risks appearance; this one
+risks behaviour, because the bridge depends on what surrounds the frame — the sizing, the scroll
+container, the overlay stacking — and the bento shell changes all three."
+
+It was right, and the measurement is worth keeping. `visual-editor.page.tsx` is
+`flex flex-col h-screen`: it owns the viewport, draws its own toolbar, and splits the rest between
+a preview iframe and a properties panel. Mounted inside the bento shell and read in a browser at
+1600×1000, against the same page mounted outside it:
+
+| | iframe top | iframe bottom | fits in 1000px | doc overflow |
+|---|---|---|---|---|
+| inside the shell | 137 | 1048 | **no — 48px below the fold** | 64px |
+| outside it | 73 | 984 | yes | none |
+
+One viewport *plus* the shell's 64px `sticky top-0` header, and two sticky bars stacked at the top
+of the page.
+
+### The fix is a route, not a container
+
+`calc(100vh - 4rem)` would have worked and would have been wrong: it makes the editor's height a
+fact about the shell — the coupling §LV.10 is warning about, written into CSS where nothing reads
+it, and stale the next time the header changes. **A surface that owns the viewport has no chrome to
+migrate.** The editor renders the same in both eras because it renders neither era's chrome, so it
+is mounted as a sibling of the shell (beside `/bento-vocabulary`, which is there for a related
+reason) and the bridge's environment is byte-identical to the one it has always had.
+
+Outside the shell, the bento route is measurably *better* than the console one: `overflows: false`
+against the console's 58px, and the properties panel's bottom is at 1000 (visible) where the
+console route puts it at 1008 (cut off). That is a small pre-existing console defect, and the
+console tree goes with SH909/SH910.
+
+### What this task did not prove
+
+§LV.10 also says "a digest is least sufficient and a real click-through is required". **The
+click-through did not run.** `universal-editor-drive` skips on a dev box — the console is `:5173`
+and the renderer answers as `:2710`, so the bridge posts to an origin this window is not, and the
+handshake cannot complete across the Vite proxy. That is a real gap in this task's evidence rather
+than a formality, and the check reports it as a skip on every run (SH238/SH659 make it a *failure*
+under `--strict`, which is what CI passes).
+
+What did run: both routes render with the same iframe `src` (`/preview/<site>/?editor=true`), the
+same edit-mode switch, the same properties panel, and no page errors — and the geometry above,
+which is the half §LV.10 was actually worried about.
+
+Census after this task: **43 pages, Card 17, PageHeader 19, Sidebar 1, twenty-three empty** — and
+49/49 live probes.

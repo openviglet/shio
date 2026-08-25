@@ -297,6 +297,23 @@ async function discoverRoutes(siteName) {
   for (const [name, path] of [["group-new", "/admin/groups/new"], ["role-new", "/admin/roles/new"]]) {
     routes.push({ name: `bento-${name}`, path: `/bento${path}`, bento: true, noPanel: true, mustSee: [] })
   }
+
+  /*
+   * SH907 — the Universal Editor, and the one bento route deliberately NOT probed as a bento
+   * surface.
+   *
+   * `visual-editor.page.tsx` is `h-screen`: it owns the viewport and draws its own toolbar, so it
+   * is mounted outside the shell and renders no rail, no hero and nothing frosted. Marking it
+   * `bento: true` would fail on all three and the honest fix would be to weaken the bento rule for
+   * everyone — which is how a check stops catching the thing it exists for. It is probed as a page
+   * that must render: an editor that 404s or throws is what this walk is for.
+   */
+  routes.push({
+    name: "bento-universal-editor",
+    path: `/bento/universal-editor/${site.id}`,
+    mustSee: [],
+  })
+  routes.push({ name: "bento-editor-sites", path: "/bento/universal-editor", bento: true, mustSee: [] })
   for (const t of postTypes.filter((t) => !t.system).slice(0, 3)) {
     routes.push({ name: `post-type-edit:${t.name}`, path: `/console/content/post-type/${t.name}`, mustSee: [t.name] })
     // The create form reads the post-type directly, so it is the control case: when a

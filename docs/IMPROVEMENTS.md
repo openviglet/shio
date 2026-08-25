@@ -964,17 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.10 The Universal Editor, where chrome and behaviour meet (SH907)
-
-editor-sites and visual-editor wrap a preview iframe and a bridge: the editor annotates
-the rendered page with data attributes and the console reads and writes through them.
-Every other slice in this block risks appearance; this one risks behaviour, because the
-bridge depends on what surrounds the frame - the sizing, the scroll container, the
-overlay stacking - and the bento shell changes all three. It is deliberately late in the
-order, so the shell has been exercised by nine slices before it reaches the one surface
-that can break silently. It is also the slice where a digest is least sufficient and a
-real click-through is required.
-
 ### LV.11 The last two, and the one nobody navigates to on purpose (SH908)
 
 The GraphiQL page and the not-found page. Both are mostly something the console does not

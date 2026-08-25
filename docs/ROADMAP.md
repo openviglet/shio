@@ -15,21 +15,14 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH907** (deps: SH901 ✅) **the Universal Editor pages wrap a preview iframe whose bridge depends on the surrounding chrome** — This is the one surface where a shell swap can break behaviour rather than only appearance. → §LV.10
 - 📋 **SH908** (deps: SH903 ✅) **the GraphiQL page and the not-found page are the last two console surfaces and both embed a third-party UI** — A not-found page in the wrong chrome is the most likely place a user lands mid-cutover. → §LV.11
-- 📋 **SH909** (deps: SH906 ✅, SH907) **with every surface migrated, two route trees and two chromes are still mounted side by side** — The parallel route was chosen for reversibility, and an unclaimed reversal becomes permanent. → §LV.12
+- 📋 **SH909** (deps: SH906 ✅, SH907 ✅) **with every surface migrated, two route trees and two chromes are still mounted side by side** — The parallel route was chosen for reversibility, and an unclaimed reversal becomes permanent. → §LV.12
 - 📋 **SH910** (deps: SH909) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 - 📋 **SH923** (deps: —) **the layer has no frosted panel without a heading, so four surfaces silently rendered console cards** — Every consumer needing one hand-rolls it, and the moment two differ the product is inconsistent invisibly. → §LV.16
 - 📋 **SH924** (deps: —) **POST /api/v2/group accepts a blank id and stores a row no API path can read, update or delete** — A write that succeeds and produces an unreachable row is worse than a refusal, and only the client that sent it can tell. → §LV.17
 
 ## Priority
-
-## Done when — SH907
-
-- **The Universal Editor still annotates and writes through the bridge** A real
-  click-through confirms selection and editing inside the bento shell, since the sizing,
-  the scroll container and the overlay stacking all changed.
 
 ## Done when — SH908
 
