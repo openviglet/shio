@@ -940,27 +940,28 @@ product that no longer exists.
 
 ### LV.19 One page, two answers, and only one of them about Shio (SH927)
 
-SH908 gave the GraphQL explorer its first live probe, and it came back with two
-different verdicts from the same commit. Against the **jar**, serving the built bundle:
-no errors, no warnings, the editor 198px from the top and 65px clear of the fold.
-Against the **Vite dev server**: *"Could not create web worker(s). Falling back to
-loading web worker code in main thread"*, plus an error event with no message, on both
-the console and the bento route.
-
-So the page is correct and the local instrument says it is broken. `monaco-workers.ts`
-already carries the reason it exists — GraphiQL's own `setup-workers/vite` entry makes
-Vite pre-bundle a dependency containing `?worker` imports, which rolldown's optimizer
-cannot load on Windows, so the same imports are declared in app source instead. That
-fixed the dev server failing to *start*; it did not make the workers actually start
-under it, and nothing noticed because nobody had opened the page in a browser a check
-was watching.
+SH908's live probe returned two verdicts from one commit. Against the **jar**: no
+errors, no warnings. Against the **Vite dev server**: *"Could not create web worker(s).
+Falling back to loading web worker code in main thread"*, plus an error event with no
+message, on both routes.
 
 The cost is not the fallback — Monaco on the main thread works, slowly. It is that `pnpm
--C shio-react console:check` is now permanently red on two probes for anybody running it
-the documented way, against `:5173`. **A gate that is red for the environment is a gate
-people learn to skim**, which is the state SH579 exists to prevent one level up. Either
-make the workers resolve in dev, or teach the probe the difference and print which
-server answered.
+-C shio-react console:check` is permanently red on two probes for anybody running it the
+documented way, against `:5173`. **A gate that is red for the environment is a gate
+people learn to skim**, which is the state SH579 exists to prevent one level up.
+
+Reproduced 2026-08-25 against a live backend and dev server: 67 of 69 probes pass and
+these two are the failures, warning and error verbatim.
+
+Two hypotheses are now measured and **refuted**. Excluding the three `?worker` entries
+from `optimizeDeps` changes nothing: the imports resolve to real `/@fs/` paths instead
+of dep chunks, the worker wrapper and every import it makes serve 200, and the warning
+is unchanged. And the worker *mechanism* is fine — constructing that exact module worker
+by hand in the page succeeds with no error.
+
+So the fault is in how Monaco is asked for a worker, not in whether one can be made.
+Read `MonacoEnvironment` on a page that has actually reached the editor:
+`httpCredentials` alone lands on `/login`, where it is absent for the wrong reason.
 
 ### LV.25 Two route fields that no longer differ (SH935)
 
