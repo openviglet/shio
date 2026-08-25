@@ -11,7 +11,7 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- ⏳ **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — The explorer's Monaco workers still fall back to the main thread under the dev server, unreproduced here because mounting the explorer needs a backend. → §LV.19
+- ⏳ **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — Reproduced against a live instance; the `?worker` exclusion is refuted and module workers themselves work, so the fault is in how Monaco asks for one. → §LV.19
 - ⏳ **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Collapsing fallbackRoute and bentoRoute into a single route field is the design system's call, since it owns BentoNavItem. → §LV.25
 
 ## Priority
