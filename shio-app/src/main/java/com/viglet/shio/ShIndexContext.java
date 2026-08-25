@@ -30,11 +30,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class ShIndexContext {
 
+	/**
+	 * SH909 — the root goes to {@code /bento}, which is where the console is.
+	 *
+	 * <p>It answered {@code /console} for as long as there was one shell. Block AR migrated every
+	 * surface to the bento tree and this task made it the default, so a signed-in visitor arriving
+	 * at {@code /} would otherwise land on a path whose only job now is to redirect them — one
+	 * extra round trip, and a URL bar that changes twice.</p>
+	 */
 	@GetMapping("/")
 	public void index(HttpServletRequest request, HttpServletResponse response, final Principal principal)
 			throws IOException {
 		if (principal != null) {
-			response.sendRedirect("/console");
+			response.sendRedirect("/bento");
 		} else {
 			response.sendRedirect("/login");
 		}

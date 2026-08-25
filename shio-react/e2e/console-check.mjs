@@ -329,7 +329,54 @@ async function discoverRoutes(siteName) {
    * catch-all this task added, that path falls through to the bare `*` and renders outside every
    * shell — and the bento probe's rail rule is what says so.
    */
-  routes.push({ name: "graphql", path: "/console/graphql", graphiql: true, mustSee: [] })
+  /*
+   * SH909 — the old URLs, which must still land somewhere rather than 404.
+   *
+   * §LV.12 said to redirect rather than drop, and this is where that is checked in the one way it
+   * can be: by opening the legacy URL in a browser and reading which path the app ended on. The
+   * five below are the shapes that differ — the bare prefix and `/home` are the console's *index*
+   * and become the bento shell's, a deep path is a straight prefix swap, a path with an id has to
+   * carry it, and the tenant-prefixed form is the one a multi-tenant install's bookmarks hold.
+   *
+   * `bento: true` on the deep ones as well: landing on the right *path* while rendering the wrong
+   * shell would be a redirect that technically worked, which is exactly what this task is about.
+   */
+  routes.push({ name: "legacy-console-root", path: "/console", redirectsTo: "/bento", bento: true, mustSee: [] })
+  routes.push({ name: "legacy-console-home", path: "/console/home", redirectsTo: "/bento", bento: true, mustSee: [] })
+  routes.push({
+    name: "legacy-console-content",
+    path: "/console/content",
+    redirectsTo: "/bento/content",
+    bento: true,
+    mustSee: [site.name],
+  })
+  routes.push({
+    name: "legacy-console-review",
+    path: "/console/admin/review",
+    redirectsTo: "/bento/admin/review",
+    bento: true,
+    mustSee: [],
+  })
+  routes.push({
+    name: "legacy-console-tenant-prefixed",
+    path: "/acme/console/content",
+    redirectsTo: "/bento/content",
+    bento: true,
+    mustSee: [site.name],
+  })
+  if (anyPost?.id) {
+    routes.push({
+      name: "legacy-console-post",
+      path: `/console/content/post/${anyPost.id}`,
+      redirectsTo: `/bento/content/post/${anyPost.id}`,
+      mustSee: [],
+    })
+  }
+  // And the admin hub, which under the console was a bare Outlet with an index redirect. It is the
+  // `urlBase` of eleven admin surfaces, so a hero back-link is what lands on it.
+  routes.push({ name: "bento-admin-hub", path: "/bento/admin", redirectsTo: "/bento/admin/users", bento: true, mustSee: [] })
+
+  routes.push({ name: "graphql", path: "/console/graphql", graphiql: true, redirectsTo: "/bento/graphql", mustSee: [] })
   routes.push({ name: "bento-graphql", path: "/bento/graphql", bento: true, graphiql: true, mustSee: [] })
   routes.push({ name: "unknown-route-bento", path: "/bento/definitely-not-a-route", bento: true, mustSee: ["404"] })
   for (const t of postTypes.filter((t) => !t.system).slice(0, 3)) {
@@ -882,6 +929,20 @@ async function main() {
         probe.morph = morph.ran ? (morph.findings.length ? morph.findings.join("; ") : "ok") : morph.why
         if (morph.ran) probe.missing.push(...morph.findings)
       }
+      /*
+       * SH909 — where a legacy console URL actually ended up, read off the browser.
+       *
+       * The redirect is client-side: the SPA loads at `/console/...`, React Router matches the
+       * legacy pattern and replaces the entry. Nothing on the server can be asked about that, and
+       * no source scan can watch a URL change — this is the only place the claim "the old
+       * bookmarks still work" is checked rather than asserted.
+       */
+      if (route.redirectsTo) {
+        probe.landedOn = new URL(page.url()).pathname
+        if (probe.landedOn !== route.redirectsTo) {
+          probe.missing.push(`redirected to ${probe.landedOn}, expected ${route.redirectsTo}`)
+        }
+      }
       if (route.graphiql) {
         /*
          * SH908 — the explorer's geometry, in whichever chrome this probe opened.
@@ -925,6 +986,9 @@ async function main() {
     console.log(`${mark} ${route.name.padEnd(30)} ${route.path}`)
     for (const t of probe.broken || []) console.log(`       broken text: ${t}`)
     for (const m of probe.missing || []) console.log(`       missing: ${m}`)
+    // SH909 — printed on every run: a redirect that lands correctly is the claim "old bookmarks
+    // still work", and it is worth seeing in the log rather than only when it breaks.
+    if (probe.landedOn) console.log(`       landed on: ${probe.landedOn}`)
     // SH908 — printed on every run, ok or not, for the same reason the morph is: the fit is a
     // number about two shells this page does not control, and it is worth seeing before it breaks.
     if (probe.graphiql) {

@@ -11,6 +11,7 @@ package com.viglet.shio.spring;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
@@ -119,6 +120,30 @@ class ShSpaContextIsServedTest {
 			assertEquals(200, status,
 					"SH926: GET %s answered %d rather than serving the shell".formatted(route, status));
 		}
+	}
+
+	/**
+	 * SH909 — where the root sends a signed-in visitor, which is the server's half of "bento is the
+	 * default".
+	 *
+	 * <p>The client's half is a `Navigate` in App.tsx and a route table full of `/bento` constants;
+	 * this is the one a browser hits first, before a line of JavaScript runs. Left at
+	 * {@code /console} it would still work — the SPA's legacy redirect would catch it — at the cost
+	 * of a round trip and a URL bar that changes twice on the way to the home page.</p>
+	 */
+	@Test
+	@DisplayName("SH909: the root sends a signed-in visitor to /bento, and everyone else to /login")
+	void theRootRedirectsToBento() throws Exception {
+		MvcResult signedIn = mockMvc.perform(get("/").with(user("admin"))).andReturn();
+		assertEquals("/bento", signedIn.getResponse().getRedirectedUrl(),
+				"SH909: the root no longer sends a signed-in visitor to the console. Bento is the"
+						+ " default now; /console only redirects, so pointing the root at it costs a"
+						+ " round trip and shows the reader two URLs on the way to one page.");
+
+		MvcResult anonymous = mockMvc.perform(get("/")).andReturn();
+		assertEquals("/login", anonymous.getResponse().getRedirectedUrl(),
+				"SH909: an anonymous visitor must still be sent to the login page — the control for"
+						+ " the assertion above, and the half that has nothing to do with bento.");
 	}
 
 	/**

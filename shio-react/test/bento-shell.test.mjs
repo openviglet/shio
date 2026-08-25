@@ -113,24 +113,33 @@ test("SH888: no sidebar provider anywhere under the bento tree", () => {
       + " the fixed rail")
 })
 
-test("SH888: the bento tree is a sibling of the console tree, not a child of it", () => {
-  const bentoRoute = /<Route path=\{ROUTES\.BENTO\}/.exec(appSource)
-  assert.ok(bentoRoute,
+/**
+ * SH909 — this check's subject changed, so the check did.
+ *
+ * It asked whether the bento route was nested inside the console one, because that would put the
+ * whole bento shell inside a `SidebarProvider` — §LIV.3's arrangement that cannot work. **There is
+ * no console route any more**: SH909 made bento the default and left the old prefix as a redirect,
+ * so the original assertion failed on its own premise ("App.tsx no longer opens a route at
+ * ROUTES.CONSOLE"), which is the honest way for a check to notice its world moved.
+ *
+ * The rule that survives is the one it was always about, and it is now stronger: **no shell in
+ * this application mounts sidebar chrome around the bento tree.** Nesting was one way to reach
+ * that state; a wrapper somebody adds above `<Routes>` is another, and the original check could
+ * not see it.
+ */
+test("SH909: nothing in the app mounts sidebar chrome around the bento tree", () => {
+  assert.match(appSource, /<Route path=\{ROUTES\.BENTO\}/,
     "SH888: App.tsx no longer mounts a route at ROUTES.BENTO")
 
-  // Nesting is the failure mode with no error message: the console root would wrap the bento
-  // shell in its SidebarProvider and its PageHeader would call SidebarTrigger around it.
-  const consoleRoute = appSource.indexOf("<Route path={ROUTES.CONSOLE}")
-  assert.notEqual(consoleRoute, -1,
-    "SH888: App.tsx no longer opens a route at ROUTES.CONSOLE, so this check has nothing to"
-      + " compare the bento route's position against")
-  const consoleClose = appSource.indexOf("</Route>", consoleRoute)
-  assert.notEqual(consoleClose, -1,
-    "SH888: the console route's element is no longer a nesting block, so this check cannot tell"
-      + " whether the bento tree sits inside it")
-  assert.ok(bentoRoute.index > consoleClose || bentoRoute.index < consoleRoute,
-    "SH888: the bento route is nested inside the console route, which puts the whole bento shell"
-      + " inside a SidebarProvider — the exact arrangement §LIV.3 says cannot work.")
+  // Stripped, because this file's own comments explain at length what the console shell mounted
+  // and why the two could not nest — the third time a "must not mention X" scan in this directory
+  // has matched the paragraph explaining X (see `source-text.mjs`).
+  assert.doesNotMatch(stripComments(appSource), /SidebarProvider|SidebarInset|SidebarTrigger|ConsoleRootPage/,
+    "SH909: App.tsx mounts sidebar chrome again. The bento shell ships no sidebar provider on"
+      + " purpose — the rail is fixed, one width, hidden below md — and a bento component that"
+      + " reaches for that context inside a provider renders blank with no error. This was the"
+      + " incompatibility that made a parallel tree necessary (§LIV.3); the tree is gone and the"
+      + " incompatibility is not.")
 })
 
 test("SH888: the rail's segment is reserved, or /bento reads as a tenant", () => {

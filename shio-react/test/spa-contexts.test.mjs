@@ -42,6 +42,17 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
 const ROUTES_CONST = stripComments(readFileSync(join(SRC, "app", "routes.const.ts"), "utf8"))
+/**
+ * The same file **unstripped**, and this is not an oversight.
+ *
+ * `stripComments` says so itself: "block comments inside string literals would be stripped too".
+ * SH909's legacy patterns are `` `${consolePath}/*` `` — a route wildcard, which is character-for-character
+ * a block-comment opener — so the stripped copy loses everything from there to the next `*&#47;`,
+ * which is the JSDoc under it. Read stripped, this file reports **one** backtick where there are
+ * four and no `/console` anywhere. Patterns come from the raw text; prose-adjacent scans keep the
+ * stripped one.
+ */
+const ROUTES_RAW = readFileSync(join(SRC, "app", "routes.const.ts"), "utf8")
 const JAVA_CONFIG = join(
   HERE, "..", "..", "shio-app", "src", "main", "java", "com", "viglet", "shio", "spring",
   "ShStaticResourceConfiguration.java")
@@ -53,6 +64,33 @@ const JAVA_CONFIG = join(
  * that matches it has, by definition, no context to declare.
  */
 const NOT_A_CONTEXT = new Set(["/", "*"])
+
+/**
+ * SH909 — the legacy console patterns, which App.tsx mounts through a `.map()` over a constant.
+ *
+ * `/console/*` is a context like any other and **must stay served**: it is what a bookmark hits,
+ * and the page it loads is the redirect. The tenant-prefixed twin, `/:tenant/console/*`, is not a
+ * context at all — its first segment is a parameter — and the server serves it through
+ * `ShIndexContext`'s `/*&#47;console/**` mapping instead, which the last test here asserts rather
+ * than assumes.
+ */
+function legacyPatterns() {
+  const declared = /LEGACY_CONSOLE_PATTERNS\s*=\s*\[([^\]]*)\]/.exec(ROUTES_RAW)
+  if (!declared) return []
+  const consolePath = consoleContextPath()
+  return [...declared[1].matchAll(/`([^`]*)`/g)]
+    .map(([, raw]) => raw.replaceAll("${consolePath}", consolePath))
+}
+
+/** The console's context path, which is a build-time setting rather than a literal. */
+function consoleContextPath() {
+  const env = readFileSync(join(SRC, "..", ".env"), "utf8")
+  const configured = /^VITE_CONSOLE_CONTEXT_PATH=(.+)$/m.exec(env)
+  assert.ok(configured, "SH926: shio-react/.env does not set VITE_CONSOLE_CONTEXT_PATH. The "
+    + "console's context path is a build-time setting the Java REACT_CONTEXTS array has to match, "
+    + "so this reader must resolve it rather than skip it.")
+  return configured[1].trim()
+}
 
 /**
  * `ROUTES.FOO` → its literal, read from the one file that spells them.
@@ -71,14 +109,10 @@ function routeConstants() {
     out.set(name, value)
   }
 
-  if (/CONSOLE:\s*scoped\(consolePath\)/.test(ROUTES_CONST)) {
-    const env = readFileSync(join(SRC, "..", ".env"), "utf8")
-    const configured = /^VITE_CONSOLE_CONTEXT_PATH=(.+)$/m.exec(env)
-    assert.ok(configured, "SH926: ROUTES.CONSOLE is built from VITE_CONSOLE_CONTEXT_PATH and "
-      + "shio-react/.env does not set it. The console's context path is a build-time setting the "
-      + "Java REACT_CONTEXTS array has to match, so this reader must resolve it rather than skip it.")
-    out.set("CONSOLE", configured[1].trim())
-  }
+  // SH909 — CONSOLE is `/bento` now and a plain literal, so the loop above has it. Before that it
+  // was `scoped(consolePath)`, off the same env var the legacy patterns still read; this branch
+  // stays because the setting did not go away, only the constant that was built from it.
+  if (/CONSOLE:\s*scoped\(consolePath\)/.test(ROUTES_CONST)) out.set("CONSOLE", consoleContextPath())
   return out
 }
 
@@ -131,6 +165,11 @@ function topLevelRoutes() {
     }
     if (!event.selfClosing) depth += 1
   }
+
+  // SH909 — the legacy console redirect is mounted through a `.map()` over a constant, so its two
+  // paths are `path={pattern}` and no literal reader can resolve them from App.tsx alone. They are
+  // top-level routes like any other and `/console/*` is the one a bookmark hits.
+  if (/LEGACY_CONSOLE_PATTERNS/.test(APP)) out.push(...legacyPatterns())
   return out
 }
 
@@ -147,10 +186,20 @@ function declaredContexts() {
   return new Set([...array[1].matchAll(/"([^"]*)"/g)].map(([, value]) => value))
 }
 
+/**
+ * A route whose **first segment is a parameter** has no context to declare: it matches any prefix.
+ * The one this project has is SH909's `/:tenant/console/*`, and the server serves it through
+ * `ShIndexContext`'s own `/*&#47;console/**` mapping rather than through the array — asserted in the
+ * vacuity test below, so this exclusion cannot quietly become a hole.
+ */
+const wildcardPrefixed = (path) => path.startsWith("/:")
+
 test("SH926: every top-level route tree the console mounts is an SPA context the app serves", () => {
   const declared = declaredContexts()
   const trees = topLevelRoutes()
-  const needed = [...new Set(trees.filter((path) => !NOT_A_CONTEXT.has(path)).map(context))].sort()
+  const needed = [...new Set(trees
+    .filter((path) => !NOT_A_CONTEXT.has(path) && !wildcardPrefixed(path))
+    .map(context))].sort()
 
   console.log(`SH926: ${trees.length} top-level routes → ${needed.length} context(s): ${needed.join(" ")}`)
 
@@ -183,14 +232,28 @@ test("SH926: the reader is not vacuous — it parses real routes and a real arra
     "SH926: /console is not in REACT_CONTEXTS, which cannot be true of a working instance — the "
       + "array reader is matching the wrong thing")
 
-  // And the console tree must be among the routes this reader *found*. It is the one whose path
-  // is not a literal — `scoped(consolePath)`, off a build-time env var — so it is the entry a
-  // constant reader drops first, and dropping it looks exactly like a clean run.
-  const needed = new Set(topLevelRoutes().map(context))
-  assert.ok(needed.has("/console"),
-    `SH926: the console tree is not among the ${trees.length} routes parsed — ROUTES.CONSOLE `
-      + "resolved to nothing, so the reader is checking the bento trees and silently skipping the "
-      + "one every curator uses")
+  // And the legacy console prefix must be among the routes this reader *found*. Its paths are the
+  // ones no literal reader resolves — before SH909 `ROUTES.CONSOLE` was `scoped(consolePath)`, and
+  // since SH909 they are a mapped constant — so they are what a reader drops first, and dropping
+  // them looks exactly like a clean run over the URLs every existing bookmark uses.
+  const found = new Set(topLevelRoutes().map(context))
+  assert.ok(found.has("/console"),
+    `SH926: the console prefix is not among the ${trees.length} routes parsed, so the reader is `
+      + "checking the bento trees and silently skipping the paths every existing bookmark uses")
   assert.ok(!declared.has("/definitely-not-a-context"),
     "SH926: the array reader accepts a string that is not in it, so it would accept anything")
+
+  /*
+   * SH909 — the tenant-prefixed twin is excluded from the context check above, and this is what
+   * makes that exclusion honest rather than a hole: the server has to serve it somewhere, and the
+   * somewhere is ShIndexContext's own mapping.
+   */
+  const indexContext = readFileSync(join(
+    HERE, "..", "..", "shio-app", "src", "main", "java", "com", "viglet", "shio",
+    "ShIndexContext.java"), "utf8")
+  assert.match(indexContext, /"\/\*\/console\/\*\*"/,
+    "SH909: ShIndexContext no longer forwards the tenant-prefixed console paths to the SPA shell. "
+      + "They are excluded from the context array on the grounds that this mapping serves them — "
+      + "without it, every /<tenant>/console/... bookmark 404s and the redirect that was supposed "
+      + "to catch it never loads.")
 })

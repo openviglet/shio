@@ -159,14 +159,18 @@ test("SH908: an unprovided page composing the adapter reads the chrome rather th
       + " header only when it answers \"bento\", as not-found.page.tsx does.")
 })
 
-test("SH908: the reader is not vacuous — it finds the shell, the routes and the chrome it forbids", () => {
-  // If the console shell block stops being found, every console route reads as "outside" and the
-  // first test fails loudly. The opposite is the dangerous one: a route pattern that matches
-  // nothing reports a clean tree for ever, which is the failure mode SH905's own vacuity check
-  // was written for.
-  assert.ok(consoleShellBlock(), "SH908: the console shell's Route block is no longer recognisable"
-    + " in App.tsx, so this reader cannot tell inside from outside")
-
+test("SH908: the reader is not vacuous — it finds the routes and the chrome it forbids", () => {
+  /*
+   * SH909 — this used to assert the console shell's block was findable, on the grounds that a
+   * reader which cannot tell inside from outside is checking nothing. That premise is gone: there
+   * is no console shell any more, so **everything** is outside one and the first test applies to
+   * the whole application rather than to part of it. `consoleShellBlock()` returning null is now
+   * the expected answer, and the strictness moved in the right direction.
+   *
+   * What has to stay true is the other half: the route walk must still find routes. A pattern that
+   * matches nothing reports a clean tree for ever, which is the failure mode SH905's own vacuity
+   * check was written for.
+   */
   const mounted = mountedOutsideTheShell()
   assert.ok(mounted.size >= 8,
     `SH908: only ${mounted.size} components resolve to a file — the bento tree mounts far more`

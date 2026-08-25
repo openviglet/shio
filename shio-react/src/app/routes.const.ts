@@ -39,36 +39,64 @@ export const TENANT_SEGMENT = readTenantSegment();
 
 const scoped = (path: string) => `${TENANT_SEGMENT}${path}`;
 
+/**
+ * SH909 — where the console lives, and it is `/bento`.
+ *
+ * Every constant below used to be `scoped(consolePath)`-prefixed, and re-pointing this one line
+ * moves all of them: the 24 call sites that build a path from `ROUTES.CONSOLE`, the nav
+ * declaration, and every `navigate()` in the console follow without being touched. That is the
+ * whole reason they were constants.
+ *
+ * **The old prefix keeps working** — `LEGACY_CONSOLE` below is matched by a redirect route, so a
+ * bookmark, a link in an old e-mail and an external redirect all still land where they meant to.
+ * §LV.12's instruction was to redirect rather than drop, because the reversal nobody claims is the
+ * one that becomes a permanent second product.
+ *
+ * ## One thing the switch drops, deliberately
+ *
+ * The console path is **tenant-prefixed** (`/acme/console/...`) and bento is not. That prefix was
+ * never how the backend resolved a tenant: `ShVigletTenantResolver` reads the session (set by
+ * `POST /tenant/{name}/switch`), a CDA token's own tenant, or an OIDC `workspace_id` claim, and
+ * never the URL. So the prefix is cosmetic — it kept generated links inside whatever prefix you
+ * arrived with — and dropping it changes which tenant nothing resolves to. **SH931** carries
+ * tenant-prefixed bento URLs for the part that is a real loss: sharing a link that names its
+ * tenant.
+ */
+const CONSOLE_BASE = "/bento";
+
 export const ROUTES = {
   ROOT: "/",
   LOGIN: "/login",
   LOGOUT: "/logout",
-  CONSOLE: scoped(consolePath),
-  HOME: scoped(`${consolePath}/home`),
-  CONTENT_ROOT: scoped(`${consolePath}/content`),
-  SITE_NEW: scoped(`${consolePath}/content/site/new`),
-  SITE_IMPORT: scoped(`${consolePath}/content/site/import`),
-  POST_TYPE_ROOT: scoped(`${consolePath}/content/post-type`),
-  POST_TYPE_NEW: scoped(`${consolePath}/content/post-type/new`),
-  SEARCH: scoped(`${consolePath}/content/search`),
-  TRASH: scoped(`${consolePath}/content/trash`),
-  FILES: scoped(`${consolePath}/content/files`),
-  ADMIN_ROOT: scoped(`${consolePath}/admin`),
-  ADMIN_USERS: scoped(`${consolePath}/admin/users`),
-  ADMIN_GROUPS: scoped(`${consolePath}/admin/groups`),
-  ADMIN_ROLES: scoped(`${consolePath}/admin/roles`),
-  GRAPHQL_ROOT: scoped(`${consolePath}/graphql`),
+  CONSOLE: CONSOLE_BASE,
+  /** The bento shell's index *is* the home page (SH898), so there is no `/home` under it. */
+  HOME: CONSOLE_BASE,
+  CONTENT_ROOT: `${CONSOLE_BASE}/content`,
+  SITE_NEW: `${CONSOLE_BASE}/content/site/new`,
+  SITE_IMPORT: `${CONSOLE_BASE}/content/site/import`,
+  POST_TYPE_ROOT: `${CONSOLE_BASE}/content/post-type`,
+  POST_TYPE_NEW: `${CONSOLE_BASE}/content/post-type/new`,
+  SEARCH: `${CONSOLE_BASE}/content/search`,
+  TRASH: `${CONSOLE_BASE}/content/trash`,
+  FILES: `${CONSOLE_BASE}/content/files`,
+  ADMIN_ROOT: `${CONSOLE_BASE}/admin`,
+  ADMIN_USERS: `${CONSOLE_BASE}/admin/users`,
+  ADMIN_GROUPS: `${CONSOLE_BASE}/admin/groups`,
+  ADMIN_ROLES: `${CONSOLE_BASE}/admin/roles`,
+  GRAPHQL_ROOT: `${CONSOLE_BASE}/graphql`,
   SETUP: "/setup",
-  ADMIN_TOKENS: scoped(`${consolePath}/admin/tokens`),
-  ADMIN_TENANTS: scoped(`${consolePath}/admin/tenants`),
-  ADMIN_AUTH_PROVIDERS: scoped(`${consolePath}/admin/auth-providers`),
-  ADMIN_EXCHANGE_PROVIDERS: scoped(`${consolePath}/admin/exchange-providers`),
-  ADMIN_EMAIL_CONFIG: scoped(`${consolePath}/admin/email-config`),
-  ADMIN_ACTIVITY: scoped(`${consolePath}/admin/activity`),
-  ADMIN_REVIEW: scoped(`${consolePath}/admin/review`),
-  ADMIN_WEBHOOKS: scoped(`${consolePath}/admin/webhooks`),
-  ADMIN_MARKETPLACE: scoped(`${consolePath}/admin/marketplace`),
-  UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
+  ADMIN_TOKENS: `${CONSOLE_BASE}/admin/tokens`,
+  ADMIN_TENANTS: `${CONSOLE_BASE}/admin/tenants`,
+  ADMIN_AUTH_PROVIDERS: `${CONSOLE_BASE}/admin/auth-providers`,
+  ADMIN_EXCHANGE_PROVIDERS: `${CONSOLE_BASE}/admin/exchange-providers`,
+  ADMIN_EMAIL_CONFIG: `${CONSOLE_BASE}/admin/email-config`,
+  ADMIN_ACTIVITY: `${CONSOLE_BASE}/admin/activity`,
+  ADMIN_REVIEW: `${CONSOLE_BASE}/admin/review`,
+  ADMIN_WEBHOOKS: `${CONSOLE_BASE}/admin/webhooks`,
+  ADMIN_MARKETPLACE: `${CONSOLE_BASE}/admin/marketplace`,
+  UNIVERSAL_EDITOR: `${CONSOLE_BASE}/universal-editor`,
+  /** SH909 — the old prefix, kept for the redirect and for nothing else. */
+  LEGACY_CONSOLE: scoped(consolePath),
   /** SH887 — unscoped on purpose: a harness with no tenant, mounted outside the console shell. */
   BENTO_VOCABULARY: "/bento-vocabulary",
   /**
@@ -109,14 +137,24 @@ export const ROUTES = {
   BENTO_EMAIL_CONFIG: "/bento/admin/email-config",
 };
 
-// Route patterns (with `:tenant` placeholder) used by React Router for matching.
-export const ROUTE_PATTERNS = {
-  CONSOLE: `/:tenant${consolePath}`,
-  ADMIN_ROOT: `/:tenant${consolePath}/admin`,
-  GRAPHQL_ROOT: `/:tenant${consolePath}/graphql`,
-  UNIVERSAL_EDITOR: `/:tenant${consolePath}/universal-editor`,
-};
+/**
+ * SH909 — the two patterns the legacy redirect matches, bare and tenant-prefixed.
+ *
+ * These replace `ROUTE_PATTERNS` and `CONSOLE_GATEWAY_PATTERN`, which were **imported by
+ * nothing**: a tenant gateway that was designed, declared and never mounted. Left in place they
+ * would have read, to the next person, as the mechanism that makes the redirect below work.
+ */
+export const LEGACY_CONSOLE_PATTERNS = [`${consolePath}/*`, `/:tenant${consolePath}/*`];
 
-// Bare console path (no tenant) — matched to redirect through TenantGateway,
-// so old bookmarks / external redirects to /console still resolve a tenant.
-export const CONSOLE_GATEWAY_PATTERN = `${consolePath}/*`;
+/** The path the legacy console prefix is stripped down to — `/console/content` → `/bento/content`. */
+export function bentoPathFor(pathname: string): string {
+  const segments = pathname.split("/").filter(Boolean);
+  const consoleSegment = consolePath.replace(/^\//, "");
+  const at = segments.indexOf(consoleSegment);
+  // Everything after `<tenant?>/console`. A tenant prefix is dropped rather than carried: bento is
+  // unscoped, and the tenant a request runs in comes from the session and never from the URL.
+  const rest = at === -1 ? segments : segments.slice(at + 1);
+  // `/console` and `/console/home` are the same page under bento, and it is the shell's index.
+  const tail = rest[0] === "home" ? rest.slice(1) : rest;
+  return tail.length === 0 ? ROUTES.HOME : `${ROUTES.CONSOLE}/${tail.join("/")}`;
+}

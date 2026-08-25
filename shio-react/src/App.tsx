@@ -40,13 +40,12 @@ import PostTypeNewPage from "./app/console/content/post-type.new.page"
 import SearchPage from "./app/console/content/search.page"
 import StaticFileListPage from "./app/console/content/static-file.list.page"
 import TrashPage from "./app/console/content/trash.page"
-import ConsoleRootPage from "./app/console/console.root.page"
 import NotFoundPage from "./app/console/not-found.page"
-import HomePage from "./app/console/home/home.page"
 import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
-import { AdminRoutes, BentoGraphQLRoute, ContentRoutes, GraphQLRoutes, UniversalEditorRoutes } from "./app/routes"
-import { ROUTES } from "./app/routes.const"
+import { BentoGraphQLRoute } from "./app/routes"
+import LegacyConsoleRedirect from "./app/legacy-console-redirect"
+import { LEGACY_CONSOLE_PATTERNS, ROUTES } from "./app/routes.const"
 import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 import { ThemeProvider } from "./components/theme-provider"
 import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
@@ -64,15 +63,16 @@ function App() {
           <ShioServiceProvider>
             <Toaster />
             <Routes>
+              {/* SH909 — the default. `ROUTES.CONSOLE` is `/bento` now, and this line did not change. */}
               <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.CONSOLE} replace />} />
               <Route path={ROUTES.SETUP} element={<SetupPage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage />} />
               {/*
-                SH887 — the bento layer's proving page, mounted OUTSIDE the console shell on
-                purpose: `ConsoleRootPage` wraps its Outlet in a `SidebarProvider`, and the bento
-                shell ships no provider at all, so a bento page under the console chrome is a
-                page proved in the era this migration retires. Top-level, no nav entry, no data.
-                SH888 builds the real parallel route tree; SH909 removes whichever shell loses.
+                SH887 — the bento layer's proving page. Top-level, no nav entry, no data: it
+                composes 23 of the layer's runtime exports so a break in the package is found
+                here rather than four surfaces into a slice. It was mounted outside the console
+                shell because the two chromes could not nest; SH909 removed that shell, and the
+                route stays top-level because a harness belongs outside the product's own shell.
               */}
               <Route path={ROUTES.BENTO_VOCABULARY} element={<BentoVocabularyPage />} />
               {/*
@@ -94,15 +94,19 @@ function App() {
               */}
               <Route path="/bento/universal-editor/:siteId" element={<VisualEditorPage />} />
               {/*
-                SH888 — the parallel bento route tree. A sibling of the console route and not a
-                child of it: `ConsoleRootPage` mounts a SidebarProvider and its PageHeader calls
-                SidebarTrigger, while the bento shell ships no provider at all, so the two cannot
-                nest. Both stay mounted for the length of Block AR and each surface moves under
-                its own task; SH909 removes whichever shell loses.
+                SH888 — the bento route tree, which since SH909 is **the** route tree.
 
-                SH898 — the index is the console home, the first migrated surface. The
-                vocabulary harness keeps its own bare route above, outside every shell, which is
-                where it proves the layer rather than the shell.
+                It was built beside the console one because the two shells could not nest: the
+                console root mounted a sidebar provider and its header reached for that context,
+                while the bento shell ships none — the rail is fixed, one width, hidden below md.
+                So every surface moved under its own task (SH898–SH908) and each slice stayed
+                independently reversible, which across 43 pages was worth two shells for a block.
+
+                SH909 claimed the reversal rather than leaving it: the console tree is gone, its
+                URLs redirect here, and `bento-is-the-default.test.mjs` is what stops a second
+                shell from arriving again in a diff that had a good local reason.
+
+                SH898 — the index is the home page, the first migrated surface.
               */}
               <Route path={ROUTES.BENTO} element={<BentoRootPage />}>
                 <Route index element={<BentoHomePage />} />
@@ -236,6 +240,14 @@ function App() {
                   It looked like a routing-order problem and was the opposite one; the live check
                   caught it as "no hero heading on a bento surface".
                 */}
+                {/*
+                  SH909 — the admin hub, which under the console was `admin.root.page.tsx`: a bare
+                  Outlet with an index redirect to the user list. There is no hub page to migrate,
+                  so this is that redirect and nothing else. It matters because `ADMIN_ROOT` is the
+                  `urlBase` of eleven admin surfaces — every one of their hero back-links pointed
+                  at a path no route claimed.
+                */}
+                <Route path="admin" element={<Navigate to={ROUTES.BENTO_USERS} replace />} />
                 <Route path="admin/groups" element={<BentoGroupListPage />} />
                 <Route path="admin/groups/:groupId" element={<BentoGroupEditPage />} />
                 <Route path="admin/roles" element={<BentoRoleListPage />} />
@@ -344,20 +356,24 @@ function App() {
                   element={<SectionCardChromeProvider chrome="bento"><NotFoundPage /></SectionCardChromeProvider>}
                 />
               </Route>
-              <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
-                <Route index element={<Navigate to={ROUTES.HOME} replace />} />
-                <Route path="home" element={<HomePage />} />
-                {ContentRoutes}
-                {AdminRoutes}
-                {GraphQLRoutes}
-                {UniversalEditorRoutes}
-                {/*
-                  SH180 — an unmatched console path says so. Inside the shell, so the sidebar
-                  and breadcrumb stay put and the user can navigate out of it; last, so it
-                  only catches what every real route declined.
-                */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
+              {/*
+                SH909 — the console tree is gone and its URLs are not.
+
+                Every surface moved (SH898–SH908), so what stood here was a second shell rendering
+                the same components in the chrome this block retires. What the block promised
+                instead was reversibility, and §LV.12 is about claiming that: "a reversal nobody
+                claims becomes a permanent second product", which is the state the *legacy* console
+                sat in for years with forty pages beside its migrated ones.
+
+                Both patterns, because the console path is tenant-prefixed and the bare one is what
+                an external redirect uses. The prefix is dropped rather than carried: bento is
+                unscoped, and the tenant a request runs in has always come from the session, a
+                token or an OIDC claim — never from the URL (SH931 carries the part of that which
+                is a real loss, a shared link naming its tenant).
+              */}
+              {LEGACY_CONSOLE_PATTERNS.map((pattern) => (
+                <Route key={pattern} path={pattern} element={<LegacyConsoleRedirect />} />
+              ))}
               {/* And outside it, for a path that is not under the console at all. */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
