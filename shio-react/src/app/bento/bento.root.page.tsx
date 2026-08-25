@@ -20,6 +20,7 @@ import { ReviewPendingProvider } from "@/contexts/review-pending.context"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
 import { BentoReviewPending } from "./bento-review-pending"
+import { BentoTenantLinkNotice } from "./bento-tenant-link-notice"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
 
 /**
@@ -145,6 +146,13 @@ export default function BentoRootPage() {
           <BentoNavRail groups={groups} homeRoute={ROUTES.BENTO} />
 
           <div className="bento-rail-gutter">
+            {/*
+              SH931 — inside the gutter and above the Outlet, so it clears the fixed rail and sits
+              over whatever page the link led to rather than inside it. It renders nothing unless
+              the URL names a tenant that is not the session's, which makes this the ordinary
+              silent case for everyone except the reader who needs telling.
+            */}
+            <BentoTenantLinkNotice />
             <Outlet />
           </div>
 

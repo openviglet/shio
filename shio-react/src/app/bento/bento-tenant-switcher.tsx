@@ -6,12 +6,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconBuildingSkyscraper, IconCheck, IconSelector } from "@tabler/icons-react"
+import { IconBuildingSkyscraper, IconCheck, IconLink, IconSelector } from "@tabler/icons-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 
 import { useMultiTenant } from "@/app/bento/bento-nav"
+import { linkWithTenant } from "@/app/bento/bento-tenant-link"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -53,6 +54,14 @@ const service = new ShTenantService()
  * old one — the site list, the nav's feature gating, every cached id. Re-fetching them piecemeal
  * is a long tail of stale reads for a control somebody uses twice a day. A full reload is the
  * honest way to say the world changed.
+ *
+ * <h2>It also produces the links SH931 reads</h2>
+ *
+ * Copying a URL that names the current tenant belongs here rather than on a page, for the same
+ * reason the switch does: it is an act about *which tenant you are in*, and this is the only
+ * control that is about that. It also inherits both gates for free — a curator who cannot switch
+ * cannot produce an ambiguous paste either, so the affordance appears exactly where the ambiguity
+ * can arise. The link states the tenant and never changes one; `bento-tenant-link.ts` says why.
  */
 export function BentoTenantSwitcher() {
   const { t } = useTranslation()
@@ -79,6 +88,15 @@ export function BentoTenantSwitcher() {
     } catch {
       toast.error(t("common.error"))
       setSwitching(false)
+    }
+  }
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(linkWithTenant(globalThis.location.href, current))
+      toast.success(t("tenantLink.copied", { tenant: current }))
+    } catch {
+      toast.error(t("common.error"))
     }
   }
 
@@ -110,6 +128,11 @@ export function BentoTenantSwitcher() {
             {tenant.name}
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={copyLink}>
+          <IconLink className="h-4 w-4" aria-hidden="true" />
+          {t("tenantLink.copy")}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

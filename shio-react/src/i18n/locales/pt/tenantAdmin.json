@@ -25,5 +25,11 @@
   "tenantAdmin.statusSuspended": "Suspenso",
   "tenantAdmin.plan": "Plano",
   "tenantAdmin.planHint": "Plano de cobrança que define os limites de criação. FREE é limitado; qualquer outro valor é ilimitado.",
-  "tenantSwitcher.label": "Trocar de tenant"
+  "tenantSwitcher.label": "Trocar de tenant",
+  "tenantLink.copy": "Copiar link indicando este tenant",
+  "tenantLink.copied": "Link copiado. Ele indica {{tenant}}, e abri-lo não troca o tenant de ninguém.",
+  "tenantLink.body": "Este link foi escrito para {{claimed}}. Você está trabalhando em {{current}}, e nada mudou.",
+  "tenantLink.switch": "Trocar para {{tenant}}",
+  "tenantLink.notMember": "Você não é membro de {{tenant}}, então este link não pode ser aberto como pretendido.",
+  "tenantLink.dismiss": "Dispensar"
 }

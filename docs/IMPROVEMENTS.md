@@ -1016,31 +1016,6 @@ people learn to skim**, which is the state SH579 exists to prevent one level up.
 make the workers resolve in dev, or teach the probe the difference and print which
 server answered.
 
-### LV.21 A link that no longer says which tenant it means (SH931)
-
-The console was addressable as `/<tenant>/console/...` and bento is `/bento/...` with no
-prefix at all. SH909 dropped it deliberately and the reasoning holds:
-`ShVigletTenantResolver` reads the session, a CDA token's own tenant, or an OIDC
-`workspace_id` claim, and **never** the URL — so the prefix never selected anything. It
-kept generated links inside whatever prefix the reader arrived with, which is a property
-of the link builder rather than of the request.
-
-What is actually lost is smaller and real. A curator with membership in two tenants
-pastes a URL to a colleague; under the old scheme that URL said which tenant it meant,
-and the colleague's session would carry them there or not — but at least the intent was
-in the string. Under bento the same paste is ambiguous: whoever opens it sees the post
-with that id **in their own current tenant**, or a 404, and nothing in the URL says
-which was meant.
-
-So this is not "restore the prefix". It is: decide what a shared bento link should say
-about its tenant, and make an id-carrying URL either state its tenant or refuse to be
-ambiguous. A query parameter that switches the session on open is the obvious shape and
-the dangerous one — it makes a link a state change — so the choice needs stating rather
-than assuming.
-
-Worth measuring first: how many installs have more than one tenant, and whether any of
-them share console URLs at all.
-
 ### LV.22 The adapters stopped adapting, and kept the name (SH932)
 
 `AdaptivePageHeader` chose between a console header plus a sticky save bar and the bento

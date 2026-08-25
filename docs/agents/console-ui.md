@@ -1988,6 +1988,32 @@ a tenant was resolved**: `ShVigletTenantResolver` reads the session (set by
 the URL. It kept generated links inside whatever prefix you arrived with, and nothing else. What is
 genuinely lost is sharing a link that names its tenant, which is **SH931**.
 
+### `?tenant=` is a claim about intent, and opening it changes nothing (SH931)
+
+A bento URL names its tenant with `?tenant=<name>`. `bento-tenant-link.ts` owns the parameter and
+both directions of it: `tenantFromSearch` reads the claim (a blank value is no claim), and
+`linkWithTenant` stamps one, absolute and idempotent — copying twice is byte-identical, so an
+already-stamped link is re-stamped rather than given two.
+
+**Opening such a link never switches the session.** `BentoTenantLinkNotice`, mounted in the shell
+above the `Outlet`, compares the claim with `GET /tenant/current` and renders nothing when they
+agree — the silent case, which is everyone who produced the link. When they differ it names both
+tenants and offers a switch the reader presses, or says plainly that they are not a member. The
+rejected shape is the obvious one: a parameter that switched the session on open would make every
+pasted URL a state change, carrying a curator out of the tenant they were working in and leaving a
+half-written draft behind in it. That is P7, and the cost of getting it wrong is a lost edit rather
+than a wrong page.
+
+That rule is one line from being broken — move `switchTo` into the effect that already reads the
+claim and nothing else notices — so `bento-tenant-link.test.mjs` slices the notice's `useEffect`
+bodies and holds them empty of it, with a floor on how many it found so the scan cannot pass by
+finding none.
+
+The producer is a **Copy link** item inside `BentoTenantSwitcher`, which inherits both of that
+control's gates: `multiTenant` and two memberships. So a curator who cannot switch cannot produce
+an ambiguous paste either, and a single-tenant install — where every link means the only tenant
+there is — gets neither the banner nor the affordance.
+
 ### The admin hub nobody had migrated
 
 `ADMIN_ROOT` is the `urlBase` of eleven admin surfaces, so it is where their hero back-links point —

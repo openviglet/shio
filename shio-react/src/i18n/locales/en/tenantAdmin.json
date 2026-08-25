@@ -25,5 +25,11 @@
   "tenantAdmin.statusSuspended": "Suspended",
   "tenantAdmin.plan": "Plan",
   "tenantAdmin.planHint": "Billing plan that drives create limits. FREE is bounded; any other value is unlimited.",
-  "tenantSwitcher.label": "Switch tenant"
+  "tenantSwitcher.label": "Switch tenant",
+  "tenantLink.copy": "Copy link naming this tenant",
+  "tenantLink.copied": "Link copied. It names {{tenant}}, and opening it will not switch anyone.",
+  "tenantLink.body": "This link was written for {{claimed}}. You are working in {{current}}, and nothing has changed.",
+  "tenantLink.switch": "Switch to {{tenant}}",
+  "tenantLink.notMember": "You are not a member of {{tenant}}, so this link cannot be opened the way it was meant.",
+  "tenantLink.dismiss": "Dismiss"
 }
