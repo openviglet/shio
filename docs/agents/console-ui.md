@@ -1787,6 +1787,33 @@ found one on its first run**: `bento/content/post-type-select.page.tsx`, shipped
 `PageHero` at a bento route with no provider — `/bento/content/folder/:id/post-type-select`
 was a blank page. It renders `BentoHero` now; a bento-only page has no second chrome to adapt to.
 
+### Six ways the Monaco workers do not get fixed (SH927)
+
+Under the Vite dev server the explorer's workers are **created** and then die evaluating their own
+module graph: `monaco-graphql` reaches CommonJS packages that Vite serves raw to a worker, where the
+app graph gets the optimizer's interop. A module worker that fails to evaluate raises an event
+carrying nothing, so `new Worker` reports no message — importing the same URL from the page is what
+prints the cause. The page is fine: Monaco falls back to the main thread and works, slowly.
+
+Every one of these was measured and refuted, and they are written into `console-check.mjs` so the
+next reader does not spend an afternoon re-running them:
+
+| attempt | result |
+|---|---|
+| exclude the three `?worker` entries from `optimizeDeps` | imports resolve to real `/@fs/` paths, warning unchanged |
+| suspect module workers | one built by hand in the page starts fine |
+| `optimizeDeps.include` the CJS package | no chunk — `graphiql` already swallowed it |
+| `optimizeDeps.needsInterop` | the import is rewritten no differently |
+| alias it to a local ESM shim | **works**, and reveals the next CJS package — a chain, not a package |
+| frame the GraphiQL Spring serves (Turing's design) | that page loads twenty resources from `esm.sh` with **no local fallback** |
+
+The last one is the finding worth keeping: Shio bundles 4.6 MB of `vendor-graphiql` **so the console
+does not need a CDN at runtime**. Turing can frame Spring's page because it accepts that dependency;
+Shio would be trading an offline-capable console for a lighter bundle.
+
+So the exemption is the earned answer, not a shrug — dev server only, explorer routes only, still a
+failure against the jar, and it expires by failing the day the workers start.
+
 ### The not-found page renders in whatever chrome the path implies
 
 Three mount points, one component: inside the console shell, inside the bento shell (this task's

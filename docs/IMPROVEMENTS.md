@@ -938,37 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.19 One page, two answers, and only one of them about Shio (SH927)
-
-SH908's live probe returned two verdicts from one commit. Against the **jar**: no
-errors, no warnings. Against the **Vite dev server**: *"Could not create web worker(s).
-Falling back to loading web worker code in main thread"*, plus an error event with no
-message, on both routes.
-
-The cost is not the fallback — Monaco on the main thread works, slowly. It is that
-`console:check` is permanently red on two probes for anybody running it the documented
-way. **A gate that is red for the environment is a gate people learn to skim.**
-
-**The cause, found 2026-08-25.** The workers *are* created and die during module
-evaluation, which is why the error carries no message: `new Worker` reports nothing
-useful about its own module graph. Importing the same URL from the page prints it —
-
-    The requested module '.../nullthrows/nullthrows.js?v=…'
-    does not provide an export named 'default'
-
-`nullthrows` is CommonJS with no ESM entry. Pre-bundling the GraphiQL tree fixes that
-interop for the *app* graph, and `optimizeDeps.include`'s own comment names this
-package; the worker graph reaches it through `monaco-graphql`, where Vite serves the raw
-file.
-
-Three fixes are refuted by measurement: excluding the `?worker` entries changes nothing,
-workers themselves construct fine, and adding `nullthrows` to `optimizeDeps.include`
-emits no chunk because `graphiql` already swallowed it.
-
-What is left is a choice — alias the package to an ESM shim, a three-line copy this
-repository's duplicate rule dislikes, or accept a dev-only fallback and stop the probe
-calling it a failure.
-
 ### LV.25 Two route fields that no longer differ (SH935)
 
 `bento-nav.ts` gives every surface a `fallbackRoute` — where it lived — and an optional

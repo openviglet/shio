@@ -904,6 +904,74 @@ async function identifyServer() {
   return { dev, title, isShio: title === SHIO_TITLE, kind: dev ? "vite dev server" : "jar" }
 }
 
+/**
+ * SH927 — the one console difference the Vite dev server is allowed to have.
+ *
+ * <h2>What is actually wrong</h2>
+ *
+ * Monaco's workers are *created* under the dev server and then die evaluating their own module
+ * graph: `monaco-graphql` reaches CommonJS packages that Vite serves raw to a worker, rather than
+ * through the optimizer that fixes that interop for the app graph. A module worker that fails to
+ * evaluate raises an error event carrying **no message**, which is why this arrives as the bare
+ * string "Event" beside Monaco's own warning. `new Worker` reports nothing useful about it;
+ * importing the same URL from the page prints the cause.
+ *
+ * The page is correct. Monaco falls back to the main thread and the editor works, slowly. The cost
+ * was never the fallback — it was that `console:check` came back red on two probes for anybody
+ * running it the documented way, against `:5173`. **A gate that is red for the environment is a
+ * gate people learn to skim**, which is the state SH579 exists to prevent one level up.
+ *
+ * <h2>Five fixes, all refuted by measurement</h2>
+ *
+ * Written down so the next reader does not spend the afternoon re-running them:
+ *
+ * 1. **Excluding the three `?worker` entries from `optimizeDeps`** — the imports then resolve to
+ *    real `/@fs/` paths instead of dep chunks, the worker wrapper and every import it makes serve
+ *    200, and the warning is unchanged.
+ * 2. **The worker mechanism itself** — constructing that exact module worker by hand in the page
+ *    succeeds with no error, so nothing is wrong with module workers here.
+ * 3. **Naming the CJS package in `optimizeDeps.include`** — no chunk is emitted, because
+ *    `graphiql` has already swallowed it and Vite dedupes.
+ * 4. **`optimizeDeps.needsInterop`** — the import is rewritten no differently.
+ * 5. **Aliasing the package to a local ESM shim** — this one *works*, and immediately reveals the
+ *    next CommonJS package in the same graph. It is a chain, not a package, so the list has no end.
+ *
+ * The sixth option is to stop bundling the explorer and frame the one Spring serves, which is what
+ * Turing does. Refuted for a different reason: that page loads twenty resources from `esm.sh` with
+ * no local fallback, so the explorer would only work on an instance whose browser can reach a CDN.
+ *
+ * <h2>Why this is an exemption and not a shrug</h2>
+ *
+ * Two things keep it from becoming a blanket excuse:
+ *
+ * - It applies **only to the dev server**, and only on a route that actually rendered the explorer.
+ *   The jar serves a built bundle where this cannot happen, so the same output there is still a
+ *   failure — which is the point, because the jar is what ships.
+ * - It **expires by failing**. If the dev server stops producing it, the exemption is spent and the
+ *   run says so with the instruction, the way SH919's own expiry did.
+ */
+const MONACO_WORKER_WARNING = /Could not create web worker\(s\)/
+/** What a module worker raises when its graph fails to evaluate: an event carrying nothing. */
+const MESSAGELESS_ERROR = /^(Event|undefined)$/
+
+function exemptDevWorkerNoise(probe, dev) {
+  if (!dev || !probe.graphiql?.present) return false
+  if (!probe.warnings.some((w) => MONACO_WORKER_WARNING.test(w))) return false
+  if (!probe.errors.some((e) => MESSAGELESS_ERROR.test(e.trim()))) return false
+
+  // Spliced in place rather than reassigned: `probe.ok` is computed from the same array object
+  // this was handed, so replacing the property would leave the verdict reading the unfiltered one
+  // — which is exactly what the first version of this did, and the probes stayed red with an
+  // empty `errors` in the report saying they should not have.
+  for (let i = probe.errors.length - 1; i >= 0; i -= 1) {
+    if (MESSAGELESS_ERROR.test(probe.errors[i].trim())) probe.errors.splice(i, 1)
+  }
+  probe.devOnly = "SH927: Monaco's workers fell back to the main thread — a dev-server-only CJS"
+    + " interop failure. The editor works, slowly. Not counted against this probe here; against"
+    + " the jar the same output still is."
+  return true
+}
+
 async function main() {
   /*
    * First, before the API is asked anything and before a browser is launched. It is two requests,
@@ -944,6 +1012,8 @@ async function main() {
   })
 
   const report = { base: BASE, api: API, site: site.name, server: server.kind, probes: [] }
+  let devWorkerExemptionFired = false
+  let devWorkerExemptionUnused = false
 
   for (const route of routes) {
     const page = await context.newPage()
@@ -1042,6 +1112,8 @@ async function main() {
     probe.errors = errors
     probe.warnings = warnings
     probe.failedRequests = failedRequests
+    if (exemptDevWorkerNoise(probe, server.dev)) devWorkerExemptionFired = true
+    else if (server.dev && probe.graphiql?.present) devWorkerExemptionUnused = true
     probe.ok =
       errors.length === 0 &&
       failedRequests.length === 0 &&
@@ -1108,6 +1180,26 @@ async function main() {
 
   await browser.close()
   await writeFile(join(OUT, "console-check.json"), JSON.stringify(report, null, 2))
+
+  /*
+   * SH927 — the exemption's expiry, asserted rather than remembered.
+   *
+   * `devWorkerExemptionUnused` means a dev-server run reached the explorer and Monaco did NOT
+   * complain, which is the day the interop stopped biting. That is good news and it goes red on
+   * purpose: a comment saying "remove this when it starts working" expires silently, and this
+   * exemption is the kind of thing that quietly outlives its reason.
+   */
+  if (devWorkerExemptionUnused && !devWorkerExemptionFired) {
+    console.log("\nSH927: **the dev server started the Monaco workers.** The exemption in"
+      + " exemptDevWorkerNoise() is spent — delete it, delete this check, and close SH927."
+      + " If instead the explorer simply did not render, that is the CDA-token skip above and"
+      + " not this.")
+    process.exitCode = 1
+  }
+  if (devWorkerExemptionFired) {
+    console.log("\nSH927: Monaco fell back to the main thread under the dev server (known,"
+      + " dev-only). The jar is unaffected and the same output there is still a failure.")
+  }
 
   const failed = report.probes.filter((p) => !p.ok)
   console.log(`\n${report.probes.length - failed.length}/${report.probes.length} probes ok — report in ${OUT}`)

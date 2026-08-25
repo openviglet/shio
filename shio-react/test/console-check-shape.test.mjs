@@ -156,3 +156,50 @@ test("SH897: the reader is not vacuous — it reads the real script", () => {
     "SH897: the script no longer launches a browser, so whatever this is checking, it is not the"
       + " one thing in this repository that opens a real page")
 })
+
+/**
+ * SH927 — the exemption that lets the dev server be red about one thing without being red.
+ *
+ * Monaco's workers die evaluating their own module graph under the dev server, because
+ * `monaco-graphql` reaches CommonJS packages Vite serves raw to a worker. Six fixes are refuted by
+ * measurement and named in the script's own comment, so the exemption is the earned answer rather
+ * than a shrug — but an exemption is exactly the shape that quietly grows into a blanket excuse,
+ * and these are the three properties that stop it.
+ */
+test("SH927: the worker exemption is scoped to the dev server and to the explorer", () => {
+  assert.match(source, /function exemptDevWorkerNoise\(probe, dev\)/,
+    "SH927: the exemption changed shape. It takes the dev flag as an argument precisely so the"
+      + " decision cannot be made without it.")
+  assert.match(source, /if \(!dev \|\| !probe\.graphiql\?\.present\) return false/,
+    "SH927: the exemption no longer refuses outright unless this is the dev server AND the probe"
+      + " actually rendered the explorer. The jar serves a built bundle where this cannot happen,"
+      + " so the same output there must still fail — the jar is what ships.")
+  assert.match(source, /MONACO_WORKER_WARNING\b/,
+    "SH927: the exemption stopped keying on Monaco's own warning, so it now forgives a"
+      + " message-less error for any reason at all — which is every reason.")
+})
+
+test("SH927: the exemption edits the array the verdict is computed from", () => {
+  /*
+   * The bug this holds, which shipped in the first draft and was caught by running it: `probe.ok`
+   * is computed from the local `errors` array, and `probe.errors` is that same object. Reassigning
+   * the property with a filtered copy leaves the verdict reading the unfiltered one — so the
+   * probes stayed red while the report they wrote said `errors: []`. A report and a verdict that
+   * disagree is worse than either being wrong.
+   */
+  assert.match(source, /probe\.errors\.splice\(i, 1\)/,
+    "SH927: the exemption no longer splices in place. `probe.ok` is computed from the same array"
+      + " object, so assigning `probe.errors = …` filters the report and not the verdict, and the"
+      + " probe stays red while its own report says it should not be.")
+  assert.doesNotMatch(source, /probe\.errors = probe\.errors\.filter/,
+    "SH927: that is the reassignment the line above exists to prevent.")
+})
+
+test("SH927: the exemption expires by failing, rather than by being remembered", () => {
+  assert.match(source, /devWorkerExemptionUnused && !devWorkerExemptionFired/,
+    "SH927: nothing notices when the dev server starts the workers again. An exemption with no"
+      + " expiry outlives its reason silently — SH919's own expiry is the shape this copies.")
+  assert.match(source, /exemption in\"\s*\+ \" exemptDevWorkerNoise\(\) is spent|is spent/,
+    "SH927: the expiry fires without saying what to do about it, so whoever meets it has to"
+      + " rediscover the whole task to act on one line.")
+})
