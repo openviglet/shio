@@ -1,7 +1,9 @@
-import { PageHeader } from "@/components/page-header"
+import { IconHistory } from "@tabler/icons-react"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
@@ -58,30 +60,34 @@ export default function ActivityListPage() {
 
   return (
     <>
-      <PageHeader title={t("activity.title")} turIcon={History} urlBase={ROUTES.ADMIN_ROOT} />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold">{t("activity.title")}</h2>
-            <p className="text-sm text-muted-foreground">{t("activity.description")}</p>
-          </div>
+      {/*
+        SH906 — a read-mostly table under a hero, the second of the two shapes §LV.9 said the
+        package covers least well. It stays a table: an audit log is read down a column, and a
+        mosaic of tiles is the wrong instrument for "what changed, by whom, when".
+      */}
+      <AdaptivePageHeader
+        icon={History}
+        title={t("activity.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("activity.description")}
+        urlBase={ROUTES.ADMIN_ROOT}
+        actions={
           <Button onClick={load} size="sm" variant="outline" disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {t("activity.refresh")}
           </Button>
-        </div>
-
+        }
+      />
+      <div className="p-6">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <History className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold text-lg mb-1">{t("activity.blankTitle")}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">{t("activity.blankDescription")}</p>
-          </div>
+          <AdaptiveEmptyState
+            icon={IconHistory}
+            tone="slate"
+            title={t("activity.blankTitle")}
+            description={t("activity.blankDescription")}
+          />
         ) : (
-          <Card>
-            <CardContent className="p-0">
+          <AdaptivePanel contentClassName="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -108,8 +114,7 @@ export default function ActivityListPage() {
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+          </AdaptivePanel>
         )}
       </div>
     </>

@@ -1,7 +1,9 @@
-import { PageHeader } from "@/components/page-header"
+import { IconRobot } from "@tabler/icons-react"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { useReviewPending } from "@/contexts/review-pending.context"
@@ -132,30 +134,37 @@ export default function ReviewListPage() {
 
   return (
     <>
-      <PageHeader title={t("review.title")} turIcon={Bot} urlBase={ROUTES.ADMIN_ROOT} />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold">{t("review.title")}</h2>
-            <p className="text-sm text-muted-foreground">{t("review.description")}</p>
-          </div>
+      {/*
+        SH906 — the curator's approval surface, and the one §LV.9 says must not be the last thing
+        that still looks old. It is also the shape that section predicted the package covers least
+        well: a hero over a list of expandable sessions, which is not a mosaic and should not be
+        made into one. `AdaptivePanel` rather than `AdaptiveSectionCard` because the panel has no
+        header — the hero above already names the page, and a header-less section card renders a
+        console card in both eras (SH902).
+      */}
+      <AdaptivePageHeader
+        icon={Bot}
+        title={t("review.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("review.description")}
+        urlBase={ROUTES.ADMIN_ROOT}
+        actions={
           <Button onClick={load} size="sm" variant="outline" disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {t("common.refresh")}
           </Button>
-        </div>
-
+        }
+      />
+      <div className="p-6">
         {sessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Bot className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold text-lg mb-1">{t("review.blankTitle")}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">{t("review.blankDescription")}</p>
-          </div>
+          <AdaptiveEmptyState
+            icon={IconRobot}
+            tone="violet"
+            title={t("review.blankTitle")}
+            description={t("review.blankDescription")}
+          />
         ) : (
-          <Card>
-            <CardContent className="p-0 divide-y">
+          <AdaptivePanel contentClassName="p-0 divide-y">
               {sessions.map((session) => {
                 const expanded = session.session in open
                 const detail = open[session.session]
@@ -277,8 +286,7 @@ export default function ReviewListPage() {
                   </div>
                 )
               })}
-            </CardContent>
-          </Card>
+          </AdaptivePanel>
         )}
       </div>
 

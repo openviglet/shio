@@ -1636,6 +1636,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH903** — All three say their own empty through one adapter, and the lint written first found the block hand-rolled in thirteen files where the design named two.
 - **SH904** — Groups and roles take the entity shell through one shared page; the user editor cannot, because its identity is a login key the hero would rename on blur.
 - **SH905** — Five lists become config on one shared component and six editors take the adapter; a route param that does not match what its component reads is now a lint, after two silent blank pages.
+- **SH906** — The curator's approval surface is bento, the two read-mostly pages keep their table under a hero, and the marketplace catalogue stops being reachable by mouse only.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

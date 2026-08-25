@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.9 Marketplace, the review queue and the activity log (SH906)
-
-Three pages with three bespoke layouts and little in common. The review queue matters
-most: it is the curator's approval surface, the human half of the agent-native design,
-and where a curator goes when they do not trust what an agent did. It should not be the
-last part of the console that still looks like the old one. The activity log and the
-marketplace are both read-mostly surfaces, which is the page shape the package covers
-least well - a hero over a table is not a mosaic - so expect this slice to want a plain
-section rather than tiles, and let it have one.
-
 ### LV.10 The Universal Editor, where chrome and behaviour meet (SH907)
 
 editor-sites and visual-editor wrap a preview iframe and a bridge: the editor annotates

@@ -124,7 +124,10 @@ const CONSOLE_CHROME = [
  * moment anybody will ask whether it should have been bento to begin with.
  */
 const STILL_CONSOLE = {
-  "admin/activity/activity.list.page.tsx": ["PageHeader", "Card"],
+  // SH906 — the three bespoke surfaces, empty by migration. The review queue and the
+  // activity log are a hero over a list, which the package has no page component for;
+  // the marketplace grid stays a grid, its tiles now real buttons rather than divs.
+  "admin/activity/activity.list.page.tsx": [],
   "admin/admin.group.page.tsx": ["PageHeader", "Card"],
   "admin/admin.groups.list.page.tsx": ["PageHeader", "Card"],
   "admin/admin.role.page.tsx": ["PageHeader", "Card"],
@@ -145,8 +148,8 @@ const STILL_CONSOLE = {
   "admin/email-config/email-config.page.tsx": [],
   "admin/exchange-provider/exchange-provider.list.page.tsx": ["PageHeader", "Card"],
   "admin/exchange-provider/exchange-provider.page.tsx": [],
-  "admin/marketplace/marketplace.list.page.tsx": ["PageHeader", "Card"],
-  "admin/review/review.list.page.tsx": ["PageHeader", "Card"],
+  "admin/marketplace/marketplace.list.page.tsx": [],
+  "admin/review/review.list.page.tsx": [],
   "admin/site-webhook/site-webhook.list.page.tsx": ["PageHeader", "Card"],
   "admin/site-webhook/site-webhook.page.tsx": [],
   "admin/tenant/tenant.list.page.tsx": ["PageHeader", "Card"],

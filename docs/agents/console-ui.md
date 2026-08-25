@@ -1654,3 +1654,48 @@ stops matching fails instead of passing.
 
 Census after this task: **43 pages, Card 21, PageHeader 23, Sidebar 1, nineteen empty** — and
 44/44 live probes, every one of the eleven opened in a browser.
+
+## Three bespoke pages, and a catalogue nobody could reach by keyboard (SH906)
+
+The review queue, the activity log and the marketplace — three layouts with little in common.
+§LV.9 predicted the shape of the problem exactly: two of them are **read-mostly surfaces**, "which
+is the page shape the package covers least well — a hero over a table is not a mosaic", and it said
+to let them have a plain section rather than tiles.
+
+They did. The review queue is a list of expandable agent sessions and the activity log is an audit
+table; both take `AdaptivePageHeader` + `AdaptivePanel` and stay exactly the shape they were. An
+audit log is read down a column, and turning it into a mosaic would trade a readable column for a
+grid of cards saying the same thing worse. The marketplace is the one that genuinely is a mosaic,
+so its grid stayed a grid.
+
+**The review queue was the point of the slice** — it is the curator's half of the agent-native design,
+where a curator goes when they do not trust what an agent did, and §LV.9's whole argument is that
+it should not be the last part of the console that looks old. It is not.
+
+### The defect: a catalogue reachable only by mouse
+
+Every marketplace tile was `<Card className="cursor-pointer" onClick={() => open(item)}>` — a div
+with a handler. **Not focusable, not announced, no key handler.** The entire catalogue, including
+every install action behind it, was unreachable without a pointer.
+
+This is SH922's sweep from the other side and worth stating as a pair, because the two are found by
+opposite means. SH922 looked for **interactive things nested inside interactive things**, which a
+DOM walk finds. This is a thing that *looks* interactive and is not one — no nesting, nothing to
+walk, and it renders identically to a working control. The tile is a real `<button>` now, inside
+the panel rather than instead of it.
+
+The assertion holds the property rather than the fix: no `AdaptivePanel` in that grid may carry
+`onClick`. Wrapping it in a button, making it a link, or giving the panel real button semantics all
+pass; a div with a handler does not.
+
+### The heading every one of these pages said twice
+
+All three rendered `<h2>{t("x.title")}</h2>` with the description under it, directly below a
+`PageHeader` already showing the title — because the console header has no subtitle slot, so the
+description had nowhere else to live. The bento hero takes both, so the pair had to go or the page
+would name itself twice with nothing between. That is the fourth and fifth time this exact
+duplication has appeared in Block AR (SH898 twice, SH899 twice), which is why it is now asserted
+rather than remembered.
+
+Census after this task: **43 pages, Card 18, PageHeader 20, Sidebar 1, twenty-two empty** — and
+47/47 live probes.

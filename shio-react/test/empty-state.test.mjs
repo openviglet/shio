@@ -45,30 +45,33 @@ const HAND_ROLLED_VOID = /\bpy-16\b[^"]*\btext-center\b/
 const MUTED_ICON_CHIP = /\bh-8 w-8 text-muted-foreground\b/
 
 /**
- * The ten pages that still hand-roll it, each named with the task that removes it. **This is the
+ * The pages that still hand-roll it, each named with the task that removes it. **This is the
  * debt**, and the shape is `console-chrome-census.test.mjs`'s `STILL_CONSOLE` for the same reason:
- * a ceiling ("no more than ten") lets one migration pay for the next, while a list fails by name
- * and the diff that shortens it is a diff somebody reviews.
+ * a ceiling lets one migration pay for the next, while a list fails by name and the diff that
+ * shortens it is a diff somebody reviews.
  *
- * ## Why ten are held rather than fixed
+ * ## Why they are held rather than fixed
  *
  * §LV.6 named two pages and this reader found thirteen. That gap is the whole argument for
- * writing the grep before the fixes (SH322) — but it is not licence to migrate ten pages that
- * belong to four unstarted tasks. Every one of these is a page SH904, SH905, SH906 or SH908
- * rewrites wholesale; converting the empty state now means touching each file twice and reviewing
- * a diff that spans four tasks' worth of surfaces.
+ * writing the grep before the fixes (SH322) — but it was not licence to migrate ten pages that
+ * belonged to four unstarted tasks, touching each file twice and reviewing a diff spanning four
+ * tasks' worth of surfaces.
  *
- * So each entry names its owner. When that task migrates its pages it deletes its own rows here,
- * and the day the list is empty this constant goes with it.
+ * ## Re-attributed once, and why that is the mechanism working
+ *
+ * Five of these were filed against SH905 on the assumption it would convert the console lists.
+ * It did not: those five became **new bento pages beside** the console ones (SH899's copy shape,
+ * which is right for a list that is forty lines of configuration), so the console originals are
+ * untouched and go when the console route tree does. They name **SH909** now. A debt row whose
+ * owner shipped without paying it is a row that has to be re-owned in the open, not quietly
+ * inherited — otherwise the list stops meaning what it says on the first task that surprises it.
  */
 const STILL_HAND_ROLLED = {
-  "app/console/admin/activity/activity.list.page.tsx": "SH906",
-  "app/console/admin/api-token/api-token.list.page.tsx": "SH905",
-  "app/console/admin/auth-provider/auth-provider.list.page.tsx": "SH905",
-  "app/console/admin/exchange-provider/exchange-provider.list.page.tsx": "SH905",
-  "app/console/admin/review/review.list.page.tsx": "SH906",
-  "app/console/admin/site-webhook/site-webhook.list.page.tsx": "SH905",
-  "app/console/admin/tenant/tenant.list.page.tsx": "SH905",
+  "app/console/admin/api-token/api-token.list.page.tsx": "SH909",
+  "app/console/admin/auth-provider/auth-provider.list.page.tsx": "SH909",
+  "app/console/admin/exchange-provider/exchange-provider.list.page.tsx": "SH909",
+  "app/console/admin/site-webhook/site-webhook.list.page.tsx": "SH909",
+  "app/console/admin/tenant/tenant.list.page.tsx": "SH909",
   "app/console/graphql/graphql.page.tsx": "SH908",
   "app/console/universal-editor/editor-sites.page.tsx": "SH907",
 }

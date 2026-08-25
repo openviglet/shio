@@ -3,6 +3,8 @@
     "title": "Marketplace",
     "searchPlaceholder": "Buscar pacotes",
     "allCategories": "Todos",
+    "description": "Blueprints e pontos de partida que você pode instalar nesta instância.",
+    "emptyHint": "Nada corresponde a esse filtro — limpe a busca ou escolha outra categoria.",
     "empty": "Nenhum pacote corresponde.",
     "installedBadge": "Instalado",
     "availableBadge": "Disponível",

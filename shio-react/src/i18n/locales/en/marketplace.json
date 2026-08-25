@@ -3,6 +3,8 @@
     "title": "Marketplace",
     "searchPlaceholder": "Search packages",
     "allCategories": "All",
+    "description": "Blueprints and starting points you can install into this instance.",
+    "emptyHint": "Nothing matched that filter — clear the search or pick another category.",
     "empty": "No packages match.",
     "installedBadge": "Installed",
     "availableBadge": "Available",

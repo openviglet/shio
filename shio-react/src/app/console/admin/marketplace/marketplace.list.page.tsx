@@ -1,7 +1,9 @@
-import { PageHeader } from "@/components/page-header"
+import { IconPackage } from "@tabler/icons-react"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -160,7 +162,16 @@ export default function MarketplaceListPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <PageHeader turIcon={Package} title={t("marketplace.title")} />
+      {/*
+        SH906 — the marketplace is the one of these three that genuinely is a mosaic, so its
+        grid stays a grid. The refresh moves into the hero beside the filters it belongs with.
+      */}
+      <AdaptivePageHeader
+        icon={Package}
+        title={t("marketplace.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("marketplace.description")}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px]">
@@ -200,16 +211,33 @@ export default function MarketplaceListPage() {
       {catalogue && <SourceNote source={catalogue.source} />}
 
       {items.length === 0 && !loading ? (
-        <p className="text-sm text-muted-foreground">{t("marketplace.empty")}</p>
+        <AdaptiveEmptyState
+          icon={IconPackage}
+          tone="blue"
+          title={t("marketplace.empty")}
+          description={t("marketplace.emptyHint")}
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
-            <Card
+            /*
+              SH906 — a real `<button>`, not a `<div onClick>`.
+              The console tile was a `Card` with an `onClick`: not focusable, not announced, and
+              unreachable by keyboard — the whole catalogue was mouse-only. That is the same class
+              of defect SH922 swept for, from the other side: SH922 found interactive things nested
+              inside interactive things, and this is a thing that looks interactive and is not one.
+              The panel carries the chrome; the button carries the behaviour.
+            */
+            <AdaptivePanel
               key={item.id}
               className="cursor-pointer transition-colors hover:border-primary"
-              onClick={() => open(item)}
+              contentClassName="p-0"
             >
-              <CardContent className="flex flex-col gap-2 p-4">
+              <button
+                type="button"
+                onClick={() => open(item)}
+                className="flex w-full flex-col gap-2 p-4 text-left"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-medium break-all">{item.title ?? item.id}</span>
                   <Badge variant={item.installed ? "secondary" : "outline"}>
@@ -229,8 +257,8 @@ export default function MarketplaceListPage() {
                     </Badge>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </button>
+            </AdaptivePanel>
           ))}
         </div>
       )}

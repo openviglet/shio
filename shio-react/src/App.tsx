@@ -26,6 +26,9 @@ import EmailConfigPage from "./app/console/admin/email-config/email-config.page"
 import ExchangeProviderPage from "./app/console/admin/exchange-provider/exchange-provider.page"
 import SiteWebhookPage from "./app/console/admin/site-webhook/site-webhook.page"
 import TenantPage from "./app/console/admin/tenant/tenant.page"
+import ActivityListPage from "./app/console/admin/activity/activity.list.page"
+import MarketplaceListPage from "./app/console/admin/marketplace/marketplace.list.page"
+import ReviewListPage from "./app/console/admin/review/review.list.page"
 import ObjectChildrenPage from "./app/console/content/object.children.page"
 import PostEditPage from "./app/console/content/post.edit.page"
 import PostNewPage from "./app/console/content/post.new.page"
@@ -268,6 +271,26 @@ function App() {
                 <Route
                   path="admin/email-config"
                   element={<SectionCardChromeProvider chrome="bento"><EmailConfigPage /></SectionCardChromeProvider>}
+                />
+                {/*
+                  SH906 — the three bespoke surfaces. All adapter pages: the review queue is a
+                  list of expandable agent sessions, the activity log is an audit table, and the
+                  marketplace is a filtered catalogue with a detail dialog. §LV.9 predicted the
+                  first two would want "a plain section rather than tiles", and they do — a hero
+                  over a list is a shape the package has no page component for, and forcing
+                  `BentoListPage` on an audit log would trade a readable column for a mosaic.
+                */}
+                <Route
+                  path="admin/review"
+                  element={<SectionCardChromeProvider chrome="bento"><ReviewListPage /></SectionCardChromeProvider>}
+                />
+                <Route
+                  path="admin/activity"
+                  element={<SectionCardChromeProvider chrome="bento"><ActivityListPage /></SectionCardChromeProvider>}
+                />
+                <Route
+                  path="admin/marketplace"
+                  element={<SectionCardChromeProvider chrome="bento"><MarketplaceListPage /></SectionCardChromeProvider>}
                 />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>

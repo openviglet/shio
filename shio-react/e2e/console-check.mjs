@@ -265,6 +265,11 @@ async function discoverRoutes(siteName) {
     ["webhooks", "/admin/webhooks"],
     ["tenants", "/admin/tenants"],
     ["email-config", "/admin/email-config"],
+    // SH906 — the review queue first, because it is the surface §LV.9 says must not be the last
+    // thing that still looks old, and the only one of the three with a stated done-when.
+    ["review", "/admin/review"],
+    ["activity", "/admin/activity"],
+    ["marketplace", "/admin/marketplace"],
     /*
      * The create route of every editor that has one. These are the pages the lists send a curator
      * to, they render the whole form with no data behind it, and — as SH904 found the hard way —
