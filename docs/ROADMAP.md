@@ -15,25 +15,18 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH909** (deps: SH906 ✅, SH907 ✅, SH926 ✅) **with every surface migrated, two route trees and two chromes are still mounted side by side** — The parallel route was chosen for reversibility, and an unclaimed reversal becomes permanent. → §LV.12
-- 📋 **SH910** (deps: SH909) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
-- 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
+- 📋 **SH910** (deps: SH909 ✅) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
+- 📋 **SH911** (deps: SH909 ✅) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 - 📋 **SH923** (deps: —) **the layer has no frosted panel without a heading, so four surfaces silently rendered console cards** — Every consumer needing one hand-rolls it, and the moment two differ the product is inconsistent invisibly. → §LV.16
 - 📋 **SH924** (deps: —) **POST /api/v2/group accepts a blank id and stores a row no API path can read, update or delete** — A write that succeeds and produces an unreachable row is worse than a refusal, and only the client that sent it can tell. → §LV.17
 - 📋 **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — A check that is red locally and green in CI is one people stop reading, and this one is red for the environment rather than the code. → §LV.19
-- 📋 **SH928** (deps: SH926 ✅) **findElements silently drops a container whose body holds self-closing children of the same tag** — Measured: it returns 48 of App.tsx's 50 Route elements, and the two it loses are the parents, so children read as top-level. → §LV.20
+- 📋 **SH931** (deps: SH909 ✅) **a bento URL cannot name its tenant, so a shared console link no longer says which tenant it is for** — The console prefix carried it and bento is unscoped; the session still resolves it, so what is lost is a link somebody pastes to a colleague. → §LV.21
 
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH930** (deps: —) **the marketplace pages republish blueprint copy the site's em-dash rule does not reach** — Sixteen em dashes in the shipped blueprints' field help and sample content reach shio.viglet.org, and those same strings are what a curator reads in the console. → §LVIII.2
 
 ## Priority
-
-## Done when — SH909
-
-- **Bento is the default and no route answers with the old shell** Console routes
-  redirect to their bento equivalents so bookmarks survive, and the digest and the
-  browser check both confirm one chrome is mounted.
 
 ## Done when — SH910
 

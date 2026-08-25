@@ -1642,6 +1642,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH907** — The visual editor routes outside the bento shell, because h-screen inside a 64px sticky header put the preview 48px below the fold; the bridge click-through still skips on a dev topology.
 - **SH908** — Both render in bento — and the lint the migration needed found a live crash: a bento page whose adapter header had no provider rendered blank.
 - **SH926** — /bento and /bento-vocabulary are SPA contexts, proved by a request rather than a reading — and by a jar that now answers 200 where it answered 404.
+- **SH928** — bodyOf resolves each candidate open through endOfOpeningTag and skips the self-closing ones, so App.tsx returns 50 of 50 Route elements with both containers, up from 48 and none — and the scanner six readers trust has its own test at last, pinned to written-out fixtures rather than to the route trees SH909 is rewriting (design §LV.20 recorded in `docs/agents/console-ui.md`).
+- **SH909** — One route tree, one shell: /bento is the console, and every legacy /console URL redirects to it — measured in a browser, seven shapes including the tenant-prefixed one.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

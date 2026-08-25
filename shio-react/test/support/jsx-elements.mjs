@@ -71,12 +71,11 @@ export function findElements(source, tagName) {
 /**
  * The index of the `>` closing an opening tag, skipping any inside `{…}` or a string.
  *
- * Exported since SH926: a caller that needs **nesting** rather than bodies cannot use
- * `findElements` for it. `bodyOf` treats every `<Tag` before the next `</Tag>` as a nested open,
- * including self-closing ones, so a container with thirty self-closing children of the same tag —
- * which is exactly what `App.tsx`'s route trees are — never balances and the element is dropped.
- * Reading tag ends directly is the honest way to walk that, and it is why `spa-contexts.test.mjs`
- * does its own depth counting instead.
+ * Exported since SH926, when `bodyOf` could not be trusted with a container whose children
+ * self-close under the same tag and `spa-contexts.test.mjs` had to count depth itself. SH928 fixed
+ * `bodyOf` — this is now the function both of them ask the same question through, which is the
+ * point: a second implementation of "where does this opening tag end" is a second thing to get
+ * wrong about `=>` inside a prop.
  */
 export function endOfOpeningTag(source, from) {
   let depth = 0
@@ -98,7 +97,30 @@ export function endOfOpeningTag(source, from) {
   return -1
 }
 
-/** Everything up to the matching `</Tag>`, allowing the same tag to nest inside itself. */
+/**
+ * Everything up to the matching `</Tag>`, allowing the same tag to nest inside itself.
+ *
+ * ## Only an open that will be closed counts as nesting (SH928)
+ *
+ * The first version counted every `<Tag` before the next `</Tag>` as a nested open. A
+ * self-closing child has no `</Tag>` of its own, so a container holding thirty of them was short
+ * thirty closers, never balanced, and was dropped — `<P attr><P /><P /></P>` returned **two**
+ * elements, the two children, and not the parent. On the console's own route file,
+ * `findElements(App.tsx, "Route")` returned **48** of 50 raw `<Route` occurrences and **zero**
+ * containers: the two it lost were the console tree and the bento tree, the only two elements in
+ * the file a caller would ask about a route *tree* through.
+ *
+ * The direction is what made it worth fixing rather than noting. A scanner that drops an element
+ * **under-reports** — a lint asking "does any of these carry `onClick`" answers no about a
+ * container it never saw, which is a clean run and not a finding. None of the readers using it
+ * were wrong at the time, because none of their tags nested self-closed inside itself; that was a
+ * property of the day's markup rather than of the tool.
+ *
+ * So each candidate open is now resolved through {@link endOfOpeningTag} — the same scanner the
+ * caller used — and only a non-self-closing one increments the depth. An opening tag that never
+ * ends is the genuinely ambiguous case, and this returns `null` for it the way the rest of the
+ * file declines to guess.
+ */
 function bodyOf(source, from, tagName) {
   const openTag = new RegExp(`<${tagName}(?=[\\s/>])`, "g")
   const closeTag = `</${tagName}>`
@@ -110,7 +132,11 @@ function bodyOf(source, from, tagName) {
     openTag.lastIndex = i
     let nested = 0
     let m
-    while ((m = openTag.exec(source)) !== null && m.index < close) nested++
+    while ((m = openTag.exec(source)) !== null && m.index < close) {
+      const end = endOfOpeningTag(source, m.index + m[0].length)
+      if (end === -1) return null
+      if (!end.selfClosing) nested++
+    }
     if (nested === 0 && depth === 0) return source.slice(from, close)
     depth += nested - 1
     i = close + closeTag.length

@@ -1875,13 +1875,147 @@ Both were silent, and both are the reason it is written the way it is.
 
 - **A lazy `<Route[\s\S]*?(\/>|>)`** reads `<Route path={ROUTES.BENTO} element={<BentoRootPage />}>`
   as self-closing — the match ends at the `/>` of the element prop — so every child of the tree read
-  as top-level and the reader demanded an SPA context for `/content`. `findElements` fails the
-  *other* way: `bodyOf` counts every `<Route` before the next `</Route>` as a nested open,
-  self-closing children included, so a parent with thirty of them never balances and is dropped
+  as top-level and the reader demanded an SPA context for `/content`. `findElements` failed the
+  *other* way: `bodyOf` counted every `<Route` before the next `</Route>` as a nested open,
+  self-closing children included, so a parent with thirty of them never balanced and was dropped
   entirely. `endOfOpeningTag` is exported now and the depth is counted over tags in source order.
+  **SH928 fixed `bodyOf` itself**, so that second failure is history rather than a live constraint
+  — but this reader keeps its own walk, because what it needs is nesting and not bodies.
 - **`ROUTES.CONSOLE` is not a literal.** It is `scoped(consolePath)`, and `consolePath` is
   `import.meta.env.VITE_CONSOLE_CONTEXT_PATH` — the console's context path is a build-time setting,
   which is a real coupling to the Java array. The first draft skipped what it could not parse and
   printed four contexts with `/console` silently missing: a clean run over the one route every
   curator uses. It resolves `.env` now and throws if it cannot, and the vacuity test asserts the
   console tree is among the routes found.
+
+## The scanner six readers trust, and nobody scanned (SH928)
+
+`test/support/jsx-elements.mjs` is how `chrome-adapter`, `bento-a11y`, `bento-bespoke-slice`,
+`bento-browser`, `bento-site-slice` and `spa-contexts` all ask what a file renders. It had no test
+of its own until now, and it was wrong: `bodyOf` counted every `<Tag` before the next `</Tag>` as a
+nested open. A self-closing child carries no closer, so a container holding thirty of them was
+short thirty and never balanced — and a container that never balances is **dropped**.
+
+Measured on the smallest case that shows it and on the file that motivated the task:
+
+| | raw `<Tag` | returned | containers |
+|---|---|---|---|
+| `<P attr><P /><P /></P>` | 3 | **2** — the two children | 0 |
+| `App.tsx`, tag `Route` | 50 | **48** | **0** of 2 |
+
+The two it lost were the console tree and the bento tree: the only two elements in that file a
+caller would ask about a route *tree* through.
+
+### The direction is why it was a task and not a note
+
+A scanner that drops an element **under-reports**, which is the failure this file was written
+against in the first place — SH893's regex, fooled by the `>` in `=>`, reported 3 unnamed icon
+buttons where there were 34. One level up, same shape: a lint asking "does any of these carry
+`onClick`" answers *no* about a container it never saw, and a reviewer reads that as coverage.
+
+None of the six readers was giving a wrong answer when this was found, because none of their tags
+happened to nest self-closed inside itself. That is a property of a day's markup, not of the tool,
+and it is the kind of luck that expires with nobody noticing.
+
+### The fix, and where the assertion is pinned
+
+`bodyOf` resolves every candidate open through `endOfOpeningTag` — the same scanner the caller
+already used, so there is no second implementation of "where does this opening tag end" to get
+wrong about `=>` — and only a non-self-closing one increments the depth. An opening tag that never
+ends returns `null`, the way the rest of the file declines to guess.
+
+`test/jsx-elements.test.mjs` asserts it on **written-out fixtures, not on `App.tsx`**. `App.tsx`
+was the right place to find the defect and the wrong place to pin it: SH909 and SH910 are
+rewriting its route trees, so an assertion reading that file would go red on a change with nothing
+to do with this scanner. The shape is what matters, so the shape is what is written down — a
+parent and its two children, a miniature route tree, real nesting, the arrow-in-a-prop case, and
+the unterminated tag that must still yield nothing.
+
+SH926's own reader keeps its hand-rolled depth walk. It needs nesting rather than bodies, which is
+what `endOfOpeningTag` was exported for; the workaround comment that described the bug as live has
+been corrected above.
+
+## The choice, made once (SH909)
+
+Fourteen surfaces migrated and the console still mounted **two route trees, two shells and two sets
+of chrome**. §LV.12's argument is not about appearance: "a reversal nobody claims becomes a
+permanent second product", and the legacy AngularJS console has been in exactly that state, beside
+its migrated pages, long enough for it to look normal.
+
+So: `/bento` is the console. `ROUTES.CONSOLE` is `/bento`, and one line does it —
+
+```ts
+const CONSOLE_BASE = "/bento";
+```
+
+— because every `navigate()`, every `to=`, every `urlBase` and the whole nav declaration are built
+from those constants. The 24 call sites that compose a path from `ROUTES.CONSOLE` moved without
+being touched, which is what the constants were for.
+
+### Redirect, don't drop
+
+`/console/**` is in bookmarks, in e-mails, and in redirects this repository does not control, so
+the old prefix is a route whose element is [`LegacyConsoleRedirect`](../../shio-react/src/app/legacy-console-redirect.tsx).
+Two patterns — the bare one and `/:tenant/console/*`, which is what a multi-tenant install's
+bookmarks carry — and `bentoPathFor` handles the two paths that are **not** a prefix swap:
+`/console` and `/console/home` are the same page under bento, and it is the shell's *index* rather
+than a `/home` route (SH898). Search and hash are carried across: `?q=` on search is the one place
+where dropping a query looks like a page that simply found nothing.
+
+`replace` rather than push, or Back from a bento page returns to the console path, which redirects
+forward again — a trap the reader cannot escape with the button they reached for.
+
+Measured in a browser, every legacy shape:
+
+| opened | landed on |
+|---|---|
+| `/console` | `/bento` |
+| `/console/home` | `/bento` |
+| `/console/content` | `/bento/content` |
+| `/console/admin/review` | `/bento/admin/review` |
+| `/acme/console/content` | `/bento/content` |
+| `/console/content/post/<id>` | `/bento/content/post/<id>` |
+| `/bento/admin` | `/bento/admin/users` |
+
+57/59 probes, the two failures being SH927's dev-server Monaco workers on the GraphQL page — the
+same two that fail on `main` and pass against the jar.
+
+### The tenant prefix is dropped, and that is smaller than it looks
+
+The console path was tenant-scoped (`/acme/console/...`); bento is not. **That prefix was never how
+a tenant was resolved**: `ShVigletTenantResolver` reads the session (set by
+`POST /tenant/{name}/switch`), a CDA token's own tenant, or an OIDC `workspace_id` claim, and never
+the URL. It kept generated links inside whatever prefix you arrived with, and nothing else. What is
+genuinely lost is sharing a link that names its tenant, which is **SH931**.
+
+### The admin hub nobody had migrated
+
+`ADMIN_ROOT` is the `urlBase` of eleven admin surfaces, so it is where their hero back-links point —
+and no bento route claimed it. Under the console it was `admin.root.page.tsx`: a bare `Outlet` with
+an index redirect to the user list. There is no hub page to migrate, so the bento route is that
+redirect, and the probe above is what would have caught eleven dead back-links.
+
+### What the switch broke in the readers, and why that is the interesting part
+
+Three checks failed on their own premises, which is the honest way for a check to notice its world
+moved:
+
+- **`bento-shell.test.mjs` asked whether the bento route was nested inside the console one.** There
+  is no console route, so it failed with "App.tsx no longer opens a route at ROUTES.CONSOLE". The
+  rule it was protecting survives and is now stronger: *nothing in the app mounts sidebar chrome
+  around the bento tree* — nesting was one way to reach that state, a wrapper above `<Routes>` is
+  another, and the old form could not see the second.
+- **`outside-shell-chrome.test.mjs` (SH908) required the console shell block to exist.** Now
+  everything is outside a shell, so the rule applies to the whole application instead of part of
+  it — 45 components rather than 44.
+- **`spa-contexts.test.mjs` (SH926) lost `/console`**, because the legacy patterns are mounted
+  through a `.map()` over a constant and no literal reader resolves `path={pattern}`. It reads the
+  constant now. The failure to notice would have been the bad one: `/console` dropping out of the
+  needed set is exactly the shape of "the redirect is unreachable on a packaged instance".
+
+And one trap worth naming: **`stripComments` eats a route wildcard.** `` `${consolePath}/*` `` is
+character-for-character a block-comment opener, so the stripped copy of `routes.const.ts` loses
+everything from there to the next `*/` — the reader saw one backtick where there are four, and no
+`/console` at all. The file's own doc warns that "block comments inside string literals would be
+stripped too"; this is the first reader in the tree to be pointed at a string that is one. Patterns
+are read from the raw source; prose-adjacent scans keep the stripped one.

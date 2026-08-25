@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.12 Make the choice, and make it once (SH909)
-
-With every surface migrated, the console still mounts two route trees, two shells and
-two sets of chrome. The parallel route was chosen for reversibility, and a reversal
-nobody claims becomes a permanent second product: the other console has been in exactly
-this state, with forty pages beside its migrated ones, long enough for it to look
-normal. Make bento the default, redirect the console routes to their bento equivalents
-rather than dropping them so that bookmarks survive, and confirm through the digest and
-the browser check that no route still answers with the old shell.
-
 ### LV.13 Retire what nothing renders (SH910)
 
 After the cutover the console shell, its sidebar, its page header and the breadcrumb
@@ -1068,29 +1058,30 @@ people learn to skim**, which is the state SH579 exists to prevent one level up.
 make the workers resolve in dev, or teach the probe the difference and print which
 server answered.
 
-### LV.20 A scanner that drops the container and keeps the children (SH928)
+### LV.21 A link that no longer says which tenant it means (SH931)
 
-`test/support/jsx-elements.mjs` exists because a regex is fooled by `>` inside a prop,
-and its own note says so. It has a second failure of the same kind, one level up:
-`bodyOf` counts every `<Tag` before the next `</Tag>` as a **nested open**, self-closing
-children included. A container with thirty self-closing children of its own tag
-therefore never balances, and the element is dropped.
+The console was addressable as `/<tenant>/console/...` and bento is `/bento/...` with no
+prefix at all. SH909 dropped it deliberately and the reasoning holds:
+`ShVigletTenantResolver` reads the session, a CDA token's own tenant, or an OIDC
+`workspace_id` claim, and **never** the URL — so the prefix never selected anything. It
+kept generated links inside whatever prefix the reader arrived with, which is a property
+of the link builder rather than of the request.
 
-Measured rather than reasoned, on the smallest case that shows it — `<P attr><P /><P
-/></P>` returns **two** elements, the two children, and not the parent. On the real
-file: `findElements(App.tsx, "Route")` returns **48** of 50 raw `<Route` occurrences,
-and the two it loses are precisely the console tree and the bento tree.
+What is actually lost is smaller and real. A curator with membership in two tenants
+pastes a URL to a colleague; under the old scheme that URL said which tenant it meant,
+and the colleague's session would carry them there or not — but at least the intent was
+in the string. Under bento the same paste is ambiguous: whoever opens it sees the post
+with that id **in their own current tenant**, or a 404, and nothing in the URL says
+which was meant.
 
-The direction is what makes it worth a task. A scanner that drops an element
-**under-reports**: a lint asking "does any of these carry `onClick`" answers no about a
-container it never saw, which is a clean run rather than a finding. Three readers use it
-today — `chrome-adapter`, `bento-bespoke-slice`, `no-duplicate-components` — and none of
-them is wrong right now, because none of their tags nests self-closed inside itself.
-That is a property of today's markup, not of the tool.
+So this is not "restore the prefix". It is: decide what a shared bento link should say
+about its tenant, and make an id-carrying URL either state its tenant or refuse to be
+ambiguous. A query parameter that switches the session on open is the obvious shape and
+the dangerous one — it makes a link a state change — so the choice needs stating rather
+than assuming.
 
-SH926 worked around it by counting tag depth itself and exporting `endOfOpeningTag`. The
-fix is to have `bodyOf` skip self-closing opens, and the assertion is the three-line
-case above: a parent and its two children, all found.
+Worth measuring first: how many installs have more than one tenant, and whether any of
+them share console URLs at all.
 
 ## LVI What Turing's index never receives
 
