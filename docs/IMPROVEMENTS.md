@@ -987,32 +987,6 @@ true, and let the test assert the single field. The package owns `BentoNavItem`,
 shape change is a conversation with it rather than a local edit — which is why this is a
 task and not a cleanup.
 
-### LV.28 What the era census actually measures (SH938)
-
-`console-chrome-census` decides a page's era from whether it imports the bento subpath,
-with three package names excluded as era-neutral. It reports **23 console pages, 0 on
-bento**, and that number is the one Block AR's progress is read from.
-
-It is wrong about at least ten of them. Every page that composes `Panel` is mounted
-under `SectionCardChromeProvider chrome="bento"` — the content browser, search, the
-trash, the file list, the post-type list, the review, activity and marketplace lists,
-the admin user page, the GraphQL explorer. They render frosted bento surfaces and
-nothing else. The census calls them console-era because their bento imports arrive
-through `@/components/panel` rather than directly, and it calls them "no chrome" because
-they render none of the console probes either. Both halves are true and the conclusion
-is not.
-
-`Panel` is what makes the misreading possible, and after SH932 it is a pure
-pass-through: one JSX line onto `BentoPanel` with identical props. Deleting it and
-letting the ten call sites import `BentoPanel` would fix the classification as a side
-effect — which is exactly why it was kept out of SH932. Moving Block AR's headline
-number from "0 on bento" to "10 on bento" is a claim about how far the migration got,
-and it deserves its own diff rather than arriving inside a rename.
-
-Decide which the census should measure: where a page's chrome comes from, or which
-chrome it renders. The second is the useful question and the first is what it currently
-answers.
-
 ## LVI What Turing's index never receives
 
 Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index
