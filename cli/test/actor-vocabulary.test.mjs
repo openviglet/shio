@@ -65,6 +65,10 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
  */
 const PUBLISHED = [
   "shio-site/src",
+  // SH925 — and what the site serves as files. `llms.txt` is the copy nobody re-reads, which is
+  // how it came to carry three occurrences and a renamed design law while `shio-site/src` was
+  // clean. A published surface is what a reader is handed, not what a bundler happened to build.
+  "shio-site/public",
   "docs/agents",
   "docs/specs",
   "claude-plugin",
@@ -84,8 +88,11 @@ const REPORTED = [
   "shio-app/src/main/java",
 ];
 
-/** Extensions that carry prose. `.ts`/`.tsx` are here for the site's content modules. */
-const PROSE = new Set([".md", ".mdx", ".ts", ".tsx", ".mjs", ".java"]);
+/**
+ * Extensions that carry prose. `.ts`/`.tsx` are here for the site's content modules, and `.txt`
+ * for `llms.txt` — the one published page written for a reader that only ever fetches text.
+ */
+const PROSE = new Set([".md", ".mdx", ".ts", ".tsx", ".mjs", ".java", ".txt"]);
 
 /**
  * The compounds that survive, and the reason each one is not the defect.

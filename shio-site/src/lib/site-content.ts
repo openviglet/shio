@@ -27,6 +27,7 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
+import { ceiling } from "./token-budgets";
 
 /*
  * ─────────────────────────────────────────────────────────────────────────────
@@ -37,6 +38,12 @@ import {
  * a route, a tool name or an error body appears below, it is the one the build
  * produces. `docs/agents/` is the authority for each; where a figure came from
  * a measurement, the test that measures it is named in a comment.
+ *
+ * Two things run over what you write here (SH925). `scripts/ai-writing.test.mjs`
+ * is the AI-writing checklist as a lint — the puffery vocabulary, and the counts
+ * that can be read back from the surface they describe. And the `ai-writing`
+ * skill is the pass somebody still has to make by reading: the tells worth
+ * catching are density and inflation, which no grep can see.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -402,7 +409,7 @@ export const PATHS: UsePath[] = [
     audience: "editors, marketers, anyone who has used a CMS before",
     needs: "a browser and a login",
     body:
-      "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team. No agent, no terminal, no YAML — a CMS behaving the way a CMS is expected to behave.",
+      "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team — in a browser, with no agent, no terminal and no file to hand-edit anywhere in it.",
     surface: ["React console", "Universal Editor", "Preview links"],
     start: { label: "Shio without an agent", href: "/console" },
   },
@@ -1073,7 +1080,7 @@ export const CONSOLE_LIMITS = [
   },
   {
     title: "Screenshots and the browser audit",
-    body: "shio audit and shio snapshot drive a real browser. That stays in the CLI, where the shell already is — the instance running Chromium per request is a different operational thing entirely.",
+    body: "shio audit and shio snapshot drive a real browser. That stays in the CLI, where the shell already is — an instance that starts a browser per request is a second service to operate, and nothing else about the CMS needs one.",
   },
   {
     title: "The file projection and the CI drift check",
@@ -1637,7 +1644,7 @@ export const FIRST_CALLS: FirstCall[] = [
     step: "Can this instance do what I need?",
     call: "GET /agent/manifest?include=features,limits",
     gets: "Capabilities and limits. Unshipped ones read false, never absent; where a capability lives elsewhere, `elsewhere` names the command.",
-    cost: "298 tokens",
+    cost: `≤ ${ceiling("response.manifest.check")} tokens`,
   },
   {
     step: "What is here, and how do I write to it?",

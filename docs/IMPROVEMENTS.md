@@ -1054,6 +1054,52 @@ taking a full entity shape has the same hole, and a curator cannot see it becaus
 create succeeded. The deliverable is the sweep, not the one endpoint — which endpoints
 mint, which trust, and which of those a client can reach with a blank key.
 
+### LV.18 The whole block was proved on a server nobody ships (SH926)
+
+`ShStaticResourceConfiguration.REACT_CONTEXTS` is `{"/login", "/setup", "/console"}`,
+and those three strings are what a packaged instance forwards to the React shell.
+`/bento`, `/bento/content`, `/bento/admin/review` and `/bento-vocabulary` are not among
+them, so every one of them answers **404** on the jar. Measured, not inferred:
+`/console` and `/console/content` return 200 from the same instance, in the same second.
+
+Nothing caught it because every live probe in Block AR ran against the Vite dev server,
+which serves `index.html` for any path that is not a file. That is the whole point of a
+dev server and it is why fourteen tasks could report `n/n probes ok` on surfaces a
+curator cannot reach by typing the URL, following a bookmark, or being redirected. The
+console-check workflow does run against the jar at `:2710` — so the answer to "why did
+CI not say so" is that it does, and the block never read it.
+
+The fix is two strings and a test; the finding is the shape of the mistake. **A surface
+is not migrated until the thing that serves it in production serves it.** SH908's own
+bento catch-all is the sharpest case: a route that exists to catch a stale link during a
+cutover, unreachable on the only deployment where a cutover happens. The assertion
+belongs where the contexts are declared, so that adding a route tree without adding its
+context fails a Java test rather than a browser nobody opened.
+
+### LV.19 One page, two answers, and only one of them about Shio (SH927)
+
+SH908 gave the GraphQL explorer its first live probe, and it came back with two
+different verdicts from the same commit. Against the **jar**, serving the built bundle:
+no errors, no warnings, the editor 198px from the top and 65px clear of the fold.
+Against the **Vite dev server**: *"Could not create web worker(s). Falling back to
+loading web worker code in main thread"*, plus an error event with no message, on both
+the console and the bento route.
+
+So the page is correct and the local instrument says it is broken. `monaco-workers.ts`
+already carries the reason it exists — GraphiQL's own `setup-workers/vite` entry makes
+Vite pre-bundle a dependency containing `?worker` imports, which rolldown's optimizer
+cannot load on Windows, so the same imports are declared in app source instead. That
+fixed the dev server failing to *start*; it did not make the workers actually start
+under it, and nothing noticed because nobody had opened the page in a browser a check
+was watching.
+
+The cost is not the fallback — Monaco on the main thread works, slowly. It is that `pnpm
+-C shio-react console:check` is now permanently red on two probes for anybody running it
+the documented way, against `:5173`. **A gate that is red for the environment is a gate
+people learn to skim**, which is the state SH579 exists to prevent one level up. Either
+make the workers resolve in dev, or teach the probe the difference and print which
+server answered.
+
 ## LVI What Turing's index never receives
 
 Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index
@@ -1064,3 +1110,5 @@ extraction step — and each is visible only as a search returning the wrong thi
 than as an error anybody sees.
 
 ## LVII What the Turing round left in the build and in a guard
+
+## LVIII The public site (shio.viglet.org)

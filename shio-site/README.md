@@ -69,13 +69,15 @@ page naming its own limits.
 
 ## Content
 
-**All page copy lives in [`src/lib/site-content.ts`](src/lib/site-content.ts)** —
+**The page copy lives in [`src/lib/site-content.ts`](src/lib/site-content.ts)** —
 the ten design laws, the two hero sessions, the four paths and six use cases, the
 MCP tool list, the CLI verbs, the token measurements, the console capability and
-limit lists, the guardrails, the comparison matrix and the links. The components in
-[`src/components/sections/`](src/components/sections/) only render it.
+limit lists, the guardrails, the comparison matrix and the links —
+with the depth pages in [`src/lib/feature-content.ts`](src/lib/feature-content.ts).
+What stays in [`src/components/sections/`](src/components/sections/) is a section's
+own heading and lead, because those are written against the layout they sit in.
 
-Two rules for editing that file:
+Three rules for editing any of it:
 
 - **Every claim is about a real surface.** A route, a tool name, a flag or an
   error body that appears there is the one the build produces. `docs/agents/` is
@@ -84,13 +86,27 @@ Two rules for editing that file:
   reads `shio-app/src/test/resources/token-budgets.properties` — the one file
   the Java suite asserts every response against — and writes
   `src/lib/token-budgets.generated.json` on every build. A renamed key fails the
-  build rather than dropping a bar.
+  build rather than dropping a bar. A figure inside a *sentence* reads it back
+  through `ceiling()` in [`src/lib/token-budgets.ts`](src/lib/token-budgets.ts);
+  two of them had been typed, and both were a measurement taken three tasks
+  before the ceiling they quoted moved.
+- **Prose gets the writing pass, and part of it is a lint.** Run the `ai-writing`
+  skill over anything you write here before handing it over — the tells worth
+  catching are density and inflation, and no grep sees those.
+  [`scripts/ai-writing.test.mjs`](scripts/ai-writing.test.mjs) is the half that
+  can be automated: the checklist's copy-paste artefacts, the phrases that are a
+  tell on their own, and five counts read back from the surface each describes.
+  Em dashes are house style here and the lint deliberately says nothing about
+  them.
 
 ## The Markdown twins
 
 Every route also emits `<path>.md` — `/` → `/index.md`, everything else appends
-`.md`. Across the eleven routes that is ~78 KB of Markdown against ~593 KB of HTML,
-and the prerender prints the ratio on every build.
+`.md`, and the twins come to something like an eighth of the HTML. The exact pair
+is printed by the prerender on every build and patched into `dist/llms.txt` from
+there, because it exists only once every route has been written. It used to be
+typed here *and* in `llms.txt`, and the two disagreed with each other before
+either disagreed with the build.
 
 The twin is **converted from the same render**, not written separately: the copy
 lives in `src/lib/*-content.ts` but the *composition* lives in the JSX, so
@@ -143,7 +159,21 @@ for that repository.
 
 ## Backlog
 
-The positioning rewrite above is the newest change and it has no roadkeep id yet:
+**Block S closed again on 2026-08-25**, on SH925, and it is the first closure in this list that
+moved claims rather than checking that none had moved. Five counts on these pages had gone stale
+without anything being able to see it: the matrix said seventeen questions and had eighteen rows,
+`/features/content-as-files` said ten projected keys where the CLI carries eleven, the two manifest
+figures were a measurement taken three tasks before the ceiling they quoted moved, `llms.txt`
+called P7 *"Never surprise the human"* where every other surface says *the curator*, and the
+Markdown size pair was typed here and in `llms.txt` and the two disagreed with each other before
+either disagreed with the build. Each was true the day it was typed. The rule this file states —
+every claim is about a real surface — had no instrument, so `scripts/ai-writing.test.mjs` is the
+one it gets: the AI-writing checklist's greppable half, plus those five counts read back from the
+surface each describes. Four of its seven rules were red when it was written. The one lesson worth
+carrying: `llms.txt` is the page nobody re-reads, and it was outside every lint the site had — the
+actor-vocabulary sweep did not walk `shio-site/public` and did not know `.txt`. It does both now.
+
+The positioning rewrite described further up is older than that, and has no roadkeep id:
 it was written in an environment where the engine is not installed, so the entry
 belongs under **Block F — Market positioning**, which is the block that exists for
 exactly this and is currently empty.

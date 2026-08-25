@@ -41,7 +41,7 @@ export const routes: PrerenderRoute[] = [
     path: "/compare",
     title: "Shio vs Contentful, Sanity, Strapi and WordPress | Viglet Shio",
     description:
-      "An honest comparison on the axis where headless CMSs actually differ: agent-operability. Seventeen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress are genuinely better at and when to pick them instead.",
+      "An honest comparison on the axis where headless CMSs actually differ: agent-operability. Eighteen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress are genuinely better at and when to pick them instead.",
   },
   {
     path: "/replicate",

@@ -14,6 +14,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import { ceiling } from "./token-budgets";
+
 export interface FeatureBlock {
   title: string;
   body: string;
@@ -52,8 +54,9 @@ const AGENT_GATEWAY: FeatureDetail = {
         caption: "the cheapest read on the surface",
         text: `GET /api/v2/agent/manifest?include=features,limits
 
-# 298 tokens. The full document is 2343, and the difference
-# is the reason this projection exists.`,
+# At most ${ceiling("response.manifest.check")} tokens, a ceiling the build enforces. The
+# full document's is ${ceiling("response.manifest")}, and the difference is
+# the reason this projection exists.`,
       },
       law: "P2",
     },
@@ -125,7 +128,7 @@ An open-source headless CMS with four ways in.`,
     },
     {
       title: "The field set is a table with a test",
-      body: "Ten keys travel, and everything a post carries that the projection drops is declared with a reason in a test. That table exists because a round-trip guard can test the values of fields the format has and cannot see a field it lacks — so the thing that would otherwise be discovered by somebody losing content is an assertion instead.",
+      body: "Eleven keys travel, and everything a post carries that the projection drops is declared with a reason in a test. That table exists because a round-trip guard can test the values of fields the format has and cannot see a field it lacks — so the thing that would otherwise be discovered by somebody losing content is an assertion instead.",
       law: "P5",
     },
     {

@@ -12,7 +12,7 @@
 
 Every route on this site is also published as Markdown at `<path>.md` — the same content,
 converted from the same render, with the navigation and the footer left out. Across the
-eleven routes that is about 78 KB of Markdown against 592 KB of HTML.
+eleven routes that is 80 KB of Markdown against 597 KB of HTML.
 
 - `/` → https://shio.viglet.org/index.md
 - any other route → append `.md`, e.g. https://shio.viglet.org/features/rendering.md
@@ -32,7 +32,7 @@ eleven routes that is about 78 KB of Markdown against 592 KB of HTML.
   Sanity, Strapi and WordPress, plus where each of them wins
 - [/replicate](https://shio.viglet.org/replicate): capture an existing site with shio clone,
   the fidelity-versus-authorable decision, and the bounds the crawl keeps
-- [/curator](https://shio.viglet.org/curator): the human half - the review queue, preview
+- [/curator](https://shio.viglet.org/curator): the curator's half - the review queue, preview
   links, inline editing, and the six gates that stop an agent write
 - [/features/agent-gateway](https://shio.viglet.org/features/agent-gateway): the manifest,
   the context pack, planned batches and teaching errors
@@ -88,7 +88,7 @@ this server sends nothing unprompted.
 ## Addresses
 
 - `post:<site>/<friendly-url>` — a post. A site's home page is `post:<site>/`.
-- `folder:<site>/<name-chain>` — a folder, by the names a human reads.
+- `folder:<site>/<name-chain>` — a folder, by the names the console shows, never by id.
 - `site:<name>` — the site itself.
 - `id:<uuid>` — reads only. Writes take `post:` and `folder:` alone.
 
@@ -120,9 +120,9 @@ A feature that breaks one is wrong even if it was requested.
 - P4 Files beat APIs for authoring — Edit, Write and Grep are the cheapest tools.
 - P5 Determinism over cleverness — stable ordering, path addressing, idempotent writes.
 - P6 Errors are instructions — every 4xx carries fix, allowed, didYouMean, example.
-- P7 Never surprise the human — draft-default, dry-run, explicit publish, confirm tokens.
+- P7 Never surprise the curator — draft-default, dry-run, explicit publish, confirm tokens.
 - P8 Skipping steps needs appliable units — blueprints, not prose recipes.
-- P9 Close the perception loop — cheap textual proof instead of a human round trip.
+- P9 Close the perception loop — cheap textual proof instead of asking someone to look.
 - P10 Compose, don't fork — MCP is a shape over the delivery API, never a third contract.
 
 ## Links

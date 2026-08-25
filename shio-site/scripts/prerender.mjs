@@ -25,12 +25,12 @@ const serverEntry = resolve(process.cwd(), "dist-ssr", "entry-server.js");
 const { render, routes } = await import(pathToFileURL(serverEntry).href);
 const template = readFileSync(resolve(distDir, "index.html"), "utf-8");
 
-/** Replace the first match of `re` in `html`, or throw so a template drift fails the build. */
-function replaceOrThrow(html, re, replacement, label) {
-  if (!re.test(html)) {
-    throw new Error(`prerender: could not find ${label} in index.html template`);
+/** Replace the first match of `re` in `text`, or throw so a drift fails the build. */
+function replaceOrThrow(text, re, replacement, label, where = "index.html template") {
+  if (!re.test(text)) {
+    throw new Error(`prerender: could not find ${label} in ${where}`);
   }
-  return html.replace(re, replacement);
+  return text.replace(re, replacement);
 }
 
 function buildHtml(route) {
@@ -155,6 +155,31 @@ writeFileSync(resolve(distDir, "manifest.json"), `${JSON.stringify(manifest, nul
 
 const htmlBytes = index.reduce((n, r) => n + r.bytes.html, 0);
 const mdBytes = index.reduce((n, r) => n + r.bytes.markdown, 0);
+
+/**
+ * SH925 — the size pair in `llms.txt` is patched here rather than typed there.
+ *
+ * It was typed in two places and the two had already disagreed (78/592 in
+ * `llms.txt`, 78/593 in the README) while the build was producing a third pair.
+ * The site's own rule is that a measured number is generated, and this is the
+ * one measurement that only exists after every route has been written — so it
+ * is patched into the copy in `dist/` on the way out, with the same
+ * `replaceOrThrow` discipline as the `<head>`: a sentence that drifts fails the
+ * build instead of publishing a stale figure.
+ */
+const llmsPath = resolve(distDir, "llms.txt");
+writeFileSync(
+  llmsPath,
+  replaceOrThrow(
+    readFileSync(llmsPath, "utf-8"),
+    /\d+ KB of Markdown against \d+ KB of HTML/,
+    `${Math.round(mdBytes / 1024)} KB of Markdown against ${Math.round(htmlBytes / 1024)} KB of HTML`,
+    "the Markdown-versus-HTML size pair",
+    "llms.txt"
+  ),
+  "utf-8"
+);
+
 console.log(
   `\nprerendered ${routes.length} route(s), each with a Markdown twin.` +
     ` ${Math.round(mdBytes / 1024)} KB of Markdown against ${Math.round(htmlBytes / 1024)} KB of HTML` +

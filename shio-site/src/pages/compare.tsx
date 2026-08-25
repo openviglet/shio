@@ -110,7 +110,7 @@ export function ComparePage() {
               title={
                 <>
                   Ten laws, turned into{" "}
-                  <span className="text-primary">seventeen questions</span>
+                  <span className="text-primary">eighteen questions</span>
                 </>
               }
               description="Grouped by the law each one comes from, so what you are looking at reads as one design position applied repeatedly rather than as a feature list that happens to be long."

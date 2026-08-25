@@ -1430,6 +1430,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH705** — A person is now named by the role — curator, editor, reviewer — or in second person, across the site, docs/agents, the specs, README, agents.md, the plugin and docs-shio; P7 reads "never surprise the curator" and `actor-vocabulary.test.mjs` holds published prose at zero, exempting only `human-readable` and `human-in-the-loop` and printing the 225 source-comment occurrences it deliberately leaves alone.
 - 🗑 **SH540** — abandoned: Provar as afirmacoes do site com uma instancia Shio viva e trabalho de infraestrutura e de demo publica, nao do produto, entao sai do backlog e o site segue com o conteudo roteirizado.
 - **SH861** — README and shio-site carry judge, the declared bar and the exclusion authorable mode rests on — and a reader now asks every recently finished block whether its sweep was owed and paid.
+- **SH925** — The site's prose is linted against the AI-writing checklist, and five counts it published are now read back from the surface each describes.
 
 ## Block T — End-user documentation, round two (the curator's half)
 
