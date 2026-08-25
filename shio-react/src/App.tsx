@@ -45,7 +45,7 @@ import NotFoundPage from "./app/console/not-found.page"
 import HomePage from "./app/console/home/home.page"
 import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
-import { AdminRoutes, ContentRoutes, GraphQLRoutes, UniversalEditorRoutes } from "./app/routes"
+import { AdminRoutes, BentoGraphQLRoute, ContentRoutes, GraphQLRoutes, UniversalEditorRoutes } from "./app/routes"
 import { ROUTES } from "./app/routes.const"
 import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 import { ThemeProvider } from "./components/theme-provider"
@@ -315,6 +315,33 @@ function App() {
                 <Route
                   path="universal-editor"
                   element={<SectionCardChromeProvider chrome="bento"><EditorSitesPage /></SectionCardChromeProvider>}
+                />
+                {/*
+                  SH908 — the last two surfaces, both mostly something this console does not draw.
+
+                  The explorer is the console component under the provider: its chrome is a header
+                  and a toolbar, and its body is a third-party editor that sizes itself to whatever
+                  container it is given. Copying it would fork a Monaco worker wiring and a fetcher
+                  that has to keep the session cookie *off* the request, so that a header could
+                  differ (SH900's rule).
+
+                  Declared in `graphql.routes.tsx` beside the console one, and it is the only
+                  Block AR route not named in this file: the page is `lazy()` so that Monaco stays
+                  out of the main console bundle, and naming the component here would have imported
+                  it eagerly and undone that — invisibly, because a bigger bundle fails no check.
+                */}
+                {BentoGraphQLRoute}
+                {/*
+                  And the page nobody navigates to on purpose. Without this route an unmatched
+                  `/bento/…` path falls through to the bare `*` below — no rail, no shell, and a
+                  Back-to-Home that leads into the console — which is the wrong chrome shown to
+                  precisely the person §LV.11 describes: somebody who followed a stale link during
+                  a cutover and did not choose to be here. Last, so it only catches what every
+                  real bento route declined.
+                */}
+                <Route
+                  path="*"
+                  element={<SectionCardChromeProvider chrome="bento"><NotFoundPage /></SectionCardChromeProvider>}
                 />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>

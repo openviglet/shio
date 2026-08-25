@@ -113,8 +113,55 @@ async function applyBlueprint() {
   )
 }
 
+/**
+ * SH908 — the GraphQL explorer has no subject without one of these.
+ *
+ * The page is token-only by design (SH4): the console session carries no `ROLE_CDA`, so the
+ * explorer authorizes with a CDA token's `Key` header, and with no enabled token it renders its
+ * empty state and never mounts GraphiQL at all. That is the correct page — and it means the live
+ * check's geometry probe, the one thing no source scan can answer about a third-party editor
+ * sized to its container, had nothing to measure on a freshly provisioned instance.
+ *
+ * `READ`, and no `siteIds`, which is the least this needs: the explorer only queries. The server
+ * mints the secret and the id, so this posts a description of the token rather than a token.
+ */
+async function ensureCdaToken() {
+  const res = await fetch(`${API}/api/v2/api-token`, { headers: { Authorization: AUTH } })
+  if (!res.ok) throw new Error(`GET /api-token → ${res.status} ${await res.text()}`)
+  const tokens = await res.json()
+  if (tokens.some((tk) => tk.enabled && tk.token)) {
+    console.log(`cda token: ${tokens.length} already declared — nothing to provision`)
+    return
+  }
+
+  // The same session+CSRF dance `createSite` does, for the same reason: token administration is
+  // console-only, so Basic auth alone is a 403 that reads like a permissions bug.
+  const csrfRes = await fetch(`${API}/api/v2/csrf`, { headers: { Authorization: AUTH } })
+  if (!csrfRes.ok) throw new Error(`GET /csrf → ${csrfRes.status}`)
+  const { token, headerName } = await csrfRes.json()
+  const cookies = (csrfRes.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ")
+
+  const created = await fetch(`${API}/api/v2/api-token`, {
+    method: "POST",
+    headers: { ...json, Authorization: AUTH, [headerName]: token, Cookie: cookies },
+    body: JSON.stringify({
+      title: "Console Check (READ)",
+      description: "Delivery token the console smoke check's GraphQL probe queries with",
+      scope: "READ",
+      env: "PROD",
+      enabled: true,
+      siteIds: [],
+    }),
+  })
+  if (!created.ok) throw new Error(`POST /api-token → ${created.status} ${await created.text()}`)
+  console.log("cda token: created (READ)")
+}
+
 async function main() {
   await setupAdminPassword()
+  // Before the site guard below: an instance provisioned before this step existed has the site
+  // and no token, and an early return would leave it that way for ever.
+  await ensureCdaToken()
   const existing = await sites()
   if (existing.some((s) => s.name === SITE)) {
     console.log(`site '${SITE}' already exists — nothing to provision`)

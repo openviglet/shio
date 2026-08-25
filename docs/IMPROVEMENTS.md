@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.11 The last two, and the one nobody navigates to on purpose (SH908)
-
-The GraphiQL page and the not-found page. Both are mostly something the console does not
-control - a third-party editor in one case and nothing at all in the other - which makes
-them the two surfaces where the shell is almost the whole page. The not-found page
-matters more than its content suggests: during a cutover it is where a stale bookmark,
-an old link in an email, or a redirect that has not landed yet puts a user, so it is the
-surface most likely to be seen in the wrong chrome by somebody who did not choose to be
-there.
-
 ### LV.12 Make the choice, and make it once (SH909)
 
 With every surface migrated, the console still mounts two route trees, two shells and

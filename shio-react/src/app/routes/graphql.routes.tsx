@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react"
 import { Route } from "react-router-dom"
 import { IconBrandGraphql } from "@tabler/icons-react"
+import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 
 // GraphiQL pulls in Monaco (multi-MB). Load the page only when the route is hit
 // so it never weighs down the main console bundle.
@@ -19,6 +20,29 @@ export const GraphQLRoutes = (
             <Suspense fallback={Fallback}>
                 <GraphiQLPage />
             </Suspense>
+        }
+    />
+)
+
+/**
+ * SH908 — the same lazy component under the bento shell, declared here rather than in App.tsx.
+ *
+ * The import above is the reason. Every other Block AR route names its component in App.tsx, and
+ * doing that for this one would have imported the page eagerly and pulled **Monaco into the main
+ * console bundle** — multi-megabytes on every route, to migrate a header. Nothing in `tsc`, in the
+ * census or in any live probe would have said so; the console would simply have got slower to
+ * start. So the bento route reuses this file's `lazy()` and its fallback, and the two chromes
+ * share one code-split chunk.
+ */
+export const BentoGraphQLRoute = (
+    <Route
+        path="graphql"
+        element={
+            <SectionCardChromeProvider chrome="bento">
+                <Suspense fallback={Fallback}>
+                    <GraphiQLPage />
+                </Suspense>
+            </SectionCardChromeProvider>
         }
     />
 )

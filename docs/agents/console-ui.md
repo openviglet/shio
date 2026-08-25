@@ -1748,3 +1748,80 @@ which is the half §LV.10 was actually worried about.
 
 Census after this task: **43 pages, Card 17, PageHeader 19, Sidebar 1, twenty-three empty** — and
 49/49 live probes.
+
+## The last two, and the crash that had no lint (SH908)
+
+The GraphQL explorer and the not-found page. §LV.11 put them together because both are "mostly
+something the console does not control", and the second one matters more than its content
+suggests: during a cutover it is where a stale bookmark or a redirect that has not landed puts
+somebody who did not choose to be there.
+
+The explorer is the adapter case (SH900's rule): `AdaptivePageHeader`, the token toolbar as an
+`AdaptivePanel`, the no-tokens void as the shared `AdaptiveEmptyState` — the last row in SH903's
+`STILL_HAND_ROLLED`, now empty. Its body is GraphiQL, which is nobody's chrome.
+
+**Its bento route is the one Block AR route not declared in `App.tsx`.** The page is `lazy()` so
+Monaco stays out of the main bundle; naming the component in `App.tsx` would have imported it
+eagerly and undone that, with nothing in `tsc`, the census or any probe to say so. `BentoGraphQLRoute`
+lives beside the console one in `graphql.routes.tsx`, and the build still emits `graphql.page`
+(3 kB) and `vendor-graphiql` (4.8 MB) as separate chunks.
+
+### Console chrome outside the console shell is a crash, not a style mistake
+
+`PageHeader` renders `SidebarTrigger` → `useSidebar()`, which **throws** with no `SidebarProvider`
+above it — and only `console.root.page.tsx` mounts one. So a console header anywhere in the bento
+tree, or at `App.tsx`'s bare `*`, blanks the application behind the error boundary.
+
+That is why the not-found page has rendered no chrome since SH180, and **nothing recorded it**. The
+census called it "console-era by absence", which reads as an accident of size rather than a
+constraint. So the obvious migration — give it an `AdaptivePageHeader` like the other thirteen
+surfaces — is a white screen on the one route that matters most.
+
+[`outside-shell-chrome.test.mjs`](../../shio-react/test/outside-shell-chrome.test.mjs) is the
+instrument, and it asks the question of **every** component `App.tsx` mounts outside the console
+shell — 44 of them — rather than of the one that was found. It caught a second, transitive form in
+the same run: `AdaptivePageHeader`'s console branch *is* `PageHeader`, so a page composing the
+adapter with no `SectionCardChromeProvider` above it carries the same crash one file away. **It
+found one on its first run**: `bento/content/post-type-select.page.tsx`, shipped by SH901, rendering
+`AdaptivePageHeader` at a bento route with no provider — `/bento/content/folder/:id/post-type-select`
+was a blank page. It renders `BentoHero` now; a bento-only page has no second chrome to adapt to.
+
+### The not-found page renders in whatever chrome the path implies
+
+Three mount points, one component: inside the console shell, inside the bento shell (this task's
+catch-all, declared last so it only catches what every real bento route declined), and the bare `*`
+for a path under neither. It reads `useSectionChrome()` and renders the hero only under bento —
+where the Back-to-Home also leads to `/bento` rather than into the console.
+
+### The height a third-party editor needs, measured rather than assumed
+
+GraphiQL sizes itself to its container, so the container must name a height, and the only height
+available is the viewport minus whatever chrome sits above it. SH907 says not to leave that as a
+CSS expression nobody reads, so `console-check` measures it on every run, in both chromes, at
+1600×1000:
+
+| | editor top | editor bottom | viewport | below fold | doc overflow |
+|---|---|---|---|---|---|
+| `/console/graphql` | 198 | 935 | 1000 | 0 | 0 |
+| `/bento/graphql` | 282 | 984 | 1000 | 0 | 0 |
+
+`calc(100vh - 4rem)` holds in both eras for two *different* reasons — the bento shell's `sticky
+top-0` header above it, the console's `AppFooter` below — which is exactly why the number is read
+off a rendered page rather than trusted to a comment.
+
+### Two findings the probe produced by having a subject
+
+- **The explorer had none.** It is token-only (SH4), so on an instance with no enabled CDA token it
+  renders its empty state and never mounts GraphiQL. `provision.mjs` creates a READ token now, so
+  CI measures the editor; without one the check reports a **skip** with its reason, and `--strict`
+  turns that into a failure the way SH238/SH659 did for the editor drive.
+- **`/bento` 404s on a packaged instance.** `ShStaticResourceConfiguration.REACT_CONTEXTS` is
+  `{"/login", "/setup", "/console"}`, so the jar forwards none of the bento tree to the SPA shell —
+  measured: `/console` 200, `/bento` 404, same instance, same second. Every live probe in this block
+  ran against the Vite dev server, which serves `index.html` for any path. **SH926** carries it, and
+  it is the one that matters: a surface is not migrated until the thing that serves it in production
+  serves it. The Monaco worker failure the same run turned up is dev-server-only — the jar's build
+  is clean — and is **SH927**.
+
+Census after this task: **43 pages, Card 17, PageHeader 18, Sidebar 1, twenty-four empty** — and
+50/52 live probes on the dev server, the two failures being SH927 rather than either page.

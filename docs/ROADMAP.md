@@ -15,22 +15,15 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH908** (deps: SH903 ✅) **the GraphiQL page and the not-found page are the last two console surfaces and both embed a third-party UI** — A not-found page in the wrong chrome is the most likely place a user lands mid-cutover. → §LV.11
 - 📋 **SH909** (deps: SH906 ✅, SH907 ✅) **with every surface migrated, two route trees and two chromes are still mounted side by side** — The parallel route was chosen for reversibility, and an unclaimed reversal becomes permanent. → §LV.12
 - 📋 **SH910** (deps: SH909) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
 - 📋 **SH911** (deps: SH909) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 - 📋 **SH923** (deps: —) **the layer has no frosted panel without a heading, so four surfaces silently rendered console cards** — Every consumer needing one hand-rolls it, and the moment two differ the product is inconsistent invisibly. → §LV.16
 - 📋 **SH924** (deps: —) **POST /api/v2/group accepts a blank id and stores a row no API path can read, update or delete** — A write that succeeds and produces an unreachable row is worse than a refusal, and only the client that sent it can tell. → §LV.17
-- 📋 **SH926** (deps: SH908) **every /bento URL 404s on a packaged instance, because only /login, /setup and /console are SPA contexts** — Fourteen migrated surfaces were proved on the Vite dev server, which serves index.html for any path; the jar does not. → §LV.18
-- 📋 **SH927** (deps: SH908) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — A check that is red locally and green in CI is one people stop reading, and this one is red for the environment rather than the code. → §LV.19
+- 📋 **SH926** (deps: SH908 ✅) **every /bento URL 404s on a packaged instance, because only /login, /setup and /console are SPA contexts** — Fourteen migrated surfaces were proved on the Vite dev server, which serves index.html for any path; the jar does not. → §LV.18
+- 📋 **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — A check that is red locally and green in CI is one people stop reading, and this one is red for the environment rather than the code. → §LV.19
 
 ## Priority
-
-## Done when — SH908
-
-- **The GraphiQL and not-found pages render in bento** The embedded editor still works
-  inside the new shell, and the not-found page is correct in the chrome a mid-cutover
-  visitor will actually land in.
 
 ## Done when — SH909
 

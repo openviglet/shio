@@ -1,5 +1,6 @@
 {
   "graphql.title": "Explorador GraphQL",
+  "graphql.description": "Execute queries de entrega nesta instância, autorizadas por um token CDA.",
   "graphql.token": "Token CDA",
   "graphql.tokenPlaceholder": "Selecione um token CDA",
   "graphql.tokenHelp": "A entrega GraphQL é exclusiva por token. Escolha um token CDA para autorizar as queries — ele é enviado no header 'Key'.",

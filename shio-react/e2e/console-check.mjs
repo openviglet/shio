@@ -314,6 +314,24 @@ async function discoverRoutes(siteName) {
     mustSee: [],
   })
   routes.push({ name: "bento-editor-sites", path: "/bento/universal-editor", bento: true, mustSee: [] })
+
+  /*
+   * SH908 — the last two console surfaces, both probed in **both** chromes.
+   *
+   * The explorer is one component under a provider, so a console regression and a bento one are
+   * the same edit (SH905's reason for probing pairs). It is also the only page in the console
+   * whose body is a third-party editor sized to its container: `graphiql-height` below reads the
+   * frame's geometry in both eras, which is the half no source scan can answer and the half SH907
+   * measured for the Universal Editor.
+   *
+   * The not-found page is the one nobody navigates to on purpose, which is exactly why it is
+   * probed: `mustSee: ["404"]` on a path under `/bento` that no route declares. Without the
+   * catch-all this task added, that path falls through to the bare `*` and renders outside every
+   * shell — and the bento probe's rail rule is what says so.
+   */
+  routes.push({ name: "graphql", path: "/console/graphql", graphiql: true, mustSee: [] })
+  routes.push({ name: "bento-graphql", path: "/bento/graphql", bento: true, graphiql: true, mustSee: [] })
+  routes.push({ name: "unknown-route-bento", path: "/bento/definitely-not-a-route", bento: true, mustSee: ["404"] })
   for (const t of postTypes.filter((t) => !t.system).slice(0, 3)) {
     routes.push({ name: `post-type-edit:${t.name}`, path: `/console/content/post-type/${t.name}`, mustSee: [t.name] })
     // The create form reads the post-type directly, so it is the control case: when a
@@ -480,6 +498,36 @@ async function checkSaveBarMorph(page) {
   await page.evaluate(() => scrollTo(0, 0))
 
   return { ran: true, findings }
+}
+
+/**
+ * SH908 — does the third-party editor fit the viewport it was given?
+ *
+ * GraphiQL sizes itself to its container, so the container names a height, and that height is the
+ * viewport minus whatever chrome sits above it — a number the page cannot read off either shell.
+ * SH907 measured the same question for the Universal Editor by hand and found its iframe 48px
+ * **below the fold** inside the bento shell; this asks it on every run instead, for both chromes,
+ * because the two shells put different things above the same container.
+ *
+ * The geometry is reported whether or not it is wrong. A number nobody prints is a number nobody
+ * notices has changed, and this one changes whenever either shell's header does.
+ */
+async function checkGraphiQLFit(page) {
+  return page.evaluate(() => {
+    const editor = document.querySelector(".graphiql-container")
+    if (!editor) return { present: false }
+    const rect = editor.getBoundingClientRect()
+    return {
+      present: true,
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+      viewport: innerHeight,
+      // Two separate failures: the editor running past the bottom of the window, and the page
+      // growing a scrollbar around a surface that is supposed to fill it exactly.
+      belowFold: Math.round(Math.max(0, rect.bottom - innerHeight)),
+      docOverflow: Math.round(Math.max(0, document.documentElement.scrollHeight - innerHeight)),
+    }
+  })
 }
 
 /** Count the widget cards a form rendered, without depending on any one widget's markup. */
@@ -834,6 +882,25 @@ async function main() {
         probe.morph = morph.ran ? (morph.findings.length ? morph.findings.join("; ") : "ok") : morph.why
         if (morph.ran) probe.missing.push(...morph.findings)
       }
+      if (route.graphiql) {
+        /*
+         * SH908 — the explorer's geometry, in whichever chrome this probe opened.
+         *
+         * No container is a **skip**, not a failure, and it has exactly one honest cause: the
+         * explorer renders its empty state on an instance with no enabled CDA token, which is a
+         * fixture fact rather than a console defect. `provision.mjs` creates one, so CI has the
+         * subject — and `--strict` turns the skip into a failure there, the way SH238/SH659 made
+         * a skipped editor drive fail: a probe that skips keeps `ok: true` and reads as coverage.
+         */
+        probe.graphiql = await checkGraphiQLFit(page)
+        if (!probe.graphiql.present) {
+          probe.graphiql.why = "this instance declares no enabled CDA token, so the explorer"
+            + " renders its empty state instead of the editor (provision.mjs creates one)"
+          if (STRICT) probe.missing.push(`graphiql: ${probe.graphiql.why}`)
+        } else if (probe.graphiql.belowFold > 8) {
+          probe.missing.push(`the editor runs ${probe.graphiql.belowFold}px below the fold`)
+        }
+      }
       probe.title = (await page.locator("h1, h2").first().innerText().catch(() => "")).trim()
 
       const shot = join(OUT, `${route.name.replace(/[:/]/g, "_")}.png`)
@@ -858,6 +925,15 @@ async function main() {
     console.log(`${mark} ${route.name.padEnd(30)} ${route.path}`)
     for (const t of probe.broken || []) console.log(`       broken text: ${t}`)
     for (const m of probe.missing || []) console.log(`       missing: ${m}`)
+    // SH908 — printed on every run, ok or not, for the same reason the morph is: the fit is a
+    // number about two shells this page does not control, and it is worth seeing before it breaks.
+    if (probe.graphiql) {
+      const g = probe.graphiql
+      console.log(g.present
+        ? `       graphiql: top ${g.top}, bottom ${g.bottom} of ${g.viewport}`
+          + `, below fold ${g.belowFold}, doc overflow ${g.docOverflow}`
+        : `       graphiql: skipped — ${g.why}`)
+    }
     // SH897 — printed on every run, ok or not. The morph has no subject until a Block AR editor
     // moves, and a fact nobody prints is a fact nobody notices has stopped being true.
     if (probe.morph) console.log(`       morph: ${probe.morph}`)

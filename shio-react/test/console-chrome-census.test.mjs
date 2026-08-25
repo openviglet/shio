@@ -48,6 +48,12 @@ import { fileURLToPath } from "node:url"
  * `visual-editor.page.tsx` builds its own frame. They are console-era by absence, not by import,
  * and an empty marker list is how that is spelled — a page that renders nothing this reader knows
  * still has to be accounted for, or the census silently shrinks by three.
+ *
+ * SH908 corrected one word of that. The not-found page renders no console chrome because it
+ * **may not**: it is mounted at App.tsx's bare `*` as well as inside both shells, and `PageHeader`
+ * calls `SidebarTrigger` → `useSidebar()`, which throws where no provider exists. "Console-era by
+ * absence" read as an accident of how small the page is; it is a constraint, and it now has its
+ * own reader in `outside-shell-chrome.test.mjs`.
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const CONSOLE_ROOT = join(HERE, "..", "src", "app", "console")
@@ -193,8 +199,17 @@ const STILL_CONSOLE = {
   "content/site.new.page.tsx": ["PageHeader", "Card"],
   "content/static-file.list.page.tsx": [],
   "content/trash.page.tsx": [],
-  "graphql/graphql.page.tsx": ["PageHeader"],
+  // SH908 — empty by migration. The explorer's chrome was a header and a toolbar strip; both go
+  // through the adapters now, and its body is GraphiQL, which is nobody's chrome.
+  "graphql/graphql.page.tsx": [],
   "home/home.page.tsx": ["PageHeader", "Card"],
+  /*
+   * SH908 — still empty, and now for a *third* reason. It renders no console chrome because it
+   * may not: it is mounted at App.tsx's bare `*` as well as in both shells, and `PageHeader`
+   * calls `SidebarTrigger` → `useSidebar()`, which throws where no provider exists. It renders
+   * the bento hero under bento chrome and nothing at all otherwise;
+   * `outside-shell-chrome.test.mjs` is what holds that rule for every such component.
+   */
   "not-found.page.tsx": [],
   // SH907 — empty by migration. `visual-editor.page.tsx` below is empty for the other reason:
   // it owns the viewport and draws its own frame, which is why it routes outside the shell.

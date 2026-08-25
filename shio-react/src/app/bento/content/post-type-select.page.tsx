@@ -7,12 +7,11 @@
  * (at your option) any later version.
  */
 import { IconFileText, IconFolderPlus, IconForms } from "@tabler/icons-react"
-import { BentoSection, BentoTile } from "@viglet/viglet-design-system/bento"
+import { BentoHero, BentoSection, BentoTile } from "@viglet/viglet-design-system/bento"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
-import { AdaptivePageHeader } from "@/components/adaptive-page-header"
 import type { ShPostType } from "@/models/post-type/post-type"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 
@@ -64,11 +63,21 @@ export default function BentoPostTypeSelectPage() {
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 px-6 pb-12">
-      <AdaptivePageHeader
-        icon={IconFileText}
+      {/*
+        SH908 — `BentoHero`, not `AdaptivePageHeader`, and this was a crash rather than a style
+        choice. This page lives in the bento tree and is mounted with **no**
+        `SectionCardChromeProvider`, so the adapter answered with its console default: `PageHeader`
+        → `SidebarTrigger` → `useSidebar()`, which throws where no `SidebarProvider` exists — and
+        the bento shell ships none, by design. The route rendered a blank page behind the error
+        boundary, with nothing in `tsc`, in the census or in any live probe to say so; it was found
+        by `outside-shell-chrome.test.mjs` on its first run. A bento-only page has no second chrome
+        to adapt to, so it names the hero it wants.
+      */}
+      <BentoHero
         eyebrow={t("content.postLabel")}
         title={t("content.whatToPost")}
-        urlBase={`${ROUTES.BENTO_CONTENT}/object/${folderId}`}
+        backTo={`${ROUTES.BENTO_CONTENT}/object/${folderId}`}
+        leading={<IconFileText size={28} aria-hidden="true" />}
       />
 
       {!loading && customTypes.length > 0 && (

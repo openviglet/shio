@@ -1639,6 +1639,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH905** — Five lists become config on one shared component and six editors take the adapter; a route param that does not match what its component reads is now a lint, after two silent blank pages.
 - **SH906** — The curator's approval surface is bento, the two read-mostly pages keep their table under a hero, and the marketplace catalogue stops being reachable by mouse only.
 - **SH907** — The visual editor routes outside the bento shell, because h-screen inside a 64px sticky header put the preview 48px below the fold; the bridge click-through still skips on a dev topology.
+- **SH908** — Both render in bento — and the lint the migration needed found a live crash: a bento page whose adapter header had no provider rendered blank.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

@@ -6,13 +6,15 @@ import "graphiql/style.css"
 
 import { GraphiQL } from "graphiql"
 import { createGraphiQLFetcher } from "@graphiql/toolkit"
-import { IconBrandGraphql } from "@tabler/icons-react"
+import { IconBrandGraphql, IconKey } from "@tabler/icons-react"
 import { KeyRound, Info } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-import { PageHeader } from "@/components/page-header"
+import { AdaptiveEmptyState } from "@/components/adaptive-empty-state"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -98,61 +100,91 @@ export default function GraphiQLPage() {
         )
     }
 
+    const header = (
+        <AdaptivePageHeader
+            icon={IconBrandGraphql}
+            title={t("graphql.title")}
+            eyebrow={t("admin.title")}
+            subtitle={t("graphql.description")}
+        />
+    )
+
     if (tokens.length === 0) {
         return (
             <>
-                <PageHeader title={t("graphql.title")} turIcon={IconBrandGraphql} />
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="rounded-full bg-muted p-4 mb-4">
-                        <KeyRound className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="font-semibold text-lg mb-1">{t("graphql.noTokensTitle")}</h3>
-                    <p className="text-sm text-muted-foreground max-w-sm mb-6">
-                        {t("graphql.noTokensDescription")}
-                    </p>
-                    <Button onClick={() => navigate(`${ROUTES.ADMIN_TOKENS}/new`)}>
-                        <KeyRound className="mr-2 h-4 w-4" />
-                        {t("graphql.createToken")}
-                    </Button>
+                {header}
+                <div className="p-6">
+                    <AdaptiveEmptyState
+                        icon={IconKey}
+                        tone="violet"
+                        title={t("graphql.noTokensTitle")}
+                        description={t("graphql.noTokensDescription")}
+                        action={
+                            <Button onClick={() => navigate(`${ROUTES.ADMIN_TOKENS}/new`)}>
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                {t("graphql.createToken")}
+                            </Button>
+                        }
+                    />
                 </div>
             </>
         )
     }
 
+    /*
+     * SH908 — the height is the one thing this page cannot get from either shell.
+     *
+     * GraphiQL sizes itself to its container, so the container has to name a height, and the only
+     * height available is the viewport minus whatever chrome sits above it. That constant is 4rem
+     * in both eras for two *different* reasons: under the bento shell it is the `sticky top-0`
+     * header the page renders below (SH907 measured the same 64px from the other side), and under
+     * the console shell it is the footer `AppFooter` puts underneath. Two coincidences that agree
+     * today — which is exactly the kind of premise SH907 says not to leave in a CSS expression, so
+     * `bento-bespoke-slice.test.mjs` asserts both heights rather than trusting this comment.
+     */
     return (
         <div className="flex flex-1 flex-col h-[calc(100vh-theme(spacing.16))] w-full">
-            <PageHeader title={t("graphql.title")} turIcon={IconBrandGraphql} />
+            {header}
 
-            <div className="flex items-center gap-3 border-b bg-muted/30 px-4 py-2">
-                <Label htmlFor="gql-token" className="text-sm font-medium whitespace-nowrap">
-                    {t("graphql.token")}
-                </Label>
-                <Select value={selectedId} onValueChange={handleSelect}>
-                    <SelectTrigger id="gql-token" className="w-72">
-                        <SelectValue placeholder={t("graphql.tokenPlaceholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {tokens.map((tk) => (
-                            <SelectItem key={tk.id} value={tk.id}>
-                                {tk.title} · {tk.scope ?? "READ"}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">{t("graphql.tokenHelp")}</TooltipContent>
-                </Tooltip>
-                {!selectedToken && (
-                    <span className="text-sm text-amber-600 dark:text-amber-400">
-                        {t("graphql.noToken")}
-                    </span>
-                )}
+            {/*
+              The toolbar is the page's own chrome, so it goes through the adapter rather than
+              staying a `border-b bg-muted/30` strip: a console strip under the frosted shell is
+              SH902's defect exactly — a page that reads as migrated in every source scan and
+              renders console markup. In console chrome it becomes the bordered card the rest of
+              this console uses, which is the one visible change on that surface.
+            */}
+            <div className="px-4 pt-4 md:px-6">
+                <AdaptivePanel contentClassName="flex flex-wrap items-center gap-3 p-3">
+                    <Label htmlFor="gql-token" className="text-sm font-medium whitespace-nowrap">
+                        {t("graphql.token")}
+                    </Label>
+                    <Select value={selectedId} onValueChange={handleSelect}>
+                        <SelectTrigger id="gql-token" className="w-72">
+                            <SelectValue placeholder={t("graphql.tokenPlaceholder")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {tokens.map((tk) => (
+                                <SelectItem key={tk.id} value={tk.id}>
+                                    {tk.title} · {tk.scope ?? "READ"}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">{t("graphql.tokenHelp")}</TooltipContent>
+                    </Tooltip>
+                    {!selectedToken && (
+                        <span className="text-sm text-amber-600 dark:text-amber-400">
+                            {t("graphql.noToken")}
+                        </span>
+                    )}
+                </AdaptivePanel>
             </div>
 
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 p-4 md:px-6">
                 <GraphiQL fetcher={fetcher} forcedTheme={resolvedTheme} />
             </div>
         </div>
