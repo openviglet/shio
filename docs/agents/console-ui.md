@@ -2014,6 +2014,26 @@ control's gates: `multiTenant` and two memberships. So a curator who cannot swit
 an ambiguous paste either, and a single-tenant install — where every link means the only tenant
 there is — gets neither the banner nor the affordance.
 
+### What is waiting on a design-system release, and what notices when it arrives (SH937)
+
+Three roadmap lines wait on the same external event. `shio-react/test/design-system-waits.test.mjs`
+holds them as a **named list** — id, what it wants, a probe that answers "is the wait over", and the
+instruction to run when it is. Each goes red on the day its wait ends, which is the shape SH919
+shipped as a one-off and this generalises: the next wait costs a line, not a test file.
+
+Two probes per entry, and the coarse one is the important one. A precise probe reads the installed
+package for the exact thing — SH935's is `fallbackRoute` disappearing from `BentoNavItem`. It can
+under-report, and that is the dangerous direction: SH923 waits on a component **whose name nobody
+has chosen**, so looking for `BentoPanel` misses a release that called it `BentoSurface`. So `PINNED`
+holds the installed version every entry was measured against and fails when it moves — every wait
+here ends with *a release*, so that one cannot miss. Read the entries, ship what is over, then move
+`PINNED`; moving it first is how a release that ended a wait passes through unnoticed.
+
+A wait-watcher's own failure mode is that a read which has lost its file answers "not yet" for the
+same reason a real wait does, so each entry also carries a `proof()` that its read reached something
+real. Verified by running SH919's probe against the fixed gate in the design-system checkout: it
+flips to "over", with the bare-root call the entry actually makes.
+
 ### The admin hub nobody had migrated
 
 `ADMIN_ROOT` is the `urlBase` of eleven admin surfaces, so it is where their hero back-links point —

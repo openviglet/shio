@@ -1654,6 +1654,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH933** — Twenty-one pages stopped feeding a trail nothing renders, the provider is unmounted and the local context deleted — and a lint matching the provider and hook by name keeps the habit out, since the design system still exports them and an import would compile. SH716's debt entry changes kind rather than closing: the surface its assertion needed no longer exists (design §LV.23 recorded in `docs/agents/console-ui.md`).
 - **SH935 (console half)** — Every entry states its route once through a helper that writes both fields, which ends the palette announcing "Opens in console" for sixteen surfaces that have no console to open — and the test that counted migrations was replaced, having gone vacuous at 0/17 while still printing a progress bar.
 - **SH931** — A bento URL now names its tenant with `?tenant=`, and opening it states the mismatch and offers a switch the reader presses rather than performing one.
+- **SH937** — The three lines waiting on a design-system release are a named list with a probe each, so the release that ends one turns the suite red instead of going unnoticed.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 
