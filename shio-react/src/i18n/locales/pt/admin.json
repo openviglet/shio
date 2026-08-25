@@ -1,5 +1,11 @@
 {
   "admin.title": "Administração",
+  "admin.usersSubtitle": "As pessoas que podem entrar nesta instância.",
+  "admin.usersEmptyHint": "Crie o primeiro usuário para dar acesso a alguém.",
+  "admin.groupsSubtitle": "Conjuntos de usuários aos quais os perfis são concedidos.",
+  "admin.groupsEmptyHint": "Crie um grupo para conceder perfis a várias pessoas de uma vez.",
+  "admin.rolesSubtitle": "O que um grupo tem permissão para fazer.",
+  "admin.rolesEmptyHint": "Crie um perfil para descrever um conjunto de permissões.",
   "admin.users": "Usuários",
   "admin.roles": "Perfis",
   "admin.groups": "Grupos",

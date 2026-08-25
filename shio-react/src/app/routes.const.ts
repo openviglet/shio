@@ -84,6 +84,17 @@ export const ROUTES = {
   BENTO_CONTENT: "/bento/content",
   BENTO_SITE_NEW: "/bento/content/site/new",
   BENTO_SITE_IMPORT: "/bento/content/site/import",
+  /**
+   * SH904 — the identity surfaces. Unscoped for the same reason as the content ones: tenancy
+   * under bento arrives with SH905, which is the slice that actually needs it.
+   */
+  BENTO_ADMIN: "/bento/admin",
+  BENTO_GROUPS: "/bento/admin/groups",
+  BENTO_GROUP_NEW: "/bento/admin/groups/new",
+  BENTO_ROLES: "/bento/admin/roles",
+  BENTO_ROLE_NEW: "/bento/admin/roles/new",
+  BENTO_USERS: "/bento/admin/users",
+  BENTO_USER_NEW: "/bento/admin/users/new",
 };
 
 // Route patterns (with `:tenant` placeholder) used by React Router for matching.

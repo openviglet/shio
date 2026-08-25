@@ -1527,3 +1527,65 @@ the unsearched state only because it opens the route with no query — **give a 
 it finds what you did not think to look for**.
 
 Census after this task: **43 pages, Card 28, PageHeader 30, Sidebar 1, twelve empty.**
+
+## The identity slice, where the design section was wrong twice (SH904)
+
+§LV.7 called users, groups and roles "the clearest case in the product for the entity shell",
+because "each of these entities has a title, a description and an enabled state". Two of those
+three claims do not survive opening the models, and both matter.
+
+**There is no `enabled`.** `ShGroup` and `ShRole` are `{id, name, description}` and nothing else,
+so `hasStatus` stays off. A status pill driven by a column that is not in the model would have
+rendered "Idle" against every group in the instance and meant nothing.
+
+**A user has neither a title nor a description.** `ShUser` is
+`{username, firstName, lastName, email, password?}`: its identity is a **login key** and its name
+is **two columns**. `BentoEntityShell`'s hero inline-edits a single `title` and commits on blur, so
+mapping `title` to `username` renames someone's login by tabbing away from it — P7 with no
+confirmation and no undo — and mapping it to the full name needs a whitespace split that is lossy
+for half the names in the world.
+
+So the slice divides where the data divides: **groups and roles take the shell** (one shared
+`IdentityEntityPage` and one shared `IdentityListPage`, because the two entities are the same
+shape and the console's two copies had already drifted in their breadcrumbs), and for users the
+**list takes the mosaic** while the **editor stays an adapter page**. The post-type editor is the
+precedent for the read-only key (SH902/SH117); a user has no equivalent Rename affordance, so the
+hero does not get the field at all.
+
+### Three defects, and the one that mattered was invisible
+
+- **A static `admin/groups/new` route beside `:groupId`** matches first and carries *no param*, so
+  `useParams().groupId` is undefined, `isNew` is false, the load never runs and the page renders
+  `null`. It reads as a route-ordering problem and is the opposite one. `new` is a **value** of
+  `:id`, which is the sentinel the console already used.
+- **`autosaveOnly` cuts both ways.** It hides Save on an existing entity — correct, the hero
+  autosaves — and deliberately *keeps* it on a new one, because there Save is what creates the
+  entity. A pure-identity entity has an empty form body, so the create branch has to render a real
+  `<form id={formId}>` or the only button on the page is inert. That is SH899 again, in the one
+  mode `autosaveOnly` does not cover.
+- **The create call sent `{id: "", …}`** — the field is required by the type, and the empty string
+  is the honest value for "not assigned yet". `POST /v2/group` **stored it verbatim.** The group
+  appears in `GET /v2/group` and in the console's list, and nothing can address it: `/v2/group/`
+  does not route and every id-shaped path 404s. Read 200, delete 404, still listed afterwards; it
+  had to be removed at the database.
+
+The third is the one worth dwelling on. Every visible thing about the flow was right — the page
+navigated to the list and the group was on it. It was found only by **creating a group and reading
+the row back**, which is the difference between driving a flow and looking at it. The client half
+is fixed here (`create` takes `Omit<IdentityEntity, "id">`); **SH924** carries the server half,
+because any client can still do this and groups are unlikely to be the only entity that allows it.
+
+### One correction to the check itself
+
+`checkBentoSurface` asked for a non-empty `h1`, which was written against `BentoHero`. The entity
+shell does not render one: its title is a `BentoInlineEdit`, which is an `<input>` carrying the
+title as its *value* with `headlineFallback` as the placeholder — and on a create page the title
+is empty by definition. So **no entity-shell page could ever have passed**, and the first four
+probed were the first four written. It now accepts either shape.
+
+The frost rule needed the opposite treatment. A create page for an all-identity entity genuinely
+has no panel and never will, so `noPanel` is declared **per probe, next to the route** rather than
+exempted inside the check — the failure this rule exists to catch (SH902) is precisely "a page
+that renders no frosted surface", and a global exemption would have retired it.
+
+Census after this task: **43 pages, Card 27, PageHeader 29, Sidebar 1, thirteen empty.**

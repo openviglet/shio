@@ -1,5 +1,11 @@
 {
   "admin.title": "Administration",
+  "admin.usersSubtitle": "The people who can sign in to this instance.",
+  "admin.usersEmptyHint": "Create the first user to give someone access.",
+  "admin.groupsSubtitle": "Sets of users that roles are granted to.",
+  "admin.groupsEmptyHint": "Create a group to grant roles to several people at once.",
+  "admin.rolesSubtitle": "What a group is permitted to do.",
+  "admin.rolesEmptyHint": "Create a role to describe a set of permissions.",
   "admin.users": "Users",
   "admin.roles": "Roles",
   "admin.groups": "Groups",

@@ -9,6 +9,12 @@ import BentoSiteListPage from "./app/bento/content/site.list.page"
 import BentoSiteNewPage from "./app/bento/content/site.new.page"
 import BentoRootPage from "./app/bento/bento.root.page"
 import BentoVocabularyPage from "./app/bento/bento-vocabulary.page"
+import BentoGroupEditPage from "./app/bento/admin/group.edit.page"
+import BentoGroupListPage from "./app/bento/admin/group.list.page"
+import BentoRoleEditPage from "./app/bento/admin/role.edit.page"
+import BentoRoleListPage from "./app/bento/admin/role.list.page"
+import BentoUserListPage from "./app/bento/admin/user.list.page"
+import AdminUserPage from "./app/console/admin/admin.user.page"
 import ObjectChildrenPage from "./app/console/content/object.children.page"
 import PostEditPage from "./app/console/content/post.edit.page"
 import PostNewPage from "./app/console/content/post.new.page"
@@ -175,6 +181,37 @@ function App() {
                   element={
                     <SectionCardChromeProvider chrome="bento">
                       <StaticFileListPage />
+                    </SectionCardChromeProvider>
+                  }
+                />
+                {/*
+                  SH904 — the identity slice. Groups and roles are `{id, name, description}` and
+                  nothing else, so both go through one shared entity shell and one shared list;
+                  `new` before `:id`, or the editor loads an entity called "new".
+
+                  The user pair splits: the *list* is a mosaic like the other two, but the
+                  *editor* stays the console component under the provider. A user has no title
+                  and no description — its identity is a login key and its name is two columns —
+                  so a hero that inline-edits `title` would rename the login on blur.
+                */}
+                {/*
+                  One route each, with `new` as a **param value** rather than a static sibling —
+                  the sentinel the console already uses. A static `admin/groups/new` route beside
+                  `:groupId` matches first and carries no param at all, so `useParams().groupId`
+                  is undefined, `isNew` is false, the load never runs and the page renders `null`.
+                  It looked like a routing-order problem and was the opposite one; the live check
+                  caught it as "no hero heading on a bento surface".
+                */}
+                <Route path="admin/groups" element={<BentoGroupListPage />} />
+                <Route path="admin/groups/:groupId" element={<BentoGroupEditPage />} />
+                <Route path="admin/roles" element={<BentoRoleListPage />} />
+                <Route path="admin/roles/:roleId" element={<BentoRoleEditPage />} />
+                <Route path="admin/users" element={<BentoUserListPage />} />
+                <Route
+                  path="admin/users/:userId"
+                  element={
+                    <SectionCardChromeProvider chrome="bento">
+                      <AdminUserPage />
                     </SectionCardChromeProvider>
                   }
                 />

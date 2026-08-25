@@ -1,6 +1,6 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ROUTES } from "@/app/routes.const"
@@ -54,13 +54,15 @@ export default function AdminUserPage() {
 
   return (
     <>
-      <PageHeader title={isNew ? t("admin.newUser") : t("admin.editUser")} turIcon={IconShieldCog} urlBase={ROUTES.ADMIN_ROOT} />
+      <AdaptivePageHeader
+        icon={IconShieldCog}
+        title={isNew ? t("admin.newUser") : t("admin.editUser")}
+        eyebrow={t("admin.users")}
+        subtitle={t("admin.usersSubtitle")}
+        urlBase={ROUTES.ADMIN_ROOT}
+      />
       <div className="p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{isNew ? t("admin.newUser") : t("admin.editUser")}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <AdaptivePanel contentClassName="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -144,8 +146,7 @@ export default function AdminUserPage() {
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
+        </AdaptivePanel>
       </div>
     </>
   )

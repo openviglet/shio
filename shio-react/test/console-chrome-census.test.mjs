@@ -130,7 +130,10 @@ const STILL_CONSOLE = {
   "admin/admin.role.page.tsx": ["PageHeader", "Card"],
   "admin/admin.roles.list.page.tsx": ["PageHeader", "Card"],
   "admin/admin.root.page.tsx": [],
-  "admin/admin.user.page.tsx": ["PageHeader", "Card"],
+  // SH904 — empty by migration. The user *editor* stays an adapter page rather than taking
+  // the entity shell: a user has no title and no description, its identity is a login key and
+  // its name is two columns, so a hero that inline-edits `title` renames the login on blur.
+  "admin/admin.user.page.tsx": [],
   "admin/admin.users.list.page.tsx": ["PageHeader", "Card"],
   "admin/api-token/api-token.list.page.tsx": ["PageHeader", "Card"],
   "admin/api-token/api-token.page.tsx": ["PageHeader", "Card"],

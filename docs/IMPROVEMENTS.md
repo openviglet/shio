@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.7 Identity: users, groups and roles (SH904)
-
-Six pages, three list-and-form pairs, and the clearest case in the product for the
-entity shell: each of these entities has a title, a description and an enabled state,
-which is exactly the identity the shell lifts out of the form and into the hero.
-Migrating them is mostly deletion - the fields that move up stop being form fields, and
-the delete flow the shell owns replaces three hand-rolled dialogs. Take this slice
-before the eleven infrastructure pages, because it is where the shell's assumptions are
-tested against a small, well-understood set of entities.
-
 ### LV.8 Infrastructure, eleven pages that are nearly the same page (SH905)
 
 API tokens, auth providers, exchange providers, site webhooks, email configuration and
@@ -1072,6 +1062,28 @@ invisible in any diff.
 
 Shio carries `AdaptivePanel` meanwhile, with the classes copied from `BentoSaveBar` so
 they match today. Ask the package for the component, then delete it.
+
+### LV.17 A blank id is accepted and strands the row (SH924)
+
+A create page sent `{id: "", name, description}` — the field is required by the
+client-side type, so the empty string was the honest value for "not yet assigned". `POST
+/api/v2/group` took it, persisted it verbatim, and answered 200 with the row. The group
+then appears in `GET /v2/group` and in the console's list, and **nothing can address
+it**: `/v2/group/` is not `/v2/group/{id}`, so it does not route, and any id-shaped path
+is a 404. Verified against a running instance with a real session and a real CSRF token
+— read 200, delete 404, row still listed afterwards. It has to be removed at the
+database.
+
+Three things are wrong and only the third is the fix. The client should not have sent
+it, and SH904 stopped doing so. The API should refuse a blank primary key with a
+teaching 400 under P6 — `fix` naming that the id is minted server-side and must be
+absent. And the server should mint the id when the field is absent *or* blank, which is
+what makes the refusal safe to add rather than a new way to break an existing caller.
+
+Groups are unlikely to be the only entity that does this: every `POST /api/v2/{entity}`
+taking a full entity shape has the same hole, and a curator cannot see it because the
+create succeeded. The deliverable is the sweep, not the one endpoint — which endpoints
+mint, which trust, and which of those a client can reach with a blank key.
 
 ## LVI What Turing's index never receives
 

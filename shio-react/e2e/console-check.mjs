@@ -231,16 +231,39 @@ async function discoverRoutes(siteName) {
    * the same edit, and a check that only ever opens the bento route would let the console half
    * break silently for as long as Block AR runs.
    *
-   * `search` opens with no query, which is its third state — neither results nor an empty result,
-   * just the form. It renders nothing below the form today, and the probe records that rather
-   * than asserting an empty state that is not there (SH924).
+   * `search` opens with no query, which is its **third** state — neither results nor an empty
+   * result, just the form. That state used to render nothing below the form at all, and this
+   * probe is what found it: it opens the route without searching, so it lands on exactly the
+   * branch nobody had looked at. SH903 gave that branch its own words.
    */
   for (const [name, path] of [
     ["search", "/content/search"],
     ["trash", "/content/trash"],
     ["files", "/content/files"],
+    /*
+     * SH904 — the identity slice. The **create** routes are probed alongside the lists because
+     * they are where this slice's one real hazard lives: a group is nothing but identity, so its
+     * form body is empty, and `autosaveOnly` hides Save on an existing entity but deliberately
+     * keeps it on a new one. That is the SH899 dead-button shape, and only opening the page
+     * catches it.
+     */
+    ["groups", "/admin/groups"],
+    ["roles", "/admin/roles"],
+    ["users", "/admin/users"],
   ]) {
     routes.push({ name: `bento-${name}`, path: `/bento${path}`, bento: true, mustSee: [] })
+  }
+  /*
+   * The two create pages, declared `noPanel` — a group and a role are `{name, description}` and
+   * both are hero fields, so these pages genuinely have no body and never will. Declared here
+   * rather than exempted inside the check, so the claim sits next to the route that makes it.
+   *
+   * They are probed at all because this is where the slice's one real hazard lives: `autosaveOnly`
+   * hides Save on an existing entity and deliberately keeps it on a new one, which is the SH899
+   * dead-button shape with the button still on screen.
+   */
+  for (const [name, path] of [["group-new", "/admin/groups/new"], ["role-new", "/admin/roles/new"]]) {
+    routes.push({ name: `bento-${name}`, path: `/bento${path}`, bento: true, noPanel: true, mustSee: [] })
   }
   for (const t of postTypes.filter((t) => !t.system).slice(0, 3)) {
     routes.push({ name: `post-type-edit:${t.name}`, path: `/console/content/post-type/${t.name}`, mustSee: [t.name] })
@@ -285,12 +308,33 @@ async function discoverRoutes(siteName) {
  * running reads as coverage. `morph: "no surface carries one yet"` is printed on every run, and
  * the count moves the day a migrated editor appears.
  */
-async function checkBentoSurface(page) {
-  return page.evaluate(() => {
+async function checkBentoSurface(page, noPanel = false) {
+  return page.evaluate((noPanel) => {
+    window.__shioNoPanel = noPanel
+
     const findings = []
 
-    const hero = document.querySelector("h1")
-    if (!hero || !hero.innerText.trim()) findings.push("no hero heading on a bento surface")
+    /*
+     * A hero is a non-empty `h1` **or** the entity shell's editable one.
+     *
+     * SH904 — the `h1` rule was written against `BentoHero`/`BentoFormHero`, which render one.
+     * `BentoEntityShell` does not: its title is a `BentoInlineEdit`, and that component renders an
+     * `<input>` (or a `<textarea>` when multiline) carrying the title as its *value*, with
+     * `headlineFallback` as the placeholder. So on a create page — where the title is empty by
+     * definition, because the entity does not exist yet — there is no heading text anywhere in
+     * the document and this reported a correct page as broken.
+     *
+     * It was worse than a false negative: **no entity-shell page could ever have passed**, and
+     * the first four to be probed were the first four written. The rule below asks the question
+     * the original meant — is there a hero and does it name something — of both shapes.
+     */
+    const h1 = document.querySelector("h1")
+    const editable = h1?.querySelector("input, textarea")
+    const named = h1
+      && (h1.innerText.trim()
+        || (editable?.value ?? "").trim()
+        || (editable?.getAttribute("placeholder") ?? "").trim())
+    if (!named) findings.push("no hero heading on a bento surface")
 
     /*
      * Read the frost off computed style, not off the class list — every `bento-*` class is
@@ -305,7 +349,17 @@ async function checkBentoSurface(page) {
      */
     const glass = document.querySelector(".bento-glass, .bento-tile")
     if (!glass) {
-      findings.push("no frosted surface (.bento-glass/.bento-tile) rendered")
+      /*
+       * SH904 — a surface with no panel is a finding, *unless* the probe said so in advance.
+       *
+       * The create page for an entity that is nothing but identity has no body: a group is
+       * `name` + `description`, both hero fields, so there is genuinely no panel to frost and
+       * never will be. Exempting that shape globally would have made this rule vacuous for every
+       * page — the failure it exists to catch (SH902's header-less section cards) is exactly "a
+       * page that renders no frosted surface". So the exemption is per-probe and it is declared
+       * next to the route, where somebody reviewing the diff sees the claim being made.
+       */
+      if (!window.__shioNoPanel) findings.push("no frosted surface (.bento-glass/.bento-tile) rendered")
     } else {
       const style = getComputedStyle(glass)
       const frost = style.backdropFilter || style.webkitBackdropFilter || "none"
@@ -329,7 +383,7 @@ async function checkBentoSurface(page) {
     // package does not render and read by nothing. `checkSaveBarMorph` is the authority on
     // the morph; a second, wrong answer sitting beside it is worse than none.
     return { findings }
-  })
+  }, noPanel)
 }
 
 /**
@@ -725,7 +779,7 @@ async function main() {
       if (route.bento) {
         // SH897 — bento facts, read off the rendered page. `missing` is what already decides
         // `ok`, so a finding here fails the probe exactly like a missing string does.
-        const surface = await checkBentoSurface(page)
+        const surface = await checkBentoSurface(page, route.noPanel === true)
         probe.missing.push(...surface.findings)
         const morph = await checkSaveBarMorph(page)
         probe.morph = morph.ran ? (morph.findings.length ? morph.findings.join("; ") : "ok") : morph.why
