@@ -16,8 +16,10 @@ import {
 import { useEffect, useState } from "react"
 import { Outlet } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
+import { ReviewPendingProvider } from "@/contexts/review-pending.context"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
+import { BentoReviewPending } from "./bento-review-pending"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
 
 /**
@@ -60,9 +62,14 @@ import { BentoTenantSwitcher } from "./bento-tenant-switcher"
  * and republishes its value as `ShCurrentUser`, so one mount satisfies both hooks from one
  * fetch. This file imports Shio's again and needs to know nothing about it.
  *
- * `ReviewPendingProvider` is still absent, deliberately. The rail renders **sections only**, so
- * SH207's badge has nowhere to appear until a hub does; mounting it now would be a fetch nothing
- * reads.
+ * `ReviewPendingProvider` is mounted since **SH936**, and the sentence that used to stand here is
+ * worth keeping because it was right about the rail and wrong about the conclusion: "the rail
+ * renders sections only, so SH207's badge has nowhere to appear until a hub does; mounting it now
+ * would be a fetch nothing reads." The rail still renders sections only and the hub still does not
+ * exist. What that reasoning missed is that the *rail* was never the only place an ambient signal
+ * can live — the header is, it is visible from every surface, and `BentoReviewPending` reads the
+ * count there. Waiting for a hub meant waiting for a page nobody had scheduled, while an agent
+ * wrote drafts nothing told a curator about.
  */
 export default function BentoRootPage() {
   const groups = useBentoNav()
@@ -98,6 +105,14 @@ export default function BentoRootPage() {
 
   return (
     <UserProvider>
+      {/*
+        SH936 — mounted here, above both the header and the Outlet, and that placement is the
+        whole reason this is a context rather than a fetch inside the indicator. The count is
+        READ by the header badge and INVALIDATED by the review queue when a run is approved or
+        reverted; two subtrees can only reach each other from a common ancestor. A badge saying
+        two over a page showing nothing pending is the one number a curator learns to distrust.
+      */}
+      <ReviewPendingProvider>
         <div className="bg-background text-foreground min-h-svh">
           {/*
             `sticky`, not `fixed`, and `z-40` under the rail's own 40 rather than over everything.
@@ -118,6 +133,7 @@ export default function BentoRootPage() {
               to more than one, which is why the header does not gate it here: a control that knows
               when it has nothing to offer is one the shell does not have to reason about.
             */}
+            <BentoReviewPending />
             <BentoTenantSwitcher />
             <BentoUserMenu
               accountRoute={ROUTES.ADMIN_USERS}
@@ -142,6 +158,7 @@ export default function BentoRootPage() {
 
           <BentoBackToTop />
         </div>
+      </ReviewPendingProvider>
     </UserProvider>
   )
 }

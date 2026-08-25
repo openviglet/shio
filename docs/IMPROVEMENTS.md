@@ -1114,30 +1114,6 @@ true, and let the test assert the single field. The package owns `BentoNavItem`,
 shape change is a conversation with it rather than a local edit — which is why this is a
 task and not a cleanup.
 
-### LV.26 The queue nobody is told about (SH936)
-
-The console sidebar carried a badge on Agent Review when runs were waiting, absent
-rather than zero when there was nothing to decide (SH207). The bento rail draws
-**sections only** — Content and Administration — so the badge has nowhere to sit, and
-`ReviewPendingProvider` is deliberately not mounted: a fetch nothing reads.
-
-That was the right call for the shell and it leaves a real hole. Approval is the
-curator's half of the agent-native design: P7 says never surprise the curator, and an
-agent writing unattended now produces drafts that wait until somebody thinks to open a
-screen. The documentation had to be corrected to say so out loud, which is the tell that
-this is a capability loss rather than a cosmetic one.
-
-Everything needed is already built. `review-pending.context.tsx` holds the count and the
-invalidation — written that way because a badge disagreeing with the page it links to is
-the one number a curator learns to distrust — and `ShReviewService` exposes a count
-cheap enough for navigation.
-
-What is missing is a place to draw it, and choosing is the work. On the **Administration
-rail section**, where the old badge's meaning lives but a whole area aggregates; on an
-**Administration hub** of tiles, which the bento design expected and the rail was built
-to allow; or in the **header** beside the user menu, the only spot visible from every
-surface. Pick the spot, then mount the provider.
-
 ## LVI What Turing's index never receives
 
 Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index

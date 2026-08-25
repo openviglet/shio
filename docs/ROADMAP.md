@@ -21,7 +21,6 @@
 - 📋 **SH932** (deps: —) **three components named Adaptive* no longer adapt, and the name is what the next page copies** — Each now has one branch, so the name promises a choice that was deleted and invites a second console era to be written against it. → §LV.22
 - 📋 **SH933** (deps: —) **twenty-two pages build a breadcrumb trail that nothing has rendered since the console shell went** — The calls compile, cost a render each and teach the next page to make them, and SH716's assertion went with the renderer. → §LV.23
 - 📋 **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Sixteen of seventeen entries declare only a fallback that now points into bento, so the field pair records a migration that is over. → §LV.25
-- 📋 **SH936** (deps: —) **nothing tells a curator an agent run is waiting: the pending-review badge has no renderer under the rail** — The count is fetched and the endpoint is cheap, but the rail carries areas rather than screens, so the one ambient signal that approval is owed is gone. → §LV.26
 
 ## Priority
 

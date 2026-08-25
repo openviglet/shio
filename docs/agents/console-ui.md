@@ -2124,6 +2124,41 @@ Switching reloads the page. The tenant is a session property and everything on s
 under the old one, so re-fetching piecemeal is a long tail of stale reads for a control used twice
 a day.
 
+## The rail was never the only place a signal can live (SH936)
+
+The sidebar badged Agent Review when runs were waiting (SH207). After the cutover the rail draws
+**sections**, so there was no entry to badge, and `ReviewPendingProvider` was left unmounted with a
+reason written beside it: *"the badge has nowhere to appear until a hub does; mounting it now would
+be a fetch nothing reads."*
+
+That sentence was right about the rail and wrong about the conclusion. Two of the three homes it
+implied are still unavailable — `BentoNavSection` carries **no badge field**, so a section badge is
+a design-system change and a release; and the hub `areaRoute` is meant to open does not exist here,
+since `/bento/admin` redirects to the user list. Waiting for either meant waiting for a page nobody
+had scheduled while an agent wrote drafts nothing told a curator about.
+
+**The header is the third home, and it is the right one rather than the leftover one.** The signal
+is *work is waiting for you*: ambient, personal, and the vocabulary of a notification rather than of
+navigation. It is visible from every surface, which is what makes it ambient at all, and it sits
+beside the account menu and the tenant switch, which are the other two things in that header.
+
+### Absent, not zero — and a 403 that looks like an empty queue
+
+`pending <= 0` renders nothing, which is SH207's rule kept. A dimmed `0` in the header of every
+screen is a number a reader learns to skip, and skipping it is what the badge existed to prevent.
+
+A curator who may not open the queue also sees nothing, and gets there without a permission check:
+the provider swallows the read error and reports 0, so a 403 on the count is indistinguishable from
+an empty one. That is correct for an indicator and would be wrong for a page.
+
+### Where the provider goes, and why that is the assertion
+
+`ReviewPendingProvider` wraps both the header and the `Outlet`. The count is **read** by the badge
+and **invalidated** by the review queue after an approve or a revert, and two subtrees can only
+reach each other through a common ancestor — which is why the count was written as a context rather
+than a fetch inside the indicator. `bento-review-pending.test.mjs` asserts the ordering by index
+rather than by presence: a provider that wraps only the header would still contain the string.
+
 ## The check was walking another product's console (SH927, probe half)
 
 SH927 was filed about redness: the GraphQL explorer's Monaco workers fall back to the main thread
