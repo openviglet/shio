@@ -53,7 +53,10 @@ test("SH46: the Tenants nav entry is gated on multiTenant, and the gate is not d
   // The entry and the flag on one line each is not enough: the assertion is that the entry is
   // gated. A file carrying both, with the item still listed unconditionally, would pass a pair of
   // `match` calls and ship exactly the defect.
-  assert.match(nav, /ROUTES\.ADMIN_TENANTS,\s*requires:\s*"multiTenant"/,
+  // SH935 moved the route onto `...at(ROUTES.ADMIN_TENANTS)`, so the closing paren is optional
+  // here. What must not become optional is the *adjacency*: the gate has to sit on the entry that
+  // names the route, not merely somewhere in the same file.
+  assert.match(nav, /ROUTES\.ADMIN_TENANTS\)?,\s*requires:\s*"multiTenant"/,
     "SH46: the tenants entry is declared without `requires: \"multiTenant\"`, so a single-tenant "
       + "install advertises it again")
   assert.match(nav, /\.filter\(\([^)]*\) => [^)]*requires !== "multiTenant" \|\| multiTenant\)/,

@@ -19,7 +19,7 @@
 - ⏳ **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — The explorer's Monaco workers still fall back to the main thread under the dev server, unreproduced here because mounting the explorer needs a backend. → §LV.19
 - 📋 **SH931** (deps: SH909 ✅, SH934 ✅) **a bento URL cannot name its tenant, so a shared console link no longer says which tenant it is for** — A link naming a tenant is only useful once the console can switch to one, which SH934 restores. → §LV.21
 - 📋 **SH932** (deps: —) **three components named Adaptive* no longer adapt, and the name is what the next page copies** — Each now has one branch, so the name promises a choice that was deleted and invites a second console era to be written against it. → §LV.22
-- 📋 **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Sixteen of seventeen entries declare only a fallback that now points into bento, so the field pair records a migration that is over. → §LV.25
+- ⏳ **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Collapsing fallbackRoute and bentoRoute into a single route field is the design system's call, since it owns BentoNavItem. → §LV.25
 
 ## Priority
 

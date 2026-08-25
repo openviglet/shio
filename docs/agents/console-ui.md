@@ -2124,6 +2124,48 @@ Switching reloads the page. The tenant is a session property and everything on s
 under the old one, so re-fetching piecemeal is a long tail of stale reads for a control used twice
 a day.
 
+## A field pair that outlived its migration, and the mislabel it was drawing (SH935)
+
+`BentoNavItem` carries `fallbackRoute` (where a surface lives) and an optional `bentoRoute` (where
+it moved), with `bentoNavTarget()` preferring the second — so a migration was one line in
+`bento-nav.ts`. SH909 ended the migration by repointing `ROUTES.CONSOLE` at `/bento`, which moved
+every constant the fallbacks are built from. Both fields have named the same path ever since, and
+the preference still ran without being able to prefer anything.
+
+**The reason this was a task and not a cleanup is what the palette does with the absence.** For an
+entry with no `bentoRoute` the command palette renders a marker whose screen-reader label is
+`bento.palette.opensConsole` — **"Opens in console"**. Sixteen of seventeen migrated surfaces were
+announcing a destination that no longer exists. A wrong accessible name is worse than a stale
+field: it is only visible to the readers least able to work around it.
+
+`at(route)` writes the route into both fields, so each entry states it once. Collapsing the pair
+into a single `route` is the package's call since it owns the type, so **SH935 ships as a partial**
+with that half named in the remainder.
+
+### The vacuous pass this uncovered
+
+`bento-nav.test.mjs` had a test named "a migration is one line — bentoRoute is the only field that
+flips". It counted entries carrying a `bentoRoute` and asserted each kept the route it moved from.
+Once every entry declared its route through `at()`, the count read **0/17**, the loop it guarded
+ran over an empty list, and the test stayed green while asserting nothing — printing a progress bar
+that read like reassurance. It is replaced by an assertion that every entry routes through `at()`
+**and** that `at()` writes both fields, which is the property the palette actually depends on; a
+helper setting one field would otherwise satisfy the first half and restore the defect everywhere
+at once. Falsified by doing exactly that.
+
+`tenant-nav-gating.test.mjs` needed one change for the same reason: its SH46 pattern matched
+`ROUTES.ADMIN_TENANTS,` immediately followed by `requires:`, and the helper puts a `)` between
+them. The closing paren is now optional in the pattern; the **adjacency** is not, because the point
+of that assertion is that the gate sits on the entry naming the route rather than merely somewhere
+in the same file.
+
+### A note on undoing a falsification
+
+The one-line edit that proved the new assertion fires was reverted with `git checkout <file>`,
+which discarded every uncommitted change in that file — the whole task. Committed work (SH934's
+`useMultiTenant`) survived; an hour of SH935 did not. Undo a deliberate one-line break with the
+inverse edit, not with a command scoped to the file.
+
 ## A retirement has two sides, and SH910 only did one (SH933)
 
 Deleting the console page header removed the only thing that ever drew a breadcrumb. The

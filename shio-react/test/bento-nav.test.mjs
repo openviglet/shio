@@ -89,11 +89,11 @@ test("SH889: every declared surface carries the fields both readers render", () 
           + "  Every field here is rendered by something: titleKey and descriptionKey by both the"
           + " palette row and the hub tile, tone by the tile, section by the rail's grouping.")
     }
-    // fallbackRoute is a template literal for two entries, so it is matched in the raw body.
-    assert.match(item.raw, /fallbackRoute:/,
-      `SH889: ${item.id} declares no fallbackRoute. bentoNavTarget() falls back to it while a`
-        + " surface has not moved, so an entry without one navigates nowhere for the whole of"
-        + " Block AR.")
+    // SH935 — the route is declared through `at()`, which writes both fields the package reads.
+    assert.match(item.raw, /\.\.\.at\(/,
+      `SH889: ${item.id} declares no route. Every entry reaches the rail, the palette and a hub`
+        + " through bentoNavTarget(), which reads the two fields at() writes — an entry without"
+        + " one is a palette row that navigates nowhere.")
   }
 
   const ids = declared.map((item) => item.id)
@@ -101,28 +101,40 @@ test("SH889: every declared surface carries the fields both readers render", () 
     "SH889: two nav entries share an id, so one of them silently wins in every keyed render")
 })
 
-test("SH889: a migration is one line — bentoRoute is the only field that flips", () => {
+/**
+ * SH935 — the migration this pair of fields existed for is over.
+ *
+ * <p>`fallbackRoute` meant "where this surface lives now" and `bentoRoute` "where it has moved",
+ * with `bentoNavTarget()` preferring the second, so a migration was one line here. SH909 ended it
+ * by repointing `ROUTES.CONSOLE` at `/bento`, which moved every constant the fallbacks are built
+ * from — both fields now name the same path for all seventeen.</p>
+ *
+ * <p>The test this replaces counted how many entries had migrated and asserted that each kept the
+ * route it moved *from*. Once every entry declared its route through `at()` that count read
+ * **0/17** and the loop it guarded ran over an empty list: still green, still printing a progress
+ * bar, asserting nothing. A vacuous pass is the failure mode worth naming here, because the number
+ * it printed was the reassuring one.</p>
+ */
+test("SH935: one route per entry, written into both fields the package reads", () => {
   const declared = items()
-  const moved = declared.filter((item) => /bentoRoute:/.test(item.raw))
+  const routed = declared.filter((item) => /\.\.\.at\(/.test(item.raw))
 
-  // Printed on every run: this is the migration's own progress bar, and it is the number Block
-  // AR moves. Zero today, seventeen when SH909 can retire the console tree.
-  console.log(`SH889: ${moved.length}/${declared.length} surfaces point at a bento route`)
+  assert.equal(routed.length, declared.length,
+    `SH935: ${routed.length} of ${declared.length} entries declare their route through at().`
+      + " An entry spelling the fields itself is the state this closed: leaving bentoRoute off"
+      + " makes the command palette render 'Opens in console' for a surface that has no console"
+      + " to open, which is a wrong accessible name rather than a cosmetic slip.")
 
-  // The invariant, which holds vacuously today and stops being vacuous with the first migration:
-  // an entry that has moved must keep the route it moved *from*. `bentoNavTarget` prefers
-  // `bentoRoute`, so dropping the fallback looks harmless — until the bento route is reverted,
-  // which is the entire reason SH888 built a parallel tree instead of migrating in place.
-  for (const item of moved) {
-    assert.match(item.raw, /fallbackRoute:/,
-      `SH889: ${item.id} has a bentoRoute and no fallbackRoute. Reversibility is what the parallel`
-        + " tree buys; an entry that cannot point back at the console page is a slice that cannot"
-        + " be reverted without editing this file again.")
-  }
+  // The helper is what makes the line above worth anything: it has to write BOTH fields, because
+  // bentoNavTarget() prefers bentoRoute and the palette's marker reads its absence. A helper that
+  // wrote only the fallback would satisfy every assertion here and restore the defect.
+  assert.match(navSource, /const at = \(route: string\) => \(\{ bentoRoute: route, fallbackRoute: route \}\)/,
+    "SH935: at() no longer writes both route fields. bentoNavTarget() reads bentoRoute first and"
+      + " the palette reads its absence as 'this one opens the old console' — so a helper that"
+      + " sets one field silently reintroduces the mislabel on every entry at once.")
 
-  // And the entries are typed as the package's contract, which is what makes `bentoRoute`
-  // available at all. A local shape that merely resembled it would take the field and hand the
-  // rail something it does not read.
+  // And the entries are typed as the package's contract, which is what makes those fields mean
+  // anything. A local shape that merely resembled it would compile and navigate nowhere.
   assert.match(navSource, /interface ShioNavItem extends BentoNavItem/,
     "SH889: Shio's entry type no longer extends the package's. `bentoRoute` and `fallbackRoute`"
       + " are the package's fields and bentoNavTarget() is what reads them — a parallel local"

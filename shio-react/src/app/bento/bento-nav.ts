@@ -44,13 +44,16 @@ import { useDiscovery } from "@/hooks/use-discovery"
  * this is the file every one of Block AR's fourteen surface tasks appends to, so a shape settled
  * after five of them have shipped is a shape five tasks have to be reopened for.
  *
- * ## The two routes, and which one a migration flips
+ * ## The two routes, and the migration they were for (SH935)
  *
- * `fallbackRoute` is where a surface lives **today** — a console path, for all seventeen of them.
- * `bentoRoute` is where it lives once its own AR task has moved it, and is absent until then.
- * `bentoNavTarget(item)` prefers the bento one, so **a migration is one line here**: add
- * `bentoRoute`, and the rail, the palette and every hub follow. Nothing else in this file changes
- * and no second list has to be kept in step.
+ * `fallbackRoute` was where a surface lived and `bentoRoute` where it had moved, with
+ * `bentoNavTarget(item)` preferring the second — so a migration was one line here and the rail,
+ * the palette and every hub followed. That is what the pair was for, and the migration is over:
+ * SH909 repointed `ROUTES.CONSOLE` at `/bento`, which moved every constant the fallbacks are
+ * built from, so both fields name the same path for every surface below.
+ *
+ * `at(route)` writes it once into both. The package still owns the two-field shape, so collapsing
+ * them into a single `route` is a conversation with it rather than an edit here.
  *
  * ## Visibility is Shio's, and stays on Shio's type
  *
@@ -95,6 +98,17 @@ interface ShioNavItem extends BentoNavItem {
 }
 
 /**
+ * SH935 — one route, written once, into the two fields the package's contract still has.
+ *
+ * Leaving `bentoRoute` off was not merely untidy. The command palette reads its absence as "this
+ * one still opens the old console" and renders a marker whose screen-reader label is **"Opens in
+ * console"** — so sixteen of seventeen migrated surfaces announced a destination that no longer
+ * exists. A wrong accessible name is a worse defect than a stale field, and it is what made this
+ * a task rather than a cleanup.
+ */
+const at = (route: string) => ({ bentoRoute: route, fallbackRoute: route })
+
+/**
  * Every surface in this console, once.
  *
  * Ordered as the sidebar orders them, because a curator who has used the console should find the
@@ -105,28 +119,25 @@ interface ShioNavItem extends BentoNavItem {
  */
 const ITEMS: ShioNavItem[] = [
   // Content
-  // SH899 — the first entry to move. `bentoNavTarget` prefers `bentoRoute`, so adding this one
-  // line repoints the rail, the palette and every hub at once; `fallbackRoute` stays so the
-  // slice can be reverted without editing anything else.
-  { id: "sites", titleKey: "content.sites", descriptionKey: "nav.desc.sites", icon: IconFileText, section: "content", tone: "blue", bentoRoute: ROUTES.BENTO_CONTENT, fallbackRoute: `${ROUTES.CONSOLE}/content` },
-  { id: "search", titleKey: "content.searchTitle", descriptionKey: "nav.desc.search", icon: IconSearch, section: "content", tone: "blue", fallbackRoute: ROUTES.SEARCH },
-  { id: "post-types", titleKey: "content.postTypes", descriptionKey: "nav.desc.postTypes", icon: IconForms, section: "content", tone: "indigo", fallbackRoute: ROUTES.POST_TYPE_ROOT },
-  { id: "files", titleKey: "staticFile.title", descriptionKey: "nav.desc.files", icon: IconPhoto, section: "content", tone: "blue", fallbackRoute: ROUTES.FILES },
-  { id: "trash", titleKey: "content.trash", descriptionKey: "nav.desc.trash", icon: IconTrash, section: "content", tone: "slate", fallbackRoute: ROUTES.TRASH },
-  { id: "universal-editor", titleKey: "sidebar.universalEditor", descriptionKey: "nav.desc.universalEditor", icon: IconLayersIntersect, section: "content", tone: "violet", fallbackRoute: ROUTES.UNIVERSAL_EDITOR },
+  { id: "sites", titleKey: "content.sites", descriptionKey: "nav.desc.sites", icon: IconFileText, section: "content", tone: "blue", ...at(ROUTES.BENTO_CONTENT) },
+  { id: "search", titleKey: "content.searchTitle", descriptionKey: "nav.desc.search", icon: IconSearch, section: "content", tone: "blue", ...at(ROUTES.SEARCH) },
+  { id: "post-types", titleKey: "content.postTypes", descriptionKey: "nav.desc.postTypes", icon: IconForms, section: "content", tone: "indigo", ...at(ROUTES.POST_TYPE_ROOT) },
+  { id: "files", titleKey: "staticFile.title", descriptionKey: "nav.desc.files", icon: IconPhoto, section: "content", tone: "blue", ...at(ROUTES.FILES) },
+  { id: "trash", titleKey: "content.trash", descriptionKey: "nav.desc.trash", icon: IconTrash, section: "content", tone: "slate", ...at(ROUTES.TRASH) },
+  { id: "universal-editor", titleKey: "sidebar.universalEditor", descriptionKey: "nav.desc.universalEditor", icon: IconLayersIntersect, section: "content", tone: "violet", ...at(ROUTES.UNIVERSAL_EDITOR) },
 
   // Administration
-  { id: "admin", titleKey: "admin.title", descriptionKey: "nav.desc.admin", icon: IconShieldCog, section: "administration", tone: "amber", fallbackRoute: ROUTES.ADMIN_ROOT },
-  { id: "api-tokens", titleKey: "apiToken.title", descriptionKey: "nav.desc.apiTokens", icon: IconKey, section: "administration", tone: "amber", fallbackRoute: ROUTES.ADMIN_TOKENS },
-  { id: "tenants", titleKey: "tenantAdmin.title", descriptionKey: "nav.desc.tenants", icon: IconBuildingSkyscraper, section: "administration", tone: "amber", fallbackRoute: ROUTES.ADMIN_TENANTS, requires: "multiTenant" },
-  { id: "auth-providers", titleKey: "authProvider.title", descriptionKey: "nav.desc.authProviders", icon: IconFingerprint, section: "administration", tone: "amber", fallbackRoute: ROUTES.ADMIN_AUTH_PROVIDERS },
-  { id: "exchange-providers", titleKey: "exchangeProvider.title", descriptionKey: "nav.desc.exchangeProviders", icon: IconArrowsExchange, section: "administration", tone: "slate", fallbackRoute: ROUTES.ADMIN_EXCHANGE_PROVIDERS },
-  { id: "email-config", titleKey: "emailConfig.title", descriptionKey: "nav.desc.emailConfig", icon: IconMail, section: "administration", tone: "slate", fallbackRoute: ROUTES.ADMIN_EMAIL_CONFIG },
-  { id: "webhooks", titleKey: "siteWebhook.title", descriptionKey: "nav.desc.webhooks", icon: IconWebhook, section: "administration", tone: "slate", fallbackRoute: ROUTES.ADMIN_WEBHOOKS },
-  { id: "marketplace", titleKey: "marketplace.title", descriptionKey: "nav.desc.marketplace", icon: IconPackages, section: "administration", tone: "violet", fallbackRoute: ROUTES.ADMIN_MARKETPLACE },
-  { id: "activity", titleKey: "activity.title", descriptionKey: "nav.desc.activity", icon: IconHistory, section: "administration", tone: "slate", fallbackRoute: ROUTES.ADMIN_ACTIVITY },
-  { id: "review", titleKey: "review.title", descriptionKey: "nav.desc.review", icon: IconRobot, section: "administration", tone: "rose", fallbackRoute: ROUTES.ADMIN_REVIEW },
-  { id: "graphql", titleKey: "graphql.title", descriptionKey: "nav.desc.graphql", icon: IconBrandGraphql, section: "administration", tone: "violet", fallbackRoute: ROUTES.GRAPHQL_ROOT },
+  { id: "admin", titleKey: "admin.title", descriptionKey: "nav.desc.admin", icon: IconShieldCog, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_ROOT) },
+  { id: "api-tokens", titleKey: "apiToken.title", descriptionKey: "nav.desc.apiTokens", icon: IconKey, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_TOKENS) },
+  { id: "tenants", titleKey: "tenantAdmin.title", descriptionKey: "nav.desc.tenants", icon: IconBuildingSkyscraper, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_TENANTS), requires: "multiTenant" },
+  { id: "auth-providers", titleKey: "authProvider.title", descriptionKey: "nav.desc.authProviders", icon: IconFingerprint, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_AUTH_PROVIDERS) },
+  { id: "exchange-providers", titleKey: "exchangeProvider.title", descriptionKey: "nav.desc.exchangeProviders", icon: IconArrowsExchange, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_EXCHANGE_PROVIDERS) },
+  { id: "email-config", titleKey: "emailConfig.title", descriptionKey: "nav.desc.emailConfig", icon: IconMail, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_EMAIL_CONFIG) },
+  { id: "webhooks", titleKey: "siteWebhook.title", descriptionKey: "nav.desc.webhooks", icon: IconWebhook, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_WEBHOOKS) },
+  { id: "marketplace", titleKey: "marketplace.title", descriptionKey: "nav.desc.marketplace", icon: IconPackages, section: "administration", tone: "violet", ...at(ROUTES.ADMIN_MARKETPLACE) },
+  { id: "activity", titleKey: "activity.title", descriptionKey: "nav.desc.activity", icon: IconHistory, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_ACTIVITY) },
+  { id: "review", titleKey: "review.title", descriptionKey: "nav.desc.review", icon: IconRobot, section: "administration", tone: "rose", ...at(ROUTES.ADMIN_REVIEW) },
+  { id: "graphql", titleKey: "graphql.title", descriptionKey: "nav.desc.graphql", icon: IconBrandGraphql, section: "administration", tone: "violet", ...at(ROUTES.GRAPHQL_ROOT) },
 ]
 
 /** Every id declared above, for a reader that wants to check coverage without importing data. */
