@@ -110,6 +110,13 @@ class ShAllowListIsGroundedTest {
         NOT_A_CONTROLLER.put("/index.html", "the console shell; the app decides what an anonymous visitor sees");
         NOT_A_CONTROLLER.put("/login/**", "the OAuth2 authorization redirect endpoints, before authentication");
         NOT_A_CONTROLLER.put("/console/**", "the React console's client-side routes, all serving the shell");
+        // SH926 — the bento route tree, a sibling of /console rather than a child of it (SH888).
+        // Grounded the same way and for the same reason: what these serve is the shell, and every
+        // API it then calls is governed by the rules below.
+        NOT_A_CONTROLLER.put("/bento", "the bento shell's index route, serving the same SPA shell");
+        NOT_A_CONTROLLER.put("/bento/**", "the bento route tree's client-side routes (SH888)");
+        NOT_A_CONTROLLER.put("/bento-vocabulary", "the bento layer's proving page (SH887), outside every shell");
+        NOT_A_CONTROLLER.put("/bento-vocabulary/**", "the same page's client-side routes");
         NOT_A_CONTROLLER.put("/graphiql/**", "the GraphiQL explorer's static assets; the /graphql endpoint itself is CDA-scoped");
         NOT_A_CONTROLLER.put("/__tur/**", "the Turing integration's callback prefix");
         NOT_A_CONTROLLER.put("/setup", "the first-run setup shell (SH6), open only until an admin exists");

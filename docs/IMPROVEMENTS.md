@@ -1044,28 +1044,6 @@ taking a full entity shape has the same hole, and a curator cannot see it becaus
 create succeeded. The deliverable is the sweep, not the one endpoint — which endpoints
 mint, which trust, and which of those a client can reach with a blank key.
 
-### LV.18 The whole block was proved on a server nobody ships (SH926)
-
-`ShStaticResourceConfiguration.REACT_CONTEXTS` is `{"/login", "/setup", "/console"}`,
-and those three strings are what a packaged instance forwards to the React shell.
-`/bento`, `/bento/content`, `/bento/admin/review` and `/bento-vocabulary` are not among
-them, so every one of them answers **404** on the jar. Measured, not inferred:
-`/console` and `/console/content` return 200 from the same instance, in the same second.
-
-Nothing caught it because every live probe in Block AR ran against the Vite dev server,
-which serves `index.html` for any path that is not a file. That is the whole point of a
-dev server and it is why fourteen tasks could report `n/n probes ok` on surfaces a
-curator cannot reach by typing the URL, following a bookmark, or being redirected. The
-console-check workflow does run against the jar at `:2710` — so the answer to "why did
-CI not say so" is that it does, and the block never read it.
-
-The fix is two strings and a test; the finding is the shape of the mistake. **A surface
-is not migrated until the thing that serves it in production serves it.** SH908's own
-bento catch-all is the sharpest case: a route that exists to catch a stale link during a
-cutover, unreachable on the only deployment where a cutover happens. The assertion
-belongs where the contexts are declared, so that adding a route tree without adding its
-context fails a Java test rather than a browser nobody opened.
-
 ### LV.19 One page, two answers, and only one of them about Shio (SH927)
 
 SH908 gave the GraphQL explorer its first live probe, and it came back with two
@@ -1089,6 +1067,30 @@ the documented way, against `:5173`. **A gate that is red for the environment is
 people learn to skim**, which is the state SH579 exists to prevent one level up. Either
 make the workers resolve in dev, or teach the probe the difference and print which
 server answered.
+
+### LV.20 A scanner that drops the container and keeps the children (SH928)
+
+`test/support/jsx-elements.mjs` exists because a regex is fooled by `>` inside a prop,
+and its own note says so. It has a second failure of the same kind, one level up:
+`bodyOf` counts every `<Tag` before the next `</Tag>` as a **nested open**, self-closing
+children included. A container with thirty self-closing children of its own tag
+therefore never balances, and the element is dropped.
+
+Measured rather than reasoned, on the smallest case that shows it — `<P attr><P /><P
+/></P>` returns **two** elements, the two children, and not the parent. On the real
+file: `findElements(App.tsx, "Route")` returns **48** of 50 raw `<Route` occurrences,
+and the two it loses are precisely the console tree and the bento tree.
+
+The direction is what makes it worth a task. A scanner that drops an element
+**under-reports**: a lint asking "does any of these carry `onClick`" answers no about a
+container it never saw, which is a clean run rather than a finding. Three readers use it
+today — `chrome-adapter`, `bento-bespoke-slice`, `no-duplicate-components` — and none of
+them is wrong right now, because none of their tags nests self-closed inside itself.
+That is a property of today's markup, not of the tool.
+
+SH926 worked around it by counting tag depth itself and exporting `endOfOpeningTag`. The
+fix is to have `bodyOf` skip self-closing opens, and the assertion is the three-line
+case above: a parent and its two children, all found.
 
 ## LVI What Turing's index never receives
 

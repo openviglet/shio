@@ -62,8 +62,28 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 
     private static final int CACHE_SECONDS = 3600 * 24;
 
-    /** React SPA contexts served from {@code classpath:/public/} (mirrors Turing's TurStaticResourceConfiguration). */
-    private static final String[] REACT_CONTEXTS = { "/login", "/setup", "/console" };
+    /**
+     * React SPA contexts served from {@code classpath:/public/} (mirrors Turing's TurStaticResourceConfiguration).
+     *
+     * <p>SH926 — {@code /bento} and {@code /bento-vocabulary} were missing, and that made every
+     * surface Block AR migrated <b>404 on a packaged instance</b>. The console's parallel bento
+     * route tree (SH888) is a sibling of {@code /console}, not a child, so nothing here matched
+     * it: measured on a running jar, {@code /console} answered 200 and {@code /bento} answered
+     * 404, in the same second.</p>
+     *
+     * <p>Fourteen tasks reported green live probes over it, because every one of them ran against
+     * the Vite dev server, which serves {@code index.html} for any path that is not a file. That
+     * is what a dev server is for, and it is why the whole block could be proved on a server
+     * nobody ships. <b>A surface is not migrated until the thing that serves it in production
+     * serves it</b> — {@code ShSpaContextIsServedTest} asks that of every entry here, and
+     * {@code spa-contexts.test.mjs} asks the other direction: that every top-level route tree the
+     * React app declares appears in this array.</p>
+     *
+     * <p>{@code /bento-vocabulary} is its own entry rather than a path under {@code /bento}: it is
+     * a sibling segment (SH887 mounts it outside every shell, so the tenant-segment reader cannot
+     * mistake it for a tenant), and {@code /bento/**} does not match it.</p>
+     */
+    private static final String[] REACT_CONTEXTS = { "/login", "/setup", "/console", "/bento", "/bento-vocabulary" };
 
     private final ShFileSourceProperties fileSourceProperties;
     private final ShImageTransformPipeline imageTransformPipeline;

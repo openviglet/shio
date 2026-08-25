@@ -68,8 +68,17 @@ export function findElements(source, tagName) {
   return found
 }
 
-/** The index of the `>` closing an opening tag, skipping any inside `{…}` or a string. */
-function endOfOpeningTag(source, from) {
+/**
+ * The index of the `>` closing an opening tag, skipping any inside `{…}` or a string.
+ *
+ * Exported since SH926: a caller that needs **nesting** rather than bodies cannot use
+ * `findElements` for it. `bodyOf` treats every `<Tag` before the next `</Tag>` as a nested open,
+ * including self-closing ones, so a container with thirty self-closing children of the same tag —
+ * which is exactly what `App.tsx`'s route trees are — never balances and the element is dropped.
+ * Reading tag ends directly is the honest way to walk that, and it is why `spa-contexts.test.mjs`
+ * does its own depth counting instead.
+ */
+export function endOfOpeningTag(source, from) {
   let depth = 0
   let quote = null
   for (let i = from; i < source.length; i++) {

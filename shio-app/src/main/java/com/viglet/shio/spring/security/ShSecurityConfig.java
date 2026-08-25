@@ -445,6 +445,16 @@ public class ShSecurityConfig {
                                 // refuses the next reopening.
                                 mvc.matcher("/console/**"),
                                 mvc.matcher("/*/console/**"),
+                                // SH926 — the bento route tree, on the same footing as /console
+                                // and for the same reason: what is public here is the SPA shell,
+                                // not anything it reads. Every API the console calls sits under
+                                // the rules below, so a shell served to an anonymous browser can
+                                // do nothing until the curator logs in — and without this the
+                                // shell itself is what a stale bookmark cannot load.
+                                mvc.matcher("/bento"),
+                                mvc.matcher("/bento/**"),
+                                mvc.matcher("/bento-vocabulary"),
+                                mvc.matcher("/bento-vocabulary/**"),
                                 mvc.matcher("/graphiql/**"),
                                 mvc.matcher("/store/**"),
                                 mvc.matcher("/file_source/**"),

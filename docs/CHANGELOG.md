@@ -1640,6 +1640,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH906** — The curator's approval surface is bento, the two read-mostly pages keep their table under a hero, and the marketplace catalogue stops being reachable by mouse only.
 - **SH907** — The visual editor routes outside the bento shell, because h-screen inside a 64px sticky header put the preview 48px below the fold; the bridge click-through still skips on a dev topology.
 - **SH908** — Both render in bento — and the lint the migration needed found a live crash: a bento page whose adapter header had no provider rendered blank.
+- **SH926** — /bento and /bento-vocabulary are SPA contexts, proved by a request rather than a reading — and by a jar that now answers 200 where it answered 404.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

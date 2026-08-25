@@ -1825,3 +1825,63 @@ off a rendered page rather than trusted to a comment.
 
 Census after this task: **43 pages, Card 17, PageHeader 18, Sidebar 1, twenty-four empty** — and
 50/52 live probes on the dev server, the two failures being SH927 rather than either page.
+
+## The whole block was proved on a server nobody ships (SH926)
+
+`ShStaticResourceConfiguration.REACT_CONTEXTS` was `{"/login", "/setup", "/console"}`, and those
+three strings are the whole of what a packaged instance forwards to the React shell. The bento tree
+is a **sibling** of `/console` (SH888), so nothing matched it. Measured on a running jar, in the
+same second:
+
+| path | jar | dev server |
+|---|---|---|
+| `/console` | 200 | 200 |
+| `/console/content` | 200 | 200 |
+| `/bento` | **404** | 200 |
+| `/bento/content` | **404** | 200 |
+| `/bento-vocabulary` | **404** | 200 |
+
+Fourteen migrated surfaces, unreachable by URL on the only deployment anybody runs — a typed
+address, a bookmark, a link in an e-mail, a redirect. SH908's bento catch-all is the sharpest case:
+a route whose whole purpose is to catch a stale link during a cutover, 404ing on the one deployment
+where a cutover happens.
+
+**Every live probe in Block AR ran against the Vite dev server**, which serves `index.html` for any
+path that is not a file. That is what a dev server is for, and it is why "the surface renders" and
+"the surface is reachable" are different claims — the block only ever checked the first, fourteen
+times, and reported `n/n probes ok` each time. The console-check workflow does run against the jar,
+which means the answer to "why did CI not say so" is that it did.
+
+### Two readers, because the two sides fail differently
+
+- [`ShSpaContextIsServedTest`](../../shio-app/src/test/java/com/viglet/shio/spring/ShSpaContextIsServedTest.java)
+  issues the request rather than reading the array back: an exact context must forward to
+  `/index.html`, a client-side route under it must answer 200 with the shell, and a path under no
+  context must still 404 — the last one is not decoration, because a fallback that became global
+  would make the other two vacuous.
+- [`spa-contexts.test.mjs`](../../shio-react/test/spa-contexts.test.mjs) asks it from the side that
+  *changes*: every top-level route tree `App.tsx` mounts is a declared context. A new tree is added
+  in the React app by somebody with no reason to be thinking about a Java file two modules away,
+  which is exactly how SH888 added one.
+
+`/bento` and `/bento-vocabulary` also join the `permitAll` block beside `/console/**`: what is
+public there is the shell, not anything it reads, and every API it calls is governed by the rules
+under it. `ShAllowListIsGroundedTest` requires each new entry to be declared as non-controller with
+its reason, which is where those two say so.
+
+### Two things the reader got wrong before it got them right
+
+Both were silent, and both are the reason it is written the way it is.
+
+- **A lazy `<Route[\s\S]*?(\/>|>)`** reads `<Route path={ROUTES.BENTO} element={<BentoRootPage />}>`
+  as self-closing — the match ends at the `/>` of the element prop — so every child of the tree read
+  as top-level and the reader demanded an SPA context for `/content`. `findElements` fails the
+  *other* way: `bodyOf` counts every `<Route` before the next `</Route>` as a nested open,
+  self-closing children included, so a parent with thirty of them never balances and is dropped
+  entirely. `endOfOpeningTag` is exported now and the depth is counted over tags in source order.
+- **`ROUTES.CONSOLE` is not a literal.** It is `scoped(consolePath)`, and `consolePath` is
+  `import.meta.env.VITE_CONSOLE_CONTEXT_PATH` — the console's context path is a build-time setting,
+  which is a real coupling to the Java array. The first draft skipped what it could not parse and
+  printed four contexts with `/console` silently missing: a clean run over the one route every
+  curator uses. It resolves `.env` now and throws if it cannot, and the vacuity test asserts the
+  console tree is among the routes found.
