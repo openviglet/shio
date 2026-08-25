@@ -864,7 +864,75 @@ const PROVISIONED = "Site the console smoke check walks"
 
 const isOurs = (site) => site?.description === PROVISIONED
 
+/**
+ * SH927 — <b>which server answered, and is it even this product?</b>
+ *
+ * `--base` defaults to `http://localhost:5173`, which is not a Shio address. It is *the* Vite
+ * default, so on any machine holding more than one Viglet front end it is whichever dev server was
+ * started last. Measured here: `:5173` was answering `<title>Turing ES Administration Console</title>`
+ * and serving `turing-app/src/App.tsx`, and this check would have walked it — logging in, screenshotting
+ * and reporting on a different product's console without one line saying so.
+ *
+ * That is worse than the redness SH927 was filed about. A check that is red for the environment gets
+ * skimmed; a check that answers confidently about the wrong application gets *believed*. The title in
+ * `index.html` is the cheapest thing that tells them apart, it is written by this repository, and
+ * `console-check-shape.test.mjs` holds the two together so it cannot drift silently.
+ *
+ * The dev/jar half is the other question the same probe answers: Vite serves its client shim at
+ * `/@vite/client` as JavaScript, and the jar has no such route. Printed on every run, because the
+ * two servers do not give the same answers — the Monaco workers fall back to the main thread under
+ * the dev server and start normally from the jar, which is the rest of SH927.
+ */
+const SHIO_TITLE = "Viglet Shio CMS"
+
+async function identifyServer() {
+  let dev = false
+  try {
+    const shim = await fetch(`${BASE}/@vite/client`)
+    dev = shim.ok && (shim.headers.get("content-type") ?? "").includes("javascript")
+  } catch {
+    // Not reachable — treat as "not the dev server" and let the title decide the rest.
+  }
+
+  let title = ""
+  try {
+    title = (/<title>([^<]*)<\/title>/i.exec(await (await fetch(BASE)).text())?.[1] ?? "").trim()
+  } catch {
+    // Left blank, which fails the identity check below rather than passing it.
+  }
+
+  return { dev, title, isShio: title === SHIO_TITLE, kind: dev ? "vite dev server" : "jar" }
+}
+
 async function main() {
+  /*
+   * First, before the API is asked anything and before a browser is launched. It is two requests,
+   * it needs nothing running but the origin under test, and everything after it is meaningless if
+   * this is the wrong front end — including the discovery call, which would provision a fixture
+   * site for a console that is never going to be opened.
+   */
+  const server = await identifyServer()
+  console.log(`server: ${server.kind} at ${BASE} — ${JSON.stringify(server.title || "(no title)")}`)
+  if (!server.isShio) {
+    console.error(
+      `\nSH927: ${BASE} is not answering as Shio.\n`
+      + `  Expected <title>${SHIO_TITLE}</title>, got ${JSON.stringify(server.title || "(nothing)")}.\n`
+      + "  :5173 is the Vite default, so it is whichever front end was started last — this check has\n"
+      + "  walked another product's console before, and reported on it as though it were this one.\n"
+      + "  Start this console (pnpm -C shio-react dev), or point the check at the right origin:\n"
+      + "    pnpm -C shio-react console:check --base http://localhost:2710\n"
+      + "    SHIO_CONSOLE_URL=http://localhost:2710 pnpm -C shio-react console:check\n")
+    /*
+     * `exitCode` and return, not `process.exit`. Killing the process here tears down the sockets
+     * the two identity requests still hold, and libuv aborts on Windows — measured:
+     * `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` and an exit status of **127**. A
+     * gate whose refusal exits 127 instead of 1 is a gate a CI script reads as "crashed", which is
+     * a different thing from "said no".
+     */
+    process.exitCode = 1
+    return
+  }
+
   const { site, routes } = await discoverRoutes(flag("site", process.env.SHIO_SITE))
   await mkdir(OUT, { recursive: true })
 
@@ -875,7 +943,7 @@ async function main() {
     extraHTTPHeaders: { Authorization: AUTH },
   })
 
-  const report = { base: BASE, api: API, site: site.name, probes: [] }
+  const report = { base: BASE, api: API, site: site.name, server: server.kind, probes: [] }
 
   for (const route of routes) {
     const page = await context.newPage()

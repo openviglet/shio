@@ -2090,6 +2090,58 @@ still push crumbs into a provider nothing renders. **SH934** records the other l
 `tenant-switcher.tsx` was deleted unreferenced, and it was the only caller of
 `POST /tenant/{name}/switch`.
 
+## The check was walking another product's console (SH927, probe half)
+
+SH927 was filed about redness: the GraphQL explorer's Monaco workers fall back to the main thread
+under the Vite dev server and start normally from the jar, so `pnpm -C shio-react console:check` is
+permanently red on two probes locally and green in CI. Going to reproduce it turned up something
+worse in the same instrument.
+
+**`--base` defaults to `http://localhost:5173`, which is not a Shio address.** It is *the* Vite
+default, so on a machine holding more than one Viglet front end it is whichever dev server was
+started last. Measured here: `:5173` was serving `turing-app/src/App.tsx` under
+`<title>Turing ES Administration Console</title>`, and this check would have logged in,
+screenshotted every route and written a report about it without one line saying so.
+
+That is the more dangerous half. A check that is red for the environment gets skimmed; a check that
+answers confidently about the wrong application gets **believed**.
+
+### What identifies a server, and why the title
+
+Two requests, before the API is asked anything and before a browser starts — everything after is
+meaningless if this is the wrong front end, including the discovery call, which would provision a
+fixture site for a console nobody is going to open.
+
+| question | signal |
+|---|---|
+| dev server or jar? | Vite serves `/@vite/client` as JavaScript; the jar has no such route |
+| is it Shio? | `<title>` in `index.html` — written by this repository and by nothing else |
+
+`console-check-shape.test.mjs` holds the expected title against `index.html` itself, so a title
+edited in one place turns the gate off loudly rather than quietly: a check that refuses *every*
+origin reads exactly like a broken server.
+
+**Verified in both directions, live.** Against `:5173` (Turing's dev server) it refuses and names
+what it found; against a Shio dev server on `:5199` it prints
+`server: vite dev server at http://localhost:5199 — "Viglet Shio CMS"` and goes on to fail at
+discovery, which is a different failure and the correct one with no backend running.
+
+### The refusal exits 1, and getting there took a measurement
+
+The first version called `process.exit(1)`, which tears down the sockets the two identity requests
+still hold. Windows aborts: `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`, and the status
+is **127**. A gate whose refusal exits 127 is one a CI script reads as *crashed* rather than as
+*said no*. `process.exitCode` and a return; the reader forbids `process.exit(` by name.
+
+### What this did not fix
+
+**The workers still fall back under the dev server.** Reproducing it needs the explorer to actually
+mount, which needs a backend serving a CDA token, and there was none running here — the page under
+test never initialised Monaco, so the second artefact SH927 describes (an error event with no
+message) was never observed. Writing a rule that forgives *unnamed* errors on the strength of a
+report would mask real ones, which is the failure mode this whole file is written against. SH927
+stays open for that half.
+
 ## What a curator has to relearn, and the two things nobody can (SH911)
 
 The published documentation described the console this block replaced. Rewriting it is in

@@ -101,6 +101,53 @@ test("SH897: no post editor is opened for a static file", () => {
       + " The bare 404 it drove into is SH921.")
 })
 
+test("SH927: the check refuses an origin that is not answering as Shio", () => {
+  /*
+   * `--base` defaults to :5173, which is the Vite default rather than a Shio address — on a machine
+   * holding more than one Viglet front end it is whichever dev server was started last. Measured:
+   * :5173 was serving `turing-app/src/App.tsx` under the title "Turing ES Administration Console",
+   * and this check would have logged in, screenshotted and reported on it without a word.
+   *
+   * Red-for-the-environment is what SH927 was filed about and it is the smaller problem. A check
+   * that answers confidently about the wrong application is one people believe.
+   */
+  assert.match(source, /const SHIO_TITLE = "Viglet Shio CMS"/,
+    "SH927: the check no longer knows what title this console serves, so it cannot tell its own "
+      + "front end from another product's on the same port.")
+  assert.match(source, /process\.exitCode = 1/,
+    "SH927: the identity check no longer stops the run with a failing status. Reporting the "
+      + "mismatch and probing anyway produces a full report about somebody else's console, which "
+      + "is the outcome this prevents.")
+
+  // And it must NOT be `process.exit`. Measured: exiting there tears down the sockets the identity
+  // requests still hold and libuv aborts on Windows, so the refusal left status 127 - which a CI
+  // script reads as "crashed" rather than "said no".
+  assert.doesNotMatch(source, /process\.exit\(/,
+    "SH927: process.exit() is back. It kills the run while the two identity fetches are still "
+      + "open, and Windows aborts with UV_HANDLE_CLOSING and an exit status of 127. Set "
+      + "process.exitCode and return.")
+
+  // The marker and the file that serves it, held together: a title edited in index.html alone
+  // turns this gate off, and a check that refuses every origin reads exactly like a broken server.
+  const indexHtml = readFileSync(join(HERE, "..", "index.html"), "utf8")
+  const title = /<title>([^<]*)<\/title>/i.exec(indexHtml)?.[1]?.trim()
+  const expected = /const SHIO_TITLE = "([^"]+)"/.exec(source)?.[1]
+  assert.equal(title, expected,
+    `SH927: index.html serves <title>${title}</title> and the check expects `
+      + `${JSON.stringify(expected)}. The two have drifted, so every run now refuses to start.`)
+})
+
+test("SH927: which server answered is printed, because the two do not behave the same", () => {
+  // Monaco's workers start from the jar and fall back to the main thread under the dev server, so
+  // "it was red locally" and "it is broken" are different claims and the log has to separate them.
+  assert.match(source, /@vite\/client/,
+    "SH927: the check no longer probes for the Vite client shim, which is the one thing that "
+      + "distinguishes the dev server from the jar without asking the operator to remember.")
+  assert.match(source, /server: \$\{server\.kind\}/,
+    "SH927: the run no longer prints which server answered. Two probes behave differently between "
+      + "them, so a report that does not say which one it walked cannot be compared with another.")
+})
+
 test("SH897: the reader is not vacuous — it reads the real script", () => {
   assert.ok(source.length > 10_000,
     `SH897: console-check.mjs read as ${source.length} characters, which is not the script — every`
