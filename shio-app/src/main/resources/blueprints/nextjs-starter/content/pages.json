@@ -11,8 +11,8 @@
       "folder": "/pages",
       "data": {
         "title": "Welcome to {{projectName}}",
-        "summary": "The page the starter renders first — proof that the front end, the CDA token and the site are wired to each other.",
-        "content": "<p>This page was created by the <code>nextjs-starter</code> blueprint. It exists so the project has something to render before you have written anything: open <code>/welcome</code> in the dev server and you are looking at content that came out of the CMS.</p><p>The catch-all route at <code>app/[...slug]/page.tsx</code> resolves a post by its friendly URL, so this page's identity is <code>/welcome</code> — renaming it is a move, not a re-creation.</p><p>Edit it, or delete it and publish your own.</p>"
+        "summary": "The page the starter renders first: proof that the front end, the CDA token and the site are wired to each other.",
+        "content": "<p>This page was created by the <code>nextjs-starter</code> blueprint. It exists so the project has something to render before you have written anything: open <code>/welcome</code> in the dev server and you are looking at content that came out of the CMS.</p><p>The catch-all route at <code>app/[...slug]/page.tsx</code> resolves a post by its friendly URL, so this page's identity is <code>/welcome</code>, and renaming it is a move rather than a re-creation.</p><p>Edit it, or delete it and publish your own.</p>"
       },
       "publish": true
     },

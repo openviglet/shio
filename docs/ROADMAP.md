@@ -26,8 +26,6 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH930** (deps: —) **the marketplace pages republish blueprint copy the site's em-dash rule does not reach** — Sixteen em dashes in the shipped blueprints' field help and sample content reach shio.viglet.org, and those same strings are what a curator reads in the console. → §LVIII.2
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

@@ -36,7 +36,7 @@
       "data": {
         "headline": "Welcome to {{blogTitle}}",
         "summary": "Why this blog exists and what you can expect to find here.",
-        "body": "<p>This is the first post on {{blogTitle}}. It exists so that the Article post-type has a worked example: a headline, a summary used in listings, and a body written as HTML.</p><p>Replace it — or delete it — once you have something to say.</p>",
+        "body": "<p>This is the first post on {{blogTitle}}. It exists so that the Article post-type has a worked example: a headline, a summary used in listings, and a body written as HTML.</p><p>Replace it, or delete it, once you have something to say.</p>",
         "author": "{{authorName}}",
         "tags": [
           "announcements"

@@ -94,7 +94,7 @@
           },
           {
             "question": "Can we get our data out?",
-            "answer": "<p>Yes — and say how.</p>"
+            "answer": "<p>Yes, and say how.</p>"
           }
         ]
       },
@@ -119,7 +119,7 @@
       "folder": "/",
       "data": {
         "title": "{{headline}}",
-        "description": "{{brand}} — {{headline}}",
+        "description": "{{brand}}: {{headline}}",
         "sections": [
           "/sections/get-started/hero",
           "/sections/get-started/features",

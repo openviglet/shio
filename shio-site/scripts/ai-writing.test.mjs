@@ -32,7 +32,7 @@
 // than of a rendered DOM.
 
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -100,11 +100,16 @@ function emitted(body) {
  * <p>Named rather than walked because the rest of `scripts/` is instruments, and a test file that
  * has to quote the mark it forbids is not a page anybody reads.</p>
  *
- * <p><b>`public/marketplace/**` is deliberately outside all of this (SH930).</b> It is generated
- * from `shio-app/src/main/resources/blueprints/**` and republishes those bytes rather than
- * restating them, which is the whole design of that channel. Sixteen em dashes live there, in
- * field help a curator also reads in the console, so moving them is a decision about the product
- * and not about this page. It is a named exception here so that it stays a decision.</p>
+ * <p><b>`public/marketplace/**` is deliberately outside all of this.</b> It is generated from
+ * `shio-app/src/main/resources/blueprints/**` and republishes those bytes rather than restating
+ * them, which is the whole design of that channel — so the copy is not this page's to rewrite.</p>
+ *
+ * <p><b>SH930 decided how far the em-dash rule reaches, and the answer split the sixteen.</b> Six
+ * were sample content, which becomes a page the user publishes: those are prose handed to a reader
+ * and they were rewritten, with `SH930: sample content …` below holding the tree so a seventh
+ * cannot arrive with the next blueprint. Ten are field help and blueprint summaries, which are
+ * product chrome a curator reads in the console; they stay, alongside the 38 of the same kind in
+ * the console's own bundles. The reasoning is at that test.</p>
  */
 const PAGES = ["public/llms.txt", "public/og.svg", "index.html"];
 const SCRIPTS = [
@@ -226,6 +231,69 @@ test("SH929: the published copy carries no em dash", () => {
       + "and it hides which — so read the sentence, write what it was asking for, and cut the "
       + `aside where it was carrying nothing.\n\n${found.length} occurrence(s):\n${found.join("\n")}`,
   );
+});
+
+/**
+ * SH930 — the rule follows the prose to its reader, and stops where the product begins.
+ *
+ * <p>`public/marketplace/**` republishes `shio-app/src/main/resources/blueprints/**` byte for byte,
+ * so the em dashes the catalogue serves are not the site's to rewrite. SH930 was filed to decide
+ * whether the rule reaches them, with two answers offered: published prose everywhere this project
+ * writes, or the site alone. Reading the sixteen split them, and the split is the decision.</p>
+ *
+ * <ul>
+ *   <li><b>Sample content</b> — `content/*.json` — becomes a page the user publishes. "Replace it
+ *       — or delete it — once you have something to say" is prose Shio hands a reader on somebody
+ *       else's marketing site, which is exactly what the rule is about. Six of them; all rewritten,
+ *       and this test is what keeps a seventh from arriving with the next blueprint.</li>
+ *   <li><b>Field help and blueprint summaries</b> — `post-types/*.json`, `blueprint.json` — are
+ *       product chrome a curator reads inside the console. Ten of them, and they stay. The console's
+ *       own bundles carry <b>38</b> more of the same kind: rewriting ten while the curator meets
+ *       thirty-eight on the surrounding screen makes the product less consistent, not more, and the
+ *       task's own phrase is "published prose", which UI labels are not.</li>
+ * </ul>
+ *
+ * <p>So the exception above narrows rather than disappearing. If the console's strings are ever
+ * taken, these ten go in that pass and this note is where to start.</p>
+ */
+const BLUEPRINT_CONTENT = join(repo, "shio-app", "src", "main", "resources", "blueprints");
+
+function sampleContentFiles() {
+  const out = [];
+  for (const name of readdirSync(BLUEPRINT_CONTENT)) {
+    const dir = join(BLUEPRINT_CONTENT, name, "content");
+    if (!existsSync(dir)) continue;
+    for (const file of readdirSync(dir)) {
+      if (file.endsWith(".json")) {
+        out.push({ path: `blueprints/${name}/content/${file}`, body: readFileSync(join(dir, file), "utf8") });
+      }
+    }
+  }
+  return out;
+}
+
+test("SH930: sample content a blueprint publishes carries no em dash", () => {
+  const files = sampleContentFiles();
+
+  // Never green on nothing: this reaches across modules, and a moved blueprints tree would report
+  // a clean sweep of zero files, which is the shape every held list here is written against.
+  assert.ok(files.length >= 3,
+    `SH930: only ${files.length} blueprint content file(s) found under ${BLUEPRINT_CONTENT}. The `
+      + "tree moved and this reader is scanning nothing, which reads exactly like a clean result.");
+
+  const found = [];
+  for (const { path, body } of files) {
+    for (const line of body.split("\n")) {
+      if (EM_DASH.test(line)) found.push(`  ${path}: ${line.trim().slice(0, 96)}`);
+    }
+  }
+
+  assert.deepEqual(found.length, 0,
+    "SH930: a blueprint's sample content carries an em dash. This is not console text: it becomes "
+      + "a published page on the site of whoever applied the blueprint, so it is prose Shio hands "
+      + "a reader.\n\nField help and blueprint summaries are deliberately NOT covered by this rule "
+      + "— see the note above, and the 38 of the same kind in the console's own bundles.\n\n"
+      + `${found.length} occurrence(s):\n${found.join("\n")}`);
 });
 
 /* ── The counts, each read back from the surface it describes ──────────────────────────── */

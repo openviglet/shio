@@ -819,3 +819,36 @@ request options on an apply, not manifest keys, and whether either is needed dep
 instance rather than on the package. A publisher may declare them about their own package; the
 generator will not guess. Worth knowing when reading SH646's consent story: nothing validates a
 publisher's `requires` against what the package actually does.
+
+## A blueprint's strings have two audiences, and only one is published prose (SH930)
+
+SH929 took the em dash out of the public site and stopped at `public/marketplace/**`, which is
+generated from `blueprints/**` and republishes those bytes rather than restating them. Sixteen live
+there. SH930 was filed to decide whether the rule reaches them, offering two answers: published
+prose everywhere this project writes, or the site alone.
+
+**Reading the sixteen split them, and the split is the decision.**
+
+| kind | where | count | verdict |
+|---|---|---|---|
+| sample content | `<blueprint>/content/*.json` | 6 | **rewritten** — it becomes a page the user publishes |
+| field help, blueprint summary | `post-types/*.json`, `blueprint.json` | 10 | kept — product chrome a curator reads |
+
+The line is the audience, not the module. `"Replace it — or delete it — once you have something to
+say"` is prose Shio hands a reader on somebody else's marketing site; `{{brand}} — {{headline}}` is
+the title of a landing page a new instance publishes. Those are the rule's subject. `"Friendly URLs
+in render order — a MenuItem, a nested Menu, or a page"` is a form label, and the task's own phrase
+is *published prose*, which a form label is not.
+
+The measurement that settled the second half: the console's own i18n bundles carry **38** em dashes
+of exactly that kind. Rewriting ten field-help strings while a curator meets thirty-eight on the
+surrounding screen makes the product less consistent, not more — so the ten stay with the
+thirty-eight, and if that set is ever taken they go in the same pass.
+
+`SH930: sample content a blueprint publishes carries no em dash` in
+[`shio-site/scripts/ai-writing.test.mjs`](../../shio-site/scripts/ai-writing.test.mjs) holds the
+`content/` tree so a seventh cannot arrive with the next blueprint. It lives beside the site's own
+rule because that is where the rule is owned, it reaches across modules the way
+`scripts/marketplace.mjs` already does, and it refuses to pass on an empty sweep — a moved
+blueprints tree would otherwise report a clean result. Verified by restoring one dash: the rule
+fires and names the file.

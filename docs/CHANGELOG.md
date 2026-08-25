@@ -1432,6 +1432,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH861** — README and shio-site carry judge, the declared bar and the exclusion authorable mode rests on — and a reader now asks every recently finished block whether its sweep was owed and paid.
 - **SH925** — The site's prose is linted against the AI-writing checklist, and five counts it published are now read back from the surface each describes.
 - **SH929** — 262 em dashes left the site in four spellings, and the lint that had exempted them now refuses every one a reader could be handed.
+- **SH930** — Reading the sixteen split them: six are sample content that becomes a page the user publishes and were rewritten, ten are field help a curator reads in the console and stay with the 38 of the same kind in its own bundles — the rule follows the prose to its reader rather than to a module, and a lint holds the content tree so a seventh cannot arrive (design §LVIII.2 recorded in `docs/agents/blueprints.md`).
 
 ## Block T — End-user documentation, round two (the curator's half)
 
