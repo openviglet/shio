@@ -690,3 +690,46 @@ observation rather than the second.
 `ShPostStateNotFoundTest` asserts at the boundary the defect crossed — the response body, not the
 service's `Optional` — and was verified by reverting the controller to the bare 404: two of its
 three assertions fail, and the `published` control stays green.
+
+## The primary key is the server's, and one endpoint let a client choose it (SH924)
+
+`POST /api/v2/group` took the id from its request body and persisted it verbatim. A blank one —
+which is what a create form sends when its type makes the field required and the server has not
+minted anything yet — stored a row that **nothing can address**: `/v2/group/` does not match
+`/v2/group/{id}` so it does not route, every id-shaped path is a 404, and the group is still listed
+by `GET /v2/group`. Read 200, delete 404, still there afterwards. It came out with a database
+statement.
+
+### The sweep said one, where the report predicted many
+
+SH924 was filed on that endpoint and expected a class: "every `POST /api/v2/{entity}` taking a full
+entity shape has the same hole." Measured across all **23** POST handlers with a `@RequestBody`,
+**one** was affected. The other twenty-two take a purpose-built `*Request` / `*Payload` / `*Def`
+record with no id component, so the key is the server's by construction and there is nothing to
+send. `ShGroupDTO` was the last entity-shaped create body in the tree.
+
+The count being one is the argument *for* the lint, not against it.
+[`ShCreateBodyKeyLintTest`](../../shio-app/src/test/java/com/viglet/shio/api/ShCreateBodyKeyLintTest.java)
+holds it: a POST body type carrying a settable `String id` is a finding to explain, with the
+assertion that covers it named, one row per type. The next `@RequestBody ShThingDTO` compiles,
+answers 200, and only the client that sent it can tell.
+
+It asks a **structural** question and says so. Whether a handler then honours the id is data flow no
+regex reads honestly, and a lint pretending otherwise is one that goes quiet on a rename — so
+behaviour is asserted against a running context in `ShGroupCreateIdTest`.
+
+### Mint, don't refuse — and the second door
+
+A teaching 400 under P6 would refuse exactly the shape the console sent until SH904, and the shape
+any client written against it still sends: a silent defect becomes a loud regression for callers who
+did nothing wrong. Minting makes those requests correct instead, and there was never anything to
+teach — the id was always the server's to assign. A **non-blank** id is still honoured, which is
+what keeps every import path working.
+
+The sweep also found the door nobody reported. `shGroupUpdate` read its id from the **body** and
+ignored its own `{id}` path variable, so `PUT /v2/group/A` carrying `{"id": "B"}` updated **B** —
+and a blank body id stranded a row from an endpoint that looks like an update. The resource a
+request addresses is the one its URL names; taking the id from the path closes both.
+
+Verified by reverting the controller: two of the three assertions fail, and the "a key the caller
+chose is still honoured" control stays green in both directions.

@@ -79,10 +79,23 @@ public class ShGroupAPI {
 		return shGroup;
 	}
 
+	/**
+	 * SH924 &mdash; <b>the path names the row, and it did not used to.</b>
+	 *
+	 * <p>This read the id out of the request body and ignored its own <code>{id}</code>, so
+	 * <code>PUT /v2/group/A</code> carrying <code>{"id": "B"}</code> updated <b>B</b>. The same
+	 * line was the create defect's second door: a body with a blank id saved a blank-keyed row from
+	 * here too, on a request that looks like an update.</p>
+	 *
+	 * <p>The resource a request addresses is the one its URL names. Taking the id from the path
+	 * closes both, and costs nothing for the console, which has always sent the two in agreement.</p>
+	 */
 	@PutMapping("/{id}")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShGroupDTO shGroupUpdate(@PathVariable String id, @RequestBody ShGroupDTO shGroupDTO) {
 		ShGroup shGroup = shGroupDTO.toEntity();
+		shGroup.setId(id);
+		shGroupDTO.setId(id);
 		shGroupRepository.save(shGroup);
 		Optional<ShGroup> shGroupOptional = shGroupRepository.findById(shGroup.getId());
 		if (shGroupOptional.isPresent()) {
@@ -110,13 +123,43 @@ public class ShGroupAPI {
 		return true;
 	}
 
+	/**
+	 * SH924 &mdash; a blank primary key means "not yet assigned", and the row it used to store was
+	 * unreachable.
+	 *
+	 * <p>A create page sent <code>{id: "", name, description}</code> because its client-side type
+	 * made the field required, and the empty string was the honest value for an id the server had
+	 * not minted yet. This took it, persisted it verbatim and answered 200. The group then appeared
+	 * in <code>GET /v2/group</code> and in the console list, and <b>nothing could address it</b>:
+	 * <code>/v2/group/</code> does not match <code>/v2/group/{id}</code>, so it does not route, and
+	 * every id-shaped path is a 404. Removing it took a database statement.</p>
+	 *
+	 * <p><b>Minting rather than refusing</b>, which is a decision and not an oversight. A teaching
+	 * 400 under P6 would refuse exactly the shape the console sent until SH904 and the shape any
+	 * other client wrote against it, turning a silent defect into a loud regression for callers who
+	 * did nothing wrong. Minting makes every one of those requests correct, and there is nothing
+	 * left to teach: the id was always the server's to assign. A non-blank id is still honoured, so
+	 * a caller that assigns its own key &mdash; the shape every import path uses &mdash; is
+	 * unaffected.</p>
+	 */
 	@PostMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShGroupDTO shGroupAdd(@RequestBody ShGroupDTO shGroupDTO) {
 
-		ShGroup shGroup = shGroupRepository.save(shGroupDTO.toEntity());
+		ShGroup shGroup = shGroupRepository.save(withMintableId(shGroupDTO.toEntity()));
 		shGroupDTO.setId(shGroup.getId());
 		return shGroupDTO;
+	}
+
+	/**
+	 * A blank id becomes {@code null}, which is what {@code @VigletAssignableUuidGenerator} mints
+	 * for. It honours an id that is explicitly set, and an empty string is "set" to it.
+	 */
+	private static ShGroup withMintableId(ShGroup shGroup) {
+		if (shGroup.getId() != null && shGroup.getId().isBlank()) {
+			shGroup.setId(null);
+		}
+		return shGroup;
 	}
 
 	@GetMapping("/model")

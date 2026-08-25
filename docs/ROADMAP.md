@@ -16,7 +16,6 @@
 ## Block AR — The curator's console, surface by surface (§LV)
 
 - 📋 **SH923** (deps: —) **the layer has no frosted panel without a heading, so four surfaces silently rendered console cards** — Every consumer needing one hand-rolls it, and the moment two differ the product is inconsistent invisibly. → §LV.16
-- 📋 **SH924** (deps: —) **POST /api/v2/group accepts a blank id and stores a row no API path can read, update or delete** — A write that succeeds and produces an unreachable row is worse than a refusal, and only the client that sent it can tell. → §LV.17
 - 📋 **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — A check that is red locally and green in CI is one people stop reading, and this one is red for the environment rather than the code. → §LV.19
 - 📋 **SH931** (deps: SH909 ✅) **a bento URL cannot name its tenant, so a shared console link no longer says which tenant it is for** — The console prefix carried it and bento is unscoped; the session still resolves it, so what is lost is a link somebody pastes to a colleague. → §LV.21
 - 📋 **SH932** (deps: —) **three components named Adaptive* no longer adapt, and the name is what the next page copies** — Each now has one branch, so the name promises a choice that was deleted and invites a second console era to be written against it. → §LV.22
