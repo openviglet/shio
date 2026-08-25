@@ -250,6 +250,33 @@ async function discoverRoutes(siteName) {
     ["groups", "/admin/groups"],
     ["roles", "/admin/roles"],
     ["users", "/admin/users"],
+    /*
+     * SH905 — the eleven infrastructure surfaces, every one of them probed.
+     *
+     * §LV.8's warning was that a slice this size "becomes a mechanical sweep with no attention
+     * left over", and the answer to that is not care, it is coverage: eleven probes cost one line
+     * each and they are what makes the difference between migrating eleven pages and believing
+     * you did. The five lists are one component, so a defect in it is a defect in all five — and
+     * the six editors are six different 130-to-300-line forms that share nothing but their shape.
+     */
+    ["tokens", "/admin/tokens"],
+    ["auth-providers", "/admin/auth-providers"],
+    ["exchange-providers", "/admin/exchange-providers"],
+    ["webhooks", "/admin/webhooks"],
+    ["tenants", "/admin/tenants"],
+    ["email-config", "/admin/email-config"],
+    /*
+     * The create route of every editor that has one. These are the pages the lists send a curator
+     * to, they render the whole form with no data behind it, and — as SH904 found the hard way —
+     * a route whose param name does not match what the component reads leaves `isNew` false and
+     * the page blank. Two of the five had exactly that (`:providerId` against `authProviderId`),
+     * and nothing but opening them would have said so.
+     */
+    ["token-new", "/admin/tokens/new"],
+    ["auth-provider-new", "/admin/auth-providers/new"],
+    ["exchange-provider-new", "/admin/exchange-providers/new"],
+    ["webhook-new", "/admin/webhooks/new"],
+    ["tenant-new", "/admin/tenants/new"],
   ]) {
     routes.push({ name: `bento-${name}`, path: `/bento${path}`, bento: true, mustSee: [] })
   }

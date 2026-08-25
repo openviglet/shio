@@ -11,20 +11,21 @@ import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 import { ShGroupService } from "@/services/auth/group.service"
-import { IdentityListPage } from "./identity-list.page"
+import { AdminListPage } from "./admin-list.page"
 
 const service = new ShGroupService()
 
-/** SH904 — configuration, not a page. The list itself is `IdentityListPage`. */
+/** SH904/SH905 — configuration, not a page. The list itself is `AdminListPage`. */
 export default function BentoGroupListPage() {
   const { t } = useTranslation()
   const query = useCallback(() => service.query(), [])
   return (
-    <IdentityListPage
+    <AdminListPage
       query={query}
       listRoute={ROUTES.BENTO_GROUPS}
       newRoute={ROUTES.BENTO_GROUP_NEW}
-      editRouteOf={(group) => `${ROUTES.BENTO_GROUPS}/${group.id}`}
+      itemKey={(group) => group.id}
+      tileOf={(group) => ({ to: `${ROUTES.BENTO_GROUPS}/${group.id}`, title: group.name, description: group.description })}
       icon={IconShieldCog}
       tone="violet"
       eyebrow={t("admin.title")}

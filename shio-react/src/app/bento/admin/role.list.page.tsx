@@ -11,20 +11,21 @@ import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 import { ShRoleService } from "@/services/auth/role.service"
-import { IdentityListPage } from "./identity-list.page"
+import { AdminListPage } from "./admin-list.page"
 
 const service = new ShRoleService()
 
-/** SH904 — configuration, not a page. The list itself is `IdentityListPage`. */
+/** SH904/SH905 — configuration, not a page. The list itself is `AdminListPage`. */
 export default function BentoRoleListPage() {
   const { t } = useTranslation()
   const query = useCallback(() => service.query(), [])
   return (
-    <IdentityListPage
+    <AdminListPage
       query={query}
       listRoute={ROUTES.BENTO_ROLES}
       newRoute={ROUTES.BENTO_ROLE_NEW}
-      editRouteOf={(role) => `${ROUTES.BENTO_ROLES}/${role.id}`}
+      itemKey={(role) => role.id}
+      tileOf={(role) => ({ to: `${ROUTES.BENTO_ROLES}/${role.id}`, title: role.name, description: role.description })}
       icon={IconLock}
       tone="rose"
       eyebrow={t("admin.title")}

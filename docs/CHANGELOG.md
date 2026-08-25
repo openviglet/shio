@@ -1635,6 +1635,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH902** — All three post-type pages adapt, and a header-less AdaptiveSectionCard is now a lint: four panels — three from SH900 — silently rendered console cards under the bento shell.
 - **SH903** — All three say their own empty through one adapter, and the lint written first found the block hand-rolled in thirteen files where the design named two.
 - **SH904** — Groups and roles take the entity shell through one shared page; the user editor cannot, because its identity is a login key the hero would rename on blur.
+- **SH905** — Five lists become config on one shared component and six editors take the adapter; a route param that does not match what its component reads is now a lint, after two silent blank pages.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

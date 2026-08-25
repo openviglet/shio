@@ -1,7 +1,7 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -107,7 +107,13 @@ export default function ApiTokenPage() {
 
   return (
     <>
-      <PageHeader title={t("apiToken.title")} turIcon={KeyRound} urlBase={ROUTES.ADMIN_ROOT} />
+      <AdaptivePageHeader
+        icon={KeyRound}
+        title={t("apiToken.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("apiToken.description")}
+        urlBase={ROUTES.ADMIN_ROOT}
+      />
       <div className="p-6 max-w-2xl">
         {/* Sticky save bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
@@ -133,12 +139,13 @@ export default function ApiTokenPage() {
         </div>
 
         {/* General section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("apiToken.general")}</CardTitle>
-            <CardDescription>{t("apiToken.generalDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AdaptiveSectionCard className="mb-6">
+          <AdaptiveSectionCard.StaticHeader
+            icon={KeyRound}
+            title={t("apiToken.general")}
+            description={t("apiToken.generalDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">{t("common.title")}</Label>
               <Input id="title" value={item.title}
@@ -164,16 +171,17 @@ export default function ApiTokenPage() {
                   onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Access section (SH2 — scope + per-site allow-list) */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("apiToken.access")}</CardTitle>
-            <CardDescription>{t("apiToken.accessDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
+        <AdaptiveSectionCard className="mb-6">
+          <AdaptiveSectionCard.StaticHeader
+            icon={KeyRound}
+            title={t("apiToken.access")}
+            description={t("apiToken.accessDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-5">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label htmlFor="scope">{t("apiToken.scope")}</Label>
@@ -276,17 +284,18 @@ export default function ApiTokenPage() {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Token section (only on edit) */}
         {!isNew && item.token && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("apiToken.tokenLabel")}</CardTitle>
-              <CardDescription>{t("apiToken.tokenDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader
+            icon={KeyRound}
+            title={t("apiToken.tokenLabel")}
+            description={t("apiToken.tokenDesc")}
+          />
+            <AdaptiveSectionCard.Content className="space-y-3">
               <div className="flex items-center gap-2">
                 <Input value={item.token} readOnly className="font-mono text-sm bg-muted" />
                 <Button variant="outline" size="icon" onClick={handleCopy}>
@@ -294,8 +303,8 @@ export default function ApiTokenPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">{t("apiToken.tokenHint")}</p>
-            </CardContent>
-          </Card>
+            </AdaptiveSectionCard.Content>
+          </AdaptiveSectionCard>
         )}
       </div>
     </>

@@ -95,6 +95,18 @@ export const ROUTES = {
   BENTO_ROLE_NEW: "/bento/admin/roles/new",
   BENTO_USERS: "/bento/admin/users",
   BENTO_USER_NEW: "/bento/admin/users/new",
+  /**
+   * SH905 — the infrastructure surfaces. Still unscoped, and the tenant list is the reason to say
+   * so out loud: it is the one page here that is *about* tenancy, and it is a platform-admin
+   * surface that lists tenants rather than a surface that lives inside one. Prefixing it would be
+   * the wrong shape even once bento gets tenant scoping.
+   */
+  BENTO_TOKENS: "/bento/admin/tokens",
+  BENTO_TENANTS: "/bento/admin/tenants",
+  BENTO_AUTH_PROVIDERS: "/bento/admin/auth-providers",
+  BENTO_EXCHANGE_PROVIDERS: "/bento/admin/exchange-providers",
+  BENTO_WEBHOOKS: "/bento/admin/webhooks",
+  BENTO_EMAIL_CONFIG: "/bento/admin/email-config",
 };
 
 // Route patterns (with `:tenant` placeholder) used by React Router for matching.

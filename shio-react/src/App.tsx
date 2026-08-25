@@ -15,6 +15,17 @@ import BentoRoleEditPage from "./app/bento/admin/role.edit.page"
 import BentoRoleListPage from "./app/bento/admin/role.list.page"
 import BentoUserListPage from "./app/bento/admin/user.list.page"
 import AdminUserPage from "./app/console/admin/admin.user.page"
+import BentoApiTokenListPage from "./app/bento/admin/api-token.list.page"
+import BentoAuthProviderListPage from "./app/bento/admin/auth-provider.list.page"
+import BentoExchangeProviderListPage from "./app/bento/admin/exchange-provider.list.page"
+import BentoSiteWebhookListPage from "./app/bento/admin/site-webhook.list.page"
+import BentoTenantListPage from "./app/bento/admin/tenant.list.page"
+import ApiTokenPage from "./app/console/admin/api-token/api-token.page"
+import AuthProviderPage from "./app/console/admin/auth-provider/auth-provider.page"
+import EmailConfigPage from "./app/console/admin/email-config/email-config.page"
+import ExchangeProviderPage from "./app/console/admin/exchange-provider/exchange-provider.page"
+import SiteWebhookPage from "./app/console/admin/site-webhook/site-webhook.page"
+import TenantPage from "./app/console/admin/tenant/tenant.page"
 import ObjectChildrenPage from "./app/console/content/object.children.page"
 import PostEditPage from "./app/console/content/post.edit.page"
 import PostNewPage from "./app/console/content/post.new.page"
@@ -214,6 +225,49 @@ function App() {
                       <AdminUserPage />
                     </SectionCardChromeProvider>
                   }
+                />
+                {/*
+                  SH905 — the eleven infrastructure pages, split the way the data splits.
+
+                  The five **lists** are configuration on one shared `AdminListPage`: they differ
+                  only in which two columns sat between the name and the status, which is what
+                  §LV.8 meant by the most repetitive surface here.
+
+                  The six **editors** stay their console components under the provider. Their
+                  identity is name + description + enabled, which the entity shell handles well —
+                  but their *bodies* are the substance: a vendor property map, a scope and site
+                  picker, an event set, a provisioning flow. The shell's value is lifting identity
+                  out of a form, and on a 300-line token form that is three fields of twelve. The
+                  adapter gets the chrome right at a fraction of the risk (SH900's rule).
+                */}
+                <Route path="admin/tokens" element={<BentoApiTokenListPage />} />
+                <Route
+                  path="admin/tokens/:tokenId"
+                  element={<SectionCardChromeProvider chrome="bento"><ApiTokenPage /></SectionCardChromeProvider>}
+                />
+                <Route path="admin/auth-providers" element={<BentoAuthProviderListPage />} />
+                <Route
+                  path="admin/auth-providers/:authProviderId"
+                  element={<SectionCardChromeProvider chrome="bento"><AuthProviderPage /></SectionCardChromeProvider>}
+                />
+                <Route path="admin/exchange-providers" element={<BentoExchangeProviderListPage />} />
+                <Route
+                  path="admin/exchange-providers/:exchangeProviderId"
+                  element={<SectionCardChromeProvider chrome="bento"><ExchangeProviderPage /></SectionCardChromeProvider>}
+                />
+                <Route path="admin/webhooks" element={<BentoSiteWebhookListPage />} />
+                <Route
+                  path="admin/webhooks/:webhookId"
+                  element={<SectionCardChromeProvider chrome="bento"><SiteWebhookPage /></SectionCardChromeProvider>}
+                />
+                <Route path="admin/tenants" element={<BentoTenantListPage />} />
+                <Route
+                  path="admin/tenants/:tenantId"
+                  element={<SectionCardChromeProvider chrome="bento"><TenantPage /></SectionCardChromeProvider>}
+                />
+                <Route
+                  path="admin/email-config"
+                  element={<SectionCardChromeProvider chrome="bento"><EmailConfigPage /></SectionCardChromeProvider>}
                 />
               </Route>
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>

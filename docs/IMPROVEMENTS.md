@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.8 Infrastructure, eleven pages that are nearly the same page (SH905)
-
-API tokens, auth providers, exchange providers, site webhooks, email configuration and
-tenants: five list-and-form pairs and a settings page. They are the most repetitive
-surface in the console, which is why they come as one slice and why they repay the
-shared list and shell more than anything else here. The risk in a slice this size is
-that it becomes a mechanical sweep with no attention left over, so run the render digest
-between each pair rather than only at the end, and notice when one of them needs
-something the shell does not have instead of working around it eleven times.
-
 ### LV.9 Marketplace, the review queue and the activity log (SH906)
 
 Three pages with three bespoke layouts and little in common. The review queue matters

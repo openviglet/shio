@@ -7,12 +7,12 @@
  * (at your option) any later version.
  */
 import { IconUser } from "@tabler/icons-react"
-import { BentoEntityTile, BentoListPage } from "@viglet/viglet-design-system/bento"
-import { useEffect, useState } from "react"
+import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 import type { ShUser } from "@/models/auth/user"
 import { ShUserService } from "@/services/auth/user.service"
+import { AdminListPage } from "./admin-list.page"
 
 const service = new ShUserService()
 
@@ -29,48 +29,30 @@ const service = new ShUserService()
  */
 export default function BentoUserListPage() {
   const { t } = useTranslation()
-  const [users, setUsers] = useState<ShUser[] | undefined>(undefined)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    // `list()`, not `query()` — the user service is the one of the three that names it
-    // differently, because `get()` was already taken by "the user I am signed in as".
-    service.list()
-      .then(setUsers)
-      // A failed load has to become an empty array *and* an error, or the package's gate — which
-      // reads `undefined` as "still loading" — spins for ever (SH899).
-      .catch((reason: unknown) => {
-        setUsers([])
-        setError(String(reason))
-      })
-  }, [])
+  // `list()`, not `query()` — the user service is the one of the three that names it differently,
+  // because `get()` was already taken by "the user I am signed in as".
+  const query = useCallback(() => service.list(), [])
 
   return (
-    <BentoListPage
-      items={users}
-      error={error}
-      tryAgainUrl={ROUTES.BENTO_USERS}
+    <AdminListPage
+      query={query}
+      listRoute={ROUTES.BENTO_USERS}
+      newRoute={ROUTES.BENTO_USER_NEW}
+      icon={IconUser}
+      tone="emerald"
       eyebrow={t("admin.title")}
-      heroIcon={IconUser}
       title={t("admin.users")}
       subtitle={t("admin.usersSubtitle")}
-      tone="emerald"
-      newRoute={ROUTES.BENTO_USER_NEW}
       newLabel={t("admin.newUser")}
-      itemKey={(user: ShUser) => user.username}
-      renderTile={(user: ShUser, emphasis) => (
-        <BentoEntityTile
-          to={`${ROUTES.BENTO_USERS}/${user.username}`}
-          emphasis={emphasis}
-          defaultIcon={IconUser}
-          tone="emerald"
-          title={[user.firstName, user.lastName].filter(Boolean).join(" ") || user.username}
-          description={user.email}
-          meta={user.username}
-        />
-      )}
       emptyTitle={t("common.noResults")}
       emptyDescription={t("admin.usersEmptyHint")}
+      itemKey={(user: ShUser) => user.username}
+      tileOf={(user: ShUser) => ({
+        to: `${ROUTES.BENTO_USERS}/${user.username}`,
+        title: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username,
+        description: user.email,
+        meta: user.username,
+      })}
     />
   )
 }

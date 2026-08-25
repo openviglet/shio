@@ -1,7 +1,7 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -95,7 +95,13 @@ export default function TenantPage() {
 
   return (
     <>
-      <PageHeader title={t("tenantAdmin.title")} turIcon={Building2} urlBase={ROUTES.ADMIN_ROOT} />
+      <AdaptivePageHeader
+        icon={Building2}
+        title={t("tenantAdmin.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("tenantAdmin.description")}
+        urlBase={ROUTES.ADMIN_ROOT}
+      />
       <div className="p-6 max-w-2xl">
         {/* Sticky save bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
@@ -134,12 +140,13 @@ export default function TenantPage() {
           </div>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("tenantAdmin.general")}</CardTitle>
-            <CardDescription>{t("tenantAdmin.generalDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AdaptiveSectionCard className="mb-6">
+          <AdaptiveSectionCard.StaticHeader
+            icon={Building2}
+            title={t("tenantAdmin.general")}
+            description={t("tenantAdmin.generalDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label htmlFor="name">{t("tenantAdmin.name")}</Label>
@@ -187,23 +194,24 @@ export default function TenantPage() {
                   onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Provisioning (SH22 Part C) — copy the default content model into this tenant */}
         {!isNew && !isDefault && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("tenantAdmin.provision")}</CardTitle>
-              <CardDescription>{t("tenantAdmin.provisionHint")}</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader
+            icon={Building2}
+            title={t("tenantAdmin.provision")}
+            description={t("tenantAdmin.provisionHint")}
+          />
+            <AdaptiveSectionCard.Content>
               <Button variant="outline" size="sm" onClick={handleProvision}>
                 <Sparkles className="h-4 w-4 mr-1" />
                 {t("tenantAdmin.provision")}
               </Button>
-            </CardContent>
-          </Card>
+            </AdaptiveSectionCard.Content>
+          </AdaptiveSectionCard>
         )}
       </div>
     </>

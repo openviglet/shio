@@ -15,8 +15,7 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH905** (deps: SH904 ✅) **eleven infrastructure admin pages — tokens, providers, webhooks, email, tenants — are console list-and-form pairs** — They are the most repetitive surface here, so a shared list and shell pays for itself most. → §LV.8
-- 📋 **SH906** (deps: SH905) **marketplace, the review queue and the activity log are console pages with bespoke layouts each** — The review queue is the curator's approval surface, and it should not be the last thing that looks old. → §LV.9
+- 📋 **SH906** (deps: SH905 ✅) **marketplace, the review queue and the activity log are console pages with bespoke layouts each** — The review queue is the curator's approval surface, and it should not be the last thing that looks old. → §LV.9
 - 📋 **SH907** (deps: SH901 ✅) **the Universal Editor pages wrap a preview iframe whose bridge depends on the surrounding chrome** — This is the one surface where a shell swap can break behaviour rather than only appearance. → §LV.10
 - 📋 **SH908** (deps: SH903 ✅) **the GraphiQL page and the not-found page are the last two console surfaces and both embed a third-party UI** — A not-found page in the wrong chrome is the most likely place a user lands mid-cutover. → §LV.11
 - 📋 **SH909** (deps: SH906, SH907) **with every surface migrated, two route trees and two chromes are still mounted side by side** — The parallel route was chosen for reversibility, and an unclaimed reversal becomes permanent. → §LV.12
@@ -26,12 +25,6 @@
 - 📋 **SH924** (deps: —) **POST /api/v2/group accepts a blank id and stores a row no API path can read, update or delete** — A write that succeeds and produces an unreachable row is worse than a refusal, and only the client that sent it can tell. → §LV.17
 
 ## Priority
-
-## Done when — SH905
-
-- **All eleven infrastructure pages are migrated and each was measured** The render
-  digest is run between pairs rather than only at the end, and any place the shell did
-  not fit is recorded rather than worked around eleven times.
 
 ## Done when — SH906
 

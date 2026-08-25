@@ -1,6 +1,6 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -10,6 +10,7 @@ import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { Mail, Save, Info } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShEmailConfigService } from "@/services/config/email-config.service"
 import type { ShEmailConfig } from "@/models/config/email-config.model"
@@ -23,6 +24,7 @@ const EMPTY: ShEmailConfig = {
 
 export default function EmailConfigPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
   const [config, setConfig] = useState<ShEmailConfig>(EMPTY)
   const [saving, setSaving] = useState(false)
@@ -69,24 +71,48 @@ export default function EmailConfigPage() {
 
   return (
     <>
-      <PageHeader title={t("emailConfig.title")} turIcon={Mail} urlBase={ROUTES.ADMIN_ROOT} />
-      <div className="p-6 max-w-2xl">
-        {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
-          <span className="font-semibold">{t("emailConfig.title")}</span>
+      {/*
+        SH905 — this is the page §LV.8 said to watch for: the one that "needs something the shell
+        does not have". It turned out to need the opposite — it had **hand-rolled** what the
+        adapter already gives.
+
+        The bar below was a `sticky top-0` div repeating the page title with a Save beside it.
+        Two problems, and neither is cosmetic. It duplicated the heading, so the page named itself
+        twice with nothing between the two. And it was sticky *without* a morph: it sat over the
+        content from the first pixel of scroll rather than fading in as the hero left, which is
+        the one behaviour the whole save-bar design is about.
+
+        Passing `onCancel` is what makes the adapter render the pair at all (`hasSaveBar`), and
+        passing `actions` **replaces** the hero's own Save/Cancel — the package's line is
+        `children: actions ?? <submit + cancel>`. That matters here: the hero's default Save is a
+        bare `type="submit"` and this page has no form for it to submit, so taking the default
+        would have been SH899's dead button one more time. This page's Save is an `onClick`, so it
+        goes in `actions`, and there is exactly one of it.
+      */}
+      <AdaptivePageHeader
+        icon={Mail}
+        title={t("emailConfig.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("emailConfig.description")}
+        urlBase={ROUTES.ADMIN_ROOT}
+        onCancel={() => navigate(ROUTES.ADMIN_ROOT)}
+        loading={saving}
+        actions={
           <Button size="sm" onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-1" />
             {saving ? t("common.loading") : t("common.save")}
           </Button>
-        </div>
-
+        }
+      />
+      <div className="p-6 max-w-2xl">
         {/* Server section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("emailConfig.server")}</CardTitle>
-            <CardDescription>{t("emailConfig.serverDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AdaptiveSectionCard className="mb-6">
+          <AdaptiveSectionCard.StaticHeader
+            icon={Mail}
+            title={t("emailConfig.server")}
+            description={t("emailConfig.serverDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-4">
             {toggleRow("enabled", t("common.enabled"), t("emailConfig.enabledHint"))}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -111,22 +137,23 @@ export default function EmailConfigPage() {
                 onChange={(e) => set("password", e.target.value)} />
             </div>
             {toggleRow("testConnection", t("emailConfig.testConnection"), t("emailConfig.testConnectionHint"))}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* SMTP section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("emailConfig.smtp")}</CardTitle>
-            <CardDescription>{t("emailConfig.smtpDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader
+            icon={Mail}
+            title={t("emailConfig.smtp")}
+            description={t("emailConfig.smtpDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-4">
             {toggleRow("smtpAuth", t("emailConfig.smtpAuth"), t("emailConfig.smtpAuthHint"))}
             {toggleRow("tlsEnabled", t("emailConfig.tlsEnabled"), t("emailConfig.tlsEnabledHint"))}
             {toggleRow("tlsRequired", t("emailConfig.tlsRequired"), t("emailConfig.tlsRequiredHint"))}
             {toggleRow("sslEnabled", t("emailConfig.sslEnabled"), t("emailConfig.sslEnabledHint"))}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
       </div>
     </>
   )

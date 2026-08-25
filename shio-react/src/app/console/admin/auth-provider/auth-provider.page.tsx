@@ -1,7 +1,7 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -107,7 +107,13 @@ export default function AuthProviderPage() {
 
   return (
     <>
-      <PageHeader title={t("authProvider.title")} turIcon={Fingerprint} urlBase={ROUTES.ADMIN_ROOT} />
+      <AdaptivePageHeader
+        icon={Fingerprint}
+        title={t("authProvider.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("authProvider.description")}
+        urlBase={ROUTES.ADMIN_ROOT}
+      />
       <div className="p-6 max-w-2xl">
         {/* Sticky save bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
@@ -133,12 +139,13 @@ export default function AuthProviderPage() {
         </div>
 
         {/* General section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("authProvider.general")}</CardTitle>
-            <CardDescription>{t("authProvider.generalDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AdaptiveSectionCard className="mb-6">
+          <AdaptiveSectionCard.StaticHeader
+            icon={Fingerprint}
+            title={t("authProvider.general")}
+            description={t("authProvider.generalDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t("common.name")}</Label>
               <Input id="name" value={item.name}
@@ -182,16 +189,17 @@ export default function AuthProviderPage() {
               <Switch id="enabled" checked={item.enabled}
                 onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
             </div>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Configuration properties */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("authProvider.properties")}</CardTitle>
-            <CardDescription>{t("authProvider.propertiesDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader
+            icon={Fingerprint}
+            title={t("authProvider.properties")}
+            description={t("authProvider.propertiesDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-4">
             {Object.keys(properties).length === 0 ? (
               <p className="text-xs text-muted-foreground">{t("authProvider.noProperties")}</p>
             ) : (
@@ -222,8 +230,8 @@ export default function AuthProviderPage() {
                 {t("authProvider.addProperty")}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
       </div>
     </>
   )

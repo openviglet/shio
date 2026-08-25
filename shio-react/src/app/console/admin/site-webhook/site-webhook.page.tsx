@@ -1,7 +1,7 @@
-import { PageHeader } from "@/components/page-header"
+import { AdaptivePageHeader } from "@/components/adaptive-page-header"
+import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -109,7 +109,13 @@ export default function SiteWebhookPage() {
 
   return (
     <>
-      <PageHeader title={t("siteWebhook.title")} turIcon={Webhook} urlBase={ROUTES.ADMIN_ROOT} />
+      <AdaptivePageHeader
+        icon={Webhook}
+        title={t("siteWebhook.title")}
+        eyebrow={t("admin.title")}
+        subtitle={t("siteWebhook.description")}
+        urlBase={ROUTES.ADMIN_ROOT}
+      />
       <div className="p-6 max-w-2xl">
         {/* Sticky save bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
@@ -139,12 +145,13 @@ export default function SiteWebhookPage() {
         </div>
 
         {/* General section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("siteWebhook.general")}</CardTitle>
-            <CardDescription>{t("siteWebhook.generalDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AdaptiveSectionCard className="mb-6">
+          <AdaptiveSectionCard.StaticHeader
+            icon={Webhook}
+            title={t("siteWebhook.general")}
+            description={t("siteWebhook.generalDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t("common.title")}</Label>
               <Input id="name" value={item.name}
@@ -176,16 +183,17 @@ export default function SiteWebhookPage() {
                   onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Scope section — site + events */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("siteWebhook.scope")}</CardTitle>
-            <CardDescription>{t("siteWebhook.scopeDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
+        <AdaptiveSectionCard className="mb-6">
+          <AdaptiveSectionCard.StaticHeader
+            icon={Webhook}
+            title={t("siteWebhook.scope")}
+            description={t("siteWebhook.scopeDesc")}
+          />
+          <AdaptiveSectionCard.Content className="space-y-5">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label htmlFor="site">{t("siteWebhook.site")}</Label>
@@ -237,17 +245,18 @@ export default function SiteWebhookPage() {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
 
         {/* Secret section (only on edit) */}
         {!isNew && item.secret && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("siteWebhook.secret")}</CardTitle>
-              <CardDescription>{t("siteWebhook.secretDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader
+            icon={Webhook}
+            title={t("siteWebhook.secret")}
+            description={t("siteWebhook.secretDesc")}
+          />
+            <AdaptiveSectionCard.Content className="space-y-3">
               <div className="flex items-center gap-2">
                 <Input value={item.secret} readOnly className="font-mono text-sm bg-muted" />
                 <Button variant="outline" size="icon" onClick={handleCopy}>
@@ -255,8 +264,8 @@ export default function SiteWebhookPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">{t("siteWebhook.secretHint")}</p>
-            </CardContent>
-          </Card>
+            </AdaptiveSectionCard.Content>
+          </AdaptiveSectionCard>
         )}
       </div>
     </>

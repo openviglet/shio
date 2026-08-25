@@ -38,7 +38,7 @@ const SRC = join(HERE, "..", "src")
 const bento = (name) => stripComments(readFileSync(join(SRC, "app", "bento", "admin", name), "utf8"))
 
 const ENTITY = bento("identity-entity.page.tsx")
-const LIST = bento("identity-list.page.tsx")
+const LIST = bento("admin-list.page.tsx")
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
 
 test("SH904: a create page sends no id, because a blank one is stored verbatim", () => {
@@ -82,16 +82,22 @@ test("SH904: the create page has a real form, and the edit page has no dead save
       + " that id the create button is inert and the page still looks finished.")
 })
 
-test("SH904: a load failure is not the empty state", () => {
-  for (const [name, source] of [["identity-list", LIST], ["user list", bento("user.list.page.tsx")]]) {
-    assert.match(source, /\.catch\(/,
-      `SH904: the ${name} has no catch, so a failed request leaves the array empty and the page`
-        + " renders 'no results'. The console lists did this: 'no groups' and 'the server did not"
-        + " answer' were the same screen.")
-    assert.match(source, /setError/,
-      `SH904: the ${name} swallows the failure instead of reporting it — and `
-        + "`items: undefined` means 'still loading' to the package's gate, so it would spin.")
-  }
+test("SH904/SH905: a load failure is not the empty state, on the one list every page shares", () => {
+  /*
+   * SH905 moved this from `identity-list.page.tsx` to `admin-list.page.tsx`, and the move is the
+   * point rather than a rename. SH904 wrote a list fixed to `{id, name, description}` because
+   * that is all a group is; SH905 needed the same list for five entities that also carry a status
+   * and a second identifying line. Two nearly-identical list components is the state that slice
+   * exists to leave, not to arrive at — so there is one, and this assertion covers all eight
+   * lists at once because they are all the same component now.
+   */
+  assert.match(LIST, /\.catch\(/,
+    "SH904: the shared admin list has no catch, so a failed request leaves the array empty and"
+      + " every one of the eight lists renders 'no results'. The console lists all did this:"
+      + " 'no groups' and 'the server did not answer' were the same screen.")
+  assert.match(LIST, /setError/,
+    "SH904: the shared admin list swallows the failure instead of reporting it — and"
+      + " `items: undefined` means 'still loading' to the package's gate, so it would spin.")
 })
 
 test("SH904: the user editor is not on the entity shell, and the reason is in the model", () => {

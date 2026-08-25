@@ -1589,3 +1589,68 @@ exempted inside the check — the failure this rule exists to catch (SH902) is p
 that renders no frosted surface", and a global exemption would have retired it.
 
 Census after this task: **43 pages, Card 27, PageHeader 29, Sidebar 1, thirteen empty.**
+
+## Eleven pages, split where the data splits (SH905)
+
+API tokens, auth providers, exchange providers, site webhooks, tenants and email configuration:
+five list-and-form pairs and a settings page. §LV.8 called them the most repetitive surface in the
+console and it was right — the five lists differ only in **which two columns sit between the name
+and the status**.
+
+So the slice divides by what each half actually is:
+
+- **The five lists become configuration** on one shared
+  [`AdminListPage`](../../shio-react/src/app/bento/admin/admin-list.page.tsx) — roughly forty lines
+  each of `query`, `tileOf` and labels. That component started as SH904's `IdentityListPage`, fixed
+  to `{id, name, description}` because that is all a group is; generalising it rather than writing
+  a second one is the whole point of the slice. **Two nearly-identical list components is the state
+  this task exists to leave, not to arrive at.** All eight admin lists are that one component now,
+  which is why a single assertion covers all of them.
+- **The six editors stay their console components** under `SectionCardChromeProvider`. Their
+  identity is name + description + enabled, which the entity shell handles well — but their
+  *bodies* are the substance: a vendor property map, a scope and site picker, an event set, a
+  provisioning flow. The shell's value is lifting identity out of a form, and on a 300-line token
+  form that is three fields of twelve. `AdaptivePageHeader` gives the same morph at a fraction of
+  the risk (SH900's rule).
+
+Every card in all six had a real `CardHeader`, so this slice took `AdaptiveSectionCard` where
+SH902's header-less panels needed `AdaptivePanel` — and a lint now holds that, because a sweep this
+size is exactly where SH902's defect gets reintroduced eleven times.
+
+### The page that needed something — and needed the opposite
+
+§LV.8 said to "notice when one of them needs something the shell does not have instead of working
+around it eleven times". One did stand out, and it turned out to have **hand-rolled what the
+adapter already gives**: email configuration carried a `sticky top-0` div repeating the page title
+with a Save beside it. It duplicated the heading, and it was sticky *without* a morph — over the
+content from the first pixel of scroll, rather than fading in as the hero left, which is the one
+behaviour the save-bar design is about.
+
+Its conversion turned up the package rule worth writing down: **`actions` replaces the hero's own
+Save/Cancel** (`children: actions ?? <submit + cancel>`). That matters because the hero's default
+Save is a bare `type="submit"` and this page has no form — taking the default would have been
+SH899's dead button one more time. A page whose save is an `onClick` passes it as `actions`; a page
+with a real form lets the default submit it.
+
+### A route param that does not match is a blank page and nothing else
+
+`<Route path="admin/auth-providers/:providerId" element={<AuthProviderPage />} />` against a
+component reading `const { authProviderId } = useParams()`. React Router matches; the component
+reads `undefined`; `isNew` stays false, the load never runs, the page renders `null`. **No error,
+no failed request, and `tsc` is silent** — `useParams()` returns
+`Record<string, string | undefined>`, so every param name type-checks.
+
+Two of the five had it. SH904 hit the same shape from the other end — a static `/new` route beside
+a `:id` one, matching first and carrying no param at all. Same symptom, same silence, twice in two
+tasks, which is what earns an instrument rather than a fix:
+[`bento-admin-slice.test.mjs`](../../shio-react/test/bento-admin-slice.test.mjs) pairs every
+parameterised bento route with the params its component actually reads. Verified by reintroducing
+the defect and watching it name the route.
+
+Its own vacuity check is worth copying: the first draft's route pattern only matched the one-line
+`<Route>` form and found **8 of 13**, reporting a clean tree while silently skipping five. It now
+asserts the parsed count equals a raw count of `path="…:param"` in the same file, so a pattern that
+stops matching fails instead of passing.
+
+Census after this task: **43 pages, Card 21, PageHeader 23, Sidebar 1, nineteen empty** — and
+44/44 live probes, every one of the eleven opened in a browser.
