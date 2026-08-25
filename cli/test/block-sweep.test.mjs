@@ -95,12 +95,14 @@ const SWEEP = {
   },
   AT: {
     swept: false,
-    why: "two tasks about this repository's own build and its own reading of itself — SH916 removed "
-      + "six Tika declarations nothing imported, taking 23 compile-scope artifacts with them, and "
-      + "SH917 made the silent-catch inventory count decisions rather than catch blocks. Both change "
-      + "what a contributor may leave in the POM or write in a handler; neither changes anything a "
-      + "curator or a reader of the product can do. `docs/agents/build.md` carries both, and "
-      + "docs-shio's internal cluster already accounts for instruments of exactly this kind",
+    why: "three tasks about this repository's own build and its own reading of itself — SH916 removed "
+      + "six Tika declarations nothing imported, taking 23 compile-scope artifacts with them; SH917 "
+      + "made the silent-catch inventory count decisions rather than catch blocks; and SH939 deleted "
+      + "an uncalled method whose declaration left a second org.json.JSONObject on the test "
+      + "classpath, where classpath order decided which one a test resolved. All three change what a "
+      + "contributor may leave in the POM or write in a handler; none changes anything a curator or "
+      + "a reader of the product can do. `docs/agents/build.md` carries all three, and docs-shio's "
+      + "internal cluster already accounts for instruments of exactly this kind",
   },
   AS: {
     swept: true,

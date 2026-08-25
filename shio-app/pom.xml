@@ -206,6 +206,18 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <version>${spring-boot.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <!-- SH939 — jsonassert carries a 2013 Android stub of org.json for environments
+                     that have no real one. This one does, transitively via turing-java-sdk, so
+                     the stub only ever added a second org.json.JSONObject to the test classpath
+                     and left which implementation a test resolves to classpath order. Spring Boot
+                     printed the collision on every boot; ShDuplicateClasspathClassLintTest fails
+                     on it now. -->
+                <exclusion>
+                    <groupId>com.vaadin.external.google</groupId>
+                    <artifactId>android-json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.graphql</groupId>
@@ -309,13 +321,6 @@
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>
             <version>3.2.2</version>
-        </dependency>
-        <!-- Used directly by ShUtils; previously came transitively via the
-             now-removed turing-java-sdk. -->
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20260814</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

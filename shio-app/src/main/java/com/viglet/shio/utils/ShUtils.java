@@ -16,10 +16,6 @@
  */
 package com.viglet.shio.utils;
 
-import org.apache.commons.lang3.StringUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.ObjectMapper;
@@ -61,20 +57,4 @@ public class ShUtils {
 		return mapper;
 	}
 
-	public boolean isJSONValid(String json) {
-		if (StringUtils.isBlank(json)) {
-			return false;
-		} else {
-			try {
-				new JSONObject(json);
-			} catch (JSONException ex) {
-				try {
-					new JSONArray(json);
-				} catch (JSONException ex1) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
 }

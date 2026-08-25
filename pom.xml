@@ -209,6 +209,9 @@
                 <artifactId>logback-classic</artifactId>
                 <version>1.6.3</version>
             </dependency>
+            <!-- SH939 — not a declaration, a pin. org.json arrives transitively through
+                 turing-java-sdk -> turing-commons at 20260522; this holds it at the current
+                 release. Nothing here imports it: shio-app's own use was one uncalled method. -->
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>

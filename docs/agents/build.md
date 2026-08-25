@@ -1408,6 +1408,47 @@ bound stays in the code, because a `substring` running off the end inside build 
 a diagnostic into a startup failure, but there is no test for it and the reason is written where the
 next reader will look for one.
 
+## Two jars, one class, and a comment that described a removal nobody did (SH939)
+
+`ShUtils.isJSONValid` parsed a string as a `JSONObject`, fell back to `JSONArray`, and answered
+whether either worked. It was the codebase's only `org.json` consumer and **nothing called it**.
+
+Its POM declaration carried the comment *"Used directly by ShUtils; previously came transitively via
+the now-removed turing-java-sdk"*. Both halves were false, and the second cost a wrong fix before
+`dependency:tree` corrected it: `turing-java-sdk` is **not** removed — it still brings `org.json`
+through `turing-commons` at `20260522`. Deleting the declaration did not remove the library, it
+silently **downgraded** it from `20260814`. What the declaration was really doing was pinning a
+newer release, so it is a `dependencyManagement` pin now and says so.
+
+The cost was on the **test** classpath. `spring-boot-starter-test` brings `org.skyscreamer:jsonassert`,
+which carries `com.vaadin.external.google:android-json` — a 2013 Android stub of `org.json` for
+environments that have no real one. This one does. So two implementations of `org.json.JSONObject`
+sat there, resolved by classpath order. Spring Boot printed *"Found multiple occurrences ... You may
+wish to exclude one of them"* on every boot, and nothing enforced the advice. Production carried a
+single provider throughout, so a test touching `JSONObject` could have passed against an
+implementation the product does not ship, and the suite would have said nothing either way.
+
+**SH916's `ShDeclaredDependencyUseLintTest` could not see this, and is right not to.** It asks
+whether a judged group is imported under `src/main/java`; `org.json` *was*. The dead thing was one
+level in — the importer — and "is this declaration used" and "is its user reachable" are different
+questions, the second of which no lint here answers.
+
+So `ShDuplicateClasspathClassLintTest` holds the **observable** instead: a named list of class
+resources that must have exactly one provider, because the causes are unbounded (an unused method
+holding a dependency open, a starter changing what it drags in, a transitive under a new name) and
+the symptom is one `getResources` call. Named rather than swept — a whole-classpath duplicate scan
+finds dozens that are deliberate, and a lint reporting those is one somebody switches off. It
+carries a vacuity check too: `getResources` finding **nothing** returns an empty list, and zero
+providers would sail past a check for "not more than one".
+
+It earned its place immediately — it failed on the real defect while the fix was still being
+written, which is how the false premise in the comment got found.
+
+One knock-on worth knowing: deleting the method removed **two silent catches**, so
+`ShSilentCatchInventoryTest`'s `utils` row went from 2 to gone. That is the one way that population
+is allowed to shrink without an argument about whether a degradation is worth reporting — the code
+that could degrade is no longer there.
+
 ## The lints that read what is written about them (SH613)
 
 `ShRenderCacheReachLintTest` scanned raw file text for `@Transactional`. SH206 removed that

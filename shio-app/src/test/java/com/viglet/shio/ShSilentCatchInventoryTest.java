@@ -226,7 +226,11 @@ class ShSilentCatchInventoryTest {
             // the page's 404 (SH437's). Two routes making the same two choices is one judgement,
             // not two — which is also why they read as duplicates here and are counted anyway.
             "render", 9,
-            "utils", 2,
+            // SH939 removed the `utils` row entirely, from 2 to none. Both catches were the two
+            // arms of `ShUtils.isJSONValid` — try `JSONObject`, fall back to `JSONArray`, answer
+            // false — and nothing called the method. So this is the one way the population is
+            // allowed to shrink without an argument about whether a degradation is worth
+            // reporting: the code that could degrade is gone.
             // SH719 raised this from 1 to 2. `ShPostUrlKeyBackfillRunner` swallows the failure of
             // its own startup pass, and the degradation is genuinely not worth an incident: the
             // only way it fails is a `url_key` column that is not there yet — a partial import, or
