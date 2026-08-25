@@ -47,18 +47,34 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
 
-/** Imports that only work under a `SidebarProvider`, and the component that renders one. */
-const NEEDS_SIDEBAR = [
-  ["@/components/page-header", "PageHeader"],
-  ["@/components/ui/sidebar", "SidebarTrigger/SidebarInset"],
+/*
+ * SH910 — the hazard moved one provider along, and the rule is the same rule.
+ *
+ * This was written about `SidebarProvider`: only `console.root.page.tsx` mounted one, and
+ * `PageHeader` → `SidebarTrigger` → `useSidebar()` throws without it. Both of those files are now
+ * deleted, so that particular crash cannot happen again — and a reader whose probes name deleted
+ * modules is a reader that reports a clean tree for ever.
+ *
+ * The **class** of defect outlived the instance, which is the SH338 shape this file was written
+ * in. `bento.root.page.tsx` mounts `UserProvider`, and `useCurrentUser` throws with
+ * "useCurrentUser must be used within UserProvider" where nothing above it does — the same white
+ * screen behind the error boundary, on the same routes: App.tsx's bare `*`, `/login`, `/setup`,
+ * the vocabulary harness and the visual editor, none of which is inside the shell.
+ *
+ * SH888 already paid for this once. The shell came up entirely blank because it mounted the
+ * *package's* `UserProvider` rather than Shio's, and `tsc` was silent because both are called
+ * `UserProvider` and both take children. Nothing catches it but a render or this.
+ */
+const NEEDS_SHELL_PROVIDER = [
+  ["@/contexts/user.context", "useCurrentUser → UserProvider"],
 ]
 
-/** The console shell's own subtree, `<Route path={ROUTES.CONSOLE}>` to its closing tag. */
-function consoleShellBlock() {
-  const open = APP.indexOf("<Route path={ROUTES.CONSOLE}")
+/** The bento shell's own subtree, `<Route path={ROUTES.BENTO}>` to its closing tag. */
+function bentoShellBlock() {
+  const open = APP.indexOf("<Route path={ROUTES.BENTO}")
   if (open < 0) return null
-  const close = APP.indexOf("</Route>", open)
-  if (close < 0) return null
+  const close = APP.lastIndexOf("</Route>")
+  if (close < 0 || close < open) return null
   return APP.slice(open, close)
 }
 
@@ -86,7 +102,7 @@ function resolve(specifier) {
  * chrome provider that wraps it where there is one.
  */
 function mountedOutsideTheShell() {
-  const shell = consoleShellBlock()
+  const shell = bentoShellBlock()
   const outside = shell === null ? APP : APP.replace(shell, "")
   const imports = defaultImports()
   const found = new Map()
@@ -104,27 +120,27 @@ function mountedOutsideTheShell() {
   return found
 }
 
-test("SH908: nothing mounted outside the console shell renders console chrome", () => {
+test("SH908: nothing mounted outside the shell needs a provider only the shell mounts", () => {
   const mounted = mountedOutsideTheShell()
   const offenders = []
 
   for (const [name, { file }] of mounted) {
     const source = stripComments(readFileSync(file, "utf8"))
-    for (const [specifier, renders] of NEEDS_SIDEBAR) {
+    for (const [specifier, renders] of NEEDS_SHELL_PROVIDER) {
       if (new RegExp(`from\\s*["']${specifier}["']`).test(source)) {
         offenders.push(`${name} imports ${specifier} (${renders})`)
       }
     }
   }
 
-  console.log(`SH908: ${mounted.size} components mounted outside the console shell`)
+  console.log(`SH908: ${mounted.size} components mounted outside the bento shell`)
 
   assert.deepEqual(offenders, [],
-    "SH908: a component mounted outside the console shell imports chrome that needs a"
-      + " SidebarProvider. `PageHeader` renders `SidebarTrigger` → `useSidebar()`, which THROWS"
-      + " when no provider is above it — and only console.root.page.tsx mounts one, so this is a"
-      + " white screen behind the error boundary rather than a page that looks wrong.\n"
-      + "  Use `AdaptivePageHeader` and let the chrome decide, or render no header at all.")
+    "SH908: a component mounted outside the bento shell imports something that needs a provider"
+      + " only that shell mounts. `useCurrentUser()` THROWS when no `UserProvider` is above it —"
+      + " and only bento.root.page.tsx mounts one — so this is a white screen behind the error"
+      + " boundary rather than a page that looks wrong.\n"
+      + "  Take what you need as a prop, or render the surface inside the shell.")
 })
 
 /**
@@ -171,20 +187,43 @@ test("SH908: the reader is not vacuous — it finds the routes and the chrome it
    * matches nothing reports a clean tree for ever, which is the failure mode SH905's own vacuity
    * check was written for.
    */
+  /*
+   * SH910 — a floor became a named list, because the set got small enough to be worth reading.
+   *
+   * While "outside" meant "outside the *console* shell" this was `>= 8` and the bento tree made
+   * that trivially true. Outside the **bento** shell there are six, and they are six on purpose:
+   * two pre-auth pages, the vocabulary harness, the redirect, the editor that owns the viewport
+   * (SH907), and the page nobody navigates to. A seventh is a route that left the shell, which is
+   * the moment somebody should be asked whether it meant to.
+   */
   const mounted = mountedOutsideTheShell()
-  assert.ok(mounted.size >= 8,
-    `SH908: only ${mounted.size} components resolve to a file — the bento tree mounts far more`
-      + " than that, so the element pattern has stopped matching and this reader is checking"
-      + " almost nothing")
+  assert.deepEqual([...mounted.keys()].sort(), [
+    "BentoVocabularyPage",
+    "LegacyConsoleRedirect",
+    "LoginPage",
+    "NotFoundPage",
+    "SetupPage",
+    "VisualEditorPage",
+  ], "SH908: the set of components mounted outside the bento shell changed.\n"
+      + "  In `+ actual`: a surface now renders without the shell's providers, its rail and its"
+      + " chrome — check it is one of the few things that should.\n"
+      + "  In `- expected`: it moved inside, or the element pattern stopped matching and this"
+      + " reader is checking almost nothing, which is the failure mode this test exists for.")
 
-  // And the forbidden import must still exist somewhere, or the probe is looking for a name the
-  // console no longer uses. It is fine for that to be *inside* the shell — that is the only place
-  // it is allowed.
-  const header = join(SRC, "components", "page-header.tsx")
-  assert.ok(existsSync(header),
-    "SH908: @/components/page-header is gone. Either SH910 deleted it — then delete this probe in"
-      + " the same diff — or it moved and this reader has gone blind to the crash it exists for.")
-  assert.match(readFileSync(header, "utf8"), /SidebarTrigger/,
-    "SH908: PageHeader no longer renders SidebarTrigger, so the hazard this file asserts may be"
-      + " gone. Re-derive the rule from what it renders now rather than deleting it on sight.")
+  // And the forbidden import must still exist, or the probe is looking for a name nothing uses.
+  // It is fine for it to be used *inside* the shell — that is the only place it is allowed.
+  const context = join(SRC, "contexts", "user.context.tsx")
+  assert.ok(existsSync(context),
+    "SH908: @/contexts/user.context is gone. Either it moved — repoint the probe in the same diff"
+      + " — or the provider was retired and this reader has gone blind to the crash it exists for.")
+  assert.match(readFileSync(context, "utf8"), /must be used within UserProvider/,
+    "SH908: useCurrentUser no longer throws without a provider, so the hazard this file asserts"
+      + " may be gone. Re-derive the rule from what it does now rather than deleting it on sight.")
+
+  // The other half of the same fact: the shell has to be the thing that mounts it. If nothing
+  // does, every route is 'outside the shell' and the rule above is about nobody.
+  const shell = readFileSync(join(SRC, "app", "bento", "bento.root.page.tsx"), "utf8")
+  assert.match(shell, /<UserProvider>/,
+    "SH908: the bento shell no longer mounts UserProvider, so the inside/outside distinction this"
+      + " reader draws no longer corresponds to anything.")
 })

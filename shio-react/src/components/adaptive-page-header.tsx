@@ -6,36 +6,33 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { StickySaveBar } from "@viglet/viglet-design-system"
-import { BentoFormHero, BentoHero, useSectionChrome } from "@viglet/viglet-design-system/bento"
+import { BentoFormHero, BentoHero } from "@viglet/viglet-design-system/bento"
 import type React from "react"
-import { PageHeader } from "@/components/page-header"
 
 interface AdaptivePageHeaderProps {
-  /** Tabler icon component, as `PageHeader` takes it. */
+  /** Tabler icon component, rendered as the hero's `leading`. */
   icon?: React.ElementType
   title: string
-  /** Bento only: the hero's eyebrow. The console header has no equivalent and ignores it. */
+  /** The hero's eyebrow. */
   eyebrow?: string
-  /** Bento only: the hero's subtitle. */
+  /** The hero's subtitle. */
   subtitle?: string
-  /** Where the console header's breadcrumb trail is rooted, and the bento hero's back link. */
+  /** The hero's back link. */
   urlBase?: string
-  /** Actions. The console header has no slot for them; the bento hero has `trailing`. */
+  /** Actions, rendered as the hero's `trailing`. */
   actions?: React.ReactNode
 
   /*
    * SH901 — the save bar, when the page has one.
    *
-   * §LV.4 predicted this slice would "reveal that the adapter needs a prop it does not have",
-   * and it is sharper than a prop. In bento the morph is **one** component: `BentoFormHero`
-   * renders the controls in the hero and fades a fixed bar in as the hero scrolls away, and the
-   * authoring contract is explicit that composing those two halves by hand is the mistake —
-   * "they are two halves that drift". In console chrome the same thing is **two** components,
-   * `PageHeader` and `StickySaveBar`, with no relationship between them.
+   * §LV.4 predicted this slice would "reveal that the adapter needs a prop it does not have", and
+   * it was sharper than a prop: the same thing was **one** component in bento and **two** in
+   * console chrome, so this had to span a 1:2 mapping. SH910 deleted the console half, and what
+   * survives is the half that was always the better shape — `BentoFormHero` renders the controls
+   * in the hero and fades a fixed bar in as the hero scrolls away, which the authoring contract
+   * asks for precisely because composing those two halves by hand is how they drift.
    *
-   * So one adapter has to span a 1:2 mapping. Give it these and it renders the pair in console
-   * and the single morph in bento; leave them out and it is just a header.
+   * Give it these and it renders the morph; leave them out and it is just a hero.
    */
   /** Sticky/morph title. Defaults to `title`. */
   saveTitle?: string
@@ -69,12 +66,18 @@ interface AdaptivePageHeaderProps {
  * and is worth writing twice. A large working surface gets the adapter, because the thing being
  * migrated is its chrome and nothing else.
  *
- * ## Why it lives in `components/` and not beside a page
+ * ## What SH910 left of it
  *
- * `console-chrome-census.test.mjs` and `surface-digest.mjs` decide a page's era from its imports,
- * and this component imports `BentoHero` — a genuinely bento-era name. A page importing *this* is
- * still console-era, correctly, because it renders console chrome by default. Keeping the import
- * on this side of the boundary is what lets both readers stay honest about the pages.
+ * The console branch is gone with the shell that rendered it, so this no longer chooses between
+ * two chromes — it maps this product's header props onto the package's `BentoHero` and
+ * `BentoFormHero`, which is still worth one place rather than twenty-two. The name outlived the
+ * branching; renaming it touches the four readers that encode Block AR's two-era model
+ * (`console-chrome-census`, `chrome-adapter`, `surface-digest`, `outside-shell-chrome`), so it is
+ * **SH932** rather than a rename smuggled into a deletion.
+ *
+ * It stays in `components/` for the reason it was put there: those readers decide a page's era
+ * from its imports, and keeping the `BentoHero` import on this side of the boundary is what lets
+ * them stay honest about the pages.
  */
 export function AdaptivePageHeader({
   icon: Icon,
@@ -91,60 +94,38 @@ export function AdaptivePageHeader({
   dirty,
   titleMissing,
 }: Readonly<AdaptivePageHeaderProps>) {
-  const chrome = useSectionChrome()
   // A page has a save bar when it gave this adapter something only a save bar takes. `actions`
   // alone is not enough — the content browser passes two navigation buttons and wants no bar.
   const hasSaveBar = onCancel !== undefined || saveBadges !== undefined
 
-  if (chrome === "bento") {
-    if (hasSaveBar) {
-      return (
-        <BentoFormHero
-          eyebrow={eyebrow}
-          backTo={urlBase}
-          leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
-          title={title}
-          subtitle={subtitle}
-          onCancel={onCancel ?? (() => undefined)}
-          actions={actions}
-          loading={loading}
-          dirty={dirty}
-          titleMissing={titleMissing}
-          saveDisabled={saveDisabled}
-          stickyTitle={saveTitle ?? title}
-          stickyBadges={saveBadges}
-        />
-      )
-    }
+  if (hasSaveBar) {
     return (
-      <BentoHero
+      <BentoFormHero
         eyebrow={eyebrow}
         backTo={urlBase}
+        leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
         title={title}
         subtitle={subtitle}
-        leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
-        trailing={actions}
+        onCancel={onCancel ?? (() => undefined)}
+        actions={actions}
+        loading={loading}
+        dirty={dirty}
+        titleMissing={titleMissing}
+        saveDisabled={saveDisabled}
+        stickyTitle={saveTitle ?? title}
+        stickyBadges={saveBadges}
       />
     )
   }
 
   return (
-    <>
-      <PageHeader title={title} turIcon={Icon} urlBase={urlBase} />
-      {hasSaveBar ? (
-        <div className="px-4 pt-4 md:px-6">
-          <StickySaveBar
-            title={saveTitle ?? title}
-            badges={saveBadges}
-            actions={actions}
-            onCancel={onCancel}
-            loading={loading}
-            disabled={saveDisabled}
-          />
-        </div>
-      ) : (
-        actions && <div className="flex items-center justify-end gap-2 px-4 pt-4 md:px-6">{actions}</div>
-      )}
-    </>
+    <BentoHero
+      eyebrow={eyebrow}
+      backTo={urlBase}
+      title={title}
+      subtitle={subtitle}
+      leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
+      trailing={actions}
+    />
   )
 }

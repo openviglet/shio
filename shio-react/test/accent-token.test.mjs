@@ -93,11 +93,8 @@ function census() {
  */
 const ORANGE_DEBT = {
   "app/console/content/object.children.page.tsx": ["bg-orange-100", "bg-orange-400", "dark:bg-orange-900/30", "dark:text-orange-400", "text-orange-700"],
-  "app/console/content/post-type-select.page.tsx": ["border-orange-300", "dark:border-orange-800", "dark:hover:bg-orange-950", "dark:text-orange-400", "hover:bg-orange-50", "text-orange-600"],
-  "app/console/content/site.list.page.tsx": ["bg-orange-100", "dark:bg-orange-900/30", "dark:text-orange-400", "text-orange-500", "text-orange-700"],
   "app/console/content/static-file.list.page.tsx": ["bg-orange-50", "bg-orange-50/80", "bg-orange-500", "border-orange-400", "dark:bg-orange-950/20", "dark:bg-orange-950/30", "dark:bg-orange-950/40", "dark:text-orange-300", "hover:border-orange-300", "ring-orange-300", "text-orange-500", "text-orange-700"],
   "app/console/content/trash.page.tsx": ["text-orange-500"],
-  "app/console/home/home.page.tsx": ["bg-orange-100", "dark:bg-orange-950/40", "dark:text-orange-400", "text-orange-600"],
   "app/console/universal-editor/visual-editor.page.tsx": ["bg-orange-50", "dark:bg-orange-950/30", "text-orange-600"],
   "app/login/login-settings.tsx": ["bg-orange-600"],
   "app/login/login.page.tsx": ["text-orange-500"],
@@ -133,22 +130,22 @@ test("SH890: the accent is declared once, on :root, and all four source tokens a
       + " component rather than as a half-finished override.")
 })
 
-test("SH890: the header chip composes the shared accent classes and names no hue", () => {
-  const header = readFileSync(join(SRC, "components", "page-header.tsx"), "utf8")
-  const body = strip(header)
-
-  assert.match(body, /vg-accent-chip/,
-    "SH890: page-header.tsx no longer uses vg-accent-chip. That class is what carries the tint,"
-      + " its dark twin and the ring colour from the four tokens — spelling them again as"
-      + " utilities is the defect this task closed.")
-  assert.match(body, /vg-accent-text/,
-    "SH890: the chip's glyph must use vg-accent-text, which re-points itself under .dark and so"
-      + " needs no dark: variant. A `dark:text-…` here is the old shape coming back.")
-  assert.deepEqual([...body.matchAll(ORANGE)].map((m) => m[0]), [],
-    "SH890: page-header.tsx names an orange again. It is the console's one shared chrome"
-      + " component and the symptom this task was filed against — an accent spelled here is"
-      + " imposed on every page at once.")
-})
+/*
+ * SH910 — the header-chip test is gone, because its subject is.
+ *
+ * It asserted that `page-header.tsx` composed `vg-accent-chip` and `vg-accent-text` rather than
+ * respelling the hue, on the grounds that it was "the console's one shared chrome component — an
+ * accent spelled here is imposed on every page at once". That file was deleted with the console
+ * shell, and no Shio source uses either class now: both are defined in the design system's own
+ * stylesheet, and the shared chrome that would compose them is the package's, outside this
+ * repository.
+ *
+ * Deleting it loses nothing this file still covers. The four **tokens** are what Shio owns, and
+ * the first test holds them; the census below holds every page that respells the hue instead of
+ * reading them; and the vacuity test holds the pattern that finds them. A test kept alive by
+ * re-pointing it at whichever file happens to be shared this month would assert less than any of
+ * those, while looking like it asserted more.
+ */
 
 test("SH890: every remaining hardcoded accent is named, and the list only shrinks", () => {
   const found = census()

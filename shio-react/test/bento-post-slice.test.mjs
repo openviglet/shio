@@ -60,13 +60,25 @@ test("SH901: the post pages compose one header call, not a header and a save bar
   }
 })
 
-test("SH901: the adapter renders the morph in bento and the pair in console", () => {
+test("SH901: the adapter renders the morph, which is the half that survived", () => {
   assert.match(ADAPTER, /BentoFormHero/,
     "SH901: the adapter no longer renders BentoFormHero, so a page with a save bar gets a plain"
-      + " hero in bento and its controls never morph")
-  assert.match(ADAPTER, /StickySaveBar/,
-    "SH901: the adapter no longer renders StickySaveBar, so every console page that gave it save"
-      + " props silently lost its bar")
+      + " hero and its controls never morph")
+
+  /*
+   * SH910 — the `StickySaveBar` assertion is gone, and its absence is now the rule.
+   *
+   * This spanned a 1:2 mapping: one `BentoFormHero` in bento, a `PageHeader` plus a `StickySaveBar`
+   * in console chrome. The console branch went with the shell, so the pair is not a thing the
+   * adapter can render any more — and a page reaching past the adapter for the console save bar
+   * directly is the regression, which `chrome-adapter.test.mjs` already forbids from the other
+   * side and more strictly.
+   */
+  assert.doesNotMatch(ADAPTER, /StickySaveBar/,
+    "SH901: the adapter renders StickySaveBar again. That is console-era chrome, deleted with the"
+      + " shell in SH910 — the morph is one component now, and composing the two halves by hand is"
+      + " what the authoring contract warns drifts.")
+
   assert.match(ADAPTER, /const hasSaveBar =/,
     "SH901: the adapter no longer distinguishes a page with a save bar from one without. The"
       + " content browser passes `actions` and wants no bar; deciding on `actions` alone would"

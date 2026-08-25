@@ -33,17 +33,26 @@ const PAGE = join(SRC, "app", "console", "admin", "marketplace", "marketplace.li
 test("SH679: the marketplace page exists and is reachable", () => {
   assert.ok(existsSync(PAGE), "SH679: the console's marketplace page is gone")
 
-  const routes = readFileSync(join(SRC, "app", "routes", "admin.routes.tsx"), "utf8")
-  assert.match(routes, /path="marketplace"/,
+  /*
+   * SH910 — the two registries this reads moved, and the question did not.
+   *
+   * The route was declared in `app/routes/admin.routes.tsx` and the nav entry in
+   * `components/app-sidebar.tsx`; both were deleted with the console shell. The rule — a page
+   * reachable by a route AND findable in the navigation — is what this reader is for, so it
+   * follows to `App.tsx` and `bento-nav.ts` rather than being deleted along with the file names it
+   * happened to know.
+   */
+  const routes = readFileSync(join(SRC, "App.tsx"), "utf8")
+  assert.match(routes, /path="admin\/marketplace"/,
     "SH679: the page is not registered as a route, so nothing can reach it — which is the same "
       + "absence this task closed, one level in")
 
   const constants = readFileSync(join(SRC, "app", "routes.const.ts"), "utf8")
   assert.match(constants, /ADMIN_MARKETPLACE:/, "SH679: no ROUTES entry")
 
-  const sidebar = readFileSync(join(SRC, "components", "app-sidebar.tsx"), "utf8")
-  assert.match(sidebar, /ROUTES\.ADMIN_MARKETPLACE/,
-    "SH679: the page is not in the sidebar. A route a curator cannot find is the defect this "
+  const nav = readFileSync(join(SRC, "app", "bento", "bento-nav.ts"), "utf8")
+  assert.match(nav, /ROUTES\.ADMIN_MARKETPLACE/,
+    "SH679: the page is not in the navigation. A route a curator cannot find is the defect this "
       + "closed — 'nothing in the console mentions a blueprint' was true of the navigation first.")
 })
 

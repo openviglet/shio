@@ -83,13 +83,18 @@ const render = (chrome) => (chrome === null
   : renderToStaticMarkup(h(SectionCardChromeProvider, { chrome }, tree)))
 
 /**
- * The three forms this task adopted the adapter in, and the console chrome each still renders.
- * A named list, so a page that quietly goes back to `@/components/ui/card` fails by name.
+ * The forms this task adopted the adapter in. A named list, so a page that quietly goes back to
+ * `@/components/ui/card` fails by name.
+ *
+ * SH910 — three became two. `site.edit.page.tsx` was deleted with the console route tree: unlike
+ * the other two it had a full bento counterpart (SH899 wrote all four site surfaces fresh, because
+ * an entity-shaped page of 100–200 lines is worth writing twice), so nothing was left to adapt.
+ * The post and post-type editors are the opposite case and the reason the adapter exists — a
+ * runtime-built schema and fifteen dynamic widgets that were never going to be rewritten twice.
  */
 const ADAPTED = [
   "app/console/content/post.edit.page.tsx",
   "app/console/content/post-type.edit.page.tsx",
-  "app/console/content/site.edit.page.tsx",
 ]
 
 test("SH892: the adapter renders two different chromes from one element tree", () => {
@@ -136,7 +141,7 @@ test("SH892: the caller's own markup survives both chromes byte-identically", ()
       + " much as it likes; the contents may not differ at all.")
 })
 
-test("SH892: the three heavy forms compose the adapter and no longer import the console Card", () => {
+test("SH892: the heavy forms compose the adapter and no longer import the console Card", () => {
   for (const page of ADAPTED) {
     const source = readFileSync(join(SRC, page), "utf8")
 

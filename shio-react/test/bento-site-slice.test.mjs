@@ -81,15 +81,25 @@ test("SH899: the form the shell submits actually writes", () => {
     "SH899: the site editor's submit path no longer calls the service")
 })
 
-test("SH899: the four site surfaces are bento, and the console four are untouched", () => {
+/*
+ * SH910 — the console four were untouched right up until they were deleted, which is the shape
+ * this slice was built to allow.
+ *
+ * The reversibility this asserted was real and it was spent: each console page stayed byte-identical
+ * while its bento counterpart was written beside it, and the whole set went in one commit once the
+ * route tree did. What is left to assert is that the four bento surfaces exist and are bento-era,
+ * and that the four console originals are **gone** rather than lingering unmounted — an unreachable
+ * page is what the next new surface copies, which is SH910's whole argument.
+ */
+test("SH899: the four site surfaces are bento, and the console four are gone", () => {
   const surfaces = survey()
   for (const name of ["site.list", "site.new", "site.edit", "site.import"]) {
     const bento = `bento/content/${name}.page.tsx`
     const legacy = `console/content/${name}.page.tsx`
     assert.equal(surfaces[bento]?.era, "bento", `SH899: ${bento} is missing or not bento-era`)
-    assert.equal(surfaces[legacy]?.era, "console",
-      `SH899: ${legacy} changed era. A migration adds a surface; the console page stays exactly`
-        + " as it was until SH909 removes that tree, which is what makes each slice reversible.")
+    assert.equal(surfaces[legacy], undefined,
+      `SH899: ${legacy} is back. SH910 deleted the console site pages with the route tree that`
+        + " mounted them; a file there again is a page on the era this migration retired.")
   }
 })
 
@@ -165,9 +175,19 @@ test("SH899: the census and the digest classify eras the same way", async () => 
       + " console-era to one reader and bento-era to the other. That is not a hypothetical: it is"
       + " what SH899 found, on a page SH892 had touched seven tasks earlier.")
 
-  // And the answer they produce, on the page that actually differed.
+  /*
+   * And the answer they produce, on a page that composes the adapter.
+   *
+   * SH910 — this asked about `console/content/site.edit.page.tsx`, the page the disagreement was
+   * actually found on, and that page is deleted. The post editor is the same question: it imports
+   * `AdaptiveSectionCard`, it is mounted under `/bento` through a provider, and it must still read
+   * as console-**era**, because era is about which chrome a file composes and not about which URL
+   * reaches it. Keeping an assertion here matters more than which page carries it — the two
+   * readers agreeing on a list is worth little if they then classify a real file differently.
+   */
   const surfaces = surveyOf()
-  assert.equal(surfaces["console/content/site.edit.page.tsx"]?.era, "console",
-    "SH899: the console site editor is bento-era again. It imports AdaptiveSectionCard — the one"
-      + " export written to be used from a console page — and that must not move a page's era.")
+  assert.equal(surfaces["console/content/post.edit.page.tsx"]?.era, "console",
+    "SH899: a console page that composes the adapter is bento-era again. AdaptiveSectionCard is"
+      + " the one export written to be used from a console page, and that must not move a page's"
+      + " era — otherwise the census shrinks by every page that adopts the adapter.")
 })

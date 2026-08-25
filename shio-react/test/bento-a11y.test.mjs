@@ -91,17 +91,19 @@ function unnamedIconButtons() {
  * The debt. **Console pages only** — a shared component may not appear here, because the
  * migration keeps those and a name missing from one is missing on every page that renders it.
  */
+/*
+ * SH910 — eight rows left by deletion rather than by naming, which is the one way this debt is
+ * allowed to shrink without anybody fixing an icon.
+ *
+ * All eight were the console **list** pages — the `Pencil`/`Trash2` row actions on groups, roles,
+ * users, tokens, auth providers, exchange providers, webhooks and tenants. Each of them had a
+ * bento replacement already carrying named controls, and SH910 deleted the console originals with
+ * the route tree. The debt these rows recorded was never paid; the pages that owed it stopped
+ * existing, and the surfaces a curator reaches now are the ones that were always named.
+ */
 const UNNAMED_DEBT = {
-  "app/console/admin/admin.groups.list.page.tsx": ["Pencil", "Trash2"],
-  "app/console/admin/admin.roles.list.page.tsx": ["Pencil", "Trash2"],
-  "app/console/admin/admin.users.list.page.tsx": ["Pencil", "Trash2"],
-  "app/console/admin/api-token/api-token.list.page.tsx": ["Pencil", "Trash2"],
-  "app/console/admin/auth-provider/auth-provider.list.page.tsx": ["Pencil", "Trash2"],
   "app/console/admin/auth-provider/auth-provider.page.tsx": ["X"],
-  "app/console/admin/exchange-provider/exchange-provider.list.page.tsx": ["Pencil", "Trash2"],
   "app/console/admin/exchange-provider/exchange-provider.page.tsx": ["X"],
-  "app/console/admin/site-webhook/site-webhook.list.page.tsx": ["Pencil", "Trash2"],
-  "app/console/admin/tenant/tenant.list.page.tsx": ["Pencil", "Trash2"],
   "app/console/content/object.children.page.tsx": ["LayoutGrid", "LayoutGrid", "List", "Search", "Sheet"],
   "app/console/content/post-type.edit.page.tsx": ["Trash2"],
   "app/console/content/post-type.list.page.tsx": ["Pencil", "Trash2"],

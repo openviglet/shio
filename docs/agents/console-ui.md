@@ -2019,3 +2019,73 @@ everything from there to the next `*/` — the reader saw one backtick where the
 `/console` at all. The file's own doc warns that "block comments inside string literals would be
 stripped too"; this is the first reader in the tree to be pointed at a string that is one. Patterns
 are read from the raw source; prose-adjacent scans keep the stripped one.
+
+## Retire what nothing renders (SH910)
+
+**40 files deleted, and the census reads 43 → 23 pages with zero console chrome.** That second
+number is the whole of Blocks AQ and AR stated as one assertion: `console-chrome-census.test.mjs`
+opened at `Card 42, PageHeader 39, Sidebar 1` and every value in its map is now an empty list.
+
+### The deletion set was computed, not remembered
+
+A reachability walk from `main.tsx` — resolving `@/`, relative and barrel imports to a fixpoint —
+is what produced the list, run again after each wave until only `vite-env.d.ts` remained (an
+ambient declaration, never imported by design). Three waves, because deleting a file makes the
+next one unreachable:
+
+| wave | what it freed |
+|---|---|
+| the shell, the route files, 19 superseded pages | `page-header.tsx` had no importer left but the adapter |
+| `page-header.tsx` | `header-user-menu`, `tenant-switcher`, `ui/sidebar`, `ui/breadcrumb`, `lib/breadcrumb-key` |
+| those | `ui/avatar`, `ui/sheet`, `ui/skeleton`, `ui/gradient-button` |
+
+Guessing the set from the route tree would have stopped after wave one. Two files nothing had
+rendered *before* this task fell out of the same walk — `tenant-gateway.tsx` and
+`tenant.context.tsx`, both designed, declared and never mounted.
+
+### The premise was slightly wrong, and that is where the work was
+
+§LV.13 says the shell and its page header "stay declared and nothing reaches them". True of the
+shell; **not** true of the header. `AdaptivePageHeader`'s console branch rendered `PageHeader`
+plus `StickySaveBar`, so deleting the file meant collapsing that branch — which is what made this
+a change to twenty-two live pages' chrome rather than a pure deletion. `AdaptivePanel` was left
+alone on purpose: **SH923** asks the package for the frosted panel that retires it, and renaming
+what SH923 will delete is work thrown away. **SH932** carries the names, which no longer describe
+what those components do.
+
+### Eleven readers encoded the two-era model, and a deletion is where they go quietly green
+
+This is the half worth reading before touching any of them. Sixteen assertions failed, in eleven
+files, and **not one was a bug in the deletion** — each had "there are two eras" as its premise.
+Three distinct endings, and choosing wrongly costs coverage rather than a red run:
+
+- **Follow the rule to its new home.** SH46 (a single-tenant install must not advertise tenant
+  admin) named `page-header.tsx` and `app-sidebar.tsx`; the *defect* moved to `bento-nav.ts`, so
+  the reader did. Same for SH679's marketplace reachability. A reader deleted alongside the surface
+  it happened to name is how a closed defect reopens.
+- **Re-derive it.** `outside-shell-chrome.test.mjs` forbade imports needing a `SidebarProvider`.
+  Both probes named deleted modules — a pattern nothing can ever match again, which is a reader
+  reporting a clean tree for ever. The *class* survived one provider along: the bento shell mounts
+  `UserProvider`, and `useCurrentUser` throws without it, on exactly the six routes outside the
+  shell. Its floor of `>= 8` became a named list of those six, because six is small enough to read.
+- **Delete it, and say why in its place.** SH890's header-chip test asserted the console's one
+  shared chrome composed `vg-accent-chip`. No Shio source uses that class now; it is the package's.
+  Re-pointing such a test at whichever file is shared this month asserts less while looking like
+  more.
+
+Two vacuity guards inverted rather than relaxed. The census required every chrome probe to *match*
+a page; zero is now the correct answer, so the probe is exercised against synthetic source instead
+— SH890's reduced-motion rule already worked that way, for the same reason. And `bento-home` gained
+a check that the survey still walks `src/app/console` at all, since "the console home is absent" is
+otherwise indistinguishable from a walk that stopped looking — which is the exact blindness SH898
+was filed against.
+
+### What the deletion cost, recorded rather than absorbed
+
+`breadcrumb-key.test.mjs` went with `lib/breadcrumb-key.ts`, and it carried **SH716**'s assertion.
+`cli/test/assertion-debt.test.mjs` caught it on the next run — an id arriving in the debt by a
+route none of its groups described: *the assertion was deleted with the surface it guarded*. It is
+a declared line now, naming **SH933**, because the retirement is half done: twenty-two live pages
+still push crumbs into a provider nothing renders. **SH934** records the other loss —
+`tenant-switcher.tsx` was deleted unreferenced, and it was the only caller of
+`POST /tenant/{name}/switch`.

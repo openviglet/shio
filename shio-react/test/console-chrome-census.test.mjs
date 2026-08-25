@@ -116,53 +116,58 @@ function isBento(source) {
  * Deleting it is not losing coverage. `chrome-adapter.test.mjs` asserts that no page mounts
  * `StickySaveBar` directly, which is the same rule from the other side and a stricter one.
  */
+/*
+ * SH910 — two of the three probes went the way the StickySaveBar one did, and for a stronger
+ * reason: the modules they matched **no longer exist**. `@/components/page-header`,
+ * `@/components/ui/sidebar` and `@/components/app-sidebar` were deleted with the console shell
+ * that rendered them, so a probe for either is not a zero that might move — it is a pattern
+ * nothing in the repository can ever match again.
+ *
+ * `Card` stays, and it is the only one that could still fire: `@/components/ui/card` is a live
+ * module, imported by components outside this tree. A console page reaching for it again is the
+ * regression this reader now exists to catch.
+ */
 const CONSOLE_CHROME = [
-  ["PageHeader", /@\/components\/page-header/],
   ["Card", /@\/components\/ui\/card/],
-  ["Sidebar", /@\/components\/ui\/sidebar|@\/components\/app-sidebar/],
 ]
 
 /**
- * Every console page still on console-era chrome, and what it renders. **This is the debt.**
+ * Every console page still on console-era chrome, and what it renders. **The debt, and it is now
+ * zero.**
  *
- * A page migrated to bento is deleted from here, not decremented from a total. A new console page
- * added on the old chrome has to be written in here, in a diff somebody reads, which is the only
- * moment anybody will ask whether it should have been bento to begin with.
+ * SH886 opened this at 43 pages carrying `Card 42, PageHeader 39, Sidebar 1`. SH910 closes it at
+ * **23 pages and nothing**: every value below is an empty list, which is the whole of Blocks AQ
+ * and AR expressed as one assertion. Twenty of the original names are gone rather than emptied —
+ * those pages were deleted with the console route tree, because a bento surface had replaced them.
+ *
+ * The twenty-three that remain are the adapter pages. They are console-*era* by directory and by
+ * import, and they render no console chrome: their header is `AdaptivePageHeader`, their panels
+ * are `AdaptiveSectionCard`/`AdaptivePanel`, and every one of them is mounted under `/bento`.
+ *
+ * Keep the shape. A page migrated to bento is deleted from here, not decremented from a total, and
+ * a new console page added on the old chrome has to be written in here, in a diff somebody reads —
+ * which is the only moment anybody will ask why it was not bento to begin with.
  */
 const STILL_CONSOLE = {
   // SH906 — the three bespoke surfaces, empty by migration. The review queue and the
   // activity log are a hero over a list, which the package has no page component for;
   // the marketplace grid stays a grid, its tiles now real buttons rather than divs.
   "admin/activity/activity.list.page.tsx": [],
-  "admin/admin.group.page.tsx": ["PageHeader", "Card"],
-  "admin/admin.groups.list.page.tsx": ["PageHeader", "Card"],
-  "admin/admin.role.page.tsx": ["PageHeader", "Card"],
-  "admin/admin.roles.list.page.tsx": ["PageHeader", "Card"],
-  "admin/admin.root.page.tsx": [],
   // SH904 — empty by migration. The user *editor* stays an adapter page rather than taking
   // the entity shell: a user has no title and no description, its identity is a login key and
   // its name is two columns, so a hero that inline-edits `title` renames the login on blur.
   "admin/admin.user.page.tsx": [],
-  "admin/admin.users.list.page.tsx": ["PageHeader", "Card"],
-  "admin/api-token/api-token.list.page.tsx": ["PageHeader", "Card"],
   // SH905 — the six infrastructure editors, empty by migration. Every card in them had a
   // real CardHeader, which is why this slice took AdaptiveSectionCard where SH902's
   // header-less panels needed AdaptivePanel.
   "admin/api-token/api-token.page.tsx": [],
-  "admin/auth-provider/auth-provider.list.page.tsx": ["PageHeader", "Card"],
   "admin/auth-provider/auth-provider.page.tsx": [],
   "admin/email-config/email-config.page.tsx": [],
-  "admin/exchange-provider/exchange-provider.list.page.tsx": ["PageHeader", "Card"],
   "admin/exchange-provider/exchange-provider.page.tsx": [],
   "admin/marketplace/marketplace.list.page.tsx": [],
   "admin/review/review.list.page.tsx": [],
-  "admin/site-webhook/site-webhook.list.page.tsx": ["PageHeader", "Card"],
   "admin/site-webhook/site-webhook.page.tsx": [],
-  "admin/tenant/tenant.list.page.tsx": ["PageHeader", "Card"],
   "admin/tenant/tenant.page.tsx": [],
-  "console.root.page.tsx": ["Sidebar"],
-  "content/folder.edit.page.tsx": ["PageHeader", "Card"],
-  "content/folder.new.page.tsx": ["PageHeader", "Card"],
   /*
    * SH900 — an empty list, and the third way to reach one. `admin.root.page.tsx`,
    * `not-found.page.tsx` and `visual-editor.page.tsx` render no chrome this reader knows
@@ -172,7 +177,6 @@ const STILL_CONSOLE = {
    * renders bento under the provider at /bento/content/object/:objectId.
    */
   "content/object.children.page.tsx": [],
-  "content/post-type-select.page.tsx": ["PageHeader", "Card"],
   // SH892 — the Card marker is gone because the section chrome is the adapter now, not
   // @/components/ui/card. The page is still console-era: PageHeader and the console sticky
   // save bar are what SH902 replaces.
@@ -192,17 +196,11 @@ const STILL_CONSOLE = {
   // SH903 — all three empty by migration: AdaptivePageHeader, AdaptivePanel and the shared
   // AdaptiveEmptyState replace the header, the card and three copies of the "nothing here" void.
   "content/search.page.tsx": [],
-  // SH892 — same swap; SH899 owns the hero and the list shape around it.
-  "content/site.edit.page.tsx": ["PageHeader"],
-  "content/site.import.page.tsx": ["PageHeader", "Card"],
-  "content/site.list.page.tsx": ["PageHeader", "Card"],
-  "content/site.new.page.tsx": ["PageHeader", "Card"],
   "content/static-file.list.page.tsx": [],
   "content/trash.page.tsx": [],
   // SH908 — empty by migration. The explorer's chrome was a header and a toolbar strip; both go
   // through the adapters now, and its body is GraphiQL, which is nobody's chrome.
   "graphql/graphql.page.tsx": [],
-  "home/home.page.tsx": ["PageHeader", "Card"],
   /*
    * SH908 — still empty, and now for a *third* reason. It renders no console chrome because it
    * may not: it is mounted at App.tsx's bare `*` as well as in both shells, and `PageHeader`
@@ -297,20 +295,30 @@ test("SH886: the reader is not vacuous — it reads real pages and a classifier 
   const all = { ...still }
 
   // A walk that found nothing would report an empty census and pass against an empty declaration,
-  // which is the one failure mode a held list cannot catch by itself.
-  assert.ok(Object.keys(all).length + MIGRATED.length > 40,
+  // which is the one failure mode a held list cannot catch by itself. The floor was 40 while the
+  // console tree had 43 pages; SH910 deleted twenty of them, so it is 20 now — still far enough
+  // above zero to catch a walk that has lost the directory.
+  assert.ok(Object.keys(all).length + MIGRATED.length > 20,
     `SH886: the walk yielded ${Object.keys(all).length} pages — the tree moved and this reader is `
       + "now measuring an empty directory, which would read as a finished migration")
 
-  // And every probe must still match something. A renamed import path turns a probe into a
-  // permanent zero, which silently retires that chrome from the census rather than from the
-  // console — the count would fall and nobody would have migrated anything.
-  for (const [id] of CONSOLE_CHROME) {
-    const hits = Object.values(all).filter((marks) => marks.includes(id)).length
-    assert.ok(hits > 0,
-      `SH886: the ${id} probe matches no page. Either every page carrying it was migrated — then `
-        + "delete the probe in the same diff — or its import path was renamed and this reader has "
-        + "gone blind to a whole layer of chrome while its count went down.")
+  /*
+   * SH910 — the probes must still be able to fire, and "matches a real page" is no longer how to
+   * ask that.
+   *
+   * Until the cutover, a probe matching nothing meant a renamed import path and a reader gone
+   * blind. Now it is the **expected** state: the debt is zero, so a probe that matched a page
+   * would be the finding. The vacuity question survives, and it is asked against synthetic source
+   * instead — exactly the way SH890's reduced-motion rule is, and for the same reason. A rule
+   * whose body never runs is a rule nobody has seen work.
+   */
+  for (const [id, probe] of CONSOLE_CHROME) {
+    assert.equal(Object.values(all).filter((marks) => marks.includes(id)).length, 0,
+      `SH910: the ${id} probe matched a console page. The console era is retired — a page reaching `
+        + "for that import again is the regression this reader was kept for.")
+    assert.ok(probe.test(`import { Card } from "@/components/ui/card"`),
+      `SH886: the ${id} probe no longer matches the import it is written for, so it is a pattern `
+        + "that can never fire and this reader has gone blind while reporting zero.")
   }
 })
 

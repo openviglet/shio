@@ -233,6 +233,17 @@ const DEBT = [
   // it — a sweep of hardcoded English with nothing watching for the next one.
   "SH7", "SH8", "SH14", "SH48", "SH49", "SH56", "SH57", "SH59", "SH73",
   "SH179", "SH180", "SH182", "SH237",
+  // SH716 arrives by a route none of the groups above describes: **its assertion was deleted with
+  // the surface it guarded.** `breadcrumb-key.test.mjs` asserted that a breadcrumb trail's React
+  // keys are unique, and SH910 deleted `lib/breadcrumb-key.ts` along with the console page header
+  // — the only thing that ever called `crumbKey`. Nothing renders a breadcrumb now: the bento shell
+  // says so in as many words ("the breadcrumb bar is console chrome, and the bento era puts a
+  // page's identity in its own hero").
+  // It is debt rather than a paid-off line because the retirement is half done. Twenty-two live
+  // pages still push crumbs into `BreadcrumbProvider`, so the data structure SH716 was about is
+  // still being built — by nobody, for nobody. **SH933** removes those calls; if it instead
+  // restores a rendered trail, this assertion comes back with it and this line goes.
+  "SH716",
   // PAID (SH529). Removals and port-or-deprecate decisions: `ShRemovalsStayedRemovedTest` asserts
   // the legacy AngularJS bundles, the Thymeleaf starter and the four deprecated widget names are
   // absent. They ranked first for return-risk rather than for cost — an absence has NOBODY looking

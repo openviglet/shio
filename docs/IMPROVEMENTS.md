@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.13 Retire what nothing renders (SH910)
-
-After the cutover the console shell, its sidebar, its page header and the breadcrumb
-chrome are still declared and still compile, and nothing reaches them. Left there they
-are what the next new page copies, because they are what a grep for an existing pattern
-finds first. They are also Shio's last use of the design system's console-era exports,
-so removing them here is what lets the package deprecate that era without breaking a
-live consumer. Delete them together with the console route tree, and let the duplication
-lint confirm nothing is quietly re-importing what was removed.
-
 ### LV.14 The documentation describes the product that was replaced (SH911)
 
 The published end-user documentation walks a curator through the console: where the
@@ -1082,6 +1072,103 @@ than assuming.
 
 Worth measuring first: how many installs have more than one tenant, and whether any of
 them share console URLs at all.
+
+### LV.22 The adapters stopped adapting, and kept the name (SH932)
+
+`AdaptivePageHeader` chose between a console header plus a sticky save bar and the bento
+hero morph. SH910 deleted the console branch, so it now maps this product's header props
+onto `BentoHero` and `BentoFormHero` and nothing else. `AdaptivePanel` and
+`AdaptiveEmptyState` are one task behind it: SH923 asks the package for the frosted
+panel that would retire the first, and the second's console branch is in the same
+position the header's was.
+
+The name is the problem rather than the indirection. A wrapper that maps twenty-two call
+sites onto two package components earns its file; a wrapper called *Adaptive* tells the
+next reader there is a chrome to choose, and the cheapest way to honour that is to write
+the branch back.
+
+It was left out of SH910 deliberately, and the reason is worth keeping. Four readers
+encode Block AR's two-era model by name — `console-chrome-census`, `chrome-adapter`,
+`surface-digest` and `outside-shell-chrome` — and `console-chrome-census` decides a
+page's *era* from whether it imports the bento subpath, with `AdaptiveSectionCard`
+excluded by name as era-neutral. Renaming the components moves that exclusion list, the
+census keys and the digest's classifier in one diff. That is a coordinated pass over the
+instruments, and smuggling it into a deletion is how one of the four ends up quietly
+classifying nothing.
+
+Do it after SH923, so the panel is retired rather than renamed twice.
+
+### LV.23 A breadcrumb built for nobody (SH933)
+
+The console page header rendered the breadcrumb trail. SH910 deleted it, and the bento
+shell is explicit that it will not: "the breadcrumb bar is console chrome, and the bento
+era puts a page's identity in its own hero." What survived the deletion is the
+*producer* side — twenty-two pages calling `useBreadcrumb` and `resetBreadcrumb` on
+every mount, pushing labels and hrefs into a provider with no consumer.
+
+Nothing fails. That is the whole problem: the calls typecheck, the provider stores what
+it is given, and a page copied from any of the twenty-two inherits the habit. It is the
+same hazard SH910 was filed against, one layer in — what the next new page copies is
+what a grep for an existing pattern finds first.
+
+There is a second cost, and it is the one that has a number. `lib/breadcrumb-key.ts`
+went with the renderer, and `breadcrumb-key.test.mjs` with it, so **SH716** — a defect
+about duplicate React keys in a trail — lost its assertion and is now a declared line in
+`assertion-debt`. That entry names this task.
+
+Two honest endings, and picking is the work. Either strip the calls and retire
+`BreadcrumbProvider` from `App.tsx`, which makes the ledger entry a deletion; or decide
+the bento era wants a trail after all, render one, and restore SH716's assertion beside
+it. What is not an ending is twenty-two pages feeding a store nobody reads.
+
+### LV.24 The tenant switcher went out with the sidebar (SH934)
+
+`components/tenant-switcher.tsx` called `POST /tenant/{name}/switch` and lived in the
+console sidebar, gated on `discovery.multiTenant` since SH22. SH910 deleted it because
+nothing rendered it any more — which was true, and is not the same as nothing needing
+it.
+
+`ShVigletTenantResolver` reads the tenant from the session, a CDA token or an OIDC
+claim, and never from the URL. The switch endpoint is what changes the session's answer.
+With no UI calling it, a curator with access to two tenants sees whichever one they were
+last put in, and the only ways out are logging in again or a hand-written POST. SH909
+dropped the `/{tenant}/console` URL prefix in the same block, so the second lever went
+at the same time; **SH931** covers naming a tenant in a shareable link, which is the
+neighbouring problem and not this one.
+
+The bento header has one control, `BentoUserMenu`, and it takes `accountRoute` and
+`logoutUrl`. A tenant switch belongs beside those: it is an identity action, it is gated
+on the same `multiTenant` fact `bento-nav.ts` already resolves, and `useDiscovery` has
+exactly one consumer today — a second one is what `tenant-nav-gating.test.mjs` now fails
+on, so routing it through the nav declaration is the shape to keep.
+
+Worth checking before building: how many installs run multi-tenant. This is a real gap
+for those and nothing at all for the rest, which is what should decide its size.
+
+### LV.25 Two route fields that no longer differ (SH935)
+
+`bento-nav.ts` gives every surface a `fallbackRoute` — where it lived — and an optional
+`bentoRoute` — where it moved. `bentoNavTarget()` prefers the second, which made a
+migration one line: add `bentoRoute`, and the rail, the palette and every hub follow.
+
+That worked, and SH909 ended it in a way the file has not caught up with. Repointing
+`ROUTES.CONSOLE` at `/bento` moved every constant the fallbacks are built from, so
+`fallbackRoute: ROUTES.SEARCH` is now `/bento/content/search`. Only `sites` ever
+declared a `bentoRoute`; the other sixteen entries resolve, through the fallback, to
+exactly the path a `bentoRoute` would have named. The preference still runs and can no
+longer prefer anything.
+
+Two things follow, and the second is the reason to file this rather than leave it
+tidy-looking. The palette renders an external-link marker for any entry **without** a
+`bentoRoute`, so sixteen migrated surfaces are marked as if they led out of bento — a
+wrong signal drawn from a field that has stopped meaning what it says. And
+`bento-nav.test.mjs` asserts that every entry keeps the route it moved *from*, which was
+reversibility insurance for a migration that has shipped.
+
+Collapse the pair to one `route`, drop the marker rule or re-derive it from something
+true, and let the test assert the single field. The package owns `BentoNavItem`, so the
+shape change is a conversation with it rather than a local edit — which is why this is a
+task and not a cleanup.
 
 ## LVI What Turing's index never receives
 

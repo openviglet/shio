@@ -66,13 +66,20 @@ const MUTED_ICON_CHIP = /\bh-8 w-8 text-muted-foreground\b/
  * owner shipped without paying it is a row that has to be re-owned in the open, not quietly
  * inherited — otherwise the list stops meaning what it says on the first task that surprises it.
  */
-const STILL_HAND_ROLLED = {
-  "app/console/admin/api-token/api-token.list.page.tsx": "SH909",
-  "app/console/admin/auth-provider/auth-provider.list.page.tsx": "SH909",
-  "app/console/admin/exchange-provider/exchange-provider.list.page.tsx": "SH909",
-  "app/console/admin/site-webhook/site-webhook.list.page.tsx": "SH909",
-  "app/console/admin/tenant/tenant.list.page.tsx": "SH909",
-}
+/*
+ * SH910 — and all five went the way the row above says they would.
+ *
+ * They named SH909 because the console originals were untouched and would go with the route tree.
+ * They did: the five files are deleted, the bento lists beside them use the shared
+ * `AdaptiveEmptyState`, and this debt is **empty**.
+ *
+ * Empty is the interesting state for a held list, because it is the one where somebody deletes the
+ * reader. Do not. The rule it enforces — nobody writes the `py-16 text-center` void a second time —
+ * is what the list was always for, and the census below runs over every `.tsx` under `src/`. A new
+ * page hand-rolling that markup fails against an empty declaration exactly as it would have failed
+ * against a full one.
+ */
+const STILL_HAND_ROLLED = {}
 
 /** Every `.tsx` under `src/`, minus the adapter itself — it is allowed to hold the markup once. */
 function sources() {

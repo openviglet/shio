@@ -15,24 +15,21 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH910** (deps: SH909 ✅) **the console shell, its sidebar and its page header stay declared after nothing renders them** — They are also the last Shio consumer of the design system's console-era exports. → §LV.13
 - 📋 **SH911** (deps: SH909 ✅) **the published documentation shows the console this work replaces, in every screenshot and every walkthrough** — A curator following the docs after the cutover is looking at a product that no longer exists. → §LV.14
 - 📋 **SH923** (deps: —) **the layer has no frosted panel without a heading, so four surfaces silently rendered console cards** — Every consumer needing one hand-rolls it, and the moment two differ the product is inconsistent invisibly. → §LV.16
 - 📋 **SH924** (deps: —) **POST /api/v2/group accepts a blank id and stores a row no API path can read, update or delete** — A write that succeeds and produces an unreachable row is worse than a refusal, and only the client that sent it can tell. → §LV.17
 - 📋 **SH927** (deps: SH908 ✅) **the explorer's Monaco workers fail under the Vite dev server, so a local console check is red on a page the jar serves** — A check that is red locally and green in CI is one people stop reading, and this one is red for the environment rather than the code. → §LV.19
 - 📋 **SH931** (deps: SH909 ✅) **a bento URL cannot name its tenant, so a shared console link no longer says which tenant it is for** — The console prefix carried it and bento is unscoped; the session still resolves it, so what is lost is a link somebody pastes to a colleague. → §LV.21
+- 📋 **SH932** (deps: —) **three components named Adaptive* no longer adapt, and the name is what the next page copies** — Each now has one branch, so the name promises a choice that was deleted and invites a second console era to be written against it. → §LV.22
+- 📋 **SH933** (deps: —) **twenty-two pages build a breadcrumb trail that nothing has rendered since the console shell went** — The calls compile, cost a render each and teach the next page to make them, and SH716's assertion went with the renderer. → §LV.23
+- 📋 **SH934** (deps: —) **a multi-tenant install has no way to switch tenant: the only switcher was in the console sidebar** — TenantSwitcher was deleted unreferenced with the shell, so a curator on two tenants can reach only whichever the session already holds. → §LV.24
+- 📋 **SH935** (deps: —) **bento-nav still carries fallbackRoute and bentoRoute per entry, and since the cutover both resolve to the same path** — Sixteen of seventeen entries declare only a fallback that now points into bento, so the field pair records a migration that is over. → §LV.25
 
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH930** (deps: —) **the marketplace pages republish blueprint copy the site's em-dash rule does not reach** — Sixteen em dashes in the shipped blueprints' field help and sample content reach shio.viglet.org, and those same strings are what a curator reads in the console. → §LVIII.2
 
 ## Priority
-
-## Done when — SH910
-
-- **The console shell is deleted, not merely unreachable** The sidebar, page header and
-  breadcrumb chrome are gone with the console route tree, and the duplication lint
-  confirms nothing re-imports a console-era export.
 
 ## Done when — SH911
 

@@ -52,24 +52,40 @@ const BENTO_HOME = "bento/home/home.page.tsx"
 const homeSource = stripComments(
   readFileSync(join(SRC, "app", "bento", "home", "home.page.tsx"), "utf8"))
 
-test("SH898: the survey sees both trees, and the two homes are different eras", () => {
+/*
+ * SH910 — there is one home now, and the assertion is the other half of the same fact.
+ *
+ * While both trees were mounted this asserted that the survey saw two homes in two eras. The
+ * console one is deleted, so the question becomes: does the survey still walk **both directories**
+ * — and is the surviving home the bento one?
+ *
+ * The second half is not a formality. SH898's actual finding was a digest that walked only
+ * `src/app/console` and therefore answered "No surface moved (43 compared)" across an entire
+ * migration. A survey that quietly went back to one directory would now report the console home as
+ * simply absent and pass, which is the same blindness wearing this task's clothes.
+ */
+test("SH898: the survey still walks both trees, and the one home left is the bento one", () => {
   const surfaces = survey()
 
-  assert.ok(surfaces[CONSOLE_HOME],
-    `SH898: ${CONSOLE_HOME} is not in the survey. Until SH909 removes the console tree it stays`
-      + " put — a migration adds a surface, it does not edit one.")
+  assert.equal(surfaces[CONSOLE_HOME], undefined,
+    `SH898: ${CONSOLE_HOME} is back in the survey. SH910 deleted the console tree — a file there`
+      + " again means somebody re-added a page to the era this migration retired.")
   assert.ok(surfaces[BENTO_HOME],
     `SH898: ${BENTO_HOME} is not in the survey. If the digest walked only src/app/console again,`
       + " every migration in Block AR would report 'No surface moved' — which is exactly what the"
       + " whole of SH898 reported before the survey learned about the second tree.")
 
-  assert.equal(surfaces[CONSOLE_HOME].era, "console")
   assert.equal(surfaces[BENTO_HOME].era, "bento",
     "SH898: the migrated home is not classified as bento. Era is decided by the bento subpath"
       + " import, so this means the page is composing something else.")
-  assert.notEqual(surfaces[CONSOLE_HOME].digest, surfaces[BENTO_HOME].digest,
-    "SH898: the two homes hash to the same digest, which would mean they compose the same chrome"
-      + " — so one of them is not what it claims to be")
+
+  // The survey must still reach the console directory, or "the console home is gone" is a claim
+  // about a walk that stopped looking rather than about a file that stopped existing.
+  const consoleSurfaces = Object.keys(surfaces).filter((name) => name.startsWith("console/"))
+  assert.ok(consoleSurfaces.length > 15,
+    `SH898: the survey found ${consoleSurfaces.length} console-tree surfaces. Twenty-three adapter`
+      + " pages are still there, so a number near zero means the walk lost the directory and the"
+      + " assertion above is vacuous.")
 })
 
 test("SH898: the migrated home composes the package's tiles and no Card", () => {
