@@ -29,6 +29,7 @@
  * put where somebody is already looking.
  */
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -176,6 +177,62 @@ test("SH758: the reader is not vacuous — it reads a real ledger, a real mirror
     `SH758: diffing the ledger from the empty tree found ${fromTheBeginning?.length} added id(s). `
     + "Every shipped line was added at some point, so a handful means the pattern no longer "
     + "matches the ledger's shape and a real ship would slip past unmentioned.");
+});
+
+test("SH911: an entry amended in place is not a ship the matrix owes a row for", () => {
+  /*
+   * `shippedSince` reads added ledger lines out of a range diff, and `roadkeep record amend`
+   * rewrites an entry in place — so a correction arrives as a `-` line and a `+` line for the same
+   * id. Counting only the `+` side dates a years-old entry to the commit that fixed a word in it.
+   *
+   * Measured: SH910 deleted forty files and corrected the seven ledger entries whose prose named
+   * them. This reader then listed all seven as owing a COVERAGE row, and the queue of five real
+   * ids became eleven — one past the ceiling that fails the build, on ids nobody had shipped.
+   *
+   * Driven through the real HEAD range so the parse is the one that ships. `SH179` is one of the
+   * seven SH910 corrected, and `SH910` itself is the genuine ship in the same commit — the pair
+   * that has to come apart.
+   */
+  const COMMIT = "b4199ee46";
+  let diff;
+  try {
+    diff = execFileSync(
+      "git", ["show", COMMIT, "-p", "--unified=0", "--", "docs/CHANGELOG.md"],
+      { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    );
+  } catch {
+    console.log(`SH911: ${COMMIT} is not in this clone — skipped`);
+    return;
+  }
+
+  /*
+   * Both sets are derived from the commit rather than written down. Naming the amended ids here
+   * would credit them as asserted (SH630 counts an id in an assertion message), and one of them is
+   * on the declared debt — so a test *about* amendments would quietly pay a debt it never closed.
+   */
+  const gained = new Set([...diff.matchAll(/^\+- \*\*(SH\d+)\*\*/gm)].map(([, id]) => id));
+  const lost = new Set([...diff.matchAll(/^-- \*\*(SH\d+)\*\*/gm)].map(([, id]) => id));
+  const amended = [...gained].filter((id) => lost.has(id));
+  const genuine = [...gained].filter((id) => !lost.has(id));
+
+  assert.ok(amended.length >= 2 && genuine.length >= 1,
+    `SH911: that commit no longer carries the shape this asks about (${amended.length} amended,`
+      + ` ${genuine.length} shipped), so the two assertions below prove nothing.`);
+
+  const range = shippedSince(ROOT, `${COMMIT}~1`);
+  if (range === null) {
+    console.log("SH911: git could not diff that range — skipped");
+    return;
+  }
+
+  assert.deepEqual(range.filter((id) => amended.includes(id)), [],
+    "SH911: an entry amended in place is being reported as newly shipped. Those entries shipped"
+      + " years before the commit that corrected the file paths in their sentences, and counting"
+      + " them demands end-user documentation rows for work documented long ago.");
+  assert.deepEqual(genuine.filter((id) => !range.includes(id)), [],
+    "SH911: a genuine ship in that same commit is missing, so the amendment rule has swallowed"
+      + " real arrivals — the direction that fails silently, since the queue then reads empty and"
+      + " nothing is ever asked for.");
 });
 
 test("SH758: the report fires on an id that shipped and is not named", () => {

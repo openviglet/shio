@@ -85,7 +85,25 @@ export function shippedSince(root, sha) {
       ["log", `${sha}..HEAD`, "-p", "--unified=0", "--", "docs/CHANGELOG.md"],
       { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
     );
-    return [...new Set([...diff.matchAll(/^\+- \*\*(SH\d+)\*\*/gm)].map((m) => m[1]))];
+    /*
+     * SH911 — net arrivals, because `roadkeep record amend` rewrites an entry in place.
+     *
+     * An amendment puts the id on a `-` line and again on a `+` one, so counting only `+` dates a
+     * years-old entry to the commit that corrected a word in it. SH910 deleted forty files and
+     * corrected the seven ledger entries whose prose named them; this reader then listed all seven
+     * as owing a COVERAGE row, which pushed a queue of five over the ceiling that fails the build.
+     *
+     * Net rather than "drop anything that was also removed": across a *range* an id can legitimately
+     * ship in one commit and be amended in a later one — `+2 / -1` — and that is still a ship.
+     */
+    const net = new Map();
+    for (const [, id] of diff.matchAll(/^\+- \*\*(SH\d+)\*\*/gm)) {
+      net.set(id, (net.get(id) ?? 0) + 1);
+    }
+    for (const [, id] of diff.matchAll(/^-- \*\*(SH\d+)\*\*/gm)) {
+      net.set(id, (net.get(id) ?? 0) - 1);
+    }
+    return [...net].filter(([, count]) => count > 0).map(([id]) => id);
   } catch {
     return null;
   }

@@ -2089,3 +2089,27 @@ a declared line now, naming **SH933**, because the retirement is half done: twen
 still push crumbs into a provider nothing renders. **SH934** records the other loss —
 `tenant-switcher.tsx` was deleted unreferenced, and it was the only caller of
 `POST /tenant/{name}/switch`.
+
+## What a curator has to relearn, and the two things nobody can (SH911)
+
+The published documentation described the console this block replaced. Rewriting it is in
+`vigletdocs/docs-shio` and is its own commit; what belongs here is what the rewrite **found**,
+because two of the three findings are about the product rather than the prose.
+
+**There were no screenshots.** §LV.14 asked for "every screenshot" to be retaken, and the
+published Shio pages carry none — every image under them is an SVG diagram of a flow, not a
+picture of a screen. The docs debt was entirely prose, which made it a smaller task than filed
+and is worth recording so the next cutover does not budget for a photo session.
+
+**The surface area of the change is small and specific.** Four claims went stale, not forty: the
+address (`/console` → `/bento`), the sidebar (a rail carrying two areas, plus the palette that
+replaces the list), the breadcrumb bar, and the dashboard's name. One thing that reads as stale is
+not: **the content browser still draws its own path** in its sub-toolbar, so "click a folder to go
+in, use the path to come back out" survived the header that used to carry a trail. Checking that
+before rewriting is what kept the page true.
+
+**Two entries are documented as losses**, which is the part a docs task is not supposed to produce.
+The pending-review badge has no renderer under a rail that carries areas (**SH936**), and the
+tenant switcher went with the sidebar (**SH934**). Both now carry a `:::caution` telling a reader
+what to do instead — check the queue on a schedule, switch tenants through the API — because a page
+that simply stopped mentioning them would read as though they had never existed.

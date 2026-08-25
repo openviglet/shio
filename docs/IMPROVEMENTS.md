@@ -964,16 +964,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.14 The documentation describes the product that was replaced (SH911)
-
-The published end-user documentation walks a curator through the console: where the
-sidebar is, what the header shows, how the breadcrumb works - and it shows all of it in
-screenshots. After the cutover none of that is what a curator sees. This project has
-been here before, with a documentation set that contradicted every block shipped under
-it, and the lesson recorded then was that a docs debt of this shape is noticed by nobody
-working in the code. Take it in the same block as the cutover rather than as a
-follow-up, since a follow-up is what it became last time.
-
 ### LV.16 A frosted panel with nothing to title (SH923)
 
 `AdaptiveSectionCard` re-skins only where it finds a header child — its own line is
@@ -1169,6 +1159,30 @@ Collapse the pair to one `route`, drop the marker rule or re-derive it from some
 true, and let the test assert the single field. The package owns `BentoNavItem`, so the
 shape change is a conversation with it rather than a local edit — which is why this is a
 task and not a cleanup.
+
+### LV.26 The queue nobody is told about (SH936)
+
+The console sidebar carried a badge on Agent Review when runs were waiting, absent
+rather than zero when there was nothing to decide (SH207). The bento rail draws
+**sections only** — Content and Administration — so the badge has nowhere to sit, and
+`ReviewPendingProvider` is deliberately not mounted: a fetch nothing reads.
+
+That was the right call for the shell and it leaves a real hole. Approval is the
+curator's half of the agent-native design: P7 says never surprise the curator, and an
+agent writing unattended now produces drafts that wait until somebody thinks to open a
+screen. The documentation had to be corrected to say so out loud, which is the tell that
+this is a capability loss rather than a cosmetic one.
+
+Everything needed is already built. `review-pending.context.tsx` holds the count and the
+invalidation — written that way because a badge disagreeing with the page it links to is
+the one number a curator learns to distrust — and `ShReviewService` exposes a count
+cheap enough for navigation.
+
+What is missing is a place to draw it, and choosing is the work. On the **Administration
+rail section**, where the old badge's meaning lives but a whole area aggregates; on an
+**Administration hub** of tiles, which the bento design expected and the rail was built
+to allow; or in the **header** beside the user menu, the only spot visible from every
+surface. Pick the spot, then mount the provider.
 
 ## LVI What Turing's index never receives
 

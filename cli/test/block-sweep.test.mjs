@@ -215,18 +215,50 @@ function shipCommits() {
   const log = git([
     "log", `-${WINDOW}`, "-p", "--unified=0", `--format=${COMMIT_MARK}%H`, "--", "docs/CHANGELOG.md",
   ]);
-  if (!log) return new Map();
+  return log ? shipsIn(log) : new Map();
+}
+
+/** The parse {@link shipCommits} runs, separated from `git` so the rule below can state it. */
+function shipsIn(log) {
   const byId = new Map();
   let commit = null;
+  let added = new Map();
+  let removed = new Set();
+
+  /*
+   * SH911 — an id that leaves as well as arrives was **amended**, not shipped.
+   *
+   * `roadkeep record amend` rewrites an entry in place, so its diff carries the id on a `-` line
+   * and again on a `+` one. Reading only the `+` side dates a years-old entry to the commit that
+   * corrected a word in it — and since a block is "finished" here when the ledger holds it and the
+   * roadmap declares no heading, every long-closed block whose prose was touched reads as having
+   * finished *today* and owing a four-surface sweep.
+   *
+   * Measured: SH910 deleted forty files and corrected the seven ledger entries whose prose named
+   * them, and the next run demanded sweeps for Blocks O, E and G — none of which had shipped
+   * anything in months. The correction is the one signal the diff already carries.
+   */
+  const settle = () => {
+    for (const [id, sha] of added) {
+      if (!removed.has(id) && !byId.has(id)) byId.set(id, sha);
+    }
+    added = new Map();
+    removed = new Set();
+  };
+
   for (const line of log.split("\n")) {
     if (line.startsWith(COMMIT_MARK)) {
+      settle();
       commit = line.slice(COMMIT_MARK.length).trim();
       continue;
     }
-    const id = /^\+- \*\*(SH\d+)\*\*/.exec(line);
     // First wins: the log is newest first, so an id touched twice keeps the commit that shipped it.
-    if (id && commit && !byId.has(id[1])) byId.set(id[1], commit);
+    const gained = /^\+- \*\*(SH\d+)\*\*/.exec(line);
+    if (gained && commit && !added.has(gained[1])) added.set(gained[1], commit);
+    const lost = /^-- \*\*(SH\d+)\*\*/.exec(line);
+    if (lost && commit) removed.add(lost[1]);
   }
+  settle();
   return byId;
 }
 
@@ -256,6 +288,32 @@ function movedSince(sha) {
     return Boolean(log?.trim());
   });
 }
+
+test("SH911: an amended ledger entry is a correction, not a ship", () => {
+  /*
+   * The diff SH910 actually produced, in miniature: one entry written for the first time, and one
+   * whose prose was corrected because it named a file that commit deleted. Both arrive as `+`
+   * lines, and only the second also leaves as a `-` one.
+   */
+  const log = [
+    `${COMMIT_MARK}aaaa111`,
+    "+- **SH9301** — Forty files deleted by a reachability walk.",
+    "-- **SH9302** — **\"View Site\" goes somewhere that exists** ([site.list.page.tsx](../old)).",
+    "+- **SH9302** — **\"View Site\" goes somewhere that exists** (`site.list.page.tsx`, deleted).",
+  ].join("\n");
+
+  const ships = shipsIn(log);
+
+  assert.deepEqual([...ships.keys()], ["SH9301"],
+    "SH911: an entry that leaves and arrives in one commit was amended in place, and dating it to"
+      + " that commit reports every long-closed block whose prose was touched as having finished"
+      + " today. SH910 corrected seven such entries and this reader demanded a four-surface sweep"
+      + " for Blocks O, E and G, none of which had shipped in months.")
+  assert.equal(ships.get("SH9301"), "aaaa111",
+    "SH911: a genuine ship lost its commit — the amendment rule must not swallow the ids it is"
+      + " written to keep, which is the direction that fails silently: no block ever looks"
+      + " finished and this whole reader goes quiet.")
+})
 
 /**
  * The finished blocks whose last ship is inside the window.
