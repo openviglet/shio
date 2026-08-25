@@ -3,7 +3,6 @@ import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
 import { Loader2, Save, Sparkles } from "lucide-react"
@@ -23,18 +22,13 @@ export default function PostUnifiedNewPage() {
   const { folderId, postTypeName } = useParams() as { folderId: string; postTypeName: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [postType, setPostType] = useState<ShPostType | null>(null)
   const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
-      { label: t("content.newPost") },
-    ])
     postTypeService.get(postTypeName).then(setPostType)
-  }, [postTypeName, resetBreadcrumb, t])
+  }, [postTypeName, t])
 
   const schema = useMemo(() => postFormSchema(postType), [postType])
 

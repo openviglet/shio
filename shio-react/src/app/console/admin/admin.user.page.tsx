@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconShieldCog } from "@tabler/icons-react"
 import { Loader2, Save } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -22,20 +21,14 @@ export default function AdminUserPage() {
   const isNew = userId === "new"
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const form = useForm<ShUser>()
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("admin.users"), href: `${ROUTES.ADMIN_ROOT}/users` },
-      { label: isNew ? t("admin.newUser") : t("admin.editUser") },
-    ])
     if (!isNew && userId) {
       service.getByUsername(userId).then((data) => form.reset(data))
     }
-  }, [userId, isNew, resetBreadcrumb, t, form])
+  }, [userId, isNew, t, form])
 
   async function onSubmit(data: ShUser) {
     setIsLoading(true)

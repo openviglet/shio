@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { ShMarketplaceService } from "@/services/marketplace/marketplace.service"
 import {
   MARKETPLACE_BUILTIN_ONLY,
@@ -43,7 +42,6 @@ const service = new ShMarketplaceService()
  */
 export default function MarketplaceListPage() {
   const { t } = useTranslation()
-  const { resetBreadcrumb } = useBreadcrumb()
 
   const [catalogue, setCatalogue] = useState<ShMarketplaceCatalogue | null>(null)
   const [loading, setLoading] = useState(true)
@@ -76,9 +74,8 @@ export default function MarketplaceListPage() {
   }, [fetchCatalogue])
 
   useEffect(() => {
-    resetBreadcrumb()
     void fetchCatalogue()
-  }, [resetBreadcrumb, fetchCatalogue])
+  }, [fetchCatalogue])
 
   const categories = useMemo(() => {
     const found = new Set<string>()

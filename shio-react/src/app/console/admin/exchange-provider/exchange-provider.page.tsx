@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { ArrowLeftRight, Save, ArrowLeft, Trash2, Info, Plus, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -27,7 +26,6 @@ export default function ExchangeProviderPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { exchangeProviderId } = useParams() as { exchangeProviderId: string }
-  const { resetBreadcrumb } = useBreadcrumb()
   const isNew = exchangeProviderId === "new"
 
   const [item, setItem] = useState<ShExchangeProviderInstance>({
@@ -38,11 +36,6 @@ export default function ExchangeProviderPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("exchangeProvider.title"), href: ROUTES.ADMIN_EXCHANGE_PROVIDERS },
-      { label: isNew ? t("common.create") : item.name || exchangeProviderId },
-    ])
     if (isNew) {
       service.model()
         .then((model) => setItem({ ...model, name: t("exchangeProvider.untitled"), properties: model.properties ?? {} }))
@@ -51,7 +44,7 @@ export default function ExchangeProviderPage() {
       service.get(exchangeProviderId)
         .then((provider) => setItem({ ...provider, properties: provider.properties ?? {} }))
     }
-  }, [resetBreadcrumb, t, exchangeProviderId, isNew, item.name])
+  }, [t, exchangeProviderId, isNew, item.name])
 
   useEffect(() => {
     service.vendors().then(setVendors).catch(() => setVendors([]))

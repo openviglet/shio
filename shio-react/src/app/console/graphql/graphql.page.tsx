@@ -21,7 +21,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { ShApiTokenService } from "@/services/token/api-token.service"
 import type { ShApiToken } from "@/models/token/api-token.model"
 
@@ -41,15 +40,13 @@ export default function GraphiQLPage() {
     const { t } = useTranslation()
     const { theme } = useTheme()
     const navigate = useNavigate()
-    const { resetBreadcrumb } = useBreadcrumb()
 
     // null = still loading; [] = loaded but none usable.
     const [tokens, setTokens] = useState<ShApiToken[] | null>(null)
     const [selectedId, setSelectedId] = useState<string>("")
 
     useEffect(() => {
-        resetBreadcrumb([{ label: t("graphql.title") }])
-    }, [t, resetBreadcrumb])
+    }, [t])
 
     useEffect(() => {
         tokenService.list()

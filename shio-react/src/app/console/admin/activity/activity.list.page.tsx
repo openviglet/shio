@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { History, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -27,7 +26,6 @@ const ACTION_BADGE: Record<string, string> = {
 
 export default function ActivityListPage() {
   const { t } = useTranslation()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [items, setItems] = useState<ShHistory[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -45,12 +43,8 @@ export default function ActivityListPage() {
   }, [fetchRecent])
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("activity.title") },
-    ])
     void fetchRecent()
-  }, [resetBreadcrumb, t, fetchRecent])
+  }, [t, fetchRecent])
 
   const actionLabel = (action: string) => {
     const key = `activity.action${action.charAt(0)}${action.slice(1).toLowerCase()}`

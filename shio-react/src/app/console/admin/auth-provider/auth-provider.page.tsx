@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { Fingerprint, Save, ArrowLeft, Trash2, Info, Plus, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -27,7 +26,6 @@ export default function AuthProviderPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { authProviderId } = useParams() as { authProviderId: string }
-  const { resetBreadcrumb } = useBreadcrumb()
   const isNew = authProviderId === "new"
 
   const [item, setItem] = useState<ShAuthProviderInstance>({
@@ -38,11 +36,6 @@ export default function AuthProviderPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("authProvider.title"), href: ROUTES.ADMIN_AUTH_PROVIDERS },
-      { label: isNew ? t("common.create") : item.name || authProviderId },
-    ])
     if (isNew) {
       service.model()
         .then((model) => setItem({ ...model, name: t("authProvider.untitled"), properties: model.properties ?? {} }))
@@ -51,7 +44,7 @@ export default function AuthProviderPage() {
       service.get(authProviderId)
         .then((provider) => setItem({ ...provider, properties: provider.properties ?? {} }))
     }
-  }, [resetBreadcrumb, t, authProviderId, isNew, item.name])
+  }, [t, authProviderId, isNew, item.name])
 
   useEffect(() => {
     service.vendors().then(setVendors).catch(() => setVendors([]))

@@ -37,7 +37,6 @@ import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
 import {
   ChevronDown,
@@ -770,7 +769,6 @@ export default function PostTypeEditPage() {
   const { postTypeName } = useParams() as { postTypeName: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const form = useForm<ShPostType>()
   const [isLoading, setIsLoading] = useState(false)
   const [fields, setFields] = useState<FieldRow[]>([])
@@ -781,11 +779,6 @@ export default function PostTypeEditPage() {
   const [renaming, setRenaming] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
-      { label: t("content.postTypes"), href: ROUTES.POST_TYPE_ROOT },
-      { label: t("content.editPostType") },
-    ])
 
     Promise.all([
       postTypeService.get(postTypeName),
@@ -797,7 +790,7 @@ export default function PostTypeEditPage() {
       setWidgets(widgetList)
       setPostTypes(ptList)
     })
-  }, [postTypeName, resetBreadcrumb, t, form])
+  }, [postTypeName, t, form])
 
   const save = useCallback(async (data: ShPostType, close: boolean) => {
     setIsLoading(true)

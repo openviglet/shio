@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { Search as SearchIcon } from "lucide-react"
 import { useEffect, useState, type FormEvent } from "react"
 import { useTranslation } from "react-i18next"
@@ -26,7 +25,6 @@ const ALL_SITES = "__all__"
 export default function SearchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [sites, setSites] = useState<ShSite[]>([])
   const [siteId, setSiteId] = useState<string>(ALL_SITES)
   const [q, setQ] = useState("")
@@ -36,12 +34,8 @@ export default function SearchPage() {
   const [searched, setSearched] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("content.sites"), href: `${ROUTES.CONSOLE}/content` },
-      { label: t("content.searchTitle") },
-    ])
     siteService.query().then(setSites).catch(() => setSites([]))
-  }, [resetBreadcrumb, t])
+  }, [t])
 
   const runSearch = async (e?: FormEvent) => {
     e?.preventDefault()

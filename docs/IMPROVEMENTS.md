@@ -1066,29 +1066,6 @@ classifying nothing.
 
 Do it after SH923, so the panel is retired rather than renamed twice.
 
-### LV.23 A breadcrumb built for nobody (SH933)
-
-The console page header rendered the breadcrumb trail. SH910 deleted it, and the bento
-shell is explicit that it will not: "the breadcrumb bar is console chrome, and the bento
-era puts a page's identity in its own hero." What survived the deletion is the
-*producer* side — twenty-two pages calling `useBreadcrumb` and `resetBreadcrumb` on
-every mount, pushing labels and hrefs into a provider with no consumer.
-
-Nothing fails. That is the whole problem: the calls typecheck, the provider stores what
-it is given, and a page copied from any of the twenty-two inherits the habit. It is the
-same hazard SH910 was filed against, one layer in — what the next new page copies is
-what a grep for an existing pattern finds first.
-
-There is a second cost, and it is the one that has a number. `lib/breadcrumb-key.ts`
-went with the renderer, and `breadcrumb-key.test.mjs` with it, so **SH716** — a defect
-about duplicate React keys in a trail — lost its assertion and is now a declared line in
-`assertion-debt`. That entry names this task.
-
-Two honest endings, and picking is the work. Either strip the calls and retire
-`BreadcrumbProvider` from `App.tsx`, which makes the ledger entry a deletion; or decide
-the bento era wants a trail after all, render one, and restore SH716's assertion beside
-it. What is not an ending is twenty-two pages feeding a store nobody reads.
-
 ### LV.25 Two route fields that no longer differ (SH935)
 
 `bento-nav.ts` gives every surface a `fallbackRoute` — where it lived — and an optional

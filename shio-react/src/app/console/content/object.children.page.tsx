@@ -9,7 +9,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
 import { PermissionsDialog } from "@/components/permissions.dialog"
@@ -123,7 +122,6 @@ export default function ObjectChildrenPage() {
   const { objectId } = useParams() as { objectId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [listData, setListData] = useState<ObjectListResponse>({ folders: [], posts: [], page: 0, size: PAGE_SIZE, totalPosts: 0 })
   const [loadingMore, setLoadingMore] = useState(false)
   const [appliedQuery, setAppliedQuery] = useState("")
@@ -260,21 +258,12 @@ export default function ObjectChildrenPage() {
     })
   }, [objectId])
 
-  useEffect(() => {
-    const items: { label: string; href?: string }[] = [
-      { label: t("content.sites"), href: `${ROUTES.CONSOLE}/content` },
-    ]
-    for (const crumb of breadcrumbPath) {
-      items.push({
-        label: crumb.name,
-        href: `${ROUTES.CONTENT_ROOT}/object/${crumb.id}`,
-      })
-    }
-    if (items.length > 1) {
-      delete items[items.length - 1].href
-    }
-    resetBreadcrumb(items)
-  }, [breadcrumbPath, resetBreadcrumb, t])
+  /*
+   * SH933 — the effect that mirrored `breadcrumbPath` into the console's trail is gone with the
+   * trail. `breadcrumbPath` itself stays: this page draws its own path in its sub-toolbar, which
+   * is the one place in the console where a reader moves up and down a tree all day and the only
+   * trail the bento era kept.
+   */
 
   /**
    * Folders first — the whole set, ordered here — then the posts in the order the server

@@ -8,7 +8,6 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { Building2, Save, ArrowLeft, Trash2, Info, Sparkles, Ban, CircleCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -23,7 +22,6 @@ export default function TenantPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { tenantId } = useParams() as { tenantId: string }
-  const { resetBreadcrumb } = useBreadcrumb()
   const isNew = tenantId === "new"
 
   const [item, setItem] = useState<ShTenant>({
@@ -34,15 +32,10 @@ export default function TenantPage() {
   const isSuspended = item.status === "SUSPENDED"
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("tenantAdmin.title"), href: ROUTES.ADMIN_TENANTS },
-      { label: isNew ? t("common.create") : item.name || tenantId },
-    ])
     if (!isNew) {
       service.get(tenantId).then(setItem).catch(() => toast.error(t("common.error")))
     }
-  }, [resetBreadcrumb, t, tenantId, isNew, item.name])
+  }, [t, tenantId, isNew, item.name])
 
   const handleSave = async () => {
     if (!item.name.trim()) {

@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dialog"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "@/components/widgets/content-browser-dialog"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import {
   Image as ImageIcon, Download, Trash2, Upload, Loader2, Search, LayoutGrid, List as ListIcon,
   X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText,
@@ -49,7 +48,6 @@ interface UploadEntry {
 
 export default function StaticFileListPage() {
   const { t } = useTranslation()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [items, setItems] = useState<ShStaticFileItem[]>([])
   const [sites, setSites] = useState<ShSite[]>([])
   const [targetSite, setTargetSite] = useState<string>("")
@@ -76,16 +74,12 @@ export default function StaticFileListPage() {
   }
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
-      { label: t("staticFile.title") },
-    ])
     void fetchList()
     siteService.query().then((s) => {
       setSites(s)
       if (s.length > 0) setTargetSite((prev) => prev || s[0].id)
     }).catch(() => setSites([]))
-  }, [resetBreadcrumb, t])
+  }, [t])
 
   // Counts per category over the full (unfiltered) set, for the filter chips.
   const counts = useMemo(() => {

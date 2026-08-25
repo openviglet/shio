@@ -2124,6 +2124,42 @@ Switching reloads the page. The tenant is a session property and everything on s
 under the old one, so re-fetching piecemeal is a long tail of stale reads for a control used twice
 a day.
 
+## A retirement has two sides, and SH910 only did one (SH933)
+
+Deleting the console page header removed the only thing that ever drew a breadcrumb. The
+**producer** side outlived it: twenty-one pages went on calling `resetBreadcrumb` on every mount,
+building label-and-href arrays for a provider with no consumer. Nothing failed, which is the whole
+problem — the calls typechecked, the provider stored what it was given, and the next page copied
+from any of them inherited the habit.
+
+**Stripped, not restored.** The bento shell already states the design: "the breadcrumb bar is
+console chrome, and the bento era puts a page's identity in its own hero." Every hero carries a
+back link, and the one place a reader moves up and down a tree all day — the content browser —
+draws its own path in its sub-toolbar. There was nothing left for a console-wide trail to do.
+
+### What a codemod leaves behind, and what catches it
+
+21 files, 140 deletions against 21 insertions, done by script and then read. Two safety nets did
+most of the reviewing: `noUnusedLocals` caught the orphaned imports, and `react-hooks/exhaustive-deps`
+would have caught a dependency array left wrong. **Neither catches a dead array**, and the codemod
+left two: a variable that is only ever `push`ed to is "used" as far as the compiler is concerned,
+so `object.children.page.tsx` kept an entire effect that built a trail and dropped it, and
+`post.edit.page.tsx` kept the same block wrapped around a live `setParentFolderId` that had to
+survive. Read the diff after a codemod; the compiler is checking a narrower question than you are.
+
+### The lint, because the habit outlives the diff
+
+`useBreadcrumb` is still exported by the design system, so an import of it compiles and would
+restore this state silently. `breadcrumb-retired.test.mjs` matches the **provider and the hook by
+name** rather than the word "breadcrumb", which would have forbidden the two surfaces that
+legitimately draw one. The local re-export at `contexts/breadcrumb.context.tsx` is deleted so the
+habitual import path no longer resolves.
+
+**SH716 stays in the assertion debt, and its entry changed kind.** It is no longer "nobody has
+written the assertion yet" but "the surface it would assert against does not exist": a trail cannot
+have duplicate React keys when nothing renders a trail. The ledger still records SH716 as shipped,
+so the line stays rather than being deleted.
+
 ## The rail was never the only place a signal can live (SH936)
 
 The sidebar badged Agent Review when runs were waiting (SH207). After the cutover the rail draws

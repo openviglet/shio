@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -19,16 +18,11 @@ const service = new ShPostTypeService()
 export default function PostTypeListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [items, setItems] = useState<ShPostType[]>([])
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
-      { label: t("content.postTypes") },
-    ])
     service.query().then(setItems)
-  }, [resetBreadcrumb, t])
+  }, [t])
 
   const handleDelete = async (name: string) => {
     if (confirm(t("dialog.deleteMessage"))) {

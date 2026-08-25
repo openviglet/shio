@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconLayersIntersect } from "@tabler/icons-react"
 import { ExternalLink, Pencil } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -20,14 +19,12 @@ const siteService = new ShSiteService()
 export default function EditorSitesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [sites, setSites] = useState<ShSite[]>([])
   const [externalUrl, setExternalUrl] = useState("")
 
   useEffect(() => {
-    resetBreadcrumb([{ label: t("universalEditor.title") }])
     siteService.query().then(setSites)
-  }, [resetBreadcrumb, t])
+  }, [t])
 
   const openExternal = () => {
     if (!externalUrl.trim()) return

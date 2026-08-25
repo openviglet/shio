@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
 import { Loader2, Save } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -20,17 +19,11 @@ const service = new ShPostTypeService()
 export default function PostTypeNewPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const form = useForm<ShPostType>()
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
-      { label: t("content.postTypes"), href: ROUTES.POST_TYPE_ROOT },
-      { label: t("content.newPostType") },
-    ])
-  }, [resetBreadcrumb, t])
+  }, [t])
 
   async function onSubmit(data: ShPostType) {
     setIsLoading(true)

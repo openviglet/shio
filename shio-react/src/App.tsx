@@ -51,7 +51,6 @@ import { ThemeProvider } from "./components/theme-provider"
 import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
 import { Toaster } from "./components/ui/sonner"
 import { ShioServiceProvider } from "./contexts/ShioServiceContext"
-import { BreadcrumbProvider } from "./contexts/breadcrumb.context"
 
 function App() {
   return (
@@ -59,7 +58,6 @@ function App() {
       {/* SH918 — the same two constants the boot-loader seed reads, so the splash and the app
           cannot disagree about the theme. Spelling them here again is what caused the defect. */}
       <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}>
-        <BreadcrumbProvider>
           <ShioServiceProvider>
             <Toaster />
             <Routes>
@@ -378,7 +376,6 @@ function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </ShioServiceProvider>
-        </BreadcrumbProvider>
       </ThemeProvider>
     </div>
   )

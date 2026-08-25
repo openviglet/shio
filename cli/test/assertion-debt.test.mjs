@@ -239,10 +239,14 @@ const DEBT = [
   // — the only thing that ever called `crumbKey`. Nothing renders a breadcrumb now: the bento shell
   // says so in as many words ("the breadcrumb bar is console chrome, and the bento era puts a
   // page's identity in its own hero").
-  // It is debt rather than a paid-off line because the retirement is half done. Twenty-two live
-  // pages still push crumbs into `BreadcrumbProvider`, so the data structure SH716 was about is
-  // still being built — by nobody, for nobody. **SH933** removes those calls; if it instead
-  // restores a rendered trail, this assertion comes back with it and this line goes.
+  // SH933 finished the retirement rather than reversing it: the twenty-one pages that still fed
+  // `BreadcrumbProvider` stopped, the provider is unmounted and the context is deleted. So this is
+  // **permanent debt of a particular kind** — not "nobody has written the assertion yet" but "the
+  // surface it would assert against no longer exists". A trail cannot have duplicate React keys
+  // when nothing renders a trail.
+  // Kept rather than deleted because the ledger still records SH716 as shipped, and a shipped id
+  // with neither an assertion nor a line here is exactly what this reader is for. If the bento era
+  // ever grows a trail, `breadcrumb-key.test.mjs` comes back from git history with it.
   "SH716",
   // PAID (SH529). Removals and port-or-deprecate decisions: `ShRemovalsStayedRemovedTest` asserts
   // the legacy AngularJS bundles, the Thymeleaf starter and the four deprecated widget names are

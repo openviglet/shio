@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { Trash2, RotateCcw, X, Folder, FileText, Globe } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -33,7 +32,6 @@ type TrashRow = {
 
 export default function TrashPage() {
   const { t } = useTranslation()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [items, setItems] = useState<TrashRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -77,12 +75,8 @@ export default function TrashPage() {
   // No `load` wrapper here: this page has no refresh control, so the mount read is the only one
   // and a `setLoading(true)` nobody triggers would be the cascading render itself (SH701).
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("content.sites"), href: `${ROUTES.CONSOLE}/content` },
-      { label: t("content.trash") },
-    ])
     void fetchTrash()
-  }, [resetBreadcrumb, t, fetchTrash])
+  }, [t, fetchTrash])
 
   const drop = (row: TrashRow) =>
     setItems((prev) => prev.filter((r) => !(r.kind === row.kind && r.id === row.id)))

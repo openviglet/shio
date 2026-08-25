@@ -14,7 +14,6 @@ import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
 import { Clock, Eye, EyeOff, History, Loader2, Save, Sparkles, Upload } from "lucide-react"
@@ -38,7 +37,6 @@ export default function PostUnifiedEditPage() {
   const { postId } = useParams() as { postId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [post, setPost] = useState<ShPostUnified | null>(null)
   const [state, setState] = useState<ShPostState>("DRAFT")
   const [data, setData] = useState<Record<string, unknown>>({})
@@ -76,23 +74,15 @@ export default function PostUnifiedEditPage() {
       setIsLive(live !== null)
       setData(unified.data || {})
 
-      const items: { label: string; href?: string }[] = [
-        { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
-      ]
-      const folder = unified.shFolder
-      if (folder) {
-        setParentFolderId(folder.id)
-        const site = folder.shSite
-        if (site) {
-          items.push({ label: site.name, href: `${ROUTES.CONTENT_ROOT}/object/${site.id}` })
-        }
-        items.push({ label: folder.name, href: `${ROUTES.CONTENT_ROOT}/object/${folder.id}` })
+      // SH933 — the folder is still read for the parent id, which the move dialog and the
+      // "up one level" action both need. The trail this block used to build alongside it went
+      // with the renderer: the hero names the post and carries its way back.
+      if (unified.shFolder) {
+        setParentFolderId(unified.shFolder.id)
       }
-      items.push({ label: unified.title || t("content.editPost") })
-      resetBreadcrumb(items)
     }
     load()
-  }, [postId, resetBreadcrumb, t])
+  }, [postId])
 
   const schema = useMemo(() => postFormSchema(post?.shPostType), [post])
   const postTypeName = post?.shPostType?.title || post?.shPostType?.name

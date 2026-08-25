@@ -5,7 +5,6 @@ import { AdaptivePanel } from "@/components/adaptive-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { useReviewPending } from "@/contexts/review-pending.context"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
@@ -42,7 +41,6 @@ const ACTION_BADGE: Record<string, string> = {
  */
 export default function ReviewListPage() {
   const { t } = useTranslation()
-  const { resetBreadcrumb } = useBreadcrumb()
   const { refresh: refreshPending } = useReviewPending()
   const [sessions, setSessions] = useState<ShReviewSession[]>([])
   const [open, setOpen] = useState<Record<string, ShReviewDetail | null>>({})
@@ -65,12 +63,8 @@ export default function ReviewListPage() {
   }, [fetchSessions])
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("review.title") },
-    ])
     void fetchSessions()
-  }, [resetBreadcrumb, t, fetchSessions])
+  }, [t, fetchSessions])
 
   const toggle = async (session: string) => {
     if (session in open) {

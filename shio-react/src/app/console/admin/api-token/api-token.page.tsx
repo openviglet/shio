@@ -10,7 +10,6 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { KeyRound, Save, ArrowLeft, Copy, Check, Trash2, Info } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -31,7 +30,6 @@ export default function ApiTokenPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { tokenId } = useParams() as { tokenId: string }
-  const { resetBreadcrumb } = useBreadcrumb()
   const isNew = tokenId === "new"
 
   const [item, setItem] = useState<ShApiToken>({
@@ -43,16 +41,11 @@ export default function ApiTokenPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("apiToken.title"), href: ROUTES.ADMIN_TOKENS },
-      { label: isNew ? t("common.create") : item.title || tokenId },
-    ])
     if (!isNew) {
       service.get(tokenId).then((token) =>
         setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD", mayPublish: token.mayPublish ?? false }))
     }
-  }, [resetBreadcrumb, t, tokenId, isNew, item.title])
+  }, [t, tokenId, isNew, item.title])
 
   useEffect(() => {
     siteService.query().then(setSites).catch(() => setSites([]))

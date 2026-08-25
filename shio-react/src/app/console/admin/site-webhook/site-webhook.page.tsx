@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { Webhook, Save, ArrowLeft, Copy, Check, Trash2, Info } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -30,7 +29,6 @@ export default function SiteWebhookPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { webhookId } = useParams() as { webhookId: string }
-  const { resetBreadcrumb } = useBreadcrumb()
   const isNew = webhookId === "new"
 
   const [item, setItem] = useState<ShSiteWebhook>({
@@ -42,15 +40,10 @@ export default function SiteWebhookPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("siteWebhook.title"), href: ROUTES.ADMIN_WEBHOOKS },
-      { label: isNew ? t("common.create") : item.name || webhookId },
-    ])
     if (!isNew) {
       service.get(webhookId).then((wh) => setItem({ ...wh, events: wh.events ?? [] }))
     }
-  }, [resetBreadcrumb, t, webhookId, isNew, item.name])
+  }, [t, webhookId, isNew, item.name])
 
   useEffect(() => {
     siteService.query().then(setSites).catch(() => setSites([]))

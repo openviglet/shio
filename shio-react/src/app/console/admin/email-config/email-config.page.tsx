@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { Mail, Save, Info } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -25,17 +24,12 @@ const EMPTY: ShEmailConfig = {
 export default function EmailConfigPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { resetBreadcrumb } = useBreadcrumb()
   const [config, setConfig] = useState<ShEmailConfig>(EMPTY)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    resetBreadcrumb([
-      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
-      { label: t("emailConfig.title") },
-    ])
     service.get().then(setConfig).catch(() => setConfig(EMPTY))
-  }, [resetBreadcrumb, t])
+  }, [t])
 
   const set = <K extends keyof ShEmailConfig>(key: K, value: ShEmailConfig[K]) =>
     setConfig((prev) => ({ ...prev, [key]: value }))
