@@ -945,23 +945,29 @@ errors, no warnings. Against the **Vite dev server**: *"Could not create web wor
 Falling back to loading web worker code in main thread"*, plus an error event with no
 message, on both routes.
 
-The cost is not the fallback — Monaco on the main thread works, slowly. It is that `pnpm
--C shio-react console:check` is permanently red on two probes for anybody running it the
-documented way, against `:5173`. **A gate that is red for the environment is a gate
-people learn to skim**, which is the state SH579 exists to prevent one level up.
+The cost is not the fallback — Monaco on the main thread works, slowly. It is that
+`console:check` is permanently red on two probes for anybody running it the documented
+way. **A gate that is red for the environment is a gate people learn to skim.**
 
-Reproduced 2026-08-25 against a live backend and dev server: 67 of 69 probes pass and
-these two are the failures, warning and error verbatim.
+**The cause, found 2026-08-25.** The workers *are* created and die during module
+evaluation, which is why the error carries no message: `new Worker` reports nothing
+useful about its own module graph. Importing the same URL from the page prints it —
 
-Two hypotheses are now measured and **refuted**. Excluding the three `?worker` entries
-from `optimizeDeps` changes nothing: the imports resolve to real `/@fs/` paths instead
-of dep chunks, the worker wrapper and every import it makes serve 200, and the warning
-is unchanged. And the worker *mechanism* is fine — constructing that exact module worker
-by hand in the page succeeds with no error.
+    The requested module '.../nullthrows/nullthrows.js?v=…'
+    does not provide an export named 'default'
 
-So the fault is in how Monaco is asked for a worker, not in whether one can be made.
-Read `MonacoEnvironment` on a page that has actually reached the editor:
-`httpCredentials` alone lands on `/login`, where it is absent for the wrong reason.
+`nullthrows` is CommonJS with no ESM entry. Pre-bundling the GraphiQL tree fixes that
+interop for the *app* graph, and `optimizeDeps.include`'s own comment names this
+package; the worker graph reaches it through `monaco-graphql`, where Vite serves the raw
+file.
+
+Three fixes are refuted by measurement: excluding the `?worker` entries changes nothing,
+workers themselves construct fine, and adding `nullthrows` to `optimizeDeps.include`
+emits no chunk because `graphiql` already swallowed it.
+
+What is left is a choice — alias the package to an ESM shim, a three-line copy this
+repository's duplicate rule dislikes, or accept a dev-only fallback and stop the probe
+calling it a failure.
 
 ### LV.25 Two route fields that no longer differ (SH935)
 
