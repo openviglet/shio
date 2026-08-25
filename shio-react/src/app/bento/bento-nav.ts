@@ -157,3 +157,18 @@ export function useBentoNavItems(): BentoNavItem[] {
   const groups = useBentoNav()
   return useMemo(() => groups.flatMap((group) => group.items), [groups])
 }
+
+/**
+ * Whether this instance runs more than one tenant (SH934).
+ *
+ * Exported from here rather than answered by a second `useDiscovery()` call, and that is a rule
+ * with a reader behind it. SH46's defect was two surfaces deciding "is this a SaaS install" by
+ * different means and drifting apart; `tenant-nav-gating.test.mjs` now fails on a second consumer
+ * of `useDiscovery` anywhere under `src/`, naming this declaration as the place to route through.
+ *
+ * So the tenant switcher in the shell header asks the same question the Tenants nav entry does,
+ * through the same call, and the two cannot disagree about whether to appear.
+ */
+export function useMultiTenant(): boolean {
+  return useDiscovery()?.multiTenant === true
+}

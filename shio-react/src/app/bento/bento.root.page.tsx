@@ -18,6 +18,7 @@ import { Outlet } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
+import { BentoTenantSwitcher } from "./bento-tenant-switcher"
 
 /**
  * SH888 — the bento shell, mounted beside the console one rather than replacing it.
@@ -111,6 +112,13 @@ export default function BentoRootPage() {
             console chrome, and the bento era puts a page's identity in its own hero.
           */}
           <header className="sticky top-0 z-40 flex h-16 items-center justify-end gap-2 px-4">
+            {/*
+              SH934 — the tenant switch is an identity action, so it sits beside the identity menu.
+              It renders nothing at all unless the instance is multi-tenant AND this reader belongs
+              to more than one, which is why the header does not gate it here: a control that knows
+              when it has nothing to offer is one the shell does not have to reason about.
+            */}
+            <BentoTenantSwitcher />
             <BentoUserMenu
               accountRoute={ROUTES.ADMIN_USERS}
               logoutUrl={ROUTES.LOGOUT}

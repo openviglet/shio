@@ -1089,30 +1089,6 @@ Two honest endings, and picking is the work. Either strip the calls and retire
 the bento era wants a trail after all, render one, and restore SH716's assertion beside
 it. What is not an ending is twenty-two pages feeding a store nobody reads.
 
-### LV.24 The tenant switcher went out with the sidebar (SH934)
-
-`components/tenant-switcher.tsx` called `POST /tenant/{name}/switch` and lived in the
-console sidebar, gated on `discovery.multiTenant` since SH22. SH910 deleted it because
-nothing rendered it any more — which was true, and is not the same as nothing needing
-it.
-
-`ShVigletTenantResolver` reads the tenant from the session, a CDA token or an OIDC
-claim, and never from the URL. The switch endpoint is what changes the session's answer.
-With no UI calling it, a curator with access to two tenants sees whichever one they were
-last put in, and the only ways out are logging in again or a hand-written POST. SH909
-dropped the `/{tenant}/console` URL prefix in the same block, so the second lever went
-at the same time; **SH931** covers naming a tenant in a shareable link, which is the
-neighbouring problem and not this one.
-
-The bento header has one control, `BentoUserMenu`, and it takes `accountRoute` and
-`logoutUrl`. A tenant switch belongs beside those: it is an identity action, it is gated
-on the same `multiTenant` fact `bento-nav.ts` already resolves, and `useDiscovery` has
-exactly one consumer today — a second one is what `tenant-nav-gating.test.mjs` now fails
-on, so routing it through the nav declaration is the shape to keep.
-
-Worth checking before building: how many installs run multi-tenant. This is a real gap
-for those and nothing at all for the rest, which is what should decide its size.
-
 ### LV.25 Two route fields that no longer differ (SH935)
 
 `bento-nav.ts` gives every surface a `fallbackRoute` — where it lived — and an optional

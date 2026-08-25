@@ -2086,9 +2086,43 @@ was filed against.
 `cli/test/assertion-debt.test.mjs` caught it on the next run — an id arriving in the debt by a
 route none of its groups described: *the assertion was deleted with the surface it guarded*. It is
 a declared line now, naming **SH933**, because the retirement is half done: twenty-two live pages
-still push crumbs into a provider nothing renders. **SH934** records the other loss —
+still push crumbs into a provider nothing renders. **SH934** recorded the other loss —
 `tenant-switcher.tsx` was deleted unreferenced, and it was the only caller of
-`POST /tenant/{name}/switch`.
+`POST /tenant/{name}/switch` — and closed it; see below.
+
+## Unreferenced and unneeded are different findings (SH934)
+
+The reachability walk that drove SH910 was right about `tenant-switcher.tsx`: nothing rendered it.
+It was also the only caller of `POST /tenant/{name}/switch`, and `ShVigletTenantResolver` reads the
+tenant from the session, a CDA token or an OIDC claim and **never** from the URL. So a curator with
+two memberships was left in whichever tenant their session held, with signing in again as the
+workaround — and SH909 had dropped the `/{tenant}/console` prefix in the same block, so both levers
+went at once.
+
+**A deletion pass can only see "unreferenced".** That is not a reason to keep dead code; it is a
+reason for the pass to end with a list of what it removed, which is how this one was caught in the
+same commit rather than by a curator.
+
+### It appears where there is somewhere to go
+
+Two conditions, and the second is what the deleted control got wrong. `multiTenant` says the
+*instance* runs more than one tenant. Membership size says *this reader* has somewhere to go: the
+old switcher rendered whenever `/tenant/mine` returned anything, so a curator with exactly one
+membership was offered a menu whose only row was the tenant they were already in — noise that looks
+like a feature.
+
+### The gate goes through the nav declaration, because a reader made it
+
+`useMultiTenant()` is exported from `bento-nav.ts` and the switcher calls that rather than
+`useDiscovery()`. Not tidiness: `tenant-nav-gating.test.mjs` fails on a **second** consumer of
+`useDiscovery` anywhere under `src/`, and its message names this declaration as where to route
+through. SH46's defect was two surfaces deciding "is this a SaaS install" by different means and
+drifting; the rule survived the surfaces it was written about, and it steered this one before it
+was written.
+
+Switching reloads the page. The tenant is a session property and everything on screen was fetched
+under the old one, so re-fetching piecemeal is a long tail of stale reads for a control used twice
+a day.
 
 ## The check was walking another product's console (SH927, probe half)
 
