@@ -2464,3 +2464,751 @@ writer touched it a moment ago before planning its next write.
 The assertions: an agent write shows the presence line within the stream's latency and
 it clears after the window, and a curator's save while the mark is showing still goes
 through AZ1's guard rather than being blocked.
+
+## LXVIII The authoring surface, field by field (Block BC)
+
+Almost every piece of authoring intelligence a modern CMS needs already exists in Shio's
+backend and is unreachable from its editor. Verify computes required-field-empty,
+image-no-alt, link-broken and dozens more; render produces a structural digest of the
+page; a field-level merge verb exists and only the visual editor calls it. Meanwhile the
+editor lets a required field save empty on every surface, has no dirty state, no
+autosave and no unsaved-change guard, renders its only repeatable field read-only,
+cannot preview what has not been saved, and stores a page body as one opaque HTML string
+produced by document.execCommand.
+
+The block works field by field. Enforcement lands on the three writers before any
+console affordance, because a rule only the form knows is a rule an agent breaks. Then
+the editor stops losing work, shows the intelligence the server already computes,
+previews proposed values, and gains a structured body an agent can address paragraph by
+paragraph. A post-type change learns to reconcile the content it governs. And a field
+can ask the connected agent for a suggestion through the assistant, which is the moment
+the Viglet assistant's reference design was drawn around, answered by the agent rather
+than by a model Shio hosts.
+
+### LXVIII.1 Required means required, on every writer (SH1009)
+
+The post form renders the required marker and posts data unconditionally. On the backend
+the create and update endpoints validate only the post-type name, and the batch refuses
+undeclared keys but never an empty required one. The only enforcement is the verify
+rule, which runs after the fact, so a draft missing its title reaches review looking
+complete.
+
+One evaluator, called from exactly three places so the surfaces cannot disagree: the
+unified write service, the batch's post upsert beside its expectation check, and the
+draft merge. A draft may be incomplete, since drafts are where work happens, so saving a
+draft with an empty required field succeeds and returns a finding; publishing refuses
+with a teaching 400 whose at is data.<field> and whose fix names it. A dry run returns
+the same findings.
+
+This task enforces required alone; BC2 adds the rest of the vocabulary through the same
+evaluator. The console reads the finding onto the field through AV6's problem reader.
+The assertion carries the id on all three writers: publishing a post with an empty
+required field is refused by the console, REST and the batch, and saving it as a draft
+is not.
+
+### LXVIII.2 A constraint vocabulary, evaluated where required already is (SH1010)
+
+ShPostTypeAttr carries name, label, description, widget, required, isTitle, isSummary,
+ordinal, widget settings, indexed and two Turing fields. There is no min, max, pattern,
+unique, default or enum, so a slug field accepts spaces, a rating accepts eleven and two
+posts can share a supposedly unique code.
+
+Add a constraints object to the field definition: minLength, maxLength, pattern with a
+message, min, max, unique, default, enum, minItems, maxItems, and an advisory
+recommendedLength that never fails a write. It is additive, so an absent block means no
+constraints and the canonical post-type serialisation is unchanged for every existing
+type. BC1's evaluator gains the kinds, so the three writers stay in agreement.
+
+MCP first: a violating publish is refused with at and a fix naming the constraint, and a
+dry run returns violations as findings. shio verify gains constraint-violated and shio
+push --check fails on it, so a content tree is provably valid before it is applied. The
+post-type editor renders a constraints section per field, and the post form shows the
+constraint as help text rather than discovering it on save.
+
+### LXVIII.3 An editor that does not lose work (SH1011)
+
+The editor holds data in useState and never compares it with the loaded post; the page
+hero accepts dirty and the editor passes only titleMissing, while the folder and site
+pages pass it. No useBlocker or beforeunload exists in the console. The design system
+renders an Unsaved changes cue when dirty is true, built and unreachable on the one page
+that needs it. The merge verb, whose rule is that a field not named keeps its value, is
+called only by the visual editor.
+
+Three layers, cheapest first. Derive dirty from a canonical serialisation of the data
+against the loaded post, with stable key order, and pass it, which lights the cue; add a
+router blocker and a beforeunload guard. Then a debounced patch of only the changed
+keys, sending the ETag from SH985 so autosave cannot multiply the race it would
+otherwise hide, with the save bar reading saved a few seconds ago. Then a recovery
+buffer in IndexedDB keyed by post id, offered explicitly and never restored silently.
+
+The CLI gains shio post set for a single field. The assertions: navigating away from a
+dirty form asks, and an autosave with a stale ETag is refused.
+
+### LXVIII.4 The repeatable field, editable again (SH1012)
+
+The relator widget's own comment says inline editing of relator subtrees is not wired
+through the unified form and that modifying children is intentionally disabled, and it
+tells the curator so. It destructures only attr, so its onChange is never called. The
+console-ui doc still lists Relator as a nested items list with add and remove, a
+capability lost in the unified-model migration and never reconciled.
+
+This is the rare case where the whole chain is complete and only the console leg is
+missing: nested items convert to and from data in full, post.upsert writes them, and the
+Markdown projection carries them. Rebuild the widget as an array editor: add with the
+child schema rendered inline, remove with undo, duplicate, collapse and expand with a
+title from the child marked isTitle, and reorder by drag with a keyboard equivalent,
+writing ordinals on drop. dnd-kit is already a dependency, used only to reorder a
+model's fields.
+
+Fix the doc row in the same commit, and add the guard that would have caught the drift:
+every widget the documentation calls editable must call onChange. BC2's minItems and
+maxItems then apply to it.
+
+### LXVIII.5 Insights beside the form (SH1013)
+
+A grep of shio-react/src for the agent namespace returns two i18n strings describing a
+token scope, and no call. The address-scoped verify returns required-field-empty,
+dangling-reference, image-no-alt, link-broken, duplicate-url and the head conventions,
+each with an address and a fix, and render returns the heading outline, landmarks, link
+and image inventory and word count. A logged-in curator's session can already reach that
+namespace. A content-quality engine is one service file away from the person editing.
+
+An Insights panel beside the form, grouped as Blockers, Suggestions and Page shape:
+outline, word count, reading time, link counts and images missing alt. Each finding
+carrying a field anchors to it and focuses the field when clicked, which is why SH955's
+problem reader lands first. It runs on save and on demand, never per keystroke, since P3
+applies to HTTP too.
+
+Two honesty changes on the backend: verify accepts state=DRAFT so the panel lints what
+is being edited, and every content finding carries its field name. This also answers the
+SEO request without a second SEO engine. The assertion plants an image with no alt and
+reads the finding anchored to its field.
+
+### LXVIII.6 Render what would be, before writing it (SH1014)
+
+The editor mints a preview token for a post id and opens it; the preview route renders
+persisted state. Nothing renders from proposed values, and the Universal Editor starts
+from a site URL rather than from the form. So a curator cannot see a change without
+saving it, and an agent cannot either: a dry run proves a write is legal and says
+nothing about how the page will look.
+
+Render-from-proposed-data serves both. shio_digest accepts a data override and returns
+the digest of the page as it would render. A preview render endpoint takes an address
+and data and renders through the existing page render service without persisting,
+guarded by the same ACL as the write so it cannot show content the caller could not
+author. shio preview renders a local Markdown file against the instance's templates, the
+missing half of content as files.
+
+The console gets a split view with a persisted ratio, form on one side and a live frame
+on the other, re-rendered on a debounce, with device-width toggles, keeping the token
+preview for sharing. The assertion is that the overlay path writes nothing: no trash, no
+webhook, no indexing and no revision.
+
+### LXVIII.7 A block content model, stored and addressable (SH1015)
+
+The rich-text widget stores innerHTML, and on the files side that body is the whole
+Markdown document, so P4's promise that Edit and Grep are the agent's cheapest tools
+lands an agent inside a single unstructured string. Four laws argue for structure. P4:
+blocks serialise to Markdown with real headings, so an Edit targets a paragraph. P5: a
+block array has a byte-identical canonical form where innerHTML does not. P9: the
+digest's outline becomes exact rather than parsed. P6: an unknown block is a teaching
+error listing the registered ones.
+
+This task lands the model on the agent side: a new widget kind storing an ordered array
+of typed blocks with stable keys and inline marks, covering heading, paragraph, list,
+quote, code, image, embed and reference, plus post-type-scoped custom blocks.
+post.upsert accepts blocks, shio_read returns them, and the Markdown projection gains a
+round-trip guard in the existing coverage test. The HTML widget stays for imported
+bodies, since shio convert produces HTML, and SH956's sanitizer already guards that
+path.
+
+BC8 delivers blocks, and BC9 gives curators an editor for them.
+
+### LXVIII.8 Blocks delivered, with a rendered view beside them (SH1016)
+
+BC7 stores a body as typed blocks. Delivery still thinks of a body as a string, which is
+the one shape a headless front end cannot style with its own components: the CDA returns
+field values, GraphQL types a body as a string, and the TypeScript client has no block
+type.
+
+The CDA returns blocks for a block field together with a rendered HTML view, so an
+existing front end keeps working and a new one can map each block type to a component.
+GraphQL gains a Block union over the registered types, and the shio-client types gain a
+Block discriminated union with a renderer helper in the React SDK that takes a component
+per block type and falls back to the rendered HTML for types it does not know.
+
+The rendered view is produced once, at write, so delivery pays nothing per request. The
+response budget gains a row for a block body, measured before this lands. The assertions
+deliver a body with each built-in block type and render it through the React helper, and
+deliver the same body to a client that asks only for HTML.
+
+### LXVIII.9 The block editor (SH1017)
+
+The current rich-text widget calls document.execCommand for bold, italic, lists, link
+and code, its link tool is prompt(), and it has no paste handling. BC7 gives the body a
+model and nothing to edit it with.
+
+The block widget renders each block as its own editable region with a handle: a slash
+menu inserts a block of any registered type, the handle drags it, and a keyboard chord
+moves it up or down. Inline marks come from a small floating toolbar, links open an
+inline form rather than prompt(), and paste converts clipboard HTML into blocks through
+the same allow-list the sanitizer uses, so a paste from a word processor becomes
+paragraphs and headings instead of spans. Image and reference blocks open the existing
+content browser dialog.
+
+It meets BG's accessibility rules from the start: every block region is labelled with
+its type and position, moves are announced, and every mouse gesture has a keyboard path.
+Undo covers block moves as well as text. The assertions insert, move and delete blocks
+by keyboard alone, paste a document with headings, and compare the stored array with the
+expected canonical form.
+
+### LXVIII.10 A model change reconciled with the content it governs (SH1018)
+
+BC2 protects every row written after it and says nothing about rows already stored: a
+post type with a new required field has an instance full of content that violates it,
+discovered only when each is published. The hole is older than constraints. Post-type
+rename and field removal exist, and a post's data is a JSON object keyed by field name,
+so a removed or renamed field leaves values under a key nothing declares. shio verify
+reports orphan posts and folders and no orphan field.
+
+Per SH322 the measurement comes first: shio post-type check reports, over existing
+content, how many rows violate each declared constraint and how many carry undeclared
+keys, and that number argues for the rest. Then post-type.migrate joins the batch
+vocabulary with rename, drop and default mappings, running through the one writer,
+planned, dry-run and confirm-tokened like every other batch.
+
+A stale-field verify finding and a per-field count of violating posts in the post-type
+editor close the loop. A model change that cannot be applied to its content is what
+makes a team stop changing the model.
+
+### LXVIII.11 Ask the agent, from the field (SH1019)
+
+The design VigletAssistant was drawn from shows its most useful gesture inside the
+editor: the curator asks for a title, and the answer arrives with a button that writes
+it into the field. Shio can offer that without hosting a model, because SH1006 relays a
+curator's request to the connected agent as a note and SH1007 lets an answer carry
+actions.
+
+Each text-like field in the post form gains an ask-the-agent control, shown only while
+an agent session is active. It opens a short prompt prefilled with the field's label and
+posts a request note anchored to the post and that field path. The agent reads the
+anchored field, its constraints from BC2 and the page, and replies with a suggested
+value. The dock renders the reply with an action to apply it, which writes into the form
+as an unsaved edit, so it passes through the same dirty state, validation and review as
+typing it would.
+
+The agent's leg is the existing note vocabulary, with a suggestion field on a reply. The
+assertions ask for a title, answer through MCP with a suggestion, apply it from the
+dock, and read the form as dirty with the suggested value.
+
+## LXIX Finding, selecting and acting on content (Block BD)
+
+The content browser is where a curator spends the day, and it is the console's weakest
+working surface. The server already pages, sorts, full-text searches and refuses an
+unknown sort with a teaching error; the browser reaches almost none of it. There is no
+filter by type, state, locale, date or author on any surface, including the agent's own
+find. Nothing is deep-linkable. Three view-mode buttons render the same list and nothing
+is virtualised. Every row action lives behind hover-only CSS with no keyboard path.
+Console search calls the published-only delivery API, so a reviewer cannot find the
+drafts an agent just wrote. And there is no bulk publish anywhere, while the MCP publish
+tool already takes many addresses atomically.
+
+The block builds one query vocabulary that the MCP tools, the CLI, REST and the console
+all speak, puts every list's state in its URL so a filtered view is a link an agent can
+hand a person, and makes the browser a keyboard-operable, virtualised table whose bulk
+verbs are the agent's verbs wearing a console shape. The command palette stops listing
+seventeen routes and starts finding content and running actions compiled from the same
+operation registry the agent reads.
+
+### LXIX.1 A list you can operate without a mouse (SH1020)
+
+The analysis found no onKeyDown, tabIndex, row role or aria-selected in the browser. Its
+row actions, edit, clone, copy, permissions, delete, move and view, are buttons inside a
+div that is hidden until a pointer hovers the row. The site list fixed exactly this in
+its own sweep, moving four mouse-only actions into a focusable, announced menu; the
+browser was not part of that sweep, and BentoActionsMenu is used in Shio only by the
+vocabulary specimen.
+
+Make the list a real listbox: arrow keys move a roving focus ring, Space toggles
+selection, Shift with an arrow or a click extends a range, Enter opens, Delete trashes
+through the confirm flow, and slash focuses search. Rows gain a role, aria-selected and
+roving tabindex, and the hover block becomes the actions menu, with each item carrying
+the op id AY7's declaration names. The bindings register with the shortcuts dialog.
+
+Range selection is what makes BD2's bulk verbs a gesture rather than hundreds of clicks,
+which is why this lands first. VDS138's data table later absorbs the behaviour for every
+list. The assertions select a range and trash it by keyboard alone.
+
+### LXIX.2 Bulk verbs that are the agent's verbs (SH1021)
+
+The MCP publish tool declares its address as an array and promises atomicity across
+everything passed. The browser's batch menu offers copy, move and delete, REST offers
+single-id publish and unpublish, and the only bulk-shaped endpoints in the backend are
+object copy and move. So the agent half shipped and the curator half did not.
+
+Compose rather than fork. A bulk endpoint on post-unified takes an op, ids or addresses,
+dryRun, confirm and when, and delegates to the agent batch service, the same writer, so
+the two surfaces cannot disagree about what publish means. It returns a result per item
+with its outcome and problem, never a bare 200, and a destructive op requires the
+confirm token from its own dry run. Publish goes through SH995's permission. The CLI's
+publish grows a query form.
+
+The browser's batch menu gains Publish, Unpublish, Schedule and a Delete that replaces
+SH953's reporting loop with one call. The dry-run plan renders as a confirmation sheet
+naming what will change, with refusals grouped by problem title and each carrying its
+fix. The assertion: a selection where one item is refused publishes the rest and names
+the refusal.
+
+### LXIX.3 One query vocabulary, four surfaces (SH1022)
+
+The console listing takes page, size, sort and q. /agent/find is richer and still thin,
+with site, type, folder, q, trash, limit, ids and after but no state, date range, locale
+or author, and it loads matches into a list and filters in memory, sorting by address,
+the defect a benchmark already measured and fixed for the file listing. The post rows
+already store owner, modifier and publisher, so an author filter needs no new column,
+only a predicate.
+
+ShContentQuery parses site, folder, subtree, type, state, locale, modifiedSince,
+modifiedBefore, author, modifier, q, sort, page and size from parameters, with a
+teaching 400 naming allowed on an unknown key, the pattern the unknown-sort refusal
+already sets. The benchmark reporting rows fetched lands first and states what the
+in-memory path costs today; then the predicate moves into the database, because a
+client-side filter over a paged listing filters one page.
+
+shio_find's schema gains the fields within SH977's reservation, shio find gains the same
+flags, and the console listing accepts them. The assertions ask the same question
+through all four surfaces and compare the address sets.
+
+### LXIX.4 Every list's state in its URL (SH1023)
+
+useSearchParams appears in two console files, neither of them a list: one is the visual
+editor and one reads a post-login redirect. The search page keeps its query in state, so
+the search URL is the same whatever was searched, and the browser keeps sort, view and
+search the same way. This breaks P5 where a person notices: the same address does not
+produce the same view, and the view on screen has no address.
+
+A typed hook reads and writes list state through the URL, debouncing text fields and
+replacing rather than pushing on keystrokes so Back does not walk one character at a
+time. It applies to the browser, search, trash, static files, activity and review. The
+URL parameter names match BD3's REST names exactly, which is the point: a link a curator
+pastes into a chat is a request an agent can run, and shio find can print the console
+URL for its own result set.
+
+Saved views then cost a stored URL and a name, not a schema. The assertion is one per
+list route: its state round-trips through the URL and a reload reproduces the rows.
+
+### LXIX.5 The filter bar over the shared vocabulary (SH1024)
+
+BD3 makes the questions answerable and BD4 makes a view addressable. What a curator
+still lacks is a way to ask without editing a URL.
+
+The browser, search, trash and the review queue render VDS139's BentoFilterBar over
+BD3's vocabulary: a free-text field, facets for type, state and locale as menus of the
+values present in scope, a date range for modified, and author as a picker over users
+with an agent option that filters to agent-written content through SH999's attribution.
+Active filters render as removable chips and mirror into the URL through BD4's hook, so
+a filtered view is shareable the moment it is built. Facet counts come from the listing
+response rather than a second request.
+
+A saved view is a named stored URL, per user with an option to share with the tenant,
+listed beside the bar. The assertions build a filter from the bar, read the URL, reload
+it into an identical result set, and confirm the facet counts equal the filtered totals.
+
+### LXIX.6 The browser's cost, measured, then paged at the server (SH1025)
+
+The browser's list accumulates: each page appends to the previous array, and every row
+carries a checkbox, badges and hidden buttons, so ten thousand rows become well over a
+hundred thousand nodes. On the folder half the navigation service returns every child
+folder on every page by documented design, and the browser sorts that whole set
+client-side. @tanstack/react-table is declared and imported nowhere, and no
+virtualisation library is present.
+
+Measure first, as agents.md requires of any cost: a benchmark over a fixture of ten
+thousand posts and five hundred folders records rows fetched, response bytes and time to
+first row for the current path, checked in beside the other budgets. Then the backend
+half: the listing gains optional folder paging and a totalFolders count beside
+totalPosts, with the envelope assertion that keeps it identical to the CDA's extended to
+the new fields. The browser requests pages instead of accumulating, and the numbers are
+re-taken.
+
+BD7 builds the views and virtualisation on top of a listing that no longer returns
+everything. The assertion is the benchmark's before-and-after pair, recorded in the
+commit.
+
+### LXIX.7 Grid, table and list views, virtualised (SH1026)
+
+A grep of the browser for viewMode returns its declaration and the three buttons' own
+class and click handlers; the render below them is one unconditional map, so the choice
+changes a button's colour and nothing else.
+
+Build the two missing views over one data hook. Grid renders cards with a thumbnail from
+the existing image transform pipeline, or a post-type-coloured placeholder. Table
+renders VDS138's BentoDataTable with a column picker persisted per user and inline
+editing of scalar fields, which goes through the merge verb with the post's ETag. All
+three views are virtualised. The 965-line page is extracted into a content-browser
+directory with one renderer per view, because at that size the next feature makes it
+unreviewable, and the chosen view moves into the URL through BD4 instead of being
+forgotten on navigation.
+
+The declared table dependency either earns its place here or leaves the manifest. The
+assertions render each view over BD6's fixture, confirm only the visible window of rows
+is mounted, and edit a scalar cell whose stale ETag is refused.
+
+### LXIX.8 Console search over the agent's find (SH1027)
+
+The search page calls the CDA search endpoint, whose state constant is PUBLISHED; a test
+pins that behaviour by name. The agent's read searches both states. So an agent writing
+drafts can find them and the curator reviewing those drafts cannot, and the first thing
+a curator does after an agent run is search for what it made. Two defects ride along:
+the CDA applies no content-ACL check, so on an instance with an ACL set the console can
+list titles from folders the user cannot open, and the folder browser's search matches
+direct children only while the agent's folder scope is recursive.
+
+One console search service composed over the agent's find, a shape rather than a third
+contract, using BD3's vocabulary with state defaulting to any and the trash flag its
+REST twin has. It applies the content ACL and returns a withheld count, so a curator is
+told results were hidden rather than shown a short list, and a scope selector offers
+this folder, this folder and below, and this site.
+
+The lint that lands first enumerates every console-reachable read that skips the ACL
+check, held as an asserted list. The assertion: a draft is found, and an unreadable
+folder's post is withheld and counted.
+
+### LXIX.9 A palette of content and actions, compiled from the agent's verbs (SH1028)
+
+Shio passes BentoCommandPalette its seventeen-entry nav declaration, every entry a list
+route, and the placeholder is honest about it: search areas. Finding a post is open the
+palette, go to search, type the term again. VDS123 made the palette accept a product's
+own results, so the remaining gap is Shio's.
+
+Three result groups. Actions, compiled from the operation registry AY7's surface
+declaration exposes, so the palette's commands are the MCP verbs in a console shape
+rather than a fourth list: publish this page, create a post here, apply a blueprint, run
+verify, open the review queue, ask the agent. Content, from BD8's search, debounced and
+cancellable, each row carrying address, type and a draft or published marker.
+Destinations, today's array. Matching is fuzzy with aliases and recency, and page
+actions rank first when a page is open.
+
+Any action that writes opens its dry run or confirm flow rather than firing from the
+palette, enforced by a confirm field on the command type. The shortcuts sheet takes the
+bound keymap as data, which removes the advertised question-mark row nothing binds and
+adds the slash Shio does bind.
+
+## LXX Media: what the bytes mean (Block BE)
+
+Shio is strong on the bytes of an asset: an on-the-fly image transform pipeline,
+content-addressed uploads, a srcset that never upscales, and assets projected to disk
+for an agent to read. It is weak on what the bytes mean. The media listing is unpaged
+and parses every row's JSON repeatedly before it filters. Alt text is optional, and the
+image helper emits an empty alt that makes the accessibility rule unable to fire. Asset
+metadata and usage have no agent reach and no manifest feature key, so the P1 census
+cannot even see the gap. Where is this used is an unindexable LIKE scan, answerable in
+one direction only. And replacing an asset's bytes exists in the API and not in the
+console, whose only route is delete and re-upload, which breaks every field pointing at
+the old id.
+
+The security defect that belongs here, uploads served inline and executable, was
+promoted to Block AV and is fixed first. This block follows the measure-first rule
+twice, because both of its scaling changes, the paged listing and the reverse index, are
+argued in the analysis and have not yet been measured on this instance.
+
+### LXX.1 The listing's cost, measured, then parsed once (SH1029)
+
+GET on the static-file listing takes folder, site, category and q, and no page or size.
+The service maps every row through an item mapper and only then filters, and that mapper
+reads the same data string once per key, file name, width, height, alt, caption, tags,
+hash and size, and makes two filesystem calls. So a tenant with thousands of assets pays
+tens of thousands of JSON parses and thousands of syscalls in one request, and the
+console calls it with no filter and then filters and counts in the browser.
+
+The measurement is the first deliverable: a benchmark reporting parses, syscalls and
+response bytes at a hundred, a thousand and five thousand assets, checked in. Then the
+refactor with no contract change: parse the data once per item and read every key off
+that one tree, and take the file size from the stored metadata instead of the disk where
+it is present.
+
+BE2 pages the endpoint. This task's assertion is the benchmark's before-and-after pair
+and an unchanged response body for the seeded sample site, byte for byte.
+
+### LXX.2 A paged media library on every surface (SH1030)
+
+After BE1 the listing is cheaper per row and still returns every row. The object listing
+has been paged for many blocks; this one never was, so the console downloads the
+library, filters by query and category client-side, and computes its chip counts over
+the full array.
+
+Page the endpoint with the envelope the object listing already uses, so the two cannot
+disagree about what a page is, and push category and query predicates into the query.
+That needs the content type stamped at upload, the way the hash already is, with the
+name probe kept as the fallback for rows stamped before this change. Facet counts come
+back in the response.
+
+shio_assets gains a cursor beside its limit, so an agent can walk a large library
+instead of stopping at a silent truncation, and the CLI's asset inventory pages rather
+than assuming one response. The console drives the fetch from filter state through BD4's
+URL hook, reads facets from the response, and virtualises the grid. The benchmark is
+re-run and its numbers recorded, and the assertions page through a fixture with each
+surface and compare the totals.
+
+### LXX.3 Alt text as a publishing fact (SH1031)
+
+Three facts compose the defect. The File post type declares ALT as not required. The
+image helper puts an empty string when ALT is null, so the attribute is always present.
+And the verify rule fires only when alt is absent, a distinction the HTML outline reader
+documents as deliberate, since a missing alt and an explicitly empty one mean different
+things. So on a site built with the recommended helper, image-no-alt is structurally
+unreachable, and nothing looks at a File post's own ALT, because the check runs on
+rendered HTML.
+
+Add asset-no-alt, a rule over File posts whose type is an image and whose ALT is blank,
+provable with no render, which makes it cheap enough to be on by default. The helper
+stops fabricating the empty attribute and takes decorative as an explicit opt-in, so
+decoration is a recorded decision. It is a publish check, not an upload refusal:
+uploading without alt is fine, publishing a page that references such an image raises
+the finding, because refusing uploads would break every capture and conversion run.
+
+The console gets a needs-alt filter chip and an inline alt field on each card, so fixing
+fifty is fifty keystrokes.
+
+### LXX.4 Asset metadata on the agent surface, and a key the census can read (SH1032)
+
+The meta and usage endpoints exist with no agent reach. The assets tool's javadoc says
+it is read-only, the op vocabulary has no op touching an asset, the CLI has no asset
+metadata verb, and the manifest indexes only the upload route from that controller. Most
+importantly, the P1 conformance test classifies manifest feature keys and the only media
+keys are image transforms and signed URLs, so the instrument built for this gap cannot
+see it.
+
+Close the hole in the instrument first, then the chain. Declare assetMetadata and
+assetUsage as features, which alone turns an invisible gap into a failing build. Then
+give them reach: an asset.meta op taking an id plus alt, caption, tags and focal point,
+going through the file service so the one-writer lint stays satisfied, and a usage
+argument on the assets tool, within its AY5 reservation, so where is this used is a flag
+on a call the agent already makes. Metadata lands in the asset sidecar and round-trips
+through pull and push under SH1004's merge rule.
+
+Metadata edits start writing an audit row, which replace already does, so they reach the
+change feed and review.
+
+### LXX.5 What the usage query costs before anything replaces it (SH1033)
+
+The usage query is a LIKE with a leading and trailing wildcard around the file id over
+the data column of every post in the tenant, which no index can serve, and the service
+runs it once per state, so every detail dialog open pays for it twice. The inverse
+question, which assets nothing references, cannot be answered without running it once
+per asset.
+
+The analysis proposed a reverse-reference table maintained on every write. That may be
+right, and it is exactly the kind of change agents.md says lands as a benchmark first: a
+maintained row on every create, update, publish and delete is a hot-path cost paid to
+make a dialog fast, and whether it is worth paying depends on numbers nobody has taken.
+
+Time the usage query at a thousand, ten thousand and fifty thousand posts on each
+supported database, and time, separately, the per-write cost an index would add, using a
+prototype of the maintenance step. Record both beside the other budgets. If the read is
+acceptable at the largest size, the honest change is a single-state query and a cached
+count, and BE6 is retired with that reason. If it is not, the numbers become BE6's
+argument and its changeset's comment.
+
+### LXX.6 Usage in both directions, at the cost BE5 measured (SH1034)
+
+The verify inventory has orphan rules for posts and folders and nothing for assets, and
+the content-files doc records that the projection side-steps the question, which leaves
+it open on the instance, where storage is actually consumed.
+
+This task builds whichever mechanism BE5's numbers chose. If the measurement argued for
+an index: sh_object_reference with from-post, to-object, field name and state,
+maintained by the unified write service by walking each post's data against its post
+type's File and content-select fields, which is more accurate than a substring because
+it knows which field holds the reference. Usage becomes an indexed join and unused
+becomes a left join that is null, with the LIKE query kept as the fallback for a tenant
+whose backfill has not run. If it argued against, a single-state query with a cached
+per-asset count invalidated on write.
+
+Either way: shio_assets reports a usage count per row, shio verify gains asset-unused,
+shio assets prune --dry-run names what it would free, and the media card shows a usage
+badge so nobody deletes an asset blind. A schema change runs with the ITs and Docker
+started.
+
+### LXX.7 Replace, with the diff that makes it safe (SH1035)
+
+The replace endpoint shipped with a CLI caller through push --content, and the console's
+static-file service and page never call it. The detail dialog offers copy URL, download,
+delete and save metadata, and no way to put new bytes behind the same id, so updating a
+logo means delete and re-upload, which breaks every field that referenced it, the
+outcome the replace verb's own javadoc calls unsound. Separately, the File widget
+refuses when its folder setting is missing, with an error toast and no path forward.
+
+A Replace control in the dialog calls the existing endpoint and shows what a curator
+needs to trust it: old and new dimensions and size, and the count of pages that will
+change, from BE4's usage argument. The previous bytes are kept as a numbered rendition
+with a revert, which is what makes replacing safe enough to encourage. When the widget
+has no configured folder it opens the folder picker instead of dead-ending, remembering
+the choice for the session.
+
+Replace stays off MCP tools, since base64 through a tool call is the reasoning the
+assets tool already gives; the manifest names the multipart route beside upload. The
+assertions replace an image, read the new bytes behind the old id, and revert.
+
+## LXXI The visual editor becomes a composer (Block BF)
+
+Shio's Universal Editor is a bridge of five postMessage messages, and every one concerns
+a field that is already on the page. There is no component, no container, no insertion,
+no move and no version in its vocabulary. Edit mode does not survive clicking a link
+inside the preview, while the console's connection badge stays green. Every field
+becomes contenteditable HTML whatever widget declared it. There is no undo, no discard,
+and a refresh leaves the pending change set pointing at edits no longer on screen. And
+the only previewable sites are those with an external front end, because the preview
+token unlocks nothing for Shio's own renderer.
+
+The model the editor needs already exists and is already agent-addressable: a Page names
+its sections in order, the section vocabulary is a shared package, and post.upsert
+writes a page's section array today. So this block builds the surface, not a model. The
+bridge learns navigation and a versioned protocol with capabilities, sections become
+selectable and movable, a server-owned catalogue says what may be inserted where, a good
+block becomes a reusable pattern file, edits gain an undo log, and a stakeholder can be
+sent an expiring link to a draft rendered by Shio itself.
+
+Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
+
+### LXXI.1 A bridge that survives navigation (SH1036)
+
+Server side, the link rewriter returns a prefix plus the site path: the link's own query
+survives and the current request's editor and state parameters do not, although the
+helper that preserves them exists and is called only on the redirect path. Browser side,
+the click handler assigns base plus href and loses them the same way. Console side,
+bridge state derives from the handshake's src equalling React state, which in-frame
+navigation cannot change. So the next page, which ships no bridge script, leaves the
+badge green while the selection and pending changes still point at the previous page's
+posts, and Save still offers to write them.
+
+The rewriter threads the renderer's parameters onto every href through the existing
+helper, and the page script does the same on intercepted navigation. A navigated message
+is posted from attach on every load, so the console re-keys its handshake, clears the
+selection and re-fetches labels, and a navigate message lets the console drive the
+frame. The badge keys on the page the bridge reports.
+
+The postMessage suite asserts only that the intercepted click was prevented, never where
+it went. It gains a destination assertion, and the live browser probe gains a
+click-through step asserting the navigated message arrives.
+
+### LXXI.2 Protocol version two, and fields that know their widget (SH1037)
+
+The ready message is a post id and a URL, and the console's state machine past it is
+waiting, ready or absent. Edit mode is granted by the presence of a prop attribute
+alone: any element carrying one becomes contenteditable and reports innerHTML, with no
+reference to the declared widget. So a plain Text field absorbs markup from a paste and
+then shows the tags as visible text, because the template escapes it.
+
+Protocol v2, negotiated. Ready carries a protocol version, a capability list, the post
+id, the post type and the URL, and the console renders only the affordances the page
+claims, so an external front end can implement part of the protocol and still work. The
+renderer emits data-shio-prop-type from the declared widget, which is resolved at
+compose time: a text field becomes plaintext-only and strips formatting on paste, a
+rich-text field gets a restricted inline toolbar, and anything else edits in the panel
+only. The attribute joins the asserted DOM contract table.
+
+Sanitising is not the bridge's job: SH956 already applies the allow-list at the write
+boundary, the draft merge included. The console panel renders the declared widget from
+the existing widget map instead of a bare input.
+
+### LXXI.3 Sections as objects on the page (SH1038)
+
+The bridge listens on two prop attributes and reports an item type of text or attr. The
+model is already there: a Page names its sections by address in order, every section
+field is annotated, and a per-section handle is emitted in converted markup and read by
+the server's region walk, so the handle exists, the server reads it and the browser
+bridge does not. The properties panel has no component header, no move control and no
+delete.
+
+Add a component item type. The region composer emits the section type, its index in the
+owning Page's ordered list, and a container attribute on the element composing them, so
+the DOM records position as well as identity. The bridge gains a component-selected
+message and accepts move, remove and duplicate for optimistic reorder, each confirmed by
+a write, and every one resolves to a single deterministic write: replace the owning
+Page's section array.
+
+The agent can already do this, since post.upsert writes that array and the file
+projection carries it as a diffable line, so no new write path is needed. The overlay
+becomes a console-drawn layer instead of a stylesheet the page injects, because a
+stylesheet cannot draw a toolbar or an insertion caret.
+
+### LXXI.4 A server-owned catalogue of what fits where (SH1039)
+
+The editable endpoint returns the fields drawn and the regions declared, with no
+insertable set, no per-container allow-list and no catalogue. The shared section types
+reach the console as post-type names in a picker. So an editor that BF3 lets select and
+move a section still cannot add one, which leaves that task half a feature.
+
+A Handlebars renderer is the right owner for the catalogue, because only the template
+knows what a container accepts. An insertable endpoint returns, per container on the
+page, the section types it accepts, with title, description, the fields the properties
+panel will draw and a thumbnail reference. Restriction rides on the container as an
+accepts attribute the template declares. Insert is a batch of two operations, upsert the
+new section and upsert the Page's array, which is already atomic.
+
+The console gets an inserter rail showing the catalogue for the selected container, with
+thumbnails rendered by the preview route against a fixture so no browser runs in the
+JVM, and an insertion caret between sections. MCP gains the catalogue as an include on
+the editable read. The assertions insert a section into a container that accepts it, and
+are refused, with the allowed list, for one that does not.
+
+### LXXI.5 Patterns: a good block becomes a file (SH1040)
+
+Every blueprint today is whole-site or whole-page, with a fixed target and no mode that
+inserts into an existing page, and nothing captures an existing arrangement as a
+blueprint. So when a curator gets a pricing block right, the only way to reuse it is to
+rebuild it.
+
+shio_apply gains at and mode insert, applying a blueprint's sections into a named
+container of an existing page through BF4's insert batch. shio capture with an
+as-pattern name writes shio/patterns/<name>.json from a selected set of sections, with
+their field values made parameters where the author marks them, diffable and reviewable
+in a pull request, the shape Gutenberg reached by registering patterns as files.
+Patterns join the blueprint registry, so an agent lists and applies them the way it does
+blueprints.
+
+The console's inserter rail from BF4 gains a Patterns tab beside section types, and a
+selected set of sections gains Save as pattern, which writes through the same capture
+path. The assertions capture a two-section pattern from one page, apply it into another
+page's container through MCP, and compare the resulting section arrays.
+
+### LXXI.6 An edit log with undo, and a refresh that tells the truth (SH1041)
+
+The pending map has two operations, set and clear on success. There is no per-field
+revert, no discard-all and no keyboard undo. Refresh reloads the iframe and resets the
+handshake and deliberately keeps the changes, so the badge counts edits no longer
+visible and Save still writes them. Leaving the route is unguarded. Nothing records the
+value that was there before an edit, so nothing can undo one.
+
+The pending map becomes an ordered change log. Capturing the prior value on the first
+content-changed message for a key is enough, since the message already exists and only
+the record is missing. A control on each row reverts one field by posting the original
+value into the frame, Discard all reverts everything, and Ctrl+Z walks the log. Refresh
+replays pending changes into the reloaded frame or asks, and never silently diverges.
+Leaving with pending changes asks.
+
+The log serialises into the change-set shape the agent path already uses, and a save
+closes its loop by returning the structural and appearance digest pair with a one-line
+delta, measured first, reported through SH972's dock. The assertions edit, undo, refresh
+and save, and read the digest delta.
+
+### LXXI.7 A share link that unlocks Shio's own renderer (SH1042)
+
+The preview path sits under the authenticated rule and was deliberately removed from
+permitAll. The token machinery serves only an external front end: when a site's front
+end is internal, the mint returns a null token with zero expiry, and its javadoc
+explains why, since a credential for a console-authenticated path would unlock nothing.
+That held while the only reader was a curator. For a site an agent just built, it means
+the only previewable sites are those with a deployed external front end, the inverse of
+the product's premise.
+
+The preview route accepts a share credential: preview scope, one site, a post, folder,
+site or release, and an expiry, which the token row already models with its ephemeral
+flag, expiry and site allow-list. It is exchanged once for a cookie so the credential
+does not travel in a copied URL's referer, and it grants anonymous, read-only, draft,
+no-store and noindex access, never the editor bridge, with the preview banner kept.
+
+A list-and-revoke endpoint makes active links visible and killable. shio share prints
+the URL, the most useful thing an agent can hand a person at the end of a run. The
+assertion: an anonymous request with no credential is still refused.

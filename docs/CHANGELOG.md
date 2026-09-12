@@ -1689,3 +1689,11 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
+## Block BC — The authoring surface, field by field
+
+## Block BD — Finding, selecting and acting on content
+
+## Block BE — Media: what the bytes mean
+
+## Block BF — The visual editor becomes a composer
+
