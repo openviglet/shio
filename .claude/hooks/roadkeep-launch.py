@@ -25,9 +25,15 @@ to look under ``~/.claude`` alone (see below).
 
 The engine is resolved in this order:
 
-  1. ``$ROADKEEP_HOME/scripts/roadkeep.py``          an explicit override
-  2. a sibling checkout ``../roadkeep``              two repositories cloned side by side
-  3. a cached clone under the user cache directory   the web, second turn onward
+  1. ``$ROADKEEP_HOME/scripts/roadkeep.py``          an explicit override, and where it is
+                                                      set the only one (RK1678)
+  2. a vendored ``.roadkeep/``                        the copy the project chose (RK1193)
+  3. a sibling checkout ``../roadkeep``              two repositories cloned side by side
+  4. a cached clone under the user cache directory   the web, second turn onward
+
+The last three are *found*, so the first of them that runs answers. The first is *named*, so
+nothing else answers for it: a copy nobody chose, answering where the named one could not, is
+indistinguishable from the named one answering (see :func:`_candidates`).
 
 Three rules keep it from ever making things worse, and the first is the **guard's alone**:
 
@@ -218,16 +224,38 @@ def _resolve() -> Path | None:
     return next(iter(_candidates()), None)
 
 
+def _named() -> Path | None:
+    """The tree ``$ROADKEEP_HOME`` names, expanded, or None where it names none (RK1678).
+
+    Empty is none, which is how a settings file or a caller says *not set* while keeping the
+    key. A variable nothing resolves is a name all the same (see :func:`_expanded`).
+    """
+    home = _expanded(os.environ.get("ROADKEEP_HOME"))
+    return Path(home) if home else None
+
+
 def _candidates() -> list[Path]:
     """Every engine this file can reach, in resolution order (RK1214).
 
     Split out of :func:`_resolve` because *existing* turned out to be the wrong test and a
     caller that needs the next one has to be able to ask for it. The order is unchanged and is
     the whole of RK1193 and RK1200 as this file sees them.
+
+    **A named engine is the whole list** (RK1678). `$ROADKEEP_HOME` was the first candidate
+    and was dropped by the same tests as the rest — absent, or failing its probe — so a
+    checkout mid-save fell through to whatever answered next. Measured on one machine: three
+    commands served by `0.2.4` out of the user cache while the sibling stood at `0.2.450`, and
+    setting the variable changed nothing, because it was a candidate like the others. Falling
+    through is right for a copy found on disk and wrong for one somebody named: the next copy
+    is one nobody chose, and its answer reads exactly like the named one's. So where it is set
+    nothing else is tried, and :func:`_missing` names it — which for `guard` means
+    *unenforced*, the second rule being the guard's and this not overriding it.
     """
-    home = _expanded(os.environ.get("ROADKEEP_HOME"))
+    named = _named()
+    if named is not None:
+        engine = _valid(named)
+        return [] if engine is None else [engine]
     found = [
-        _valid(Path(home)) if home else None,
         _valid(_repo_root() / VENDORED),
         _valid(_repo_root().parent / "roadkeep"),
         _cache_engine(),
@@ -257,6 +285,25 @@ def _answers(engine: Path) -> bool:
     docstring), and a subprocess is also the only thing that proves the *child* will start,
     which is what every mode here goes on to spawn.
     """
+    return not _probe(engine)
+
+
+#: What each probe this process ran said, by engine — `""` where it answered (RK1678). Kept so
+#: a refusal quotes the probe that decided and never runs a second one: on a checkout mid-save,
+#: the one state this is about, asking again can answer differently.
+_PROBED: dict[Path, str] = {}
+
+#: How much of an engine's own sentence a refusal quotes. A traceback's last line fits, and an
+#: engine that prints one enormous line is not one whose every byte this file should repeat.
+_SAID_MAX = 200
+
+
+def _probe(engine: Path) -> str:
+    """Why this engine does not run, or `""` where it answered — :func:`_answers` with the why.
+
+    Three ways not to answer, and the refusal names which: it exited, it did not answer in
+    time, or it could not be started at all.
+    """
     try:
         done = subprocess.run(
             [sys.executable, str(engine), "--version"],
@@ -264,20 +311,47 @@ def _answers(engine: Path) -> bool:
             timeout=PROBE_TIMEOUT,
             check=False,
         )
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return False
-    return done.returncode == 0
+    except subprocess.TimeoutExpired:
+        why = f"did not answer --version within {PROBE_TIMEOUT}s"
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        why = f"could not be started ({error})"
+    else:
+        why = "" if done.returncode == 0 else f"exited {done.returncode} on --version"
+        said = _said(done.stderr) if why else ""
+        if said:
+            why = f"{why}: {said}"
+    _PROBED[engine] = why
+    return why
+
+
+def _said(stderr: bytes | None) -> str:
+    """The line of an engine's stderr that says what went wrong (RK1678).
+
+    **The last one at column 0.** A Python traceback indents its frames and leaves the header
+    and the exception flush left, so the last unindented line is `ImportError: …`; the engine's
+    own refusal for a checkout that does not parse (RK1179) indents its rows under a first line
+    that says so. One structural rule for both, and never a match on an error's name.
+    """
+    lines = [
+        one for one in (stderr or b"").decode("utf-8", "replace").splitlines() if one.strip()
+    ]
+    flush = [one for one in lines if not one[0].isspace()]
+    said = (flush or lines or [""])[-1].strip()
+    return said if len(said) <= _SAID_MAX else said[: _SAID_MAX - 3] + "..."
 
 
 def _running() -> Path | None:
     """The first candidate that answers, or None (RK1214).
 
-    Paid by the two modes that are about to do something a broken engine would half-do: a
-    forwarded verb may **write**, and the server is `execv`'d and cannot be taken back. One
-    probe on a healthy machine, because the first candidate answers.
+    Paid where a broken engine would half-do something that cannot be taken back: a forwarded
+    verb may **write**, and on POSIX the server is `execv`'d. One probe on a healthy machine,
+    because the first candidate answers.
 
     Not paid by :func:`_guard`, which is the hot path and needs no probe at all: it writes
-    nothing, so it can simply run a candidate and try the next on any failure.
+    nothing, so it can simply run a candidate and try the next on any failure. **Nor by the
+    server on Windows** (RK1465), where there is no image to replace: the parent waits on the
+    child, so the failure this predicts arrives as that child's exit code — and the probe is a
+    second cold Python start on the one path a client puts a thirty-second ceiling on.
     """
     return next((one for one in _candidates() if _answers(one)), None)
 
@@ -310,9 +384,10 @@ def _expanded(value: str | None) -> str | None:
     writes can be one this process cannot look up — and this file already knows the answer.
 
     A variable nothing resolves is left **as written** rather than emptied. Both fail, and they
-    fail differently: `${NOPE}/.roadkeep` names nothing and falls through, while an empty
-    expansion is `/.roadkeep`, a path at the filesystem root that could exist and would then be
-    run. The silent-wrong-engine outcome is the one this whole task is about.
+    fail differently: `${NOPE}/.roadkeep` names a tree that is not there and is refused by that
+    name (RK1678), while an empty expansion is `/.roadkeep`, a path at the filesystem root that
+    could exist and would then be run. The silent-wrong-engine outcome is the one this whole
+    task is about.
     """
     if not value:
         return value
@@ -337,6 +412,9 @@ def _guard(argv: list[str], payload: bytes | None) -> int:
     Optimistic rather than probed, because this is the path that runs on every tool call in
     every session: a healthy machine pays exactly what it paid before, and only a broken
     engine pays for a second spawn.
+
+    The fall-through is over what was **found** (RK1678). A named engine is the whole list, so
+    one that fails leaves the turn unenforced rather than guarded by a copy nobody chose.
     """
     if _plugin_is_wired(_repo_root()):
         return 0  # the plugin's own hook already runs; do not double-fire.
@@ -349,6 +427,17 @@ def _guard(argv: list[str], payload: bytes | None) -> int:
     return 0  # unenforced beats broken, whether none was found or none of them ran.
 
 
+def _windows() -> bool:
+    """Whether this platform spawns where POSIX replaces the image (RK1446, RK1465).
+
+    A function and not two `os.name` reads: `_serve` branches on it twice — once for whether
+    the probe is bought and once for how the child is run — and those are one fact. It is also
+    the seam a test can move, which patching `os.name` is not: `pathlib` reads that name too,
+    and a test that changed it stopped being able to make a path.
+    """
+    return os.name == "nt"
+
+
 def _serve(argv: list[str]) -> int:
     """The server, which stands down for nobody (RK1189) — see the module docstring.
 
@@ -358,13 +447,50 @@ def _serve(argv: list[str]) -> int:
     Probed (RK1214), because `execv` cannot be taken back: a broken engine here replaces this
     process and the harness reads the exit as a crashed server, in the projects where
     everything was installed correctly.
+
+    **And `execv` is POSIX's answer, not Windows'** (RK1446). There is no image to replace
+    there: the CRT's `_execv` *spawns* and lets the caller exit, and what the harness spawned
+    is the caller. Measured on Windows 11 from a project whose `.mcp.json` is the one `install`
+    writes — `roadkeep-launch.py mcp` returned 0 in under a second with both streams empty,
+    while the engine invoked directly was still serving at ten seconds. No server survived the
+    launcher, so the harness held a pipe nothing was on, reported `CONNECT_TIMEOUT` after
+    thirty seconds and dropped every tool; the hooks still fired, so the session was told to
+    call tools it had never been handed and a hand-edit was denied with a command it could not
+    run. The exit code is the sharpest part: a 2 would have surfaced as a failed server, and 0
+    in silence is indistinguishable from one that started and closed cleanly.
+
+    So there the child is run to completion with this process's stdio **inherited** — one
+    extra process in the chain, and still no pipe in the middle, which is the property the
+    `execv` was for. The parent does nothing but wait and hand back the exit code.
+
+    **And there the probe is not paid** (RK1465). It exists because `execv` cannot be taken
+    back: a broken engine replaces this process and the harness reads the exit as a crashed
+    server. With no image replaced there is nothing to take back — the parent is still here
+    when the child fails, and the failure the probe predicts has already happened in front of
+    it, with the child's own exit code standing for it.
+
+    Measured on Windows 11 against this checkout, five runs each, `initialize` written to
+    stdin and the first response line read back: the engine directly at 283 ms min and 315
+    median, this file at 646 and 677. The difference is one `python scripts/roadkeep.py
+    --version` — a whole interpreter start and a whole `roadkeep.cli` import, 287 ms of the
+    363 this file added. What that costs is not the milliseconds: connecting is the engine's
+    time plus a second cold start, on the one path a client puts a thirty-second ceiling on.
+    RK1449 moved the cliff out of `initialize`, and this is the floor under it.
     """
-    engine = _running()
+    # `_resolve` and not `_running` on the branch that waits: see above. On POSIX the probe
+    # stays, `execv` being the thing it was bought for.
+    waits = _windows()
+    engine = _resolve() if waits else _running()
     if engine is None:
         return _missing()
+    command = [sys.executable, str(engine), "mcp", *argv]
+    if waits:
+        # `_forward`'s call exactly, and for the same reason it is spelled that way: no
+        # `stdout`, `stderr` or `stdin` argument, so all three are this process's own.
+        return subprocess.run(command, check=False).returncode
     # `execv`, so the server owns this process's stdio rather than talking through a pipe to a
     # parent that would have to shuttle every frame.
-    os.execv(sys.executable, [sys.executable, str(engine), "mcp", *argv])
+    os.execv(sys.executable, command)
 
 
 def _missing() -> int:
@@ -380,7 +506,12 @@ def _missing() -> int:
     `ImportError` from inside somebody's half-refactored checkout, and a message that said
     *no engine found* over a directory plainly sitting there would send its reader looking for
     the wrong thing.
+
+    **And a named engine gets its own sentence** (RK1678): see :func:`_unrunnable`.
     """
+    named = _named()
+    if named is not None:
+        return _unrunnable(named)
     seen = len(_candidates())
     found = (
         f"{seen} candidate(s) on disk, none of which ran"
@@ -391,6 +522,36 @@ def _missing() -> int:
         f"roadkeep-launch.py: {found}: set ROADKEEP_HOME to a roadkeep "
         "checkout, or put one beside this repository as ../roadkeep\n"
     )
+    return 2
+
+
+def _unrunnable(named: Path) -> int:
+    """The engine ``$ROADKEEP_HOME`` names cannot be run, and nothing else was tried (RK1678).
+
+    Three facts, being what a reader acts on: which variable chose it, the path it resolved to,
+    and what the probe said — a tree holding no engine, one that exited, one that did not
+    answer in time. The probe quoted is the one that decided (:data:`_PROBED`), and a named
+    engine that is on disk only reaches here after one: the server on Windows, which buys no
+    probe, runs the named engine and lets its own exit say it failed.
+
+    And what was **not** done, said because it is the question a working sibling beside a
+    refusal raises: no other copy was tried, the name being the choice.
+
+    ASCII, like :func:`_missing`, and folded rather than trusted to be: a path and an engine's
+    own stderr can carry any codepoint, and a console that cannot encode one turns this
+    refusal into a traceback.
+    """
+    engine = _valid(named)
+    if engine is None:
+        where, why = named, f"holds no {ENGINE_REL.as_posix()}"
+    else:
+        where, why = engine, _PROBED.get(engine) or "did not answer"
+    message = (
+        f"roadkeep-launch.py: ROADKEEP_HOME names {where}, which {why}: a named engine is the "
+        "one meant, so no other copy was tried - fix that tree, or unset ROADKEEP_HOME to let "
+        "the launcher find one\n"
+    )
+    sys.stderr.write(message.encode("ascii", "backslashreplace").decode("ascii"))
     return 2
 
 

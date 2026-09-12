@@ -392,3 +392,6 @@ symptom = false
 name = "Viglet Shio"
 description = "The open source headless CMS built for coding agents."
 icon = "📰"
+
+[install]
+wired = "0.2.473"
