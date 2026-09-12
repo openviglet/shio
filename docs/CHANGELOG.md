@@ -1674,3 +1674,10 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AU — The design system's consumer contract, adopted and gated
 
 - **SH940** — The console builds on 2026.3.10, the first release carrying the page-reference bins, their docs payload and the Viglet assistant; only the build caught registerVigTranslations moving to ./i18n, and the waits list traded SH935's endless wait for SH943 and SH944 (design §LX.1 recorded in `docs/agents/console-ui.md`).
+
+## Block AV — The live defects, fixed before anything is built on them
+
+## Block AW — One chrome: bento, and nothing left that names another
+
+## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
+

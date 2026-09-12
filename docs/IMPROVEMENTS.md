@@ -1093,3 +1093,584 @@ So this is a task inside the block rather than a gate in front of it, and its sc
 those five. The artboards go in docs/design beside the vendored vds- pages, on this
 repository's own canvas.json pages, which page-reference.mjs preserves rather than
 rewrites.
+
+### LX.7 The reading column, owned once (SH946)
+
+BENTO-AUTHORING section 1 says main sets the max width, the gutters and the vertical
+rhythm once, and a page sets none of the three. The analysis measured the opposite in
+Shio: seven lines across six bento pages at three widths, max-w-6xl on the vocabulary
+page, max-w-4xl on three form pages and max-w-7xl on the post-type picker and the home
+page. Nobody reviewing one screen sees it, which is the exact failure the rule names.
+
+The package has to export the shell first, which is VDS131. On Shio's side,
+bento.root.page.tsx recomposes on BentoShell, whose main carries the column as a
+default, narrow or wide prop, and the six pages drop their own mx-auto, max-w, padding
+and spacing classes. A single-question form asks for narrow by name instead of repeating
+a class.
+
+The proof is a before-and-after surface-digest pair asserting that nothing but the width
+classes moved, which is the use the digest was built for: cheap textual evidence rather
+than asking somebody to look at six screens. It has no agent leg, and its classification
+is chrome.
+
+### LX.8 The page lint, run where the duplicate gate already runs (SH947)
+
+The vendored SKILL.md closes on two rules it calls easy to get wrong: a page sets no
+width, gutters or rhythm, and a product claims --primary through the base inputs rather
+than by setting --vg-primary, which would key the dark ground to the light value. Shio
+broke the first six times. It is clean on the second only by luck, since nothing would
+notice a write to --vg-primary if one appeared.
+
+VDS132 ships viglet-ds-page-lint. Shio's half is shio-react/test/page-lint.test.mjs,
+modelled line for line on no-duplicate-components.test.mjs: spawn the bin resolved
+through the installed package against the repository root with --check, assert a clean
+exit, and carry a non-vacuity case that plants a width class on a routed page in a
+temporary copy and asserts the gate goes red naming the file.
+
+That places the check inside pnpm test, which is the argument the duplicate gate already
+makes: a check reachable only by a second command runs when somebody remembers. It
+depends on AU7 because the first rule has no correct alternative until the shell owns
+the column.
+
+### LX.9 The local loop, resolved from the register (SH948)
+
+SH895 made copy-ds.cmd forward to the design system's own use:local so the consumer and
+the install path were resolved rather than hardcoded. Both checkouts have since moved to
+git worktrees, and copy-ds.cmd --list now fails with could not find the design system
+checkout, while use:local --list reports no consumer at all. The script's header records
+the same failure one level down, where it did nothing useful for two version bumps
+without anyone noticing.
+
+VDS130 makes the register the source: each consumer declares its checkout, and zero
+consumers found is a non-zero exit naming the register. Shio's side is to stop deriving
+anything from position. copy-ds.cmd resolves the package through the
+viglet-design-system latest junction, the same stable pointer the global instructions
+use for Shio and Turing, or it is deleted if use:local alone now does the job.
+
+The assertion is that copy-ds.cmd --list, run from this checkout, names Shio and exits
+zero. A wrapper whose only job is a path it gets wrong is worth less than no wrapper,
+because it reports a missing package instead of a broken script.
+
+### LX.10 The plugin this repository ships, loaded where it is written (SH949)
+
+.claude-plugin/marketplace.json declares the openviglet marketplace with one plugin,
+shio, sourced from ./claude-plugin: a manifest, an .mcp.json wiring the MCP server, four
+skills and three commands, with a test asserting manifest paths, skill descriptions and
+command safety. .claude/settings.json enables roadkeep@alegauss and knows only the
+alegauss marketplace. So the skills that tell an agent how to build a site in Shio are
+published and never loaded in the repository that wrote them.
+
+Add openviglet to extraKnownMarketplaces and shio@openviglet to enabledPlugins. That
+forces a decision worth forcing: ten project skills under .claude/skills/shio-* and four
+plugin skills overlap in subject, and two authorities on one subject is the drift
+agents.md already names. The split that survives is that plugin skills serve a session
+driving an instance, and project skills serve a session changing this source tree. Write
+that sentence into the routing table.
+
+The instrument extends claude-plugin/test/plugin.test.mjs: no skill name appears on both
+sides, and settings.json enables the marketplace this repository publishes.
+
+## LXI The live defects, fixed before anything is built on them (Block AV)
+
+Everything else in this round adds a capability. This block removes behaviour that is
+wrong today and reports itself as right, which is the most expensive kind of defect in a
+product whose promise to the curator is that nothing surprises them.
+
+Each task was confirmed by running or reading the code path rather than by the analysis
+alone. An uploaded SVG or HTML file is served inline from the console's own origin with
+no nosniff and no content security policy, and the upload has no type policy at all.
+shio_write builds every operation through a constructor that discards when, locale,
+translationOf, url and expect, so an agent asking for a scheduled publish gets an
+immediate one and its concurrency guard never applies. Bulk delete swallows every
+failure and reports the whole selection deleted. A Clear cache button calls an endpoint
+whose entire body is a 200. Twenty-four save paths replace the server's teaching error
+with the word Error. The rich-text field stores whatever arrives and the renderer emits
+it unescaped.
+
+They come first because later blocks stand on them: the assistant reports outcomes these
+defects falsify, and releases schedule through the argument the MCP path drops. Each
+closes with an assertion carrying its id, at the boundary it crossed.
+
+### LXI.1 Stop serving uploads as executable documents (SH950)
+
+ShStaticFileAPI sets Content-Disposition inline on both of its file responses, and
+ShSiteAssetDelivery does the same for site assets. A grep of the backend for
+X-Content-Type-Options or Content-Security-Policy returns nothing. The content type is
+probed from the file name first, so evil.svg is served as image/svg+xml and payload.html
+as text/html, from the same origin the console runs on, and the upload endpoint accepts
+an agent token.
+
+This task is the one-commit mitigation, deliberately separated from the policy work in
+AV2 so the hole does not stay open while an allow-list is argued. Register a response
+filter on every asset route that sends X-Content-Type-Options nosniff; serve anything
+outside a short render-safe list of raster image types with Content-Disposition
+attachment; and send a sandbox Content-Security-Policy on asset responses so an SVG
+opened directly runs nothing.
+
+The assertion carries the id at the boundary: a GET of an uploaded SVG answers with
+nosniff, a sandbox CSP and no inline disposition, and the same GET of a PNG still
+renders inline. The delivered site's own image tags are unaffected, because an img
+element never executes script.
+
+### LXI.2 An upload policy that says what it refused and why (SH951)
+
+The only sanitising in the static-file services is of tenant and file names. Nothing
+inspects content, and spring.servlet.multipart.max-file-size is 1024MB. So after AV1 the
+bytes are no longer executable when served, but they are still stored, still listed, and
+still copied into a content tree by shio pull.
+
+Add an upload type policy with allow, deny and sanitize per media type, defaulting to
+deny for HTML and JavaScript and sanitize for SVG. The SVG sanitizer strips script,
+foreignObject, event-handler attributes and non-data xlink:href, and records
+SANITIZED:true in the File post's data so the fact is content rather than a log line. A
+refusal is a teaching 400 carrying allowed and a fix naming the policy key, which is the
+shape every other refusal on the agent surface already has.
+
+The agent legs land together: shio_assets rows gain unsafe and sanitized flags, and shio
+verify gains asset-unsafe-type over the projected tree. One decision must be written
+into the task rather than assumed: what shio convert uploads today, since a replication
+run that captures inline SVG must keep working. The assertions plant a script in an SVG
+and a refusal of an HTML file.
+
+### LXI.3 A tool that accepts an argument and ignores it (SH952)
+
+ShAgentBatch.Op carries eleven fields: op, address, type, folder, to, data, when,
+locale, translationOf, url and expect. ShAgentBatchService reads when for scheduling and
+expect for the SH721 concurrency guard. ShWriteTool's schema advertises when as the
+ISO-8601 instant for post.publish, and its call method builds every op through the
+constructor whose javadoc reads the six-field form, for the ops that never schedule,
+which passes null for the other five. No test calls shio_write with any of them; the
+golden tools-list only records the schema.
+
+So over MCP, which is how most agents write, a publish meant for next Monday happens
+now, a write meant to be conditional on the state it was planned against is
+unconditional, and a translation is created without its locale. The REST batch
+deserialises all eleven fields, which is why nothing looked wrong from the console.
+
+The instrument lands first and generalises: a conformance test walks every MCP tool's
+declared inputSchema and each op spec in ShAgentOps, and asserts every declared property
+is either read by the handler or refused with a teaching 400. Then ShWriteTool passes
+all eleven fields. The assertion carries the id: shio_write with when schedules, and
+with a stale expect refuses.
+
+### LXI.4 A count that is the number acted on (SH953)
+
+In object.children.page.tsx the batch delete loops the selection, awaits deleteObject
+for each id with .catch(() => {}), and then shows content.itemsDeleted with the
+selection's size. The select-all cap is a thousand, so a thousand sequential round trips
+that all fail still report a thousand deleted. There is no progress, no cancel, and the
+refresh returns to page zero. The folder write service has real refusals, restore
+conflicts and 409s, and none of them can reach the curator through this loop.
+
+The content API doc already states the rule this breaks: the number in the dialog is the
+number acted on. The honest fix does not wait for the bulk endpoint Block BD adds.
+Collect each outcome, count successes, and report refusals by problem title with their
+detail, keeping the curator on the page they were on. When BD's bulk verb lands, the
+loop becomes one call and this reporting stays.
+
+The assertion carries the id: a batch in which one delete is refused reports the
+successful count, names the refused item, and never shows the selection size as the
+number deleted.
+
+### LXI.5 A button that has lied since the cache it cleared was removed (SH954)
+
+ShObjectAPI.clearCache is a GetMapping on {id}/clear-cache returning
+ResponseEntity.ok().build(). The console's content browser renders a Clear Cache button
+on every row that calls it and then toasts content.cacheCleared. Nothing is cached at
+that scope any more, so every press is a success message about nothing.
+
+Decide it rather than inherit it. The honest move is to delete the action, its i18n keys
+and the endpoint together, since the CDA's cache-control headers and the image transform
+cache are invalidated by publishing, not by a row button. If an operator does need to
+purge derived images, that is a named verb with a real effect and an agent equivalent,
+filed as its own line.
+
+The instrument is the part that generalises past one button: a lint over the controller
+scan that fails on any mapping whose body is a bare ok() with no side effect, held as an
+asserted list of exceptions with reasons, and on any GET mapping named as an action. The
+assertion for this task is that no console call and no manifest entry names clear-cache.
+
+### LXI.6 Errors are instructions, on both sides of the wall (SH955)
+
+grep for toast.error(t("common.error")) over shio-react returns twenty-four hits, three
+of them in the post editor inside catch blocks that do not bind the error. The server's
+problem type documents fix, allowed, didYouMean and at, and calls a 4xx carrying none of
+them incomplete. The console's axios interceptor handles CSRF capture and
+backend-offline reporting and nothing else, so no code path reads
+application/problem+json.
+
+P6 is a law about errors, not about the agent surface, and today it holds on one side
+only. One interceptor parses a problem document into a typed error. A single reporter
+renders detail as the headline, fix as the action, didYouMean as a clickable correction
+and allowed as a collapsible list, and the form reads at to pin the message on that
+field. The backend's half is small: populate at with data.<field> on single writes,
+which today only the batch does.
+
+The instrument is a lint that fails on a catch in a save path that reports a fixed
+string, and a backend assertion that every console-facing 4xx carries fix. Block AX
+routes these reports into the assistant dock; this task makes them exist.
+
+### LXI.7 One sanitizer, at the one boundary every writer crosses (SH956)
+
+html-editor.widget.tsx calls document.execCommand for its formatting, reads innerHTML as
+the value, and has no paste handler. Nothing in the console or the backend sanitises
+content: the only sanitize calls in the tree are for tenant and file names. The renderer
+emits field HTML unescaped by design, and an agent's post.upsert writes the same field
+with no filter at all, so the gap is not a console gap.
+
+Put the defence at the boundary every writer crosses rather than in each writer. An
+allow-list sanitizer runs in the unified write service for every field whose widget is
+HTML, covering the console, REST, the agent batch and the Universal Editor's draft
+merge, which the analysis found proposing its own sanitize step separately. A dry run
+reports what would be stripped as a finding, so an agent learns why its markup changed
+instead of discovering it later. shio verify gains html-unsafe for existing content,
+because a sanitizer on writes says nothing about rows already stored.
+
+The block content model in Block BC is the long answer to an opaque HTML body; this is
+the short one, and it must not wait for that. The assertion plants an onerror attribute
+through each writer.
+
+## LXII One chrome: bento, and nothing left that names another (Block AW)
+
+Blocks AQ and AR moved every console surface onto the bento shell and deleted the
+console shell itself. What they left is the machinery of the move: a chrome switch that
+still has two values, and a codebase that still explains itself in terms of both.
+
+Measured, not remembered: shio-react's source names a chrome on 108 lines across
+eighteen files, and its tests and scripts on 180 lines across twenty-two. App.tsx wraps
+about twenty-five routes in SectionCardChromeProvider chrome=bento, because the design
+system's context defaults to console, and EmptyState, Panel, the not-found page and the
+static-file list still branch on useSectionChrome. A component rendered where no
+provider is mounted, a login, setup or error page, still takes the console look. The
+surface digest and the chrome census still classify every surface into an era nothing
+renders, and twenty-three bento pages live in a directory named for the retired chrome.
+
+The order is the one this project uses for any sweep: a lint that counts the vocabulary
+and may only shrink, then one root provider, then the branches, the era instruments, the
+names and the prose. The last task removes the provider itself, once the package drops
+the switch in VDS146.
+
+### LXII.1 A census of the chrome vocabulary that may only shrink (SH957)
+
+SH886 opened Block AQ with three figures grepped by hand and two of them were wrong,
+which is why its census walks the tree instead. This sweep needs the same instrument
+before its first deletion, or the last reference to a console chrome survives because
+nobody could see it.
+
+A test walks shio-react's src, test and scripts for SectionCardChromeProvider,
+useSectionChrome, a comparison against a chrome value, a chrome prop, and the word
+chrome in a comment that explains two eras. It holds the matches as a per-file debt list
+asserted to equal what it finds, so a new reference fails the build naming the file and
+a removal fails it until the list is shortened in the same commit. It prints both counts
+on every run.
+
+The non-vacuity case plants a SectionCardChromeProvider in a temporary copy of a clean
+file and asserts the census names it. The list reaching zero is this block's acceptance
+criterion, which turns one chrome from a claim in a changelog into a number a later
+reader can re-run.
+
+### LXII.2 One provider at the root instead of one per route (SH958)
+
+bento-section-chrome.tsx creates its context with console as the default. Shio pays for
+that on every route: App.tsx wraps about twenty-five route elements, and
+graphql.routes.tsx one more, in SectionCardChromeProvider chrome=bento. The wrappers are
+not decoration. A surface mounted without one renders AdaptiveSectionCard and EmptyState
+in the console look, and nothing fails when a new route forgets it.
+
+Mount one provider above the router, so every element under it, inside the shell or
+outside it, reads bento, and delete the per-route wrappers. This is the interim form:
+VDS145 flips the package's default to bento, after which the root provider is a no-op,
+and AW7 deletes it.
+
+The assertion carries the id: a route element mounted with no wrapper of its own renders
+the bento form of EmptyState, and the census from AW1 shrinks by the wrappers removed.
+The surface digest is taken before and after and must show no surface changing chrome,
+since every route already rendered bento through its own wrapper.
+
+### LXII.3 The console branches, deleted where they are still reachable (SH959)
+
+empty-state.tsx documents the case exactly: a component rendered under no
+SectionCardChromeProvider concludes there is a console chrome to render into, and
+renders its monochrome console block. panel.tsx falls back the same way when chrome is
+not bento or there is no header, not-found.page.tsx renders whichever chrome the path
+implies, and static-file.list.page.tsx picks its container by chrome.
+outside-shell-chrome.test.mjs was written to record that pages outside the shell took
+the console look.
+
+With AW2's root provider every one of these reads bento, so the console branches become
+unreachable, and they are deleted rather than left as a fallback nobody exercises. The
+bento vocabulary page loses its ChromeWitness, which exists to print which chrome a
+provider chose. outside-shell-chrome.test.mjs is rewritten to assert the opposite of
+what it recorded: login, setup and the catch-all render the bento forms.
+
+The census from AW1 drops by every branch removed. The design system's own
+AdaptiveSectionCard keeps its console branch until VDS146, and this task does not touch
+the package.
+
+### LXII.4 Instruments that measured a migration, re-derived for a console that has one chrome (SH960)
+
+SH896's surface digest hashes each surface's era, its chrome in source order and its
+frosted-surface classes, and SH886's census holds every page by the chrome it renders.
+Both were the right instruments for a migration, and SH910 already rewrote eleven
+readers whose premise was two eras. What is left is the era field itself: every surface
+reports bento, the classifier still carries the rules for console, and a saved survey
+compares a field that cannot change.
+
+Re-derive rather than delete, because the digest is the P9 tool for proving a page did
+not change without opening it. The era field leaves the digest, the
+chrome-in-source-order and frost fields stay, and the saved survey is regenerated in the
+same commit so a comparison against it means something. The console-chrome census either
+folds into AW1's vocabulary census or is deleted with the reason recorded, since two
+walks asserting the same absence are two files that can disagree about it.
+
+SH938 is the warning worth carrying: it filed a defect off a census log line without
+reading the declaration beneath it. The rewritten readers state in their headers what
+they measure and what they do not.
+
+### LXII.5 One page tree, organised by domain (SH961)
+
+src/app/bento holds the pages written for the shell; src/app/console holds the
+twenty-three that were adapted into it, including the post editor, the post-type editor,
+the content browser, search, trash, the review queue and the GraphQL explorer. Every one
+renders bento. The split is a record of how each page arrived, and it misleads the
+reader who needs it most: an agent adding a surface greps both trees and has to decide
+which era a new page belongs to.
+
+Merge them into one tree organised by domain, content, admin, editor and system, with
+git mv so history follows each file, and rewrite the imports and route declarations in
+the same commit. ROUTES.CONSOLE is not a chrome reference, it is the console product,
+whose base is /bento, and it stays; the legacy /console redirects stay too, because they
+protect bookmarks, not a chrome.
+
+The assertions are that no import path contains app/console or app/bento, that
+route-params.test and the route scanner from SH928 still find every route, and that the
+build and the census are green.
+
+### LXII.6 The prose, brought to one chrome (SH962)
+
+page-hero.tsx explains that the console branch went with the shell that rendered it,
+post-type.edit.page.tsx that its sections render differently in the two chromes, App.tsx
+that the visual editor renders neither era's chrome, and object.children.page.tsx that
+it is one header for both chromes. docs/agents/console-ui.md carries the census, the
+digest's era classifier, the chrome adapter and its two silent failure modes as current
+guidance. Each was accurate when written and is now an instruction to keep supporting
+something that is gone.
+
+Rewrite comments to say what the code does now, in one chrome, and leave the migration's
+reasoning to git log, which is where agents.md puts history. In console-ui.md, sections
+whose subject was the migration collapse into one short record of what the console is
+today, and the census and digest sections describe the instruments as AW1 and AW4 left
+them.
+
+The docs-shio pages are checked for the same vocabulary, and any user-visible mention of
+a console look is removed. The census from AW1 counts comments, so this task is where
+its debt list reaches the provider AW7 removes and nothing else.
+
+### LXII.7 The last chrome declaration, removed with the switch (SH963)
+
+After AW2 through AW6, one reference remains by design: the provider at the root that
+tells the package's components to render bento. It exists only because the package still
+has a SectionChrome type with a console value and, until VDS145, a console default.
+
+VDS146 removes the type, the provider, the hook and every console branch from the
+package, once VDS144's census reads zero console consumers, which in today's
+measurements waits on Dumont's own cutover. When that release lands, this task deletes
+Shio's root provider and its import, raises the design-system floor to the release that
+carries the removal, and moves AW1's census to an empty debt list asserted to stay
+empty.
+
+The design-system waits list from SH937 carries an entry for this line, with a probe
+that reads the installed package's bento types for SectionChrome and a proof that the
+read reached the bento declarations. That is what turns this dependency into a red test
+on the day the release arrives, instead of a line somebody has to remember to re-read.
+
+## LXIII The Viglet assistant: where the console reports, and how the curator reaches the agent (Block AX)
+
+The design system's Block E shipped three pieces for exactly this product. VigletAvatar
+is the Viglet mascot with five states: idle, working, success, error and attention.
+VigletAssistant is the dock it lives in: collapsed, a status light with a typed caption,
+and open, a transcript with a composer that exists only when the product supplies
+onSend. useAssistantNotifications reads the toasts already on screen and moves the
+mascot without wrapping toast. The reference design those were drawn from is a CMS
+screen with the avatar wired to publish, a validation failure and an arriving lead. No
+consumer has mounted them; SH940 made them installable here.
+
+In Shio the dock replaces notifications rather than decorating them. Outcomes, agent
+runs, review arrivals, failed schedules and form submissions all report through it, and
+the header's pending-review count moves into it.
+
+The chat half is constrained by a binding non-goal: Shio hosts no model. So the composer
+appears only when an external agent is connected, and a curator's message is relayed to
+that agent through MCP, with its answer arriving in the transcript. That relay needs the
+run and intent records Block BB builds and lands there. This block builds the status
+surface, ordered mount, instrument, channel, then each kind of report.
+
+### LXIII.1 The dock, mounted as a status surface (SH964)
+
+Shio calls toast.success fifty-two times, toast.error fifty-one, warning twice and info
+once, and mounts the package's Toaster in App.tsx. With 2026.3.10 installed,
+VigletAssistant and useAssistantNotifications are importable, and the hook's contract is
+that it reads the live toast list rather than patching toast, so every existing call
+moves the mascot without being touched.
+
+Mount VigletAssistant once in the bento root with no onSend, which makes it a status
+surface: state, caption and activity come from useAssistantNotifications, and the
+transcript is closed. The mascot is decorative and aria-hidden, and the dock's caption
+is an aria-live region, so a screen-reader user hears each outcome once, which is the
+announcer Block BG would otherwise have to build.
+
+It depends on VDS133 because the dock and BentoBackToTop are both fixed to the
+bottom-right corner and the dock covers the button. The assertions: a toast.error moves
+the dock to error with the toast's title as caption, an empty toast list returns it to
+idle, reduced motion draws a still frame, and the dock's box does not intersect the
+back-to-top control at mobile or desktop width.
+
+### LXIII.2 Every write the console makes says how it ended (SH965)
+
+The package's hook documents its own failure mode: if the mascot needed a second call
+beside each toast, it would get one where somebody remembered and nowhere else, and it
+would sit at idle while a red toast slid past. Once the dock is the reporting surface,
+the same failure shifts one level down. A save that resolves and shows nothing, or a
+catch that swallows, leaves no trace in the dock, in the aria-live caption, or in the
+curator's understanding of what happened.
+
+The instrument comes before any report is added: a lint over shio-react's services and
+pages that finds each call to a mutating service method, a post, put, patch or delete,
+inside a handler, and requires the handler to reach a toast or an explicit outcome
+report on both its success and failure paths. Exceptions are held as an asserted list,
+each with a reason, in the Reason-with-a-falsifier shape the conformance gates use.
+
+Its first run is the worklist for AX3 and AV4, and it prints both counts. The
+non-vacuity case plants a handler that awaits a delete and reports nothing, and requires
+the lint to name it.
+
+### LXIII.3 A refusal the curator can act on from the dock (SH966)
+
+AV6 gives the console a typed problem document and a reporter. This task decides where
+that report lives, and the answer is the dock rather than a toast stack: the caption
+types the problem's detail, and the report row carries its actions.
+
+The row uses VDS134's report kind with tone error and up to three actions: go to the
+field named by at, apply the didYouMean correction, and open the allowed list. The toast
+for the same failure is suppressed so the curator reads one message, not two, and the
+aria-live caption announces the detail once. A success keeps its brief toast-driven
+reaction and caption, because a success needs no action.
+
+The post editor is the first consumer because it is where the teaching errors are
+richest: an undeclared field, a missing required value, a stale expectation. The
+assertions: a planted 400 carrying at and didYouMean produces a report whose first
+action focuses that field and whose second applies the suggestion, and no second toast
+appears. A refusal with no problem document still reports, with its HTTP status, because
+the lint from AX2 does not accept silence.
+
+### LXIII.4 The change feed, pushed to the screens that are open (SH967)
+
+No SseEmitter or event-stream response exists anywhere in the backend. The agent surface
+reads changes by polling a keyset feed, and the console does not read it at all, so a
+curator watching the content browser while an agent writes sees nothing until they
+navigate.
+
+Compose rather than fork: GET /api/v2/events streams the same change-feed entries the
+agent reads, filtered to the session's tenant and to what its content ACL may see,
+starting from a watermark and resuming from Last-Event-ID after a reconnect, with a
+heartbeat. The CLI gains shio changes --follow over the same stream, and the agent's
+polling read is unchanged. Scheduler incidents and form arrivals, which AX6 and AX7
+report, join the feed as entry kinds rather than as separate channels.
+
+Measure before relying on it: a benchmark states the cost of one idle connection and of
+a fan-out of a hundred entries to fifty sessions, and the budget lands beside the
+others. The assertions are that a write reaches an open stream, that an entry the reader
+cannot see is withheld, and that a reconnect with Last-Event-ID loses nothing.
+
+### LXIII.5 What the agent did, told where the curator already looks (SH968)
+
+The console's only ambient signal about agent work is bento-review-pending.tsx, the
+count SH936 placed in the header because the rail carries no badge. BENTO-AUTHORING
+section 1 names that exact case as what a header is not for, and it tells the curator a
+number without telling them what happened.
+
+With AX4's stream, the dock reports agent activity as it happens. A run that starts
+moves the mascot to working, with the actor and the site in the caption. A run that ends
+becomes a report, tone attention when it produced entries for review and success when it
+did not, with actions to open the review queue filtered to that run and to open its
+change set. An approval or a revert reports success to the curator who made it. Each
+agent write in view bumps the dock's activity, so the mascot reacts to smaller events
+than a state change.
+
+The header count is removed in the same commit and the dock's unread count takes its
+place, which is also what lets the tenant switcher stand alone in the header. The
+assertions drive a run through the stream and read the report and its actions.
+
+### LXIII.6 A schedule's outcome, reported to the people who set it (SH969)
+
+ShPostScheduler sweeps every minute. When a scheduled publish or unpublish throws, it
+logs a warning and records a SCHEDULE incident in ShAgentIncidentLog, which the agent's
+diagnostics read; a success is a log line. The curator who set the date sees neither. So
+a launch that did not happen is discovered by a customer, and one that did happen is
+confirmed only by opening the page.
+
+The scheduler emits its outcomes into the change feed as entries, published, unpublished
+or failed with its problem, and AX4's stream carries them to open screens. The dock
+reports a failure with tone error and actions to open the post and to retry now, and a
+success with tone success naming the post and the time it went live. A curator with no
+open screen sees the failure as an unread report at next login, because a failure that
+only reaches a live session is still a failure nobody reads.
+
+The agent side keeps its incident log, and shio diagnostics lists the same entries. The
+assertions: a planted failing transition produces a failure report with a retry action,
+and retry publishes.
+
+### LXIII.7 The arriving lead (SH970)
+
+The design the assistant was drawn from shows its attention state for one event above
+all: a lead arriving from the site's form, typed into the caption as a name, an
+organisation and a source. Shio has the event and not the report. ShFormSubmissionAPI is
+a public POST that spends a CDA rate-limit token, refuses a filled honeypot, and writes
+the submission as a draft post into the folder the site's form configuration names.
+After that it is indistinguishable from any other draft, and nothing tells anyone.
+
+A submission joins the change feed as its own entry kind, and the dock reports it with
+tone attention, a caption built from the fields the form marks as its title and summary,
+and actions to open the submission and to archive it. Reports are grouped when several
+arrive together, so a campaign does not become fifty rows.
+
+The inbox view, the per-site destination settings and what an agent can do with a
+submission are a separate line in Block BI. The assertions post a submission, read the
+arrival report and its caption, and confirm a refused honeypot produces no report.
+
+### LXIII.8 What the dock reports, chosen per person (SH971)
+
+Once AX3 to AX7 land, every kind of event reaches one surface. That is the point, and it
+is also how a notification centre turns into something people learn to ignore. An author
+wants their own saves and failures; a reviewer wants agent runs and review arrivals; an
+operator wants schedule failures and form arrivals; a person presenting their screen
+wants the mascot still.
+
+A per-user preference, stored server-side so it follows the curator across devices,
+chooses which report kinds reach the dock and whether the mascot animates, keeping the
+caption and the aria-live announcement either way. Muting a kind never hides its record:
+the activity trail and the agent's change feed still carry it, and a muted failure still
+counts toward the unread badge unless explicitly excluded, since a failure is the report
+least safe to lose.
+
+This is a console preference with no agent equivalent, classified as such in the P1
+declaration rather than argued in prose. The assertions set a preference, drive each
+kind of event, and read which reports appear.
+
+### LXIII.9 The dock in the one surface that owns the whole viewport (SH972)
+
+SH907 routed the visual editor outside the bento shell because h-screen inside a sticky
+header pushed the preview below the fold. AX1 mounts the dock in the bento root, so the
+editor, where a curator changes content with every click on the page, is the one surface
+with no reporting channel, and its saves either toast into nothing or say nothing.
+
+Mount the dock in the editor with the package's inline mode, docked into the editor's
+own toolbar rather than pinned over the preview iframe, so it never covers the page
+being edited. Bridge saves drive it: working while a patch is in flight, success with
+the field name when it lands, error with the problem document when it is refused. The
+status light stays visible while the transcript is closed, which is what a person needs
+while editing: confirmation without a panel.
+
+The assertions render the editor, drive a bridge save through success and refusal, read
+the dock's state and caption, and assert the preview iframe's bounding box is unchanged
+by the dock's presence.
