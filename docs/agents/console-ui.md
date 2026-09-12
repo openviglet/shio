@@ -2116,6 +2116,26 @@ same reason a real wait does, so each entry also carries a `proof()` that its re
 real. Verified by running SH919's probe against the fixed gate in the design-system checkout: it
 flips to "over", with the bare-root call the entry actually makes.
 
+### The floor carries the page reference and the assistant, not only the subpaths (SH940)
+
+`^2026.3.10` is the floor because it is the first release whose `files` carry what the console now
+takes from the package besides imports: the two bins (`viglet-ds-page-reference`,
+`viglet-ds-check-duplicates`), the docs payload the page reference copies (`BENTO-AUTHORING.md`,
+`BENTO-BOUNDARY.md`, `docs/reference/`) and Block E's `VigletAssistant`, `VigletAvatar` and
+`useAssistantNotifications`. 2026.3.5 had the subpaths and none of those. A bin is not in `exports`,
+so `design-system-subpaths.test.mjs` reads the manifest and the files rather than resolving.
+
+**`registerVigTranslations` comes from `@viglet/viglet-design-system/i18n`.** VDS117 took the i18n
+runtime out of the root entry so a consumer that never asked for it does not resolve i18next; the
+root import compiled under 2026.3.5 and is a `TS2305` under 2026.3.10. The unit suite did not see it
+— only `compile:build` did — which is why a design-system bump is validated with the build, not with
+`pnpm test` alone. It also makes `./i18n` Shio's seventh entry, which SH943's line now counts.
+
+The bump read the waits list the way SH937 intends. SH935's wait was not over and never will be: it
+shipped with the collapse abandoned, so its entry left the list instead of waiting on a release
+nobody will cut. SH943 (VDS129's consumer-entries bin) and SH944 (the package's plugin manifest)
+entered it, each with a probe and a proof, because they are now the lines waiting on a release.
+
 ### The admin hub nobody had migrated
 
 `ADMIN_ROOT` is the `urlBase` of eleven admin surfaces, so it is where their hero back-links point —

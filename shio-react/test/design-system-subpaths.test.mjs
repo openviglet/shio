@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { strict as assert } from "node:assert"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
@@ -95,6 +95,49 @@ test("SH915: the declared floor is a version that has the subpaths, not merely o
     `SH915: the floor is ${range}, which permits a version with no /bento — the console would then`
     + " fail to compile on a fresh install while resolving fine on any machine that had updated."
     + " Raise the floor to the release that carries the subpath.")
+})
+
+/**
+ * SH940. A subpath is not the only thing the console now takes from the package. The page
+ * reference Block AU vendors is a **bin** and a **docs payload**, and the Viglet assistant Block AX
+ * mounts is a pair of root exports — and 2026.3.5 had none of the three, so the floor that let the
+ * console compile could not run `viglet-ds-page-reference` or mount the dock. A bin is not in
+ * `exports`, so `require.resolve` cannot see it; this reads the manifest and the files instead.
+ */
+const PACKAGE_ROOT = dirname(dirname(require_.resolve("@viglet/viglet-design-system/exports.json")))
+
+test("SH940: the installed package carries the page-reference bins, their docs payload and the assistant", () => {
+  const manifest = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))
+  const missing = []
+  for (const bin of ["viglet-ds-page-reference", "viglet-ds-check-duplicates"]) {
+    const target = manifest.bin?.[bin]
+    if (!target || !existsSync(join(PACKAGE_ROOT, target))) missing.push(`bin ${bin}`)
+  }
+  for (const doc of ["docs/BENTO-AUTHORING.md", "docs/BENTO-BOUNDARY.md", "docs/reference"]) {
+    if (!existsSync(join(PACKAGE_ROOT, doc))) missing.push(doc)
+  }
+  const uiTypes = readFileSync(join(PACKAGE_ROOT, "dist", "components", "ui", "index.d.ts"), "utf8")
+  for (const name of ["VigletAssistant", "VigletAvatar"]) {
+    if (!new RegExp(`\\b${name}\\b`).test(uiTypes)) missing.push(`export ${name}`)
+  }
+  if (!existsSync(join(PACKAGE_ROOT, "dist", "hooks", "use-assistant-notifications.d.ts"))) {
+    missing.push("export useAssistantNotifications")
+  }
+
+  assert.deepEqual(missing, [],
+    `SH940: the installed ${manifest.version} lacks what the console's floor was raised for.`
+    + " Check `npm view @viglet/viglet-design-system version` and raise the floor in"
+    + " shio-react/package.json; vendoring the page reference and mounting the assistant both"
+    + " start from these being on disk.")
+})
+
+test("SH940: the declared floor carries the page reference and the assistant, not merely allows them", () => {
+  const manifest = JSON.parse(readFileSync(join(CONSOLE_ROOT, "package.json"), "utf8"))
+  const range = manifest.dependencies["@viglet/viglet-design-system"]
+  const [, year, minor, patch] = /(\d+)\.(\d+)\.(\d+)/.exec(range).map(Number)
+  assert.ok(year > 2026 || minor > 3 || patch >= 10,
+    `SH940: the floor is ${range}, which permits a release with no page-reference bin, no docs`
+    + " payload and no VigletAssistant — a fresh lockfile could resolve one. Raise it to 2026.3.10.")
 })
 
 test("SH915: the reader is not vacuous — it would catch a subpath that is genuinely absent", () => {

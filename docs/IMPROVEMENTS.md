@@ -976,29 +976,6 @@ discovery, then the declaration corrected on both sides. It closes by asking whe
 package should be a plugin rather than copied files — a question this repository already
 ships an answer to.
 
-### LX.1 The floor that cannot run the tooling (SH940)
-
-shio-react declares @viglet/viglet-design-system at ^2026.3.5 and node_modules holds
-exactly that. The caret permits a newer release, but nothing has pulled one, and
-2026.3.5 predates the additions this block depends on: VDS88 added
-scripts/page-reference.mjs to the package's files list and bin map, and the same release
-began shipping docs/BENTO-AUTHORING.md, docs/BENTO-BOUNDARY.md and docs/reference/. Its
-scripts directory holds check-duplicates.mjs alone and there is no docs directory, so
-viglet-ds-page-reference is not on the path and the payload it copies is not on disk.
-
-This is why the task is first. Every other line in this block runs that bin or checks
-its output; filed in any other order they are blocked on a fact nobody would look for,
-because a caret range reads as new enough and the failure is a missing file rather than
-a version error.
-
-Two lessons from SH915 apply. A blocker on a design-system bump has twice been recorded
-as a fact when it was a timestamp, so the release is checked rather than assumed. And
-pnpm's minimumReleaseAge guard rejects a fresh release during lockfile verification
-before any script runs; SH915 fixed that by excluding the package by name rather than
-name@version, which only ever excused the version in front of it. The floor moves to a
-release carrying both the bin and the docs payload, and the subpath test that already
-asserts resolution gains an assertion for each.
-
 ### LX.2 The contract, vendored where it is tripped over (SH941)
 
 page-reference.mjs states its own argument in its header, and it is the one worth
@@ -1052,10 +1029,10 @@ so the release that ends the wait turns the suite red instead of going unnoticed
 consumers.json is the design system's answer to a question it got wrong twice: prose
 that names a subset of consumers as though it were the whole. The file's own header says
 the membership is what the guards read, and that entries are a snapshot measured over
-product source. For Shio the snapshot is short by half. It lists ".", "./styles" and
-"./vite"; the console's src imports ".", "./bento", "./bento.css", "./styles" and
-"./router", and vite.config.ts imports "./vite", so three real entries are undeclared
-and none is spurious.
+product source. For Shio the snapshot is short by more than half. It lists ".",
+"./styles" and "./vite"; the console's src imports ".", "./bento", "./bento.css",
+"./styles" and "./router", since SH940 "./i18n" as well, while vite.config.ts imports
+"./vite", so four real entries are undeclared and none is spurious.
 
 The header anticipates this and still missed it. It records that shio-react's test
 directory greps for ./bento to census the pages importing it, and warns that counting a

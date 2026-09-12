@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { strict as assert } from "node:assert"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
@@ -49,6 +49,14 @@ import { fileURLToPath } from "node:url"
  * contains. It costs a deliberate red on every design-system bump, which is exactly the moment
  * somebody should be re-reading these entries. Clearing it is one edit to `PINNED`.
  *
+ * <h2>The second release it read</h2>
+ *
+ * SH940 moved the floor from 2026.3.5 to 2026.3.10 and this file went red on the version, as it
+ * should. SH935's wait was still not over, and never will be: that line shipped with the collapse
+ * abandoned, because Turing reads the two fields differently, so its entry was waiting on a release
+ * nobody intends to cut. It left the list rather than being carried as a wait with no end. The two
+ * lines that do wait on the package now, SH943 and SH944, entered it in the same read.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -75,10 +83,10 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.5"
+const PINNED = "2026.3.10"
 
-function bentoNavTypes() {
-  return readFileSync(join(PACKAGE_ROOT, "dist", "bento", "bento-nav.d.ts"), "utf8")
+function manifest() {
+  return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))
 }
 
 /**
@@ -90,12 +98,20 @@ function bentoNavTypes() {
  */
 const WAITS = [
   {
-    id: "SH935",
-    waitingFor: "BentoNavItem collapsing fallbackRoute and bentoRoute into one route field",
-    over: () => !/\bfallbackRoute\b/.test(bentoNavTypes()),
-    proof: () => /\bbentoRoute\b/.test(bentoNavTypes()),
-    proofIs: "the nav type still declares bentoRoute, so this read reached the real declaration",
-    instruction: "Collapse the two fields at every entry in bento-nav.ts and ship SH935.",
+    id: "SH943",
+    waitingFor: "VDS129: a consumer-entries bin that diffs a consumer's imports against its declaration",
+    over: () => "viglet-ds-consumer-entries" in (manifest().bin ?? {}),
+    proof: () => "viglet-ds-page-reference" in (manifest().bin ?? {}),
+    proofIs: "the installed manifest still declares the page-reference bin, so this read reached the real bin map",
+    instruction: "Spawn viglet-ds-consumer-entries --id shio --check inside pnpm test and ship SH943.",
+  },
+  {
+    id: "SH944",
+    waitingFor: "VDS135: the package shipping a Claude Code plugin manifest",
+    over: () => existsSync(join(PACKAGE_ROOT, ".claude-plugin", "plugin.json")),
+    proof: () => existsSync(join(PACKAGE_ROOT, "scripts", "page-reference.mjs")),
+    proofIs: "the installed package still carries scripts/page-reference.mjs, so this read reached the package root",
+    instruction: "Decide skills-from-the-plugin against vendoring, enable it in settings.json and ship SH944.",
   },
 ]
 
