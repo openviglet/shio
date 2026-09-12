@@ -9,6 +9,15 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block AU — The design system's consumer contract, adopted and gated
+
+- 📋 **SH940** (deps: —) **the design-system floor is a version that ships neither the page reference nor its docs payload** — shio-react pins ^2026.3.5, whose files list carries only check-duplicates.mjs, so viglet-ds-page-reference cannot run and the vendored contract cannot land. → §LX.1
+- 📋 **SH941** (deps: SH940) **the bento authoring contract and its nine artboards live only in the package's repository, not here** — roadkeep-gui vendors them into .claude/skills/viglet-ds-pages and docs/design by running viglet-ds-page-reference; Shio has neither directory. → §LX.2
+- 📋 **SH942** (deps: SH941) **nothing fails when the vendored contract drifts from the package that wrote it** — The bin offers --check, --json and --warn and no Shio gate runs any of them, so a file rewritten upstream stays stale here until somebody reads both copies. → §LX.3
+- 📋 **SH943** (deps: DS VDS129) **the package declares three of the six design-system entries Shio's product source imports** — consumers.json omits ./bento, ./bento.css and ./router, so the parity digest the package's guards read describes a console three entries smaller than the real one. → §LX.4
+- 📋 **SH944** (deps: SH941, DS VDS135) **the design system reaches this repository as copied files, never as an enabled Claude Code plugin** — Shio already ships claude-plugin/ with a manifest, commands and skills, so the pattern a design-system plugin would follow is in this tree and unread. → §LX.5
+- 📋 **SH945** (deps: SH941) **the surfaces this round invents have no drawing, so their layout gets decided in review** — roadkeep-gui drew two directions and marked one not-chosen before building; Shio's 23 migrated screens need no drawing and its new ones do. → §LX.6
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

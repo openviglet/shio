@@ -952,3 +952,167 @@ than as an error anybody sees.
 ## LVIII The public site (shio.viglet.org)
 
 ## LIX What the Turing round left in the build and in a guard
+
+## LX The design system's consumer contract, adopted and gated (Block AU)
+
+Shio is one of seven products declared in the design system's consumers.json, and the
+only one whose declaration is wrong: it says the console takes three subpaths where its
+source imports five. That is not bookkeeping. The package's own guards read that
+declaration, so a parity check meant to catch a drifting consumer passes on one it does
+not describe.
+
+The larger gap is newer. The package stopped being only a component catalogue when VDS88
+gave it a way to vendor its page contract into a consumer: viglet-ds-page-reference
+writes .claude/skills/viglet-ds-pages/ and nine artboards into the consuming repository,
+on the argument that a contract kept in another repository is read after the fifth
+screen. roadkeep-gui adopted it. Shio has none of it — no skill, no artboards, no drift
+check — and cannot, because the floor it pins is 2026.3.5, whose files list carries
+check-duplicates.mjs and neither the page-reference bin nor the docs payload.
+
+This block is the substrate the rest of the round stands on, ordered the way this
+project orders instruments: the version floor that makes the tooling runnable, the
+vendoring that lands the contract, the check that makes drift a failure rather than a
+discovery, then the declaration corrected on both sides. It closes by asking whether the
+package should be a plugin rather than copied files — a question this repository already
+ships an answer to.
+
+### LX.1 The floor that cannot run the tooling (SH940)
+
+shio-react declares @viglet/viglet-design-system at ^2026.3.5 and node_modules holds
+exactly that. The caret permits a newer release, but nothing has pulled one, and
+2026.3.5 predates the additions this block depends on: VDS88 added
+scripts/page-reference.mjs to the package's files list and bin map, and the same release
+began shipping docs/BENTO-AUTHORING.md, docs/BENTO-BOUNDARY.md and docs/reference/. Its
+scripts directory holds check-duplicates.mjs alone and there is no docs directory, so
+viglet-ds-page-reference is not on the path and the payload it copies is not on disk.
+
+This is why the task is first. Every other line in this block runs that bin or checks
+its output; filed in any other order they are blocked on a fact nobody would look for,
+because a caret range reads as new enough and the failure is a missing file rather than
+a version error.
+
+Two lessons from SH915 apply. A blocker on a design-system bump has twice been recorded
+as a fact when it was a timestamp, so the release is checked rather than assumed. And
+pnpm's minimumReleaseAge guard rejects a fresh release during lockfile verification
+before any script runs; SH915 fixed that by excluding the package by name rather than
+name@version, which only ever excused the version in front of it. The floor moves to a
+release carrying both the bin and the docs payload, and the subpath test that already
+asserts resolution gains an assertion for each.
+
+### LX.2 The contract, vendored where it is tripped over (SH941)
+
+page-reference.mjs states its own argument in its header, and it is the one worth
+keeping: the catalogue answers whether a component exists, but not whether a page reads
+as the same product, and that answer lives in two documents and nine artboards which no
+node_modules read will surface. A contract an author has to browse another repository to
+find is one they read after the fifth screen, which is what BENTO-AUTHORING's own
+opening warns against.
+
+So the bin writes those surfaces into the consumer, where an agent session and a person
+both trip over them, in two disciplines worth adopting as written rather than
+reinventing. Copy is rewritten on every run and drift is a finding, because a vendored
+authority that has drifted is read with the same trust as one that has not. Declaration
+is the consumer's own entries re-derived inside a file the adopter also writes in,
+compared as parsed JSON rather than bytes, so indentation is not drift and the check
+survives being left switched on.
+
+roadkeep-gui carries the result: .claude/skills/viglet-ds-pages holding SKILL.md,
+authoring.md and boundary.md, and docs/design holding nine vds-*.dc.html artboards laid
+out by canvas.json, whose vds- pages belong to the package and whose other pages are
+that repository's own and are preserved. Shio has neither directory. This task runs the
+bin and commits what it writes; nothing in those files is hand-authored, because the
+next run rewrites them.
+
+### LX.3 Drift as a failure, not a discovery (SH942)
+
+A vendored file is read with the trust of the package that wrote it, so the interesting
+failure is not that it is missing but that it is stale. page-reference.mjs is built for
+this: --check reports what would change and writes nothing, exiting non-zero on drift;
+--json gives the machine-readable form; --warn reports and still exits zero, which is
+the shape a repository adopts before it has paid off its debt.
+
+The gate belongs inside the JS gate rather than beside it. This project runs three
+through scripts/run-gate.mjs, and agents.md's rule about never piping a gate into grep
+applies: a pipeline's exit status is its last command's, which is how pnpm test once
+printed fail 2 above EXIT=0. So the check runs within pnpm test, redirected rather than
+filtered.
+
+Two things it must assert beyond an exit code, both learned here. SH897's browser check
+passed with bento.css deleted, so this one is broken on purpose until it fails: plant a
+drifted byte in a vendored file and require the check to name that file. And the
+declaration half is compared as parsed JSON, never as bytes, or reformatting the
+consumer's own file reads as drift and the gate becomes the first thing somebody
+switches off.
+
+SH937's pattern covers the rest: a line waiting on a design-system release gets a probe,
+so the release that ends the wait turns the suite red instead of going unnoticed.
+
+### LX.4 A declaration the guards trust and the source contradicts (SH943)
+
+consumers.json is the design system's answer to a question it got wrong twice: prose
+that names a subset of consumers as though it were the whole. The file's own header says
+the membership is what the guards read, and that entries are a snapshot measured over
+product source. For Shio the snapshot is short by half. It lists ".", "./styles" and
+"./vite"; the console's src imports ".", "./bento", "./bento.css", "./styles" and
+"./router", and vite.config.ts imports "./vite", so three real entries are undeclared
+and none is spurious.
+
+The header anticipates this and still missed it. It records that shio-react's test
+directory greps for ./bento to census the pages importing it, and warns that counting a
+lint looking for a subpath as the product taking it would record the opposite of what
+SH887 says. That warning is about over-counting. What happened is the reverse: measuring
+over src once and never re-deriving left three real imports undeclared.
+
+So the fix is two-sided, and the second side is the point. Correcting Shio's entry is
+one line that drifts again the next time the console takes a subpath. What must also
+land is the guard that re-derives every consumer's entries from its source and fails
+when a declaration and an import set disagree — the discipline page-reference.mjs
+already applies to its own declaration half. SH322 is the rule being followed: when a
+task says and whatever a grep turns up, the grep is the deliverable.
+
+### LX.5 A plugin, or files rewritten on every run (SH944)
+
+page-reference.mjs argues for copying, and the argument is good: a contract an author
+must browse another repository to find is read after the fifth screen, so the surfaces
+are written where a session and a person both trip over them. Nothing here disputes
+that. The question is narrower — whether copying is the only way to be tripped over, now
+that a plugin is a thing a repository can enable.
+
+A plugin answers by distribution what vendoring answers by rewriting. An enabled
+plugin's skills are in every session by name with no file in the consumer's tree, they
+move when the plugin moves rather than when somebody remembers to run a bin, and there
+is no drift to gate because there is no second copy. What a plugin does not answer is
+the artboards: nine .dc.html files that open straight from the file tree are exactly
+what a consumer wants on disk, and canvas.json is a file the adopter also writes in. So
+the likely answer is both — skills from the plugin, artboards vendored — and that split
+is what this task decides rather than assumes.
+
+Shio need not invent the shape. claude-plugin/ here is a working example:
+.claude-plugin/plugin.json, .mcp.json, three commands, four skills, and a test asserting
+the manifest. The deliverable is the decision with its reasons, plus whichever half Shio
+can land on its own side; the package's half is the design system's own line.
+
+### LX.6 Which screens are worth drawing, and which are already decided (SH945)
+
+roadkeep-gui put nine artboards in docs/design before building, and two of them,
+DirecaoA and DirecaoB, are titled nao escolhida. That is an artboard earning its keep:
+it made a choice between two directions cheap and visible, and the record of the
+rejected one survives in the file. It drew first because it was greenfield, with no
+screen to disagree with.
+
+Shio is not in that position and should not copy the practice wholesale. Blocks AQ and
+AR already migrated the console: 23 pages, zero legacy chrome, one route tree, the three
+shapes and the panel taken from the package. Drawing those screens would re-decide a
+settled question, cost days, and yield nothing, because what an artboard resolves is
+already resolved by the shell and by BENTO-AUTHORING.
+
+What is unsettled is the surfaces this round invents, where a wrong guess is paid for in
+backend work. Five qualify: version history with a diff, the translation workspace,
+release bundles, the agent-supervision inbox, and the asset browser. Each is a layout
+with real alternatives whose data model follows from the choice, which is the
+DirecaoA/DirecaoB case exactly.
+
+So this is a task inside the block rather than a gate in front of it, and its scope is
+those five. The artboards go in docs/design beside the vendored vds- pages, on this
+repository's own canvas.json pages, which page-reference.mjs preserves rather than
+rewrites.
