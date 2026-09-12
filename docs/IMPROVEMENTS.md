@@ -3212,3 +3212,592 @@ no-store and noindex access, never the editor bridge, with the preview banner ke
 A list-and-revoke endpoint makes active links visible and killable. shio share prints
 the URL, the most useful thing an agent can hand a person at the end of a run. The
 assertion: an anonymous request with no credential is still refused.
+
+## LXXII The console as an application: cost, resilience and access (Block BG)
+
+Shio measures what an agent costs to the token, per endpoint, with the reasoning for
+every raise written beside the number, and measures nothing about what its own console
+costs a person. There is no bundle budget. The lazy GraphiQL split is defeated, so an
+editor nobody opened loads on every route. There is no query cache and no request
+cancellation, the console API sends no ETag, one error boundary guards the whole
+application, and a failed fetch leaves a spinner forever. The dashboard downloads two
+whole collections to show two numbers. The accent fails AA, the primary token is never
+claimed, every post-editor field is an unnamed edit box to a screen reader, and no
+accessibility check runs against a rendered page in the console or in the content Shio
+delivers.
+
+The block follows agents.md's rule for any cost: a measurement first, then what the
+number argues for. The bundle gate's seed is taken before the feature blocks add console
+code, so their additions are visible as raises rather than folded into a baseline.
+Resilience and access follow, and the assistant dock from Block AX already carries the
+announcements this block would otherwise have to build.
+
+### LXXII.1 A bundle budget, seeded before this round adds code (SH1043)
+
+The design system has a size budget enforced by its own comparator. Shio's gates are the
+Maven suite, the JS suite and conformance, and none looks at a byte, while the agent's
+cost is governed by a properties file of per-endpoint ceilings with a reason for every
+raise. The analysis measured the console at roughly 7.3 MB raw and 2.16 MB gzip loaded
+before the first row of content.
+
+console-size-budget.json holds one entry per built chunk plus a computed eager total in
+raw and gzip bytes. A test reads the built index.html, resolves the static import graph,
+computes the eager total and fails on a breach, printing both numbers on every run, so a
+raise is a deliberate act with its reason in the commit.
+
+The seed is taken now, before Blocks BC to BF add console code, so their cost appears as
+raises they must argue for rather than being absorbed into a baseline. The diagnostics
+endpoint reports the eager total as a finding, so an agent can check its own frontend
+change without a browser. The assertion is the gate failing on a planted import of a
+large module into the entry.
+
+### LXXII.2 The editor chunk, loaded when an editor is opened (SH1044)
+
+The analysis measured the real build: the entry chunk statically imports the GraphiQL
+vendor chunk, so index.html preloads about 1.33 MB gzip of it and a render-blocking
+stylesheet, while the GraphQL route's own chunk is a few kilobytes, which proves the
+split is nominal. The cause is one ordering: the manual-chunk rule routes every id
+containing codemirror into the GraphiQL chunk, and the Ace widget imports CodeMirror
+into the widget map, which the app imports eagerly. The config's own comment asserts the
+opposite of what shipped.
+
+Split three ways. Give CodeMirror its own vendor chunk, matched before the GraphiQL
+rule. Make the Ace widget a lazy component behind a Suspense boundary in the widget map,
+so its chunk loads only for a post that has a code field. And fix or delete the Radix
+manual-chunk rule, which produces no output file under the current bundler.
+
+BG1's gate records the before and after in the commit. The live browser probe, which
+already walks every route, starts recording request count, transfer bytes and time to
+first row per route, the per-route budget this gate cannot see.
+
+### LXXII.3 Declared dependencies that are reachable, or named as peers (SH1045)
+
+A grep over shio-react/src finds no import of @tanstack/react-table, next-themes,
+sonner, class-variance-authority, tailwind-merge, clsx or @radix-ui/react-dialog, each
+declared in package.json. Some are genuinely dead. Some may be required as peers by the
+design system, whose Toaster and assistant read sonner and whose theme provider may read
+next-themes, and deleting a peer breaks the package at runtime rather than at build.
+
+A reachability lint walks the declared dependencies and classifies each as imported by
+product source, required as a peer by an installed dependency, read by build tooling, or
+unreachable, with an asserted exemption list carrying a reason per entry. Its first run
+is the deletion list: every unreachable dependency is removed in the same commit, and
+the lockfile shrinks with it.
+
+The lint then keeps the class from returning, which is the argument BG1 makes about
+bytes applied to declarations. The assertions: the build and the JS suite stay green
+after the removals, BG1's gate records any change, and a planted unused dependency fails
+the lint by name.
+
+### LXXII.4 One query layer, keyed on the addresses every surface uses (SH1046)
+
+There is no query library in the manifest. The analysis counted seventeen call sites
+fetching whole collections, and the browser refetches every post type on each folder
+navigation to choose a default. The pattern that fixes this is applied to one endpoint
+only: a hand-rolled single-flight store whose comment says components mounting together
+share one request. Nothing generalised it. A service-injection provider built for this
+exists with no call sites against dozens of module-scope service constructions, and it
+is still mounted around the route tree.
+
+Adopt one query layer keyed on the address grammar the MCP tools, the CLI and REST
+already use, post:, folder:, site: and postType:, so a cache key is the string every
+other surface addresses by, which is P10 applied to the cache. Migrate the seventeen
+catalogue reads first. Repurpose the dead provider as the client provider, owning stale
+time, retry and the error handler, or delete it, and prune the suppression entries
+naming files that no longer exist.
+
+BG1 records the byte cost of the library. The assertions count requests for a
+folder-to-folder navigation before and after, from the live probe.
+
+### LXXII.5 Cancellation, and a lint that keeps it (SH1047)
+
+The analysis found no AbortController in the console. The browser's page fetch is
+recreated on every change of folder, sort or query with nothing cancelling the previous
+request, so a quick sequence of navigations can render a slow earlier response over a
+fast later one: the list on screen belongs to a folder the curator already left.
+
+BG4's query layer passes an abort signal to every request it makes, so migrating the
+page reads onto it brings cancellation with it. This task migrates the remaining page
+reads, the browser listing, search, trash, static files and activity, and lands the
+guard independently of the library: a lint that every fetching effect or service call
+passes a signal or carries a documented exception, held as a named list rather than a
+ceiling.
+
+The assertion reproduces the race in a test: navigate to folder A, then B before A's
+delayed response arrives, and the rendered rows are B's. A planted fetch with no signal
+fails the lint by name.
+
+### LXXII.6 Validators on the console's reads (SH1048)
+
+The CDA cache configuration registers the shallow ETag filter and a cache-control filter
+for the CDA pattern; the agent web configuration registers its own for the agent and CDA
+patterns. The other filter registrations are the tenant filter and an error recorder. So
+the object listing, post-unified, post types, sites, static files and widgets, every
+endpoint the console actually calls, carry no validator and no freshness hint.
+
+The measurement lands first, in the shape of the agent's response-budget test: the bytes
+each console read returns for the seeded sample site, checked in, so a payload
+regression fails the build. Then extend the registration to the console namespace, minus
+mutating and streaming paths, reusing the shallow ETag filter and a cache-control of
+no-cache, which means revalidate rather than refetch. It sits below authentication and
+rate limiting, so a 401, 403 or 429 never receives a validator, the rule the CDA
+configuration already states.
+
+MCP and the CLI benefit for free, since they call the same REST. With BG4 in place a
+stale-while-revalidate becomes a 304. The assertion: a repeated read with its ETag
+answers 304 with no body.
+
+### LXXII.7 Failures that stay in their panel and say what to do (SH1049)
+
+The app mounts one boundary around everything, and the codebase's own prose records
+twice that the bento shell once came up blank behind it with the compiler saying
+nothing. Fetch failures never reach it: the post editor's load settles every promise and
+shows a spinner while the post is null, so a 500 leaves a spinner forever with no error
+and no retry. The design system exports a load provider that shows a skeleton while
+loading and a blank slate with Try again on error, and a skeleton primitive, and the
+console uses neither.
+
+A per-route boundary inside the shell outlet retries by re-running the route's queries,
+and a per-panel boundary wraps each section panel so one dead widget does not take the
+page. Every unconditioned spinner becomes the load provider with a skeleton shaped like
+its content, rows for a list and tiles for a dashboard, and the error panel renders the
+server's fix through SH955's reader.
+
+The instrument comes first: the live browser probe injects a 500 on each route's primary
+read and records what a curator sees. A lint holds the routes with no loading state,
+shrinking only by deletion.
+
+### LXXII.8 Home as the attention queue (SH1050)
+
+The home page fires four requests on mount: every site, every post type, system info and
+recent activity. The first two transfer full collections and use one property of each,
+the length, and there is no count endpoint. The tiles start as null and render nothing
+until both collections land.
+
+One summary endpoint composes the existing services with count queries rather than
+loaded rows: counts, the instance version, recent activity and the pending review count,
+in one ETag'd response. The same numbers join the context pack, so an agent's first call
+knows the shape of the instance, which is P2, measured against the pack's budget and
+dropped if it regresses the cheapest read.
+
+Then home becomes the attention queue, because the dashboard's question in this product
+is not how much content exists but what needs a person: pending review sessions and
+changes, content scheduled in the next seven days from SH991, recent agent runs with
+their intent and a review action, open notes from SH1003, and instance diagnostics.
+Every tile links to the page that acts on it, and shio status prints the same rows for
+an agent orienting itself.
+
+### LXXII.9 The accent measured, re-keyed and claimed through the inputs (SH1051)
+
+Shio's accent gate asserts four tokens are present. Measured with the design system's
+own arithmetic, the analysis found accent text on the background near 3.6:1 against AA's
+4.5, and the gradient primary button placing white text far lower on the dark ground,
+because the dark block reuses the light fill. Separately nothing in Shio sets the four
+--vg-primary base inputs, so the preset's neutral renders in the surfaces
+BENTO-AUTHORING says read --primary, including the rail's active marker, which is the
+failure the contract names.
+
+The gate lands before the re-key, because the numbers argue for the values. Using
+VDS137's exported measurePairs, a Shio test resolves src/index.css over the published
+preset and asserts every accent and primary pair at 4.5:1 on both grounds, printing each
+ratio on every run. Then re-key: deepen the accent text and darken the dark-ground
+fills, or give the button a foreground the pair guarantees.
+
+Claim primary through the four base inputs, never by setting the compiled token, and
+turn the accent gate into a census of claimable families driven by the preset, so a new
+family fails Shio's build instead of silently rendering grey.
+
+### LXXII.10 Fields with names, state and a keyboard path (SH1052)
+
+The form renders a label with no htmlFor and then the widget, whose props carry no id,
+no labelledBy, no describedBy, no required and no invalid. So clicking a label focuses
+nothing, and every field on every post is announced as an unlabelled edit box. The
+required marker is a bare asterisk with no aria-required and no text alternative, and
+the description is an orphan paragraph with no aria-describedby.
+
+Widen the widget contract to carry a field id, a described-by id, required and invalid.
+Mint one stable, deterministic id per field in the form, so a render digest does not
+move, render the required marker as hidden plus an sr-only word from the bundles, and
+have each of the fifteen widgets forward the id and state to its own control, with
+composite widgets taking labelledBy. The File widget's drop zone is a div with onClick
+over an input hidden with display:none, which gives no keyboard path to attach a file,
+and the rich-text widget removes its focus ring with nothing in its place.
+
+The instruments: a source rule over the widget map asserting each component threads the
+id, and a rule that a form control hidden with display:none rather than sr-only fails.
+
+### LXXII.11 A shell that owns the landmark, the skip link and focus (SH1053)
+
+The analysis found no aria-live, no sr-only text and no effect moving focus on route
+change, a main element on three of forty-seven page components, and no skip link. The
+primary button's loading state sets disabled, which drops focus from the control just
+pressed. The assistant dock from SH964 now announces outcomes through its aria-live
+caption, which removes the need for a separate announcer; what remains is structure and
+focus.
+
+VDS141 gives BentoShell exactly one labelled main and a skip link as its first focusable
+element, and moves focus to the page heading on navigation; VDS143 keeps a loading
+control focusable with aria-busy. Shio adopts both: the root renders through the shell's
+main, the three page-level main elements are deleted, and every spinner gains an sr-only
+label and an aria-busy ancestor. The selection count in the browser and the review delta
+report through the dock rather than through a second live region.
+
+The instruments: a landmark test asserting exactly one main per route and a
+first-focusable skip link, and a heading-outline probe in the live browser check,
+because heading level depends on composition a source scan cannot see.
+
+### LXXII.12 Axe against every console route (SH1054)
+
+The four accessibility rules are source scans for unnamed icon buttons, ARIA state
+literals, keyframes and nested interactive elements, and each is blind outside its
+shape: the analysis ran the scanner over raw buttons and anchors and found unnamed
+controls it cannot see, one in a shared widget the gate says must never carry debt.
+There is no jsx-a11y plugin, no axe and one viewport.
+
+The live browser probe already opens about thirty routes against a running backend.
+Inject axe on each, assert zero serious or critical violations, and hold everything else
+as a named per-route debt map that shrinks only by deletion. Run it at three viewports,
+assert the document language matches the active locale, and add the jsx-a11y plugin for
+the class a source rule can catch at edit time.
+
+It depends on BG10 and BG11 so its first debt map is not mostly the fields and landmarks
+those tasks already fix, which would write the map twice. The assertion plants an
+unlabelled input on one route and requires the probe to name the route, the rule and the
+element.
+
+### LXXII.13 An accessibility check family over delivered pages (SH1055)
+
+A CMS's real accessibility liability is the pages it publishes. The verify inventory has
+one accessibility rule, image-no-alt, which SH1031 makes reachable. There is no rule for
+heading order, document language, empty links, landmarks or form labels, although the
+outline reader already parses headings and the render endpoint already reports
+landmarks, links and images.
+
+Add a checks=a11y family composed over what the render path builds: heading-skip,
+lang-missing, link-no-text, landmark-missing and form-label-missing, with image-no-alt
+and asset-no-alt folded in, each carrying an address and a fix. Contrast belongs here
+too, since the appearance digest already inventories classes and a theme's declared
+token pairs can be measured with the same arithmetic BG9 uses for the console.
+
+The family runs in shio verify, in the Insights panel from SH1013, and as a selectable
+check in BA8's publish gates, so a team can refuse to publish a page that fails it. The
+assertions render a fixture page with one violation of each rule and read each finding
+with its address.
+
+## LXXIII One content model, many languages (Block BH)
+
+Localization in Shio is complete in the data and thin everywhere above it. ShPostUnified
+carries locale and translationGroupId, the unique URL key includes the locale, the file
+projection carries translationOf, hreflang renders, the console's post DTO ships both
+fields, and SH53's translations menu lets a curator switch to a sibling or create one.
+What is missing is everything a translation team does after that. No site can declare
+its default locale, enabled set or fallback order, so the menu offers every seeded
+locale on every post. The public locale segment is validated and never selects. Nothing
+knows a translation is out of date. The content browser drops the locale it is sent, no
+coverage view exists, and translating means navigating away from the source.
+
+The block adds the policy, makes delivery honour it, detects staleness with a digest
+rather than a diff, and gives curators a coverage board and a side-by-side workspace.
+The MCP write path that silently dropped locale and translationOf was a live defect and
+is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
+translates, reached through the assistant, and every result lands as a reviewable draft.
+
+### LXXIII.1 A locale policy, declared as content (SH1056)
+
+The page render service states it outright: there is no per-site default locale, the
+value is instance-wide, and calling it a site default would promise a setting nobody can
+set. The site entity has no locale field. Verify derives a site's languages from the
+locales its posts already carry, deliberately inferred rather than configured. So the
+translations menu offers every seeded locale on every post, the missing-translation
+warning fires only after something was translated, and a headless front end has nothing
+to negotiate against.
+
+A locale policy, default, enabled set and fallback map, stored as content: a field on
+site.upsert rather than a new tool, a locales block in the site marker file that pulls
+and pushes byte-stably, and a read on the CDA site so a front end can build a switcher.
+The migration default is the derived union, so no site changes behaviour on upgrade and
+the original argument survives as the unset case.
+
+The resolved policy joins the context pack, the render frame's default moves onto the
+site, and SH53's menu filters to the enabled set. The console gets a Languages card on
+the site page. It depends on SH952 because an agent must be able to write locale at all.
+
+### LXXIII.2 Delivery that honours the locale it is asked for (SH1057)
+
+The public site route parses its locale segment into the link prefix, and the only place
+that reads it is the validator that returns 404 for an unknown tag. It never reaches the
+resolver, so on a site with two locales both URLs render the same post. Two constants
+disagree about the default tag, en in storage and en-us in the delivery URL, and the
+validator hides the mismatch. The CDA's list, query and search take no locale, the
+GraphQL schema has no locale reference, and the TypeScript client cannot pass a locale
+to the one endpoint that accepts it while its response type already declares one.
+
+Thread the segment into a locale-aware resolve using the finder that exists, then BH1's
+fallback chain, then today's locale-blind finder last, so no monolingual site changes.
+Replace the second default constant with the policy's canonical tag. Add locale to CDA
+list, query and search, and locale plus available locales to GraphQL with a locale
+argument, measuring first the per-row available-locales lookup, which is an N+1 on a
+list.
+
+The client gains a locale option and a third argument on post-by-url. A verify finding
+flags a route that accepts a distinction it does not honour.
+
+### LXXIII.3 Staleness as a digest comparison (SH1058)
+
+The translate verb copies the source's data and records the translation group, and
+nothing captures which version of the source it came from: the row has no source digest,
+source version or translated-from field. The only translation rule reports a missing
+translation, so it cannot report a stale one. It is the most-used signal in every
+commercial localization workflow, and Shio cannot represent it: a site can be fully
+translated, then wrong, and no surface can tell.
+
+The cheap part is a digest. Add a source_digest column by Liquibase, stamp it at
+translate time from a hash over the source post's data, and never refresh it, since it
+is a snapshot rather than a mirror, so staleness is a string comparison against the
+source's current digest rather than a diff. The rule for which post is the source
+already exists. A translation-stale finding joins verify as a warning, never an error,
+because a lagging translation is ordinary work in progress.
+
+The reads are conditional so a monolingual read stays byte-identical: shio_read reports
+the flag only when true, the file projection carries translatedFrom beside translationOf
+under SH1004's merge rule, and the console shows a badge on the post.
+
+### LXXIII.4 The locale the browser was already sent (SH1059)
+
+The content browser's row type declares locale and the server includes it, and the
+mapping into rows keeps id, title, date, type and publish status and drops it. Two
+locales of one page, which the unique key permits by design, render as two rows with the
+same title, date and type and nothing to tell them apart. A curator deleting the one
+they think is a duplicate deletes a translation.
+
+This is the one-line defect inside the larger coverage task, separated so it does not
+wait for it. Keep locale in the mapping and render it as a chip beside the post-type
+badge, showing the tag and, where the site's enabled set from BH1 exists, marking the
+default locale. The chip is part of each row's accessible name, so a screen reader
+distinguishes the two rows as a sighted reader does.
+
+The assertion carries the id: a folder containing a post and its translation renders two
+rows whose accessible names differ by locale. BH5 builds the coverage view on the same
+field.
+
+### LXXIII.5 Coverage, from one grouped query, as a board (SH1060)
+
+shio_find cannot filter by locale although every result carries one, so what is missing
+in pt-br is a scan whose cost grows with the site rather than with the answer. The only
+coverage report is the agent's missing-translation warning, which is warning-level and
+returns early on a scoped scan, and no console view exists.
+
+The query vocabulary from SH1022 gains locale and missingLocale; the second is the one
+that pays, because every post whose translation group has no pt-br member is a single
+grouped query on the server and a paged scan anywhere else. The same predicates reach
+the CLI and shio report. A coverage endpoint returns, per locale, current, stale from
+BH3 and missing, with addresses, built as one grouped query rather than one lookup per
+group.
+
+The console gets a Languages board: a row per translation group, a column per enabled
+locale, and each cell current, stale or missing with a click through to the post or to
+creating the translation. That turns a translation backlog into a work list, for a
+person or for an agent handed it through BH7. The assertion compares the board's counts
+with the endpoint's and with find.
+
+### LXXIII.6 A translation workspace (SH1061)
+
+SH53's menu navigates to the sibling's editor, and does the same after creating one.
+There is no translation route, no split view, no source pane and no field-by-field
+pairing, while every competitor treats this screen as the heart of the feature. The data
+is ready: the translations read exists and field order is deterministic.
+
+A workspace at its own route shows the source's fields read-only on one side and the
+target's editable on the other, aligned by post-type ordinal, with per-field
+copy-from-source and per-field mark-reviewed. Target saves land in draft, publishing
+stays a separate explicit gesture, and the source pane is visibly read-only so nobody
+edits English believing it is Portuguese. At narrow widths it stacks source above target
+with a sticky language toggle rather than shrinking two columns. The translations read
+takes an expand, so the pane loads in one request.
+
+Mark-reviewed writes a note of kind reviewed through SH1003, so review state is visible
+to an agent too. The assertions open the workspace, copy a field from source, save, and
+read the target draft with the source untouched.
+
+### LXXIII.7 Translation by the connected agent, requested from the board (SH1062)
+
+Every commercial CMS ships an in-product translate button, and Shio's non-goal refuses
+to host the model behind one. The honest version already has its parts: SH1006 relays a
+curator's request to the connected agent as a note, post.upsert writes a linked sibling
+with locale and translationOf, BH5's board lists what is missing, and shio verify proves
+the result.
+
+The board and the workspace gain a request action on a missing or stale cell, a row, or
+a whole locale column. It writes a request note of kind translate, anchored to the
+translation groups, carrying the target locale and whether stale translations should be
+refreshed. The agent reads it, writes the translations as drafts in one run with an
+intent naming the request, and replies on the thread referencing that run, so SH1007's
+actions let the curator open the diff and approve from the dock.
+
+Nothing is published by the request, and a stale cell becomes current only when its new
+draft is approved. The assertions request a missing translation, fulfil it through MCP,
+read the draft with its translationOf, and watch the board cell move from missing to
+pending review.
+
+## LXXIV The areas this round did not reach (Block BI)
+
+The analysis behind this round was strong on the loop between the agent and the console
+and thin on delivery and operations. Its coverage critique walked agents.md's area table
+and found areas with no line at all, and each claim below was checked against the source
+before being filed. Two of the critique's claims did not survive that check and are not
+here: form submissions do have abuse controls, a CDA rate-limit token and a honeypot,
+and the tenant page does expose quota and suspension.
+
+What survived is concrete. On an instance with search indexing on, nothing can say
+whether a published page reached the index. Renaming a page breaks every inbound link
+while a Redirect post type the renderer already serves is never created by any writer.
+Site export is an id-keyed zip with no CLI verb, no MCP reach and no console button,
+while import has all three. Form submissions have no inbox and no settings screen.
+Replication, one of Shio's differentiators, lives only in the CLI with no manifest key
+the P1 census could classify. The conformance gate knows none of this round's new
+vocabulary. And no task carries the documentation sweep for everything the round ships,
+which the project's own process requires when a block closes.
+
+### LXXIV.1 Index status, readable on every surface (SH1063)
+
+ShTuringIndexService.active() is published as the manifest feature searchIndexing, so
+the P1 census already counts it. The com.viglet.shio.turing package holds configuration,
+a document mapper, field declarations, an index listener, the service, properties and a
+text extractor, and no controller. In the console the word turing appears only in the
+nav declaration and a stylesheet. So on an instance where indexing is on, nobody can
+answer the question search exists for, is this page findable, and a failed push after
+commit is recorded only as an incident.
+
+The chain is short because the machinery exists. shio_read include=index reports the
+resolved search site, the last indexed instant and the last incident for an address; a
+shio://index resource publishes the routing table, which makes a site routing nowhere
+visible rather than silent. shio index status and shio index reindex --dry-run use the
+reindex path an existing test covers. REST adds a read beside publish, and the console
+shows a card on the site page with enabled state, target, search site and last failure.
+
+verify gains index-unroutable for a published site whose search site resolves to
+nothing, the failure that costs most because it raises no error.
+
+### LXXIV.2 A rename that offers the redirect it needs (SH1064)
+
+ShSystemPostType declares REDIRECT, the page render service serves it, and SH385 decided
+that its PERMANENT flag chooses 301 over 302. Grepping the unified write service and the
+agent batch service for it returns nothing: no rename, move, unpublish or delete path
+has ever created one. The content-files side is further along than the server, since a
+post carries movedFrom so the three-way merge can follow a rename, but that instructs
+the merge and routes nothing on the instance. So renaming pricing to plans answers 200,
+and every external link, bookmark and link from the site's own published pages then
+404s.
+
+SH996 computes, for a publish, which URLs stop resolving and how many published pages
+link to them. A friendly-URL change or a move reuses that computation and answers with
+the count of inbound links that will break, and with redirect set it writes a Redirect
+post in the same transaction. The batch vocabulary gains post.redirect rather than a
+tool. verify gains url-orphaned for a previous address with inbound links that resolves
+nowhere, and shio redirects lists them.
+
+The console's rename dialog states the count before its button arms and offers the
+redirect checked by default.
+
+### LXXIV.3 Export on every surface, and what it does and does not carry (SH1065)
+
+GET /api/v2/site/{id}/export produces a zip, and ShSiteAPI's javadoc notes the route
+stays strictly id-keyed, so a caller must resolve a uuid first: the one export route of
+an address-native product cannot be reached with an address. cli/src/commands holds
+import.mjs and no export, no MCP tool or resource exports, and the console's services
+never call the route. That asymmetry is P1 broken the way this round keeps finding it:
+the half a person clicked shipped, and the half a pipeline needs did not.
+
+The chain is small. shio export site:<name> --out writes the zip, resolving the address
+and streaming to a file. The manifest indexes the route. MCP gets a resource rather than
+a tool, since a zip through a tool call is the reasoning shio_assets already gives for
+uploads. The console gets a menu item on the site page beside Import.
+
+The task also writes down a boundary nobody has stated: what an export carries and what
+it does not, users, tokens, revisions, notes, releases, and how that differs from shio
+pull. Promotion between environments is named as that boundary's open question, with
+releases from Block BA as the likely unit, rather than being solved here.
+
+### LXXIV.4 A forms surface for the arrivals the dock reports (SH1066)
+
+ShFormSubmissionAPI's javadoc argues that a submission is a post, so trash, export, ACL,
+review and the agent surface already apply to it. That is true of storage and false of
+attention. bento-nav.ts has no Forms entry, the site form configuration has no console
+page, and a curator's only route to submissions is to find the folder a developer
+configured, where each looks like an ordinary draft. SH970 makes an arrival visible in
+the dock; there is still nowhere to go from it.
+
+The endpoint's abuse controls already exist, a CDA rate-limit token, a honeypot and an
+allowed-origins check, and this task does not re-open them. It builds the surface. A
+Forms page lists submissions per site through SH1022's query vocabulary with a
+submission flag, with per-row archive and mark-as-spam that write ordinary states, and a
+settings panel for a site's form: destination folder, allowed origins, and which fields
+supply the arrival's caption.
+
+The agent's leg is nearly free because a submission is a post: shio_find gains
+submission true, and verify gains form-destination-missing for a form whose folder no
+longer exists. The assertions post a submission, find it on the Forms page and through
+MCP, and archive it.
+
+### LXXIV.5 Replication, declared so the census must decide it (SH1067)
+
+The manifest's features map carries multiTenant, oidc, webhooks, scheduledPublish,
+previewTokens, rateLimit, signedImageUrls, searchIndexing, marketplace, graphql, search
+and locales, and no replication key. shio clone, shio convert and shio propose, which
+turn an existing site into an authorable Shio site, exist only as CLI commands. So the
+conformance test that classifies every feature cannot see them, a curator who finds a
+page worth replicating cannot start from the console, and an MCP-only client cannot
+start at all.
+
+The smallest honest move comes first: declare replication as a feature key, which forces
+the census to classify it and turns an absence into a decision, either an agent route or
+an exception with a reason and a falsifier. Then give it the reach the decision names.
+The likely shape is a resource describing replication runs and their status plus a
+request, since a capture needs a browser and the instance runs none, so the work stays
+in the CLI where Playwright is an optional import and the instance records and reports
+it.
+
+The console gets a replication entry that starts a run through that request and shows
+its status, reporting outcomes through the dock.
+
+### LXXIV.6 The third gate, told about the round (SH1068)
+
+cli/conformance holds docs-vocabulary.conformance.mjs, which asks whether documented
+tool names, ops and properties still exist, docs-stack.conformance.mjs, which pins the
+product's description of its search story, and docs-coverage, which derives the coverage
+matrix's summary from its tables. This round adds MCP arguments, op names such as
+post.rollback, release.run, note.add and asset.meta, verify checks, CLI verbs,
+properties and resources. Every one is vocabulary those files read, and agents.md is
+explicit that a red gate is a stop.
+
+The likely failure is quiet in the wrong direction: a block ships green on the Maven and
+JS gates, its new names never enter the conformance vocabulary, and the docs later
+describe tools the gate never checked. So each capability task in this round adds its
+names to the conformance vocabulary sources in the same commit, and this task makes that
+checkable: a test compares the op names in ShAgentOps, the tool and resource names the
+MCP server registers, and the CLI's command table with the vocabulary sources, and fails
+on any name present in code and absent from them.
+
+It prints both sets on green. The assertion plants an op in the code only and requires
+the gate to name it.
+
+### LXXIV.7 Documentation as a count, not a memory (SH1069)
+
+The shio-roadmap-docs process is explicit: when a block's last task ships, docs-shio,
+shio-site and README.md are brought up to date in one pass, and each task records its
+end-user documentation decision. This round files many blocks and no task mentions any
+of them. shio-site's README records that all the public site's copy lives in one file,
+which makes the omission cheap to fix and expensive to skip: the site would keep
+describing a console without releases, revisions, notes, the assistant, a translation
+workspace or publish gates.
+
+Two mechanical changes. The coverage matrix that docs-coverage.conformance.mjs reads
+gains a row for every manifest feature key and every surface in AY6's declaration, so an
+undocumented capability is a failing count rather than something a person remembers, and
+the conformance gate reports the count. And the block-completion sweep becomes a check
+rather than a habit: when roadkeep reports a block finished, the gate fails until each
+of that block's new keys and surfaces has a documented row.
+
+The honest reason this is not housekeeping is the round's own thesis that discovery is a
+product feature, which applies to a person reading shio.viglet.org as much as to an
+agent reading the manifest.

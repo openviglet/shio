@@ -147,6 +147,42 @@
 - 📋 **SH1041** (deps: SH1036) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
 - 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
 
+## Block BG — The console as an application: cost, resilience and access
+
+- 📋 **SH1043** (deps: —) **nothing measures what the console costs to load, in a project where a token regression fails the build** — There is no size budget for the console while the agent's cost is governed per endpoint, which is how an eager multi-megabyte chunk arrived with nobody noticing. → §LXXII.1
+- 📋 **SH1044** (deps: SH1043) **the lazy GraphiQL split is defeated, so the editor's chunk loads on every console route** — The manual-chunk rule claims every module id containing codemirror, and the widget map imports CodeMirror eagerly, so the entry statically imports the GraphiQL vendor chunk. → §LXXII.2
+- 📋 **SH1045** (deps: SH1043) **the console declares dependencies that nothing imports, and nothing would notice another** — The table library, class utilities, a Radix package and others appear in the manifest and in no import, and no lint checks that a declared dependency is reachable. → §LXXII.3
+- 📋 **SH1046** (deps: SH1043) **the console has no query cache, so every mount refetches whole collections from scratch** — Seventeen call sites fetch whole collections and the browser refetches the entire post-type catalogue on every folder navigation, while one hand-rolled store shows the fix. → §LXXII.4
+- 📋 **SH1047** (deps: SH1046) **no console fetch can be cancelled, so a fast navigation renders whichever response arrives last** — AbortController appears nowhere, and the browser's page fetch is recreated on each folder, sort or query change with nothing cancelling the request before it. → §LXXII.5
+- 📋 **SH1048** (deps: SH1046) **the console API sends no ETag and no Cache-Control, so an unchanged read costs its full body every time** — Both cache filters are registered for the delivery and agent paths only, so every endpoint the console calls answers a full 200 with no validator. → §LXXII.6
+- 📋 **SH1049** (deps: SH1046, SH955) **one error boundary guards the whole console, and a failed fetch leaves a spinner that never ends** — A render throw blanks the application, an unhandled load settles into a permanent spinner, and the design system's load provider and skeleton are used by nothing. → §LXXII.7
+- 📋 **SH1050** (deps: SH1048, SH991, SH1003) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
+- 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
+- 📋 **SH1052** (deps: —) **every post-editor field is a label with no htmlFor over a widget that cannot take an id** — The widget contract is attr, onChange and postId, so a screen reader meets each field of every post type as an unnamed edit box and a label click focuses nothing. → §LXXII.10
+- 📋 **SH1053** (deps: DS VDS141, SH964) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
+- 📋 **SH1054** (deps: SH1052, SH1053) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
+- 📋 **SH1055** (deps: SH1031) **the content Shio delivers is checked for one accessibility rule, image-no-alt, and nothing else** — Verify has dozens of rules and one about accessibility, although the render path already builds the heading outline, landmarks and link inventory the rest would need. → §LXXII.13
+
+## Block BH — One content model, many languages
+
+- 📋 **SH1056** (deps: SH952) **no site can declare its default locale, its enabled locales or a fallback order** — The render service says there is no per-site default in this model, a site's languages are inferred from its content, and the translations menu offers every seeded locale on every post. → §LXXIII.1
+- 📋 **SH1057** (deps: SH1056) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — The segment reaches only the validator and the link prefix, and CDA list, query and search, GraphQL and the TypeScript client take no locale at all. → §LXXIII.2
+- 📋 **SH1058** (deps: SH1056) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — Translate copies the source's data and records only the group id, with no source revision or digest, and the only translation rule asks about absence. → §LXXIII.3
+- 📋 **SH1059** (deps: —) **the content browser discards the locale the server sends, so two languages of one page look identical** — The row type declares locale and the mapper keeps id, title, date, type and status, so a page and its translation render as two indistinguishable rows. → §LXXIII.4
+- 📋 **SH1060** (deps: SH1058, SH1022) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — shio_find cannot filter by locale though every row carries one, and the only coverage report is a warning that returns early on a scoped scan. → §LXXIII.5
+- 📋 **SH1061** (deps: SH1056) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
+- 📋 **SH1062** (deps: SH1060, SH1006) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — Shio hosts no model, and the assistant's request relay has no translation form, so the coverage board's missing cells can be read and not handed to the agent. → §LXXIII.7
+
+## Block BI — The areas this round did not reach
+
+- 📋 **SH1063** (deps: —) **nothing in the console, the CLI or MCP can say whether a published page reached the search index** — searchIndexing is a live manifest feature whose only surfaces are properties, a listener and an incident log entry, and no controller or console page reads index state. → §LXXIV.1
+- 📋 **SH1064** (deps: SH996) **changing a page's friendly URL breaks every inbound link, and no writer ever creates the redirect Shio models** — REDIRECT is a system post type the renderer serves with a permanent flag choosing 301 or 302, and no rename, move, unpublish or delete path writes one. → §LXXIV.2
+- 📋 **SH1065** (deps: —) **site export is an id-keyed zip with no CLI verb, no MCP reach and no console button** — Import has REST, a CLI verb and an example while export is reachable only by building a URL from a resolved uuid, so no surface moves a site between instances. → §LXXIV.3
+- 📋 **SH1066** (deps: SH970, SH1022) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
+- 📋 **SH1067** (deps: —) **replication lives only in the CLI, with no manifest feature key the P1 census could classify** — shio clone, convert and propose are a differentiator with no MCP reach and no console entry, and without a key ShAgentP1ConformanceTest cannot see the gap at all. → §LXXIV.5
+- 📋 **SH1068** (deps: —) **the conformance gate knows none of the vocabulary this round adds, so its docs checks stay green over new names** — pnpm conformance pins documented tools, ops, properties and verbs against the code, and the round adds dozens with no line updating its vocabulary sources. → §LXXIV.6
+- 📋 **SH1069** (deps: —) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — The block-completion sweep of docs-shio, the coverage matrix and the public site is required when a block's last task ships, and no block here declares one. → §LXXIV.7
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
@@ -178,3 +214,23 @@ Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–
   snapshot, Playwright an optional dynamic import — because that is where the agent
   already has a shell (P4) and where the human opens the PNG. Chromium per request is a
   different operational thing, and the diff ratio is a number the CLI already computes.
+- **The publish gate is a checklist, not an orchestrator** No workflow triggers,
+  branches, waits or flow builder inside Shio: a gate is a declared list of checks
+  evaluated on publish and answering a teaching 409, and GATE_FAILED is the edge an
+  external orchestrator acts on, because an engine here would be a third contract (P10).
+- **Awareness, not co-editing: no CRDT or shared-document runtime** The second editor on
+  a page is usually a machine. If-Match, a teaching 409, a short-lived working mark and
+  a presence line solve a lost update, and a presence signal must never become a lock
+  that blocks a write.
+- **The agent never approves, holds or rejects its own work** Review decisions stay off
+  the agent namespace and the manifest keeps the approve route out of its index. An
+  agent may read the verdict on its own runs through a read-only resource, and nothing
+  more.
+- **The assistant is answered by the connected agent, never by a model**
+  VigletAssistant's composer relays a curator's request to the external agent as a note.
+  Shio adds no endpoint, key, prompt or model id for it, and with no agent connected the
+  dock shows no composer and stays a status surface.
+- **A new capability does not arrive as a thirteenth MCP tool** tools/list is resent
+  every turn and sits near its ceiling. The ladder is an op name, then a parameter, then
+  a resource, then an endpoint, and a tool is added only in a commit that names the tool
+  that leaves.

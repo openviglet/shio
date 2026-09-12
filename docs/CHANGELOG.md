@@ -1697,3 +1697,9 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BF — The visual editor becomes a composer
 
+## Block BG — The console as an application: cost, resilience and access
+
+## Block BH — One content model, many languages
+
+## Block BI — The areas this round did not reach
+
