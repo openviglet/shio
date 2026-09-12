@@ -1674,3 +1674,793 @@ while editing: confirmation without a panel.
 The assertions render the editor, drive a bridge save through success and refusal, read
 the dock's state and caption, and assert the preview iframe's bounding box is unchanged
 by the dock's presence.
+
+## LXIV What the conformance instruments cannot see (Block AY)
+
+This round adds console surfaces, write paths and agent affordances by the dozen, and
+the instruments that are meant to catch a broken law are keyed on things most of those
+additions do not have. ShAgentP1ConformanceTest walks manifest feature keys, so a
+capability with no flag is not classified. ShStatelessReachabilityLintTest matches
+mutating mappings, so a read-only surface is invisible. The MCP budget test reveals its
+total only inside a failure message, while tools/list sits within a few tokens of its
+ceiling. And of the ten laws, P7 and P9 have no instrument at all, in a round that cites
+P7 more than any other.
+
+SH338 sets the order: when a review finds a law being broken, the instrument that finds
+every other break lands before the fixes. So this block widens what the gates can see,
+publishes the numbers they already compute, and adds the two missing censuses, before
+the feature blocks that follow spend the headroom and the exceptions these instruments
+exist to ration.
+
+Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
+rationale paragraph into something a build can read.
+
+### LXIV.1 The read half of reachability (SH973)
+
+ShStatelessReachabilityLintTest compiles a pattern for Post, Put, Delete and Patch
+mappings and returns early when a controller contributes no verbs, so a GET-only class
+yields no root; its javadoc frames the lint as which paths an agent can write to at all.
+The analysis named the casualties: the history endpoint the Activity page renders,
+discovery, locale, system info, sites and preview among them. ShAgentCapabilityJoinTest
+reads declared manifest endpoints, not the controller inventory, so an undeclared
+GET-only controller escapes it too.
+
+Add a sibling, ShAgentReadReachabilityLintTest, asking the inverse over GET mappings:
+every GET-only root is in the manifest's endpoint index, reachable as an MCP resource or
+an include, or classified with a reason and a falsifier in the Reason, target and
+closedBy shape the two existing gates use. Extract the class-mapping and constant
+patterns and covers() into one ShControllerScan helper both lints read, rather than a
+copy.
+
+It prints its inventory on green. Each root it names becomes a worklist item, and the
+audit trail is the first one Block BB spends.
+
+### LXIV.2 A figure in prose is cited from a run or not written (SH974)
+
+agents.md says of 25 mutating paths, which 8 an agent can write to without a cookie.
+Reproducing the lint's own patterns returns twenty-eight mutating controller roots, and
+ShSecurityConfig carries eleven stateless exemptions before the permitAll paths, so
+neither figure is current. The sentence just before it gets this right for the other
+gate, saying the run prints both counts, which is why neither is written here, and then
+writes this gate's counts anyway.
+
+The guard that exists does not reach it: ShAgentP1ConformanceTest refuses a figure
+nothing reproduces only inside its exception reasons. Two halves close it. Both lints,
+and AY1's sibling, write their inventory to target/p1-inventory.json as well as printing
+it. And cli/test/agents-md-figures.test.mjs scans agents.md and docs/agents for numeric
+claims about an instrument's inventory, failing unless the number is absent or cited
+from that artefact.
+
+The index file then cites the run instead of a number. This is the honesty precondition
+for the rest of the block: a round that adds classifications to three instruments while
+the index quotes an older shape produces a document that disagrees with its own build.
+
+### LXIV.3 A pointer is a command, and an operator path is a category (SH975)
+
+The manifest's elsewhere map points reviewQueue at console. Every other value is
+something a caller runs, and the conformance test's own prose says a pointer is a
+command or a route, never an apology, then asserts only isNotBlank(), so the apology
+passes. Tighten the assertion to the sentence: each value parses as a CLI command or as
+a verb and a path, and reviewQueue becomes the review route plus a console deep link,
+with the note that it needs an operator credential.
+
+That exposes the second half. /api/v2/review is stateless-writable to HTTP Basic,
+because its path carries the narrowed CSRF exemption, and refused to an AGENT token,
+which may write only on the agent namespace and MCP. So the reachability lint says
+writable, the conformance test says console-only and the manifest says console: three
+artefacts, three answers, which is what a missing category looks like. Add OPERATOR_HTTP
+to Reach, reclassify the review queue into it, and have that category assert the path
+really is stateless-writable, so the two instruments cross-check.
+
+The vacuity guard's hard-coded absent-paths list is derived from the exceptions'
+targets, so it cannot outlive the fix it guards.
+
+### LXIV.4 The scarcest number in the product, printed on green (SH976)
+
+The budget test computes the estimate and the limit and reveals both only through its
+failure message, so a green run prints per-tool rows and no total. The analysis measured
+the twelve tools at 2546 estimated tokens against a 2560 ceiling, with shio_apply at 441
+and shio_write at 434 against a 460 per-tool cap, and the server refuses a thirteenth
+tool. resources/list and prompts/list carry no budget at all, which matters because an
+MCP resource is where a squeezed tool list pushes new work.
+
+Three changes in one commit. Print the total, the headroom, the tool count and the
+initialize figure on every run, so the number informs a pull request while it is being
+written. Measure resources/list and prompts/list now, before anything is added, and
+record them in the budget properties with the same comment discipline every other number
+there has. And publish the affordance ladder as a test that computes, live, what each
+shape costs: an op name on shio_write, a parameter on an existing tool, a resource, a
+declared endpoint.
+
+The figures above are the analysis's; this task's first run replaces them with the
+build's own.
+
+### LXIV.5 The tool-list headroom, allocated before it is spent (SH977)
+
+Later blocks add arguments to the tools an agent already calls: a state perspective and
+include=revisions on shio_read, a schedule predicate and query fields on shio_find, when
+and cancel on shio_publish, locale and translation fields on shio_write. Each task,
+written alone, says to measure against the per-tool ceiling first, and each would pass
+if it were the only one. With a few tokens of headroom they cannot all be true, and
+whichever three land first take the room, leaving the rest to ship as resources or ops
+by accident rather than by the ladder AY4 publishes.
+
+The deliverable is an allocation, not another measurement. A per-tool reservation is
+declared in the budget properties for each planned addition, with any ceiling raise
+stated beside it and argued the way every existing raise in that file is. The budget
+test refuses an addition that exceeds its tool's reservation and names the ladder's
+cheaper shape.
+
+It is written after AY4's first green run, from the build's own numbers, and each later
+task that adds an argument cites its reservation instead of the ceiling.
+
+### LXIV.6 One surface declaration, owned by the backend, with a gate (SH978)
+
+The console's map is bento-nav.ts, whose javadoc says the rail and the palette both need
+to know what surfaces exist because declared twice they disagree within a release. The
+manifest and tools/list are not among its readers, and no test under cli or shio-app
+reads routes.const. The conformance test is keyed on manifest features, and the
+reachability lint concedes that a capability with no flag is not classified, so a round
+that adds console surfaces without flags can read all decided while breaking P1
+repeatedly.
+
+This task lands the declaration and its gate; AY7 lands the readers. A machine-readable
+file the backend owns lists each surface: id, section, route, the capability it
+exercises, and its agent equivalent, a tool, an op, an endpoint, or a classified
+exception with a reason and a falsifier. Icons and i18n keys stay in TypeScript, where
+they must live.
+
+ShConsoleSurfaceP1Test fails when a declared surface names an agent equivalent that does
+not exist or has neither, and prints its counts on green. AY8 defines the exception
+vocabulary before any console-only surface in this round needs it.
+
+### LXIV.7 Four readers of one declaration (SH979)
+
+AY6 makes the surface declaration exist and be checked. It stops being a second list
+only when the places that currently describe surfaces read it instead.
+
+Four readers. bento-nav.ts imports the declaration and adds only what TypeScript owns,
+the icon and the i18n keys, so the rail and the palette derive from it. MCP publishes it
+as shio://surfaces, a resource rather than a tool, since a list re-sent every turn is
+paid every turn. The CLI prints it as shio surfaces. And the manifest serves it behind
+an include, absent by default so an ordinary manifest stays byte-identical.
+
+Once the console imports it, each console action can carry the op id the declaration
+names, which is what VDS142's required action id makes checkable from the DOM, and what
+lets the palette in Block BD offer actions compiled from the same vocabulary the agent
+reads. The assertions: the rail renders exactly the declared surfaces, the resource and
+the CLI print the same ids in the same order, and the manifest with no include is
+unchanged.
+
+### LXIV.8 Words a gate can read for a surface with no agent leg (SH980)
+
+Several tasks in this round are console-only by nature and say so in their rationale:
+the reading column in AU7, the root chrome provider in AW2, the dock preferences in AX8,
+the query cache, the error boundaries, the widget labelling and the skip link in Block
+BG. A paragraph saying this is the console leg of a contract with no other legs is
+exactly what ShConsoleSurfaceP1Test cannot read. So either that gate lands red for the
+whole round, or each task invents its own exception wording, which is the drift between
+two authorities agents.md already names.
+
+Define the exception kinds the declaration accepts for a surface with no agent
+equivalent: chrome, accessibility, cache, preference and contract-leg, each carrying a
+reason, a target and a falsifier in the shape the existing gates use, so a stale
+exception fails rather than rots. Seed the declaration with the console-only surfaces
+that exist today, so the gate is green on the day it lands.
+
+Every later console-only task then adds one classified entry instead of an argument. The
+assertion plants a surface with a paragraph and no kind, and requires the gate to refuse
+it.
+
+### LXIV.9 The handoff as a link (SH981)
+
+Grepping the agent package for a console deep link finds prose: a batch detail ending
+change it in the console with no URL, and the manifest pointing review at the word
+console. ShAgentDoc's withUrl attaches the stored furl spelling, not a console route,
+and previewUrl exists only on the preview-token response. routes.const.ts records that
+the console prefix moved once already, so a URL concatenated in Java would rot on the
+next move.
+
+Every write result and every agent read gains curatorUrl for the address it touched, and
+previewUrl where one exists, built from the route AY6's declaration carries rather than
+from a string in Java. shio push and shio publish print the link the way a deploy tool
+prints its URL. The console needs nothing: it already has the pages.
+
+Budget it before shipping, at roughly ten estimated tokens per response, against the
+measured terse read and find figures, and absent rather than empty where no console page
+exists. It depends only on the declaration, not on AY7's readers, so the smallest
+version of the handoff does not wait for the largest task in the block.
+
+### LXIV.10 A census for never surprise the curator (SH982)
+
+The conformance tests in the tree are ShAgentP1ConformanceTest and
+ShAgentP2ConformanceTest. P7, never surprise the curator, is the law this round leans on
+hardest: releases require a confirm token, the console publish gains a dry run, bulk
+verbs report per-item outcomes, attribution becomes visible and publishing gains a
+permission. Each of those tasks asserts its own fix, and none asks the SH338 question
+first: which other mutating paths have none of these?
+
+The instrument is a census built on AY1's ShControllerScan. It enumerates every mutating
+path and classifies each on four axes: does it accept a dry run, does a destructive
+branch require a confirm token from its own plan, does it write an audit row carrying
+the actor and any agent session, and does it produce a review entry where the actor is
+an agent. Each unclassified gap is fixed or held as a reason with a target and a
+falsifier, and both counts print on green.
+
+Run before the feature blocks, it is their worklist; run after, it is what stops the
+next console write arriving with none of the four.
+
+### LXIV.11 A census for close the perception loop (SH983)
+
+P9 asks for cheap textual proof instead of asking someone to look. The instruments exist
+and are good, the structural and appearance digests, the address-scoped verify,
+include=impact and shio audit, and every one of them is something a caller must request.
+Nothing enumerates which mutating responses carry proof, so a task can observe that one
+save returns a toast while the agent path returns two digests, and the observation stays
+inside that task.
+
+The census shares AY10's walk: for each mutating path, does the response carry a digest,
+a change set, a finding list or a route delta, and if not, is there a recorded reason.
+The bar is deliberately low. The point is not that every write renders a page, but that
+a write returning a bare 200 is a decision somebody wrote down rather than an omission.
+
+It pays for itself in this round. Release runs, review decisions, bulk verbs, asset
+metadata and rollback each invent a response shape, and several independently propose a
+digest delta. A census that names the missing ones before they are written turns those
+improvisations into one contract, which is also what keeps the console and shio diff
+agreeing about what changed.
+
+### LXIV.12 Every wait on the package, probed (SH984)
+
+design-system-waits.test.mjs exists because has it landed was three reads across two
+repositories that somebody had to remember, and it proved itself on 2026.3.5 and again
+on SH940's bump. Its rule is that a roadmap line waiting on a design-system release
+carries an entry: what it wants, a probe that answers whether the wait is over, a proof
+that the probe read something real, and the instruction to run when it is.
+
+SH940 added entries for SH943 and SH944. This round then filed seven more lines
+depending on the package: the reading column on VDS131, the page lint on VDS132, the
+local loop on VDS130, the chrome provider's removal on VDS146, the dock's mount on
+VDS133, and the dock's report rows on VDS134, twice. None has a probe, so the release
+that ends each wait will pass through as silently as SH919's fix once did.
+
+Add one entry per line, each probing the installed package for the specific export, bin
+or file the line needs and proving the read reached the package root. The assertion is
+the existing one: every entry's proof holds, and none reports over while its line is
+still open.
+
+## LXV What the content said before (Block AZ)
+
+A post in Shio has at most two rows, one draft and one published, under a composite key
+of id and state. Publishing copies the draft over the live row and keeps nothing.
+ShHistory records that something happened, with an action, an owner, a date, an agent
+session and a 255-character description, and no content. So the question every content
+team asks first, what did this page say before and who changed it, has no answer, and
+neither does the curator's second question after an agent run: show me exactly what
+changed, including on a page that did not exist yesterday.
+
+The console's own save path has a second, related gap. The agent surface refuses a stale
+write with expect and a 409 since SH721, while the console's PUT and PATCH take no
+version at all, so a curator can silently overwrite fields an agent wrote a minute
+earlier.
+
+The block gives the product a memory in the order that makes each step safe: one
+concurrency contract for both writers, a revision store captured in the publish
+transaction, the reads and a rollback verb over it, a diff that works for a created
+page, and audit rows that name the fields they changed. Releases, review and translation
+all read what this block stores.
+
+### LXV.1 One concurrency contract for both writers (SH985)
+
+expect and ShStaleExpectationException are used by the agent batch and nothing else, and
+no entity carries @Version. The post-unified PUT and PATCH payloads are data and state,
+and attributes and publish. So since SH721 the agent is protected from clobbering a
+human, and the human is not protected from clobbering the agent, which is the
+worst-shaped version of this bug under P7. It depends on AV3 because the MCP path
+currently drops expect too, and one contract needs both callers honouring it.
+
+The instrument lands first: a lint enumerating every mutating content path and asserting
+it accepts a version guard, held as a named list. Then the contract: GET on a post
+returns a strong ETag computed from the existing ShAgentPostDigest, one digest rather
+than a second; PUT, PATCH, publish and delete honour If-Match and answer the same
+teaching 409 the batch does, including its instruction to read again rather than resend
+with a fresh digest. The console holds the ETag from its load, sends it on save, and on
+409 opens a field-level conflict view.
+
+The assertion carries the id: two writes to one post, the second with a stale digest,
+and the second is refused.
+
+### LXV.2 A revision store, captured where content goes live (SH986)
+
+ShConsolePostReadService.versions is findById over an id-and-state key, and ShPostState
+is exactly DRAFT and PUBLISHED, so every version is at most two, which SH14's own ledger
+entry states. ShHistory has no payload column. So publishing destroys what visitors were
+reading, and the review queue's undo is narrower than it reads.
+
+Add sh_post_revision through a new Liquibase changeset: id, post_id as a plain string
+because the post's key is composite, a monotonic version_no, the captured state, title,
+furl, locale, post_type_id, the data CLOB, the actor, agent_session_id, captured_at, a
+reason of PUBLISH, SAVE or ROLLBACK, and a lowercase tenant_id. The JPQL invariant
+applies: store the post-type id and resolve its name in the service. A snapshot is
+written inside the publish transaction, so a revision exists for every state a visitor
+ever saw; save-time capture sits behind a property, retention is shio.versions.keep
+defaulting to fifty, and pruning happens in the same write.
+
+It is a schema change, so it runs with -DskipITs=false and Docker started. The closing
+assertion names the defect: publish twice, restore the first revision, and its bytes
+come back.
+
+### LXV.3 Revisions on every surface, and a rollback that is itself a revision (SH987)
+
+With AZ2's store in place, the reads are the whole P1 chain and cost little. MCP:
+shio_read accepts state=rev:<n> and include=revisions, returning index, actor, instant,
+digest and changed field names but never bodies, within the reservation AY5 allocates.
+post.rollback with address, revision and expect joins the batch op vocabulary rather
+than becoming a tool, so it inherits plan, dry run and the confirm token, and it
+restores into DRAFT and requires an explicit publish, which is P7 as mechanics rather
+than convention.
+
+Files and CLI: shio versions, shio diff with a from revision, and shio rollback with a
+dry run, reusing the comparison function shio diff already has with stored revisions as
+a second row source. REST: revisions and one revision under the post, and a restore
+action, with today's two-row answer moved behind a states parameter so nothing that
+reads it breaks.
+
+The budget comes first: include=revisions gets a row in the response-budget test
+asserting an ordinary read stays byte-identical when nobody asks. A rollback writes a
+new revision and never deletes one, and that rule is stated in the endpoint's javadoc.
+
+### LXV.4 A diff that reads a created page and a changed sentence (SH988)
+
+The dialog picks the draft row and the published row and renders per-field cells capped
+in height, so a long body is two blocks of text with nothing marking the sentence that
+moved. The review queue shows its diff button only when an entry has a post id, a
+published row and a draft, so a CREATE, which is what the publish gate makes an agent
+produce, has no diff at all.
+
+Answer once on the server rather than twice in the client: a diff endpoint returning
+before, after and a field list, where before is null for a create and the published row
+or a chosen revision otherwise, so the console and shio diff cannot disagree about what
+changed. The console renders it with VDS140's BentoDiff and BentoVersionRail: any two
+revisions selectable, word-level highlight inside a field, unchanged fields collapsed
+behind a count, and for a create, the rendered page's structural digest and a preview
+link instead of an empty column. Restore-whole and restore-one-field call AZ3's rollback
+behind a confirm.
+
+The review queue's diff then appears on every entry that still exists, inline rather
+than as a modal, since a modal per entry is a click per entry on a long run.
+
+### LXV.5 Audit rows that name the fields they changed (SH989)
+
+ShHistory carries owner, date, action, subject kind, a description, the object, the site
+and the agent session, and no field list. The Activity page can only print the sentence,
+and the review queue's diff is always the current draft against the current published
+row, so after an approve it shows no changes at all, because publishing copied the draft
+across. The one thing a reviewer most wants to see is gone at the moment of acceptance.
+
+Store the changed field names and never the values: the values live in AZ2's revisions
+and the audit row carries the index. That is the shape the CLI's comparison already
+emits, field, change of added, removed or changed, and a size, and its javadoc gives the
+reason, that a rich-text body is the most expensive thing to print. A bounded
+changed_fields column arrives by Liquibase and is computed in the write service's update
+and publish paths, which already hold both objects in the transaction, so it is a set
+difference with no extra query.
+
+Readers follow: /agent/changes rows gain fields behind include=fields, shio changes
+--fields, and the console history. The byte-identity assertion on the default row is the
+P3 guard.
+
+## LXVI Releases, scheduling and the publish gate (Block BA)
+
+Publishing in Shio is one post at a time. ShPostScheduler fires each due row in its own
+transaction, which is right for independent posts and wrong for a launch: forty pages
+that belong together go live forty times, in sweep order, and a failure halfway leaves
+half a launch. Nothing lists what is scheduled. The curator's publish button has none of
+the three safeguards the agent's path has, no dry run, no impact preview and no confirm,
+and there is no publish permission for a person at all, so any user who may write may
+also put content live.
+
+The block gives a launch a unit and a publish a gate, over primitives Shio already owns.
+One state grammar on every read path is the substrate: a release is read as a
+perspective, as a revision is. Scheduling becomes visible and reliable on every surface.
+A release is a named set of post versions that publish atomically through the existing
+batch runner, never a second writer, with a rollback that restores each item to its
+anchor revision. Publishing gains a permission above write, a dry run with the routes it
+changes, and gates declared as appliable checklists in the content tree.
+
+The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
+
+### LXVI.1 One perspective grammar on every content read (SH990)
+
+/agent/read takes state, and its comment says why: what will change when I publish this
+is a read, not a diff endpoint. /preview takes it too and threads it through layout,
+region and theme. /agent/render, /agent/editable, /agent/verify and /agent/find take
+none, and the CDA takes site, url, locale, post type, page, size and q. There is no
+shared parser, so the two paths that accept a state validate it separately, and a third
+caller would make a third.
+
+One grammar and one value type. ShContentPerspective parses draft, published and
+rev:<n>, the last reading AZ2's store; release:<name> is added by BA4, which creates the
+entity it names, and never before it. An unknown value answers a teaching 400 with
+allowed and didYouMean. Resolution is plumbed through the agent read, render and verify
+services, the CDA mapper and the page render service, and on the CDA the allow-list
+check runs before the state is honoured, so a scoped token cannot read a draft it has no
+rights to.
+
+ShPerspectiveCoverageLintTest lands first, asserting every content-read path accepts the
+parameter, held as a named list. MCP gains one argument on existing tools within AY5's
+reservations; the CLI gains --state.
+
+### LXVI.2 Scheduled content, visible on every surface (SH991)
+
+Scheduling works end to end through the REST batch, and the only repository queries over
+publishScheduledDate and unpublishScheduledDate are the two due-only sweep finders.
+/agent/find has no schedule predicate and ShAgentDoc no schedule component, so an agent
+cannot confirm the schedule it just set. The console has a one-post dialog whose inputs
+are bare datetime-local fields, with no timezone shown against a server-stored instant.
+
+Reads first: shio_find gains scheduled, before and after, and shio_read gains
+include=schedule, both within AY5's reservations; shio schedule prints an agenda for a
+site and a range; and a scheduled endpoint answers the console. Then the console gets a
+Scheduled view, an agenda list and a month and week calendar, each row linking to the
+post, rescheduling by drag through the same verb, and the timezone stated on every row
+and in the dialog.
+
+A scheduled transition's outcome, and in particular its failure, reports through the
+assistant dock in SH969; this task records schedule_requested_by, so the Activity row
+reads published by the scheduler, scheduled by the person who set it. The assertions set
+a schedule through each surface and read it back through the others.
+
+### LXVI.3 Scheduling where a caller looks for it, and a takedown that waits (SH992)
+
+ShPublishTool declares address, unpublish and dryRun and builds its op without when,
+while its description says it is the only call that changes what visitors see, which is
+exactly where an agent looks for scheduling. when is a component of the single Op
+record, so JSON binds it on every op, and scheduleInstant has one call site, inside
+postPublish. postUnpublish never reads it, so an unpublish carrying a future instant
+happens immediately and answers as if it had been scheduled.
+
+AV3 lands the instrument that makes this a class: every declared tool argument and op
+key is read by its handler or refused. This task lands the behaviour. shio_publish gains
+when and cancel, measured against its AY5 reservation. post.unpublish compiles a real
+when into the write service's existing unpublish-at column, and a cancel on either
+clears the pending instant and reports what it cleared. The dry run reports the schedule
+it would set, identically, so a plan cannot promise what a run will refuse.
+
+The assertions carry the id on both halves: shio_publish with when leaves the page
+unpublished until the instant, and post.unpublish with a future when leaves it live.
+
+### LXVI.4 A release: a named set that publishes atomically (SH993)
+
+Each scheduled transition runs in its own transaction, and the CLI's publish splits
+above the batch ceiling and says so: atomic per chunk, not across them. So no surface
+can publish a two-hundred-page site atomically, and there is no release entity or
+release op anywhere. The grouping idea exists for another job: the review queue groups
+changes by agent session with approve and revert over the set.
+
+A release is a named, addressable set of post versions that publish atomically.
+sh_release holds name, description, site, a state of PLANNED, SCHEDULED, PUBLISHED or
+ROLLED_BACK, scheduled_at, actor and tenant_id; sh_release_item holds the release, the
+post, added_at and version_before, the AZ2 revision that is its rollback anchor.
+release.create, add, remove, schedule, run and archive join the batch vocabulary, so
+plan computes everything without writing and run requires a confirm token from its own
+plan, the widest blast radius in the product. The service compiles a release into ops
+for the existing runner, and a release above the op ceiling is refused at plan time
+naming the count.
+
+It projects to shio/releases/<name>.yaml, three-way merged like content, so a launch is
+reviewable in a pull request, and it reads back as state=release:<name>.
+
+### LXVI.5 Rolling a release back, as the unit it went live as (SH994)
+
+BA4 records version_before on every release item and declares ROLLED_BACK among its
+states, and its operations are create, add, remove, schedule, run and archive. A column
+written and never read is the shape that rots, because the next reader cannot tell
+whether it is dead or load-bearing, and a declared state with no transition into it is
+the same defect one level up.
+
+It is also the undo a curator will ask for first. A launch that went live wrongly is the
+scenario releases exist for, and atomicity without a reverse is half the promise.
+release.rollback with a name and a confirm joins the batch vocabulary the way run does.
+It compiles to per-item restores to each version_before through AZ3's rollback, requires
+a confirm token from its own plan because its blast radius equals run's, and writes a
+new revision per item rather than deleting one, the rule AZ3 sets for a single post.
+Reading the result back is state=release:<name> against the pre-run perspective.
+
+The assertion carries the id: run a release, roll it back, and every item's bytes match
+its anchor revision, with the release reading ROLLED_BACK.
+
+### LXVI.6 Publish as a permission above write (SH995)
+
+ShAclPermission has two values, READ and WRITE, with WRITE implying READ, and the
+content ACL service exposes requireRead and requireWrite. mayPublish lives on the API
+token and its accessor returns true when no token is in play, which is every console
+session. The review service's approve calls requireWrite. So the agent, whose work the
+review queue exists to gate, is the only actor the product can stop from publishing, and
+a team has no separation between author and approver.
+
+Add PUBLISH above WRITE, so PUBLISH implies WRITE, and route every publish through
+requirePublish: publish, unpublish and schedule, the release run and rollback, and
+review approve. The migration is the design decision: every existing WRITE grant is
+backfilled to PUBLISH in the same changeset, so nobody loses a capability on upgrade and
+separation is opt-in from then on.
+
+Per SH322 the sweep lands before the fix: a lint listing every method that publishes
+without asking for PUBLISH, held as an asserted list. The console disables Publish and
+Approve with the server's own fix text, and the ACL editor offers the third level. The
+assertion: a write-only user is refused a publish and still allowed a save.
+
+### LXVI.7 The curator's publish gets the agent's safeguards (SH996)
+
+The visual editor's Publish patches with publish true and, when nothing was edited,
+publishes the selected post outright; the post editor has the same shape, and its
+payload has no dryRun and no confirm. The agent path carries a dry run, a confirm token,
+a publish capability check and a review entry with a revertable flag. So the surface P7
+was written for is the one with none of P7's instruments, and include=impact answers a
+different question: template blast radius from layout bindings, not which URLs change.
+
+Two halves in one commit. The merge verb accepts dryRun and answers with the change-set
+shape the agent path returns, one contract and two callers. And impact gains a routes
+block computed from the content graph without rendering: which URLs go live, which
+change, which stop resolving, and how many published pages link to a URL this publish
+creates or removes, reusing the inbound-link scanner so the lint and the preview cannot
+disagree. It is absent when a publish affects nothing, so ordinary responses stay
+byte-identical.
+
+The console shows that list before the button arms, and a console publish writes a
+review entry attributed to the curator. The assertions: a dry run writes nothing, and a
+console publish appears in the queue.
+
+### LXVI.8 Publish gates as appliable checklists in the content tree (SH997)
+
+The address-scoped verify grades unresolved links, missing themes, head conventions and
+field lint; render produces structural and appearance digests; shio audit reports
+overflow and contrast per viewport. All are opt-in. The webhook vocabulary is PUBLISH,
+UNPUBLISH and DELETE, dispatched after commit, and the only gate that exists checks who
+may publish, never whether this content should.
+
+Not a workflow engine: an orchestrator inside Shio would be a third contract over the
+CDA and the console, which P10 forbids, and Shio's operator already is one. Instead a
+site declares shio/gates/<name>.yaml, an ordered list of checks, verify, audit,
+render-digest-unchanged-except and links-resolve, each with a severity, loaded from the
+content tree the way blueprints are. post.publish, the console publish from BA7 and
+release.run evaluate them server-side, so no surface can bypass them, and a failure
+answers a teaching 409 whose fix names the failing check and the address that failed it.
+
+shio gate run is the CI form and a publish dry run shows which gates would fail. A
+no-unresolved-notes check arrives with notes in Block BB. The override and the outbound
+events are BA9.
+
+### LXVI.9 An override that leaves a record, and the events an orchestrator needs (SH998)
+
+BA8 makes a gate refuse a publish. A gate with no sanctioned way past it is one a team
+removes the day it blocks something urgent, and a waiver nobody can see is worse than no
+gate.
+
+A user holding PUBLISH, from BA6, may publish past a failing gate by supplying a reason.
+The override is recorded as an audit row naming the gate, the failing check, the address
+and the reason, and as a revision reason on the content, so both the Activity page and
+shio changes show that a gate was waived and by whom. An agent credential cannot
+override, which keeps the non-goal that an agent does not approve its own work.
+
+The outbound edge gains GATE_FAILED and REVIEW_REQUESTED, dispatched when a gate refuses
+and when a run enters review. That is the honest integration with an external
+orchestrator: Shio reports, and something else decides whether to page a human, pause a
+pipeline or open a ticket. The assertions: an override without a reason is refused, one
+with a reason publishes and records both rows, and a failing gate emits GATE_FAILED with
+the check in its payload.
+
+## LXVII The curator's return channel, and the conversation with the agent (Block BB)
+
+Shio's thesis is that an agent builds and a curator approves. Today that is a one-way
+street. An agent writes; a human approves the whole run or reverts the whole run; and
+nothing travels back. The audit row records the agent session and both continuous
+readers drop it. A run carries no statement of what it was trying to do. A rejection has
+nowhere to record why. The agent cannot read the verdict on its own work, so every
+correction needs a human to re-explain it out of band, and there is no place to leave a
+note on the page or the field that is wrong.
+
+This block closes the loop and gives the Viglet assistant its voice. Attribution becomes
+visible, a run gains an intent, review moves from the run to the change with a reason,
+and the agent can read its verdict. Notes anchored to an object, a field or a revision
+become the channel, and they are also how the dock's chat works without Shio hosting a
+model: a curator's message to the connected agent is a note, the agent reads it over MCP
+and answers on the same thread, and the dock renders the thread as a conversation with
+actions attached.
+
+The agent still never approves its own work; the review decision stays off its
+namespace.
+
+### LXVII.1 A machine's change, told apart from a person's (SH999)
+
+ShHistory.agent_session_id is written with every content write and read by the review
+queue. The console history response is id, action, description, owner, date, object and
+site, with no agent field and no subject kind, and the change feed passes the owner into
+by while its javadoc still says the agent session is stamped into that string so a
+caller can tell its own writes from a human's. That stopped being true when the actor
+suffix was removed, and no test asserted the guarantee, which is why it drifted.
+
+Add agent and agentName to the change row, omitted when null so a human row stays
+byte-identical, with a by filter of agent, human or a session. Add agent, agentName and
+subjectKind to the console history response, with agent and actor filters. Persisting
+the MCP clientInfo name on initialize into a run row makes agentName a name rather than
+a uuid, and that row is where BB2 hangs intent.
+
+Fix the javadoc in the same commit and land ShAgentChangesAttributionTest: an agent
+write and a human write by the same credential are distinguishable on the feed. The
+console renders an agent chip in the Who column linking to the run.
+
+### LXVII.2 A run that says what it was for (SH1000)
+
+ShReviewSession holds session, actor, changes, counts by action, first and last seen,
+sites and pending, and its detail entries add action, post, title, address, state and
+date. Neither carries an intent; the rendered string is a count of changes by an actor
+above a uuid. The MCP session is stateless and stores only its id. shio report composes
+three reads into a narrative client-side and never reaches the console, so the curator
+who does not open a terminal gets the version with no premise.
+
+An agent declares its intent once and it rides every surface. Accept intent in the MCP
+initialize clientInfo, the cheapest place because tools/list is resent every turn and
+initialize is not; X-Shio-Intent on the agent surface and shio apply --intent persist it
+onto BB1's run row; shio report reads the stored intent instead of reconstructing one.
+
+The review queue leads with the intent sentence and a server-computed summary, counts by
+action and site and the pages whose appearance digest moved. A run with no intent reads
+no intent declared with a hint naming the argument that would have supplied it. The
+intent is read once per run and never joins the per-row change payload, which is
+measured.
+
+### LXVII.3 Decisions per change, with a reason (SH1001)
+
+The review API has two mutations, each taking a session: approve publishes every draft
+the run wrote, revert undoes all of them. The console renders two buttons per run; the
+entry rows carry badges and a diff button and no control. Each entry already has a
+revertable flag, and the outcome DTO already reports skipped entries with reasons, so
+the surface can report per-post outcomes and cannot take per-post instructions.
+
+Move the decision from the run to the change. A decisions call takes a list of post,
+decision of APPROVE, REJECT or HOLD, and note, applied atomically and reporting per
+entry in the existing outcome shape; the two whole-run verbs become that call over every
+entry. sh_review_decision makes HOLD and REJECT durable, since today a decision's only
+record is its side effect, and the pending count subtracts held entries. Approve
+requires BA6's PUBLISH.
+
+The queue gains a CLI, shio review list, show and decide with notes, so CI can gate on
+it, and a dry run showing what approve would publish and skip. The console gets
+per-entry selection with range select, a required note on reject, and keyboard triage,
+because this is a screen a curator lives in.
+
+### LXVII.4 The verdict, readable by the one it is about (SH1002)
+
+The conformance test holds the review queue as a decided exception, because an agent
+approving its own run is what it prevents, and the manifest asserts the approve route is
+absent from its endpoint index. That decision is right and this task does not touch it.
+The gap is read-only: a revert produces ordinary restore and delete audit rows that look
+like a curator's own edit, and approve produces publish rows, with no outcome, no reason
+and no typed event.
+
+BB3 writes decisions as typed rows, so the read is cheap. /agent/changes gains review
+with decision, by, at and note, omitted when null so ordinary rows stay byte-identical,
+and a filter to rejected changes only. shio://review/mine is a resource scoped to the
+calling credential's own runs, off tools/list, and the first thing a resumed session
+reads. shio review --since last prints rejections with their notes, and shio report
+gains what the curator changed.
+
+The assertions keep the decision intact: the manifest's endpoint index still lacks the
+approve route, the new resource exposes no decide path, and a rejected change's note is
+readable by the session that wrote it and by no other.
+
+### LXVII.5 Notes: a thread anchored to an address is the next prompt (SH1003)
+
+Searching the backend for a comment, mention or annotation class returns nothing. The
+review queue reviews runs, not documents, so a curator who wants this paragraph fixed
+has no channel and an agent has nothing to read. Site memory is the nearest thing,
+scoped to an instance or a site rather than a field, and it has no console surface, so
+the conventions that govern an agent are readable and writable by the agent alone.
+
+A note anchors to an object, optionally a field path and optionally a revision: sh_note
+holds body, author, agent session, a kind, resolved state, a parent for threading and
+lowercase tenant_id, and its visibility reuses the content ACL, so a thread is exactly
+as visible as the object it hangs on. shio_read include=notes attaches open notes;
+note.add and note.resolve join the batch vocabulary; shio notes --open prints a work
+list; open notes project into the content sidecars so Grep finds them. The console gets
+a comment rail on the post editor anchored to fields, and a page for site memory.
+
+Kinds make assignment and requests one mechanism rather than several: a comment, a
+request to the agent, and a reply. BB8 builds the dock's conversation on them.
+
+### LXVII.6 Every new projected field, with a rule for who wins (SH1004)
+
+This round adds content to the file projection in several places. BA4 projects releases
+and says they are three-way merged like content, the only task that states a merge. BB5
+projects open notes into sidecars. Constraint blocks join post-type files in Block BC,
+translation provenance joins sidecar metadata in Block BH, and asset alt, caption and
+tags join the asset sidecar in Block BE.
+
+content-base.json is the common ancestor. A field the projector writes but the merger
+does not know is either clobbered on the next pull or in conflict on every pull,
+depending on which side is treated as authoritative. Notes are the sharpest case, being
+the one projected field a person edits locally and the server also mutates: resolving a
+note in the console while the local tree holds an edited body is a conflict with no
+rule.
+
+The deliverable is the rule per new field, stated once in content-files.md: which side
+wins, whether the field participates in the base, and how a conflict is reported. Each
+gains a round-trip assertion in the existing coverage test. It is small and dull, and it
+is what keeps P4's promise for everything this round projects.
+
+### LXVII.7 One reader over the audit table, for both surfaces (SH1005)
+
+The history endpoints take a limit and nothing else: no since, no cursor, and no action,
+actor or site filter. The per-object and per-site reads have typed client methods with
+no callers, and the console asks for two hundred rows and stops. /agent/changes over the
+same table has a keyset cursor, a commit-order watermark and a measured budget. This is
+P1 working and P10 not applied: the console built a second, weaker reader.
+
+/api/v2/history gains since, before, action, actor, agent, site and subject, delegating
+to the agent changes service rather than a second query set, with the same
+instant-and-id cursor so the two surfaces cannot disagree about what a cursor is, and
+the duplicated finders are removed rather than extended.
+
+The console's Activity page gains filters mirrored into the URL and cursor paging, and
+the post editor gains a history panel for that object, with each row linking to AZ4's
+diff. That is the question every CMS is asked and the one this console cannot answer on
+screen. Live updates arrive through SH967's stream, and the plan's notification inbox is
+replaced by the assistant dock.
+
+### LXVII.8 The dock's chat, relayed to the agent over notes (SH1006)
+
+The design the dock was drawn from called a model API from the browser, and the package
+deliberately left that out: the dock takes messages, busy and onSend, and knows no
+backend. Shio's binding non-goal forbids hosting a model or holding provider keys. So
+the conversation cannot be answered by Shio, and it does not need to be: the agent that
+already drives the instance is the one to answer.
+
+The composer's onSend writes a note of kind request, anchored to the page the curator is
+on, or to the site when none is open, and attributed to the curator. The agent reads
+open requests through shio_read include=notes and a shio://requests resource scoped to
+its tenant, and answers with note.add as a reply on the thread. SH967's stream delivers
+the reply to the dock, which renders the thread as its transcript, sets busy while a
+request is unanswered, and raises unread when an answer arrives behind a collapsed dock.
+
+The composer is shown only while an agent session has been active on the tenant within a
+window, read from BB2's run rows, and otherwise the dock stays a status surface. The
+assertions send a request, answer it through MCP, and read the reply in the transcript.
+
+### LXVII.9 An answer that arrives with its change attached (SH1007)
+
+The reference design's chat offered a suggested title with a button to use it, and
+VigletAssistantMessage carries an action for exactly that. In Shio an agent answering a
+request usually does more than suggest: it writes drafts, which land in the review queue
+under its run. Without a link between the reply and those changes, the curator reads
+that the work is done and then has to find it.
+
+A reply note may reference the run whose changes answer it. The dock renders such a
+reply with actions, up to three through VDS134's actions array: open the diff for that
+run's changes to the anchored page, approve them, and reject them with a note. Approve
+and reject go through BB3's decisions call and require its permissions, so the dock
+never becomes a way around review. A reply that references no run is plain text.
+
+The agent's side is one field on note.add, the run it answers with, which a session
+already knows. The assertions answer a request with a run that drafts a change, then
+approve it from the dock's action and read the published result and the decision row.
+
+### LXVII.10 Awareness, not co-editing (SH1008)
+
+AZ1 makes a conflicting save fail loudly instead of silently. That is necessary and it
+arrives late: the curator discovers the collision after writing. The second editor on a
+Shio page is usually a machine, and the requirement is that neither party writes blind,
+not that both type into one document at once, which is why the non-goals rule out a
+shared-document runtime.
+
+A short-lived working mark is derived from writes rather than declared: an agent session
+that wrote to an address within the last minute is working on it, and the mark expires
+on its own, so it can never become a lock that blocks a write. SH967's stream carries
+the mark. The post editor shows a presence line naming the agent and its run's intent,
+and the dock bumps its activity when a mark appears on the page in view. The agent side
+reads the same marks through shio_read on the address, so a session learns another
+writer touched it a moment ago before planning its next write.
+
+The assertions: an agent write shows the presence line within the stream's latency and
+it clears after the window, and a curator's save while the mark is showing still goes
+through AZ1's guard rather than being blocked.

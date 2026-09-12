@@ -1681,3 +1681,11 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
+## Block AY — What the conformance instruments cannot see
+
+## Block AZ — What the content said before
+
+## Block BA — Releases, scheduling and the publish gate
+
+## Block BB — The curator's return channel, and the conversation with the agent
+
