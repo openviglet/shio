@@ -342,6 +342,20 @@ const DEBT = [
   // and twelve read the same). When either ships, this entry comes off — and if it does not, that
   // is the reader saying the process finding was never closed.
   "SH797",
+  // DOES NOT EARN one, and it is SH797's reason a second time — which is what makes it a shape
+  // rather than an accident. SH1072's deliverable is *rows of data in another repository*: six
+  // shipped ids named in `docs-shio/COVERAGE.md`, plus the mirror this repository keeps of it. The
+  // property "every shipped id is named in the matrix" is already asserted, by the same SH758
+  // reader that went red and produced the task — and by SH799's ceiling, which is what turned a
+  // printed queue into a failing build on the sixth id.
+  //
+  // An assertion naming SH1072 would have to assert that somebody edited a file this repository
+  // cannot see except through the mirror the task itself refreshes, which is circular: it would go
+  // green on the mirror being written and say nothing about the matrix. The honest open half is
+  // filed as the line's own criterion instead — that a *fresh clone* of vigletdocs reads a matrix
+  // naming the six, which is untrue until that edit is committed there. This entry comes off when
+  // it is.
+  "SH1072",
   // DOES NOT EARN one, for the reason a measurement never does. What SH805 shipped is a *number*
   // and the elimination it bought: the drain is 50-140ms per file alone, 45ms for the whole suite
   // alone, and ~5.5s only inside `pnpm test` under workspace concurrency — so it is not a lingering

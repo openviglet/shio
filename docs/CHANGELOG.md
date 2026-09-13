@@ -1690,6 +1690,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AY — What the conformance instruments cannot see
 
+- **SH1072 (the matrix named and mirrored)** — All six ids are named in the published matrix — SH950 and SH951 in Security, the five Block AU ones as contributor-facing — the mirror is refreshed and the JS gate is green again.
+
 ## Block AZ — What the content said before
 
 ## Block BA — Releases, scheduling and the publish gate

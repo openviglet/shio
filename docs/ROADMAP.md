@@ -64,7 +64,7 @@
 - 📋 **SH983** (deps: SH982) **no census asks which writes return proof, so cheap textual evidence stays a per-author choice** — Digest, verify and impact are opt-in per endpoint, so a new write can ship returning a bare 200 and nothing notices the perception loop was left open. → §LXIV.11
 - 📋 **SH984** (deps: —) **lines filed against a design-system release have no probe in the waits list, so a release can end their wait unnoticed** — SH937 holds every line waiting on the package as a named probe, and SH946, SH947, SH948, SH963, SH964, SH966 and SH968 were filed without one. → §LXIV.12
 - 📋 **SH1070** (deps: —) **the docs conformance gate is red at HEAD, and 135 commits deep in owed runs** — Two suites fail on drift nobody has seen: a published page states Spring Boot 4.1.0 against a pom declaring 4.1.1, and COVERAGE.md's summary counts 57 clusters over 54 rows. → §LXIV.13
-- 📋 **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — SH799 fails the JS gate once the queue exceeds five, and the fix is two commits in two repositories: COVERAGE.md in vigletdocs, then coverage:mirror here. → §LXIV.14
+- ⏳ **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — the COVERAGE.md edit is in the vigletdocs working tree and uncommitted, so a fresh clone still reads the old matrix. → §LXIV.14
 
 ## Block AZ — What the content said before
 
@@ -190,6 +190,13 @@
   over the projected tree. The server half is done: uploads are refused or sanitized and
   the post records SANITIZED, but that fact is reachable only by reading the post's
   data.
+
+## Done when — SH1072
+
+- **A fresh clone of vigletdocs reads a matrix that names the six ids** The COVERAGE.md
+  edit is committed in vigletdocs. Until then it exists only in that working tree, so
+  the green JS gate here rests on an uncommitted file and any other checkout still reads
+  the old matrix.
 
 ## Non-goals (do NOT add as tasks)
 
