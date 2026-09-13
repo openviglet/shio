@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    a { color: #1447e6; text-decoration: none; }
+    a:hover { color: #193cb8; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); }
+    /* One label per row of the gutter, so no two can ever land on each other. */
+    .lab { position: absolute; right: 0; display: flex; align-items: center; gap: 7px; justify-content: flex-end; width: 100%; }
+    .lab b { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+    .lab i { font-style: normal; font-size: 9.5px; color: #a1a1a1; white-space: nowrap; }
+    .lead { height: 1px; width: 22px; flex: 0 0 auto; }
+    .dot { width: 8px; height: 8px; border-radius: 3px; flex: 0 0 auto; display: inline-block; }
+    .note { border-radius: 12px; padding: 11px 13px; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1400px;height:980px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 26px 0">
+    <div class="eyebrow" style="color:#1447e6">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">The page's regions, and who owns each</div>
+      <div style="font-size:12.5px;color:#737373">Every region is owned once. Nearly all the divergence between two products is an argument about which.</div>
+    </div>
+  </div>
+
+  <!-- diagram: a label gutter, then the page -->
+  <div style="margin:14px 26px 0;display:flex;gap:0;height:620px">
+
+    <!-- the gutter. one row per label. -->
+    <div style="position:relative;width:168px;flex:0 0 auto">
+      <div class="lab" style="top:26px"><b style="color:#1447e6">SHELL &middot; HEADER</b><i>80px</i><span class="lead" style="background:#1447e6"></span></div>
+      <div class="lab" style="top:132px"><b style="color:#1447e6">SHELL &middot; NAV</b><i>64px, fixed</i><span class="lead" style="background:#1447e6"></span></div>
+      <div class="lab" style="top:186px"><b style="color:#1447e6">SHELL &middot; COLUMN</b><i>set once</i><span class="lead" style="background:#1447e6"></span></div>
+      <div class="lab" style="top:250px"><b style="color:#7f22fe">PAGE &middot; ASIDE</b><i>optional</i><span class="lead" style="background:#7f22fe"></span></div>
+      <div class="lab" style="top:304px"><b style="color:#7f22fe">PAGE &middot; CONTENT</b><span class="lead" style="background:#7f22fe"></span></div>
+      <div class="lab" style="top:556px"><b style="color:#c10007">FOOTER</b><i>undecided</i><span class="lead" style="background:#fb2c36"></span></div>
+    </div>
+
+    <!-- the page -->
+    <div style="position:relative;flex:1;min-width:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;overflow:hidden;box-shadow:0 24px 50px -38px rgba(0,0,0,0.4)">
+
+      <!-- header, 80px -->
+      <div style="position:absolute;left:0;right:0;top:0;height:80px;z-index:4;display:flex;align-items:center;gap:10px;padding:0 18px;background:rgba(20,71,230,0.05);border-bottom:1px solid rgba(229,229,229,0.7)">
+        <div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background-image:linear-gradient(to bottom right,#155dfc,#4f39f6);color:#ffffff"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg></div>
+        <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15px;font-weight:600;letter-spacing:-0.015em">Product</div>
+        <div style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid #e5e5e5;border-radius:8px;background:#ffffff;color:#525252;margin-left:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"></path></svg></div>
+        <div style="display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;margin-left:8px;border:1px solid #e5e5e5;border-radius:10px;background:#ffffff;width:200px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.4-4.4"></path></svg>
+          <span style="font-size:11.5px;color:#737373;flex:1">Search</span>
+          <span class="mono" style="font-size:9.5px;color:#a1a1a1">Ctrl K</span>
+        </div>
+        <div style="flex:1"></div>
+        <span class="dot" style="background:#009966"></span>
+        <div style="display:inline-flex;align-items:center;height:26px;padding:0 9px;border:1px solid rgba(0,153,102,0.5);border-radius:8px;font-size:10.5px;color:#007a55;font-weight:600">Tenant</div>
+        <div style="display:inline-flex;align-items:center;height:26px;padding:0 8px;border:1px solid #e5e5e5;border-radius:8px;background:#ffffff;font-size:10.5px;color:#525252">EN</div>
+        <div style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid #e5e5e5;border-radius:8px;background:#ffffff;color:#525252"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2"></path></svg></div>
+        <span class="dot" style="background:#009966"></span>
+        <div style="width:28px;height:28px;border-radius:999px;background-image:linear-gradient(to bottom right,#155dfc,#4f39f6)"></div>
+      </div>
+
+      <!-- rail, 64px -->
+      <div style="position:absolute;left:0;top:80px;bottom:0;width:64px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 0;background:rgba(20,71,230,0.05);border-right:1px solid rgba(229,229,229,0.7)">
+        <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;border:1px solid rgba(23,23,23,0.4);background:rgba(23,23,23,0.09);color:#171717"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 11.5 12 5l8 6.5"></path><path d="M6 10.5V19h12v-8.5"></path></svg></div>
+        <div style="width:38px;height:38px;border-radius:12px;background:#f0f0f0"></div>
+        <div style="width:38px;height:38px;border-radius:12px;background:#f0f0f0"></div>
+      </div>
+
+      <!-- everything the shell hands to a page -->
+      <div style="position:absolute;left:64px;right:0;top:80px;bottom:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:0;display:flex;justify-content:center;padding:0 28px">
+          <!-- the column: one max-width, one pair of gutters, set here -->
+          <div style="width:100%;max-width:940px;border-left:1px dashed rgba(20,71,230,0.5);border-right:1px dashed rgba(20,71,230,0.5);padding:22px 22px 0;display:flex;gap:16px;min-height:0">
+
+            <!-- a page's aside -->
+            <div style="width:190px;flex:0 0 auto;border-radius:20px;background:rgba(127,34,254,0.05);border:1px solid rgba(127,34,254,0.28);padding:12px;display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:9.5px;font-weight:700;letter-spacing:0.06em;color:#7f22fe">FILTERS</div>
+              <div style="height:26px;border-radius:8px;background:rgba(127,34,254,0.14)"></div>
+              <div style="height:26px;border-radius:8px;background:#f2f2f2"></div>
+              <div style="height:26px;border-radius:8px;background:#f2f2f2"></div>
+              <div style="flex:1"></div>
+              <div class="mono" style="font-size:9px;color:#7f22fe;line-height:1.4">scrolls with the page,<br>not beside the rail</div>
+            </div>
+
+            <!-- the content -->
+            <div style="flex:1;min-width:0">
+              <div style="height:11px;width:120px;border-radius:999px;background:#ededed;margin-bottom:9px"></div>
+              <div style="height:22px;width:260px;border-radius:8px;background:#e6e6e6;margin-bottom:16px"></div>
+              <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:12px">
+                <div class="glass" style="grid-column:span 2;border-radius:24px;height:104px"></div>
+                <div class="glass" style="grid-column:span 2;border-radius:24px;height:104px"></div>
+                <div class="glass" style="grid-column:span 2;border-radius:24px;height:88px"></div>
+                <div class="glass" style="grid-column:span 2;border-radius:24px;height:88px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- the footer region, drawn as absent -->
+        <div style="flex:0 0 auto;margin:0 28px 16px;border-top:1px dashed #fb2c36;padding-top:12px;display:flex;align-items:center;justify-content:center;gap:9px">
+          <div style="width:16px;height:16px;border-radius:5px;background:#ededed"></div>
+          <span style="font-size:11px;color:#bdbdbd">Product 2026.3</span>
+          <span style="font-size:11px;color:#e0e0e0">&middot;</span>
+          <span style="font-size:10.5px;color:#cfcfcf">Link</span>
+          <span style="font-size:11px;color:#e0e0e0">&middot;</span>
+          <span style="font-size:10.5px;color:#cfcfcf">Link</span>
+          <span class="mono" style="font-size:9px;color:#c10007;margin-left:10px">no bento shell mounts one</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- legend and the notes -->
+  <div style="margin:16px 26px 18px;display:grid;grid-template-columns:212px 292px 1fr 1fr;gap:16px;align-items:stretch">
+
+    <div class="note" style="border:1px solid #e5e5e5;background:#ffffff">
+      <div class="eyebrow" style="color:#737373;margin-bottom:8px">WHO OWNS A REGION</div>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:11px;color:#404040">
+        <div style="display:flex;align-items:center;gap:7px"><span class="dot" style="background:#1447e6"></span><strong>Shell</strong> &mdash; once, for all</div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="dot" style="background:#7f22fe"></span><strong>Page</strong> &mdash; inside the column</div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="dot" style="background:#009966"></span><strong>Product</strong> &mdash; passed as a prop</div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="dot" style="background:#ffffff;border:1px dashed #fb2c36"></span><strong>Undecided</strong></div>
+      </div>
+    </div>
+
+    <div class="note" style="border:1px solid rgba(0,153,102,0.35);background:rgba(0,153,102,0.05)">
+      <div class="eyebrow" style="color:#007a55;margin-bottom:7px">THE SIGNED-IN USER</div>
+      <div style="border-radius:14px;background:#ffffff;border:1px solid rgba(229,229,229,0.9);overflow:hidden;margin-bottom:7px">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #f0f0f0">
+          <div style="width:26px;height:26px;border-radius:999px;background-image:linear-gradient(to bottom right,#155dfc,#4f39f6)"></div>
+          <div style="font-size:11px;font-weight:600">Display name</div>
+        </div>
+        <div style="padding:5px 6px">
+          <div style="display:flex;align-items:center;gap:7px;padding:5px 7px;font-size:10.5px;color:#404040"><span class="mono" style="font-size:9px;color:#007a55">accountRoute</span>Account</div>
+          <div style="display:flex;align-items:center;gap:7px;padding:5px 7px;font-size:10.5px;color:#c10007"><span class="mono" style="font-size:9px;color:#007a55">logoutUrl</span>Sign out</div>
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:#404040;line-height:1.45">Two routes, no default for either. Anything past them &mdash; a tenant, a review count &mdash; is the product's.</div>
+    </div>
+
+    <div class="note" style="border:1px solid rgba(254,154,0,0.45);background:rgba(254,154,0,0.07)">
+      <div class="eyebrow" style="color:#973c00;margin-bottom:4px">THE FOOTER IS THE REGION NOBODY DECIDED</div>
+      <div style="font-size:11.5px;color:#404040;line-height:1.5"><span class="mono" style="font-size:11px">AppFooter</span> is exported &mdash; a hairline, then the product name, its version and a few links &mdash; and it is written <span class="mono" style="font-size:11px">mt-auto</span>, so it expects a shell that is a flex column with the main growing. No bento shell mounts one. Either the shell carries a footer for every page or the chrome has none; what must not happen is one page growing its own.</div>
+    </div>
+
+    <div class="note" style="border:1px solid rgba(127,34,254,0.35);background:rgba(127,34,254,0.06)">
+      <div class="eyebrow" style="color:#7f22fe;margin-bottom:4px">TWO THINGS CALLED A SIDEBAR</div>
+      <div style="font-size:11.5px;color:#404040;line-height:1.5">The console era's collapses, remembers its width and pushes content, so it needs a provider. The rail does none of that: fixed, one width, hidden below <span class="mono" style="font-size:11px">md</span>. "No sidebar provider" is about the <em>shell</em> &mdash; a page that needs a secondary column still has one, inside the reading column, owned by that page and scrolling with it.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

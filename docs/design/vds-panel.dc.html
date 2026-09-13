@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    a { color: #1447e6; text-decoration: none; }
+    a:hover { color: #193cb8; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); border-radius: 24px; }
+    .slot { position: absolute; font-size: 9px; padding: 0 5px; background: #ffffff; }
+    .trow { display: grid; grid-template-columns: 1fr 90px 70px; gap: 10px; align-items: center; padding: 7px 14px; border-bottom: 1px solid #f4f4f4; font-size: 11px; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1080px;height:680px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">The panel, and why it has no heading</div>
+      <div style="font-size:12.5px;color:#737373">A frosted box with arbitrary content. Three of them, and the same component each time.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 320px;gap:20px;padding:14px 24px 0">
+
+    <div style="border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden;display:flex;flex-direction:column;gap:13px">
+
+      <!-- the hero already names the page -->
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em">Page title</div>
+        <div class="mono" style="font-size:9.5px;color:#1447e6">the hero already named it -- h1</div>
+      </div>
+
+      <!-- a stats strip, py default -->
+      <div style="position:relative">
+        <div class="glass" style="padding:14px;display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:14px">
+          <div><div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1">128</div><div style="font-size:10.5px;color:#737373;margin-top:2px">Label</div></div>
+          <div><div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1">94</div><div style="font-size:10.5px;color:#737373;margin-top:2px">Label</div></div>
+          <div><div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1">6</div><div style="font-size:10.5px;color:#737373;margin-top:2px">Label</div></div>
+          <div><div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1">2</div><div style="font-size:10.5px;color:#737373;margin-top:2px">Label</div></div>
+        </div>
+        <div class="slot mono" style="right:10px;top:-7px;color:#737373">a stats strip</div>
+      </div>
+
+      <!-- a toolbar, py-2 -->
+      <div style="position:relative">
+        <div class="glass" style="padding:8px 12px;display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:7px;height:28px;padding:0 10px;border:1px solid #e5e5e5;border-radius:10px;background:#ffffff;flex:1;max-width:230px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.4-4.4"></path></svg>
+            <span style="font-size:11.5px;color:#737373">Filter</span>
+          </div>
+          <div style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:8px;background:#171717;color:#fafafa;font-size:11px;font-weight:500">All</div>
+          <div style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:8px;border:1px solid #e5e5e5;color:#525252;font-size:11px">Subset</div>
+          <div style="flex:1"></div>
+          <span class="mono" style="font-size:10px;color:#a1a1a1">contentClassName py-2</span>
+        </div>
+        <div class="slot mono" style="right:10px;top:-7px;color:#737373">a toolbar</div>
+      </div>
+
+      <!-- a table, p-0 -->
+      <div style="position:relative;flex:1;min-height:0">
+        <div class="glass" style="overflow:hidden;height:100%">
+          <div class="trow" style="background:rgba(245,245,245,0.6);font-size:9.5px;font-weight:600;letter-spacing:0.06em;color:#737373"><div>COLUMN</div><div>COLUMN</div><div>COLUMN</div></div>
+          <div class="trow"><div>Row</div><div style="color:#737373">Value</div><div style="color:#737373">Value</div></div>
+          <div class="trow"><div>Row</div><div style="color:#737373">Value</div><div style="color:#737373">Value</div></div>
+          <div class="trow"><div>Row</div><div style="color:#737373">Value</div><div style="color:#737373">Value</div></div>
+          <div class="trow" style="border-bottom:none"><div>Row</div><div style="color:#737373">Value</div><div style="color:#737373">Value</div></div>
+        </div>
+        <div class="slot mono" style="right:10px;top:-7px;color:#737373">a listing -- contentClassName p-0</div>
+      </div>
+    </div>
+
+    <!-- rules -->
+    <div style="display:flex;flex-direction:column;gap:11px;min-height:0">
+      <div style="border:1px solid #e5e5e5;background:#ffffff;border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#737373;margin-bottom:6px">NO HEADING, ON PURPOSE</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5">These surfaces sit under a hero that already names the page. A heading on them is noise, and it also puts a section in the document outline the page does not have.</div>
+      </div>
+
+      <div style="border:1px solid #e5e5e5;background:#ffffff;border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#737373;margin-bottom:6px">TWO CLASS SLOTS, NO PADDING OF ITS OWN</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5"><span class="mono" style="font-size:11px">className</span> on the frosted container and <span class="mono" style="font-size:11px">contentClassName</span> on the inner wrapper. A table wants <span class="mono" style="font-size:11px">p-0</span>; a toolbar wants <span class="mono" style="font-size:11px">py-2</span>. That is why the padding is yours.</div>
+      </div>
+
+      <div style="border:1px solid rgba(251,44,54,0.3);background:rgba(251,44,54,0.05);border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#c10007;margin-bottom:5px">NEVER HAND-ROLL IT</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5">The moment two call sites pick different radii, the product is inconsistent for a reason no diff shows -- one file says 24 and another says 16 and neither is wrong on its own.</div>
+      </div>
+
+      <div style="flex:1"></div>
+
+      <div style="border:1px solid #e5e5e5;background:#ffffff;border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#737373;margin-bottom:5px">WHERE THE HEADING DOES BELONG</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5">In a form, where a group of fields is a named thing. That component is the form section, and its heading is an <span class="mono" style="font-size:11px">h2</span> under the hero's <span class="mono" style="font-size:11px">h1</span>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:18px"></div>
+</div>
+</x-dc>
+</body>
+</html>

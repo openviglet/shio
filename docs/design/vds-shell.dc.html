@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    a { color: #1447e6; text-decoration: none; }
+    a:hover { color: #193cb8; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; color: #1447e6; }
+    .pin { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 999px; background: #1447e6; color: #ffffff; font-size: 10.5px; font-weight: 700; flex: 0 0 auto; }
+    .req { display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: 5px; background: #171717; color: #fafafa; font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em; }
+    .opt { display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: 5px; border: 1px solid #e5e5e5; color: #737373; font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1280px;height:760px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">The shell</div>
+      <div style="font-size:12.5px;color:#737373">Adopt it before the pages. Three pieces, no provider, no context between them.</div>
+    </div>
+  </div>
+
+  <!-- the shell -->
+  <div style="margin:14px 24px 0;flex:1;min-height:0;position:relative;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;overflow:hidden;box-shadow:0 24px 50px -36px rgba(0,0,0,0.4)">
+
+    <!-- rail: w-16, hidden below md, items start below the header -->
+    <div style="position:absolute;left:0;top:0;bottom:0;width:64px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:4px;padding:80px 0 16px;background:rgba(255,255,255,0.55);backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);border-right:1px solid rgba(229,229,229,0.4)">
+      <div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;border:1px solid rgba(23,23,23,0.4);background:rgba(23,23,23,0.09);color:#171717" title="aria-current=page">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"></path><path d="M6 10.5V19h12v-8.5"></path></svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;color:#737373"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect></svg></div>
+      <div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;color:#737373"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></svg></div>
+      <div style="flex:1"></div>
+      <div class="mono" style="font-size:9px;color:#a1a1a1;transform:rotate(180deg);writing-mode:vertical-rl">64px</div>
+    </div>
+
+    <!-- header -->
+    <div style="position:absolute;left:0;right:0;top:0;height:80px;z-index:4;display:flex;align-items:center;gap:10px;padding:0 20px 0 16px;background:rgba(255,255,255,0.55);backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);border-bottom:1px solid rgba(229,229,229,0.4)">
+      <span class="pin">1</span>
+      <div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background-image:linear-gradient(to bottom right,#155dfc,#4f39f6);color:#ffffff"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg></div>
+      <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:16px;font-weight:600;letter-spacing:-0.015em">Product</div>
+
+      <span class="pin">2</span>
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #e5e5e5;border-radius:8px;color:#525252"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"></path></svg></div>
+
+      <span class="pin">3</span>
+      <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid #e5e5e5;border-radius:10px;background:#ffffff;min-width:210px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.4-4.4"></path></svg>
+        <span style="font-size:12.5px;color:#737373;flex:1">Search</span>
+        <span class="mono" style="display:inline-flex;align-items:center;height:19px;padding:0 5px;border:1px solid #e5e5e5;border-radius:5px;font-size:10px;color:#737373">Ctrl K</span>
+      </div>
+
+      <div style="flex:1"></div>
+      <span class="pin">4</span>
+      <div style="display:inline-flex;align-items:center;height:28px;padding:0 9px;border:1px solid #e5e5e5;border-radius:8px;font-size:11.5px;color:#525252">EN</div>
+      <span class="pin">5</span>
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #e5e5e5;border-radius:8px;color:#525252"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2"></path></svg></div>
+      <span class="pin">6</span>
+      <div style="width:28px;height:28px;border-radius:999px;background:#f5f5f5;border:1px solid #e5e5e5"></div>
+    </div>
+    <div class="mono" style="position:absolute;left:74px;top:58px;z-index:5;font-size:9px;color:#a1a1a1">header 80px, so the rail's items start at 80</div>
+
+    <!-- routed page, in the gutter the rail reserves -->
+    <div style="position:absolute;left:64px;right:0;top:80px;bottom:0;overflow:hidden">
+      <div style="max-width:1120px;margin:0 auto;padding:28px 32px">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px">
+          <span class="pin">7</span>
+          <span class="mono" style="font-size:10.5px;color:#737373">main: the shell's column, set once</span>
+        </div>
+        <div style="height:12px;width:150px;border-radius:999px;background:#ededed;margin-bottom:12px"></div>
+        <div style="height:26px;width:340px;border-radius:8px;background:#e6e6e6;margin-bottom:9px"></div>
+        <div style="height:11px;width:470px;border-radius:999px;background:#f0f0f0;margin-bottom:22px"></div>
+        <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:14px">
+          <div style="height:104px;border-radius:24px;background:rgba(255,255,255,0.72);border:1px solid rgba(229,229,229,0.7);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)"></div>
+          <div style="height:104px;border-radius:24px;background:rgba(255,255,255,0.72);border:1px solid rgba(229,229,229,0.7);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)"></div>
+          <div style="height:104px;border-radius:24px;background:rgba(255,255,255,0.72);border:1px solid rgba(229,229,229,0.7);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- back to top -->
+    <div style="position:absolute;right:20px;bottom:20px;z-index:5;display:flex;align-items:center;gap:8px">
+      <span class="pin">8</span>
+      <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:999px;background:rgba(255,255,255,0.86);backdrop-filter:blur(18px);border:1px solid rgba(229,229,229,0.7);box-shadow:0 10px 22px -12px rgba(0,0,0,0.3);color:#404040"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 12l6-6 6 6"></path></svg></div>
+    </div>
+  </div>
+
+  <!-- the set -->
+  <div style="margin:14px 24px 18px;display:grid;grid-template-columns:1fr 1fr 300px;gap:18px;align-items:start">
+    <div>
+      <div class="eyebrow" style="color:#737373;margin-bottom:7px">THE HEADER, IN THIS ORDER</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:#404040">
+        <div style="display:flex;align-items:center;gap:7px"><span class="pin">1</span>Mark and wordmark <span class="req">REQUIRED</span></div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="pin">2</span>Back, by route hierarchy <span class="opt">WHERE THERE IS A PARENT</span></div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="pin">3</span>Palette trigger, with the platform's own hint <span class="req">REQUIRED</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="eyebrow" style="color:#737373;margin-bottom:7px">AND ON THE TRAILING EDGE</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:#404040">
+        <div style="display:flex;align-items:center;gap:7px"><span class="pin">4</span>Locale <span class="opt">WHERE A SECOND ONE SHIPS</span></div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="pin">5</span>Ground <span class="req">REQUIRED</span></div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="pin">6</span>User menu <span class="opt">WHERE THERE IS AN ACCOUNT</span></div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="pin">8</span>Back to top <span class="req">REQUIRED</span></div>
+      </div>
+    </div>
+    <div style="border:1px solid rgba(251,44,54,0.3);background:rgba(251,44,54,0.05);border-radius:12px;padding:10px 12px">
+      <div class="eyebrow" style="color:#c10007;margin-bottom:5px">TWO THINGS THE HEADER IS NOT</div>
+      <div style="font-size:11px;color:#404040;line-height:1.45">A second always-visible nav: the rail is the nav and the palette is the mobile one. And a surface's own controls -- a switcher, a pending count -- which belong to the surface that owns them, not to every page that renders under it.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

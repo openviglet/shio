@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    a { color: #1447e6; text-decoration: none; }
+    a:hover { color: #193cb8; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .surface { border: 1px solid #ededed; border-radius: 12px; padding: 12px; background: #ffffff; }
+    .slabel { font-size: 10px; color: #737373; margin-bottom: 9px; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1080px;height:640px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">What <span class="mono" style="font-size:18px">--primary</span> reaches</div>
+      <div style="font-size:12.5px;color:#737373">Four surfaces, and the accent tokens reach none of them.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:14px 24px 0">
+
+    <!-- not claimed -->
+    <div style="border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:14px;display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;border:1px solid #e5e5e5;background:#fafafa;color:#525252;font-size:11px;font-weight:600"><span style="width:5px;height:5px;border-radius:999px;background:#a1a1a1"></span>not claimed</span>
+        <span class="mono" style="font-size:10.5px;color:#737373">the preset's neutral</span>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">the rail's active item</div>
+        <div style="display:flex;gap:6px">
+          <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;border:1px solid rgba(23,23,23,0.4);background:rgba(23,23,23,0.09);color:#171717"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect></svg></div>
+          <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;color:#737373"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"></path></svg></div>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">a tile, hovered</div>
+        <div style="height:52px;border-radius:24px;background:rgba(255,255,255,0.72);border:1px solid rgba(229,229,229,0.7);box-shadow:0 18px 40px -18px rgba(23,23,23,0.4),0 4px 12px -4px rgba(0,0,0,0.08);transform:translateY(-3px)"></div>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">a field being edited in place</div>
+        <div style="height:32px;border-radius:10px;border:1px solid rgba(23,23,23,0.6);background:#ffffff"></div>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">the default Button</div>
+        <div style="display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:10px;background:#171717;color:#fafafa;font-size:13px;font-weight:500">Save changes</div>
+        <div class="mono" style="font-size:10px;color:#737373;margin-top:7px">white on #171717 -- 17.4:1</div>
+      </div>
+
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:#404040;line-height:1.45">Nothing is broken and nothing says the product's name. This is what a console looks like when it keyed the accent and stopped.</div>
+    </div>
+
+    <!-- claimed -->
+    <div style="border-radius:14px;background:#ffffff;border:1px solid rgba(20,71,230,0.35);padding:14px;display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(20,71,230,0.4);background:rgba(20,71,230,0.08);color:#1447e6;font-size:11px;font-weight:600"><span style="width:5px;height:5px;border-radius:999px;background:#1447e6"></span>claimed</span>
+        <span class="mono" style="font-size:10.5px;color:#737373">the same four surfaces</span>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">the rail's active item</div>
+        <div style="display:flex;gap:6px">
+          <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;border:1px solid rgba(20,71,230,0.4);background:rgba(20,71,230,0.15);color:#1447e6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect></svg></div>
+          <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;color:#737373"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"></path></svg></div>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">a tile, hovered</div>
+        <div style="height:52px;border-radius:24px;background:rgba(255,255,255,0.72);border:1px solid rgba(229,229,229,0.7);box-shadow:0 18px 40px -18px rgba(20,71,230,0.4),0 4px 12px -4px rgba(0,0,0,0.08);transform:translateY(-3px)"></div>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">a field being edited in place</div>
+        <div style="height:32px;border-radius:10px;border:1px solid rgba(20,71,230,0.6);background:#ffffff"></div>
+      </div>
+
+      <div class="surface">
+        <div class="slabel">the default Button</div>
+        <div style="display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:10px;background:#1447e6;color:#ffffff;font-size:13px;font-weight:500">Save changes</div>
+        <div class="mono" style="font-size:10px;color:#737373;margin-top:7px">white on #1447e6 -- 6.8:1, and 6.8:1 on dark too</div>
+      </div>
+
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:#404040;line-height:1.45">The same layer, the same components, one token claimed. Nothing here was forked to get it.</div>
+    </div>
+  </div>
+
+  <div style="margin:14px 24px 18px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:12px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:0 0 auto">
+      <div class="eyebrow" style="color:#737373;margin-bottom:6px">HOW</div>
+      <div class="mono" style="font-size:10.5px;line-height:1.7;color:#404040;background:#fafafa;border:1px solid #f0f0f0;border-radius:10px;padding:9px 11px">:root {
+  --vg-primary-base: …;
+  --vg-primary-base-dark: …;
+  --vg-primary-foreground-base: …;
+  --vg-primary-foreground-base-dark: …;
+}</div>
+    </div>
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#c10007;margin-bottom:4px">NOT BY SETTING --VG-PRIMARY</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5">A consumer stylesheet imports the preset and then declares its own <span class="mono" style="font-size:11px">:root</span>, which lands after the dark block at the same specificity and in no layer. One value set there wins on <em>both</em> grounds, and the dark ground silently takes the light value. The inputs are read per ground, so a product never writes a dark block -- the same shape the accent uses for <span class="mono" style="font-size:11px">-text-dark</span>.</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5;margin-top:6px">The fill carries text, so keep that pair at 4.5:1 on both grounds. A gradient stop at full chroma usually will not; the value is a deeper step than the chip is drawn with.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

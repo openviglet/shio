@@ -976,30 +976,6 @@ discovery, then the declaration corrected on both sides. It closes by asking whe
 package should be a plugin rather than copied files — a question this repository already
 ships an answer to.
 
-### LX.2 The contract, vendored where it is tripped over (SH941)
-
-page-reference.mjs states its own argument in its header, and it is the one worth
-keeping: the catalogue answers whether a component exists, but not whether a page reads
-as the same product, and that answer lives in two documents and nine artboards which no
-node_modules read will surface. A contract an author has to browse another repository to
-find is one they read after the fifth screen, which is what BENTO-AUTHORING's own
-opening warns against.
-
-So the bin writes those surfaces into the consumer, where an agent session and a person
-both trip over them, in two disciplines worth adopting as written rather than
-reinventing. Copy is rewritten on every run and drift is a finding, because a vendored
-authority that has drifted is read with the same trust as one that has not. Declaration
-is the consumer's own entries re-derived inside a file the adopter also writes in,
-compared as parsed JSON rather than bytes, so indentation is not drift and the check
-survives being left switched on.
-
-roadkeep-gui carries the result: .claude/skills/viglet-ds-pages holding SKILL.md,
-authoring.md and boundary.md, and docs/design holding nine vds-*.dc.html artboards laid
-out by canvas.json, whose vds- pages belong to the package and whose other pages are
-that repository's own and are preserved. Shio has neither directory. This task runs the
-bin and commits what it writes; nothing in those files is hand-authored, because the
-next run rewrites them.
-
 ### LX.3 Drift as a failure, not a discovery (SH942)
 
 A vendored file is read with the trust of the package that wrote it, so the interesting
@@ -1928,6 +1904,30 @@ Add one entry per line, each probing the installed package for the specific expo
 or file the line needs and proving the read reached the package root. The assertion is
 the existing one: every entry's proof holds, and none reports over while its line is
 still open.
+
+### LXIV.13 A gate nobody runs went quiet instead of red (SH1070)
+
+Found by running the gate, not by reading anything: SH941 touched `docs/`, which is what
+the docs gate covers, so it ran for the first time in a long while and came back red on
+two suites at once.
+
+`docs-stack` reports `Spring Boot 4.1.0 at developer-guide.md:44 — declared: 4.1.1`,
+which is SH628's instrument doing what it shipped to do — a version in prose is a claim
+nothing derives — against a published page the pom moved out from under. `docs-coverage`
+reports SH653's summary disagreeing with its own tables: the sentence says 57 clusters,
+56 covered, 50 green; the rows count 54, 54 and 48. Both are real, both live in the
+published-docs checkout rather than here, and neither is a defect in the instrument.
+
+What makes this a task rather than two corrections is the number beside it. `pnpm gates`
+reports the docs gate **135 commits** behind, against 2 for java and 13 for conformance,
+so both drifts sat in front of an instrument built to catch them while nothing ran it.
+It is not among the three `agents.md` names as blocking and not in `red-suites.json`, so
+it went quiet rather than red — and it is the one gate whose subject lives in a sibling
+repository, which a clone may not have at all.
+
+So: correct both drifts, then decide what stops the third. Either the docs gate joins
+the blocking set with its sibling-checkout absence handled explicitly, or its staleness
+is reported somewhere a commit passes.
 
 ## LXV What the content said before (Block AZ)
 

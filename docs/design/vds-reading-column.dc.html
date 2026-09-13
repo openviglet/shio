@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    a { color: #1447e6; text-decoration: none; }
+    a:hover { color: #193cb8; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .bar { border-radius: 999px; background: #ededed; }
+    .page { position: relative; background: #ffffff; border: 1px solid #ededed; border-radius: 10px; height: 116px; overflow: hidden; }
+    .glabel { position: absolute; bottom: 5px; font-size: 9px; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1280px;height:720px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">Who owns the reading column</div>
+      <div style="font-size:12.5px;color:#737373">Three pages of one product, drawn twice. The only difference is where the measure is set.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 24px 0">
+
+    <!-- shell-owned -->
+    <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(0,188,125,0.4);background:rgba(0,188,125,0.1);color:#007a55;font-size:11px;font-weight:600"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>the shell sets it, once</span>
+        <span class="mono" style="font-size:10.5px;color:#525252">main: mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10</span>
+      </div>
+
+      <div style="position:relative;flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:14px;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <!-- one guide, because there is one measure -->
+        <div style="position:absolute;left:46px;top:0;bottom:0;width:1px;background:rgba(20,71,230,0.45)"></div>
+        <div style="position:absolute;right:46px;top:0;bottom:0;width:1px;background:rgba(20,71,230,0.45)"></div>
+
+        <div class="page">
+          <div style="padding:14px 32px"><div class="bar" style="height:9px;width:56%;margin-bottom:8px"></div><div class="bar" style="height:20px;width:70%;background:#e6e6e6;margin-bottom:8px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="height:34px;border-radius:12px;background:#f5f5f5"></div><div style="height:34px;border-radius:12px;background:#f5f5f5"></div></div></div>
+          <div class="glabel mono" style="left:34px;color:#a1a1a1">a list page</div>
+        </div>
+        <div class="page">
+          <div style="padding:14px 32px"><div class="bar" style="height:9px;width:40%;margin-bottom:8px"></div><div class="bar" style="height:20px;width:58%;background:#e6e6e6;margin-bottom:8px"></div><div style="height:34px;border-radius:12px;background:#f5f5f5"></div></div>
+          <div class="glabel mono" style="left:34px;color:#a1a1a1">a detail page</div>
+        </div>
+        <div class="page">
+          <div style="padding:14px 32px"><div class="bar" style="height:9px;width:48%;margin-bottom:8px"></div><div class="bar" style="height:20px;width:64%;background:#e6e6e6;margin-bottom:8px"></div><div style="height:34px;border-radius:12px;background:#f5f5f5"></div></div>
+          <div class="glabel mono" style="left:34px;color:#a1a1a1">a form page</div>
+        </div>
+      </div>
+
+      <div style="font-size:11.5px;color:#404040;line-height:1.45">Every page starts on the same line and ends on the same line. A page that needs a narrower column asks the shell for the variant; it does not set a measure of its own.</div>
+    </div>
+
+    <!-- page-owned -->
+    <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(251,44,54,0.4);background:rgba(251,44,54,0.1);color:#c10007;font-size:11px;font-weight:600"><span style="width:5px;height:5px;border-radius:999px;background:#fb2c36"></span>the shell sets nothing</span>
+        <span class="mono" style="font-size:10.5px;color:#525252">so each page repeats one, and they disagree</span>
+      </div>
+
+      <div style="position:relative;flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:14px;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <div style="position:absolute;left:38px;top:0;bottom:0;width:1px;background:rgba(251,44,54,0.4)"></div>
+        <div style="position:absolute;left:54px;top:0;bottom:0;width:1px;background:rgba(251,44,54,0.4)"></div>
+        <div style="position:absolute;left:70px;top:0;bottom:0;width:1px;background:rgba(251,44,54,0.4)"></div>
+
+        <div class="page">
+          <div style="padding:14px 24px"><div class="bar" style="height:9px;width:56%;margin-bottom:8px"></div><div class="bar" style="height:20px;width:70%;background:#e6e6e6;margin-bottom:8px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="height:34px;border-radius:12px;background:#f5f5f5"></div><div style="height:34px;border-radius:12px;background:#f5f5f5"></div></div></div>
+          <div class="glabel mono" style="left:26px;color:#c10007">px-6, pb-12</div>
+        </div>
+        <div class="page">
+          <div style="padding:20px 40px 8px"><div class="bar" style="height:9px;width:40%;margin-bottom:8px"></div><div class="bar" style="height:20px;width:58%;background:#e6e6e6;margin-bottom:8px"></div><div style="height:30px;border-radius:12px;background:#f5f5f5"></div></div>
+          <div class="glabel mono" style="left:42px;color:#c10007">max-w-4xl, px-6</div>
+        </div>
+        <div class="page">
+          <div style="padding:10px 56px 8px"><div class="bar" style="height:9px;width:48%;margin-bottom:8px"></div><div class="bar" style="height:20px;width:64%;background:#e6e6e6;margin-bottom:8px"></div><div style="height:34px;border-radius:12px;background:#f5f5f5"></div></div>
+          <div class="glabel mono" style="left:58px;color:#c10007">px-8, py-4</div>
+        </div>
+      </div>
+
+      <div style="font-size:11.5px;color:#404040;line-height:1.45">Nothing here is wrong on its own screen. The defect only exists between screens, which is why review never catches it: nobody opens two pages side by side.</div>
+    </div>
+  </div>
+
+  <div style="margin:14px 24px 18px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">THE RULE</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5">The shell's <span class="mono" style="font-size:11px">main</span> owns the max width, the gutters and the vertical rhythm. A page sets none of the three. This is the cheapest of the four decisions to get right and the most expensive to retrofit, because the fix is a class removed from every page rather than one added to the shell.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:330px">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">THE ONE EXCEPTION</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5">A narrower column for a single-question form is a variant the shell offers by name, so it is set in one place and the same everywhere it is asked for.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

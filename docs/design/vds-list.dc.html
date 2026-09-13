@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    a { color: #1447e6; text-decoration: none; }
+    a:hover { color: #193cb8; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; height: 19px; padding: 0 7px; border-radius: 999px; border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #007a55; font-size: 10px; font-weight: 600; }
+    .row { display: grid; grid-template-columns: 1fr 92px 74px 60px; gap: 12px; align-items: center; padding: 7px 14px; border-bottom: 1px solid #f4f4f4; font-size: 11.5px; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1280px;height:720px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">A list screen, and when it is not tiles</div>
+      <div style="font-size:12.5px;color:#737373">One <span class="mono" style="font-size:12px">BentoListPage</span> call with a <span class="mono" style="font-size:12px">renderTile</span>. The same entities, twice.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:14px 24px 0">
+
+    <!-- tiles -->
+    <div style="display:flex;flex-direction:column;gap:9px;min-height:0">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(20,71,230,0.4);background:rgba(20,71,230,0.08);color:#1447e6;font-size:11px;font-weight:600">arrive to pick one</span>
+        <span class="mono" style="font-size:10.5px;color:#737373">BentoEntityTile</span>
+      </div>
+
+      <div style="flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden">
+        <!-- hero -->
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+          <div class="chip" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect></svg></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10px;color:#737373;letter-spacing:0.05em;font-weight:600">EYEBROW</div>
+            <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Collection name</div>
+            <div style="font-size:11.5px;color:#737373;margin-top:2px">One sentence of subtitle, which the shell does not own.</div>
+          </div>
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">New</div>
+        </div>
+
+        <!-- mosaic: spans in multiples of two -->
+        <div style="display:grid;grid-template-columns:repeat(6, minmax(0, 1fr));gap:11px">
+          <div class="glass" style="grid-column:span 4;border-radius:24px;padding:13px;display:flex;flex-direction:column;gap:8px;height:118px">
+            <div class="chip"></div>
+            <div style="font-size:12.5px;font-weight:600">Entity name</div>
+            <div style="font-size:10.5px;color:#737373;line-height:1.35">Description, two lines at most, from the entity itself.</div>
+            <div style="flex:1"></div>
+            <div><span class="pill"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>Status</span></div>
+          </div>
+          <div class="glass" style="grid-column:span 2;border-radius:24px;padding:13px;display:flex;flex-direction:column;gap:7px;height:118px">
+            <div class="chip"></div>
+            <div style="font-size:12.5px;font-weight:600">Entity name</div>
+            <div style="flex:1"></div>
+            <div style="font-size:10px;color:#737373">Meta</div>
+          </div>
+          <div class="glass" style="grid-column:span 2;border-radius:24px;padding:13px;display:flex;flex-direction:column;gap:7px;height:104px">
+            <div class="chip" style="width:28px;height:28px;border-radius:9px"></div>
+            <div style="font-size:12px;font-weight:600">Entity name</div>
+            <div style="flex:1"></div>
+            <div style="font-size:10px;color:#737373">Meta</div>
+          </div>
+          <div class="glass" style="grid-column:span 2;border-radius:24px;padding:13px;display:flex;flex-direction:column;gap:7px;height:104px">
+            <div class="chip" style="width:28px;height:28px;border-radius:9px"></div>
+            <div style="font-size:12px;font-weight:600">Entity name</div>
+            <div style="flex:1"></div>
+            <div style="font-size:10px;color:#737373">Meta</div>
+          </div>
+          <div style="grid-column:span 2;border-radius:24px;height:104px;border:1px dashed #d4d4d4;display:flex;align-items:center;justify-content:center;color:#a1a1a1;font-size:11.5px">New</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#404040;line-height:1.45">Spans in multiples of two, so the mosaic reflows without a gap at every breakpoint. The dashed tile is the one affordance the grid adds.</div>
+    </div>
+
+    <!-- rows -->
+    <div style="display:flex;flex-direction:column;gap:9px;min-height:0">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(254,154,0,0.45);background:rgba(254,154,0,0.1);color:#973c00;font-size:11px;font-weight:600">arrive to compare many</span>
+        <span class="mono" style="font-size:10.5px;color:#737373">a table inside BentoPanel, contentClassName p-0</span>
+      </div>
+
+      <div style="flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+          <div class="chip" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></svg></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10px;color:#737373;letter-spacing:0.05em;font-weight:600">EYEBROW</div>
+            <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Collection name</div>
+            <div style="font-size:11.5px;color:#737373;margin-top:2px">The same hero. Only what sits under it changed.</div>
+          </div>
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">New</div>
+        </div>
+
+        <div class="glass" style="border-radius:24px;overflow:hidden">
+          <div class="row" style="background:rgba(245,245,245,0.6);font-size:9.5px;font-weight:600;letter-spacing:0.06em;color:#737373;border-bottom:1px solid #ededed">
+            <div>ENTITY</div><div>META</div><div>STATUS</div><div></div>
+          </div>
+          <div class="row"><div>Entity name</div><div style="color:#737373">Meta</div><div><span class="pill"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>On</span></div><div style="color:#a1a1a1">…</div></div>
+          <div class="row"><div>Entity name</div><div style="color:#737373">Meta</div><div><span class="pill"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>On</span></div><div style="color:#a1a1a1">…</div></div>
+          <div class="row"><div>Entity name</div><div style="color:#737373">Meta</div><div><span class="pill" style="border-color:rgba(254,154,0,0.4);background:rgba(254,154,0,0.1);color:#973c00"><span style="width:5px;height:5px;border-radius:999px;background:#fe9a00"></span>Warn</span></div><div style="color:#a1a1a1">…</div></div>
+          <div class="row"><div>Entity name</div><div style="color:#737373">Meta</div><div><span class="pill"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>On</span></div><div style="color:#a1a1a1">…</div></div>
+          <div class="row"><div>Entity name</div><div style="color:#737373">Meta</div><div><span class="pill"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>On</span></div><div style="color:#a1a1a1">…</div></div>
+          <div class="row"><div>Entity name</div><div style="color:#737373">Meta</div><div><span class="pill"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>On</span></div><div style="color:#a1a1a1">…</div></div>
+          <div class="row" style="border-bottom:none"><div>Entity name</div><div style="color:#737373">Meta</div><div><span class="pill"><span style="width:5px;height:5px;border-radius:999px;background:#00bc7d"></span>On</span></div><div style="color:#a1a1a1">…</div></div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#404040;line-height:1.45">Still the layer: the hero is the hero, the frosted surface is the panel, the pills are the same intents. Density did not mean leaving.</div>
+    </div>
+  </div>
+
+  <div style="margin:14px 24px 18px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">THE DISCRIMINATOR</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5">Does the reader arrive to <strong>pick one</strong>, or to <strong>compare many</strong>? Picking is tiles: the chip carries identity, the span carries weight, and eight of them fill a screen. Comparing is rows: the eye runs down a column, and a tile that has to be scanned against six others is a tile the reader is fighting.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:340px">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHY IT IS WORTH SAYING</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5">Without it, density reads as a reason to drop out of the layer and hand-roll a card and a table -- which is how one product ends up with two eras of chrome on one screen.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,117 @@
+{
+  "pages": [
+    {
+      "id": "vds-shell",
+      "name": "The shell"
+    },
+    {
+      "id": "vds-shapes",
+      "name": "The shapes"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "vds-page-anatomy.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1400,
+      "h": 980,
+      "title": "The page's regions",
+      "page": "vds-shell"
+    },
+    {
+      "file": "vds-shell.dc.html",
+      "x": 1520,
+      "y": 0,
+      "w": 1280,
+      "h": 760,
+      "title": "The shell",
+      "page": "vds-shell"
+    },
+    {
+      "file": "vds-reading-column.dc.html",
+      "x": 2920,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "title": "Who owns the reading column",
+      "page": "vds-shell"
+    },
+    {
+      "file": "vds-primary.dc.html",
+      "x": 4320,
+      "y": 0,
+      "w": 1080,
+      "h": 640,
+      "title": "What --primary reaches",
+      "page": "vds-shell"
+    },
+    {
+      "file": "vds-list.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "title": "A list screen",
+      "page": "vds-shapes"
+    },
+    {
+      "file": "vds-detail.dc.html",
+      "x": 1400,
+      "y": 0,
+      "w": 1280,
+      "h": 760,
+      "title": "A detail screen",
+      "page": "vds-shapes"
+    },
+    {
+      "file": "vds-form-hero.dc.html",
+      "x": 2800,
+      "y": 0,
+      "w": 1080,
+      "h": 680,
+      "title": "A form with its own hero",
+      "page": "vds-shapes"
+    },
+    {
+      "file": "vds-panel.dc.html",
+      "x": 0,
+      "y": 900,
+      "w": 1080,
+      "h": 680,
+      "title": "The panel",
+      "page": "vds-shapes"
+    },
+    {
+      "file": "vds-grounds.dc.html",
+      "x": 1200,
+      "y": 900,
+      "w": 1180,
+      "h": 700,
+      "title": "Both grounds",
+      "page": "vds-shapes"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "vds-why-shell",
+      "page": "vds-shell",
+      "x": 0,
+      "y": -190,
+      "w": 700,
+      "text": "Three decisions live on this page, and none of them is a component defect -- which is why no component change closes them.\nThe contract says adopt the shell before the pages. These artboards say what the shell is: what the header carries and in what order, who owns the reading column, and which surfaces --primary reaches.\nThe content is role-labelled on purpose. Routes and entity names belong to a product, never to this package."
+    },
+    {
+      "id": "vds-why-shapes",
+      "page": "vds-shapes",
+      "x": 0,
+      "y": -190,
+      "w": 700,
+      "text": "Almost every screen is one of three shapes plus data: a detail is BentoEntityShell wrapping a form, a list is one BentoListPage call with a renderTile, a form with no entity behind it yet is BentoFormHero as the first child of its form.\nThe panel is the fourth thing and not a shape: a frosted box with no heading, for whatever a hero already named.\nThe last artboard is the same components on both grounds, because one look means one look twice."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "vds-shell"
+  }
+}

@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    a { color: #1447e6; text-decoration: none; }
+    a:hover { color: #193cb8; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .ratio { display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 5px; font-size: 9.5px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .pass { border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #007a55; }
+    .passd { border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #00d492; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1180px;height:700px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">Both grounds, and nothing told by colour alone</div>
+      <div style="font-size:12.5px;color:#696969">The same components twice. Every state carries a dot or a word as well as a hue.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:14px 24px 0">
+
+    <!-- LIGHT -->
+    <div style="border:1px solid #e5e5e5;border-radius:14px;background:#ffffff;padding:15px;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="eyebrow" style="color:#696969">LIGHT</span>
+        <span class="mono" style="font-size:10px;color:#a1a1a1">--vg-background oklch(1 0 0)</span>
+      </div>
+
+      <div style="border:1px solid #e5e5e5;border-radius:16px;padding:12px">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">
+          <div style="width:26px;height:26px;border-radius:9px;background-image:linear-gradient(to bottom right,#155dfc,#4f39f6)"></div>
+          <div style="font-size:13px;font-weight:600;color:#0a0a0a">Entity name</div>
+          <div style="flex:1"></div>
+          <span class="ratio pass">19.8:1</span>
+        </div>
+        <div style="font-size:11.5px;color:#696969;line-height:1.45">A line of muted description, which is the pair a panel is most likely to reach for.</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:7px"><span class="ratio pass">5.51:1</span><span style="font-size:10px;color:#696969">muted on the ground</span></div>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="color:#696969;margin-bottom:7px">STATUS -- A DOT AND A WORD</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(0,188,125,0.4);background:rgba(0,188,125,0.1);color:#007a55;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:999px;background:#00bc7d"></span>On</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(254,154,0,0.4);background:rgba(254,154,0,0.1);color:#973c00;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:999px;background:#fe9a00"></span>Warn</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(251,44,54,0.4);background:rgba(251,44,54,0.1);color:#c10007;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:999px;background:#fb2c36"></span>Error</span>
+        </div>
+        <div style="font-size:10px;color:#696969;margin-top:6px">Tinted surfaces take the darker text token here, which is the whole reason there are two.</div>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="color:#696969;margin-bottom:7px">THE ACCENT, AND THE FOCUS RING</div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:10px;background:#1447e6;color:#ffffff;font-size:12.5px;font-weight:500">Primary</div>
+          <div style="display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:10px;border:1px solid #e5e5e5;color:#0a0a0a;font-size:12.5px;font-weight:500;box-shadow:0 0 0 3px rgba(20,71,230,0.35)">Focused</div>
+          <span class="ratio pass">6.83:1</span>
+        </div>
+      </div>
+
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:#404040;line-height:1.45">Contrast holds at 4.5:1 for text and 3:1 for a focus indicator. The catalogue's stories run under axe on every push, so a violation is a failing build.</div>
+    </div>
+
+    <!-- DARK -->
+    <div style="border:1px solid rgba(255,255,255,0.14);border-radius:14px;background:#171717;color:#dedede;padding:15px;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="eyebrow" style="color:#ababab">DARK</span>
+        <span class="mono" style="font-size:10px;color:#8a8a8a">--vg-background oklch(0.205 0 0)</span>
+      </div>
+
+      <div style="border:1px solid rgba(255,255,255,0.14);border-radius:16px;padding:12px;background:#262626">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">
+          <div style="width:26px;height:26px;border-radius:9px;background-image:linear-gradient(to bottom right,#155dfc,#4f39f6)"></div>
+          <div style="font-size:13px;font-weight:600;color:#dedede">Entity name</div>
+          <div style="flex:1"></div>
+          <span class="ratio passd">13.3:1</span>
+        </div>
+        <div style="font-size:11.5px;color:#ababab;line-height:1.45">A line of muted description, which is the pair a panel is most likely to reach for.</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:7px"><span class="ratio passd">6.79:1</span><span style="font-size:10px;color:#8a8a8a">muted on a card</span></div>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="color:#ababab;margin-bottom:7px">STATUS -- A DOT AND A WORD</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(0,188,125,0.4);background:rgba(0,188,125,0.1);color:#00d492;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:999px;background:#00bc7d"></span>On</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(254,154,0,0.4);background:rgba(254,154,0,0.1);color:#fdc700;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:999px;background:#fe9a00"></span>Warn</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(251,44,54,0.4);background:rgba(251,44,54,0.1);color:#ff6467;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:999px;background:#fb2c36"></span>Error</span>
+        </div>
+        <div style="font-size:10px;color:#8a8a8a;margin-top:6px">Same marks, lighter text. The mark is the token that does not move between grounds.</div>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="color:#ababab;margin-bottom:7px">THE ACCENT, AND THE FOCUS RING</div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:10px;background:#51a2ff;color:#171717;font-size:12.5px;font-weight:500">Primary</div>
+          <div style="display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:10px;border:1px solid rgba(255,255,255,0.34);color:#dedede;font-size:12.5px;font-weight:500;box-shadow:0 0 0 3px rgba(81,162,255,0.4)">Focused</div>
+          <span class="ratio passd">6.79:1</span>
+        </div>
+      </div>
+
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:#ababab;line-height:1.45">The dark surfaces sit a step above black on purpose: near-black under near-white overshoots AAA and the glyphs bloom at the edges.</div>
+    </div>
+  </div>
+
+  <div style="margin:14px 24px 18px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#696969;margin-bottom:4px">THE ACCENT IS THE SAME RATIO ON BOTH GROUNDS</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5">6.83 and 6.79. That is not luck -- it is what the two readable inputs are for. A product that states one accent value and lets the other ground inherit gets one of these numbers and not the other.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:340px">
+      <div class="eyebrow" style="color:#696969;margin-bottom:4px">A STATE IS NEVER ONLY A HUE</div>
+      <div style="font-size:12px;color:#404040;line-height:1.5">Every pill above carries a dot and a word. A reader who cannot separate the three hues still reads three states.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -2136,6 +2136,27 @@ shipped with the collapse abandoned, so its entry left the list instead of waiti
 nobody will cut. SH943 (VDS129's consumer-entries bin) and SH944 (the package's plugin manifest)
 entered it, each with a probe and a proof, because they are now the lines waiting on a release.
 
+### Two vendored directories, and nothing in them is hand-authored (SH941)
+
+`.claude/skills/viglet-ds-pages/` and `docs/design/vds-*` are written by
+`viglet-ds-page-reference`, a bin the design system ships. Run it from the repository root; it
+writes thirteen surfaces — `SKILL.md`, `authoring.md`, `boundary.md`, nine `vds-*.dc.html`
+artboards and `canvas.json` — and `--check` reports drift without writing. **Do not edit any of
+them here.** The next run rewrites them, so a correction belongs in the package, where every
+consumer gets it.
+
+The catalogue answers whether a component exists; it cannot answer whether a page reads as the same
+product, and that answer was in a repository nobody browses. Vendoring puts it where an agent
+session and a person both trip over it — the skill loads before the first screen, an artboard opens
+from the file tree.
+
+Twelve of the thirteen are copies. `canvas.json` is a **merge**: the `vds-` pages, artboards and
+annotations are re-derived and this repository's own are preserved, compared as parsed JSON so a
+formatter is not drift. That merge has a failure a copy does not — the declaration and the files can
+disagree, and a canvas naming an absent artboard opens a blank frame rather than reporting anything
+— which is what `cli/test/page-reference.test.mjs` compares in both directions. It asserts presence
+and coherence only; asking the *package* whether the copies are current is SH942's gate.
+
 ### The admin hub nobody had migrated
 
 `ADMIN_ROOT` is the `urlBase` of eleven admin surfaces, so it is where their hero back-links point —
