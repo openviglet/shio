@@ -181,6 +181,8 @@
   "content.deletedShort": "Deleted",
   "content.itemsDeleted_one": "{{count}} item deleted",
   "content.itemsDeleted_other": "{{count}} items deleted",
+  "content.itemsRefused_one": "{{count}} item could not be deleted — {{reasons}}",
+  "content.itemsRefused_other": "{{count}} items could not be deleted — {{reasons}}",
   "content.itemsSelected_one": "{{count}} item selected",
   "content.itemsSelected_other": "{{count}} items selected",
   "content.folderCount_one": "{{count}} folder",

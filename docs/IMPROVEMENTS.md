@@ -1099,25 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.4 A count that is the number acted on (SH953)
-
-In object.children.page.tsx the batch delete loops the selection, awaits deleteObject
-for each id with .catch(() => {}), and then shows content.itemsDeleted with the
-selection's size. The select-all cap is a thousand, so a thousand sequential round trips
-that all fail still report a thousand deleted. There is no progress, no cancel, and the
-refresh returns to page zero. The folder write service has real refusals, restore
-conflicts and 409s, and none of them can reach the curator through this loop.
-
-The content API doc already states the rule this breaks: the number in the dialog is the
-number acted on. The honest fix does not wait for the bulk endpoint Block BD adds.
-Collect each outcome, count successes, and report refusals by problem title with their
-detail, keeping the curator on the page they were on. When BD's bulk verb lands, the
-loop becomes one call and this reporting stays.
-
-The assertion carries the id: a batch in which one delete is refused reports the
-successful count, names the refused item, and never shows the selection size as the
-number deleted.
-
 ### LXI.5 A button that has lied since the cache it cleared was removed (SH954)
 
 ShObjectAPI.clearCache is a GetMapping on {id}/clear-cache returning

@@ -24,6 +24,7 @@ import type { ShPostType } from "@/models/post-type/post-type"
 import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
 import { siteDestination } from "@/lib/site-front-end"
+import { deleteEach, refusalSummary, type DeleteTarget } from "@/lib/batch-delete"
 
 const postTypeService = new ShPostTypeService()
 const siteService = new ShSiteService()
@@ -415,7 +416,10 @@ export default function ObjectChildrenPage() {
    * back to page 1 is the behaviour a curator can actually predict.
    */
   const refreshList = async () => {
-    const res = await fetchPage(0)
+    // SH953 — the page the curator was on, not page zero. A batch delete on page 14 used to
+    // answer by scrolling them back to the top of the tree, which loses the place they were
+    // working in and hides whichever rows were refused.
+    const res = await fetchPage(listData.page ?? 0)
     setListData(res.data)
   }
 
@@ -934,18 +938,36 @@ export default function ObjectChildrenPage() {
         open={deleteDialogOpen}
         setOpen={setDeleteDialogOpen}
         onDelete={async () => {
-          if (deleteTarget) {
-            await deleteObject(deleteTarget.id, deleteTarget.objectType).catch(() => {})
-            toast.success(t("content.deletedShort"))
-          } else {
-            for (const id of selectedItems) {
+          // SH953 — every outcome is collected, and the number announced is the number that
+          // actually went. This used to `.catch(() => {})` each delete and then report the
+          // SELECTION's size, so a thousand refusals announced a thousand deletions.
+          const targets: DeleteTarget[] = deleteTarget
+            ? [{ id: deleteTarget.id, name: deleteTarget.name, objectType: deleteTarget.objectType }]
+            : [...selectedItems].map(id => {
               // An id with no loaded row came from SH237's select-everything, which only ever
               // collects posts — so the POST default is the right one rather than a guess.
               const item = combinedItems.find(i => i.id === id)
-              await deleteObject(id, item?.objectType || "POST").catch(() => {})
-            }
-            toast.success(t("content.itemsDeleted", { count: selectedItems.size }))
-            setSelectedItems(new Set())
+              return { id, name: item?.name, objectType: item?.objectType || "POST" }
+            })
+
+          const outcome = await deleteEach(targets, target => deleteObject(target.id, target.objectType))
+
+          if (outcome.refusals.length > 0) {
+            toast.error(t("content.itemsRefused", {
+              count: outcome.refusals.length,
+              reasons: refusalSummary(outcome.refusals),
+            }))
+          }
+          if (outcome.deleted > 0) {
+            toast.success(deleteTarget
+              ? t("content.deletedShort")
+              : t("content.itemsDeleted", { count: outcome.deleted }))
+          }
+          // Only what went is deselected: a row that refused stays selected, so the curator can
+          // read the reason and try again without finding it again.
+          if (!deleteTarget) {
+            const refused = new Set(outcome.refusals.map(refusal => refusal.id))
+            setSelectedItems(refused)
           }
           setDeleteDialogOpen(false)
           setDeleteTarget(null)

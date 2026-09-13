@@ -181,6 +181,8 @@
   "content.deletedShort": "Excluído",
   "content.itemsDeleted_one": "{{count}} item excluído",
   "content.itemsDeleted_other": "{{count}} itens excluídos",
+  "content.itemsRefused_one": "{{count}} item não pôde ser excluído — {{reasons}}",
+  "content.itemsRefused_other": "{{count}} itens não puderam ser excluídos — {{reasons}}",
   "content.itemsSelected_one": "{{count}} item selecionado",
   "content.itemsSelected_other": "{{count}} itens selecionados",
   "content.folderCount_one": "{{count}} pasta",

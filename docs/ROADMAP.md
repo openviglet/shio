@@ -19,7 +19,6 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- 📋 **SH953** (deps: —) **bulk delete swallows every failure and reports the whole selection as deleted** — Each DELETE's rejection is discarded by an empty catch and the toast counts the selection, so a thousand refused deletes still announce a thousand deleted. → §LXI.4
 - 📋 **SH954** (deps: —) **the Clear cache row action calls an endpoint whose entire body returns 200 and does nothing** — The page-cache subsystem it drove is gone and the no-op stayed because the console expects a 200, so the button has reported success for a cache that does not exist. → §LXI.5
 - 📋 **SH955** (deps: —) **twenty-four console save paths discard the server's problem document and show the word Error** — The server writes fix, allowed, didYouMean and at on every 4xx and the console has no problem-document reader, so a curator sees Error where an agent sees the fix. → §LXI.6
 - 📋 **SH956** (deps: —) **the rich-text field stores whatever a paste or an agent write contains, and the renderer emits it unescaped** — The widget is execCommand over contentEditable with no paste handler or sanitizer, and field HTML renders raw by design, so any markup reaches the published page. → §LXI.7

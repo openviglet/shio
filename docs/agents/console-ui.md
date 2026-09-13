@@ -2525,3 +2525,31 @@ The pending-review badge has no renderer under a rail that carries areas (**SH93
 tenant switcher went with the sidebar (**SH934**). Both now carry a `:::caution` telling a reader
 what to do instead — check the queue on a schedule, switch tenants through the API — because a page
 that simply stopped mentioning them would read as though they had never existed.
+
+## A count is the number acted on (SH953)
+
+`object.children.page.tsx` looped the selection, awaited each `DELETE` with `.catch(() => {})`, and
+then announced `content.itemsDeleted` with `selectedItems.size`. The select-all cap is a thousand
+(SH237), so **a thousand refused deletes reported a thousand deleted** — and the folder write
+service has real refusals, restore conflicts and 409s, none of which could reach the curator. The
+single-row path had the same shape one line up: a refused delete still toasted "Deleted".
+
+`src/lib/batch-delete.ts` holds the part worth asserting. `deleteEach` takes the call as an
+argument and returns `{ deleted, attempted, refusals }`; `problemOf` reads the server's RFC 9457
+document (`title` + `detail`, falling back to Spring's `message`, then to the rejection's own
+message, so a network failure still says something true); `refusalSummary` caps the list and says
+how many it is not showing, because a truncated list that does not admit it reads as the whole of
+what went wrong.
+
+**It is a module rather than a page test on purpose.** The page is a dialog, a toast and a refresh;
+a test that renders all three to find out whether a number is right is a test nobody keeps. What
+was wrong was the arithmetic and the swallowing, and both live in the module. Four lines of the
+page's own half — the toast counting `outcome.deleted`, and the refresh — are asserted by reading
+the file, which is the only place that substitution can be caught.
+
+Two smaller decisions. A refused row **stays selected**, so the curator can read the reason and
+retry without hunting for it again. And `refreshList` re-fetches `listData.page` rather than page
+zero: a batch delete on page 14 used to answer by scrolling back to the top of the tree, which is
+exactly where the refused rows are not.
+
+When Block BD's bulk endpoint lands the loop becomes one call, and this reporting is what stays.
