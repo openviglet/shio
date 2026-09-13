@@ -122,13 +122,23 @@ public class ShWriteTool implements ShMcpTool {
             throw new MissingOpsException();
         }
         List<ShAgentBatch.Op> parsed = new ArrayList<>();
+        // SH952 — the ELEVEN-field form. This used to call the six-field constructor, whose own
+        // javadoc says it is for the ops that never schedule, so `when` arrived as null on the one
+        // surface that advertised it: a publish dated for next Monday went live now and reported
+        // success. `expect`, `locale`, `translationOf` and `url` were dropped the same way — the
+        // REST batch deserialises all eleven, which is why nothing looked wrong from the console.
         ops.forEach(op -> parsed.add(new ShAgentBatch.Op(
                 ShMcpArgs.string(op, "op"),
                 ShMcpArgs.string(op, "address"),
                 ShMcpArgs.string(op, "type"),
                 ShMcpArgs.string(op, "folder"),
                 ShMcpArgs.string(op, "to"),
-                ShMcpArgs.node(op, "data"))));
+                ShMcpArgs.node(op, "data"),
+                ShMcpArgs.string(op, "when"),
+                ShMcpArgs.string(op, "locale"),
+                ShMcpArgs.string(op, "translationOf"),
+                ShMcpArgs.string(op, "url"),
+                ShMcpArgs.string(op, "expect"))));
 
         return ShAgentReadTerse.changes(shAgentProofService.attach(
                 shAgentBatchService.run(

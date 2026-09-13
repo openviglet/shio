@@ -2630,3 +2630,40 @@ is `raceUntilContested`. Two consequences worth keeping:
 The general shape, which is the reusable part: **a test whose assertion has a precondition it does
 not control must separate the two.** Asserting anyway is how a condition that never arose reads as a
 guarantee that broke.
+
+## A tool that advertises an argument reads it (SH952)
+
+`shio_write`'s schema declared `when` — "post.publish: ISO-8601 instant to schedule for" — and its
+`call` built every op through `ShAgentBatch.Op`'s **six-field** constructor, the form whose own
+javadoc says it is for the ops that never schedule. So five fields arrived as `null`. Over MCP,
+which is how most agents write, **a publish dated for next Monday went live now and answered
+success** — a wrong answer rather than a refusal, which is the worse of the two. `expect` (SH721's
+concurrency guard), `locale`, `translationOf` (SH348) and `url` (SH467) were lost the same way. The
+REST batch deserialises all eleven, which is why nothing looked wrong from the console, and the
+golden `tools/list` only ever recorded the schema — so the one artefact naming `when` was the one
+that could not tell whether anybody read it.
+
+**`ShMcpDeclaredArgumentsTest` is the instrument, and it landed first (SH338).** An argument
+silently dropped is invisible from both ends: the caller sees success, the schema still advertises
+it, and no test passes the argument *because* nobody suspected it was ignored. The declared side
+comes from `tools/list` itself — the artefact a model reads, so the only authoritative list — and
+the read side from the tool's own source.
+
+Two things it got wrong first, both worth keeping:
+
+- **A mention is not a read.** The first version searched the source for the name as a literal and
+  **passed on the defect it was written for**: the schema declaring `when` is in the same class, so
+  it was comparing a declaration against itself. The pattern is the *accessor*.
+- **There are two accessors.** Matching only `ShMcpArgs.<kind>(node, "name")` reported
+  `shio_apply.publish` as a false positive — it is read by `post.get("publish")`, in a helper that
+  must tell absent from `false` because omitting the field means "leave alone". A reader knowing one
+  form would have cost somebody a rewrite of correct code.
+
+`EXEMPT` is empty and should stay that way: an entry is a tool whose schema promises something its
+handler never looks at.
+
+**Read but not declared, and the budget is why.** The tool now passes all eleven fields; `locale`,
+`translationOf`, `url` and `expect` are read and **not** in the schema. Declaring them costs ~15-25
+tokens each against roughly 6 tokens of headroom on `mcp.tools.list.total`, so it is a budgeted
+change rather than a free one — tracked as its own line. Accepting them undeclared is strictly
+better than dropping them, and the REST batch documents all eleven.

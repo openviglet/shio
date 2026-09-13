@@ -1099,27 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.3 A tool that accepts an argument and ignores it (SH952)
-
-ShAgentBatch.Op carries eleven fields: op, address, type, folder, to, data, when,
-locale, translationOf, url and expect. ShAgentBatchService reads when for scheduling and
-expect for the SH721 concurrency guard. ShWriteTool's schema advertises when as the
-ISO-8601 instant for post.publish, and its call method builds every op through the
-constructor whose javadoc reads the six-field form, for the ops that never schedule,
-which passes null for the other five. No test calls shio_write with any of them; the
-golden tools-list only records the schema.
-
-So over MCP, which is how most agents write, a publish meant for next Monday happens
-now, a write meant to be conditional on the state it was planned against is
-unconditional, and a translation is created without its locale. The REST batch
-deserialises all eleven fields, which is why nothing looked wrong from the console.
-
-The instrument lands first and generalises: a conformance test walks every MCP tool's
-declared inputSchema and each op spec in ShAgentOps, and asserts every declared property
-is either read by the handler or refused with a teaching 400. Then ShWriteTool passes
-all eleven fields. The assertion carries the id: shio_write with when schedules, and
-with a stale expect refuses.
-
 ### LXI.4 A count that is the number acted on (SH953)
 
 In object.children.page.tsx the batch delete loops the selection, awaits deleteObject
@@ -1219,6 +1198,32 @@ already does, so the change is to stop building the string by hand.
 It is filed rather than folded into SH950 because it is a different failure with a
 different blast radius, and because SH950's own rule is that one place decides how an
 asset is served: that place now exists, and this is the next thing wrong with it.
+
+### LXI.9 The half SH952 could not afford (SH1073)
+
+SH952 made `shio_write` pass all eleven op fields, which fixed the defect: a scheduled
+publish schedules again. It left the half it could not afford. `locale`,
+`translationOf`, `url` and `expect` are now read and are **not** in the tool's
+`inputSchema`, so an agent whose only surface is MCP cannot discover them — which is P2
+broken in the quiet direction, since a caller who never learns an argument exists never
+reports its absence.
+
+The reason is a number, not a judgement. `mcp.tools.list.total` is 2560 and the surface
+sits at roughly 2554; a declared property costs 15 to 25 tokens, so four is several
+times the headroom. `shio_write` has 26 tokens against its own ceiling of 460, so the
+total binds, not this tool.
+
+Three ways out, to be picked with the measurement in hand rather than by taste. Trim
+elsewhere, which SH342 and SH951 both did and which `agents.md` asks for first — though
+after two rounds the cheap prose is largely gone. Raise the ceiling, legitimate where
+the surface genuinely grew and argued in the commit. Or declare only the two that decide
+whether a write is correct — `expect`, the difference between a conditional write and a
+lost update, and `locale`.
+
+`ShMcpDeclaredArgumentsTest` does not fail on this: it asserts declared implies read,
+and this is read without being declared. The opposite direction has no reader, which is
+worth noticing on its own — it is the direction that hides a capability rather than a
+defect.
 
 ## LXII One chrome: bento, and nothing left that names another (Block AW)
 

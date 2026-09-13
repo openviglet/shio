@@ -19,12 +19,12 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- 📋 **SH952** (deps: —) **shio_write drops when, locale, translationOf, url and expect, so a scheduled publish over MCP goes live at once** — ShWriteTool builds each op with the six-field constructor documented for ops that never schedule, while its own schema advertises when for post.publish. → §LXI.3
 - 📋 **SH953** (deps: —) **bulk delete swallows every failure and reports the whole selection as deleted** — Each DELETE's rejection is discarded by an empty catch and the toast counts the selection, so a thousand refused deletes still announce a thousand deleted. → §LXI.4
 - 📋 **SH954** (deps: —) **the Clear cache row action calls an endpoint whose entire body returns 200 and does nothing** — The page-cache subsystem it drove is gone and the no-op stayed because the console expects a 200, so the button has reported success for a cache that does not exist. → §LXI.5
 - 📋 **SH955** (deps: —) **twenty-four console save paths discard the server's problem document and show the word Error** — The server writes fix, allowed, didYouMean and at on every 4xx and the console has no problem-document reader, so a curator sees Error where an agent sees the fix. → §LXI.6
 - 📋 **SH956** (deps: —) **the rich-text field stores whatever a paste or an agent write contains, and the renderer emits it unescaped** — The widget is execCommand over contentEditable with no paste handler or sanitizer, and field HTML renders raw by design, so any markup reaches the published page. → §LXI.7
 - 📋 **SH1071** (deps: —) **an upload's file name is interpolated into Content-Disposition without escaping** — sanitizeFileName guards the filesystem and leaves quotes and control characters alone, so a name like a".svg produces a header a client parses as something else. → §LXI.8
+- 📋 **SH1073** (deps: —) **shio_write reads four op fields its schema does not declare, so MCP cannot discover them** — locale, translationOf, url and expect now reach the batch, and declaring them costs 15-25 tokens each against about 6 of headroom on mcp.tools.list.total. → §LXI.9
 
 ## Block AW — One chrome: bento, and nothing left that names another
 
@@ -67,7 +67,7 @@
 
 ## Block AZ — What the content said before
 
-- 📋 **SH985** (deps: SH952) **console writes carry no version, so a curator silently overwrites fields an agent just wrote** — The agent surface refuses a stale write with expect and a 409, while the console's PUT and PATCH take no digest and no If-Match, and nothing in the backend uses @Version. → §LXV.1
+- 📋 **SH985** (deps: SH952 ✅) **console writes carry no version, so a curator silently overwrites fields an agent just wrote** — The agent surface refuses a stale write with expect and a 409, while the console's PUT and PATCH take no digest and no If-Match, and nothing in the backend uses @Version. → §LXV.1
 - 📋 **SH986** (deps: —) **a post has only a draft row and a published row, so every earlier version is gone** — versions() returns the two rows of one composite key, publishing copies the draft over the live row, and no table holds a snapshot of anything a visitor once read. → §LXV.2
 - 📋 **SH987** (deps: SH986) **no surface can read a past revision of an address, and no verb restores one** — The state parameter reaches draft and published only, no revisions list exists on REST or MCP, and shio diff compares a replica with its capture rather than two revisions. → §LXV.3
 - 📋 **SH988** (deps: SH987, DS VDS140) **the version dialog compares two whole values and shows nothing at all for a created page** — The review diff is gated on a published twin existing, so a create, the commonest agent output, has no review affordance, and a changed body renders as two walls of text. → §LXV.4
@@ -77,7 +77,7 @@
 
 - 📋 **SH990** (deps: SH986) **state= is honoured on two read paths and absent from every other** — The agent read and the preview renderer each parse it themselves, while render, editable, verify, find and the whole CDA cannot read a draft or a revision at all. → §LXVI.1
 - 📋 **SH991** (deps: —) **nothing lists what is scheduled, so an agent cannot confirm a schedule it set and a curator has no agenda** — The only queries over the schedule columns are the sweep's due-only finders, and neither find nor read exposes a schedule, so the only view is a single post's dialog. → §LXVI.2
-- 📋 **SH992** (deps: SH952) **shio_publish cannot schedule, and post.unpublish accepts a when it never reads** — The publish tool builds an op with no when, and only postPublish calls scheduleInstant, so an embargoed takedown dated for December takes the page down now and reports success. → §LXVI.3
+- 📋 **SH992** (deps: SH952 ✅) **shio_publish cannot schedule, and post.unpublish accepts a when it never reads** — The publish tool builds an op with no when, and only postPublish calls scheduleInstant, so an embargoed takedown dated for December takes the page down now and reports success. → §LXVI.3
 - 📋 **SH993** (deps: SH990, SH986) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — One batch call is atomic and nothing persists a set across calls, so a coordinated launch has no unit to stage, preview, approve, schedule or undo. → §LXVI.4
 - 📋 **SH994** (deps: SH993, SH987) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5
 - 📋 **SH995** (deps: —) **there is no publish permission for a person, so any user who may write may also put content live** — mayPublish exists only on an API token and falls back to true for every console session, so an agent can be denied publishing and a curator cannot. → §LXVI.6
@@ -162,7 +162,7 @@
 
 ## Block BH — One content model, many languages
 
-- 📋 **SH1056** (deps: SH952) **no site can declare its default locale, its enabled locales or a fallback order** — The render service says there is no per-site default in this model, a site's languages are inferred from its content, and the translations menu offers every seeded locale on every post. → §LXXIII.1
+- 📋 **SH1056** (deps: SH952 ✅) **no site can declare its default locale, its enabled locales or a fallback order** — The render service says there is no per-site default in this model, a site's languages are inferred from its content, and the translations menu offers every seeded locale on every post. → §LXXIII.1
 - 📋 **SH1057** (deps: SH1056) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — The segment reaches only the validator and the link prefix, and CDA list, query and search, GraphQL and the TypeScript client take no locale at all. → §LXXIII.2
 - 📋 **SH1058** (deps: SH1056) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — Translate copies the source's data and records only the group id, with no source revision or digest, and the only translation rule asks about absence. → §LXXIII.3
 - 📋 **SH1059** (deps: —) **the content browser discards the locale the server sends, so two languages of one page look identical** — The row type declares locale and the mapper keeps id, title, date, type and status, so a page and its translation render as two indistinguishable rows. → §LXXIII.4
