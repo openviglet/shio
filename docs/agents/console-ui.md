@@ -2155,7 +2155,22 @@ annotations are re-derived and this repository's own are preserved, compared as 
 formatter is not drift. That merge has a failure a copy does not — the declaration and the files can
 disagree, and a canvas naming an absent artboard opens a blank frame rather than reporting anything
 — which is what `cli/test/page-reference.test.mjs` compares in both directions. It asserts presence
-and coherence only; asking the *package* whether the copies are current is SH942's gate.
+and coherence only.
+
+**Whether the copies are still the package's is a second gate, and it lives inside `pnpm test`
+(SH942).** `cli/test/page-reference-drift.test.mjs` spawns the bin's `--check --json` against this
+repository and fails on any surface that is not `unchanged`, on an orphaned `vds-` artboard, and on
+a `vds-version` stamp *newer* than the installed package — where refreshing would be a downgrade and
+the bin refuses to write. Inside the JS gate rather than beside it, because a gate run through
+`scripts/run-gate.mjs` keeps its log and stamps its outcome where the comparators read it, and
+because a test reading a spawned process's own exit status cannot lose it the way a pipeline does.
+
+Two properties of that gate are load-bearing, and changing either quietly defeats it. It is **broken
+on purpose**: it plants each kind of drift the bin can see in a throwaway root and requires the check
+to *name the file*, because SH897's browser check passed with `bento.css` deleted. And `canvas.json`
+is compared as **parsed JSON, never as bytes** — reindenting it must stay green, or the first person
+whose editor reformats it is the person who deletes the gate. Its control is a semantic edit to the
+same file, which must still be caught.
 
 ### The admin hub nobody had migrated
 

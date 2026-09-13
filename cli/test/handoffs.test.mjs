@@ -101,6 +101,14 @@ const CLAIMS = {
       + "runs. Verified: cli/src/index.mjs handles `shio help <command>` itself (SH435), so the "
       + "exempted case is genuinely unreachable by the lint's subject",
   },
+  "cli/test/page-reference.test.mjs -> page-reference-drift.test.mjs": {
+    kind: Kind.HANDS_OFF,
+    why: "SH941's reader asserts the vendored page reference is present and internally coherent and "
+      + "explicitly does NOT ask the package whether it is current, naming the other file as the "
+      + "gate that does. Verified by running it: page-reference-drift.test.mjs spawns the bin's "
+      + "`--check` against this repository and plants drift of each kind it can see — an edited "
+      + "copy, an artboard the package no longer ships — requiring the check to name the file",
+  },
   // SH862 removed `cli/test/known-debt.test.mjs -> floor-kind.test.mjs`, and it is worth saying why
   // rather than leaving a gap: that entry was the reader's own defect written down. Its `SELF`
   // reason said outright that the name came from *the ledger row being read* — a `path:` field on a

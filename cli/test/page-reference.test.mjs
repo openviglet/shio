@@ -15,7 +15,8 @@
  *
  * This asserts that those surfaces are **present and internally coherent**. It does not ask the
  * installed package whether they are current: comparing the two copies means running the bin's
- * `--check`, and that is SH942's gate, not this one. The split matters because the two fail for
+ * `--check`, and that is SH942's gate in `page-reference-drift.test.mjs`, not this one. The split
+ * matters because the two fail for
  * different reasons and want different instructions — a surface deleted here is fixed by re-running
  * the bin, a surface that drifted upstream is fixed by re-running it *and* reading what changed.
  *

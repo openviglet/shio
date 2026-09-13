@@ -976,30 +976,6 @@ discovery, then the declaration corrected on both sides. It closes by asking whe
 package should be a plugin rather than copied files — a question this repository already
 ships an answer to.
 
-### LX.3 Drift as a failure, not a discovery (SH942)
-
-A vendored file is read with the trust of the package that wrote it, so the interesting
-failure is not that it is missing but that it is stale. page-reference.mjs is built for
-this: --check reports what would change and writes nothing, exiting non-zero on drift;
---json gives the machine-readable form; --warn reports and still exits zero, which is
-the shape a repository adopts before it has paid off its debt.
-
-The gate belongs inside the JS gate rather than beside it. This project runs three
-through scripts/run-gate.mjs, and agents.md's rule about never piping a gate into grep
-applies: a pipeline's exit status is its last command's, which is how pnpm test once
-printed fail 2 above EXIT=0. So the check runs within pnpm test, redirected rather than
-filtered.
-
-Two things it must assert beyond an exit code, both learned here. SH897's browser check
-passed with bento.css deleted, so this one is broken on purpose until it fails: plant a
-drifted byte in a vendored file and require the check to name that file. And the
-declaration half is compared as parsed JSON, never as bytes, or reformatting the
-consumer's own file reads as drift and the gate becomes the first thing somebody
-switches off.
-
-SH937's pattern covers the rest: a line waiting on a design-system release gets a probe,
-so the release that ends the wait turns the suite red instead of going unnoticed.
-
 ### LX.4 A declaration the guards trust and the source contradicts (SH943)
 
 consumers.json is the design system's answer to a question it got wrong twice: prose
