@@ -193,6 +193,94 @@ class ShStaticFileAPITest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * SH950 — an uploaded SVG is not a document this origin renders.
+     *
+     * <p>The route probes the content type from the file name and sent
+     * {@code Content-Disposition: inline} for whatever came back, with no
+     * {@code X-Content-Type-Options} and no {@code Content-Security-Policy} anywhere in the
+     * backend. So {@code evil.svg} was served as a scriptable document on the console's own
+     * origin, through an endpoint an agent token may call: stored XSS against the curator's
+     * session, needing no other defect.</p>
+     *
+     * <p>These three live here rather than beside the rest of SH950 in
+     * {@code ShAssetSecurityHeadersTest} because this class already owns an isolated context with
+     * a temp file-source root, and a second {@code @SpringBootTest} would have spent the last slot
+     * SH423's headroom budget had.</p>
+     */
+    @Test
+    void stage02dServeSvgIsNotARenderableDocument() throws Exception {
+        String id = uploadFile("evil.svg", "image/svg+xml",
+                ("<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(document.domain)</script></svg>")
+                        .getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id).principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    var response = result.getResponse();
+                    assertEquals("nosniff",
+                            response.getHeader(ShAssetResponseHeaders.X_CONTENT_TYPE_OPTIONS),
+                            "SH950: without nosniff a browser may still make a document of these bytes");
+                    assertEquals(ShAssetResponseHeaders.ASSET_CSP,
+                            response.getHeader(ShAssetResponseHeaders.CONTENT_SECURITY_POLICY),
+                            "SH950: an asset opened directly must land in a sandbox that runs nothing");
+                    String disposition = response.getHeader("Content-Disposition");
+                    assertNotNull(disposition, "SH950: an asset must say how it is to be handled");
+                    assertFalse(disposition.startsWith("inline"),
+                            "SH950: an SVG carries script and must not be handed to the browser to "
+                                    + "render. Got: " + disposition);
+                });
+    }
+
+    @Test
+    void stage02eServeHtmlIsNotARenderableDocument() throws Exception {
+        String id = uploadFile("payload.html", "text/html",
+                "<script>alert(document.domain)</script>".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id).principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertTrue(
+                        result.getResponse().getHeader("Content-Disposition").startsWith("attachment"),
+                        "SH950: an uploaded HTML file is the same hole and the more obvious one. Got: "
+                                + result.getResponse().getHeader("Content-Disposition")));
+    }
+
+    /**
+     * The half a fix like this loses. If the media library stops showing images it gets reverted,
+     * and the hole reopens with it.
+     */
+    @Test
+    void stage02fServePngStillRendersInline() throws Exception {
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(4, 4, BufferedImage.TYPE_INT_RGB), "png", png);
+        String id = uploadFile("ok.png", "image/png", png.toByteArray());
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id).principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    assertEquals("inline; filename=\"ok.png\"",
+                            result.getResponse().getHeader("Content-Disposition"),
+                            "SH950: a raster image is not a document and must still render");
+                    assertEquals("nosniff",
+                            result.getResponse().getHeader(ShAssetResponseHeaders.X_CONTENT_TYPE_OPTIONS),
+                            "SH950: nosniff goes on every asset, including the ones served inline");
+                });
+    }
+
+    /** Upload bytes under a name and return the new File post's id. */
+    private String uploadFile(String fileName, String declaredType, byte[] bytes) throws Exception {
+        String response = mockMvc
+                .perform(multipart("/api/v2/staticfile/upload")
+                        .file(new MockMultipartFile("file", fileName, declaredType, bytes))
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String id = com.jayway.jsonpath.JsonPath.read(response, "$.id");
+        assertNotNull(id, "the upload must return the new File post's id");
+        return id;
+    }
+
     @Test
     void stage03PreUploadReportsExisting() throws Exception {
         mockMvc.perform(get("/api/v2/staticfile/pre-upload/" + folderId + "/hello.txt")

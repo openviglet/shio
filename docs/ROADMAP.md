@@ -19,13 +19,13 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- 📋 **SH950** (deps: —) **an uploaded SVG or HTML file is served inline and executable from the console's own origin** — Both asset routes set Content-Disposition inline and no response anywhere carries nosniff or a content security policy, so an agent token can plant script on the origin. → §LXI.1
-- 📋 **SH951** (deps: SH950) **no upload path has a content policy, so HTML, JavaScript and scripted SVG are accepted like images** — There is no MIME allow-list anywhere in the static-file package and the multipart limit is 1024 MB, so the write path agents use for assets filters nothing. → §LXI.2
+- 📋 **SH951** (deps: SH950 ✅) **no upload path has a content policy, so HTML, JavaScript and scripted SVG are accepted like images** — There is no MIME allow-list anywhere in the static-file package and the multipart limit is 1024 MB, so the write path agents use for assets filters nothing. → §LXI.2
 - 📋 **SH952** (deps: —) **shio_write drops when, locale, translationOf, url and expect, so a scheduled publish over MCP goes live at once** — ShWriteTool builds each op with the six-field constructor documented for ops that never schedule, while its own schema advertises when for post.publish. → §LXI.3
 - 📋 **SH953** (deps: —) **bulk delete swallows every failure and reports the whole selection as deleted** — Each DELETE's rejection is discarded by an empty catch and the toast counts the selection, so a thousand refused deletes still announce a thousand deleted. → §LXI.4
 - 📋 **SH954** (deps: —) **the Clear cache row action calls an endpoint whose entire body returns 200 and does nothing** — The page-cache subsystem it drove is gone and the no-op stayed because the console expects a 200, so the button has reported success for a cache that does not exist. → §LXI.5
 - 📋 **SH955** (deps: —) **twenty-four console save paths discard the server's problem document and show the word Error** — The server writes fix, allowed, didYouMean and at on every 4xx and the console has no problem-document reader, so a curator sees Error where an agent sees the fix. → §LXI.6
 - 📋 **SH956** (deps: —) **the rich-text field stores whatever a paste or an agent write contains, and the renderer emits it unescaped** — The widget is execCommand over contentEditable with no paste handler or sanitizer, and field HTML renders raw by design, so any markup reaches the published page. → §LXI.7
+- 📋 **SH1071** (deps: —) **an upload's file name is interpolated into Content-Disposition without escaping** — sanitizeFileName guards the filesystem and leaves quotes and control characters alone, so a name like a".svg produces a header a client parses as something else. → §LXI.8
 
 ## Block AW — One chrome: bento, and nothing left that names another
 

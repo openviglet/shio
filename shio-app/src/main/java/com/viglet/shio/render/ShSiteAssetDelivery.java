@@ -15,7 +15,6 @@ import java.util.Optional;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -23,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.staticfile.ShAssetResponseHeaders;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.api.staticfile.ShStaticFileService;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -96,11 +96,15 @@ public class ShSiteAssetDelivery {
             // along, and a different sentence from "no asset at that path" because the fix differs.
             throw new StrandedAssetException(site.getName(), path, post.getId());
         }
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(storage.probeContentType(bytes)))
-                .cacheControl(CacheControl.maxAge(java.time.Duration.ofSeconds(CACHE_SECONDS)).cachePrivate())
-                .header("X-Robots-Tag", "noindex, nofollow")
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+        // SH950: a site asset is bytes, never a document this origin renders. An `<img>`,
+        // `<link rel=stylesheet>` and `<script src>` are unaffected — a browser honours the
+        // disposition on a navigation and ignores it for a subresource.
+        String contentType = storage.probeContentType(bytes);
+        return ShAssetResponseHeaders
+                .harden(ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .cacheControl(CacheControl.maxAge(java.time.Duration.ofSeconds(CACHE_SECONDS)).cachePrivate())
+                        .header("X-Robots-Tag", "noindex, nofollow"), contentType, fileName)
                 .body(new FileSystemResource(bytes));
     }
 

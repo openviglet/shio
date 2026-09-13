@@ -11,7 +11,6 @@ package com.viglet.shio.api.staticfile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -432,7 +431,10 @@ public class ShFileStorageService {
      * bytes; falls back to {@code application/octet-stream}.
      */
     public String probeContentType(Path path) {
-        String byName = URLConnection.guessContentTypeFromName(path.getFileName().toString());
+        // SH950: the JDK's table, then the handful of extensions it does not know. Since assets
+        // are now served with `nosniff`, a type this gets wrong is no longer sniffed past — a
+        // `.mjs` answered as text/plain is a module the browser refuses to execute.
+        String byName = ShAssetResponseHeaders.contentTypeByName(path.getFileName().toString());
         if (byName != null) {
             return byName;
         }
@@ -444,6 +446,6 @@ public class ShFileStorageService {
         } catch (IOException e) {
             log.debug("Could not probe content type for {}", path, e);
         }
-        return "application/octet-stream";
+        return ShAssetResponseHeaders.FALLBACK_CONTENT_TYPE;
     }
 }

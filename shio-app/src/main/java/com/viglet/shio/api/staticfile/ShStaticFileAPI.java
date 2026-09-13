@@ -287,9 +287,11 @@ public class ShStaticFileAPI {
                 if (etag != null && ifNoneMatchMatches(ifNoneMatch, etag)) {
                     return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
                 }
-                ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(transformed.contentType()))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"");
+                // SH950: the transform's own output type decides the disposition, not the
+                // source's — `?format=` is how a caller changes it.
+                ResponseEntity.BodyBuilder builder = ShAssetResponseHeaders.harden(
+                        ResponseEntity.ok().contentType(MediaType.parseMediaType(transformed.contentType())),
+                        transformed.contentType(), fileName);
                 if (etag != null) {
                     builder.eTag(etag);
                 }
@@ -297,9 +299,10 @@ public class ShStaticFileAPI {
             }
         }
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+        // SH950: an uploaded SVG or HTML file is not a document this origin renders.
+        return ShAssetResponseHeaders
+                .harden(ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType)),
+                        contentType, fileName)
                 .body(new FileSystemResource(path));
     }
 

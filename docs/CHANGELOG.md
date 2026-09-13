@@ -1681,6 +1681,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AV — The live defects, fixed before anything is built on them
 
+- **SH950** — An uploaded SVG or HTML file now comes back as an attachment with nosniff and a sandbox CSP, on all three asset routes, while a PNG still renders inline (design §LXI.1 recorded in `docs/agents/security.md`).
+
 ## Block AW — One chrome: bento, and nothing left that names another
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent

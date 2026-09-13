@@ -1099,27 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.1 Stop serving uploads as executable documents (SH950)
-
-ShStaticFileAPI sets Content-Disposition inline on both of its file responses, and
-ShSiteAssetDelivery does the same for site assets. A grep of the backend for
-X-Content-Type-Options or Content-Security-Policy returns nothing. The content type is
-probed from the file name first, so evil.svg is served as image/svg+xml and payload.html
-as text/html, from the same origin the console runs on, and the upload endpoint accepts
-an agent token.
-
-This task is the one-commit mitigation, deliberately separated from the policy work in
-AV2 so the hole does not stay open while an allow-list is argued. Register a response
-filter on every asset route that sends X-Content-Type-Options nosniff; serve anything
-outside a short render-safe list of raster image types with Content-Disposition
-attachment; and send a sandbox Content-Security-Policy on asset responses so an SVG
-opened directly runs nothing.
-
-The assertion carries the id at the boundary: a GET of an uploaded SVG answers with
-nosniff, a sandbox CSP and no inline disposition, and the same GET of a PNG still
-renders inline. The delivered site's own image tags are unaffected, because an img
-element never executes script.
-
 ### LXI.2 An upload policy that says what it refused and why (SH951)
 
 The only sanitising in the static-file services is of tenant and file names. Nothing
@@ -1237,6 +1216,29 @@ because a sanitizer on writes says nothing about rows already stored.
 The block content model in Block BC is the long answer to an opaque HTML body; this is
 the short one, and it must not wait for that. The assertion plants an onerror attribute
 through each writer.
+
+### LXI.8 The one place that builds a header, building it by hand (SH1071)
+
+Found while centralising the header in SH950, not by a scan.
+`ShAssetResponseHeaders.disposition` builds `attachment; filename="<name>"` by
+interpolation, and the name it is handed is whatever
+`ShFileStorageService.sanitizeFileName` returned. That method is written for the
+filesystem, and it does exactly what it says: it drops every path segment before the
+last and refuses a blank, `.` or `..`. It does not touch a double quote, a semicolon, or
+a control character in the middle of the name, because none of those can escape a
+directory.
+
+So an upload named `a".svg` produces `attachment; filename="a".svg"`, which a parser
+reads as a filename of `a` followed by something it does not understand. The
+consequences run from a wrong saved name to a client that reads the parameters after it,
+and a name carrying CR LF is the same defect one step worse. The fix is small and
+specified: RFC 6266 says to escape `\` and `"` inside the quoted string, and to send a
+`filename*` form for anything non-ASCII — which Spring's `ContentDisposition` builder
+already does, so the change is to stop building the string by hand.
+
+It is filed rather than folded into SH950 because it is a different failure with a
+different blast radius, and because SH950's own rule is that one place decides how an
+asset is served: that place now exists, and this is the next thing wrong with it.
 
 ## LXII One chrome: bento, and nothing left that names another (Block AW)
 

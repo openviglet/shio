@@ -620,3 +620,47 @@ startup** — blank, too short and unset are each a log line and a return, becau
 `shio.admin.password` binds from `SHIO_ADMIN_PASSWORD`. The service is asserted directly and the
 binding is a one-line property; a context test for it would cost a slot `ShContextCacheHeadroomTest`
 counts (SH315) to check Spring does its own job.
+
+## Uploaded bytes are never a document this origin renders (SH950)
+
+Every asset route sent `Content-Disposition: inline`, and a grep of the backend for
+`X-Content-Type-Options` or `Content-Security-Policy` returned nothing. The content type is probed
+from the file name, so `evil.svg` was served as `image/svg+xml` and `payload.html` as `text/html` —
+scriptable documents, on the console's own origin, through an upload endpoint that accepts an
+**agent token**. Stored XSS against the curator's session, needing no other defect to exploit.
+
+`ShAssetResponseHeaders` is the one place that decides, and every asset response goes through it:
+
+- `X-Content-Type-Options: nosniff` — the browser may not upgrade bytes to a document type the
+  server did not declare.
+- `Content-Disposition: attachment` for anything outside a short list of **raster** image types.
+  `image/svg+xml` is deliberately not on it: an SVG is the one image type a reader assumes is safe
+  because the rest of its family is. **The delivered site is unaffected** — a browser honours the
+  disposition on a navigation and ignores it for a subresource, so `<img>`, `<link rel=stylesheet>`
+  and `<script src>` load exactly as before.
+- `Content-Security-Policy: default-src 'none'; sandbox` — the backstop for an asset opened
+  directly as a top-level document. Inert on a subresource, because CSP binds the document that
+  embeds a response and never the response itself.
+
+**Three routes, not the two the task named.** `ShStaticFileAPI` and `ShSiteAssetDelivery` build a
+`ResponseEntity` and call `harden`. `/file_source/**` is a Spring *resource handler* with no
+`ResponseEntity` at all — and it is the `permitAll` one, so it was the worst of the three. It is
+covered by `ShAssetSecurityHeadersFilter`, registered in `ShAssetSecurityConfig` on
+`/file_source/*` **and nothing wider**: a delivered page is `text/html` by design, and an
+`attachment` on `/sites/**` would take every replicated site down.
+
+**`nosniff` is why the content-type table is part of this fix.** A wrong type used to be sniffed
+past; now a stylesheet that is not `text/css` and a module script that is not a JavaScript type are
+refused outright. Measured on this JDK: `guessContentTypeFromName` is right for `.css` and `.js`,
+and returns nothing for `.mjs` (probed as `text/plain`), `.woff2` and `.avif`. Shipping `nosniff`
+without `BY_EXTENSION` would have taken a replicated site's ES modules off the air — the class of
+breakage SH555 and SH556 each cost a round.
+
+The boundary is asserted in `ShStaticFileAPITest` (`stage02d/e/f`: upload an SVG, an HTML file and
+a PNG, GET each, read the headers) rather than in a class of its own, because a second
+`@SpringBootTest` would have spent the last slot SH423's headroom budget had.
+`ShAssetSecurityHeadersTest` holds the rest, including the grep that fails if any future route
+writes its own `Content-Disposition`.
+
+**Not covered:** the allow-list on what may be uploaded at all is SH951. This is the one-commit
+mitigation, deliberately separate so the hole does not stay open while that is argued.
