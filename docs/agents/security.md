@@ -708,6 +708,20 @@ SVG anyway.
 projects it and a reader comparing a replica against its source can then see the difference was a
 policy and not a defect.
 
-**Not covered (the remainder of SH951):** the agent legs — `shio_assets` rows gaining `unsafe` and
-`sanitized` flags, and `shio verify` gaining `asset-unsafe-type` over the projected tree. The
-server refuses and cleans today; what an agent can *see* about it is still only the post's data.
+**What an agent can see about it.** `shio_assets` rows carry two `flag`s: `sanitized` (the stored
+bytes were cleaned) and `unsafe` — the policy's verdict taken on bytes that are **already stored**,
+which is the question an upload check cannot answer. `DENY` is unsafe outright; `SANITIZE` is unsafe
+only where the post does not say it was sanitized, because that is exactly the SVG uploaded before
+the cleaning existed. Both are flags rather than attributes, so the ordinary asset — every asset on
+a healthy instance — pays nothing for them (P3). Naming them in the tool description was paid for
+out of the same description: the closing rationale about base64 moved to the class javadoc, because
+a payload re-sent every turn may carry what a caller *decides on* and not why the design is what it
+is. `shio_assets` came out at 184 tokens against 183 before, and `mcp.tools.list.total` is untouched.
+
+`shio verify` gains **`asset-unsafe-type`** over the projected tree: an asset in `shio/assets/**`
+whose type a default policy denies, reported as an error before `shio push --content` meets the
+400. It reports the denied class only and never SVG — a default policy cleans an SVG rather than
+refusing it, so a finding would fire on every logo in every replicated site, and a warning that
+appears on every run is the next thing nobody reads. The extension table mirrors
+`ShUploadPolicyProperties` and says so: the CLI has no instance to ask, which is also why the fix
+names the property rather than claiming to know the verdict.

@@ -1099,26 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.2 An upload policy that says what it refused and why (SH951)
-
-The only sanitising in the static-file services is of tenant and file names. Nothing
-inspects content, and spring.servlet.multipart.max-file-size is 1024MB. So after AV1 the
-bytes are no longer executable when served, but they are still stored, still listed, and
-still copied into a content tree by shio pull.
-
-Add an upload type policy with allow, deny and sanitize per media type, defaulting to
-deny for HTML and JavaScript and sanitize for SVG. The SVG sanitizer strips script,
-foreignObject, event-handler attributes and non-data xlink:href, and records
-SANITIZED:true in the File post's data so the fact is content rather than a log line. A
-refusal is a teaching 400 carrying allowed and a fix naming the policy key, which is the
-shape every other refusal on the agent surface already has.
-
-The agent legs land together: shio_assets rows gain unsafe and sanitized flags, and shio
-verify gains asset-unsafe-type over the projected tree. One decision must be written
-into the task rather than assumed: what shio convert uploads today, since a replication
-run that captures inline SVG must keep working. The assertions plant a script in an SVG
-and a refusal of an HTML file.
-
 ### LXI.3 A tool that accepts an argument and ignores it (SH952)
 
 ShAgentBatch.Op carries eleven fields: op, address, type, folder, to, data, when,

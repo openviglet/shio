@@ -401,3 +401,49 @@ test("SH382: a post of any other type is not subject to the rule", () => {
 
   assert.deepEqual(findings, []);
 });
+
+/**
+ * SH951 — an asset in the tree that the instance will refuse on the way in.
+ *
+ * The server decides, and it decides at the wrong moment for an agent: by the time the 400
+ * arrives, `push --content` has stopped part-way through several hundred assets. This says so
+ * from files alone, before the push.
+ */
+test("SH951: an asset of a type a default upload policy denies is an error before the push", () => {
+  const { findings } = lintProjection({
+    posts: [],
+    defs: DEFS,
+    assets: ["Blog/media/page.html", "Blog/media/bundle.js", "Blog/media/legacy.htm"],
+  });
+
+  assert.deepEqual(findings.map((finding) => finding.rule),
+    ["asset-unsafe-type", "asset-unsafe-type", "asset-unsafe-type"]);
+  assert.deepEqual(findings.map((finding) => finding.severity), ["error", "error", "error"]);
+  assert.deepEqual(findings.map((finding) => finding.address),
+    ["asset:Blog/media/bundle.js", "asset:Blog/media/legacy.htm", "asset:Blog/media/page.html"]);
+
+  const bundle = findings.find((finding) => finding.address.endsWith("bundle.js"));
+  assert.match(bundle.message, /text\/javascript/);
+  // P6: the fix names the property, because the instance may legitimately want this — a capture
+  // taken with `--scripts` uploads the site's own bundle on purpose.
+  assert.match(bundle.fix, /shio\.upload\.policy\.text\/javascript=allow/);
+  assert.match(bundle.fix, /--scripts/);
+});
+
+test("SH951: an SVG is not a finding, because a default policy cleans it rather than refusing", () => {
+  // The rule this protects: a warning that fires on every logo in every replicated site is the
+  // next thing nobody reads, and it would bury the rows that mean something.
+  const { findings } = lintProjection({
+    posts: [],
+    defs: DEFS,
+    assets: ["Blog/media/logo.svg", "Blog/media/hero.png", "Blog/media/site.css", "Blog/media/a.woff2"],
+  });
+
+  assert.deepEqual(findings, []);
+});
+
+test("SH951: an asset with no extension is left alone rather than guessed at", () => {
+  const { findings } = lintProjection({ posts: [], defs: DEFS, assets: ["Blog/media/LICENSE"] });
+
+  assert.deepEqual(findings, []);
+});

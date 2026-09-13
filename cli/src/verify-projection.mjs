@@ -101,8 +101,66 @@ export function lintProjection({
     ...sidecarFindings(missingSidecars),
     ...translationFindings(posts, scoped),
     ...menuItemFindings(posts),
+    ...unsafeAssetFindings(assets, assetsDir),
   );
   return { findings: sortFindings(findings), checked };
+}
+
+/**
+ * Extensions a default upload policy **denies** (SH951).
+ *
+ * <p>Mirrors the shipped defaults of `shio.upload.policy` in `ShUploadPolicyProperties`, which is
+ * the source of truth — an instance may widen or narrow them, and this gate has no instance to
+ * ask. That is why it reports only the denied class and says the property's name rather than
+ * claiming to know the verdict.
+ */
+const DENIED_EXTENSIONS = new Map([
+  ["html", "text/html"],
+  ["htm", "text/html"],
+  ["xhtml", "application/xhtml+xml"],
+  ["js", "text/javascript"],
+  ["mjs", "text/javascript"],
+]);
+
+/**
+ * An asset in the tree that a push will not be able to upload (SH951).
+ *
+ * <h3>Why only the denied class, and never SVG</h3>
+ *
+ * A default policy `sanitize`s `image/svg+xml` rather than refusing it, so an SVG pushes fine and
+ * arrives with its script removed. Reporting one would fire on every logo in every replicated
+ * site — a warning that appears on every run is the next thing nobody reads (SH192's rule), and it
+ * would bury the rows that mean something. What is worth a finding is the file whose push will
+ * **fail**: the tree holds it, the field points at it, and `shio push --content` gets a teaching
+ * 400 it cannot act on from here.
+ *
+ * <h3>Why it is a tree rule at all</h3>
+ *
+ * The server refuses on the way in, which is the right place and the wrong moment: by then the
+ * agent has run a push that stops part-way, and the asset it cannot upload is one of several
+ * hundred. This says so before the push, from files alone.
+ */
+function unsafeAssetFindings(assets, assetsDir) {
+  const out = [];
+  for (const path of [...assets].sort((a, b) => String(a).localeCompare(String(b)))) {
+    const name = String(path ?? "").split("/").pop() ?? "";
+    const dot = name.lastIndexOf(".");
+    if (dot < 0) continue;
+    const type = DENIED_EXTENSIONS.get(name.slice(dot + 1).toLowerCase());
+    if (!type) continue;
+    out.push({
+      address: `asset:${path}`,
+      rule: "asset-unsafe-type",
+      severity: "error",
+      message: `\`${assetsDir}/${path}\` is ${type}, which an instance's upload policy denies by `
+        + "default, so pushing it is refused",
+      fix: `Remove it from ${assetsDir} if it is not an asset — a page is content, not a file. `
+        + `If this instance really does serve ${type} as an asset (\`shio clone --scripts\` `
+        + `captures a site's own bundle), set \`shio.upload.policy.${type}=allow\` on the `
+        + "instance before pushing.",
+    });
+  }
+  return out;
 }
 
 /**

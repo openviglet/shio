@@ -18,6 +18,8 @@ import com.viglet.shio.api.agent.ShTerse;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
+import com.viglet.shio.api.staticfile.ShAssetResponseHeaders;
+import com.viglet.shio.api.staticfile.ShUploadPolicy;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 
@@ -43,9 +45,12 @@ import tools.jackson.databind.JsonNode;
 public class ShAssetsTool implements ShMcpTool {
 
     private final ShAgentReadService shAgentReadService;
+    /** SH951 — the same verdict the upload path takes, asked of bytes that are already stored. */
+    private final ShUploadPolicy shUploadPolicy;
 
-    public ShAssetsTool(ShAgentReadService shAgentReadService) {
+    public ShAssetsTool(ShAgentReadService shAgentReadService, ShUploadPolicy shUploadPolicy) {
         this.shAgentReadService = shAgentReadService;
+        this.shUploadPolicy = shUploadPolicy;
     }
 
     @Override
@@ -57,8 +62,14 @@ public class ShAssetsTool implements ShMcpTool {
     public String description() {
         return "List the uploaded files (images, documents) you can reference, with the public "
                 + "URL of each. To reference one from a File field, use the asset's address. "
-                + "Uploading is not a tool — POST multipart to /api/v2/staticfile/upload, "
-                + "because base64 through a tool call is the most expensive way to move bytes.";
+                // SH951 traded the closing rationale for the two flags, and the budget is why: this
+                // payload is re-sent every turn, so it may carry what a caller DECIDES on and not
+                // why the design is what it is. That base64 through a tool call is the most
+                // expensive way to move bytes is in this class's javadoc, where it costs nothing
+                // per turn; "POST multipart to this URL" is the whole of what an agent acts on.
+                + "Uploading is not a tool — POST multipart to /api/v2/staticfile/upload. "
+                + "A row flagged `unsafe` is of a type this instance now refuses; `sanitized` "
+                + "means its stored bytes were cleaned.";
     }
 
     @Override
@@ -103,16 +114,52 @@ public class ShAssetsTool implements ShMcpTool {
         }
         List<ShAgentDoc> docs = shAgentReadService.read(
                 found.results().stream().map(ShAgentFound.Row::address).toList(),
-                List.of(ShSystemPostTypeAttr.FILE), true);
+                // SH951 — SANITIZED alongside FILE, because "these are not the bytes that were
+                // uploaded" is a fact about the asset an agent is choosing between others.
+                List.of(ShSystemPostTypeAttr.FILE, ShSystemPostTypeAttr.SANITIZED), true);
         for (ShAgentDoc doc : docs) {
             String fileName = fileName(doc);
+            boolean sanitized = flagOf(doc, ShSystemPostTypeAttr.SANITIZED);
             out.append(ShTerse.line("asset")
                     .word(doc.address())
                     .attr("file", fileName)
                     .attr("url", fileName == null ? null : "/file_source/" + doc.id() + "/" + fileName)
+                    // Both are `flag`s, so they cost nothing on the ordinary asset — which is every
+                    // asset on a healthy instance, and the reason this is affordable at all (P3).
+                    .flag("sanitized", sanitized)
+                    .flag("unsafe", isUnsafe(fileName, sanitized))
                     .build());
         }
         return out.toString();
+    }
+
+    /**
+     * Bytes this instance would not accept today, and nothing has cleaned (SH951).
+     *
+     * <p>The policy is asked about what is <em>already stored</em>, which is the question an upload
+     * check cannot answer: an asset uploaded before the policy existed, or before a policy was
+     * tightened, is still sitting there. {@code DENY} is unsafe outright; {@code SANITIZE} is
+     * unsafe only where the post does not say it was sanitized, because that is exactly the SVG
+     * that predates the cleaning.</p>
+     *
+     * <p>An asset with no file name cannot be classified and is not guessed at — reporting it as
+     * safe and reporting it as unsafe are both claims nothing here can make.</p>
+     */
+    private boolean isUnsafe(String fileName, boolean sanitized) {
+        if (fileName == null) {
+            return false;
+        }
+        String contentType = ShAssetResponseHeaders.contentTypeByName(fileName);
+        return switch (shUploadPolicy.verdictFor(contentType)) {
+            case DENY -> true;
+            case SANITIZE -> !sanitized;
+            case ALLOW -> false;
+        };
+    }
+
+    private static boolean flagOf(ShAgentDoc doc, String key) {
+        JsonNode value = doc.data() == null ? null : doc.data().get(key);
+        return value != null && value.asBoolean(false);
     }
 
     private static String fileName(ShAgentDoc doc) {

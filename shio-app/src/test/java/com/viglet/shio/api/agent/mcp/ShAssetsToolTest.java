@@ -19,11 +19,19 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import com.viglet.shio.api.agent.ShAgentReadService;
+import com.viglet.shio.api.agent.dto.ShAgentDoc;
+import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.mcp.tools.ShAssetsTool;
+import com.viglet.shio.api.staticfile.ShUploadPolicy;
+import com.viglet.shio.api.staticfile.ShUploadPolicyProperties;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * SH727 — <b>an empty listing is not a typo.</b>
@@ -61,12 +69,17 @@ class ShAssetsToolTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** The tool with the instance's shipped upload policy, which is what SH951's flags read. */
+    private static ShAssetsTool tool(ShAgentReadService reads) {
+        return new ShAssetsTool(reads, new ShUploadPolicy(new ShUploadPolicyProperties()));
+    }
+
     @Test
     void assetsOnAnInstanceWithNoFileTypeAnswersNoneRatherThanRefusing() {
         ShAgentReadService reads = mock(ShAgentReadService.class);
         when(reads.hasType(ShSystemPostType.FILE)).thenReturn(false);
 
-        String answer = new ShAssetsTool(reads).call(objectMapper.createObjectNode());
+        String answer = tool(reads).call(objectMapper.createObjectNode());
 
         assertThat(answer)
                 .as("SH727: the true answer to \"what files does this site have\" on an instance "
@@ -89,7 +102,7 @@ class ShAssetsToolTest {
         ShAgentReadService reads = mock(ShAgentReadService.class);
         when(reads.hasType(ShSystemPostType.FILE)).thenReturn(false);
 
-        new ShAssetsTool(reads).call(objectMapper.createObjectNode());
+        tool(reads).call(objectMapper.createObjectNode());
 
         verify(reads, never()).find(any(), any(), any(), any(), any(), anyBoolean());
     }
@@ -105,7 +118,7 @@ class ShAssetsToolTest {
                 .thenThrow(new IllegalStateException("SH727: find was reached, which is the point"));
 
         try {
-            new ShAssetsTool(reads).call(objectMapper.createObjectNode());
+            tool(reads).call(objectMapper.createObjectNode());
         } catch (IllegalStateException expected) {
             assertThat(expected).hasMessageContaining("find was reached");
             return;
@@ -114,5 +127,76 @@ class ShAssetsToolTest {
                 "SH727: the tool answered without asking `find` on an instance that HAS the File "
                         + "type. The empty-listing branch is for an absent type only — widened, it "
                         + "would report zero assets to somebody who has some.");
+    }
+
+    /**
+     * SH951 — an asset already on disk that this instance would refuse today.
+     *
+     * <p>The upload policy runs on the way in, which can say nothing about bytes stored before it
+     * existed or before it was tightened. An agent choosing between assets is exactly the reader
+     * who needs to know, and the row is where it can afford to be told: both are {@code flag}s, so
+     * an ordinary asset — every asset on a healthy instance — pays nothing for them (P3).</p>
+     */
+    @Test
+    void sh951AStoredAssetOfADeniedTypeIsFlaggedUnsafe() {
+        String answer = listing("post:Blog/payload.html", "payload.html", null);
+
+        assertThat(answer)
+                .as("SH951: the policy denies text/html, so bytes stored before it existed are "
+                        + "still sitting there and nothing said so")
+                .contains("unsafe");
+        assertThat(answer).doesNotContain("sanitized");
+    }
+
+    @Test
+    void sh951ASvgThatWasCleanedSaysSoAndIsNotUnsafe() {
+        String answer = listing("post:Blog/logo.svg", "logo.svg", Boolean.TRUE);
+
+        assertThat(answer).contains("sanitized");
+        assertThat(answer)
+                .as("SH951: a sanitized SVG is the good case — its script is gone, and calling it "
+                        + "unsafe too would make the flag mean nothing")
+                .doesNotContain("unsafe");
+    }
+
+    @Test
+    void sh951ASvgNobodyCleanedIsTheOneThisExistsToFind() {
+        String answer = listing("post:Blog/old.svg", "old.svg", null);
+
+        assertThat(answer)
+                .as("SH951: an SVG stored before the sanitizer shipped still carries whatever it "
+                        + "carried, and the upload path can never revisit it")
+                .contains("unsafe");
+        assertThat(answer).doesNotContain("sanitized");
+    }
+
+    @Test
+    void sh951AnOrdinaryImageCarriesNeitherFlag() {
+        // The control, and the reason both are flags rather than attributes: this is every asset on
+        // a healthy instance, and it must cost nothing to say nothing about it.
+        String answer = listing("post:Blog/hero.png", "hero.png", null);
+
+        assertThat(answer).doesNotContain("unsafe").doesNotContain("sanitized");
+        assertThat(answer).contains("hero.png");
+    }
+
+    /** One asset through the tool, with the stored file name and the SANITIZED its post carries. */
+    private String listing(String address, String fileName, Boolean sanitized) {
+        ShAgentReadService reads = mock(ShAgentReadService.class);
+        when(reads.hasType(ShSystemPostType.FILE)).thenReturn(true);
+        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean()))
+                .thenReturn(new ShAgentFound(1, false,
+                        List.of(new ShAgentFound.Row(address, "File", "PUBLISHED", fileName, "id1"))));
+
+        ObjectNode data = objectMapper.createObjectNode();
+        data.put(ShSystemPostTypeAttr.FILE, fileName);
+        if (sanitized != null) {
+            data.put(ShSystemPostTypeAttr.SANITIZED, sanitized.booleanValue());
+        }
+        when(reads.read(any(), any(), anyBoolean())).thenReturn(List.of(
+                new ShAgentDoc(address, "File", "PUBLISHED", "Blog", List.of(), data,
+                        "id1", null, null, null, null, null)));
+
+        return tool(reads).call(objectMapper.createObjectNode());
     }
 }

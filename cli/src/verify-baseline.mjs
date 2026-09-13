@@ -294,6 +294,7 @@ const PROJECTION_RULES = new Set([
   "asset-missing",
   "asset-path-unsafe",
   "asset-check-skipped",
+  "asset-unsafe-type",
   "sidecar-missing",
   "translation-target-missing",
   "duplicate-address",
