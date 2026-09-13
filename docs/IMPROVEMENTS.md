@@ -1099,24 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.5 A button that has lied since the cache it cleared was removed (SH954)
-
-ShObjectAPI.clearCache is a GetMapping on {id}/clear-cache returning
-ResponseEntity.ok().build(). The console's content browser renders a Clear Cache button
-on every row that calls it and then toasts content.cacheCleared. Nothing is cached at
-that scope any more, so every press is a success message about nothing.
-
-Decide it rather than inherit it. The honest move is to delete the action, its i18n keys
-and the endpoint together, since the CDA's cache-control headers and the image transform
-cache are invalidated by publishing, not by a row button. If an operator does need to
-purge derived images, that is a named verb with a real effect and an agent equivalent,
-filed as its own line.
-
-The instrument is the part that generalises past one button: a lint over the controller
-scan that fails on any mapping whose body is a bare ok() with no side effect, held as an
-asserted list of exceptions with reasons, and on any GET mapping named as an action. The
-assertion for this task is that no console call and no manifest entry names clear-cache.
-
 ### LXI.6 Errors are instructions, on both sides of the wall (SH955)
 
 grep for toast.error(t("common.error")) over shio-react returns twenty-four hits, three

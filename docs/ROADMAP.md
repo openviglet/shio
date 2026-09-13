@@ -19,7 +19,6 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- 📋 **SH954** (deps: —) **the Clear cache row action calls an endpoint whose entire body returns 200 and does nothing** — The page-cache subsystem it drove is gone and the no-op stayed because the console expects a 200, so the button has reported success for a cache that does not exist. → §LXI.5
 - 📋 **SH955** (deps: —) **twenty-four console save paths discard the server's problem document and show the word Error** — The server writes fix, allowed, didYouMean and at on every 4xx and the console has no problem-document reader, so a curator sees Error where an agent sees the fix. → §LXI.6
 - 📋 **SH956** (deps: —) **the rich-text field stores whatever a paste or an agent write contains, and the renderer emits it unescaped** — The widget is execCommand over contentEditable with no paste handler or sanitizer, and field HTML renders raw by design, so any markup reaches the published page. → §LXI.7
 - 📋 **SH1071** (deps: —) **an upload's file name is interpolated into Content-Disposition without escaping** — sanitizeFileName guards the filesystem and leaves quotes and control characters alone, so a name like a".svg produces a header a client parses as something else. → §LXI.8

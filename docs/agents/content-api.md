@@ -733,3 +733,31 @@ request addresses is the one its URL names; taking the id from the path closes b
 
 Verified by reverting the controller: two of the three assertions fail, and the "a key the caller
 chose is still honoured" control stays green in both directions.
+
+## An endpoint that answers 200 and does nothing (SH954)
+
+`ShObjectAPI.clearCache` was a `@GetMapping("/{id}/clear-cache")` whose entire body was
+`return ResponseEntity.ok().build();`. Its own javadoc explained why: the page-cache subsystem it
+drove was no longer part of the backend, and the no-op was *"kept for the console's clear cache
+action (it expects a 200)"*. The content browser rendered a **Clear Cache** button on every row,
+called it, and toasted "Cache cleared" — so the product told a curator it had done something, every
+time, for as long as the cache had been gone. **The comment saying so was in the file the whole
+time**, which is the argument against prose as a guard.
+
+Deleted rather than reimplemented, endpoint and button and i18n keys together, plus the test whose
+subject was that the no-op returned 200 — a test holding a lie in place goes with it. Cache
+invalidation here is the CDA's `Cache-Control` headers and the image-transform cache, both
+invalidated by publishing rather than by a row button. If an operator ever needs to purge derived
+images, that is a named verb with a real effect and an agent equivalent (P1), and it is a line of
+its own.
+
+**`ShNoOpMappingLintTest` is what generalises past one button.** It walks every request mapping and
+fails on a body that is exactly one bare success — `ok().build()`, `noContent().build()`, or a bare
+`return;`. A body that returns `ok(something)` computed the something and is out of scope, so the
+rule cannot be argued wider.
+
+Its `EXPECTED` list holds one entry, and that entry is the distinction worth keeping: `ShMcpAPI.end`
+answers 204 to `DELETE` because MCP requires a session-end verb and there is nothing to free — a
+session id is an attribution label, not server-side state. **That is an answer; `clear-cache` was a
+placeholder for one.** An addition to the list has to carry a sentence of that kind, in a diff
+somebody reads.

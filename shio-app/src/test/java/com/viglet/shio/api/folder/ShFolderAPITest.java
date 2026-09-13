@@ -353,11 +353,11 @@ class ShFolderAPITest {
                 .andExpect(status().isOk());
     }
 
-    @Test
-    void stage09ClearCacheIsOk() throws Exception {
-        mockMvc.perform(get("/api/v2/object/" + childFolderId + "/clear-cache").principal(mockPrincipal))
-                .andExpect(status().isOk());
-    }
+    // SH954 — `stage09ClearCacheIsOk` was here, asserting that `/clear-cache` answered 200. It did,
+    // and that was the defect: the endpoint's whole body was `ResponseEntity.ok().build()` long
+    // after the page cache it cleared had been removed, and the console's Clear Cache button
+    // reported success on every press. A test whose subject is that a no-op returns 200 is a test
+    // holding a lie in place — it goes with the endpoint rather than being retargeted.
 
     @Test
     void stage10DeleteFolderCascadesPosts() throws Exception {

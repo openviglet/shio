@@ -1685,6 +1685,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH951** — shio_assets rows now flag an asset the policy would refuse today or has cleaned, and shio verify reports asset-unsafe-type over the tree before a push meets the refusal (design §LXI.2 recorded in `docs/agents/security.md`).
 - **SH952** — shio_write passes all eleven op fields, so a scheduled publish schedules and a conditional write is conditional — and a reader now fails the build on any tool that declares an argument it never reads (design §LXI.3 recorded in `docs/agents/agent-surface.md`).
 - **SH953** — A bulk delete now counts what actually went, names each refused row with the server's own reason, leaves the refusals selected and refreshes the page the curator was on (design §LXI.4 recorded in `docs/agents/console-ui.md`).
+- **SH954** — The Clear Cache button, its endpoint, its keys and the test that held the no-op in place are gone, and a lint now fails on any mapping whose body is a bare success (design §LXI.5 recorded in `docs/agents/content-api.md`).
 
 ## Block AW — One chrome: bento, and nothing left that names another
 

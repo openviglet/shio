@@ -156,13 +156,4 @@ public class ShObjectAPI {
         return ResponseEntity.ok(shContentAclService.replaceAcl(id, entries));
     }
 
-    /**
-     * Cache invalidation hook. The page-cache subsystem the legacy endpoint drove
-     * is not part of the current backend, so this is a no-op kept for the console's
-     * "clear cache" action (it expects a 200).
-     */
-    @GetMapping("/{id}/clear-cache")
-    public ResponseEntity<Void> clearCache(@PathVariable String id) {
-        return ResponseEntity.ok().build();
-    }
 }

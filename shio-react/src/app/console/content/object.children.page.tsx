@@ -12,7 +12,7 @@ import { ROUTES } from "@/app/routes.const"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
 import { PermissionsDialog } from "@/components/permissions.dialog"
-import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy, ShieldCheck } from "lucide-react"
+import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck } from "lucide-react"
 import { useEffect, useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -809,9 +809,6 @@ export default function ObjectChildrenPage() {
                     </button>
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleClone(item.id) }}>
                       <ClipboardCopy className="h-3 w-3" /> {t("content.clone")}
-                    </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); axios.get(`/v2/object/${item.id}/clear-cache`).then(() => toast.success(t("content.cacheCleared"))) }}>
-                      <RefreshCw className="h-3 w-3" /> {t("content.clearCacheAction")}
                     </button>
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("copy", [item.id]) }}>
                       <Copy className="h-3 w-3" /> {t("content.copy")}
