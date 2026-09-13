@@ -16,7 +16,6 @@
 - 📋 **SH946** (deps: SH941 ✅, DS VDS131) **six bento pages set their own max-width, gutters and rhythm, at three different widths** — The contract gives the reading column to the shell, but with no shell exported each page invents one, and the defect exists only between screens. → §LX.7
 - 📋 **SH947** (deps: SH946, SH942 ✅, DS VDS132) **the contract's two named rules have no check inside Shio's own test run** — A page setting its own column and a stylesheet setting --vg-primary directly would both pass pnpm test today, since nothing here spawns a page lint. → §LX.8
 - 📋 **SH948** (deps: DS VDS130) **copy-ds.cmd cannot find the design system, so a package change cannot be tried in Shio unpublished** — It forwards to use:local, whose walk from the package's position on disk now reaches a worktree container, and the wrapper adds nothing but that path. → §LX.9
-- 📋 **SH949** (deps: —) **Shio publishes a Claude Code marketplace that its own sessions never enable** — The openviglet marketplace ships four skills and an MCP server to strangers while settings.json enables only roadkeep, so a breakage arrives as somebody else's report. → §LX.10
 
 ## Block AV — The live defects, fixed before anything is built on them
 

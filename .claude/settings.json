@@ -94,13 +94,20 @@
     ]
   },
   "enabledPlugins": {
-    "roadkeep@alegauss": true
+    "roadkeep@alegauss": true,
+    "shio@openviglet": true
   },
   "extraKnownMarketplaces": {
     "alegauss": {
       "source": {
         "source": "github",
         "repo": "alegauss/roadkeep"
+      }
+    },
+    "openviglet": {
+      "source": {
+        "source": "github",
+        "repo": "openviglet/shio"
       }
     }
   }

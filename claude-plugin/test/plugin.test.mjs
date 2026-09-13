@@ -247,6 +247,74 @@ test("SH604: the README sends a reader to the manifest instead", async () => {
     "the README must point at the resource that answers what this plugin exposes");
 });
 
+/**
+ * SH949 — this repository loads the plugin it publishes, and the two skill sets stay apart.
+ *
+ * <p>The marketplace shipped four skills and an MCP server to strangers while
+ * `.claude/settings.json` enabled only `roadkeep@alegauss`. So the skills that teach an agent how
+ * to build a site in Shio were published by, and never loaded in, the repository that wrote them —
+ * which means every breakage in them arrives as somebody else's report rather than as a session
+ * here behaving oddly.</p>
+ *
+ * <p>Enabling it forces a decision worth forcing, and the second assertion is what holds it. There
+ * are now two sets of skills on one subject, and two authorities on one subject is the drift
+ * `agents.md` already names. The split: <b>a plugin skill serves a session driving an instance; a
+ * project skill serves a session changing this source tree.</b> A shared name would make the
+ * routing undecidable at the only moment it matters — when a description matches and Claude has to
+ * pick one — so a collision is a failure rather than a note.</p>
+ */
+test("SH949: the marketplace this repository publishes is enabled in this repository", async () => {
+  const marketplace = await json(join(repo, ".claude-plugin/marketplace.json"));
+  const settings = await json(join(repo, ".claude/settings.json"));
+
+  const known = settings.extraKnownMarketplaces ?? {};
+  assert.ok(
+    Object.hasOwn(known, marketplace.name),
+    `SH949: .claude-plugin/marketplace.json publishes \`${marketplace.name}\` and`
+      + ` .claude/settings.json does not know it. Known: ${Object.keys(known).join(", ") || "none"}.`
+      + " A plugin this repository ships and never loads is one whose breakages are reported by"
+      + " strangers.",
+  );
+
+  const enabled = settings.enabledPlugins ?? {};
+  for (const entry of marketplace.plugins) {
+    const key = `${entry.name}@${marketplace.name}`;
+    assert.equal(
+      enabled[key], true,
+      `SH949: ${key} is published by this repository and not enabled here. Add it to`
+        + " enabledPlugins in .claude/settings.json, so a session in this tree loads exactly what"
+        + " somebody installing the marketplace gets.",
+    );
+  }
+});
+
+test("SH949: no skill name is both a plugin skill and a project skill", async () => {
+  const directories = async (dir) =>
+    (await readdir(dir, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+
+  const ofPlugin = await directories(join(plugin, "skills"));
+  const ofProject = await directories(join(repo, ".claude/skills"));
+
+  // Neither side may be empty, or the intersection below is empty for the wrong reason — the
+  // failure mode of every comparison of two walks (SH322).
+  assert.ok(ofPlugin.length >= 4, `SH949: found ${ofPlugin.length} plugin skills; there were 4`);
+  assert.ok(ofProject.length >= 9, `SH949: found ${ofProject.length} project skills; there were 11`);
+
+  const shared = ofPlugin.filter((name) => ofProject.includes(name)).sort();
+  assert.deepEqual(
+    shared,
+    [],
+    `SH949: ${shared.join(", ")} is both a plugin skill and a project skill.\n`
+      + "  A plugin skill serves a session DRIVING AN INSTANCE; a project skill serves a session"
+      + " CHANGING THIS SOURCE TREE. Both sets are loaded in this repository, so a shared name"
+      + " makes the routing undecidable exactly when the descriptions overlap.\n"
+      + "  Rename one to say which side it is on — `shio-replicate` (drive) against"
+      + " `shio-replication-test` (change) is the pair this rule was written from.",
+  );
+});
+
 /** Every file the plugin ships that a reader can read: markdown and the manifest. */
 async function published() {
   const out = [];

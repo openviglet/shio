@@ -1677,6 +1677,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH941** — The bento authoring contract, its boundary document and nine artboards are vendored here — a skill that loads before the first screen, and a canvas that opens from the file tree (design §LX.2 recorded in `docs/agents/console-ui.md`).
 - **SH942** — Drift in the vendored page reference now fails pnpm test, naming the file — planted drift of each kind proves the check reads them, and reformatting canvas.json stays green (design §LX.3 recorded in `docs/agents/console-ui.md`).
 - **SH945** — The five surfaces this round invents are drawn, each stating what it decides and the direction it did not take, with the rejected release tray kept as its own artboard (design §LX.6 recorded in `docs/agents/console-ui.md`).
+- **SH949** — A session in this tree now loads the shio@openviglet plugin a stranger installs, and the two skill sets are split by whether a session drives an instance or changes this source tree (design §LX.10 recorded in `agents.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 

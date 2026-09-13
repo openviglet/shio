@@ -83,6 +83,16 @@ describes. The per-area detail below is **authoritative** — do not restate it 
 | The public site at shio.viglet.org — its stack, its prerender, and the one file all its copy lives in | [shio-site/README.md](shio-site/README.md) | — |
 | ROADMAP / CHANGELOG / IMPROVEMENTS upkeep rules — those three are **owned by `roadkeep`** ([roadkeep.toml](roadkeep.toml)), never hand-edited | [docs/agents/docs-process.md](docs/agents/docs-process.md) | `shio-roadmap-docs` |
 
+**Every skill above is a *project* skill, and there is a second set (SH949).** This repository
+publishes the `openviglet` marketplace, whose `shio` plugin ships `shio-site`,
+`shio-content-model`, `shio-replicate` and `shio-verify` — and `.claude/settings.json` now enables
+it here, so a session in this tree loads exactly what a stranger installs. The split, which is what
+keeps two sets from becoming two authorities on one subject: **a plugin skill serves a session
+driving an instance; a project skill serves a session changing this source tree.** So replicating a
+site is `shio-replicate` and changing the replication code is `shio-replication-test`; building
+pages is `shio-site` and changing the renderer is `shio-renderer`. No name may appear on both
+sides, and `claude-plugin/test/plugin.test.mjs` fails if one does.
+
 Addresses (SH79), used everywhere: `post:<site>/<friendly-url>` ·
 `folder:<site>/<name-chain>` · `site:<name>` · `id:<uuid>`. **Writes take only
 `post:`/`folder:`**, and a site's **home page is `post:<site>/`** — the one form

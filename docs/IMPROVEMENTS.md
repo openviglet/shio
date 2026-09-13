@@ -1078,25 +1078,6 @@ The assertion is that copy-ds.cmd --list, run from this checkout, names Shio and
 zero. A wrapper whose only job is a path it gets wrong is worth less than no wrapper,
 because it reports a missing package instead of a broken script.
 
-### LX.10 The plugin this repository ships, loaded where it is written (SH949)
-
-.claude-plugin/marketplace.json declares the openviglet marketplace with one plugin,
-shio, sourced from ./claude-plugin: a manifest, an .mcp.json wiring the MCP server, four
-skills and three commands, with a test asserting manifest paths, skill descriptions and
-command safety. .claude/settings.json enables roadkeep@alegauss and knows only the
-alegauss marketplace. So the skills that tell an agent how to build a site in Shio are
-published and never loaded in the repository that wrote them.
-
-Add openviglet to extraKnownMarketplaces and shio@openviglet to enabledPlugins. That
-forces a decision worth forcing: ten project skills under .claude/skills/shio-* and four
-plugin skills overlap in subject, and two authorities on one subject is the drift
-agents.md already names. The split that survives is that plugin skills serve a session
-driving an instance, and project skills serve a session changing this source tree. Write
-that sentence into the routing table.
-
-The instrument extends claude-plugin/test/plugin.test.mjs: no skill name appears on both
-sides, and settings.json enables the marketplace this repository publishes.
-
 ## LXI The live defects, fixed before anything is built on them (Block AV)
 
 Everything else in this round adds a capability. This block removes behaviour that is
