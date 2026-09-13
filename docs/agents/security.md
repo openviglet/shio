@@ -664,3 +664,50 @@ writes its own `Content-Disposition`.
 
 **Not covered:** the allow-list on what may be uploaded at all is SH951. This is the one-commit
 mitigation, deliberately separate so the hole does not stay open while that is argued.
+
+## What an instance accepts as an upload (SH951)
+
+SH950 stopped uploaded bytes being *served* as documents. They were still **stored**, still listed,
+and still copied into a content tree by `shio pull` — so the hole had moved rather than closed.
+`ShUploadPolicy` is the half that decides whether the bytes arrive.
+
+`shio.upload.policy.<media-type>` takes `allow`, `deny` or `sanitize`;
+`shio.upload.default-verdict` covers everything unnamed and ships as `allow`, because a policy is a
+list of exceptions and a deny-by-default list would have to enumerate every font and image format
+anyone ships. An exact key beats a `family/*` key beats the default.
+
+**Three verdicts, because two would force a bad choice about SVG.** `text/html` and
+`application/xhtml+xml` are denied outright: neither is legitimately an asset, and a page is
+content. SVG is **sanitized** — a replicated site's logo is very often one, and refusing it would
+make the product worse at its own job. `ShSvgSanitizer` removes `<script>`, `<foreignObject>`,
+`<handler>`, every `on*` attribute, a non-local `href`/`xlink:href`, `<!DOCTYPE>` and
+`<?xml-stylesheet?>`, and leaves everything else byte-identical — a clean SVG comes back unchanged,
+or every replication digest would move and `shio diff` would report a change nobody made. It is
+regex-based on purpose: an XML parse of attacker-controlled bytes is the surface XXE lives on, and
+re-serialising rewrites the whole document. **It is the second of two layers, not the only one** —
+SH950 already serves every SVG as an attachment under `default-src 'none'; sandbox`, and neither
+layer may be removed on the strength of the other.
+
+**The JavaScript default had to be settled, not assumed, and it has a cost.** A capture does not
+collect scripts: `clone-assets.mjs` splits its inventory into `DOWNLOADABLE` (image, stylesheet,
+font, icon, media, manifest) and `BEHAVIOUR` (script, data). So an ordinary replication uploads no
+JavaScript and is unaffected — but **`shio clone --scripts` (SH469) uploads a site's own bundle on
+purpose, and this default refuses it.** Nothing in the suites would have caught that: `--scripts`
+is exercised only in `planAssets` unit tests and never through a live upload, so the feature would
+have broken quietly rather than redly. The refusal is a teaching 400 naming
+`shio.upload.policy.text/javascript=allow`, which is the difference between a blocked replication
+and a mystery.
+
+**The verdict is taken on the name as well as the declared type, and the stricter wins.** The name
+is how the bytes will be *served* (`ShAssetResponseHeaders` reads it), so keying only on what the
+client declared would let `evil.svg` sent as `image/png` past the policy and then be served as an
+SVG anyway.
+
+`replace` is an upload path and gets the same treatment. Where bytes were cleaned, the post carries
+`SANITIZED: true` in its `data` — content rather than a log line, deliberately, because `shio pull`
+projects it and a reader comparing a replica against its source can then see the difference was a
+policy and not a defect.
+
+**Not covered (the remainder of SH951):** the agent legs — `shio_assets` rows gaining `unsafe` and
+`sanitized` flags, and `shio verify` gaining `asset-unsafe-type` over the projected tree. The
+server refuses and cleans today; what an agent can *see* about it is still only the post's data.

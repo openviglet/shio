@@ -82,6 +82,9 @@ public class ShStaticFileService {
     /** SH210 — a replaced asset is a content change, so it reaches the feed and the queue. */
     private final ShContentAuditService shContentAuditService;
     private final ShTenantQuotaService shTenantQuotaService;
+    /** SH951 — what this instance accepts, and what it cleans before accepting. */
+    private final ShUploadPolicy shUploadPolicy;
+    private final ShSvgSanitizer shSvgSanitizer;
     /** Self-reference so upload() bootstraps the File post type through the
      *  transactional proxy instead of a bare {@code this} call (S6809). */
     private final ObjectProvider<ShStaticFileService> self;
@@ -124,7 +127,11 @@ public class ShStaticFileService {
                                ObjectMapper objectMapper,
                                ShContentAuditService shContentAuditService,
                                ShTenantQuotaService shTenantQuotaService,
+                               ShUploadPolicy shUploadPolicy,
+                               ShSvgSanitizer shSvgSanitizer,
                                ObjectProvider<ShStaticFileService> self) {
+        this.shUploadPolicy = shUploadPolicy;
+        this.shSvgSanitizer = shSvgSanitizer;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -152,15 +159,26 @@ public class ShStaticFileService {
     public ShPostUnified upload(MultipartFile file, String folderId, String owner) {
         String fileName = ShFileStorageService.sanitizeFileName(file.getOriginalFilename());
 
+        // SH951 — the policy decides before anything is stored, and before the quota is spent:
+        // refusing costs nothing, and a 400 raised after a row exists leaves a File post with no
+        // bytes. The verdict is taken on how the file will be SERVED (its name, which is what
+        // ShAssetResponseHeaders reads) as well as on what the client declared, and the stricter of
+        // the two wins — otherwise `evil.svg` sent as image/png dodges the policy and is then
+        // served as an SVG anyway.
+        byte[] sanitized = applyUploadPolicy(file, fileName);
+
         // SH110 — before the post row and before the bytes. A 402 raised after either would leave
         // the tenant holding something they were just told they could not have, and the row is the
         // half that survives a rolled-back write on disk.
-        shTenantQuotaService.checkCanStore(file.getSize());
+        shTenantQuotaService.checkCanStore(sanitized != null ? sanitized.length : file.getSize());
 
         ShPostType fileType = self.getObject().resolveOrCreateFilePostType();
 
         ObjectNode data = objectMapper.createObjectNode();
         data.put(ShSystemPostTypeAttr.FILE, fileName);
+        if (sanitized != null) {
+            data.put(ShSystemPostTypeAttr.SANITIZED, true);
+        }
 
         // The post first, then the bytes, then what the bytes say about themselves. The order is
         // forced: storage is keyed by the post's id, so the id has to exist before anything can be
@@ -168,7 +186,12 @@ public class ShStaticFileService {
         ShPostUnified post = shPostUnifiedWriteService.create(new CreateRequest(
                 folderId, fileType.getId(), data, ShPostState.PUBLISHED, owner, null, null));
 
-        try (InputStream bytes = file.getInputStream()) {
+        // SH951 — the sanitized bytes when the policy cleaned them, the stream otherwise. Only the
+        // sanitize path buffers, and only an SVG takes it: streaming is what keeps a video upload
+        // from becoming an allocation the size of the video (SH398's reason, one step earlier).
+        try (InputStream bytes = sanitized != null
+                ? new ByteArrayInputStream(sanitized)
+                : file.getInputStream()) {
             storage.store(post.getId(), fileName, bytes);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read upload " + fileName, e);
@@ -180,6 +203,49 @@ public class ShStaticFileService {
         // hit, and the dimension reader takes the same route because it only wants a header.
         stampBytes(post, fileName);
         return post;
+    }
+
+    /**
+     * Run the upload policy over these bytes (SH951).
+     *
+     * <p>Refuses outright where the policy denies the type. Where it says sanitize, returns the
+     * cleaned bytes; where the bytes were already clean, returns them anyway so the caller stores
+     * what was inspected rather than re-reading a stream that has been consumed.</p>
+     *
+     * @return the bytes to store, or {@code null} to stream the upload through untouched
+     */
+    private byte[] applyUploadPolicy(MultipartFile file, String fileName) {
+        // How it will be served, which is by name (ShAssetResponseHeaders), and what the client
+        // said it was. A deny on either refuses: the two disagree exactly when somebody is trying
+        // to get an SVG past a policy by calling it a PNG.
+        String byName = ShAssetResponseHeaders.contentTypeByName(fileName);
+        String declared = file.getContentType();
+
+        boolean sanitize = false;
+        if (byName != null) {
+            sanitize = shUploadPolicy.check(byName, fileName);
+        }
+        if (declared != null && !ShUploadPolicy.bare(declared).equals(ShUploadPolicy.bare(byName))) {
+            sanitize |= shUploadPolicy.check(declared, fileName);
+        }
+        if (byName == null && declared == null) {
+            shUploadPolicy.check(ShAssetResponseHeaders.FALLBACK_CONTENT_TYPE, fileName);
+        }
+        if (!sanitize) {
+            return null;
+        }
+
+        byte[] raw;
+        try {
+            raw = file.getBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read upload " + fileName, e);
+        }
+        ShSvgSanitizer.Result result = shSvgSanitizer.sanitize(raw);
+        if (result.changed()) {
+            log.info("SH951: sanitized {} on upload — removed {}", fileName, result.removed());
+        }
+        return result.bytes();
     }
 
     /**
@@ -259,14 +325,24 @@ public class ShStaticFileService {
                 .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
 
         String fileName = fileNameOf(post);
+        // SH951 — `replace` is an upload path, so the policy applies here too. The name is the
+        // existing post's, which is the point: new bytes cannot change what this asset is served
+        // as, so a script smuggled in through a replace would be served under the old name.
+        byte[] sanitized = applyUploadPolicy(file, fileName);
         // SH110 — the DIFFERENCE, not the new size: replacing a 900 MB video with a 1 MB one frees
         // 899 MB, and charging the plan for the new size would refuse a write that makes the tenant
         // smaller. A negative delta is a no-op in the shared check.
-        shTenantQuotaService.checkCanStore(file.getSize() - storage.storedBytes(post.getId(), fileName));
-        try (InputStream bytes = file.getInputStream()) {
+        long incoming = sanitized != null ? sanitized.length : file.getSize();
+        shTenantQuotaService.checkCanStore(incoming - storage.storedBytes(post.getId(), fileName));
+        try (InputStream bytes = sanitized != null
+                ? new ByteArrayInputStream(sanitized)
+                : file.getInputStream()) {
             storage.store(post.getId(), fileName, bytes);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read replacement for " + fileName, e);
+        }
+        if (sanitized != null) {
+            markSanitized(post);
         }
         post.setModifier(modifier);
         post.setModifiedDate(Instant.now());
@@ -332,6 +408,20 @@ public class ShStaticFileService {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + fileName + " for " + id, e);
         }
+    }
+
+    /**
+     * Record on the post that its stored bytes are not the bytes that arrived (SH951).
+     *
+     * <p>Set, never cleared: a replace that needed no cleaning does not un-say that an earlier one
+     * did, because the flag is about what is on disk and a replace writes over it. The one case
+     * that would clear it is bytes replaced by something the policy allows outright, and that is
+     * exactly when the caller does not reach here.</p>
+     */
+    private void markSanitized(ShPostUnified post) {
+        ObjectNode data = dataOf(post);
+        data.put(ShSystemPostTypeAttr.SANITIZED, true);
+        post.setData(objectMapper.writeValueAsString(data));
     }
 
     /**

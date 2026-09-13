@@ -51,6 +51,7 @@ import org.springframework.web.context.WebApplicationContext;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -232,16 +233,25 @@ class ShStaticFileAPITest {
                 });
     }
 
+    /**
+     * SH950's rule is about everything that is not a raster image, and a PDF is the case that
+     * still reaches storage.
+     *
+     * <p>This asserted an uploaded {@code .html} until SH951, which denies that type at the door —
+     * so the more obvious hole is now closed one layer earlier ({@code stage06a}) and cannot be set
+     * up here at all. A PDF is the honest subject for the serving rule: the policy stores it, it is
+     * a document, it can carry script, and it must not be handed to the browser to render.</p>
+     */
     @Test
-    void stage02eServeHtmlIsNotARenderableDocument() throws Exception {
-        String id = uploadFile("payload.html", "text/html",
-                "<script>alert(document.domain)</script>".getBytes(StandardCharsets.UTF_8));
+    void stage02eServeAStoredDocumentIsNotRenderedInline() throws Exception {
+        String id = uploadFile("brochure.pdf", "application/pdf",
+                "%PDF-1.4 not really a pdf".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(get("/api/v2/staticfile/" + id).principal(mockPrincipal))
                 .andExpect(status().isOk())
                 .andExpect(result -> assertTrue(
                         result.getResponse().getHeader("Content-Disposition").startsWith("attachment"),
-                        "SH950: an uploaded HTML file is the same hole and the more obvious one. Got: "
+                        "SH950: only a raster image renders inline. Got: "
                                 + result.getResponse().getHeader("Content-Disposition")));
     }
 
@@ -265,6 +275,60 @@ class ShStaticFileAPITest {
                             result.getResponse().getHeader(ShAssetResponseHeaders.X_CONTENT_TYPE_OPTIONS),
                             "SH950: nosniff goes on every asset, including the ones served inline");
                 });
+    }
+
+    /**
+     * SH951 — the upload policy, at the boundary it defends.
+     *
+     * <p>SH950 stopped these bytes being <em>served</em> as documents. They were still stored, still
+     * listed and still copied into a content tree by {@code shio pull}, so the hole had moved rather
+     * than closed. Here the HTML never lands at all, and the SVG lands with its behaviour taken
+     * out.</p>
+     */
+    @Test
+    void stage06aUploadOfAnHtmlFileIsRefusedWithAnInstruction() throws Exception {
+        mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(new MockMultipartFile("file", "page.html", "text/html",
+                                "<script>alert(1)</script>".getBytes(StandardCharsets.UTF_8)))
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fix").exists())
+                .andExpect(jsonPath("$.allowed").exists());
+    }
+
+    @Test
+    void stage06bUploadOfAScriptedSvgIsStoredWithoutTheScript() throws Exception {
+        String hostile = "<svg xmlns=\"http://www.w3.org/2000/svg\" onload=\"alert(1)\">"
+                + "<script>alert(document.domain)</script>"
+                + "<circle cx=\"5\" cy=\"5\" r=\"4\" fill=\"red\"/></svg>";
+
+        String created = mockMvc
+                .perform(multipart("/api/v2/staticfile/upload")
+                        .file(new MockMultipartFile("file", "logo.svg", "image/svg+xml",
+                                hostile.getBytes(StandardCharsets.UTF_8)))
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
+        assertTrue(created.contains(ShSystemPostTypeAttr.SANITIZED),
+                "SH951: the post must record that its stored bytes are not the bytes that arrived — "
+                        + "`shio pull` projects this, so a replica's difference reads as a policy "
+                        + "rather than as a defect");
+
+        String served = mockMvc.perform(get("/api/v2/staticfile/" + id).principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertFalse(served.contains("<script"),
+                "SH951: the script must be gone from the STORED bytes, not merely neutralised on "
+                        + "the way out — a later change of policy must not resurrect a payload");
+        assertFalse(served.contains("onload"), "SH951: the event handler must be gone too");
+        assertTrue(served.contains("circle"),
+                "SH951: the drawing is the point — a sanitizer that empties the picture is a "
+                        + "denial with extra steps, and a replicated logo is usually an SVG");
     }
 
     /** Upload bytes under a name and return the new File post's id. */

@@ -29,6 +29,15 @@ public class ShSystemPostTypeAttr {
 	public static final String TITLE = "TITLE";
 	public static final String DESCRIPTION = "DESCRIPTION";
 	public static final String FILE = "FILE";
+	/**
+	 * SH951 — {@code true} where the stored bytes are not the bytes that were uploaded, because
+	 * the upload policy sanitized them (today: script and event handlers taken out of an SVG).
+	 *
+	 * <p>On the post's data rather than in a log line, deliberately: {@code shio pull} projects
+	 * this into the content tree, so a reader comparing a replica against its source can see that
+	 * the difference was a policy and not a defect. A log line is gone by the time anyone asks.</p>
+	 */
+	public static final String SANITIZED = "SANITIZED";
 	public static final String TEXT = "TEXT";
 	/**
 	 * SH195 — a Theme's design tokens, as W3C Design Tokens (DTCG) JSON.

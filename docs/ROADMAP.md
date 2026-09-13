@@ -19,7 +19,7 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- 📋 **SH951** (deps: SH950 ✅) **no upload path has a content policy, so HTML, JavaScript and scripted SVG are accepted like images** — There is no MIME allow-list anywhere in the static-file package and the multipart limit is 1024 MB, so the write path agents use for assets filters nothing. → §LXI.2
+- ⏳ **SH951** (deps: SH950 ✅) **no upload path has a content policy, so HTML, JavaScript and scripted SVG are accepted like images** — the agent legs — shio_assets rows gaining unsafe and sanitized flags, and shio verify gaining asset-unsafe-type over the projected tree. → §LXI.2
 - 📋 **SH952** (deps: —) **shio_write drops when, locale, translationOf, url and expect, so a scheduled publish over MCP goes live at once** — ShWriteTool builds each op with the six-field constructor documented for ops that never schedule, while its own schema advertises when for post.publish. → §LXI.3
 - 📋 **SH953** (deps: —) **bulk delete swallows every failure and reports the whole selection as deleted** — Each DELETE's rejection is discarded by an empty catch and the toast counts the selection, so a thousand refused deletes still announce a thousand deleted. → §LXI.4
 - 📋 **SH954** (deps: —) **the Clear cache row action calls an endpoint whose entire body returns 200 and does nothing** — The page-cache subsystem it drove is gone and the no-op stayed because the console expects a 200, so the button has reported success for a cache that does not exist. → §LXI.5
@@ -64,6 +64,7 @@
 - 📋 **SH983** (deps: SH982) **no census asks which writes return proof, so cheap textual evidence stays a per-author choice** — Digest, verify and impact are opt-in per endpoint, so a new write can ship returning a bare 200 and nothing notices the perception loop was left open. → §LXIV.11
 - 📋 **SH984** (deps: —) **lines filed against a design-system release have no probe in the waits list, so a release can end their wait unnoticed** — SH937 holds every line waiting on the package as a named probe, and SH946, SH947, SH948, SH963, SH964, SH966 and SH968 were filed without one. → §LXIV.12
 - 📋 **SH1070** (deps: —) **the docs conformance gate is red at HEAD, and 135 commits deep in owed runs** — Two suites fail on drift nobody has seen: a published page states Spring Boot 4.1.0 against a pom declaring 4.1.1, and COVERAGE.md's summary counts 57 clusters over 54 rows. → §LXIV.13
+- 📋 **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — SH799 fails the JS gate once the queue exceeds five, and the fix is two commits in two repositories: COVERAGE.md in vigletdocs, then coverage:mirror here. → §LXIV.14
 
 ## Block AZ — What the content said before
 
@@ -181,6 +182,14 @@
 - 📋 **SH1069** (deps: —) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — The block-completion sweep of docs-shio, the coverage matrix and the public site is required when a block's last task ships, and no block here declares one. → §LXXIV.7
 
 ## Priority
+
+## Done when — SH951
+
+- **An agent can see that an asset was refused or cleaned, without reading a post**
+  shio_assets rows carry unsafe and sanitized, and shio verify reports asset-unsafe-type
+  over the projected tree. The server half is done: uploads are refused or sanitized and
+  the post records SANITIZED, but that fact is reachable only by reading the post's
+  data.
 
 ## Non-goals (do NOT add as tasks)
 

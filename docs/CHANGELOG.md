@@ -1682,6 +1682,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AV — The live defects, fixed before anything is built on them
 
 - **SH950** — An uploaded SVG or HTML file now comes back as an attachment with nosniff and a sandbox CSP, on all three asset routes, while a PNG still renders inline (design §LXI.1 recorded in `docs/agents/security.md`).
+- **SH951 (the server-side policy)** — Uploads now meet a policy: HTML and JavaScript are refused with a teaching 400 naming the property that allows them, and an SVG is stored with its script, handlers and foreignObject removed.
 
 ## Block AW — One chrome: bento, and nothing left that names another
 
