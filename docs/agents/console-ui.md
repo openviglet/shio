@@ -2172,6 +2172,35 @@ is compared as **parsed JSON, never as bytes** — reindenting it must stay gree
 whose editor reformats it is the person who deletes the gate. Its control is a semantic edit to the
 same file, which must still be caught.
 
+### Which screens are worth drawing, and which are already decided (SH945)
+
+`docs/design/` holds two kinds of artboard. The `vds-*` ones belong to the package (above). The
+`shio-*` ones are this repository's own, on this repository's own `canvas.json` pages —
+`shio-surfaces` and `shio-not-chosen` — which the bin preserves rather than rewrites.
+
+**The 23 migrated console screens are deliberately not drawn.** Blocks AQ and AR settled them: one
+route tree, the three shapes and the panel taken from the package, zero legacy chrome. An artboard
+would re-open a decided question and cost days to confirm what the shell and `authoring.md` already
+say. Drawing is for a layout that is still open *and* whose data model follows from the choice.
+
+Five qualify, and each artboard states what it decides and names the direction it did not take:
+revision history with a **field-level** diff (Block AZ — per-field is what SH989 needs, so a
+revision stores a field map and not a rendered blob), the translation workspace (Block BH —
+staleness is per field, so SH1058's digest is too), release bundles (Block BA — a release is
+persisted and addressable, which is what gives SH994 a rollback anchor and SH998 a waiver somewhere
+to live), the agent-supervision inbox (Block BB — the verdict and its reason sit on the *item*, the
+intent on the *run*), and the asset browser (Block BE — every filter including "unused" is
+server-side and paged, which is a claim on SH1033's index).
+
+One rejected direction is kept **drawn** rather than described: `shio-release-tray.dc.html`, a
+release as a session-scoped tray. It reads perfectly well, and everything wrong with it is invisible
+on the screen — which is the argument for drawing it instead of arguing about it.
+
+`cli/test/design-canvas.test.mjs` names the five, checks the canvas and the files agree both ways,
+and — the one that matters — runs a real refresh against a copy and asserts this repository's own
+pages, artboards and annotations come back unchanged. A release that stopped preserving them would
+delete every drawing here, and the only sign would be a canvas that opens with fewer pages.
+
 ### The admin hub nobody had migrated
 
 `ADMIN_ROOT` is the `urlBase` of eleven admin surfaces, so it is where their hero back-links point —

@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; height: 19px; padding: 0 7px; border-radius: 999px; border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #007a55; font-size: 10px; font-weight: 600; }
+    .pill-stale { border-color: rgba(254,154,0,0.45); background: rgba(254,154,0,0.1); color: #973c00; }
+    .pill-missing { border-color: rgba(251,44,54,0.35); background: rgba(251,44,54,0.07); color: #9f0712; }
+    .field { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; color: #737373; }
+    .cell { display: flex; align-items: center; justify-content: center; height: 26px; border-radius: 7px; font-size: 10px; font-weight: 600; }
+    .ok { background: rgba(0,188,125,0.13); color: #006045; }
+    .stale { background: rgba(254,154,0,0.16); color: #973c00; }
+    .gone { background: rgba(251,44,54,0.09); color: #9f0712; border: 1px dashed rgba(251,44,54,0.35); }
+    .note { font-size: 11px; color: #404040; line-height: 1.5; }
+    .src { background: rgba(245,245,245,0.75); }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1360px;height:780px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">SHIO &middot; BLOCK BH &middot; SH1056-SH1062</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">One content model, many languages</div>
+      <div style="font-size:12.5px;color:#737373">The board says what is missing; the workspace puts both languages on one screen.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:360px 1fr;gap:18px;padding:14px 24px 0">
+
+    <!-- the coverage board (SH1060) -->
+    <div style="min-height:0;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(20,71,230,0.4);background:rgba(20,71,230,0.08);color:#1447e6;font-size:11px;font-weight:600">arrive to see what is missing</span>
+      </div>
+
+      <div style="flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:15px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:flex-start;gap:11px;margin-bottom:13px">
+          <div class="chip" style="width:38px;height:38px;border-radius:12px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"></path></svg></div>
+          <div style="flex:1;min-width:0">
+            <div class="eyebrow" style="color:#737373">CORPORATE</div>
+            <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Translation coverage</div>
+            <div style="font-size:11px;color:#737373;margin-top:2px">en source &middot; pt-br, es enabled</div>
+          </div>
+        </div>
+
+        <!-- a table inside BentoPanel, contentClassName p-0 -->
+        <div class="glass" style="border-radius:20px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1fr 54px 54px;gap:7px;padding:7px 11px;background:rgba(245,245,245,0.6);border-bottom:1px solid #ededed;font-size:9.5px;font-weight:600;letter-spacing:0.06em;color:#737373">
+            <div>PAGE</div><div style="text-align:center">PT-BR</div><div style="text-align:center">ES</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 54px 54px;gap:7px;padding:5px 11px;align-items:center;border-bottom:1px solid #f4f4f4;font-size:11.5px">
+            <div>Home</div><div class="cell ok">ok</div><div class="cell ok">ok</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 54px 54px;gap:7px;padding:5px 11px;align-items:center;border-bottom:1px solid #f4f4f4;font-size:11.5px;background:rgba(20,71,230,0.05)">
+            <div style="font-weight:600">Pricing</div><div class="cell stale">stale</div><div class="cell gone">&mdash;</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 54px 54px;gap:7px;padding:5px 11px;align-items:center;border-bottom:1px solid #f4f4f4;font-size:11.5px">
+            <div>About</div><div class="cell ok">ok</div><div class="cell gone">&mdash;</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 54px 54px;gap:7px;padding:5px 11px;align-items:center;border-bottom:1px solid #f4f4f4;font-size:11.5px">
+            <div>Contact</div><div class="cell stale">stale</div><div class="cell ok">ok</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 54px 54px;gap:7px;padding:5px 11px;align-items:center;font-size:11.5px">
+            <div>Careers</div><div class="cell gone">&mdash;</div><div class="cell gone">&mdash;</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">
+          <span class="pill">12 current</span>
+          <span class="pill pill-stale">6 stale</span>
+          <span class="pill pill-missing">9 missing</span>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <div style="border-top:1px solid #f0f0f0;padding-top:10px;margin-top:10px">
+          <div class="eyebrow" style="color:#737373;margin-bottom:5px">HAND THE GAPS TO THE AGENT</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:30px;border-radius:10px;border:1px solid #e5e5e5;background:#ffffff;display:flex;align-items:center;padding:0 10px;font-size:11px;color:#a1a1a1">Translate the 9 missing pages into es</div>
+            <div style="display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:10px;background:#171717;color:#fafafa;font-size:11.5px;font-weight:500">Ask</div>
+          </div>
+          <div style="font-size:10px;color:#737373;margin-top:5px">Relayed to the connected agent (SH1062). Shio hosts no model; the board only states the request.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- the workspace (SH1061) -->
+    <div style="min-height:0;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(254,154,0,0.45);background:rgba(254,154,0,0.1);color:#973c00;font-size:11px;font-weight:600">arrive to translate one</span>
+        <span class="mono" style="font-size:10.5px;color:#737373">BentoEntityShell + a page-owned aside</span>
+      </div>
+
+      <div style="flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden;display:flex;flex-direction:column">
+
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:13px">
+          <div class="chip" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M9 6v12M4 18h10M16 9l4 9M20 9l-4 9"></path></svg></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:5px;color:#737373">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>
+              <span class="eyebrow">COVERAGE</span>
+            </div>
+            <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Pricing &rarr; pt-br</div>
+            <div style="font-size:11.5px;color:#737373;margin-top:2px">Source is <strong>2 revisions ahead</strong> of this translation</div>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;border:1px solid #e5e5e5;background:#ffffff;font-size:12px;font-weight:500;color:#404040">Ask agent</div>
+            <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">Save</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
+          <div class="eyebrow" style="color:#737373">EN &mdash; SOURCE, READ ONLY</div>
+          <div class="eyebrow" style="color:#1447e6">PT-BR &mdash; EDITING</div>
+        </div>
+
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:9px">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="glass src" style="border-radius:18px;padding:10px 12px">
+              <div class="field">TITLE</div>
+              <div style="font-size:12.5px;margin-top:4px">Plans &amp; pricing</div>
+            </div>
+            <div class="glass" style="border-radius:18px;padding:10px 12px;border-color:rgba(20,71,230,0.35)">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="field">TITLE</div>
+                <span class="pill pill-stale">source changed</span>
+              </div>
+              <div style="font-size:12.5px;margin-top:4px">Pre&ccedil;os</div>
+            </div>
+          </div>
+
+          <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="glass src" style="border-radius:18px;padding:10px 12px;display:flex;flex-direction:column">
+              <div class="field">BODY</div>
+              <div style="font-size:11.5px;line-height:1.55;margin-top:5px;color:#404040">Every plan includes unlimited seats <mark style="background:rgba(254,154,0,0.25);color:inherit">and unlimited environments</mark>. Annual billing saves two months.</div>
+              <div style="flex:1"></div>
+              <div style="font-size:10px;color:#737373">Highlighted: what changed since this translation was made.</div>
+            </div>
+            <div class="glass" style="border-radius:18px;padding:10px 12px;border-color:rgba(20,71,230,0.35);display:flex;flex-direction:column">
+              <div class="field">BODY</div>
+              <div style="font-size:11.5px;line-height:1.55;margin-top:5px;color:#404040">Todos os planos incluem usu&aacute;rios ilimitados. A cobran&ccedil;a anual economiza dois meses.</div>
+              <div style="flex:1"></div>
+              <div style="height:1px;background:#ededed;margin:7px 0"></div>
+              <div style="font-size:10px;color:#973c00">One sentence is untranslated. The field is marked stale until it is saved again.</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="glass src" style="border-radius:18px;padding:9px 12px;display:flex;gap:18px;align-items:center">
+              <div><div class="field">FURL</div><div style="font-size:11px;margin-top:3px" class="mono">/pricing</div></div>
+            </div>
+            <div class="glass" style="border-radius:18px;padding:9px 12px;display:flex;gap:18px;align-items:center;border-color:rgba(20,71,230,0.35)">
+              <div><div class="field">FURL</div><div style="font-size:11px;margin-top:3px" class="mono">/precos</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHAT THIS DECIDES</div>
+      <div class="note">Staleness is a <strong>per-field</strong> fact derived from the source revision a translation was made from &mdash; so SH1058's digest has to be stored per field, not per post, or the right pane cannot mark one sentence and leave the rest alone. The board and the workspace read the same fact at two resolutions.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:400px">
+      <div class="eyebrow" style="color:#973c00;margin-bottom:4px">NOT CHOSEN &mdash; A LOCALE SWITCHER ON THE POST</div>
+      <div class="note">Keep one editor and switch which language it is showing. Cheapest to build, and it is roughly what the translations menu does now: the two languages are never on screen together, so the translator works from memory or a second tab (SH1061). It also leaves no place to show what changed in the source.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

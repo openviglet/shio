@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; height: 19px; padding: 0 7px; border-radius: 999px; border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #007a55; font-size: 10px; font-weight: 600; }
+    .pill-hold { border-color: rgba(254,154,0,0.45); background: rgba(254,154,0,0.1); color: #973c00; }
+    .pill-rej { border-color: rgba(251,44,54,0.35); background: rgba(251,44,54,0.07); color: #9f0712; }
+    .pill-agent { border-color: rgba(79,57,246,0.4); background: rgba(79,57,246,0.09); color: #4f39f6; }
+    .pill-mute { border-color: #e5e5e5; background: #fafafa; color: #737373; }
+    .run { padding: 9px 11px; border-radius: 13px; border: 1px solid transparent; }
+    .run-on { background: rgba(20,71,230,0.06); border-color: rgba(20,71,230,0.3); }
+    .verdict { display: inline-flex; align-items: center; justify-content: center; height: 25px; padding: 0 10px; border-radius: 8px; font-size: 11px; font-weight: 500; border: 1px solid #e5e5e5; background: #ffffff; color: #404040; }
+    .note { font-size: 11px; color: #404040; line-height: 1.5; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1360px;height:780px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">SHIO &middot; BLOCK BB &middot; SH999-SH1005</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">Supervising an agent, one run at a time</div>
+      <div style="font-size:12.5px;color:#737373">Grouped by run, because a run is what has an intent. Decided per item, because one bad page is not the run.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:318px 1fr;gap:18px;padding:14px 24px 0">
+
+    <!-- the runs -->
+    <div style="min-height:0;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="eyebrow" style="color:#737373">RUNS AWAITING REVIEW</span>
+        <span style="font-size:10px;color:#a1a1a1">3</span>
+      </div>
+
+      <div style="flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:9px;display:flex;flex-direction:column;gap:5px">
+
+        <div class="run run-on">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span class="pill pill-agent">claude</span>
+            <span style="font-size:10px;color:#737373">14 min ago</span>
+            <div style="flex:1"></div>
+            <span style="font-size:11px;font-weight:600">12</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;margin-top:5px;line-height:1.35">Rewrite the pricing pages for the Spring plan names</div>
+          <div style="font-size:10.5px;color:#737373;margin-top:3px;line-height:1.4">From ticket <span class="mono" style="font-size:10px">SHIO-412</span>. Renaming Starter to Solo across the plan tree and fixing inbound links.</div>
+          <div style="display:flex;gap:5px;margin-top:7px">
+            <span class="pill">8 approved</span>
+            <span class="pill pill-hold">1 held</span>
+            <span class="pill pill-mute">3 left</span>
+          </div>
+        </div>
+
+        <div class="run">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span class="pill pill-agent">claude</span>
+            <span style="font-size:10px;color:#737373">2 h ago</span>
+            <div style="flex:1"></div>
+            <span style="font-size:11px;font-weight:600">41</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;margin-top:5px;line-height:1.35">Import the careers listings from the ATS feed</div>
+          <div style="font-size:10.5px;color:#737373;margin-top:3px">No ticket. Stated intent only.</div>
+        </div>
+
+        <div class="run">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span class="pill pill-agent">ops-bot</span>
+            <span style="font-size:10px;color:#737373">yesterday</span>
+            <div style="flex:1"></div>
+            <span style="font-size:11px;font-weight:600">3</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;margin-top:5px;line-height:1.35">Add alt text to images missing it</div>
+          <div style="display:flex;gap:5px;margin-top:7px"><span class="pill pill-rej">1 rejected</span></div>
+        </div>
+
+        <div style="flex:1"></div>
+        <div style="border-top:1px solid #f0f0f0;padding-top:8px;font-size:10.5px;color:#737373;line-height:1.4">A run with no stated intent still lists. It is reviewed by reading the diffs, which is what every run costs today.</div>
+      </div>
+    </div>
+
+    <!-- the run's items -->
+    <div style="min-height:0;display:flex;flex-direction:column">
+      <div style="flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;display:flex;flex-direction:column">
+
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:13px">
+          <div class="chip" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H7l-3 3V5z"></path></svg></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:5px;color:#737373">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>
+              <span class="eyebrow">REVIEW</span>
+            </div>
+            <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Rewrite the pricing pages</div>
+            <div style="font-size:11.5px;color:#737373;margin-top:2px">12 changes &middot; <span class="mono" style="font-size:11px">run:8f2c41</span> &middot; claude &middot; token <span class="mono" style="font-size:11px">agent-ci</span></div>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <div class="verdict">Revert the rest</div>
+            <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">Approve the rest</div>
+          </div>
+        </div>
+
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:8px">
+
+          <!-- an item still to decide, expanded -->
+          <div class="glass" style="border-radius:22px;padding:12px 14px;border-color:rgba(20,71,230,0.32)">
+            <div style="display:flex;align-items:center;gap:9px">
+              <span class="mono" style="font-size:11px;flex:1">post:corporate/plans/starter</span>
+              <span class="pill pill-mute">renamed</span>
+            </div>
+            <div style="display:flex;gap:5px;margin-top:8px;flex-direction:column;font-size:11.5px">
+              <div style="background:rgba(251,44,54,0.07);border-left:2px solid rgba(251,44,54,0.5);color:#9f0712;padding:5px 9px;border-radius:0 8px 8px 0">Starter &mdash; for one person getting going</div>
+              <div style="background:rgba(0,188,125,0.08);border-left:2px solid rgba(0,188,125,0.55);color:#006045;padding:5px 9px;border-radius:0 8px 8px 0">Solo &mdash; for one person getting going</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:10px">
+              <div class="verdict" style="border-color:rgba(0,188,125,0.4);color:#006045">Approve</div>
+              <div class="verdict" style="border-color:rgba(254,154,0,0.45);color:#973c00">Hold</div>
+              <div class="verdict" style="border-color:rgba(251,44,54,0.35);color:#9f0712">Reject</div>
+              <div style="flex:1;height:27px;border-radius:9px;border:1px solid #e5e5e5;background:#ffffff;display:flex;align-items:center;padding:0 10px;font-size:10.5px;color:#a1a1a1">Why &mdash; the agent reads this</div>
+            </div>
+          </div>
+
+          <!-- a held item, with the reason that goes back -->
+          <div class="glass" style="border-radius:22px;padding:12px 14px;background:rgba(254,154,0,0.05)">
+            <div style="display:flex;align-items:center;gap:9px">
+              <span class="mono" style="font-size:11px;flex:1">post:corporate/pricing</span>
+              <span class="pill pill-hold">held</span>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:flex-start">
+              <div style="width:3px;align-self:stretch;background:rgba(254,154,0,0.5);border-radius:2px"></div>
+              <div style="font-size:11px;color:#404040;line-height:1.45">&ldquo;Legal has not signed off on &lsquo;unlimited environments&rsquo;. Keep the rename, drop that clause.&rdquo;<div style="font-size:10px;color:#737373;margin-top:3px">A. Oliveira, 4 min ago &middot; readable by the run</div></div>
+            </div>
+          </div>
+
+          <div class="glass" style="border-radius:22px;padding:10px 14px;display:flex;align-items:center;gap:9px">
+            <span class="mono" style="font-size:11px;flex:1">post:corporate/plans/team</span>
+            <span class="pill">approved</span>
+            <span style="font-size:10px;color:#737373">and published</span>
+          </div>
+          <div class="glass" style="border-radius:22px;padding:10px 14px;display:flex;align-items:center;gap:9px">
+            <span class="mono" style="font-size:11px;flex:1">post:corporate/plans/business</span>
+            <span class="pill">approved</span>
+            <span style="font-size:10px;color:#737373">and published</span>
+          </div>
+
+          <div style="flex:1"></div>
+          <div style="font-size:10.5px;color:#737373;border-top:1px solid #f0f0f0;padding-top:8px">Each item already carries a revertable flag. This is the surface that lets a curator use it &mdash; one item at a time, with the reason stored beside the verdict.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHAT THIS DECIDES</div>
+      <div class="note">The <strong>verdict and its reason live on the item</strong>, not on the run &mdash; that is what SH1001 needs to stop review being all-or-nothing, and it is the row SH1002 reads back so an agent can learn a change was held and why. The run keeps one thing of its own: the intent it was given (SH1000), which is what makes twelve diffs reviewable as one decision.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:400px">
+      <div class="eyebrow" style="color:#973c00;margin-bottom:4px">NOT CHOSEN &mdash; AN INBOX GROUPED BY PAGE</div>
+      <div class="note">Rows are addresses with something pending. It suits a curator who owns a section, and it destroys the only context a reviewer has: twelve changes that only make sense as &ldquo;rename Starter to Solo&rdquo; arrive as twelve unrelated edits, and the intent has nowhere to attach. Grouping by page is a filter on this screen, not a second screen.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

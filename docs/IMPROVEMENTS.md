@@ -1021,31 +1021,6 @@ Shio need not invent the shape. claude-plugin/ here is a working example:
 the manifest. The deliverable is the decision with its reasons, plus whichever half Shio
 can land on its own side; the package's half is the design system's own line.
 
-### LX.6 Which screens are worth drawing, and which are already decided (SH945)
-
-roadkeep-gui put nine artboards in docs/design before building, and two of them,
-DirecaoA and DirecaoB, are titled nao escolhida. That is an artboard earning its keep:
-it made a choice between two directions cheap and visible, and the record of the
-rejected one survives in the file. It drew first because it was greenfield, with no
-screen to disagree with.
-
-Shio is not in that position and should not copy the practice wholesale. Blocks AQ and
-AR already migrated the console: 23 pages, zero legacy chrome, one route tree, the three
-shapes and the panel taken from the package. Drawing those screens would re-decide a
-settled question, cost days, and yield nothing, because what an artboard resolves is
-already resolved by the shell and by BENTO-AUTHORING.
-
-What is unsettled is the surfaces this round invents, where a wrong guess is paid for in
-backend work. Five qualify: version history with a diff, the translation workspace,
-release bundles, the agent-supervision inbox, and the asset browser. Each is a layout
-with real alternatives whose data model follows from the choice, which is the
-DirecaoA/DirecaoB case exactly.
-
-So this is a task inside the block rather than a gate in front of it, and its scope is
-those five. The artboards go in docs/design beside the vendored vds- pages, on this
-repository's own canvas.json pages, which page-reference.mjs preserves rather than
-rewrites.
-
 ### LX.7 The reading column, owned once (SH946)
 
 BENTO-AUTHORING section 1 says main sets the max width, the gutters and the vertical

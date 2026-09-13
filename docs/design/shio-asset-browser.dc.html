@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .pill { display: inline-flex; align-items: center; gap: 5px; height: 19px; padding: 0 7px; border-radius: 999px; border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #007a55; font-size: 10px; font-weight: 600; }
+    .pill-warn { border-color: rgba(254,154,0,0.45); background: rgba(254,154,0,0.1); color: #973c00; }
+    .pill-mute { border-color: #e5e5e5; background: #fafafa; color: #737373; }
+    .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .thumb { border-radius: 14px; background-image: linear-gradient(135deg, #e5e7eb, #cbd5e1); position: relative; overflow: hidden; }
+    .tile { border-radius: 22px; padding: 9px; display: flex; flex-direction: column; gap: 6px; }
+    .field { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; color: #737373; }
+    .row { display: grid; grid-template-columns: 24px 1fr 66px 58px 62px; gap: 10px; align-items: center; padding: 5px 12px; border-bottom: 1px solid #f4f4f4; font-size: 11px; }
+    .note { font-size: 11px; color: #404040; line-height: 1.5; }
+    .seg { display: inline-flex; border: 1px solid #e5e5e5; border-radius: 9px; overflow: hidden; background: #ffffff; }
+    .seg > div { padding: 0 10px; height: 26px; display: flex; align-items: center; font-size: 11px; color: #737373; }
+    .seg > div.on { background: #171717; color: #fafafa; font-weight: 500; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1360px;height:780px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">SHIO &middot; BLOCK BE &middot; SH1029-SH1035</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">Media: what the bytes mean</div>
+      <div style="font-size:12.5px;color:#737373">One list screen with a resolved layout. Tiles to pick one, rows to reclaim many.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;padding:14px 24px 0">
+    <div style="height:100%;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden;display:flex;flex-direction:column">
+
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:13px">
+        <div class="chip" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2.5"></rect><circle cx="9" cy="10" r="1.7"></circle><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"></path></svg></div>
+        <div style="flex:1;min-width:0">
+          <div class="eyebrow" style="color:#737373">CORPORATE</div>
+          <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Media</div>
+          <div style="font-size:11.5px;color:#737373;margin-top:2px">1,284 assets &middot; 2.4 GB &middot; page 1 of 26</div>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <div class="seg"><div class="on">Tiles</div><div>Rows</div></div>
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">Upload</div>
+        </div>
+      </div>
+
+      <!-- toolbar: BentoPanel, contentClassName py-2 -->
+      <div class="glass" style="border-radius:18px;padding:7px 11px;display:flex;align-items:center;gap:8px;margin-bottom:11px">
+        <div style="flex:1;height:26px;border-radius:8px;border:1px solid #ededed;background:#ffffff;display:flex;align-items:center;padding:0 9px;font-size:11px;color:#a1a1a1">Search name, alt text or caption</div>
+        <span class="pill-mute pill">image</span>
+        <span class="pill-mute pill">pdf</span>
+        <span class="pill pill-warn">no alt text &middot; 37</span>
+        <span class="pill pill-warn">unused &middot; 112</span>
+        <span style="font-size:10.5px;color:#737373;padding-left:4px">server-side, paged</span>
+      </div>
+
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 300px;gap:18px">
+
+        <div style="min-height:0;display:flex;flex-direction:column;gap:10px">
+          <!-- spans in multiples of two -->
+          <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:11px">
+            <div class="glass tile" style="grid-column:span 2;border-color:rgba(20,71,230,0.45);background:rgba(20,71,230,0.04)">
+              <div class="thumb" style="height:74px"></div>
+              <div style="font-size:11.5px;font-weight:600">hero-spring.jpg</div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="pill">alt ok</span><span style="font-size:10px;color:#737373">used 4&times;</span></div>
+            </div>
+            <div class="glass tile" style="grid-column:span 2">
+              <div class="thumb" style="height:74px"></div>
+              <div style="font-size:11.5px;font-weight:600">team-photo.jpg</div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="pill pill-warn">no alt</span><span style="font-size:10px;color:#737373">used 1&times;</span></div>
+            </div>
+            <div class="glass tile" style="grid-column:span 2">
+              <div class="thumb" style="height:74px"></div>
+              <div style="font-size:11.5px;font-weight:600">pricing-table.png</div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="pill">alt ok</span><span style="font-size:10px;color:#737373">used 2&times;</span></div>
+            </div>
+            <div class="glass tile" style="grid-column:span 2">
+              <div class="thumb" style="height:62px"></div>
+              <div style="font-size:11.5px;font-weight:600">old-logo.svg</div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="pill pill-warn">unused</span></div>
+            </div>
+            <div class="glass tile" style="grid-column:span 2">
+              <div class="thumb" style="height:62px"></div>
+              <div style="font-size:11.5px;font-weight:600">brochure.pdf</div>
+              <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:#737373">used 1&times;</span></div>
+            </div>
+            <div style="grid-column:span 2;border-radius:22px;height:auto;min-height:96px;border:1px dashed #d4d4d4;display:flex;align-items:center;justify-content:center;color:#a1a1a1;font-size:11.5px">Drop files</div>
+          </div>
+
+          <div style="flex:1"></div>
+
+          <!-- the rows mode, same layer, same pills -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span class="eyebrow" style="color:#737373">ROWS &mdash; THE SAME LIST, RESOLVED THE OTHER WAY</span>
+              <span style="font-size:10px;color:#a1a1a1">for the reclaim pass, where the eye runs down a column</span>
+            </div>
+            <div class="glass" style="border-radius:20px;overflow:hidden">
+              <div class="row" style="background:rgba(245,245,245,0.6);font-size:9.5px;font-weight:600;letter-spacing:0.06em;color:#737373;border-bottom:1px solid #ededed">
+                <div></div><div>NAME</div><div>SIZE</div><div>USED</div><div>ALT</div>
+              </div>
+              <div class="row"><div class="thumb" style="height:20px;border-radius:5px"></div><div class="mono" style="font-size:10.5px">old-logo.svg</div><div style="color:#737373">14 KB</div><div style="color:#9f0712;font-weight:600">0</div><div>&mdash;</div></div>
+              <div class="row"><div class="thumb" style="height:20px;border-radius:5px"></div><div class="mono" style="font-size:10.5px">banner-2024.jpg</div><div style="color:#737373">1.2 MB</div><div style="color:#9f0712;font-weight:600">0</div><div>ok</div></div>
+              <div class="row" style="border-bottom:none"><div class="thumb" style="height:20px;border-radius:5px"></div><div class="mono" style="font-size:10.5px">team-photo.jpg</div><div style="color:#737373">840 KB</div><div>1</div><div style="color:#973c00">&mdash;</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- the selected asset: an aside the page owns -->
+        <div style="min-height:0;display:flex;flex-direction:column;gap:8px">
+          <span class="eyebrow" style="color:#737373">HERO-SPRING.JPG</span>
+
+          <div class="glass" style="border-radius:24px;padding:12px;flex:1;min-height:0;display:flex;flex-direction:column;gap:9px">
+            <div class="thumb" style="height:96px"></div>
+
+            <div>
+              <div class="field">ALT TEXT</div>
+              <div style="margin-top:4px;border-radius:9px;border:1px solid #e5e5e5;background:#ffffff;padding:6px 8px;font-size:11px;line-height:1.4">Two people looking at a laptop in a bright office</div>
+            </div>
+
+            <div style="display:flex;gap:16px">
+              <div><div class="field">SIZE</div><div style="font-size:11px;margin-top:3px">2400&times;1260 &middot; 640 KB</div></div>
+              <div><div class="field">TYPE</div><div style="font-size:11px;margin-top:3px">image/jpeg</div></div>
+            </div>
+
+            <div>
+              <div class="field">USED BY</div>
+              <div style="margin-top:5px;display:flex;flex-direction:column;gap:3px">
+                <div class="mono" style="font-size:10px;color:#1447e6">post:corporate/</div>
+                <div class="mono" style="font-size:10px;color:#1447e6">post:corporate/pricing</div>
+                <div class="mono" style="font-size:10px;color:#1447e6">post:corporate/about</div>
+                <div class="mono" style="font-size:10px;color:#1447e6">post:corporate/careers</div>
+              </div>
+            </div>
+
+            <div style="flex:1"></div>
+
+            <div style="border-top:1px solid #f0f0f0;padding-top:9px">
+              <div style="display:inline-flex;align-items:center;justify-content:center;height:29px;width:100%;border-radius:10px;border:1px solid #e5e5e5;background:#ffffff;font-size:11.5px;font-weight:500;color:#404040">Replace the bytes</div>
+              <div style="font-size:10px;color:#737373;margin-top:6px;line-height:1.4">Same id, new bytes, so all four references keep pointing here. Deleting and re-uploading mints a new id and breaks every one of them.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHAT THIS DECIDES</div>
+      <div class="note">Every filter on the toolbar is <strong>server-side and paged</strong>, including &ldquo;unused&rdquo; &mdash; which is the one that cannot be computed per row without the reverse index SH1033 says nobody has measured. Drawing it as a filter chip beside the others is the claim that it has to be as cheap as the others, and that is a backend decision the console cannot walk back.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:400px">
+      <div class="eyebrow" style="color:#973c00;margin-bottom:4px">NOT CHOSEN &mdash; A PICKER THAT IS NOT A PAGE</div>
+      <div class="note">Media reachable only as a modal from the File widget. It is what exists, it keeps the library invisible until somebody is already editing a field, and it has no room for where-used, alt-text repair or the reclaim pass. The picker stays &mdash; as the same list in a dialog, not as the only way in.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

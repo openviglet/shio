@@ -1,6 +1,14 @@
 {
   "pages": [
     {
+      "id": "shio-surfaces",
+      "name": "Surfaces this round invents"
+    },
+    {
+      "id": "shio-not-chosen",
+      "name": "Directions not taken"
+    },
+    {
       "id": "vds-shell",
       "name": "The shell"
     },
@@ -10,6 +18,60 @@
     }
   ],
   "artboards": [
+    {
+      "file": "shio-revision-history.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 780,
+      "title": "What the content said before",
+      "page": "shio-surfaces"
+    },
+    {
+      "file": "shio-translation-workspace.dc.html",
+      "x": 1480,
+      "y": 0,
+      "w": 1360,
+      "h": 780,
+      "title": "One content model, many languages",
+      "page": "shio-surfaces"
+    },
+    {
+      "file": "shio-release-bundle.dc.html",
+      "x": 2960,
+      "y": 0,
+      "w": 1360,
+      "h": 780,
+      "title": "A release is an entity",
+      "page": "shio-surfaces"
+    },
+    {
+      "file": "shio-agent-inbox.dc.html",
+      "x": 0,
+      "y": 900,
+      "w": 1360,
+      "h": 780,
+      "title": "Supervising an agent, one run at a time",
+      "page": "shio-surfaces"
+    },
+    {
+      "file": "shio-asset-browser.dc.html",
+      "x": 1480,
+      "y": 900,
+      "w": 1360,
+      "h": 780,
+      "title": "Media: what the bytes mean",
+      "page": "shio-surfaces"
+    },
+    {
+      "file": "shio-release-tray.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "title": "A release as a tray (not chosen)",
+      "page": "shio-not-chosen"
+    },
     {
       "file": "vds-page-anatomy.dc.html",
       "x": 0,
@@ -93,6 +155,22 @@
     }
   ],
   "annotations": [
+    {
+      "id": "shio-why-surfaces",
+      "page": "shio-surfaces",
+      "x": 0,
+      "y": -210,
+      "w": 760,
+      "text": "Shio's 23 migrated console screens are not drawn, and should not be: the shell and BENTO-AUTHORING already decided them, so an artboard would re-open a settled question.\nThese five are the ones this round invents, where the layout has real alternatives and the data model follows from the choice. Each says what it decides and names the direction it did not take.\nThe drawing is the cheap half. Every region on these five needs a row in a table that does not exist yet, which is what makes them worth settling before the backend is written."
+    },
+    {
+      "id": "shio-why-not-chosen",
+      "page": "shio-not-chosen",
+      "x": 0,
+      "y": -210,
+      "w": 760,
+      "text": "A rejected direction is kept drawn, not deleted, so the next reader does not re-propose it and the argument against it survives with it.\nThe release tray is the one that needed drawing rather than a sentence: it reads perfectly well, and everything wrong with it is invisible on the screen itself."
+    },
     {
       "id": "vds-why-shell",
       "page": "vds-shell",

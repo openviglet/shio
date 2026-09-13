@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; height: 19px; padding: 0 7px; border-radius: 999px; border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #007a55; font-size: 10px; font-weight: 600; }
+    .pill-warn { border-color: rgba(254,154,0,0.45); background: rgba(254,154,0,0.1); color: #973c00; }
+    .pill-err { border-color: rgba(251,44,54,0.35); background: rgba(251,44,54,0.07); color: #9f0712; }
+    .pill-mute { border-color: #e5e5e5; background: #fafafa; color: #737373; }
+    .field { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; color: #737373; }
+    .item { display: grid; grid-template-columns: 18px 1fr 108px 86px; gap: 10px; align-items: center; padding: 7px 13px; border-bottom: 1px solid #f4f4f4; font-size: 11.5px; }
+    .note { font-size: 11px; color: #404040; line-height: 1.5; }
+    .gate { display: flex; align-items: center; gap: 8px; padding: 7px 11px; border-radius: 11px; font-size: 11px; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1360px;height:780px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">SHIO &middot; BLOCK BA &middot; SH993-SH998 &middot; DIRECTION A, CHOSEN</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">A release is an entity, with an address of its own</div>
+      <div style="font-size:12.5px;color:#737373">Stage, gate, schedule, publish as one event, roll back as one event.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;padding:14px 24px 0">
+    <div style="height:100%;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden;display:flex;flex-direction:column">
+
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
+        <div class="chip" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"></path><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"></path></svg></div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:5px;color:#737373">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>
+            <span class="eyebrow">RELEASES</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;margin-top:2px">
+            <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em">Spring launch</div>
+            <span class="pill pill-warn">staged</span>
+          </div>
+          <div style="font-size:11.5px;color:#737373;margin-top:2px"><span class="mono" style="font-size:11px">release:corporate/spring-launch</span> &middot; 41 items &middot; scheduled 01 Apr 09:00 UTC</div>
+        </div>
+        <!-- destructive lives in the hero's trailing only; the morph handles the rest -->
+        <div style="display:flex;gap:7px;align-items:center">
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;border:1px solid #e5e5e5;background:#ffffff;font-size:12px;font-weight:500;color:#404040">Preview all</div>
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;border:1px solid rgba(251,44,54,0.3);background:#ffffff;font-size:12px;font-weight:500;color:#9f0712">Discard</div>
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 13px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">Publish release</div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 300px;gap:18px">
+
+        <div style="min-height:0;display:flex;flex-direction:column;gap:9px">
+          <div class="glass" style="border-radius:24px;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column">
+            <div class="item" style="background:rgba(245,245,245,0.6);font-size:9.5px;font-weight:600;letter-spacing:0.06em;color:#737373;border-bottom:1px solid #ededed">
+              <div></div><div>ADDRESS</div><div>CHANGE</div><div>GATE</div>
+            </div>
+            <div class="item">
+              <div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00bc7d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div>
+              <div class="mono" style="font-size:11px">post:corporate/pricing</div>
+              <div style="color:#737373">updated</div>
+              <div><span class="pill">passed</span></div>
+            </div>
+            <div class="item">
+              <div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00bc7d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div>
+              <div class="mono" style="font-size:11px">post:corporate/plans/team</div>
+              <div style="color:#737373">created</div>
+              <div><span class="pill">passed</span></div>
+            </div>
+            <div class="item" style="background:rgba(254,154,0,0.05)">
+              <div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fe9a00" stroke-width="2.4" stroke-linecap="round"><path d="M12 8v5M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg></div>
+              <div class="mono" style="font-size:11px">post:corporate/plans/solo</div>
+              <div style="color:#737373">created</div>
+              <div><span class="pill pill-warn">1 warning</span></div>
+            </div>
+            <div class="item" style="background:rgba(251,44,54,0.04)">
+              <div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fb2c36" stroke-width="2.4" stroke-linecap="round"><path d="M12 8v5M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg></div>
+              <div class="mono" style="font-size:11px">post:corporate/careers</div>
+              <div style="color:#737373">updated</div>
+              <div><span class="pill pill-err">blocked</span></div>
+            </div>
+            <div class="item">
+              <div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00bc7d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div>
+              <div class="mono" style="font-size:11px">folder:corporate/plans</div>
+              <div style="color:#737373">created</div>
+              <div><span class="pill">passed</span></div>
+            </div>
+            <div class="item" style="border-bottom:none">
+              <div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a1a1a1" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"></path></svg></div>
+              <div class="mono" style="font-size:11px">post:corporate/legacy-pricing</div>
+              <div style="color:#737373">unpublish</div>
+              <div><span class="pill">passed</span></div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="padding:8px 13px;border-top:1px solid #f0f0f0;font-size:10.5px;color:#737373;display:flex;justify-content:space-between">
+              <span>35 more</span>
+              <span>The whole set is one event in the sweep, not 41.</span>
+            </div>
+          </div>
+
+          <div class="glass" style="border-radius:20px;padding:10px 13px;display:flex;align-items:center;gap:12px">
+            <span class="eyebrow" style="color:#737373">ROUTES</span>
+            <span style="font-size:11px;color:#404040">38 URLs start resolving &middot; 2 change &middot; <strong>1 stops resolving</strong></span>
+            <div style="flex:1"></div>
+            <span style="font-size:11px;color:#1447e6">Show the list</span>
+          </div>
+        </div>
+
+        <!-- the release's own aside: the gate, and what a curator may do about it -->
+        <div style="min-height:0;display:flex;flex-direction:column;gap:8px">
+          <span class="eyebrow" style="color:#737373">THE GATE</span>
+
+          <div class="glass" style="border-radius:24px;padding:11px;flex:1;min-height:0;display:flex;flex-direction:column;gap:6px">
+            <div class="gate" style="background:rgba(0,188,125,0.08)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#007a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+              <div style="flex:1"><div style="font-weight:600;color:#006045">verify</div><div style="font-size:10px;color:#737373">41 objects, 0 errors</div></div>
+            </div>
+            <div class="gate" style="background:rgba(0,188,125,0.08)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#007a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+              <div style="flex:1"><div style="font-weight:600;color:#006045">render digest</div><div style="font-size:10px;color:#737373">every page renders</div></div>
+            </div>
+            <div class="gate" style="background:rgba(254,154,0,0.09)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#973c00" stroke-width="2.4" stroke-linecap="round"><path d="M12 8v5M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
+              <div style="flex:1"><div style="font-weight:600;color:#973c00">accessibility</div><div style="font-size:10px;color:#737373">1 image without alt</div></div>
+            </div>
+            <div class="gate" style="background:rgba(251,44,54,0.06)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9f0712" stroke-width="2.4" stroke-linecap="round"><path d="M12 8v5M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
+              <div style="flex:1"><div style="font-weight:600;color:#9f0712">broken links</div><div style="font-size:10px;color:#737373">careers &rarr; /jobs, 404</div></div>
+            </div>
+
+            <div style="flex:1"></div>
+
+            <div style="border-top:1px solid #f0f0f0;padding-top:9px">
+              <div class="eyebrow" style="color:#737373;margin-bottom:5px">WAIVE, WITH A REASON</div>
+              <div style="height:46px;border-radius:10px;border:1px solid #e5e5e5;background:#ffffff;padding:7px 9px;font-size:10.5px;color:#a1a1a1;line-height:1.4">Why this failure is acceptable&hellip;</div>
+              <div style="display:flex;gap:7px;margin-top:7px;align-items:center">
+                <div style="display:inline-flex;align-items:center;height:27px;padding:0 11px;border-radius:9px;border:1px solid #e5e5e5;background:#ffffff;font-size:11px;color:#404040">Waive</div>
+                <div style="font-size:10px;color:#737373;flex:1;line-height:1.35">Recorded on the release and sent as a webhook, so a check nobody may waive does not become one people disable.</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px">
+            <span class="pill pill-mute">rollback anchor per item</span>
+            <span class="pill pill-mute">one undo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHAT THIS DECIDES</div>
+      <div class="note">A release is <strong>persisted, addressable and revisioned</strong> &mdash; not a selection. That is what gives SH994 somewhere to keep a rollback anchor per item, SH997 something to attach a gate result to, and SH998 somewhere to record a waiver. The drawing is the argument: every region on it needs a row in a table.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:400px">
+      <div class="eyebrow" style="color:#973c00;margin-bottom:4px">THE ALTERNATIVE, DRAWN</div>
+      <div class="note"><span class="mono" style="font-size:10.5px">shio-release-tray.dc.html</span> &mdash; the same job as a tray that follows the curator around the console. Cheaper, familiar, and it cannot hold any of the three things above. Kept, marked not chosen, so the next reader does not re-propose it.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

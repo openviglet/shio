@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .note { font-size: 11px; color: #404040; line-height: 1.5; }
+    .tile { border-radius: 22px; padding: 12px; height: 92px; display: flex; flex-direction: column; gap: 6px; }
+    .cross { color: #9f0712; font-weight: 600; }
+    .strike { position: relative; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1280px;height:720px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <!-- The not-chosen banner is the whole point of keeping this artboard. -->
+  <div style="background:repeating-linear-gradient(45deg,rgba(251,44,54,0.08),rgba(251,44,54,0.08) 10px,rgba(251,44,54,0.14) 10px,rgba(251,44,54,0.14) 20px);border-bottom:1px solid rgba(251,44,54,0.3);padding:9px 24px;display:flex;align-items:center;gap:11px">
+    <span style="display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:999px;background:#9f0712;color:#ffffff;font-size:10.5px;font-weight:700;letter-spacing:0.06em">NOT CHOSEN</span>
+    <span style="font-size:12px;color:#9f0712;font-weight:500">Direction B for Block BA. Kept so the argument survives, not as a plan.</span>
+  </div>
+
+  <div style="padding:14px 24px 0">
+    <div class="eyebrow" style="color:#737373">SHIO &middot; BLOCK BA &middot; THE REJECTED DIRECTION</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">A release as a tray you fill as you browse</div>
+      <div style="font-size:12.5px;color:#737373">Add to release from anywhere; a drawer holds the set; publish from the drawer.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 300px;gap:18px;padding:12px 24px 0">
+
+    <div style="min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:15px;display:flex;flex-direction:column;opacity:0.92">
+      <div style="display:flex;align-items:flex-start;gap:11px;margin-bottom:13px">
+        <div class="chip" style="width:38px;height:38px;border-radius:12px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect></svg></div>
+        <div style="flex:1;min-width:0">
+          <div class="eyebrow" style="color:#737373">CORPORATE</div>
+          <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Pages</div>
+          <div style="font-size:11px;color:#737373;margin-top:2px">The ordinary content browser, with one extra affordance per tile.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:11px">
+        <div class="glass tile" style="grid-column:span 2">
+          <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
+          <div style="font-size:12px;font-weight:600">Pricing</div>
+          <div style="flex:1"></div>
+          <div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#1447e6;font-weight:600"><span style="font-size:12px">+</span> in release</div>
+        </div>
+        <div class="glass tile" style="grid-column:span 2;border-color:rgba(20,71,230,0.45);background:rgba(20,71,230,0.05)">
+          <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
+          <div style="font-size:12px;font-weight:600">Plans / Team</div>
+          <div style="flex:1"></div>
+          <div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#1447e6;font-weight:600">&#10003; added</div>
+        </div>
+        <div class="glass tile" style="grid-column:span 2">
+          <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
+          <div style="font-size:12px;font-weight:600">About</div>
+          <div style="flex:1"></div>
+          <div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#1447e6;font-weight:600"><span style="font-size:12px">+</span> in release</div>
+        </div>
+        <div class="glass tile" style="grid-column:span 2">
+          <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
+          <div style="font-size:12px;font-weight:600">Careers</div>
+          <div style="flex:1"></div>
+          <div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#1447e6;font-weight:600"><span style="font-size:12px">+</span> in release</div>
+        </div>
+        <div class="glass tile" style="grid-column:span 2;border-color:rgba(20,71,230,0.45);background:rgba(20,71,230,0.05)">
+          <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
+          <div style="font-size:12px;font-weight:600">Contact</div>
+          <div style="flex:1"></div>
+          <div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#1447e6;font-weight:600">&#10003; added</div>
+        </div>
+        <div class="glass tile" style="grid-column:span 2">
+          <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
+          <div style="font-size:12px;font-weight:600">Home</div>
+          <div style="flex:1"></div>
+          <div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#1447e6;font-weight:600"><span style="font-size:12px">+</span> in release</div>
+        </div>
+      </div>
+
+      <div style="flex:1"></div>
+      <div style="font-size:10.5px;color:#737373;border-top:1px solid #f0f0f0;padding-top:9px">It reads well. Everything that is wrong with it is invisible on this screen, which is the reason to draw it rather than argue about it.</div>
+    </div>
+
+    <!-- the tray -->
+    <div style="min-height:0;display:flex;flex-direction:column;gap:8px">
+      <span class="eyebrow" style="color:#737373">THE TRAY</span>
+      <div class="glass" style="border-radius:24px;padding:12px;flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+          <div style="font-size:13px;font-weight:600">2 staged</div>
+          <div style="font-size:10.5px;color:#1447e6">Clear</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:11px">
+          <div style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:9px;background:rgba(245,245,245,0.8)"><span class="mono" style="font-size:10px;flex:1">post:corporate/plans/team</span><span style="color:#a1a1a1">&times;</span></div>
+          <div style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:9px;background:rgba(245,245,245,0.8)"><span class="mono" style="font-size:10px;flex:1">post:corporate/contact</span><span style="color:#a1a1a1">&times;</span></div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:inline-flex;align-items:center;justify-content:center;height:31px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">Publish these</div>
+        <div style="font-size:10px;color:#737373;margin-top:7px;line-height:1.4">Session state. Closing the tab loses it; a second curator cannot see it; nothing can be scheduled against it.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid rgba(251,44,54,0.3);background:rgba(251,44,54,0.03);border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#9f0712;margin-bottom:4px">WHY NOT</div>
+      <div class="note">A tray is a <strong>selection</strong>, and three filed lines need a <strong>record</strong>. SH993 wants a unit to stage, preview, approve, schedule and undo &mdash; a schedule needs a row that outlives the session. SH994 wants a rollback anchor per item, which has to be written when the release publishes, not when a tab is open. SH998 wants a waiver with a reason, attached to something a webhook can name.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:rgba(251,44,54,0.2)"></div>
+    <div style="width:380px">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHAT IT WOULD HAVE COST TO FIND OUT LATER</div>
+      <div class="note">The tray is two days of console work and no backend. The gap only appears when the first schedule is set, by which time the console has a shape that assumes no entity exists &mdash; and the cheapest fix from there is to keep the tray and bolt a table behind it, which is how a product ends up with both.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

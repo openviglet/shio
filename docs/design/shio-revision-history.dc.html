@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; height: 19px; padding: 0 7px; border-radius: 999px; border: 1px solid rgba(0,188,125,0.4); background: rgba(0,188,125,0.1); color: #007a55; font-size: 10px; font-weight: 600; }
+    .pill-warn { border-color: rgba(254,154,0,0.45); background: rgba(254,154,0,0.1); color: #973c00; }
+    .pill-agent { border-color: rgba(79,57,246,0.4); background: rgba(79,57,246,0.09); color: #4f39f6; }
+    .was { background: rgba(251,44,54,0.07); border-left: 2px solid rgba(251,44,54,0.5); color: #9f0712; }
+    .now { background: rgba(0,188,125,0.08); border-left: 2px solid rgba(0,188,125,0.55); color: #006045; }
+    .field { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; color: #737373; }
+    .rev { display: flex; gap: 9px; padding: 8px 10px; border-radius: 11px; border: 1px solid transparent; }
+    .rev-on { background: rgba(20,71,230,0.06); border-color: rgba(20,71,230,0.3); }
+    .dot { width: 7px; height: 7px; border-radius: 999px; flex: 0 0 auto; margin-top: 5px; }
+    .note { font-size: 11px; color: #404040; line-height: 1.5; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1360px;height:780px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">SHIO &middot; BLOCK AZ &middot; SH986-SH989</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">What the content said before</div>
+      <div style="font-size:12.5px;color:#737373">Revisions are a page-owned aside; the diff is field by field, in the column.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;padding:14px 24px 0;display:flex;flex-direction:column">
+    <div style="flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden;display:flex;flex-direction:column">
+
+      <!-- hero: BentoEntityShell. Eyebrow leads with the arrow, so it reads as the way back. -->
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
+        <div class="chip" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h13"></path></svg></div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:5px;color:#737373">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>
+            <span class="eyebrow">PAGES</span>
+          </div>
+          <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Pricing</div>
+          <div style="font-size:11.5px;color:#737373;margin-top:2px"><span class="mono" style="font-size:11px">post:corporate/pricing</span> &middot; comparing <strong>rev 14</strong> with <strong>rev 13</strong></div>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;border:1px solid #e5e5e5;background:#ffffff;font-size:12px;font-weight:500;color:#404040">Restore rev 13</div>
+          <div style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:10px;background:#171717;color:#fafafa;font-size:12px;font-weight:500">Publish</div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 268px;gap:18px">
+
+        <!-- the reading column: the diff, per field -->
+        <div style="min-height:0;display:flex;flex-direction:column;gap:10px">
+
+          <div class="glass" style="border-radius:24px;padding:13px 15px">
+            <div class="field">TITLE</div>
+            <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+              <div class="was" style="padding:5px 9px;border-radius:0 8px 8px 0;font-size:12px">Pricing</div>
+              <div class="now" style="padding:5px 9px;border-radius:0 8px 8px 0;font-size:12px">Plans &amp; pricing</div>
+            </div>
+          </div>
+
+          <div class="glass" style="border-radius:24px;padding:13px 15px;flex:1;min-height:0;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div class="field">BODY</div>
+              <div style="font-size:10px;color:#737373">3 of 47 paragraphs changed</div>
+            </div>
+            <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;font-size:11.5px;line-height:1.5">
+              <div style="padding:4px 9px;color:#a1a1a1">&hellip; unchanged paragraph, collapsed</div>
+              <div class="was" style="padding:5px 9px;border-radius:0 8px 8px 0">Every plan includes unlimited seats.</div>
+              <div class="now" style="padding:5px 9px;border-radius:0 8px 8px 0">Every plan includes unlimited seats and unlimited environments.</div>
+              <div style="padding:4px 9px;color:#a1a1a1">&hellip; 42 more unchanged, collapsed</div>
+              <div class="now" style="padding:5px 9px;border-radius:0 8px 8px 0">Annual billing saves two months.</div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="font-size:10.5px;color:#737373;border-top:1px solid #f0f0f0;padding-top:7px;margin-top:8px">Only changed fields open. A field nothing touched stays a one-line row, so a 47-paragraph body is three paragraphs of reading.</div>
+          </div>
+
+          <div class="glass" style="border-radius:24px;padding:13px 15px;display:flex;gap:22px">
+            <div><div class="field">HERO IMAGE</div><div style="font-size:11.5px;color:#a1a1a1;margin-top:5px">unchanged</div></div>
+            <div><div class="field">FRIENDLY URL</div><div style="font-size:11.5px;color:#a1a1a1;margin-top:5px">unchanged</div></div>
+            <div><div class="field">LOCALE</div><div style="font-size:11.5px;color:#a1a1a1;margin-top:5px">unchanged</div></div>
+          </div>
+        </div>
+
+        <!-- the page's own aside (contract §1): inside the column, scrolls with it, no provider -->
+        <div style="min-height:0;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="eyebrow" style="color:#737373">REVISIONS</span>
+            <span style="font-size:10px;color:#a1a1a1">14 kept</span>
+          </div>
+
+          <div class="glass" style="border-radius:24px;padding:7px;flex:1;min-height:0;display:flex;flex-direction:column;gap:2px">
+            <div class="rev rev-on">
+              <div class="dot" style="background:#4f39f6"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11.5px;font-weight:600">rev 14 &middot; draft</div>
+                <div style="font-size:10px;color:#737373;margin-top:1px">2 min ago</div>
+                <div style="margin-top:4px"><span class="pill pill-agent">agent &middot; claude</span></div>
+              </div>
+            </div>
+            <div class="rev">
+              <div class="dot" style="background:#00bc7d"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11.5px;font-weight:600">rev 13 &middot; published</div>
+                <div style="font-size:10px;color:#737373;margin-top:1px">yesterday &middot; A. Oliveira</div>
+              </div>
+            </div>
+            <div class="rev">
+              <div class="dot" style="background:#d4d4d4"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11.5px;font-weight:600">rev 12</div>
+                <div style="font-size:10px;color:#737373;margin-top:1px">3 days ago &middot; A. Oliveira</div>
+              </div>
+            </div>
+            <div class="rev">
+              <div class="dot" style="background:#d4d4d4"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11.5px;font-weight:600">rev 11</div>
+                <div style="font-size:10px;color:#737373;margin-top:1px">6 days ago</div>
+                <div style="margin-top:4px"><span class="pill pill-agent">agent &middot; claude</span></div>
+              </div>
+            </div>
+            <div class="rev">
+              <div class="dot" style="background:#d4d4d4"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11.5px;font-weight:600">rev 10 &middot; created</div>
+                <div style="font-size:10px;color:#737373;margin-top:1px">2 weeks ago</div>
+              </div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="text-align:center;font-size:10.5px;color:#1447e6;padding:6px">Older&hellip;</div>
+          </div>
+
+          <div class="note" style="font-size:10.5px;color:#737373">A created page has one revision and no published twin. It still opens here, with every field green &mdash; which is the case SH988 says shows nothing at all today.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHAT THIS DECIDES</div>
+      <div class="note">The diff is <strong>per field</strong>, not per document, and that is a backend decision as much as a layout one: it is what SH989 needs to say which fields an approved run touched, and it is why a revision has to store a field map rather than a rendered blob.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:400px">
+      <div class="eyebrow" style="color:#973c00;margin-bottom:4px">NOT CHOSEN &mdash; A DIFF PAGE OF ITS OWN</div>
+      <div class="note">A route per comparison, two whole values side by side. It is what the version dialog does today, and SH988 names the result: a changed body renders as two walls of text, and a created page renders as nothing. It also puts revisions a click further from the content they are about.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
