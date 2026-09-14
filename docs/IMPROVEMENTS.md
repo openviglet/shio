@@ -1329,25 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.5 The tool-list headroom, allocated before it is spent (SH977)
-
-Later blocks add arguments to the tools an agent already calls: a state perspective and
-include=revisions on shio_read, a schedule predicate and query fields on shio_find, when
-and cancel on shio_publish, locale and translation fields on shio_write. Each task,
-written alone, says to measure against the per-tool ceiling first, and each would pass
-if it were the only one. With a few tokens of headroom they cannot all be true, and
-whichever three land first take the room, leaving the rest to ship as resources or ops
-by accident rather than by the ladder AY4 publishes.
-
-The deliverable is an allocation, not another measurement. A per-tool reservation is
-declared in the budget properties for each planned addition, with any ceiling raise
-stated beside it and argued the way every existing raise in that file is. The budget
-test refuses an addition that exceeds its tool's reservation and names the ladder's
-cheaper shape.
-
-It is written after AY4's first green run, from the build's own numbers, and each later
-task that adds an argument cites its reservation instead of the ceiling.
-
 ### LXIV.6 One surface declaration, owned by the backend, with a gate (SH978)
 
 The console's map is bento-nav.ts, whose javadoc says the rail and the palette both need

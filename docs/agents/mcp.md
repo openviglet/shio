@@ -438,3 +438,29 @@ digits; a parameter is an order of magnitude more; a resource and an endpoint ar
 with the resource the dearer of the two.** Only the first of those is asserted, because it is the
 claim the docs make everywhere: the batch vocabulary is the surface that grows, and a task reaching
 for a thirteenth tool is answering a question this number already answered.
+
+## The headroom, allocated before it is spent (SH977)
+
+Four designed additions each said, in their own task, to measure against the per-tool ceiling first,
+and each would have passed alone: a state perspective and `include=revisions` on `shio_read`, a
+schedule predicate and query fields on `shio_find`, `when` and `cancel` on `shio_publish`, and the
+locale pair on `shio_write`. At SH976's measured rate a parameter is about 30 est. tokens, so three of
+those are 180 — against 40 free. Whichever landed first would have taken the room, and the rest would
+have shipped as a resource or an op **by accident** rather than by the ladder. A ceiling that is raced
+for is not a budget; it is an order of arrival.
+
+So the room is divided in `token-budgets.properties` before anybody spends it. A **reservation** is
+the most a tool may cost — not the most it may grow by — and `ShMcpToolBudgetTest` refuses a tool over
+its reservation, naming the ladder's cheaper shape. The whole allocation (reserved tools at their
+reservation, every other tool at what it costs today) has to fit `mcp.tools.list.total`, so the room
+cannot be promised twice. The run prints the table.
+
+`mcp.tools.list.total` rises once for this, from 2640 to 2820, with the arithmetic beside it: 180 for
+the three parameter pairs plus SH811's two arguments of headroom. `shio_write` and `shio_apply` get
+none of it — both are `AT_THE_WALL`, and SH1073 already spent `shio_write`'s last two tokens on
+`locale` and `translationOf`. The ladder was applied before the ceiling was: anything expressible as a
+batch op costs about three tokens and belongs in the enum, and these are not — they are parameters of
+a read, a search and a publish.
+
+A later task that adds an argument cites its reservation rather than the ceiling, and one that wants
+more has to say which planned capability is giving up its room.

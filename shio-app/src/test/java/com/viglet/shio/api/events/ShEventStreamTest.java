@@ -150,8 +150,16 @@ class ShEventStreamTest {
         return new ShAgentChangeCursor(Instant.now(), "").toString();
     }
 
+    /**
+     * Opens a stream at this cursor, scoped to this class's own site.
+     *
+     * <p>The scope is what makes a single {@link ShEventStreamHub#pump()} enough (SH977): a pass reads
+     * one page, and an unscoped stream on the shared context reads every other class's writes first,
+     * so a write of this class's could sit behind a suite's worth of rows and arrive several passes
+     * later. Scoped, "more rows" means this class's own.</p>
+     */
     private String open(RecordingSink sink, String since) {
-        String id = hub.open(sink, since);
+        String id = hub.open(sink, since, siteName);
         opened.add(id);
         return id;
     }

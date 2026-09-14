@@ -298,35 +298,38 @@ class ShScheduleOutcomeFeedTest {
     }
 
     /**
-     * Passes until the planted failure reaches this stream, or gives up after a second.
+     * A few passes, because one pass reads one page.
      *
-     * <p><b>Not a retry around a flaky assertion.</b> The feed holds a row back while any write that
-     * stamped earlier is still running (SH147), so a pass taken in that window carries nothing and
-     * leaves the cursor where it was — which is the guarantee, and the reason the next pass carries
-     * it. A single pass was enough on a quiet instance and not in the full suite, where another test's
-     * commit is in flight often enough to matter. Alice's assertion runs after this returns, so she has
-     * had exactly the passes bob needed: "withheld" is measured against a stream that did receive it.</p>
+     * <p>The stream walks the feed a page at a time and stops after {@code max-pages-per-pass}, so a
+     * row behind more rows than that arrives on a later pass — which is the guarantee, not a race: the
+     * cursor does not move past what was not sent. The streams are scoped to this test's own site, so
+     * "more rows" means this class's own writes and the loop ends on the first or second pass. Alice's
+     * assertion runs after this returns, so she has had exactly the passes bob needed, which is what
+     * makes "withheld" a statement about the ACL rather than about timing.</p>
      */
     private void pumpUntilDelivered(RecordingSink sink, String postId) {
-        for (int pass = 0; pass < 20; pass++) {
+        for (int pass = 0; pass < 5; pass++) {
             hub.pump();
             if (sink.incidents().stream().anyMatch(i -> ("id:" + postId).equals(i.subject()))) {
-                return;
-            }
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
                 return;
             }
         }
     }
 
+    /**
+     * Opens a stream for this reader, <b>scoped to this test's site</b>.
+     *
+     * <p>Not a detail: an unscoped stream reads the whole instance, and on the shared context that is
+     * every other class's content (the rule {@code ShBenchmarkIsolationLintTest} holds). A planted
+     * incident then sits behind however many rows the suite happened to write before it, and the
+     * assertion becomes a statement about suite order — which is exactly how this failed twice in a
+     * full run and never alone.</p>
+     */
     private RecordingSink open(String username, String since) {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(username, "x", List.of()));
         RecordingSink sink = new RecordingSink();
-        opened.add(hub.open(sink, since));
+        opened.add(hub.open(sink, since, siteName));
         return sink;
     }
 

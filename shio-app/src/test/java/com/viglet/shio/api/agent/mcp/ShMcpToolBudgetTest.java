@@ -62,6 +62,9 @@ class ShMcpToolBudgetTest {
 
     private static final String BUDGETS = "/token-budgets.properties";
 
+    /** The prefix a per-tool reservation is declared under (SH977). */
+    private static final String RESERVED = "mcp.tools.list.reserved.";
+
     @Autowired
     private ShMcpServer shMcpServer;
     @Autowired
@@ -70,14 +73,31 @@ class ShMcpToolBudgetTest {
     private ObjectMapper objectMapper;
 
     private static int budget(String key) throws IOException {
+        String value = budgets().getProperty(key);
+        assertThat(value).as("no budget declared for '%s' in %s", key, BUDGETS).isNotNull();
+        return Integer.parseInt(value.trim());
+    }
+
+    private static Properties budgets() throws IOException {
         Properties properties = new Properties();
         try (InputStream in = ShMcpToolBudgetTest.class.getResourceAsStream(BUDGETS)) {
             assertThat(in).as("missing %s", BUDGETS).isNotNull();
             properties.load(in);
         }
-        String value = properties.getProperty(key);
-        assertThat(value).as("no budget declared for '%s' in %s", key, BUDGETS).isNotNull();
-        return Integer.parseInt(value.trim());
+        return properties;
+    }
+
+    /** SH977 — the room each planned addition holds, by tool: the most that tool may cost. */
+    private static Map<String, Integer> reservations() throws IOException {
+        Map<String, Integer> reserved = new LinkedHashMap<>();
+        Properties properties = budgets();
+        for (String key : new java.util.TreeSet<>(properties.stringPropertyNames())) {
+            if (key.startsWith(RESERVED)) {
+                reserved.put(key.substring(RESERVED.length()),
+                        Integer.parseInt(properties.getProperty(key).trim()));
+            }
+        }
+        return reserved;
     }
 
     private ObjectNode call(String method) {
@@ -370,6 +390,74 @@ class ShMcpToolBudgetTest {
                 .isLessThan(perParameter)
                 .isLessThan(perResource)
                 .isLessThan(perEndpoint);
+    }
+
+    /**
+     * SH977 — the headroom is allocated before it is spent.
+     *
+     * <h2>What went wrong without this</h2>
+     *
+     * <p>Four designed additions each said, in their own task, to measure against the per-tool
+     * ceiling first — and each would have passed alone. Between them they need about 180 est. tokens
+     * and the list had 40 free, so whichever landed first took the room and the rest would have
+     * shipped as a resource or an op <em>by accident</em> rather than by SH976's ladder. A ceiling
+     * that is raced for is not a budget; it is an order of arrival.</p>
+     *
+     * <p>So the room is divided in the properties file, and this holds the division: a tool over its
+     * reservation fails, and the whole allocation — reserved tools at their reservation, the rest at
+     * what they cost today — has to fit the ceiling. A task adding an argument then cites its
+     * reservation instead of the ceiling, and a task that wants more has to say which planned
+     * capability is giving up its room.</p>
+     */
+    @Test
+    @DisplayName("SH977: a planned addition spends its own reservation, not whatever is left")
+    void everyPlannedAdditionHasItsOwnRoom() throws IOException {
+        int perTool = budget("mcp.tools.list.max-per-tool");
+        int total = budget("mcp.tools.list.total");
+        Map<String, Integer> reserved = reservations();
+        Map<String, Integer> costs = perTool();
+
+        List<String> problems = new ArrayList<>();
+        reserved.forEach((name, room) -> {
+            Integer cost = costs.get(name);
+            if (cost == null) {
+                problems.add(name + ": reserved and not served — the reservation is holding room "
+                        + "for a tool that does not exist");
+                return;
+            }
+            if (cost > room) {
+                problems.add("%s = %d over its reservation of %d. An op name costs about 3 est. "
+                        .formatted(name, cost, room)
+                        + "tokens and a parameter about 30 (SH976's ladder), so the cheaper shape is "
+                        + "usually an op on shio_write — and if this really is a parameter, raise the "
+                        + "reservation and name the planned capability giving up the room");
+            }
+            if (room > perTool) {
+                problems.add("%s: reserved %d above the per-tool ceiling of %d"
+                        .formatted(name, room, perTool));
+            }
+        });
+
+        int allocated = costs.entrySet().stream()
+                .mapToInt(entry -> Math.max(entry.getValue(), reserved.getOrDefault(entry.getKey(), 0)))
+                .sum();
+
+        StringBuilder out = new StringBuilder(
+                "%n[SH977] the tool list, allocated — %d of %d est. tokens spoken for%n"
+                        .formatted(allocated, total));
+        costs.forEach((name, cost) -> out.append("  %-16s %4d  reserved %4d  to spend %+5d%n"
+                .formatted(name, cost, reserved.getOrDefault(name, cost),
+                        reserved.getOrDefault(name, cost) - cost)));
+        System.out.println(out);
+
+        assertThat(problems).as("SH977: the allocation above is what each planned addition may "
+                + "spend, and this is what makes it binding").isEmpty();
+        assertThat(allocated)
+                .as("SH977: every reservation plus every unreserved tool at today's size must fit "
+                        + "the ceiling, or the room has been promised twice and the ceiling is a "
+                        + "queue. Raise mcp.tools.list.total with the argument beside it, or take "
+                        + "the room from a reservation that is no longer planned.")
+                .isLessThanOrEqualTo(total);
     }
 
     private JsonNode tool(String name) {
