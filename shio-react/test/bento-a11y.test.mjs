@@ -153,14 +153,34 @@ test("SH893: every icon-only control has a name, and the ones that do not are na
   }
 })
 
+/**
+ * Whether an expression is a string literal, or a choice between two of them.
+ *
+ * The first draft of this rule required the expression to *begin* with a quote, which refused the
+ * very form its own failure message prescribes — `aria-selected={active ? "true" : "false"}` — and
+ * nothing noticed, because the console had no state ARIA attribute at all to try it on. SH985's
+ * conflict view was the first, and it hit the contradiction on its first run. A rule that refuses
+ * its own instruction teaches the reader to work around the rule.
+ *
+ * A ternary is the shape this attribute takes in a React component, so it is accepted when **both**
+ * branches are quoted. What stays refused is what the rule is about: a bare boolean, which React
+ * either renders as the wrong thing or drops, so the control silently loses its state.
+ */
+function isStringLiteral(expression) {
+  const text = expression.trim()
+  if (/^"[^"]*"$/u.test(text) || /^'[^']*'$/u.test(text)) return true
+  return /^[^?]+\?\s*("[^"]*"|'[^']*')\s*:\s*("[^"]*"|'[^']*')$/u.test(text)
+}
+
 test("SH893: a state ARIA attribute is a string literal, never a boolean expression", () => {
   const offenders = []
   for (const path of sources().sort()) {
     const source = stripComments(readFileSync(path, "utf8"))
     for (const state of STATE_ARIA) {
-      // `aria-x={...}` where the expression is not a quoted string.
-      const pattern = new RegExp(`aria-${state}=\\{(?!\\s*")([^}]*)\\}`, "g")
+      // `aria-x={...}` where the expression does not resolve to a string literal.
+      const pattern = new RegExp(`aria-${state}=\\{([^}]*)\\}`, "g")
       for (const [, expression] of source.matchAll(pattern)) {
+        if (isStringLiteral(expression)) continue
         offenders.push(`${rel(path)}  aria-${state}={${expression.trim().slice(0, 40)}}`)
       }
       // A bare attribute with no value at all — `aria-hidden` — which is also not a literal.
@@ -386,4 +406,15 @@ test("SH893: the reader is not vacuous — and specifically not in the way it wa
   assert.ok(sources().length > 100,
     `SH893: the walk yielded ${sources().length} files — the tree moved and every census above is`
       + " measuring an empty directory, which reads as a console with no violations at all")
+
+  // SH985 — the state-ARIA rule, driven against the form its own message prescribes and against
+  // the form it exists to refuse. It accepted neither and refused nothing for as long as no page
+  // had one of these attributes: a rule with no instance is a rule nobody has run.
+  assert.ok(isStringLiteral('"true"'), "a literal is a literal")
+  assert.ok(isStringLiteral('active ? "true" : "false"'),
+    "SH893's own failure message prescribes this exact form, so the rule has to accept it")
+  assert.ok(!isStringLiteral("active"),
+    "a bare boolean is what the rule is about — React drops it and the control loses its state")
+  assert.ok(!isStringLiteral('active ? "true" : other'),
+    "a half-literal choice still renders a boolean on one of its two branches")
 })

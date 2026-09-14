@@ -44,6 +44,40 @@ import com.viglet.shio.api.error.ShTeachingException;
  */
 public class ShStaleExpectationException extends ShTeachingException {
 
+    private ShStaleExpectationException(ShProblem problem) {
+        super(problem);
+    }
+
+    /**
+     * SH985 — the same refusal, for the console, which reads with an id and an entity tag.
+     *
+     * <p>One problem type rather than two: a caller learning what {@code stale-expectation} means
+     * on one surface should not have to learn a second name for it on the other, which is P6 read
+     * as a contract rather than as a message. What differs is the instruction, and it has to: the
+     * console holds an {@code ETag} from a {@code GET} it already makes, so "read it again" here
+     * means that request and that header, not the agent's.</p>
+     *
+     * <p>The fix says <b>read again</b> and not "resend with the new tag", for the reason above:
+     * resending is the overwrite the guard was asked to prevent, spelled in two steps.</p>
+     */
+    public static ShStaleExpectationException consolePost(String id, String expected, String actual) {
+        return new ShStaleExpectationException(ShProblem.conflict("stale-expectation",
+                        "post '" + id + "' changed since it was read")
+                .withDetail(actual == null
+                        ? "This write expected the post " + id + " to be unchanged (If-Match "
+                                + expected + "), and there is no such row now — it was deleted, "
+                                + "trashed or unpublished after the read this write was composed "
+                                + "against."
+                        : "This write expected the post " + id + " to be unchanged (If-Match "
+                                + expected + "), and it now reads as " + actual + ". Somebody wrote "
+                                + "to it after the read this write was composed against.")
+                .withFix("Read it again (GET /api/v2/post-unified/" + id + "?state=DRAFT), compare "
+                        + "it with what you were editing, and send a write composed from what is "
+                        + "there now with the ETag that read returns. Re-sending this body with the "
+                        + "new tag would perform the overwrite If-Match was asked to prevent.")
+                .withExample("GET /api/v2/post-unified/" + id + "?state=DRAFT"));
+    }
+
     public ShStaleExpectationException(String address, String expected, String actual) {
         super(ShProblem.conflict("stale-expectation",
                         "'" + address + "' changed since it was read")

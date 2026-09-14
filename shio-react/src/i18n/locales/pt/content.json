@@ -240,5 +240,12 @@
   "content.editorNumberedList": "Lista numerada",
   "content.editorLink": "Link",
   "content.editorCodeBlock": "Bloco de código",
-  "content.editorLinkPrompt": "Digite a URL:"
+  "content.editorLinkPrompt": "Digite a URL:",
+  "content.conflictTitle": "Alguém escreveu nesta página enquanto você a mantinha aberta",
+  "content.conflictHelp": "Sua alteração não foi aplicada. Escolha como cada campo deve ficar — o que está gravado agora ou o que está no seu formulário.",
+  "content.conflictTheirs": "Gravado agora",
+  "content.conflictMine": "Seu",
+  "content.conflictEmpty": "(vazio)",
+  "content.conflictApply": "Salvar o que eu escolhi",
+  "content.conflictNoFields": "Nada mais está diferente — salvar de novo aplica a sua versão."
 }

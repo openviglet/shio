@@ -24,7 +24,12 @@ import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
-import { fieldOf, headlineOf, reportProblem } from "@/lib/problem"
+import { fieldOf, headlineOf, problemOf, reportProblem } from "@/lib/problem"
+import {
+  conflictsBetween,
+  PostConflictDialog,
+  type PostConflictField,
+} from "@/app/content/post-conflict.dialog"
 
 const unifiedService = new ShPostUnifiedService()
 const previewService = new ShPreviewTokenService()
@@ -57,6 +62,16 @@ export default function PostUnifiedEditPage() {
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  /**
+   * SH985 — the refusal that needs a view rather than a message.
+   *
+   * A 409 means somebody wrote to this post after the form was loaded. The server knows the two
+   * versions disagree and cannot know which the curator wants, so the answer is the comparison:
+   * what is stored now beside what is in the form, field by field, defaulting to what is stored.
+   */
+  const [conflict, setConflict] = useState<
+    { fields: PostConflictField[]; theirs: Record<string, unknown>; detail?: string } | undefined
+  >(undefined)
 
   useEffect(() => {
     async function load() {
@@ -133,10 +148,51 @@ export default function PostUnifiedEditPage() {
         setData(updated.data || {})
       }
     } catch (error) {
+      if (await openConflict(error)) return
       // SH955 — the toast says what happened; `at` says where, so the field is marked too.
       const problem = reportProblem(error, t("common.error"))
       const field = fieldOf(problem)
       setRefusal(field ? { field, message: headlineOf(problem, t("common.error")) } : undefined)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  /**
+   * A stale save opens the comparison instead of toasting the refusal.
+   *
+   * The re-read is what makes the resolution safe: it fetches the row as it is now *and* leaves
+   * this service holding that row's version, so whatever the curator decides is saved conditionally
+   * on what they were shown rather than on the version the refusal was about.
+   */
+  async function openConflict(error: unknown): Promise<boolean> {
+    const problem = problemOf(error)
+    if (problem.status !== 409) return false
+    const theirs = await unifiedService.get(postId, state)
+    const labelOf = (name: string) =>
+      schema.find((field) => field.name === name)?.label || name
+    setConflict({
+      fields: conflictsBetween(data, theirs.data || {}, labelOf),
+      theirs: theirs.data || {},
+      detail: problem.detail,
+    })
+    return true
+  }
+
+  /** Save what the curator chose, conditional on the row the dialog showed them. */
+  async function resolveConflict(keepMine: readonly string[]) {
+    if (!conflict) return
+    const merged = { ...conflict.theirs }
+    for (const field of keepMine) merged[field] = data[field]
+    setIsLoading(true)
+    try {
+      const updated = await unifiedService.update(postId, { data: merged, state })
+      setPost(updated)
+      setData(updated.data || {})
+      setConflict(undefined)
+      toast.success(t("common.saved"))
+    } catch (error) {
+      if (!(await openConflict(error))) reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }
@@ -158,6 +214,7 @@ export default function PostUnifiedEditPage() {
       setIsLive(true)
       toast.success(t("content.publishSuccess"))
     } catch (error) {
+      if (await openConflict(error)) return
       // SH955 — the toast says what happened; `at` says where, so the field is marked too.
       const problem = reportProblem(error, t("common.error"))
       const field = fieldOf(problem)
@@ -384,6 +441,14 @@ export default function PostUnifiedEditPage() {
         open={scheduleOpen}
         setOpen={setScheduleOpen}
         onScheduled={(d) => setPost(d)}
+      />
+      <PostConflictDialog
+        open={conflict !== undefined}
+        onOpenChange={(open) => !open && setConflict(undefined)}
+        fields={conflict?.fields ?? []}
+        detail={conflict?.detail}
+        saving={isLoading}
+        onResolve={resolveConflict}
       />
     </>
   )

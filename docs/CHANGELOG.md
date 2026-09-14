@@ -1724,6 +1724,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AZ — What the content said before
 
+- **SH985** — GET /api/v2/post-unified/{id} answers with an ETag and PUT, PATCH, publish and DELETE honour If-Match, refusing a stale write with the same stale-expectation problem the agent's expect throws — one digest, ShAgentPostDigest, so both writers ask one question about one row. The console holds the tag from its load, sends it on every write and answers a 409 by re-reading and opening a field-by-field comparison that defaults to what is stored. ShVersionGuardLintTest landed first and classifies all 22 content writes as guarded or unguarded-with-a-reason; its first draft read parameter lists with a regex and saw one write in ShStaticFileAPI where there are three, so it counts parentheses instead (design §LXV.1 recorded in `docs/agents/content-api.md`).
+
 ## Block BA — Releases, scheduling and the publish gate
 
 ## Block BB — The curator's return channel, and the conversation with the agent

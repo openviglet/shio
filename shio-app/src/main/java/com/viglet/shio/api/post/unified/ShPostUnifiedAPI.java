@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,19 +62,22 @@ public class ShPostUnifiedAPI {
     private final ShContentAclService shContentAclService;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostDraftMergeService shPostDraftMergeService;
+    private final ShConsolePostVersion shConsolePostVersion;
 
     public ShPostUnifiedAPI(ShPostUnifiedWriteService shPostUnifiedWriteService,
                             ShConsolePostReadService shConsolePostReadService,
                             ShTenantQuotaService shTenantQuotaService,
                             ShContentAclService shContentAclService,
                             ShPostTypeRepository shPostTypeRepository,
-                            ShPostDraftMergeService shPostDraftMergeService) {
+                            ShPostDraftMergeService shPostDraftMergeService,
+                            ShConsolePostVersion shConsolePostVersion) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.shContentAclService = shContentAclService;
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostDraftMergeService = shPostDraftMergeService;
+        this.shConsolePostVersion = shConsolePostVersion;
     }
 
     @PostMapping
@@ -91,15 +96,29 @@ public class ShPostUnifiedAPI {
                 payload.furl())));
     }
 
+    /**
+     * SH985 — {@code If-Match} makes this conditional, and the console always sends it.
+     *
+     * <p>The tag is the one {@link #get} answered with, which is {@code ShAgentPostDigest} in HTTP
+     * clothing — the same value the agent's {@code expect} compares, so the two writers are asking
+     * one question about one row rather than each keeping a version of their own.</p>
+     */
     @PutMapping("/{id}")
-    public ShConsolePost update(@PathVariable String id,
-                                @RequestBody UpdatePayload payload,
-                                Principal principal) {
+    public ResponseEntity<ShConsolePost> update(
+            @PathVariable String id,
+            @RequestBody UpdatePayload payload,
+            @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            Principal principal) {
         shContentAclService.requireWrite(id);
-        return shConsolePostReadService.written(shPostUnifiedWriteService.update(id, new UpdateRequest(
-                payload.data(),
-                payload.state() != null ? payload.state() : ShPostState.DRAFT,
-                principal != null ? principal.getName() : null)));
+        shConsolePostVersion.require(ifMatch, id,
+                payload.state() != null ? payload.state() : ShPostState.DRAFT);
+        ShConsolePost written = shConsolePostReadService.written(shPostUnifiedWriteService
+                .update(id, new UpdateRequest(
+                        payload.data(),
+                        payload.state() != null ? payload.state() : ShPostState.DRAFT,
+                        principal != null ? principal.getName() : null)));
+        // SH985 — the write answers with the version it produced, so a second save needs no read.
+        return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
     }
 
     /**
@@ -117,15 +136,21 @@ public class ShPostUnifiedAPI {
      * nothing carrying publish rights that SH107 never saw.</p>
      */
     @PatchMapping("/{id}")
-    public ShConsolePost patch(@PathVariable String id,
-                               @RequestBody PatchPayload payload,
-                               Principal principal) {
+    public ResponseEntity<ShConsolePost> patch(
+            @PathVariable String id,
+            @RequestBody PatchPayload payload,
+            @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            Principal principal) {
         shContentAclService.requireWrite(id);
-        return shConsolePostReadService.written(shPostDraftMergeService
+        // The draft is the subject: a merge writes the draft row, which is also what the editor and
+        // the Universal Editor are looking at when they compose one.
+        shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
+        ShConsolePost written = shConsolePostReadService.written(shPostDraftMergeService
                 .merge(id, payload.attrs() == null ? Map.of() : payload.attrs(),
                         Boolean.TRUE.equals(payload.publish()),
                         principal != null ? principal.getName() : null)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found: " + id)));
+        return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
     }
 
     /**
@@ -136,10 +161,17 @@ public class ShPostUnifiedAPI {
     }
 
     @PostMapping("/{id}/publish")
-    public ShConsolePost publish(@PathVariable String id, Principal principal) {
+    public ResponseEntity<ShConsolePost> publish(
+            @PathVariable String id,
+            @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            Principal principal) {
         shContentAclService.requireWrite(id);
-        return shConsolePostReadService.written(shPostUnifiedWriteService.publish(id,
-                principal != null ? principal.getName() : null));
+        // SH730's rule, and the agent's: the DRAFT is the subject. Publishing is not a content
+        // change, so matching against the PUBLISHED row would refuse the case publishing exists for.
+        shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
+        ShConsolePost written = shConsolePostReadService.written(shPostUnifiedWriteService
+                .publish(id, principal != null ? principal.getName() : null));
+        return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
     }
 
     @PostMapping("/{id}/unpublish")
@@ -150,8 +182,13 @@ public class ShPostUnifiedAPI {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id, Principal principal) {
+    public ResponseEntity<Void> delete(@PathVariable String id,
+                                       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+                                       Principal principal) {
         shContentAclService.requireWrite(id);
+        // A delete is about the post rather than about one snapshot, so the draft answers when
+        // there is one — it is what a curator was looking at — and the live row otherwise.
+        shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT, ShPostState.PUBLISHED);
         shPostUnifiedWriteService.delete(id, principal != null ? principal.getName() : null);
         return ResponseEntity.noContent().build();
     }
@@ -233,7 +270,10 @@ public class ShPostUnifiedAPI {
                                              @RequestParam(name = "state", defaultValue = "PUBLISHED") ShPostState state) {
         shContentAclService.requireRead(id);
         return shConsolePostReadService.get(id, state)
-                .map(ResponseEntity::ok)
+                // SH985 — the tag the writes below compare, handed over by the read that produced
+                // the row, so a caller never has to know how it is computed.
+                .map(post -> ResponseEntity.ok().eTag(shConsolePostVersion.etagOf(id, state))
+                        .body(post))
                 .orElseThrow(() -> {
                     List<ShPostState> available = shConsolePostReadService.statesOf(id);
                     return available.isEmpty()

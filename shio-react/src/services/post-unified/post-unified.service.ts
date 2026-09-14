@@ -30,10 +30,75 @@ export interface UpdateUnifiedPostRequest {
 }
 
 export class ShPostUnifiedService {
+  /**
+   * SH985 — the version each row was last seen at, keyed by post and state.
+   *
+   * The agent has had `expect` since SH721: a write carrying the digest it was planned against is
+   * refused when somebody wrote in between. The console sent no version at all, so a curator saving
+   * a form loaded five minutes ago silently discarded whatever an agent had written since — and the
+   * agent is the writer with a review queue and an audit row, which is what makes that the worse
+   * direction of the same collision.
+   *
+   * Held here rather than in each page because the guarantee has to hold for *every* caller of this
+   * service: a page that forgot to thread the tag through would be back to last-write-wins, and
+   * nothing about the call would look wrong. A read stores the tag, a write sends it and stores the
+   * one the server answers with, so a save loop never needs a second round trip (P3).
+   */
+  private readonly etags = new Map<string, string>()
+
+  /**
+   * Keyed by state as well as by id, because the editor loads both rows on every open.
+   *
+   * Keying by id alone looks right and is not: `load()` reads the draft and the live row in one
+   * `Promise.allSettled`, so the second answer overwrites the first and a save composed against
+   * the draft would go out carrying the published row's version. It would be refused, correctly
+   * and unhelpfully, on the very first save.
+   */
+  private static key(id: string, state: ShPostState): string {
+    return `${id}|${state}`
+  }
+
+  /** What the server last said this row digests as, if this service has read or written it. */
+  versionOf(id: string, state: ShPostState = "DRAFT"): string | undefined {
+    return this.etags.get(ShPostUnifiedService.key(id, state))
+  }
+
+  /** Forget a post's versions — after a conflict the caller resolved by reloading. */
+  forgetVersion(id: string): void {
+    for (const state of ["DRAFT", "PUBLISHED"] as const) {
+      this.etags.delete(ShPostUnifiedService.key(id, state))
+    }
+  }
+
+  private remember(id: string, state: ShPostState, headers: unknown): void {
+    const etag = (headers as Record<string, unknown> | undefined)?.etag
+    if (typeof etag === "string" && etag) this.etags.set(ShPostUnifiedService.key(id, state), etag)
+  }
+
+  /**
+   * `If-Match` for a row this service has seen, and nothing at all for one it has not.
+   *
+   * Exactly that state, with no falling back to the other one: the server compares a write against
+   * the row it is about to change, so sending the live row's version for a write to the draft is a
+   * refusal the caller did nothing to deserve — and the way out a caller finds for that is to stop
+   * sending the header. An unconditional write is the honest answer when nothing was read.
+   */
+  private ifMatch(id: string, state: ShPostState): Record<string, string> {
+    const held = this.versionOf(id, state)
+    return held ? { "If-Match": held } : {}
+  }
+
+  /** For a delete, which is about the post: either row proves the caller read it as it is now. */
+  private ifMatchEither(id: string): Record<string, string> {
+    const held = this.versionOf(id, "DRAFT") ?? this.versionOf(id, "PUBLISHED")
+    return held ? { "If-Match": held } : {}
+  }
+
   async get(id: string, state: ShPostState = "PUBLISHED"): Promise<ShPostUnified> {
     const response = await axios.get<ShPostUnified>(`/v2/post-unified/${id}`, {
       params: { state },
     })
+    this.remember(id, state, response.headers)
     return response.data
   }
 
@@ -54,13 +119,42 @@ export class ShPostUnifiedService {
     return response.data
   }
 
+  /**
+   * Save the whole state (SH168), conditional on the version this service last saw (SH985).
+   *
+   * A 409 is the server saying somebody wrote in between. It carries a problem document whose
+   * `fix` says to read again rather than to resend — resending is the overwrite the guard was
+   * asked to prevent — and the editor answers it with the conflict view.
+   */
   async update(id: string, req: UpdateUnifiedPostRequest): Promise<ShPostUnified> {
-    const response = await axios.put<ShPostUnified>(`/v2/post-unified/${id}`, req)
+    const written = req.state ?? "DRAFT"
+    const response = await axios.put<ShPostUnified>(`/v2/post-unified/${id}`, req, {
+      headers: this.ifMatch(id, written),
+    })
+    this.remember(id, written, response.headers)
+    return response.data
+  }
+
+  /**
+   * Merge a few fields into the draft (SH335), conditional the same way.
+   *
+   * The Universal Editor's path, and the one where the collision is likeliest: two or three fields
+   * written from a page a curator has had open while an agent worked on the same post.
+   */
+  async patch(
+    id: string,
+    attrs: Record<string, unknown>,
+    publish = false
+  ): Promise<ShPostUnified> {
+    const response = await axios.patch<ShPostUnified>(`/v2/post-unified/${id}`, { attrs, publish },
+      { headers: this.ifMatch(id, "DRAFT") })
+    this.remember(id, "DRAFT", response.headers)
     return response.data
   }
 
   async delete(id: string): Promise<void> {
-    await axios.delete(`/v2/post-unified/${id}`)
+    await axios.delete(`/v2/post-unified/${id}`, { headers: this.ifMatchEither(id) })
+    this.forgetVersion(id)
   }
 
   /**
@@ -74,7 +168,10 @@ export class ShPostUnifiedService {
    * only offers the button while it is editing one.
    */
   async publish(id: string): Promise<ShPostUnified> {
-    const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/publish`)
+    const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/publish`, undefined,
+      { headers: this.ifMatch(id, "DRAFT") })
+    // The draft row survives a publish, so the tag the write answers with is the draft's.
+    this.remember(id, "DRAFT", response.headers)
     return response.data
   }
 

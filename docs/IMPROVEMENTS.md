@@ -1447,26 +1447,6 @@ transaction, the reads and a rollback verb over it, a diff that works for a crea
 page, and audit rows that name the fields they changed. Releases, review and translation
 all read what this block stores.
 
-### LXV.1 One concurrency contract for both writers (SH985)
-
-expect and ShStaleExpectationException are used by the agent batch and nothing else, and
-no entity carries @Version. The post-unified PUT and PATCH payloads are data and state,
-and attributes and publish. So since SH721 the agent is protected from clobbering a
-human, and the human is not protected from clobbering the agent, which is the
-worst-shaped version of this bug under P7. It depends on AV3 because the MCP path
-currently drops expect too, and one contract needs both callers honouring it.
-
-The instrument lands first: a lint enumerating every mutating content path and asserting
-it accepts a version guard, held as a named list. Then the contract: GET on a post
-returns a strong ETag computed from the existing ShAgentPostDigest, one digest rather
-than a second; PUT, PATCH, publish and delete honour If-Match and answer the same
-teaching 409 the batch does, including its instruction to read again rather than resend
-with a fresh digest. The console holds the ETag from its load, sends it on save, and on
-409 opens a field-level conflict view.
-
-The assertion carries the id: two writes to one post, the second with a stale digest,
-and the second is refused.
-
 ### LXV.2 A revision store, captured where content goes live (SH986)
 
 ShConsolePostReadService.versions is findById over an id-and-state key, and ShPostState

@@ -1,5 +1,6 @@
 import axios from "@/lib/axios"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
+import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 
 /**
  * Universal Editor save-back service — on the console surface, on the curator's session.
@@ -19,6 +20,9 @@ import type { ShPostUnified } from "@/models/post-unified/post-unified"
  * ACL as two guards over it.
  */
 export class ShUniversalEditorService {
+  /** The console's own post service, so there is one caller of each post endpoint (SH985). */
+  private readonly posts = new ShPostUnifiedService()
+
   /**
    * The post-type name of one post, on the session (SH335).
    *
@@ -48,9 +52,13 @@ export class ShUniversalEditorService {
     attrs: Record<string, unknown>,
     publish = false,
   ): Promise<ShPostUnified> {
-    const response = await axios.patch<ShPostUnified>(
-      `/v2/post-unified/${postId}`, { attrs, publish })
-    return response.data
+    // SH985 — one caller of the endpoint, so the version guard is not a property of which service
+    // you happened to reach it through. This editor writes the draft from a *published* page it
+    // never read as a draft, so it holds no version for that row and the write goes out
+    // unconditional, exactly as before. That is the honest answer: a conditional write needs a read
+    // to be conditional on, and inventing one here would be a round trip spent on a promise nobody
+    // could keep.
+    return this.posts.patch(postId, attrs, publish)
   }
 
   /** Promote the post's draft to published. */

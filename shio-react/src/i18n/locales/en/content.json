@@ -240,5 +240,12 @@
   "content.editorNumberedList": "Numbered List",
   "content.editorLink": "Link",
   "content.editorCodeBlock": "Code Block",
-  "content.editorLinkPrompt": "Enter URL:"
+  "content.editorLinkPrompt": "Enter URL:",
+  "content.conflictTitle": "Somebody wrote to this page while you had it open",
+  "content.conflictHelp": "Your save was not applied. Choose what each field should end up as — what is stored now, or what is in your form.",
+  "content.conflictTheirs": "Stored now",
+  "content.conflictMine": "Yours",
+  "content.conflictEmpty": "(empty)",
+  "content.conflictApply": "Save what I chose",
+  "content.conflictNoFields": "Nothing differs any more — saving again will apply your version."
 }

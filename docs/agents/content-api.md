@@ -761,3 +761,45 @@ answers 204 to `DELETE` because MCP requires a session-end verb and there is not
 session id is an attribution label, not server-side state. **That is an answer; `clear-cache` was a
 placeholder for one.** An addition to the list has to carry a sentence of that kind, in a diff
 somebody reads.
+
+## One concurrency contract, honoured by both writers (SH985)
+
+SH721 gave the agent `expect`: a write carrying the digest it was planned against is refused when
+somebody wrote in between. Its own reasoning was about a curator — *a curator patching one field
+while an agent runs `post.upsert` gets 200, the agent gets `changed=1`, and the curator's field is
+gone* — and it fixed one direction. The console went on sending `PUT` and `PATCH` with no version at
+all, so the same collision with the roles swapped still ended with the agent's write silently
+discarded. That is the worse direction: the agent is the writer with a review queue and an audit
+row, and neither recorded that anything was lost.
+
+**`GET /api/v2/post-unified/{id}` now answers with an `ETag`**, and `PUT`, `PATCH`,
+`POST /{id}/publish` and `DELETE` honour `If-Match`. The tag is `ShAgentPostDigest` in HTTP clothing
+— the same value `expect` compares — so the two writers ask one question about one row rather than
+each keeping a version of their own, and an agent's digest can be handed to a console write.
+
+Three decisions worth knowing before you touch this:
+
+- **Opt-in on the wire, always sent by the console.** An absent `If-Match` is last-write-wins,
+  exactly as an absent `expect` is. A mandatory header would refuse every caller written before it,
+  and the guarantee is the console holding the tag and sending it, which is where the defect was.
+- **The subject is the row the write changes**, so a publish matches against the *draft* (SH730's
+  rule, and the agent's — matching the live row would refuse the case publishing exists for). A
+  delete names both rows and **any** of them may match: a caller holding the live row's tag for a
+  post that also has a draft has still proved it read the post as it is now.
+- **The write answers with the new tag.** Without that, the console would save once and be refused
+  on its next save by the write it made itself — a guard that fires on its own writer is worse than
+  none, because the way out a caller finds is to stop sending the header.
+
+The refusal is the same problem type as the agent's, `stale-expectation`, with the instruction the
+console caller needs: read again, compare, and send a write composed from what is there now. It does
+**not** say *resend with the new tag* — that is the overwrite the guard was asked to prevent, in two
+steps. The editor answers a 409 by re-reading the draft and opening the comparison: one row per
+field that differs, what is stored beside what is in the form, defaulting to **what is stored**,
+because the guard exists to stop a save silently discarding the other writer.
+
+`ShVersionGuardLintTest` is the instrument, and it landed first (SH322). It classifies every
+mutating mapping in the four content controllers as guarded or unguarded-with-a-reason, and a write
+that gains a guard fails until its row moves. Its first draft read the parameter list with
+`\(([^)]*)\)` and reported **one** write in `ShStaticFileAPI` where there are three — a parameter
+annotated `@RequestParam("file")` closes that group early — so the scan counts parentheses instead.
+Under-reporting is the one way a lint like this goes wrong: it is green, and it is not looking.

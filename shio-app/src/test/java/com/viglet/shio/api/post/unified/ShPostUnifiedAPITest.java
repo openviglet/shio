@@ -33,6 +33,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -285,6 +286,70 @@ class ShPostUnifiedAPITest {
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Hello Updated"));
+    }
+
+    /**
+     * SH985 — two writes to one post, the second composed against a read the first invalidated.
+     *
+     * <p>This is the assertion the defect earns rather than a unit test of the guard's internals:
+     * it goes through the same {@code PUT} a curator's save makes, with the tag the console holds
+     * from its load. Before SH985 every line here answered {@code 200} and the first writer's work
+     * was gone with no signal to either party — the failure SH721 fixed for the agent and left
+     * standing for the console, in the direction that costs the reviewed writer.</p>
+     */
+    @Test
+    void stage05aWriteWithAStaleVersionIsRefused() throws Exception {
+        String held = mockMvc.perform(get("/api/v2/post-unified/" + newPostId)
+                        .param("state", "DRAFT")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getHeader(HttpHeaders.ETAG);
+        org.assertj.core.api.Assertions.assertThat(held)
+                .as("SH985: the read hands over the tag a conditional write compares")
+                .isNotBlank();
+
+        // Somebody else writes — an agent's post.upsert, another curator's save, the same thing.
+        mockMvc.perform(put("/api/v2/post-unified/" + newPostId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, held)
+                        .content(objectMapper.writeValueAsString(draftTitled("Written By Somebody"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Written By Somebody"));
+
+        // ...and the write composed against the earlier read is refused, with the instruction.
+        mockMvc.perform(put("/api/v2/post-unified/" + newPostId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, held)
+                        .content(objectMapper.writeValueAsString(draftTitled("Composed Before That"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.fix").value(org.hamcrest.Matchers.containsString("Read it again")));
+
+        // A publish is conditional on the draft too (SH730's subject, and the agent's).
+        mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/publish")
+                        .principal(mockPrincipal)
+                        .header(HttpHeaders.IF_MATCH, held))
+                .andExpect(status().isConflict());
+
+        // The unconditional write still works, which is what keeps every caller written before
+        // today working: the guarantee is the console sending the header, not the server demanding it.
+        mockMvc.perform(put("/api/v2/post-unified/" + newPostId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(draftTitled("Hello Updated"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Hello Updated"));
+    }
+
+    private ObjectNode draftTitled(String title) {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("state", "DRAFT");
+        payload.putObject("data").put(ShSystemPostTypeAttr.TITLE, title);
+        return payload;
     }
 
     @Test
