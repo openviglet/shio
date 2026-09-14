@@ -81,6 +81,19 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AV: {
+    swept: true,
+    why: "nine defect fixes, and seven of them change what a reader can do or see, so the sweep is "
+      + "docs-shio. security.md gains a section on uploaded files and rich text — the headers every "
+      + "asset now carries, the upload policy and its three verdicts, the allow-list a rich-text save "
+      + "runs, and a download name that stays itself (SH950, SH951, SH956, SH1071); mcp.md lists the "
+      + "four op fields shio_write now declares and the digest shio_read returns for `expect` (SH952, "
+      + "SH1073); content-console.md says what a refused save and a partly refused batch delete tell "
+      + "a curator (SH953, SH955). SH954 deleted a button no page had ever described. COVERAGE.md "
+      + "names all nine and the mirror is regenerated. README and shio-site are NOT moved, and that "
+      + "is the finding: neither describes asset headers, upload policy, the console's error "
+      + "reporting or shio_write's argument list, and the tool count did not change",
+  },
   AR: {
     swept: true,
     why: "the console cutover block, and the sweep is docs-shio: COVERAGE.md now names SH927 and "

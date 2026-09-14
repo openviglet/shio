@@ -77,7 +77,11 @@ public class ShReadTool implements ShMcpTool {
                 // SH619 — the only way to see what is LIVE. Two reads of one address, with and
                 // without this, is "what will change when I publish", which nothing could answer.
                 "state", ShMcpTool.string(
-                        "`published` reads the live row, not the draft.")),
+                        "`published` reads the live row, not the draft."),
+                // SH1073 — SH721's digest, which REST has taken as `include=digest` since it
+                // shipped and MCP could not ask for. Declaring shio_write's `expect` without this
+                // would advertise a guard whose only input no MCP client can obtain.
+                "digest", ShMcpTool.bool("Return the value shio_write's expect takes.")),
                 List.of("address"));
     }
 
@@ -88,6 +92,7 @@ public class ShReadTool implements ShMcpTool {
                 ShMcpArgs.strings(arguments, "fields"),
                 false,
                 ShMcpArgs.bool(arguments, "impact"),
-                ShMcpArgs.string(arguments, "state")));
+                ShMcpArgs.string(arguments, "state"),
+                ShMcpArgs.bool(arguments, "digest")));
     }
 }

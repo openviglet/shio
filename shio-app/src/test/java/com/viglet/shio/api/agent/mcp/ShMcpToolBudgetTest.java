@@ -165,7 +165,14 @@ class ShMcpToolBudgetTest {
             "the blueprint-apply surface, and the one the P1 list already declines postTypeMerge "
                     + "on. Its schema is a document branch and a blueprint branch sharing one tool "
                     + "by design (SH186), so the size is the composition rather than slack: the "
-                    + "leaner shape would be a thirteenth tool, and tools/list is paid every turn");
+                    + "leaner shape would be a thirteenth tool, and tools/list is paid every turn",
+            "shio_write",
+            "SH1073 — the whole write vocabulary in one all-or-nothing call: fifteen ops and eleven "
+                    + "op fields, the last four declared only after SH952 found them read and "
+                    + "undiscoverable. Paid for by cutting its own wording three times over, down to "
+                    + "the decisions; what is left is the contract, and the leaner shape is a "
+                    + "thirteenth tool, which ShMcpServerTest refuses. The next field here is a "
+                    + "conversation about the per-tool ceiling, not a trim");
 
     @Test
     @DisplayName("SH795: a tool with no room for another argument is declared, not discovered")

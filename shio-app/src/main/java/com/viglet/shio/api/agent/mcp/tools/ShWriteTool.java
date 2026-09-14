@@ -60,11 +60,12 @@ public class ShWriteTool implements ShMcpTool {
         // list 3 tokens over its ceiling. Trimmed rather than raised (P3: lean the payload
         // first) — every sentence here now carries a decision the model has to make, and the
         // two move verbs are stated together because they are one rule.
-        return "Create, move, update or delete content: N addressed ops in one all-or-nothing "
-                + "transaction — you never need an id. Rename or relocate with post.move / "
-                + "folder.move, never upsert-then-delete: that orphans the page, or takes "
-                + "everything inside the folder. Everything lands in DRAFT until you publish. "
-                + "Send dryRun=true first.";
+        // SH1073 trimmed it again, to fund the four op fields below: the list of verbs went, because
+        // the `op` enum states them one line later, and nothing that informs a decision did.
+        return "N addressed ops, all-or-nothing; no id needed. Rename or relocate with "
+                + "post.move / folder.move, never upsert-then-delete: that orphans the page, or takes "
+                + "the folder's contents. Writes land in DRAFT until published. Send dryRun=true "
+                + "first.";
     }
 
     @Override
@@ -72,46 +73,63 @@ public class ShWriteTool implements ShMcpTool {
         return ShMcpTool.schema(Map.of(
                 "ops", Map.of(
                         "type", "array",
-                        "description", "The operations, in order.",
+                        "description", "Applied in order.",
                         "items", Map.of(
                                 "type", "object",
                                 "required", List.of("op", "address"),
-                                "properties", Map.of(
-                                        "op", Map.of("type", "string",
-                                                "enum", ShAgentBatchService.OPS,
-                                                "description", "What to do."),
-                                        "address", ShMcpTool.string(
-                                                "post:<site>/<friendly-url> or folder:<site>/<path>."),
-                                        "type", ShMcpTool.string(
-                                                "Post-type name; required only when creating a post."),
+                                // Map.ofEntries: eleven properties is one past what Map.of takes.
+                                // The server canonicalises the order, so nothing reads this one.
+                                "properties", Map.ofEntries(
+                                        // No description: the enum is the whole of what it says.
+                                        Map.entry("op", Map.of("type", "string",
+                                                "enum", ShAgentBatchService.OPS)),
+                                        Map.entry("address", ShMcpTool.string(
+                                                "post:<site>/<friendly-url> or folder:<site>/<path>.")),
+                                        Map.entry("type", ShMcpTool.string(
+                                                "Post-type name; required to create a post.")),
                                         // SH175: an argument whose requirement depends on
                                         // another's value has to say so on itself. `type` did
                                         // and `folder` did not, so the most common write on the
                                         // surface — the first create — paid a round trip to
                                         // learn it, and the schema is the one document a model
                                         // reads before calling.
-                                        "folder", ShMcpTool.string(
-                                                "Folder path; required with type when creating a "
-                                                        + "post, or as post.move's destination."),
-                                        "to", ShMcpTool.string(
-                                                "post.move / folder.move: the new address. A "
-                                                        + "folder's is its whole name chain."),
-                                        "data", ShMcpTool.object(
-                                                "Field values keyed by post-type field name."),
+                                        Map.entry("folder", ShMcpTool.string(
+                                                "Folder path: required to create a post; "
+                                                        + "post.move's destination.")),
+                                        Map.entry("to", ShMcpTool.string(
+                                                "A move's new address (a folder's whole name "
+                                                        + "chain).")),
+                                        Map.entry("data", ShMcpTool.object("Field values by name.")),
                                         // SH342 — the agent-native form of scheduled publishing,
                                         // which the manifest advertised while only an id-keyed
                                         // console route could reach it. Funded by trimming
                                         // shio_apply's description rather than by raising the
                                         // ceiling, which is the order agents.md sets.
-                                        "when", ShMcpTool.string(
-                                                "post.publish: ISO-8601 instant to schedule "
-                                                        + "for. Omit to publish now.")))),
-                "dryRun", ShMcpTool.bool("Report what would change and write nothing."),
+                                        Map.entry("when", ShMcpTool.string(
+                                                "post.publish: ISO-8601 instant to schedule; omit "
+                                                        + "for now.")),
+                                        /*
+                                         * SH1073 — read since SH952 and declared nowhere, so no MCP
+                                         * client could learn they exist. Each says "on create"
+                                         * because that is the whole contract: an upsert that finds
+                                         * the post ignores all three, and an agent sending a locale
+                                         * to relocalize a live page would otherwise read success.
+                                         */
+                                        Map.entry("locale", ShMcpTool.string("On create: its locale.")),
+                                        Map.entry("translationOf", ShMcpTool.string(
+                                                "On create: the post this translates.")),
+                                        Map.entry("url", ShMcpTool.string(
+                                                "On create: URL as the source spells it.")),
+                                        // Useless without its source, which is why shio_read gained
+                                        // `digest` in the same change rather than a later one.
+                                        Map.entry("expect", ShMcpTool.string(
+                                                "shio_read's digest; refused if the post changed."))))),
+                "dryRun", ShMcpTool.bool("Report what would change; write nothing."),
                 "confirm", ShMcpTool.string("dryRun's token; required to delete."),
                 // SH157: the closing turn of the write-then-check loop, as an argument.
                 // ~15 tokens of schema against a whole round trip, and the report it returns
                 // is scoped to what changed rather than to the site.
-                "verify", ShMcpTool.bool("Lint what this run touched and return the findings.")),
+                "verify", ShMcpTool.bool("Lint what this run touched.")),
                 List.of("ops"));
     }
 

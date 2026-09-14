@@ -94,6 +94,10 @@ public final class ShAgentReadTerse {
                     // ask a second time: it is the projection a `pull` uses.
                     .attr("url", doc.url())
                     .attr("id", doc.id())
+                    // SH1073 — SH721's digest, which the JSON form carried and this line dropped:
+                    // a terse reader asking for it got the row without the one value it asked for.
+                    // Absent unless asked, so every other read's line is byte-identical.
+                    .attr("digest", doc.digest())
                     .attr("fields", doc.fields() == null ? null : String.join(",", doc.fields()))
                     .build());
             if (doc.error() != null) {

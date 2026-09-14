@@ -17,10 +17,6 @@
 - 📋 **SH947** (deps: SH946, SH942 ✅, DS VDS132) **the contract's two named rules have no check inside Shio's own test run** — A page setting its own column and a stylesheet setting --vg-primary directly would both pass pnpm test today, since nothing here spawns a page lint. → §LX.8
 - 📋 **SH948** (deps: DS VDS130) **copy-ds.cmd cannot find the design system, so a package change cannot be tried in Shio unpublished** — It forwards to use:local, whose walk from the package's position on disk now reaches a worktree container, and the wrapper adds nothing but that path. → §LX.9
 
-## Block AV — The live defects, fixed before anything is built on them
-
-- 📋 **SH1073** (deps: —) **shio_write reads four op fields its schema does not declare, so MCP cannot discover them** — locale, translationOf, url and expect now reach the batch, and declaring them costs 15-25 tokens each against about 6 of headroom on mcp.tools.list.total. → §LXI.9
-
 ## Block AW — One chrome: bento, and nothing left that names another
 
 - 📋 **SH957** (deps: —) **nothing counts the two-chrome vocabulary left in the console, so its removal cannot say when it is done** — 108 source lines and 180 test and script lines still name a chrome, and a figure grepped once by hand is the measurement SH886 found wrong twice. → §LXII.1

@@ -2662,8 +2662,29 @@ Two things it got wrong first, both worth keeping:
 `EXEMPT` is empty and should stay that way: an entry is a tool whose schema promises something its
 handler never looks at.
 
-**Read but not declared, and the budget is why.** The tool now passes all eleven fields; `locale`,
-`translationOf`, `url` and `expect` are read and **not** in the schema. Declaring them costs ~15-25
-tokens each against roughly 6 tokens of headroom on `mcp.tools.list.total`, so it is a budgeted
-change rather than a free one — tracked as its own line. Accepting them undeclared is strictly
-better than dropping them, and the REST batch documents all eleven.
+## A tool declares what it reads (SH1073)
+
+SH952 left `shio_write` reading `locale`, `translationOf`, `url` and `expect` with none of them in
+its schema, so **no MCP client could learn they exist** — `tools/list` is the one document a model
+reads before calling, and a caller who never learns an argument exists never reports its absence.
+`ShAgentP1ConformanceTest` was counting `locales` as MCP-reachable on the strength of two of them.
+
+**The other direction is an instrument now, and it landed first.**
+`sh1073EveryArgumentAToolReadsIsDeclared` walks every tool's `ShMcpArgs.<kind>(node, "name")`
+calls against its `inputSchema` and holds the difference as a named list, `UNDECLARED`. Its first
+run found exactly these four across twelve tools. Only the accessor counts on this side: the raw
+`.get("x")` that SH952's direction accepts also reads service results, which are not arguments.
+
+**`expect` needed its source.** SH721's digest came from `read?include=digest`, which is REST;
+`shio_read` could not ask, and `ShAgentReadTerse.docs` dropped the field even when the JSON carried
+it — so a terse REST reader asking for the digest did not get it either. Declaring `expect` alone
+would have advertised a guard whose only input MCP cannot obtain. `shio_read` takes `digest`, and
+the line renders it, absent unless asked.
+
+**The budget, measured.** The five arguments cost ~99 tokens. Cutting `shio_write`'s wording to its
+decisions paid ~54 — the verb list the `op` enum states, the `op` description the enum *is*, a
+clause from nearly every field — and `mcp.tools.list.total` went 2560 → 2640 for the rest, keeping
+two arguments of headroom. `shio_write` sits at 458 of 460 and is on `AT_THE_WALL`: the next field
+there is a conversation about the per-tool ceiling. The three create-only fields say **"On create"**
+because an upsert that finds the post ignores them, and a relocalization would otherwise read as
+success.

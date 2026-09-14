@@ -251,6 +251,10 @@
             },
             "type" : "array"
           },
+          "digest" : {
+            "description" : "#string",
+            "type" : "boolean"
+          },
           "fields" : {
             "description" : "#string",
             "items" : {
@@ -348,12 +352,19 @@
                   "description" : "#string",
                   "type" : "object"
                 },
+                "expect" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
                 "folder" : {
                   "description" : "#string",
                   "type" : "string"
                 },
-                "op" : {
+                "locale" : {
                   "description" : "#string",
+                  "type" : "string"
+                },
+                "op" : {
                   "enum" : [ "site.upsert", "site.delete", "folder.upsert", "folder.move", "folder.copy", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete", "post.restore", "folder.restore", "site.restore", "render.provision" ],
                   "type" : "string"
                 },
@@ -361,7 +372,15 @@
                   "description" : "#string",
                   "type" : "string"
                 },
+                "translationOf" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
                 "type" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
+                "url" : {
                   "description" : "#string",
                   "type" : "string"
                 },

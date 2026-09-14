@@ -1099,32 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.9 The half SH952 could not afford (SH1073)
-
-SH952 made `shio_write` pass all eleven op fields, which fixed the defect: a scheduled
-publish schedules again. It left the half it could not afford. `locale`,
-`translationOf`, `url` and `expect` are now read and are **not** in the tool's
-`inputSchema`, so an agent whose only surface is MCP cannot discover them — which is P2
-broken in the quiet direction, since a caller who never learns an argument exists never
-reports its absence.
-
-The reason is a number, not a judgement. `mcp.tools.list.total` is 2560 and the surface
-sits at roughly 2554; a declared property costs 15 to 25 tokens, so four is several
-times the headroom. `shio_write` has 26 tokens against its own ceiling of 460, so the
-total binds, not this tool.
-
-Three ways out, to be picked with the measurement in hand rather than by taste. Trim
-elsewhere, which SH342 and SH951 both did and which `agents.md` asks for first — though
-after two rounds the cheap prose is largely gone. Raise the ceiling, legitimate where
-the surface genuinely grew and argued in the commit. Or declare only the two that decide
-whether a write is correct — `expect`, the difference between a conditional write and a
-lost update, and `locale`.
-
-`ShMcpDeclaredArgumentsTest` does not fail on this: it asserts declared implies read,
-and this is read without being declared. The opposite direction has no reader, which is
-worth noticing on its own — it is the direction that hides a capability rather than a
-defect.
-
 ## LXII One chrome: bento, and nothing left that names another (Block AW)
 
 Blocks AQ and AR moved every console surface onto the bento shell and deleted the

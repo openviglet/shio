@@ -161,6 +161,68 @@ class ShMcpDeclaredArgumentsTest {
     }
 
     /**
+     * Arguments a tool reads and knowingly does not declare, by {@code tool.argument} (SH1073).
+     *
+     * <p>A held list rather than a ceiling, the {@code assertion-debt.test.mjs} contract: a new
+     * undeclared read fails by name, and a declaration fails until its entry is deleted in the same
+     * diff.</p>
+     */
+    private static final Set<String> UNDECLARED = Set.of();
+
+    /**
+     * SH1073 — the other direction, which had no reader at all.
+     *
+     * <p>{@link #sh952EveryDeclaredArgumentIsReadByTheToolThatDeclaresIt} asks whether a schema
+     * promises something the handler ignores. The opposite is quieter and costs more: a handler that
+     * reads an argument its schema never mentions has a capability no MCP client can discover,
+     * because {@code tools/list} is the one document a model reads before calling. SH952 left
+     * {@code shio_write} reading four such fields — and {@code ShAgentP1ConformanceTest} counted
+     * {@code locales} as reachable over MCP on the strength of two of them. A caller who never learns
+     * an argument exists never reports its absence, so nothing was going to.</p>
+     *
+     * <p>Only the {@code ShMcpArgs} accessor counts as a read here. The raw {@code .get("x")} form
+     * the other direction accepts also reads service results and nested documents, which are not
+     * arguments, so on this side it would be a stream of false findings.</p>
+     */
+    @Test
+    void sh1073EveryArgumentAToolReadsIsDeclared() throws IOException {
+        JsonNode tools = call("tools/list").get("result").get("tools");
+        assertThat(tools).as("SH1073: tools/list answered nothing to read").isNotEmpty();
+
+        Set<String> undeclared = new java.util.TreeSet<>();
+        int reads = 0;
+        for (JsonNode tool : tools) {
+            String name = tool.get("name").asString();
+            Set<String> properties = new LinkedHashSet<>();
+            collectProperties(tool.get("inputSchema"), properties);
+
+            var accessor = ACCESSOR.matcher(ShSourceText.code(sourceOf(name)));
+            while (accessor.find()) {
+                reads++;
+                if (!properties.contains(accessor.group(1))) {
+                    undeclared.add(name + "." + accessor.group(1));
+                }
+            }
+        }
+
+        // Forty-odd accessor calls across twelve tools when this shipped. A walk that finds none
+        // agrees with an empty list for the wrong reason (SH322).
+        assertThat(reads).as("SH1073: no ShMcpArgs reads were found, so this asserted nothing")
+                .isGreaterThan(25);
+        assertThat(undeclared)
+                .as("SH1073: a tool reads an argument its inputSchema does not declare, so an MCP "
+                        + "client cannot discover it — tools/list is the only document a model "
+                        + "reads before calling. Declare it (the budget in "
+                        + "token-budgets.properties is part of that diff), or add it to UNDECLARED "
+                        + "with the reason.")
+                .isEqualTo(UNDECLARED);
+    }
+
+    /** {@code ShMcpArgs.<kind>(<node>, "<name>")}, capturing the name. */
+    private static final Pattern ACCESSOR =
+            Pattern.compile("ShMcpArgs\\.\\w+\\s*\\(\\s*[\\w.]+\\s*,\\s*\"([^\"]+)\"");
+
+    /**
      * Whether this source <em>reads</em> the argument, rather than merely naming it.
      *
      * <p>{@code ShMcpArgs.<kind>(<node>, "<name>")} is how a tool usually takes one. Matching the
