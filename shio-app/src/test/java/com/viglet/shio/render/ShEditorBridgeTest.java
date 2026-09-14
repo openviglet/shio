@@ -262,8 +262,8 @@ class ShEditorBridgeTest {
     @Test
     @DisplayName("SH304: the console's half does not post to \"*\" either")
     void theConsoleHalfPinsItsOriginToo() throws IOException {
-        Path editor = Path.of("..", "shio-react", "src", "app", "console", "universal-editor",
-                "visual-editor.page.tsx");
+        // SH961 moved the console's pages into trees by domain; the Universal Editor is editor/.
+        Path editor = Path.of("..", "shio-react", "src", "app", "editor", "visual-editor.page.tsx");
 
         assertThat(Files.readString(editor, StandardCharsets.UTF_8))
                 .as("""

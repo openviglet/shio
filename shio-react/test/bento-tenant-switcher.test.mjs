@@ -38,9 +38,9 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
 const SWITCHER = stripComments(
-  readFileSync(join(SRC, "app", "bento", "bento-tenant-switcher.tsx"), "utf8"))
-const SHELL = stripComments(readFileSync(join(SRC, "app", "bento", "bento.root.page.tsx"), "utf8"))
-const NAV = stripComments(readFileSync(join(SRC, "app", "bento", "bento-nav.ts"), "utf8"))
+  readFileSync(join(SRC, "app", "system", "bento-tenant-switcher.tsx"), "utf8"))
+const SHELL = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
+const NAV = stripComments(readFileSync(join(SRC, "app", "system", "bento-nav.ts"), "utf8"))
 
 test("SH934: the switcher calls the endpoint that changes the session's tenant", () => {
   assert.match(SWITCHER, /switchTo\(/,

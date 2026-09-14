@@ -7,11 +7,11 @@
  * (at your option) any later version.
  */
 import { strict as assert } from "node:assert"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { survey } from "../scripts/surface-digest.mjs"
+import { DOMAINS, survey } from "../scripts/surface-digest.mjs"
 import { stripComments } from "./support/source-text.mjs"
 
 /**
@@ -28,7 +28,7 @@ import { stripComments } from "./support/source-text.mjs"
  * wraps everything in a `SidebarProvider` no bento component can live under — so a migration
  * *adds* a surface rather than editing one, and every instrument that measured "the console
  * directory" was measuring the half that does not move. The digest now surveys both trees and
- * keys them under `src/app`, so `console/home/home.page.tsx` and `bento/home/home.page.tsx` are
+ * keys them under `src/app`, so `console/home/home.page.tsx` and `system/home.page.tsx` are
  * two surfaces with two eras.
  *
  * ## The before and after §LV.1 asked for
@@ -36,7 +36,7 @@ import { stripComments } from "./support/source-text.mjs"
  * | surface | era | chrome |
  * |---|---|---|
  * | `console/home/home.page.tsx` | console | PageHeader, Card ×3 |
- * | `bento/home/home.page.tsx` | bento | BentoHero, BentoSection, BentoCountTile, BentoTile, BentoEmptyState |
+ * | `system/home.page.tsx` | bento | BentoHero, BentoSection, BentoCountTile, BentoTile, BentoEmptyState |
  *
  * Digests are deliberately not asserted as literals: they are a hash of era, chrome and surface
  * classes, so pinning one here would fail on every edit to the page and teach the next reader to
@@ -46,47 +46,40 @@ import { stripComments } from "./support/source-text.mjs"
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
-const CONSOLE_HOME = "console/home/home.page.tsx"
-const BENTO_HOME = "bento/home/home.page.tsx"
+const HOME = "system/home.page.tsx"
 
 const homeSource = stripComments(
-  readFileSync(join(SRC, "app", "bento", "home", "home.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "system", "home.page.tsx"), "utf8"))
 
 /*
- * SH910 — there is one home now, and the assertion is the other half of the same fact.
+ * SH961 — one page tree by domain, and the survey has to walk every one of them.
  *
- * While both trees were mounted this asserted that the survey saw two homes in two eras. The
- * console one is deleted, so the question becomes: does the survey still walk **both directories**
- * — and is the surviving home the bento one?
- *
- * The second half is not a formality. SH898's actual finding was a digest that walked only
- * `src/app/console` and therefore answered "No surface moved (43 compared)" across an entire
- * migration. A survey that quietly went back to one directory would now report the console home as
- * simply absent and pass, which is the same blindness wearing this task's clothes.
+ * SH898's finding was a digest that walked only `src/app/console` and answered "No surface moved
+ * (43 compared)" across an entire migration, because the pages being written were in a second
+ * tree. SH910 turned this into "the survey still walks both trees"; SH961 merged the two into
+ * `admin`, `content`, `editor` and `system`, so the same blindness now means a walk that lost one
+ * domain — and a retired tree coming back is a page placed by the era it was migrated from.
  */
-test("SH898: the survey still walks both trees, and the one home left is the bento one", () => {
+test("SH898: the survey walks every domain tree, and the home is in it", () => {
   const surfaces = survey()
+  const names = Object.keys(surfaces)
 
-  assert.equal(surfaces[CONSOLE_HOME], undefined,
-    `SH898: ${CONSOLE_HOME} is back in the survey. SH910 deleted the console tree — a file there`
-      + " again means somebody re-added a page to the era this migration retired.")
-  assert.ok(surfaces[BENTO_HOME],
-    `SH898: ${BENTO_HOME} is not in the survey. If the digest walked only src/app/console again,`
-      + " every migration in Block AR would report 'No surface moved' — which is exactly what the"
-      + " whole of SH898 reported before the survey learned about the second tree.")
+  for (const retired of ["console", "bento"]) {
+    assert.ok(!existsSync(join(SRC, "app", retired)),
+      `SH961: src/app/${retired} exists again. Pages live in their domain tree (${DOMAINS.join(", ")});`
+        + " a directory named after an era is where the next page gets filed by the wrong question.")
+  }
+  for (const domain of DOMAINS) {
+    assert.ok(names.some((name) => name.startsWith(`${domain}/`)),
+      `SH898: the survey found no surface under ${domain}/, so the walk lost a directory — the`
+        + " blindness that reported 'No surface moved' across the whole of Block AR's first slice.")
+  }
 
+  assert.ok(surfaces[HOME], `SH898: ${HOME} is not in the survey`)
   // SH960 — asked of what the digest records now, since it has no era field.
-  assert.ok(surfaces[BENTO_HOME].chrome.includes("BentoHero"),
-    "SH898: the survey records no BentoHero on the migrated home, so either the page stopped"
-      + " composing the package's hero or the digest's vocabulary lost it.")
-
-  // The survey must still reach the console directory, or "the console home is gone" is a claim
-  // about a walk that stopped looking rather than about a file that stopped existing.
-  const consoleSurfaces = Object.keys(surfaces).filter((name) => name.startsWith("console/"))
-  assert.ok(consoleSurfaces.length > 15,
-    `SH898: the survey found ${consoleSurfaces.length} console-tree surfaces. Twenty-three adapter`
-      + " pages are still there, so a number near zero means the walk lost the directory and the"
-      + " assertion above is vacuous.")
+  assert.ok(surfaces[HOME].chrome.includes("BentoHero"),
+    "SH898: the survey records no BentoHero on the home, so either the page stopped composing the"
+      + " package's hero or the digest's vocabulary lost it.")
 })
 
 test("SH898: the migrated home composes the package's tiles and no Card", () => {
@@ -126,8 +119,6 @@ test("SH898: the reader is not vacuous — it runs the real survey over a real t
   assert.ok(Object.keys(surfaces).length > 40,
     `SH898: the survey yielded ${Object.keys(surfaces).length} surfaces — it is reading an empty`
       + " directory, and every comparison above is passing over nothing")
-  assert.ok(Object.keys(surfaces).some((name) => name.startsWith("console/")),
-    "SH898: no console surface in the survey, so the keys are not relative to src/app")
-  assert.ok(Object.keys(surfaces).some((name) => name.startsWith("bento/")),
-    "SH898: no bento surface in the survey, which is the blind spot this task removed")
+  assert.ok(Object.keys(surfaces).every((name) => DOMAINS.some((d) => name.startsWith(`${d}/`))),
+    "SH898: a survey key does not start with a domain, so the keys are not relative to src/app")
 })

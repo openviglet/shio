@@ -43,8 +43,8 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
 const read = (p) => stripComments(readFileSync(join(SRC, p), "utf8"))
-const EDIT = read("app/console/content/post.edit.page.tsx")
-const NEW = read("app/console/content/post.new.page.tsx")
+const EDIT = read("app/content/post.edit.page.tsx")
+const NEW = read("app/content/post.new.page.tsx")
 const ADAPTER = read("components/page-hero.tsx")
 const CHECK = stripComments(readFileSync(join(HERE, "..", "e2e", "console-check.mjs"), "utf8"))
 
@@ -112,14 +112,16 @@ test("SH901: the three post surfaces exist, and the chooser is the copy", () => 
   // Adapter surfaces: the console page IS the bento page, so there is no bento/ copy of them.
   for (const name of ["post.edit", "post.new"]) {
     // SH960 — the digest has no era; what makes these adapter pages is the seam they compose.
-    assert.ok(surfaces[`console/content/${name}.page.tsx`]?.chrome.includes("PageHero"),
-      `SH901: console/content/${name}.page.tsx is missing or no longer composes PageHero, the seam`
+    assert.ok(surfaces[`content/${name}.page.tsx`]?.chrome.includes("PageHero"),
+      `SH901: content/${name}.page.tsx is missing or no longer composes PageHero, the seam`
         + " through which one component renders the bento header.")
-    assert.equal(surfaces[`bento/content/${name}.page.tsx`], undefined,
-      `SH901: a bento/ copy of ${name} appeared. These two migrate by adapter precisely so 500`
+    // SH961 — one tree, so "no bento/ copy" is asked as "exactly one".
+    assert.deepEqual(Object.keys(surfaces).filter((key) => key.endsWith(`/${name}.page.tsx`)),
+      [`content/${name}.page.tsx`],
+      `SH901: a second copy of ${name} appeared. These two migrate by adapter precisely so 500`
         + " lines of save/publish/preview handling do not need every fix twice.")
   }
-  assert.ok(surfaces["bento/content/post-type-select.page.tsx"],
+  assert.ok(surfaces["content/post-type-select.page.tsx"],
     "SH901: the post-type chooser has no bento surface. Its cards are choices rather than chrome,"
       + " so their counterpart is a tile and the page is worth writing twice.")
 })

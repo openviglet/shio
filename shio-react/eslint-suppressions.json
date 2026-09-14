@@ -1,15 +1,15 @@
 {
-  "src/app/console/content/object.children.page.tsx": {
+  "src/app/content/object.children.page.tsx": {
     "@typescript-eslint/no-unused-expressions": {
       "count": 1
     }
   },
-  "src/app/console/content/post-type.edit.page.tsx": {
+  "src/app/content/post-type.edit.page.tsx": {
     "no-useless-assignment": {
       "count": 1
     }
   },
-  "src/app/console/content/static-file.list.page.tsx": {
+  "src/app/content/static-file.list.page.tsx": {
     "react-hooks/static-components": {
       "count": 2
     }

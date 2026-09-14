@@ -49,7 +49,7 @@ import { fileURLToPath } from "node:url"
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const CONSOLE_ROOT = join(HERE, "..")
-const PAGE = join(CONSOLE_ROOT, "src", "app", "bento", "bento-vocabulary.page.tsx")
+const PAGE = join(CONSOLE_ROOT, "src", "app", "system", "bento-vocabulary.page.tsx")
 
 const require_ = createRequire(join(CONSOLE_ROOT, "noop.js"))
 

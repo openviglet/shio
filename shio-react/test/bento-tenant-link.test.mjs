@@ -40,10 +40,10 @@ import { stripComments } from "./support/source-text.mjs"
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
-const BENTO = join(SRC, "app", "bento")
+const BENTO = join(SRC, "app", "system")
 
 const { TENANT_PARAM, linkWithTenant, tenantFromSearch } =
-  await import("../src/app/bento/bento-tenant-link.ts")
+  await import("../src/app/system/bento-tenant-link.ts")
 
 const NOTICE = stripComments(readFileSync(join(BENTO, "bento-tenant-link-notice.tsx"), "utf8"))
 const SWITCHER = stripComments(readFileSync(join(BENTO, "bento-tenant-switcher.tsx"), "utf8"))

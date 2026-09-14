@@ -11,8 +11,8 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 
-import { useMultiTenant } from "@/app/bento/bento-nav"
-import { linkWithTenant } from "@/app/bento/bento-tenant-link"
+import { useMultiTenant } from "@/app/system/bento-nav"
+import { linkWithTenant } from "@/app/system/bento-tenant-link"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

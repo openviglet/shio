@@ -37,8 +37,8 @@ import { stripComments } from "./support/source-text.mjs"
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
-const navSource = stripComments(readFileSync(join(SRC, "app", "bento", "bento-nav.ts"), "utf8"))
-const shellSource = stripComments(readFileSync(join(SRC, "app", "bento", "bento.root.page.tsx"), "utf8"))
+const navSource = stripComments(readFileSync(join(SRC, "app", "system", "bento-nav.ts"), "utf8"))
+const shellSource = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
 
 /** Every `{ id: "...", ... }` entry in the ITEMS array, as a flat object of its string fields. */
 function items() {

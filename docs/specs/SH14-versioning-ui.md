@@ -27,7 +27,7 @@
   response carries `data` as a **JSON string**, not a nested object. The diff UI
   must coerce defensively (see §5).
 - **The post editor is the natural host.**
-  [post.edit.page.tsx](../../shio-react/src/app/console/content/post.edit.page.tsx)
+  [post.edit.page.tsx](../../shio-react/src/app/content/post.edit.page.tsx)
   already loads the `DRAFT` (falling back to `PUBLISHED`), keeps the live `data`
   in state, parses the post-type field schema (`parseSchema(shPostType.schemaJson)`),
   and renders a `StickySaveBar` whose `actions` slot already hosts Preview/Save/

@@ -50,7 +50,7 @@ const SRC = join(HERE, "..", "src")
 const contextSource = stripComments(
   readFileSync(join(SRC, "contexts", "user.context.tsx"), "utf8"))
 const shellSource = stripComments(
-  readFileSync(join(SRC, "app", "bento", "bento.root.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
 
 const USER = {
   username: "curator", firstName: "C", lastName: "Urator",

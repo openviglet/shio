@@ -92,10 +92,10 @@ function census() {
  * debt.** Delete a line when you migrate the file; never edit a line to make room for a new one.
  */
 const ORANGE_DEBT = {
-  "app/console/content/object.children.page.tsx": ["bg-orange-100", "bg-orange-400", "dark:bg-orange-900/30", "dark:text-orange-400", "text-orange-700"],
-  "app/console/content/static-file.list.page.tsx": ["bg-orange-50", "bg-orange-50/80", "bg-orange-500", "border-orange-400", "dark:bg-orange-950/20", "dark:bg-orange-950/30", "dark:bg-orange-950/40", "dark:text-orange-300", "hover:border-orange-300", "ring-orange-300", "text-orange-500", "text-orange-700"],
-  "app/console/content/trash.page.tsx": ["text-orange-500"],
-  "app/console/universal-editor/visual-editor.page.tsx": ["bg-orange-50", "dark:bg-orange-950/30", "text-orange-600"],
+  "app/content/object.children.page.tsx": ["bg-orange-100", "bg-orange-400", "dark:bg-orange-900/30", "dark:text-orange-400", "text-orange-700"],
+  "app/content/static-file.list.page.tsx": ["bg-orange-50", "bg-orange-50/80", "bg-orange-500", "border-orange-400", "dark:bg-orange-950/20", "dark:bg-orange-950/30", "dark:bg-orange-950/40", "dark:text-orange-300", "hover:border-orange-300", "ring-orange-300", "text-orange-500", "text-orange-700"],
+  "app/content/trash.page.tsx": ["text-orange-500"],
+  "app/editor/visual-editor.page.tsx": ["bg-orange-50", "dark:bg-orange-950/30", "text-orange-600"],
   "app/login/login-settings.tsx": ["bg-orange-600"],
   "app/login/login.page.tsx": ["text-orange-500"],
   "app/setup/setup.page.tsx": ["from-orange-500", "hover:from-orange-600", "text-orange-500"],

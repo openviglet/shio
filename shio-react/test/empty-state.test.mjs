@@ -172,7 +172,7 @@ test("SH903: the pattern still describes the markup it is looking for", () => {
  */
 test("SH903: an unsearched search page says so, and says something else than a failed one", () => {
   const search = stripComments(
-    readFileSync(join(SRC, "app", "console", "content", "search.page.tsx"), "utf8"))
+    readFileSync(join(SRC, "app", "content", "search.page.tsx"), "utf8"))
 
   assert.match(search, /content\.searchPromptTitle/,
     "SH903: the search page lost its unsearched state. It opens with no query, so that branch is"

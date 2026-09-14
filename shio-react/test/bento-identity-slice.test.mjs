@@ -35,7 +35,7 @@ import { stripComments } from "./support/source-text.mjs"
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
-const bento = (name) => stripComments(readFileSync(join(SRC, "app", "bento", "admin", name), "utf8"))
+const bento = (name) => stripComments(readFileSync(join(SRC, "app", "admin", name), "utf8"))
 
 const ENTITY = bento("identity-entity.page.tsx")
 const LIST = bento("admin-list.page.tsx")
@@ -102,7 +102,7 @@ test("SH904/SH905: a load failure is not the empty state, on the one list every 
 
 test("SH904: the user editor is not on the entity shell, and the reason is in the model", () => {
   const editor = stripComments(
-    readFileSync(join(SRC, "app", "console", "admin", "admin.user.page.tsx"), "utf8"))
+    readFileSync(join(SRC, "app", "admin", "admin.user.page.tsx"), "utf8"))
 
   assert.doesNotMatch(editor, /BentoEntityShell/,
     "SH904: the user editor mounts the entity shell. Its hero inline-edits a single `title` and"

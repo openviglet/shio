@@ -7,7 +7,7 @@
 
 - **Token auth is shipped (SH1).** [ShApiTokenFilter](../../shio-app/src/main/java/com/viglet/shio/spring/security/auth/ShApiTokenFilter.java) reads a `Key` header, looks up [ShApiToken](../../shio-app/src/main/java/com/viglet/shio/persistence/model/token/ShApiToken.java), **rejects any non-GET** with 403, and grants `ROLE_CDA` + `ROLE_USER` for *every* path the request happens to hit.
 - **The CDA read surface is shipped (SH1).** [ShCdaService](../../shio-app/src/main/java/com/viglet/shio/api/cda/ShCdaService.java) pins every read to `PUBLISHED`. SH1 §6 already committed to the forward shape: *"`siteId` is a first-class query param ... SH2 per-site key scoping filters at the service boundary without URL changes."*
-- **Token CRUD is shipped.** [ShApiTokenAPI](../../shio-app/src/main/java/com/viglet/shio/api/token/ShApiTokenAPI.java) (`/api/v2/api-token`) + the React editor at `shio-react/src/app/console/admin/api-token/`.
+- **Token CRUD is shipped.** [ShApiTokenAPI](../../shio-app/src/main/java/com/viglet/shio/api/token/ShApiTokenAPI.java) (`/api/v2/api-token`) + the React editor at `shio-react/src/app/admin/api-token/`.
 
 **What SH2 adds:** every token carries a **scope** (`READ` / `PREVIEW` / `WRITE`) and an optional **site allow-list**. The filter enforces the scope (which HTTP methods, which preview authority) and confines token auth to the CDA namespace; the CDA service enforces the allow-list so a public delivery key can read exactly one site's published content and nothing else.
 

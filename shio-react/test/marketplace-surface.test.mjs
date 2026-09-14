@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url"
  * same *set*; this holds the page to the set.
  */
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
-const PAGE = join(SRC, "app", "console", "admin", "marketplace", "marketplace.list.page.tsx")
+const PAGE = join(SRC, "app", "admin", "marketplace", "marketplace.list.page.tsx")
 
 test("SH679: the marketplace page exists and is reachable", () => {
   assert.ok(existsSync(PAGE), "SH679: the console's marketplace page is gone")
@@ -50,7 +50,7 @@ test("SH679: the marketplace page exists and is reachable", () => {
   const constants = readFileSync(join(SRC, "app", "routes.const.ts"), "utf8")
   assert.match(constants, /ADMIN_MARKETPLACE:/, "SH679: no ROUTES entry")
 
-  const nav = readFileSync(join(SRC, "app", "bento", "bento-nav.ts"), "utf8")
+  const nav = readFileSync(join(SRC, "app", "system", "bento-nav.ts"), "utf8")
   assert.match(nav, /ROUTES\.ADMIN_MARKETPLACE/,
     "SH679: the page is not in the navigation. A route a curator cannot find is the defect this "
       + "closed — 'nothing in the console mentions a blueprint' was true of the navigation first.")

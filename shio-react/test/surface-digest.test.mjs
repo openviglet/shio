@@ -141,7 +141,7 @@ test("SH896: compare names the page and the field that moved", () => {
  * seams rather than the package; with the seams named, one does — the visual editor, which owns the
  * viewport and draws its own frame (SH907). A page joining it is a page the proof cannot see.
  */
-const NO_CHROME = ["console/universal-editor/visual-editor.page.tsx"]
+const NO_CHROME = ["editor/visual-editor.page.tsx"]
 
 test("SH896: every surface yields a digest, the survey is reproducible, and it sees the pages", () => {
   const first = survey()

@@ -150,7 +150,7 @@ test("SH955: the lint is not vacuous — it matches the call it was written to f
  * in, and by the time the curator went looking the toast had gone.
  */
 test("SH955: the editor pins a refusal on the field the server named", () => {
-  const page = readFileSync(new URL("../src/app/console/content/post.edit.page.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/app/content/post.edit.page.tsx", import.meta.url), "utf8");
   const fields = readFileSync(new URL("../src/components/widgets/post-form-fields.tsx", import.meta.url), "utf8");
 
   assert.match(page, /fieldOf\(problem\)/,

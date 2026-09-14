@@ -23,7 +23,7 @@ import { stripComments } from "./support/source-text.mjs"
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
-const CONSOLE_ADMIN = join(SRC, "app", "console", "admin")
+const CONSOLE_ADMIN = join(SRC, "app", "admin")
 
 /**
  * Every `<Route path="…/:param" element={<X />} />` under the bento tree, as `[param, component]`.

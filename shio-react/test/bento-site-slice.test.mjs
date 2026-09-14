@@ -41,7 +41,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
 const read = (name) =>
-  stripComments(readFileSync(join(SRC, "app", "bento", "content", name), "utf8"))
+  stripComments(readFileSync(join(SRC, "app", "content", name), "utf8"))
 
 const EDIT = read("site.edit.page.tsx")
 const LIST = read("site.list.page.tsx")
@@ -94,12 +94,13 @@ test("SH899: the form the shell submits actually writes", () => {
 test("SH899: the four site surfaces are bento, and the console four are gone", () => {
   const surfaces = survey()
   for (const name of ["site.list", "site.new", "site.edit", "site.import"]) {
-    const bento = `bento/content/${name}.page.tsx`
-    const legacy = `console/content/${name}.page.tsx`
-    assert.ok(surfaces[bento]?.chrome.length > 0, `SH899: ${bento} is missing or composes no chrome`)
-    assert.equal(surfaces[legacy], undefined,
-      `SH899: ${legacy} is back. SH910 deleted the console site pages with the route tree that`
-        + " mounted them; a file there again is a page on the era this migration retired.")
+    const page = `content/${name}.page.tsx`
+    assert.ok(surfaces[page]?.chrome.length > 0, `SH899: ${page} is missing or composes no chrome`)
+    // SH961 — one tree, so "the console copy is gone" is asked as "there is exactly one".
+    const copies = Object.keys(surfaces).filter((key) => key.endsWith(`/${name}.page.tsx`))
+    assert.deepEqual(copies, [page],
+      `SH899: ${name}.page.tsx exists in more than one place. SH910 deleted the console site pages;`
+        + " a second copy is a page every fix has to land in twice.")
   }
 })
 

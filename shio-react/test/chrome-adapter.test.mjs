@@ -93,8 +93,8 @@ const render = (chrome) => (chrome === null
  * runtime-built schema and fifteen dynamic widgets that were never going to be rewritten twice.
  */
 const ADAPTED = [
-  "app/console/content/post.edit.page.tsx",
-  "app/console/content/post-type.edit.page.tsx",
+  "app/content/post.edit.page.tsx",
+  "app/content/post-type.edit.page.tsx",
 ]
 
 test("SH892: the adapter renders two different chromes from one element tree", () => {

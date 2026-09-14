@@ -96,13 +96,13 @@ const DECLARED = {
   // quietly appearing in a file somebody regenerated.
   "react-hooks/set-state-in-effect": {},
   "@typescript-eslint/no-unused-expressions": {
-    "src/app/console/content/object.children.page.tsx": 1,
+    "src/app/content/object.children.page.tsx": 1,
   },
   "no-useless-assignment": {
-    "src/app/console/content/post-type.edit.page.tsx": 1,
+    "src/app/content/post-type.edit.page.tsx": 1,
   },
   "react-hooks/static-components": {
-    "src/app/console/content/static-file.list.page.tsx": 2,
+    "src/app/content/static-file.list.page.tsx": 2,
   },
   "react-refresh/only-export-components": {
     "src/app/login/login-settings.tsx": 1,
@@ -192,10 +192,10 @@ test("SH701: the lint baseline is exactly the declared list", async () => {
 const PAID = [
   // SH701 — the mechanical four: a `useCallback` opening with `setLoading(true)`, called from a
   // mount effect.
-  "src/app/console/admin/activity/activity.list.page.tsx",
-  "src/app/console/admin/review/review.list.page.tsx",
-  "src/app/console/content/trash.page.tsx",
-  "src/app/console/content/static-file.list.page.tsx",
+  "src/app/admin/activity/activity.list.page.tsx",
+  "src/app/admin/review/review.list.page.tsx",
+  "src/app/content/trash.page.tsx",
+  "src/app/content/static-file.list.page.tsx",
   // SH702 — the four dialogs, by a keyed remount rather than a better effect. Driven and asserted
   // against a running console by `shio-react/e2e/dialog-remount.check.mjs`: before it, a reopened
   // version history kept the previous read's *Restaurar versão publicada* button for the whole of
@@ -208,8 +208,8 @@ const PAID = [
   // editor handshake carry the folder and the destination they belong to, and the two widgets tag
   // their resolved path with the id it is for. That last one closed a real race — a slow answer for
   // a file the curator had already replaced used to land on the new one.
-  "src/app/console/content/object.children.page.tsx",
-  "src/app/console/universal-editor/visual-editor.page.tsx",
+  "src/app/content/object.children.page.tsx",
+  "src/app/editor/visual-editor.page.tsx",
   "src/components/widgets/content-select.widget.tsx",
   "src/components/widgets/file.widget.tsx",
   // SH704 — the last one, and the only one with a test of its own: the module cache became a

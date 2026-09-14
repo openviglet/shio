@@ -51,22 +51,18 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 const byCodepoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-export const CONSOLE_ROOT = join(HERE, "..", "src", "app", "console")
+export const APP_ROOT = join(HERE, "..", "src", "app")
 
 /**
- * SH898 — the bento tree is surveyed too, and both are keyed under `src/app`.
+ * The page trees, by domain (SH961), and every one of them is walked.
  *
- * The first migrated surface is what found this. SH888 built the bento route tree **beside** the
- * console one, so a migration adds `src/app/bento/<surface>` and leaves the console page in place
- * until SH909 removes that tree wholesale. This survey walked `src/app/console` alone, so the
- * whole of SH898 produced `No surface moved (43 compared)` — a correct answer about a directory
- * nothing had changed, and a useless one about the migration.
- *
- * Keys are relative to `src/app`, so `console/content/post.edit.page.tsx` and
- * `bento/content/site.edit.page.tsx` are different surfaces however the tree is later reshaped.
+ * SH898 is why the list is explicit: the survey once walked `src/app/console` alone while every
+ * migrated page was being written into a second tree, and answered `No surface moved (43
+ * compared)` across a whole migration. SH961 merged those two trees into these four. Keys stay
+ * relative to `src/app`, so a surface is named by its domain and file. `login/` and `setup/` are
+ * pre-auth screens outside the product's page vocabulary, and are not surveyed.
  */
-export const BENTO_ROOT = join(HERE, "..", "src", "app", "bento")
-export const APP_ROOT = join(HERE, "..", "src", "app")
+export const DOMAINS = ["admin", "content", "editor", "system"]
 
 /*
  * SH960 — the `era` field is gone, and it was worse than redundant.
@@ -170,7 +166,7 @@ export function digestOf(source) {
   return createHash("sha256").update(canonical).digest("hex").slice(0, 12)
 }
 
-export function pages(dir = CONSOLE_ROOT, out = []) {
+export function pages(dir = APP_ROOT, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name)
     if (entry.isDirectory()) pages(path, out)
@@ -179,10 +175,10 @@ export function pages(dir = CONSOLE_ROOT, out = []) {
   return out
 }
 
-/** Every surface in both trees, keyed by its path relative to `src/app`, in a stable order. */
+/** Every surface in the domain trees, keyed by its path relative to `src/app`, in a stable order. */
 export function survey() {
   const out = {}
-  const files = [...pages(CONSOLE_ROOT), ...pages(BENTO_ROOT)]
+  const files = DOMAINS.flatMap((domain) => pages(join(APP_ROOT, domain)))
   for (const file of files.sort(byCodepoint)) {
     const source = readFileSync(file, "utf8")
     const name = relative(APP_ROOT, file).replace(/\\/g, "/")

@@ -45,7 +45,7 @@ Backlog: [docs/ROADMAP.md](docs/ROADMAP.md) Blocks H–N. Rationale:
 
 ### Frontend (React + Vite + shadcn/ui + TypeScript)
 - **shio-react/** - New React frontend
-  - `src/app/console/` - Page components (content, admin, config)
+  - `src/app/{content,admin,editor,system}/` - Page components, one tree by domain
   - `src/app/routes/` - Route definitions
   - `src/components/` - Reusable components
   - `src/components/ui/` - shadcn/ui components

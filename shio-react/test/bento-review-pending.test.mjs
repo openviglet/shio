@@ -37,12 +37,12 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
 const BADGE = stripComments(
-  readFileSync(join(SRC, "app", "bento", "bento-review-pending.tsx"), "utf8"))
-const SHELL = stripComments(readFileSync(join(SRC, "app", "bento", "bento.root.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "system", "bento-review-pending.tsx"), "utf8"))
+const SHELL = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
 const CONTEXT = stripComments(
   readFileSync(join(SRC, "contexts", "review-pending.context.tsx"), "utf8"))
 const QUEUE = stripComments(
-  readFileSync(join(SRC, "app", "console", "admin", "review", "review.list.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "admin", "review", "review.list.page.tsx"), "utf8"))
 
 test("SH936: the shell mounts the provider, above both the reader and the writer", () => {
   assert.match(SHELL, /<ReviewPendingProvider>/,

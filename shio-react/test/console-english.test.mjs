@@ -62,7 +62,7 @@ const UNTRANSLATED = new Map(Object.entries({
     + "the one screen where a reader has no other confirmation of what they have connected to.",
   "app/setup/setup.page.tsx | text | Viglet Shio CMS":
     "The same name on the first-run screen, and the same reason.",
-  "app/console/admin/tenant/tenant.page.tsx | prop | FREE":
+  "app/admin/tenant/tenant.page.tsx | prop | FREE":
     "A plan identifier the backend stores and compares (`plan: \"FREE\"`), shown as the field's "
     + "placeholder so the curator types the value the API expects. Translating the placeholder "
     + "would teach a Portuguese operator to type a word the server rejects.",

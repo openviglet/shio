@@ -998,7 +998,7 @@ export interface CapabilityGroup {
 
 /**
  * What the console does on its own. Each line is a screen in
- * `shio-react/src/app/console/` — this list is a walk of that directory rather
+ * `shio-react/src/app/` (content, admin, editor) — this list is a walk of those directories rather
  * than a wish, because the failure it prevents is the one this page exists to
  * correct: a claim about the curator's half that nobody checked against the
  * curator's half.

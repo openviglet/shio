@@ -102,14 +102,14 @@ function unnamedIconButtons() {
  * existing, and the surfaces a curator reaches now are the ones that were always named.
  */
 const UNNAMED_DEBT = {
-  "app/console/admin/auth-provider/auth-provider.page.tsx": ["X"],
-  "app/console/admin/exchange-provider/exchange-provider.page.tsx": ["X"],
-  "app/console/content/object.children.page.tsx": ["LayoutGrid", "LayoutGrid", "List", "Search", "Sheet"],
-  "app/console/content/post-type.edit.page.tsx": ["Trash2"],
-  "app/console/content/post-type.list.page.tsx": ["Pencil", "Trash2"],
+  "app/admin/auth-provider/auth-provider.page.tsx": ["X"],
+  "app/admin/exchange-provider/exchange-provider.page.tsx": ["X"],
+  "app/content/object.children.page.tsx": ["LayoutGrid", "LayoutGrid", "List", "Search", "Sheet"],
+  "app/content/post-type.edit.page.tsx": ["Trash2"],
+  "app/content/post-type.list.page.tsx": ["Pencil", "Trash2"],
   // SH922 removed the Download entry: that button lived inside the anchor that already
   // named it, and the fix was to delete the button rather than to label it.
-  "app/console/content/static-file.list.page.tsx": ["Trash2"],
+  "app/content/static-file.list.page.tsx": ["Trash2"],
 }
 
 /**
@@ -143,11 +143,13 @@ test("SH893: every icon-only control has a name, and the ones that do not are na
       + "A **shared component** must never appear here at all — the migration keeps those, and a"
       + " name missing from one is missing on every page that renders it.")
 
+  // SH961 — "a console page" was a directory, `app/console/`, and the pages in it now live in their
+  // domain trees. What the rule protects is unchanged: a debt row may name a page, never a shared
+  // component, because a name missing from a component is missing on every page that renders it.
   for (const file of Object.keys(found)) {
-    assert.ok(file.startsWith("app/console/"),
-      `SH893: ${file} is not a console page and has an unnamed icon control. Block AR rewrites`
-        + " the console pages, which is why their debt is tolerated and declared; a shared"
-        + " component or a bento surface is not rewritten and has to be fixed now.")
+    assert.ok(/^app\/.+\.page\.tsx$/.test(file),
+      `SH893: ${file} is not a page and has an unnamed icon control. A page's debt is tolerated and`
+        + " declared; a shared component's is on every page that renders it, and has to be fixed now.")
   }
 })
 

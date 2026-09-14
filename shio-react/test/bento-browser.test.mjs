@@ -51,9 +51,9 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
 const BROWSER = stripComments(
-  readFileSync(join(SRC, "app", "console", "content", "object.children.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "content", "object.children.page.tsx"), "utf8"))
 const FOLDER_EDIT = stripComments(
-  readFileSync(join(SRC, "app", "bento", "content", "folder.edit.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "content", "folder.edit.page.tsx"), "utf8"))
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
 
 test("SH900: the browser is one component with no console chrome of its own", () => {
@@ -129,13 +129,13 @@ test("SH900: the survey sees the browser's seams, and the two folder surfaces", 
   // SH960 — this asserted the browser stayed console-era. The digest has no era now; what it
   // records is what a page composes, which for this page is its seams.
   const surfaces = survey()
-  const browser = surfaces["console/content/object.children.page.tsx"]
+  const browser = surfaces["content/object.children.page.tsx"]
   assert.ok(browser?.chrome.includes("PageHero") && browser.chrome.includes("Panel"),
     "SH900: the survey records neither PageHero nor Panel on the content browser, so the digest is"
       + " blind to the header and the three panels that were the whole of its migration.")
   for (const name of ["folder.edit", "folder.new"]) {
-    assert.ok(surfaces[`bento/content/${name}.page.tsx`],
-      `SH900: bento/content/${name}.page.tsx is missing from the survey`)
+    assert.ok(surfaces[`content/${name}.page.tsx`],
+      `SH900: content/${name}.page.tsx is missing from the survey`)
   }
 })
 

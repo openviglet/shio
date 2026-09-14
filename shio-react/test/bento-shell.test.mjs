@@ -52,9 +52,9 @@ const SRC = join(HERE, "..", "src")
 
 // Comments stripped: these assertions are largely "this file must NOT mention X", and the file
 // explains at length why it does not. See test/support/source-text.mjs.
-const shellSource = stripComments(readFileSync(join(SRC, "app", "bento", "bento.root.page.tsx"), "utf8"))
+const shellSource = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
 const appSource = readFileSync(join(SRC, "App.tsx"), "utf8")
-const navSource = stripComments(readFileSync(join(SRC, "app", "bento", "bento-nav.ts"), "utf8"))
+const navSource = stripComments(readFileSync(join(SRC, "app", "system", "bento-nav.ts"), "utf8"))
 
 const render = (node) => renderToStaticMarkup(
   h(StaticRouter, { location: "/bento" }, node))

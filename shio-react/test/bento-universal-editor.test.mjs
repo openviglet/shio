@@ -53,9 +53,9 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
 const EDITOR = stripComments(
-  readFileSync(join(SRC, "app", "console", "universal-editor", "visual-editor.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "editor", "visual-editor.page.tsx"), "utf8"))
 const PICKER = stripComments(
-  readFileSync(join(SRC, "app", "console", "universal-editor", "editor-sites.page.tsx"), "utf8"))
+  readFileSync(join(SRC, "app", "editor", "editor-sites.page.tsx"), "utf8"))
 
 test("SH907: the visual editor is mounted outside the bento shell", () => {
   /*

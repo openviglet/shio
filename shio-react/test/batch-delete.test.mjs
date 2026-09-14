@@ -118,7 +118,7 @@ test("SH953: a long list of refusals is capped and says how many it is not showi
  * and the refresh must return to the page the curator was on.
  */
 test("SH953: the page reports the outcome's count and refreshes where it was", () => {
-  const page = readFileSync(new URL("../src/app/console/content/object.children.page.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/app/content/object.children.page.tsx", import.meta.url), "utf8");
 
   assert.match(page, /count:\s*outcome\.deleted/,
     "SH953: the toast must count what went, not `selectedItems.size` — that substitution IS the "

@@ -19,8 +19,7 @@
 
 ## Block AW — One chrome: bento, and nothing left that names another
 
-- 📋 **SH961** (deps: SH959 ✅) **twenty-three bento pages live under src/app/console, beside a src/app/bento tree, so a path names a retired era** — The two page trees record where each page was migrated from, not what it renders, so a reader choosing where a new page goes is choosing between eras. → §LXII.5
-- 📋 **SH962** (deps: SH960 ✅, SH961) **the console-ui area doc and eighteen source files narrate a two-chrome console that no longer exists** — Comments explain code by the migration that produced it, so a reader learns a console chrome exists and a new page copies an adapter that chooses nothing. → §LXII.6
+- 📋 **SH962** (deps: SH960 ✅, SH961 ✅) **the console-ui area doc and eighteen source files narrate a two-chrome console that no longer exists** — Comments explain code by the migration that produced it, so a reader learns a console chrome exists and a new page copies an adapter that chooses nothing. → §LXII.6
 - 📋 **SH963** (deps: SH958 ✅, DS VDS146) **Shio still has to declare a chrome at all, because the package keeps a switch with a console value** — Until the design system drops SectionChrome the root provider must stay, and while it stays the census cannot reach zero. → §LXII.7
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
@@ -52,6 +51,7 @@
 - 📋 **SH1070** (deps: —) **the docs conformance gate is red at HEAD, and 135 commits deep in owed runs** — Two suites fail on drift nobody has seen: a published page states Spring Boot 4.1.0 against a pom declaring 4.1.1, and COVERAGE.md's summary counts 57 clusters over 54 rows. → §LXIV.13
 - ⏳ **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — the COVERAGE.md edit is in the vigletdocs working tree and uncommitted, so a fresh clone still reads the old matrix. → §LXIV.14
 - 📋 **SH1074** (deps: —) **the ARIA-state lint rejects the exact form its own failure message tells you to write** — Its regex refuses any expression not starting with a quote, so the ternary BENTO-AUTHORING gives as correct fails, and nobody saw it because the console had none. → §LXIV.15
+- 📋 **SH1076** (deps: viglet-core 2026.3.11 published) **every CI suite fails before it starts, because the viglet-core BOM version is not in Maven Central** — pom.xml imports viglet-core-bom 2026.3.11, which only a local ~/.m2 holds, so Maven cannot read the POM in CI while every local gate passes. → §LXIV.16
 
 ## Block AZ — What the content said before
 
@@ -147,6 +147,7 @@
 - 📋 **SH1053** (deps: DS VDS141, SH964) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
 - 📋 **SH1054** (deps: SH1052, SH1053) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
 - 📋 **SH1055** (deps: SH1031) **the content Shio delivers is checked for one accessibility rule, image-no-alt, and nothing else** — Verify has dozens of rules and one about accessibility, although the render path already builds the heading outline, landmarks and link inventory the rest would need. → §LXXII.13
+- 📋 **SH1075** (deps: —) **the console lint fails in CI on an error the suppressions file does not hold, and no local gate runs it** — react-hooks/set-state-in-effect in bento-tenant-link-notice.tsx has failed pnpm lint since SH931, while pnpm test and the baseline test stay green. → §LXXII.14
 
 ## Block BH — One content model, many languages
 

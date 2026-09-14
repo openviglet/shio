@@ -265,7 +265,7 @@ test("SH908: the reader is not vacuous — it finds the routes and the chrome it
 
   // The other half of the same fact: the shell has to be the thing that mounts it. If nothing
   // does, every route is 'outside the shell' and the rule above is about nobody.
-  const shell = readFileSync(join(SRC, "app", "bento", "bento.root.page.tsx"), "utf8")
+  const shell = readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8")
   assert.match(shell, /<UserProvider>/,
     "SH908: the bento shell no longer mounts UserProvider, so the inside/outside distinction this"
       + " reader draws no longer corresponds to anything.")

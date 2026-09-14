@@ -23,7 +23,7 @@ import { stripComments } from "./support/source-text.mjs"
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
-const admin = (rel) => stripComments(readFileSync(join(SRC, "app", "console", "admin", rel), "utf8"))
+const admin = (rel) => stripComments(readFileSync(join(SRC, "app", "admin", rel), "utf8"))
 
 const REVIEW = admin("review/review.list.page.tsx")
 const ACTIVITY = admin("activity/activity.list.page.tsx")

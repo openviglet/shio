@@ -39,7 +39,7 @@ import { fileURLToPath } from "node:url"
  * `shio-react/e2e`, which needs a running instance.
  */
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
-const NAV = join(SRC, "app", "bento", "bento-nav.ts")
+const NAV = join(SRC, "app", "system", "bento-nav.ts")
 
 test("SH46: the Tenants nav entry is gated on multiTenant, and the gate is not decoration", () => {
   const nav = readFileSync(NAV, "utf8")
@@ -89,7 +89,7 @@ test("SH46: one surface decides tenancy, so there is nothing to drift against", 
     .filter((name) => name !== "hooks/use-discovery.ts" && name !== "lib/discovery-store.ts")
     .sort()
 
-  assert.deepEqual(consumers, ["app/bento/bento-nav.ts"],
+  assert.deepEqual(consumers, ["app/system/bento-nav.ts"],
     "SH46: discovery is read from more than one place. Two surfaces deciding tenancy separately "
       + "is the arrangement that produced this defect — the second one is where the gate will be "
       + "forgotten. Route the new caller through the nav declaration instead.")

@@ -1119,25 +1119,6 @@ and may only shrink, then one root provider, then the branches, the era instrume
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
 
-### LXII.5 One page tree, organised by domain (SH961)
-
-src/app/bento holds the pages written for the shell; src/app/console holds the
-twenty-three that were adapted into it, including the post editor, the post-type editor,
-the content browser, search, trash, the review queue and the GraphQL explorer. Every one
-renders bento. The split is a record of how each page arrived, and it misleads the
-reader who needs it most: an agent adding a surface greps both trees and has to decide
-which era a new page belongs to.
-
-Merge them into one tree organised by domain, content, admin, editor and system, with
-git mv so history follows each file, and rewrite the imports and route declarations in
-the same commit. ROUTES.CONSOLE is not a chrome reference, it is the console product,
-whose base is /bento, and it stays; the legacy /console redirects stay too, because they
-protect bookmarks, not a chrome.
-
-The assertions are that no import path contains app/console or app/bento, that
-route-params.test and the route scanner from SH928 still find every route, and that the
-build and the census are green.
-
 ### LXII.6 The prose, brought to one chrome (SH962)
 
 page-hero.tsx explains that the console branch went with the shell that rendered it,
@@ -1695,6 +1676,28 @@ a quoted literal — is the rule the contract actually states.
 The console still has no ARIA state attribute the corrected rule would accept, so the
 fix lands with a fixture rather than a corpus — and the first real one will be written
 by somebody reading the message rather than the regex.
+
+### LXIV.16 A dependency only this machine has (SH1076)
+
+Found reading a failed CI run while checking what the IDE sync had pushed, and confirmed
+from the job logs. Every `Suites` run on a push to 2026.3 since at least 2026-09-06
+concludes failure, and all four jobs fail. `mvnw clean test` cannot read the POM:
+`Non-resolvable import POM: com.viglet.core:viglet-core-bom:pom:2026.3.11 ... could not
+find artifact ... in central`. The version was raised in `pom.xml` by SH110. On this
+machine `~/.m2` holds 2026.3.11 because viglet-core is built locally, so every local
+gate passes. The Java suite reported 2050 green today while CI could not start it.
+
+This is the state SH579 says does not exist, arrived at by the route it names: a red
+suite nobody mentioned. It is also worse than a red test. Maven stops before the
+reactor, so CI reports no count and no failing name, and the three other jobs fail
+downstream of the same missing artifact.
+
+The fix is outside this backlog: publish viglet-core 2026.3.11, or pin the last
+published version until it is. The part inside it is the instrument. A version bump that
+points at an artifact the central repository does not have is detectable at the commit,
+by resolving the BOM with an empty local repository, or offline against a list of
+published versions. Without that check, the next bump fails the same way and is seen a
+week later.
 
 ## LXV What the content said before (Block AZ)
 
@@ -3250,6 +3253,28 @@ The family runs in shio verify, in the Insights panel from SH1013, and as a sele
 check in BA8's publish gates, so a team can refuse to publish a page that fails it. The
 assertions render a fixture page with one violation of each rule and read each finding
 with its address.
+
+### LXXII.14 The console lint is red and only CI runs it (SH1075)
+
+Found running `pnpm lint` in shio-react while moving files for SH961, not by reading
+code. It exits 1 on one error, `react-hooks/set-state-in-effect` at line 73 of
+`src/app/system/bento-tenant-link-notice.tsx`, and the same error is on the file's
+previous path at the commit before the move, so the move did not introduce it.
+`eslint-suppressions.json` holds every other finding by path and count, and does not
+hold this one. `.github/workflows/suites.yml` runs `pnpm lint` as "The console lint (new
+findings only)", so the rule SH665 set up, that a new finding fails CI, has been failing
+on this file since SH931's tenant link notice arrived.
+
+Nothing local noticed. `pnpm test` does not run ESLint, and `lint-baseline.test.mjs`
+compares the suppressions file with its declared list, not with a live run. Both halves
+are green while the lint is red.
+
+Two fixes, each small. The effect sets state from the location on every change, and a
+derived value or a keyed reset removes the synchronous setState. Suppressing it instead
+would take a reason in the diff, since the rule describes a cascading render. The
+instrument half matters more: something in `pnpm test` should run the console lint, or
+state that it does not and name the gate that does. A suppressions baseline nobody
+compares against a run is a list, not a gate.
 
 ## LXXIII One content model, many languages (Block BH)
 

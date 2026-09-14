@@ -25,7 +25,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { labelSource, labelSourceKey, labelsFrom }
-  from "../src/app/console/universal-editor/field-labels.ts";
+  from "../src/app/editor/field-labels.ts";
 
 test("labels come from declared fields, and a blank label is absent rather than empty", () => {
   const labels = labelsFrom([

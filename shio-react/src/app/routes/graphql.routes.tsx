@@ -4,7 +4,7 @@ import { IconBrandGraphql } from "@tabler/icons-react"
 
 // GraphiQL pulls in Monaco (multi-MB). Load the page only when the route is hit
 // so it never weighs down the main console bundle.
-const GraphiQLPage = lazy(() => import("../console/graphql/graphql.page"))
+const GraphiQLPage = lazy(() => import("../admin/graphql/graphql.page"))
 
 const Fallback = (
     <div className="flex flex-1 items-center justify-center py-24 text-muted-foreground">

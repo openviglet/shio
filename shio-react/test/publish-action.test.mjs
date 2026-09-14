@@ -36,7 +36,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
-const PAGE = new URL("../src/app/console/content/post.edit.page.tsx", import.meta.url);
+const PAGE = new URL("../src/app/content/post.edit.page.tsx", import.meta.url);
 const SERVICE = new URL("../src/services/post-unified/post-unified.service.ts", import.meta.url);
 
 const page = await readFile(PAGE, "utf8");

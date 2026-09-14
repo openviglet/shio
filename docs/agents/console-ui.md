@@ -695,7 +695,7 @@ in the file with that reason beside it.
 ## The bento layer, installed and proved here (SH887)
 
 `@viglet/viglet-design-system/bento` is now imported by this console, and one page —
-[`src/app/bento/bento-vocabulary.page.tsx`](../../shio-react/src/app/bento/bento-vocabulary.page.tsx)
+[`src/app/system/bento-vocabulary.page.tsx`](../../shio-react/src/app/system/bento-vocabulary.page.tsx)
 at the top-level route `/bento-vocabulary` — composes 23 of the layer's 35 runtime exports.
 It is a **harness, not a surface**: no nav entry, no service, no request, and it is deleted
 when Block AR finishes. `src/index.css` takes `bento.css` as a second import, because the
@@ -925,7 +925,7 @@ Verified in a browser under both OS preferences: `<body>` carries no boot class 
 ## The bento route tree, beside the console one (SH888)
 
 `/bento` is a **sibling** of `/console`, not a child.
-[`bento.root.page.tsx`](../../shio-react/src/app/bento/bento.root.page.tsx) mounts the package's
+[`bento.root.page.tsx`](../../shio-react/src/app/system/bento.root.page.tsx) mounts the package's
 whole shell — `BentoNavRail` down the left, `BentoUserMenu` in the header, `BentoBackToTop` at
 the corner — and **no provider between them**. `console.root.page.tsx` wraps everything in a
 `SidebarProvider` and its `PageHeader` calls `SidebarTrigger`; the two cannot nest, which is why
@@ -934,7 +934,7 @@ slices. Both trees stay mounted for the length of Block AR, each surface moves u
 task, and **SH909** removes whichever shell loses — on the roadmap precisely so the temporary
 state cannot become permanent by nobody deciding.
 
-[`bento-nav.ts`](../../shio-react/src/app/bento/bento-nav.ts) is the product's own map, which the
+[`bento-nav.ts`](../../shio-react/src/app/system/bento-nav.ts) is the product's own map, which the
 package will not hold: "an entry appears when its route does." The rail draws **sections only** —
 it filters `groups` to those carrying an `areaRoute` — so a section without one is invisible,
 silently. `BentoNavItem` exists for the command palette, which SH889 wires; items are declared
@@ -965,7 +965,7 @@ file very likely to *discuss* X.
 
 ## Every surface declared once, for both readers (SH889)
 
-[`bento-nav.ts`](../../shio-react/src/app/bento/bento-nav.ts) declares **17 surfaces in 2
+[`bento-nav.ts`](../../shio-react/src/app/system/bento-nav.ts) declares **17 surfaces in 2
 sections**, and the rail *and* the command palette both read it. The rail takes
 `useBentoNav()` (grouped), the palette takes `useBentoNavItems()` (flat). A palette built from
 its own array would look completely fine right up to the release where one of them lists a
@@ -1230,7 +1230,7 @@ Verified after: 169 rows, **0 nested pairs**, two focusables per row for two rea
 ## The first migrated surface, and the instruments that could not see it (SH898)
 
 The console home is on the bento shell at `/bento`:
-[`src/app/bento/home/home.page.tsx`](../../shio-react/src/app/bento/home/home.page.tsx). Every
+[`src/app/system/home.page.tsx`](../../shio-react/src/app/system/home.page.tsx). Every
 fetch, service and i18n key is the console page's — what moved is the chrome. `BentoHero` replaces
 `PageHeader` and an `<h2>`, `BentoCountTile` the two counts, `BentoTile` the six quick actions,
 `BentoEmptyState` an activity list with nothing in it.
@@ -1238,7 +1238,7 @@ fetch, service and i18n key is the console page's — what moved is the chrome. 
 | surface | era | chrome |
 |---|---|---|
 | `console/home/home.page.tsx` | console | PageHeader, Card ×3 |
-| `bento/home/home.page.tsx` | bento | BentoHero, BentoSection, BentoCountTile, BentoTile, BentoEmptyState |
+| `system/home.page.tsx` | bento | BentoHero, BentoSection, BentoCountTile, BentoTile, BentoEmptyState |
 
 ### What the first migration actually found
 
@@ -1600,7 +1600,7 @@ and the status**.
 So the slice divides by what each half actually is:
 
 - **The five lists become configuration** on one shared
-  [`AdminListPage`](../../shio-react/src/app/bento/admin/admin-list.page.tsx) — roughly forty lines
+  [`AdminListPage`](../../shio-react/src/app/admin/admin-list.page.tsx) — roughly forty lines
   each of `query`, `tileOf` and labels. That component started as SH904's `IdentityListPage`, fixed
   to `{id, name, description}` because that is all a group is; generalising it rather than writing
   a second one is the whole point of the slice. **Two nearly-identical list components is the state
@@ -1783,7 +1783,7 @@ shell — 44 of them — rather than of the one that was found. It caught a seco
 the same run: at the time, `AdaptivePageHeader`'s console branch **was** `PageHeader`, so a page
 composing the adapter with no `SectionCardChromeProvider` above it carried the same crash one file
 away. (SH910 deleted that branch and SH932 re-pointed the probe — see below.) **It
-found one on its first run**: `bento/content/post-type-select.page.tsx`, shipped by SH901, rendering
+found one on its first run**: `content/post-type-select.page.tsx`, shipped by SH901, rendering
 `PageHero` at a bento route with no provider — `/bento/content/folder/:id/post-type-select`
 was a blank page. It renders `BentoHero` now; a bento-only page has no second chrome to adapt to.
 
@@ -2723,3 +2723,40 @@ adapter pages compose `PageHero` and `Panel`), and `surface-digest.test.mjs` hol
 surfaces with no chrome, so a page the vocabulary cannot see fails by name.
 
 The vocabulary census went from 92 test lines to 66 and from 40 source lines to 38.
+
+## One page tree, by domain (SH961)
+
+`src/app/console` and `src/app/bento` recorded where each page was migrated *from* — twenty-four
+adapter pages in one, twenty-eight written-for-the-shell files in the other, all rendering bento —
+so a reader adding a page was choosing between eras. They are merged, with `git mv`, into four
+trees by domain, following the nav's own sections:
+
+| Tree | Holds |
+|---|---|
+| `content/` | the browser, posts, post types, sites, folders, search, trash, files |
+| `admin/` | users, groups, roles, the infrastructure editors and lists, review, activity, marketplace — and `graphql/`, which the nav files under administration |
+| `editor/` | the Universal Editor (site list, visual editor, field labels) |
+| `system/` | the shell (`bento.root.page.tsx`, the nav, the tenant and review-pending pieces), the home, the 404, and the vocabulary harness |
+
+File names are unchanged, so history follows each file and `bento.*` names still mean the design
+system rather than an era. `login/` and `setup/` stay where they were: pre-auth screens outside the
+product's page vocabulary. `ROUTES.CONSOLE` and the legacy `/console` redirects are untouched — the
+first is the product, the second protects bookmarks.
+
+The mechanical half was a script, and the semantic half was not: every import, `src/app/…` key,
+survey key and `join(SRC, "app", …)` path was rewritten from the move map, but the assertions that
+*meant* "two trees" were re-derived by hand. The SH898 survey test asserts the retired directories
+do not exist and that the survey finds a surface in **every** domain (SH898's blindness is a walk
+that lost a directory); "the console copy is gone" became "exactly one surface has this name";
+`bento-a11y`'s rule that icon debt may sit only on "a console page" became "on a page, never on a
+shared component", which is what it protected. `surface-digest.mjs` walks `DOMAINS` explicitly.
+
+Measured unchanged across the move: 45 surfaces and 28 distinct digests, 13/13 parameterised routes
+parsed with 6 paired, 6 components outside the shell, the census at 38 and 66 lines. `tsc`, and a
+`vite build` into a scratch directory — `graphql.page` is still its own chunk, so the lazy import
+survived the path change. `eslint-suppressions.json` is keyed by path and moved with the files.
+
+**The first Java run found a reader the JS sweep could not:** `ShEditorBridgeTest` reads
+`visual-editor.page.tsx` off disk to assert the console's half of the bridge pins its origin
+(SH304), with the path spelled as `Path.of(..., "app", "console", "universal-editor", …)`. A move
+under `shio-react/` has readers in `shio-app/` too.
