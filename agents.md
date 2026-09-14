@@ -213,7 +213,10 @@ now — two, in fact: **`ShAgentP1ConformanceTest`** classifies **every** manife
 of which no task had named when it shipped; the run prints both counts, which is why
 neither is written here), and **`ShStatelessReachabilityLintTest`** asks
 the narrower question — of 25 mutating paths, which 8 an agent can write to without
-a cookie. Before "fix the thirteen instances", ask what would have failed.
+a cookie. Since SH973 a third, **`ShAgentReadReachabilityLintTest`**, asks it of the
+*reads*: every GET-only root is declared in the manifest or classified, because a
+controller that only reads was invisible to both of the others. Before "fix the
+thirteen instances", ask what would have failed.
 
 **And a defect closes with an assertion carrying its id (SH527).** Not a unit test of
 the fix's internals — *the assertion that would have caught it*, at the boundary it

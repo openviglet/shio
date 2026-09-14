@@ -10,9 +10,6 @@ package com.viglet.shio.spring.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,13 +20,11 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.viglet.shio.lint.ShSourceScan;
-import com.viglet.shio.lint.ShSourceText;
+import com.viglet.shio.lint.ShControllerScan;
 
 /**
  * SH339 — <b>every mutating path is usable without a cookie, or says why not.</b>
@@ -58,7 +53,6 @@ import com.viglet.shio.lint.ShSourceText;
  *
  * @author Alexandre Oliveira
  */
-@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShStatelessReachabilityLintTest {
 
     private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
@@ -353,20 +347,11 @@ class ShStatelessReachabilityLintTest {
                 .isFalse();
     }
 
-    /** Does an exempt path pattern cover this controller root? */
+    /** Does an exempt path pattern cover this controller root? {@link ShControllerScan}'s, since SH973. */
     private static boolean covers(String pattern, String root) {
-        if (pattern.endsWith("/**")) {
-            String prefix = pattern.substring(0, pattern.length() - 3);
-            return root.equals(prefix) || root.startsWith(prefix + "/");
-        }
-        return pattern.equals(root);
+        return ShControllerScan.covers(pattern, root);
     }
 
-    /** {@code @RequestMapping} on a class, in each of the three spellings this codebase uses. */
-    private static final Pattern CLASS_MAPPING = Pattern.compile(
-            "@RequestMapping\\(\\s*(?:value\\s*=\\s*)?(\"([^\"]*)\"|[A-Za-z_][\\w.]*)");
-    private static final Pattern MUTATING_MAPPING = Pattern.compile(
-            "@(Post|Put|Delete|Patch)Mapping\\b");
     /** {@code public static final String X = "/literal";} — for a mapping given as a constant. */
     private static final Pattern CONSTANT = Pattern.compile(
             "String\\s+(\\w+)\\s*=\\s*\"([^\"]*)\"");
@@ -391,49 +376,19 @@ class ShStatelessReachabilityLintTest {
      * <p>The verb was matched and thrown away, which is precisely why a controller could be
      * classified covered on the strength of one of its three mutating methods. Two controllers may
      * share a root, so the sets are merged rather than replaced.</p>
+     *
+     * <p>SH973 moved the reading itself into {@link ShControllerScan}, because the read half of this
+     * question — which GET-only roots an agent can find — needs the same answer about the same
+     * program, and two copies of "what is a controller root" is the cheapest way for two inventories
+     * to disagree about one file.</p>
      */
     private static Map<String, Set<String>> mutatingVerbs() {
-        Map<String, Set<String>> byRoot = new TreeMap<>();
-        List<String> unresolved = new ArrayList<>();
-        sources().forEach((name, body) -> {
-            Set<String> verbs = new TreeSet<>();
-            Matcher mutating = MUTATING_MAPPING.matcher(body);
-            while (mutating.find()) {
-                verbs.add(mutating.group(1).toUpperCase(java.util.Locale.ROOT));
-            }
-            if (verbs.isEmpty()) {
-                return;
-            }
-            Matcher mapping = CLASS_MAPPING.matcher(body);
-            if (!mapping.find()) {
-                unresolved.add(name + " (no @RequestMapping on the class)");
-                return;
-            }
-            String literal = mapping.group(2);
-            if (literal == null) {
-                // A constant: `@RequestMapping(ShMcpAPI.MCP_PATH)`. Resolve it in the same file.
-                String reference = mapping.group(1);
-                String simple = reference.substring(reference.lastIndexOf('.') + 1);
-                Matcher constant = CONSTANT.matcher(body);
-                while (constant.find()) {
-                    if (constant.group(1).equals(simple)) {
-                        literal = constant.group(2);
-                        break;
-                    }
-                }
-            }
-            if (literal == null || literal.isBlank()) {
-                unresolved.add(name + " (" + mapping.group(1) + " could not be resolved)");
-                return;
-            }
-            byRoot.computeIfAbsent(literal, ignored -> new TreeSet<>()).addAll(verbs);
-        });
-
-        assertThat(unresolved)
+        ShControllerScan.Scan scan = ShControllerScan.of(Set.of("POST", "PUT", "DELETE", "PATCH"));
+        assertThat(scan.unresolved())
                 .as("every mutating controller must contribute a root, or this lint reports fewer "
-                        + "paths than exist and passes — add the spelling to CLASS_MAPPING")
+                        + "paths than exist and passes — add the spelling to ShControllerScan")
                 .isEmpty();
-        return byRoot;
+        return new TreeMap<>(scan.byRoot());
     }
 
     /**
@@ -472,23 +427,8 @@ class ShStatelessReachabilityLintTest {
     }
 
     private static Map<String, String> sources() {
-        try (Stream<Path> files = Files.walk(MAIN)) {
-            Map<String, String> byName = new TreeMap<>();
-            files.filter(path -> path.toString().endsWith(".java"))
-                    .forEach(path -> byName.put(path.getFileName().toString(),
-                            ShSourceText.code(read(path))));
-            assertThat(byName).containsKey(CONFIG.getFileName().toString());
-            return byName;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private static String read(Path path) {
-        try {
-            return Files.readString(path);
-        } catch (IOException e) {
-            throw new UncheckedIOException("cannot read " + path.toAbsolutePath(), e);
-        }
+        Map<String, String> byName = ShControllerScan.sources();
+        assertThat(byName).containsKey(CONFIG.getFileName().toString());
+        return byName;
     }
 }

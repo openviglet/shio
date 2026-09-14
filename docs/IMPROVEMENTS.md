@@ -1329,26 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.1 The read half of reachability (SH973)
-
-ShStatelessReachabilityLintTest compiles a pattern for Post, Put, Delete and Patch
-mappings and returns early when a controller contributes no verbs, so a GET-only class
-yields no root; its javadoc frames the lint as which paths an agent can write to at all.
-The analysis named the casualties: the history endpoint the Activity page renders,
-discovery, locale, system info, sites and preview among them. ShAgentCapabilityJoinTest
-reads declared manifest endpoints, not the controller inventory, so an undeclared
-GET-only controller escapes it too.
-
-Add a sibling, ShAgentReadReachabilityLintTest, asking the inverse over GET mappings:
-every GET-only root is in the manifest's endpoint index, reachable as an MCP resource or
-an include, or classified with a reason and a falsifier in the Reason, target and
-closedBy shape the two existing gates use. Extract the class-mapping and constant
-patterns and covers() into one ShControllerScan helper both lints read, rather than a
-copy.
-
-It prints its inventory on green. Each root it names becomes a worklist item, and the
-audit trail is the first one Block BB spends.
-
 ### LXIV.2 A figure in prose is cited from a run or not written (SH974)
 
 agents.md says of 25 mutating paths, which 8 an agent can write to without a cookie.

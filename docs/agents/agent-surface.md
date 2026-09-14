@@ -2788,3 +2788,33 @@ entry, and the stream carries the field through its ACL like any change row.
 **Not covered:** the dock's report (tone attention, a caption, *open* and *archive* actions, grouping
 when many arrive together) waits for SH964. *Archive* also needs a meaning first, and the inbox line in
 Block BI is where it gets one.
+
+## The read half of reachability (SH973)
+
+Two instruments guarded P1 and both watched writes. `ShStatelessReachabilityLintTest` compiles a
+pattern for `Post`, `Put`, `Delete` and `Patch`, so a controller that only reads yields no root and
+is never classified; `ShAgentCapabilityJoinTest` walks what the manifest declares rather than what
+the tree serves, so a GET-only controller nobody declared escapes it too. Between them the product's
+reads were unmeasured, which is a P2 concern rather than a P1 one: discovery is a feature, and an
+endpoint no index names is one an agent finds by reading source.
+
+**`ShAgentReadReachabilityLintTest`** asks the inverse question over GET mappings. A GET-only root is
+**declared** — the manifest's endpoint index names it or a path beneath it — or it is classified with
+a reason and something that would falsify the claim: an `AGENT_EQUIVALENT` names a declared path, an
+`MCP_RESOURCE` names a uri this instance must serve, a `GAP` names the task that closes it. A root
+that becomes declared while still classified fails the build, and so does a classification for a root
+that is gone (SH142).
+
+**The first run's inventory: 14 GET-only roots.** One declared (`/api/v2`), four with an agent
+equivalent (`/api/v2/events` → `/agent/changes`, `/api/v2/post/xp` → `/agent/read`,
+`/api/v2/system/info` → `/agent/manifest`, `/preview` → `/agent/render`), one entry point
+(`/api/v2/discovery`, read before the manifest), one console-only (`/api/v2/locale`, the language
+picker's catalogue — nothing validates a write against it), six not agent-facing (the console shell,
+`/`, `/api/v2/csrf`, `/api/v2/ping`, `/sites`), and **one gap**: `/api/v2/history`. `/agent/changes`
+walks the same audit rows by cursor and cannot answer "what happened to this page", which is the
+question a correction starts from; SH1005 is the line that closes it.
+
+Both lints read one scanner, `ShControllerScan` — a second copy of "what is a controller root" is the
+cheapest way for two inventories to disagree about one file. It resolves a class-level
+`@RequestMapping`, a constant, and the whole-path-on-the-method spelling `ShCsrfController` and
+`ShIndexContext` use, which the older copy dropped.

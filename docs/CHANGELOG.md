@@ -1709,6 +1709,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AY — What the conformance instruments cannot see
 
 - **SH1072 (the matrix named and mirrored)** — All six ids are named in the published matrix — SH950 and SH951 in Security, the five Block AU ones as contributor-facing — the mirror is refreshed and the JS gate is green again.
+- **SH973** — ShAgentReadReachabilityLintTest holds every GET-only controller root as declared in the manifest or classified with a falsifier, and its first inventory names 14 roots and one gap (design §LXIV.1 recorded in `docs/agents/agent-surface.md`).
 
 ## Block AZ — What the content said before
 
