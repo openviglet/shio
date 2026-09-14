@@ -1664,3 +1664,34 @@ vocabulary entry with no user is one nobody agreed on — and plants a surface w
 sentence to prove the refusal happens. The rule is written over a supplied list rather than over the
 file, because a check that can only be exercised by breaking the document it guards is a check
 nobody runs.
+
+## Every wait on the design system, probed or declared unprobeable (SH984)
+
+`design-system-waits.test.mjs` exists because *has it landed* was three reads across two repositories
+that somebody had to remember to make (SH937). Its rule: a roadmap line waiting on a design-system
+release carries an entry — what it wants, a probe that answers whether the wait is over, a proof that
+the probe read something real, and the instruction to run when it fires. It has worked twice, on
+2026.3.5 and on SH940's bump.
+
+What it had not done is ask **how many lines are waiting**. Two entries stood while the backlog went
+on filing them, so the list was a sample. It is now derived: the check reads `docs/ROADMAP.md` for
+every line whose deps carry `DS VDS<n>` and fails naming any that has no entry. SH984 was filed
+against seven such lines; the first run of that check found **thirteen**. Six had been invisible to
+the read that filed the task, which is the ordinary result when a list is kept by hand and the
+argument for not keeping one that way (SH142).
+
+Three things the round settled, each of which had a wrong version that looked right:
+
+- **A probe reads a name, not a word.** The skip-link probe first matched `skip`, and two bento
+  declarations already say *"skip it and pass their own node"* and *"skipping to `h3`"* in their
+  prose — so it reported that wait over on the day it was written. The shape-reading probes are now
+  driven against the shape they wait for *and* against what is installed today, because `proof` cannot
+  catch this: a read can reach the right file and still ask a question nothing answers yes to.
+- **An exact match, not a substring.** The package already emits `BentoShellFormState`, so a probe
+  asking whether anything *contains* `BentoShell` ends SH946's wait immediately.
+- **An entry may decline to probe, and must say so.** SH948 waits on `use:local` resolving consumers
+  from a register — and `use:local` runs from the design system's own checkout, so nothing in the
+  published package changes on the day it lands. Reading the checkout is the one thing this file must
+  not do: that path exists on one machine and CI would go red on it. The entry carries
+  `unprobeable` with its reason instead, and the version pin is what ends that wait. A wait with no
+  entry is invisible; a wait whose entry lies is worse, because it is trusted.

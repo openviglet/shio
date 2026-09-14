@@ -1329,25 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.12 Every wait on the package, probed (SH984)
-
-design-system-waits.test.mjs exists because has it landed was three reads across two
-repositories that somebody had to remember, and it proved itself on 2026.3.5 and again
-on SH940's bump. Its rule is that a roadmap line waiting on a design-system release
-carries an entry: what it wants, a probe that answers whether the wait is over, a proof
-that the probe read something real, and the instruction to run when it is.
-
-SH940 added entries for SH943 and SH944. This round then filed seven more lines
-depending on the package: the reading column on VDS131, the page lint on VDS132, the
-local loop on VDS130, the chrome provider's removal on VDS146, the dock's mount on
-VDS133, and the dock's report rows on VDS134, twice. None has a probe, so the release
-that ends each wait will pass through as silently as SH919's fix once did.
-
-Add one entry per line, each probing the installed package for the specific export, bin
-or file the line needs and proving the read reached the package root. The assertion is
-the existing one: every entry's proof holds, and none reports over while its line is
-still open.
-
 ### LXIV.13 A gate nobody runs went quiet instead of red (SH1070)
 
 Found by running the gate, not by reading anything: SH941 touched `docs/`, which is what
