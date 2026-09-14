@@ -22,6 +22,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.ShAgentBatchService;
+import com.viglet.shio.api.agent.dto.ShAgentBatch;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
@@ -68,6 +71,8 @@ class ShHtmlSanitizerWriteBoundaryTest {
     @Autowired
     private ShPostUnifiedWriteService writeService;
     @Autowired
+    private ShAgentBatchService batchService;
+    @Autowired
     private ObjectMapper objectMapper;
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -79,17 +84,23 @@ class ShHtmlSanitizerWriteBoundaryTest {
     /** A content type with a rich-text field, and one with a code-editor field. */
     private String richTextTypeId;
     private String templateTypeId;
+    /** The plan addresses posts by site and type NAME, not by id. */
+    private String siteName;
+    private String siteId;
+    private String richTextTypeName;
 
     @BeforeAll
     void setup() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             ShSite site = new ShSite();
-            site.setName("sanitizer-site-" + UUID.randomUUID());
+            siteName = "sanitizer-site-" + UUID.randomUUID();
+            site.setName(siteName);
             site.setDescription("SH956");
             site.setUrl("http://example.test");
             site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
+            siteId = site.getId();
 
             ShFolder root = new ShFolder();
             root.setName("root");
@@ -104,6 +115,7 @@ class ShHtmlSanitizerWriteBoundaryTest {
             // other classes created, and a fixture that depends on a type somebody else seeded is
             // one that passes or fails on run order (SH724's shape).
             richTextTypeId = postType("SanitizerRichText", ShSystemWidget.HTML_EDITOR);
+            richTextTypeName = entityManager.find(ShPostType.class, richTextTypeId).getName();
             templateTypeId = postType("SanitizerTemplate", ShSystemWidget.ACE_HTML);
         });
     }
@@ -145,7 +157,6 @@ class ShHtmlSanitizerWriteBoundaryTest {
 
     private ObjectNode data(String field, String value) {
         ObjectNode data = objectMapper.createObjectNode();
-        data.put("TITLE", "SH956 " + UUID.randomUUID());
         data.put(field, value);
         return data;
     }
@@ -207,5 +218,44 @@ class ShHtmlSanitizerWriteBoundaryTest {
                         + "there. Sanitising it would strip every site's own layout on its next "
                         + "save, which is a larger outage than the defect this task closes.")
                 .isEqualTo(template);
+    }
+
+    /**
+     * SH956's other half — what a <b>plan</b> says before the write happens.
+     *
+     * <p>The sanitizer runs silently: an agent whose markup changed shape learns nothing from a
+     * 200 and finds out on the page. A dry run is where it can be told first, which is the whole
+     * point of having one — so the plan runs the same sanitizer and reports what it would refuse.
+     * The same one, not a second reader of the rule: two answers to "what is allowed here" is how
+     * a plan comes to disagree with the run it predicts.</p>
+     */
+    @Test
+    void sh956ADryRunSaysWhatTheWriteWouldStrip() {
+        ShAgentChangeSet plan = batchService.run(
+                new ShAgentBatch(true, java.util.List.of(new ShAgentBatch.Op(
+                        "post.upsert", "post:" + siteName + "/sanitizer-plan", richTextTypeName,
+                        "/", null, data(RICH_TEXT_FIELD, HOSTILE))), null),
+                false, "admin");
+
+        assertThat(plan.dryRun()).isTrue();
+        assertThat(plan.results()).hasSize(1);
+        assertThat(plan.results().get(0).detail())
+                .as("SH956: a plan that does not mention the allow-list leaves the agent to "
+                        + "discover the change on the published page")
+                .contains(RICH_TEXT_FIELD)
+                .contains("allow-list");
+    }
+
+    @Test
+    void sh956ADryRunOverCleanMarkupSaysNothingAboutIt() {
+        // The control, and the reason this is a note rather than a warning on every plan: an agent
+        // that is told about the allow-list on every op stops reading the detail at all.
+        ShAgentChangeSet plan = batchService.run(
+                new ShAgentBatch(true, java.util.List.of(new ShAgentBatch.Op(
+                        "post.upsert", "post:" + siteName + "/sanitizer-plan-clean",
+                        richTextTypeName, "/", null, data(RICH_TEXT_FIELD, "<p>Clean</p>"))), null),
+                false, "admin");
+
+        assertThat(String.valueOf(plan.results().get(0).detail())).doesNotContain("allow-list");
     }
 }

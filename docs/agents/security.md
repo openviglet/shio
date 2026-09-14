@@ -771,7 +771,24 @@ A clean value is returned **byte for byte** — the original string, not jsoup's
 or every digest moves and `shio diff` reports a change nobody made. What was refused is *named*
 rather than counted, because "3 things removed" is not a fact anybody can act on.
 
-**Not covered (the remainder of SH956):** a `dryRun` does not yet report what *would* be stripped,
-so an agent learns its markup changed shape only by reading the result back. And `shio verify` has
-no `html-unsafe` rule, so this says nothing about rows stored before it shipped — a sanitizer on
-writes is silent about the corpus it inherited.
+**What a plan says, and what the corpus is checked against.** A `dryRun` batch now reports what
+the write *would* strip, in the op's `detail` — "`body` loses `<script>`, event handler onerror to
+the content allow-list" — so an agent learns its markup will change shape before the write rather
+than by reading the result back. A plan over clean markup says nothing about the allow-list, or an
+agent told about it on every op stops reading the detail at all.
+
+`shio verify` gains **`html-unsafe`**, an error on a published `HTML Editor` value the allow-list
+would refuse today: a sanitizer on writes is silent about the corpus it inherited, and those rows
+are the ones already serving visitors. The fix is a save away, because every write runs the
+allow-list. `Ace Editor - HTML` is exempt here too, or every `PageLayout` in the estate reads as
+unsafe and this is the first rule anybody switches off.
+
+**All three readers — write, plan and verify — call the same `ShHtmlSanitizer`.** Two answers to
+"what is allowed here" is how a plan comes to disagree with the run it predicts, or a corpus with a
+write (SH245).
+
+`ShHtmlUnsafeRuleTest` drives the rule directly rather than through the published-site scan, and
+that is recorded as a decision: three fixtures the scan should have treated as published — a
+hand-persisted row, one with its site set, one created through the write path and overwritten — all
+came back with an empty report, and each attempt was becoming a test of `scan()` rather than of this
+rule. The rule's one call sits beside the link and image checks that walk the same fields.

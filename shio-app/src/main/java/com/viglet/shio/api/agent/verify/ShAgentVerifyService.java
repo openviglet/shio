@@ -67,6 +67,7 @@ import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.url.ShFurlSpellings;
+import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
 import com.viglet.shio.widget.ShSystemWidget;
 
 import tools.jackson.core.JacksonException;
@@ -173,6 +174,8 @@ public class ShAgentVerifyService {
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShFileStorageService fileStorage;
+    /** SH956 — the same allow-list the write path runs, asked of rows written before it existed. */
+    private final ShHtmlSanitizer shHtmlSanitizer;
     private final ShAgentIncidentLog incidentLog;
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
@@ -222,6 +225,7 @@ public class ShAgentVerifyService {
                                 ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShFileStorageService fileStorage,
+                                ShHtmlSanitizer shHtmlSanitizer,
                                 ShAgentIncidentLog incidentLog,
                                 ObjectMapper objectMapper,
                                 ShAgentProperties properties,
@@ -244,6 +248,7 @@ public class ShAgentVerifyService {
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.fileStorage = fileStorage;
+        this.shHtmlSanitizer = shHtmlSanitizer;
         this.incidentLog = incidentLog;
         this.objectMapper = objectMapper;
         this.properties = properties;
@@ -1889,6 +1894,7 @@ public class ShAgentVerifyService {
             if (isEmpty(value) || !value.isString()) {
                 continue;
             }
+            htmlUnsafeFinding(check, address, attr, value.asString(), findings);
             ShHtmlOutline.Outline outline = ShHtmlOutline.of(value.asString());
             for (ShHtmlOutline.Link link : outline.links()) {
                 silenced += linkFinding(check, post, address, attr.getName(), link.href(),
@@ -1945,6 +1951,43 @@ public class ShAgentVerifyService {
                         + "(shio remember " + ShFrontEndRoutes.MEMORY_KEY + " \"" + path
                         + "\" --site <site>), or turn on checks=delivery to have it proved."));
         return 0;
+    }
+
+    /**
+     * Content that predates the sanitizer, and would not be accepted today (SH956).
+     *
+     * <p>SH956 put an allow-list on every write. That says nothing about rows already stored: a
+     * payload written before it shipped sits there, and the renderer emits field HTML unescaped by
+     * design, so it is still on the page. This asks the <b>same</b> sanitizer what it would do —
+     * two rules about one question is how a corpus comes to be judged differently from a write.</p>
+     *
+     * <p><b>{@code HTML Editor} only</b>, exactly as the write path is. {@code Ace Editor - HTML}
+     * is in {@link #MARKUP_WIDGETS} because a template holds links worth checking, and it is a
+     * template: a {@code PageLayout} carries {@code <script>} on purpose, and reporting every
+     * layout in the estate as unsafe would make this rule the first one anybody switches off.</p>
+     *
+     * <p>An error rather than a warning: the value is on a published page, and the fix is a save
+     * away — re-saving the post runs the write path, which cleans it.</p>
+     */
+    // Package-private so the rule can be asserted directly: driving it through the whole
+    // published-site scan means building a fixture the scan agrees is published, which is a
+    // test of the scan rather than of this rule.
+    void htmlUnsafeFinding(String check, String address, ShPostTypeAttr attr,
+                                   String value, List<Finding> findings) {
+        if (!ShSystemWidget.HTML_EDITOR.equals(widgetName(attr))) {
+            return;
+        }
+        ShHtmlSanitizer.Result result = shHtmlSanitizer.sanitize(value);
+        if (!result.changed()) {
+            return;
+        }
+        findings.add(Finding.error(check, "html-unsafe", address, attr.getName(),
+                "This published value carries markup the upload policy would refuse today: "
+                        + String.join(", ", result.removed()) + ".",
+                "Re-save the post — every write runs the allow-list, so saving it cleans the "
+                        + "stored value. It was written before SH956 put the sanitizer on the "
+                        + "write path, and the renderer emits field HTML unescaped, so it is on "
+                        + "the page as it stands."));
     }
 
     private void imageFindings(String check, String address, String field,

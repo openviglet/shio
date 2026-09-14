@@ -36,6 +36,8 @@ import org.springframework.data.domain.Sort;
 import com.viglet.shio.turing.ShTuringIndexService;
 import com.viglet.shio.turing.ShTuringTextExtractor;
 import com.viglet.turing.client.sn.job.TurSNJobItem;
+import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
+import com.viglet.shio.widget.ShSystemWidget;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
@@ -294,7 +296,11 @@ public class ShAgentBatchService {
     private final ShTuringIndexService shTuringIndexService;
     private final ShTuringTextExtractor shTuringTextExtractor;
 
-    public ShAgentBatchService(ShAgentSiteAccess siteAccess,
+    /** SH956 — what a write would strip, so a plan says it before the write happens. */
+    private final ShHtmlSanitizer shHtmlSanitizer;
+
+    public ShAgentBatchService(ShHtmlSanitizer shHtmlSanitizer,
+                               ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShPostTypeRepository shPostTypeRepository,
@@ -315,6 +321,7 @@ public class ShAgentBatchService {
                                ShPostLinks shPostLinks,
                                ShTuringIndexService shTuringIndexService,
                                ShTuringTextExtractor shTuringTextExtractor) {
+        this.shHtmlSanitizer = shHtmlSanitizer;
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -1832,7 +1839,9 @@ public class ShAgentBatchService {
                                     post.getShPostType().getName())),
                             readTree(post.getData())),
                     checkTemplates(resolved, address, session, post.getShPostType().getName())),
-                    planTemplateTitle(resolved, session, post.getShPostType(), site, post.getId()));
+                    note(planTemplateTitle(resolved, session, post.getShPostType(), site,
+                            post.getId()),
+                            noteSanitized(resolved, post.getShPostType())));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
                 shPostUnifiedWriteService.update(post.getId(),
@@ -1854,7 +1863,8 @@ public class ShAgentBatchService {
         String undeclared = note(note(
                 checkDeclaredFields(created0, address, session, postType, null),
                 checkTemplates(created0, address, session, postType.name())),
-                planTemplateTitle(created0, session, livePostType(postType), site, null));
+                note(planTemplateTitle(created0, session, livePostType(postType), site, null),
+                        noteSanitized(created0, livePostType(postType))));
         ShFolder folder = requireTargetFolder(op, site, address, session);
         session.planPost(address);
         if (session.dryRun || folder == null) {
@@ -2126,6 +2136,41 @@ public class ShAgentBatchService {
     }
 
     /** Joins two optional change notes without producing a stray separator. */
+    /**
+     * What the write path would take out of this op's rich text (SH956).
+     *
+     * <p>SH956 put an allow-list on every write. Silently: an agent whose markup changed shape
+     * learns nothing from a 200 and finds out on the page. A plan is where it can be told
+     * <em>before</em> the write, which is the whole point of having one — so this runs the same
+     * sanitizer the write path runs and reports what it would refuse.</p>
+     *
+     * <p>The same sanitizer, not a second reader of the same rule: two answers to "what is allowed
+     * here" is how a plan comes to disagree with the run it predicts (SH245).</p>
+     */
+    private String noteSanitized(ShAgentBatch.Op op, ShPostType postType) {
+        if (op.data() == null || !op.data().isObject() || postType == null
+                || postType.getShPostTypeAttrs() == null) {
+            return null;
+        }
+        List<String> notes = new ArrayList<>();
+        for (ShPostTypeAttr attr : postType.getShPostTypeAttrs()) {
+            if (attr.getShWidget() == null
+                    || !ShSystemWidget.HTML_EDITOR.equals(attr.getShWidget().getName())) {
+                continue;
+            }
+            JsonNode value = op.data().get(attr.getName());
+            if (value == null || !value.isString()) {
+                continue;
+            }
+            ShHtmlSanitizer.Result result = shHtmlSanitizer.sanitize(value.asString());
+            if (result.changed()) {
+                notes.add("`" + attr.getName() + "` loses " + String.join(", ", result.removed())
+                        + " to the content allow-list");
+            }
+        }
+        return notes.isEmpty() ? null : String.join("; ", notes);
+    }
+
     private static String note(String first, String second) {
         if (first == null) {
             return second;

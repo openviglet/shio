@@ -1099,26 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.7 One sanitizer, at the one boundary every writer crosses (SH956)
-
-html-editor.widget.tsx calls document.execCommand for its formatting, reads innerHTML as
-the value, and has no paste handler. Nothing in the console or the backend sanitises
-content: the only sanitize calls in the tree are for tenant and file names. The renderer
-emits field HTML unescaped by design, and an agent's post.upsert writes the same field
-with no filter at all, so the gap is not a console gap.
-
-Put the defence at the boundary every writer crosses rather than in each writer. An
-allow-list sanitizer runs in the unified write service for every field whose widget is
-HTML, covering the console, REST, the agent batch and the Universal Editor's draft
-merge, which the analysis found proposing its own sanitize step separately. A dry run
-reports what would be stripped as a finding, so an agent learns why its markup changed
-instead of discovering it later. shio verify gains html-unsafe for existing content,
-because a sanitizer on writes says nothing about rows already stored.
-
-The block content model in Block BC is the long answer to an opaque HTML body; this is
-the short one, and it must not wait for that. The assertion plants an onerror attribute
-through each writer.
-
 ### LXI.8 The one place that builds a header, building it by hand (SH1071)
 
 Found while centralising the header in SH950, not by a scan.
