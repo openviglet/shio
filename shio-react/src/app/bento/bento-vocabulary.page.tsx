@@ -39,7 +39,6 @@ import {
   bentoChipClass,
   resolveBentoLayout,
   toBentoLayoutEntries,
-  useSectionChrome,
 } from "@viglet/viglet-design-system/bento"
 import { ROUTES } from "@/app/routes.const"
 import { COPY, SPECIMENS } from "./bento-vocabulary.fixture"
@@ -87,20 +86,6 @@ import { COPY, SPECIMENS } from "./bento-vocabulary.fixture"
 
 /** Specimen ids that stand for a mosaic whose filter matched nothing. */
 const NOTHING: typeof SPECIMENS = []
-
-/**
- * Reads the chrome the surrounding provider declares and prints it, so the page shows that
- * `SectionCardChromeProvider` is actually driving `AdaptiveSectionCard` rather than the
- * component happening to default to the same thing.
- */
-function ChromeWitness() {
-  const chrome = useSectionChrome()
-  return (
-    <p className="text-muted-foreground text-xs">
-      <span className={bentoChipClass("violet")}>{chrome}</span>
-    </p>
-  )
-}
 
 export default function BentoVocabularyPage() {
   const [name, setName] = useState(SPECIMENS[0].title)
@@ -241,7 +226,7 @@ export default function BentoVocabularyPage() {
             description={COPY.adaptiveDescription}
           />
           <AdaptiveSectionCard.Content>
-            <ChromeWitness />
+            <p className="text-sm text-muted-foreground">{COPY.adaptiveBody}</p>
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
       </SectionCardChromeProvider>

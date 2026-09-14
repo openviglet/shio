@@ -111,9 +111,9 @@ test("SH903: nobody hand-rolls the empty state a second time", () => {
     [],
     "SH903: these pages draw their own empty state — a centred py-16 void with a muted 8x8 icon"
       + " chip, which is the markup EmptyState exists to hold once. Use"
-      + " <EmptyState icon title description action />: it renders this block in console"
-      + " chrome and BentoEmptyState in bento, so the page also stops being one that looks"
-      + " finished while rendering console markup under the bento shell.")
+      + " <EmptyState icon title description action />: it renders BentoEmptyState, so the"
+      + " page also stops being one that looks finished while rendering its own markup under the"
+      + " bento shell.")
 
   /*
    * And the other direction, which is the half a debt list usually forgets. A page that no longer
@@ -131,19 +131,31 @@ test("SH903: nobody hand-rolls the empty state a second time", () => {
 
 /**
  * The reader is worth nothing if the pattern no longer describes the markup — a lint that matches
- * nothing anywhere reports a clean tree and an unused regex identically. So: the adapter itself
- * must still carry both halves. When it stops, this pattern has gone stale and every page it was
- * meant to catch is invisible to it.
+ * nothing anywhere reports a clean tree and an unused regex identically.
+ *
+ * SH959 — asked of the markup itself now, not of the adapter. This used to require that the
+ * adapter's console branch still carried both halves, which was a live specimen for as long as
+ * that branch existed; SH959 deleted it, so `EmptyState` renders `BentoEmptyState` and nothing in
+ * `src/` holds the pattern on purpose. The block a hand-rolled copy writes is the specimen instead,
+ * and the control is the adapter, which must no longer match.
  */
 test("SH903: the pattern still describes the markup it is looking for", () => {
+  const handRolled = `
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="rounded-full bg-muted p-4 mb-4">
+        <Icon className="h-8 w-8 text-muted-foreground" />
+      </div>
+    </div>`
+  assert.match(handRolled, HAND_ROLLED_VOID,
+    "SH903: the pattern no longer matches a centred py-16 void, so the lint is vacuous and the next"
+      + " hand-rolled copy lands unseen.")
+  assert.match(handRolled, MUTED_ICON_CHIP,
+    "SH903: the pattern no longer matches the muted 8x8 icon chip — same staleness, other half.")
+
   const adapter = stripComments(readFileSync(ADAPTER, "utf8"))
-  assert.match(adapter, HAND_ROLLED_VOID,
-    "SH903: the adapter's console branch no longer renders a centred py-16 void, so the pattern"
-      + " above matches nothing and the lint is vacuous. Re-derive it from what the branch renders"
-      + " now, or the next hand-rolled copy lands unseen.")
-  assert.match(adapter, MUTED_ICON_CHIP,
-    "SH903: the adapter's console branch no longer renders the muted 8x8 icon chip — same"
-      + " staleness, other half.")
+  assert.ok(!(HAND_ROLLED_VOID.test(adapter) && MUTED_ICON_CHIP.test(adapter)),
+    "SH959: EmptyState hand-rolls the block again. It renders BentoEmptyState and nothing else;"
+      + " a second rendering is the console branch coming back.")
 })
 
 /**

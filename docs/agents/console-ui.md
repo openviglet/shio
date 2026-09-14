@@ -2660,3 +2660,34 @@ Measured, as §LXII.2 asked: the surface digest is identical before and after (4
 change), since every route already rendered bento through its own wrapper. The census went from src
 89 lines to 58 (App.tsx 39 → 11) and from 81 to 92 in tests — ten of those are the new test naming
 the provider it holds in place, which leaves with it.
+
+## The console branches, deleted once nothing could reach them (SH959)
+
+With SH958's root provider every `useSectionChrome()` in the console answered `bento`, so the
+other arm of each branch became code nothing exercises. Deleted rather than kept as a fallback:
+
+- **`EmptyState`** renders `BentoEmptyState` and nothing else — its plain `py-16` block was the arm
+  a page under no provider took, and the catch-all 404 was that page.
+- **`not-found.page.tsx`** renders the hero and panel everywhere and always offers the bento home.
+  It is mounted twice, as the shell's catch-all and at App.tsx's bare `*`; both are under the root
+  provider now.
+- **`static-file.list.page.tsx`**'s `MediaCard` is `bento-tile bento-glass` unconditionally.
+- **The vocabulary page's `ChromeWitness`** is gone: it printed which chrome a provider chose, which
+  is now one answer. `useSectionChrome` moves to `bento-vocabulary.test.mjs`'s `DEFERRED` under
+  SH963, since nothing in this console calls it; the page keeps `SectionCardChromeProvider` around
+  the `AdaptiveSectionCard` specimen, whose console branch is the package's until VDS146.
+
+`panel.tsx` had no branch left to delete (SH932 removed it); what it keeps is narration, which is
+SH962's.
+
+**Two readers asserted the old shape and were re-derived, not deleted.**
+`outside-shell-chrome.test.mjs`'s SH932 half required a page outside the shell to *decide* rather
+than inherit the console default; it now asserts the opposite of what it recorded — no file under
+`src/` reads `useSectionChrome()` in code, every mount outside the shell is under the root provider,
+and the catch-all composes `PageHero` — with a non-vacuity case for the pattern, the comment strip
+and the walk. `empty-state.test.mjs`'s vacuity check read the hand-rolled markup off the adapter's
+console branch as its live specimen; with that branch gone the specimen is a literal hand-rolled
+block, and the adapter becomes the control that must *not* match.
+
+The surface digest is unchanged, since every page still composes the same elements. The census went
+from src 58 lines to 40 in 14 files; tests stay at 92.

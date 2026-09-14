@@ -100,7 +100,6 @@ const RENDERED = [
   "bentoChipClass",
   "resolveBentoLayout",
   "toBentoLayoutEntries",
-  "useSectionChrome",
 ]
 
 /**
@@ -127,6 +126,9 @@ const DEFERRED = {
   BentoSaveBar: "SH892 — the fixed half of the morph; BentoFormHero is what composes it.",
   BentoScrollSaveBar: "SH892 — the scroll-driven half, for the same reason.",
   useBentoScrollFade: "SH892 — the hook behind the morph, exercised by whatever renders it.",
+  useSectionChrome:
+    "SH963 — the read side of a switch with one live value. SH959 deleted every reader in this"
+    + " console, the witness here included; the hook leaves with the switch when VDS146 ships.",
 }
 
 test("SH887: the harness accounts for every runtime export the bento layer ships", () => {

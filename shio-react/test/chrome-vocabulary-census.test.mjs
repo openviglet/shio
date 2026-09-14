@@ -64,18 +64,18 @@ const STILL_TWO_CHROMES = {
   // SH958 — 39 → 11: twenty-one per-route wrappers became one provider above <Routes>.
   "src/App.tsx": 11,
   "src/app/bento/bento-nav.ts": 1,
-  "src/app/bento/bento-vocabulary.page.tsx": 9,
+  // SH959 — the ChromeWitness is gone; the provider around the adapter specimen stays until SH963.
+  "src/app/bento/bento-vocabulary.page.tsx": 5,
   "src/app/bento/bento.root.page.tsx": 1,
   "src/app/bento/content/post-type-select.page.tsx": 3,
   "src/app/bento/home/home.page.tsx": 1,
   "src/app/console/content/object.children.page.tsx": 2,
   "src/app/console/content/post-type.edit.page.tsx": 5,
   "src/app/console/content/post.edit.page.tsx": 3,
-  "src/app/console/content/static-file.list.page.tsx": 4,
+  // SH959 — the console branches in these three are deleted; not-found.page.tsx leaves the list.
+  "src/app/console/content/static-file.list.page.tsx": 1,
   "src/app/console/graphql/graphql.page.tsx": 2,
-  "src/app/console/not-found.page.tsx": 3,
   "src/app/routes/graphql.routes.tsx": 1,
-  "src/components/empty-state.tsx": 8,
   "src/components/page-hero.tsx": 2,
   "src/components/panel.tsx": 2,
   "test/accent-token.test.mjs": 2,

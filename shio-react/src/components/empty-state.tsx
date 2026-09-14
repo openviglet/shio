@@ -7,20 +7,19 @@
  * (at your option) any later version.
  */
 import type { Icon as TablerIcon } from "@tabler/icons-react"
-import { BentoEmptyState, useSectionChrome, type BentoTone } from "@viglet/viglet-design-system/bento"
+import { BentoEmptyState, type BentoTone } from "@viglet/viglet-design-system/bento"
 import type React from "react"
-import { cn } from "@/lib/utils"
 
 interface EmptyStateProps {
-  /** Tabler icon, as `BentoEmptyState` takes it. Rendered in both chromes. */
+  /** Tabler icon, as `BentoEmptyState` takes it. */
   icon: TablerIcon
-  /** Bento only: the tone driving the icon chip's gradient. The console block is monochrome. */
+  /** The tone driving the icon chip's gradient. */
   tone?: BentoTone
   /** What is missing, in plain language. */
   title: string
   /** One line on how to fill it. */
   description?: React.ReactNode
-  /** Optional call to action, rendered under the hint in both chromes. */
+  /** Optional call to action, rendered under the hint. */
   action?: React.ReactNode
   className?: string
 }
@@ -28,22 +27,13 @@ interface EmptyStateProps {
 /**
  * SH903 — the "nothing here" block, written once.
  *
- * ## The one of the three that really does still branch (SH932)
+ * ## One rendering (SH959)
  *
- * SH932 renamed three `Adaptive*` components on the grounds that none of them adapted any more.
- * That was true of two. This one has a **live** second branch, and the reason is worth stating
- * because it is not the reason the name suggested.
- *
- * It is not choosing between two *eras*. The console era is gone. It is choosing between **inside
- * the shell and outside it**: `not-found.page.tsx` is mounted at App.tsx's bare `*`, for a path
- * under neither shell and therefore under no `SectionCardChromeProvider`, so `useSectionChrome()`
- * answers with its `console` default and this renders the plain block. That route is permanent —
- * a 404 for an unknown path cannot be inside a shell that only covers known ones — so the branch
- * is not migration debt waiting to be deleted.
- *
- * `EmptyState` rather than `AdaptiveEmptyState` all the same. *Adaptive* invited the next reader
- * to conclude there is a console chrome to render into, and the cheapest way to honour that
- * reading is to write one back.
+ * This had a second branch after the others lost theirs: a page mounted under no provider —
+ * the catch-all 404, outside every shell — read the package's default and drew a monochrome block
+ * instead of `BentoEmptyState`. SH958 put one provider above the router, so nothing is mounted
+ * under none, and the branch could not be reached; it is deleted rather than kept as a fallback
+ * nobody exercises.
  *
  * ## Three copies of the same twelve lines, and why that was the defect
  *
@@ -65,44 +55,27 @@ interface EmptyStateProps {
  * a filter that excluded everything from a site with no files at all, and the two want different
  * next actions.
  *
- * ## One icon type, not two
+ * ## Why it is still a component of this console's
  *
- * The package takes a Tabler icon and the console pages were written with lucide. Rather than
- * carry both props, this takes the Tabler one and renders it in console chrome too: it is an SVG
- * component that accepts `className` like any other, so the console branch is unchanged in
- * appearance and the call sites stop having to know which era they are in.
+ * A seam, the way `panel.tsx` is: the call sites take one import whose props are the product's
+ * rather than the package's, and the day `BentoEmptyState`'s props move, one file changes.
  */
 export function EmptyState({
-  icon: Icon,
+  icon,
   tone,
   title,
   description,
   action,
   className,
 }: Readonly<EmptyStateProps>) {
-  const chrome = useSectionChrome()
-
-  if (chrome === "bento") {
-    return (
-      <BentoEmptyState
-        icon={Icon}
-        tone={tone}
-        title={title}
-        description={description}
-        action={action}
-        className={className}
-      />
-    )
-  }
-
   return (
-    <div className={cn("flex flex-col items-center justify-center py-16 text-center", className)}>
-      <div className="rounded-full bg-muted p-4 mb-4">
-        <Icon className="h-8 w-8 text-muted-foreground" />
-      </div>
-      <h3 className="font-semibold text-lg mb-1">{title}</h3>
-      {description ? <p className="text-sm text-muted-foreground max-w-sm">{description}</p> : null}
-      {action ? <div className="mt-4">{action}</div> : null}
-    </div>
+    <BentoEmptyState
+      icon={icon}
+      tone={tone}
+      title={title}
+      description={description}
+      action={action}
+      className={className}
+    />
   )
 }

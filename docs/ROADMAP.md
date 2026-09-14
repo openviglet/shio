@@ -19,9 +19,8 @@
 
 ## Block AW — One chrome: bento, and nothing left that names another
 
-- 📋 **SH959** (deps: SH958 ✅) **EmptyState, Panel, NotFound and the static-file list still carry a console rendering beside the bento one** — Each branches on useSectionChrome, and the console half is what renders wherever no provider is mounted, so login, setup and error pages still show the retired look. → §LXII.3
 - 📋 **SH960** (deps: SH957 ✅) **the surface digest and the chrome census still classify every surface into a console era nothing renders** — surface-digest.mjs and console-chrome-census.test.mjs were built to measure a migration that finished, so every run spends assertions on an era with no members. → §LXII.4
-- 📋 **SH961** (deps: SH959) **twenty-three bento pages live under src/app/console, beside a src/app/bento tree, so a path names a retired era** — The two page trees record where each page was migrated from, not what it renders, so a reader choosing where a new page goes is choosing between eras. → §LXII.5
+- 📋 **SH961** (deps: SH959 ✅) **twenty-three bento pages live under src/app/console, beside a src/app/bento tree, so a path names a retired era** — The two page trees record where each page was migrated from, not what it renders, so a reader choosing where a new page goes is choosing between eras. → §LXII.5
 - 📋 **SH962** (deps: SH960, SH961) **the console-ui area doc and eighteen source files narrate a two-chrome console that no longer exists** — Comments explain code by the migration that produced it, so a reader learns a console chrome exists and a new page copies an adapter that chooses nothing. → §LXII.6
 - 📋 **SH963** (deps: SH958 ✅, DS VDS146) **Shio still has to declare a chrome at all, because the package keeps a switch with a console value** — Until the design system drops SectionChrome the root provider must stay, and while it stays the census cannot reach zero. → §LXII.7
 

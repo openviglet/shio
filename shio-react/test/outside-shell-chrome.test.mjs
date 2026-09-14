@@ -7,8 +7,8 @@
  * (at your option) any later version.
  */
 import { strict as assert } from "node:assert"
-import { existsSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { dirname, join, relative } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
@@ -147,62 +147,75 @@ test("SH908: nothing mounted outside the shell needs a provider only the shell m
 })
 
 /*
- * SH932 — the transitive half, and the premise it used to run on.
+ * SH959 — what SH932 recorded, asserted the other way round.
  *
- * This was written about `AdaptivePageHeader`: its console branch *was* `PageHeader`, so a page
- * composing the adapter outside a bento provider carried `PageHeader → SidebarTrigger →
- * useSidebar()` one file away, where a grep for the import found nothing. SH910 deleted that
- * branch and SH932 renamed what was left to `PageHero`, which maps onto `BentoHero` and
- * `BentoFormHero` and nothing else. **Composing it outside the shell is now harmless**, so the
- * probe that named it was guarding a crash that cannot happen — the exact shape the SH910 note
- * above warns about, one component along.
+ * SH932 was written when `EmptyState` still read `useSectionChrome()` and rendered a plain block
+ * wherever no provider was mounted — which was every page outside the shell: login, setup, the
+ * catch-all 404. It required such a page to *decide* rather than take the console default by
+ * accident, and it recorded that pages outside the shell took the console look.
  *
- * The *class* outlives the instance again, and it has a new instance. `EmptyState` is the one
- * component here that still reads `useSectionChrome()` and renders two different things — not
- * between two eras, but between inside the shell and outside it, which is permanent. A page
- * mounted outside every shell gets the `console` default whether or not it thought about it, so
- * the rule is that such a page must **decide**: read the chrome, or compose nothing that branches
- * on it.
+ * SH958 put one provider above the router and SH959 deleted every branch that read it, so the
+ * question has no subject left. What holds now is stronger and simpler: **nothing in this console
+ * reads the chrome**, so a page outside the shell renders exactly what one inside does, and every
+ * mount outside the shell is under the root provider.
  */
-const CHROME_BRANCHING = [
-  ["@/components/empty-state", "EmptyState — renders the plain block outside the shell"],
-]
+const READS_CHROME = /useSectionChrome\s*\(/
 
-test("SH932: an unprovided page composing a chrome-branching component decides, rather than assuming", () => {
-  const undecided = []
-
-  for (const [name, { file, bento }] of mountedOutsideTheShell()) {
-    if (bento) continue
-    const source = stripComments(readFileSync(file, "utf8"))
-    for (const [module, why] of CHROME_BRANCHING) {
-      if (!source.includes(module)) continue
-      if (/useSectionChrome\s*\(/.test(source)) continue
-      undecided.push(`${name} → ${why}`)
+/** Every `.ts`/`.tsx` under `src/` whose code — not its comments — reads the chrome. */
+function chromeReaders() {
+  const out = []
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (/\.tsx?$/.test(entry.name)
+        && READS_CHROME.test(stripComments(readFileSync(full, "utf8")))) {
+        out.push(relative(SRC, full).replace(/\\/g, "/"))
+      }
     }
   }
+  walk(SRC)
+  return out.sort()
+}
 
-  assert.deepEqual(undecided, [],
-    "SH932: this component composes something that branches on chrome, is mounted outside the"
-      + " console shell, and is not wrapped in SectionCardChromeProvider chrome=\"bento\" — so it"
-      + " silently takes the `console` default rather than choosing it.\n"
-      + "  That default is correct outside a shell and wrong to arrive at by accident: the page"
-      + " renders one of two layouts and nothing in it says which, so the next edit tunes the"
-      + " branch nobody is looking at.\n"
-      + "  Either wrap the route in the bento provider, or read `useSectionChrome()` and render"
-      + " each arm deliberately, as not-found.page.tsx does.")
+test("SH959: nothing in the console branches on chrome, so outside the shell renders bento", () => {
+  assert.deepEqual(chromeReaders(), [],
+    "SH959: a component reads useSectionChrome() again. Every surface is under one bento provider"
+      + " (SH958), so the answer is always the same, and a branch on it is a second rendering"
+      + " nothing exercises — the console half this block deleted. Render the bento form.")
+
+  const outside = mountedOutsideTheShell()
+  const unprovided = [...outside].filter(([, { bento }]) => !bento).map(([name]) => name)
+  assert.deepEqual(unprovided, [],
+    "SH932: a component mounted outside the bento shell is not under the root chrome provider, so"
+      + " anything it composes from the package takes the console default without deciding to —"
+      + " the case SH932 made a page answer for, which SH958's root provider closes for all of them.")
+
+  const notFound = stripComments(readFileSync(outside.get("NotFoundPage").file, "utf8"))
+  assert.match(notFound, /<PageHero\b/,
+    "SH959: the catch-all 404 no longer renders the bento hero. It is the page a stale link lands"
+      + " on outside every shell, which is where the plain console block used to show.")
 })
 
-test("SH932: the branching list names components that actually branch", () => {
-  // Without this the list rots into names that no longer read the hook, and the test above then
-  // asks its question about nothing — which is how the premise it replaced survived SH910.
-  for (const [module, why] of CHROME_BRANCHING) {
-    const file = join(SRC, `${module.replace("@/", "")}.tsx`)
-    assert.ok(existsSync(file), `SH932: ${module} is listed as chrome-branching and does not exist`)
-    assert.match(readFileSync(file, "utf8"), /useSectionChrome\s*\(/,
-      `SH932: ${module} is listed as chrome-branching (${why}) and no longer reads the chrome.`
-        + " Either it stopped branching — drop the entry — or the hook was renamed and every"
-        + " reader that greps for it is now reporting a clean tree.")
+test("SH959: the chrome-reader walk is not vacuous", () => {
+  // A walk that found no files would report no readers for the wrong reason; a pattern that could
+  // not match the hook would do the same while reading every file.
+  assert.ok(READS_CHROME.test('const chrome = useSectionChrome()'),
+    "SH959: the pattern no longer matches a call to the hook, so the walk reports a clean tree for"
+      + " ever.")
+  assert.ok(!READS_CHROME.test(stripComments('/** reads useSectionChrome() */\nconst x = 1')),
+    "SH959: a comment naming the hook counts as a read, so this console's own explanations would"
+      + " fail the rule they describe.")
+  const walked = []
+  const count = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) count(join(dir, entry.name))
+      else if (/\.tsx?$/.test(entry.name)) walked.push(entry.name)
+    }
   }
+  count(SRC)
+  // 174 when this was written; a floor well under that still catches a walk that lost the tree.
+  assert.ok(walked.length > 100, `SH959: the walk found ${walked.length} source files under src/`)
 })
 
 test("SH908: the reader is not vacuous — it finds the routes and the chrome it forbids", () => {

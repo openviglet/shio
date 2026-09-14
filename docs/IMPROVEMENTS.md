@@ -1119,26 +1119,6 @@ and may only shrink, then one root provider, then the branches, the era instrume
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
 
-### LXII.3 The console branches, deleted where they are still reachable (SH959)
-
-empty-state.tsx documents the case exactly: a component rendered under no
-SectionCardChromeProvider concludes there is a console chrome to render into, and
-renders its monochrome console block. panel.tsx falls back the same way when chrome is
-not bento or there is no header, not-found.page.tsx renders whichever chrome the path
-implies, and static-file.list.page.tsx picks its container by chrome.
-outside-shell-chrome.test.mjs was written to record that pages outside the shell took
-the console look.
-
-With AW2's root provider every one of these reads bento, so the console branches become
-unreachable, and they are deleted rather than left as a fallback nobody exercises. The
-bento vocabulary page loses its ChromeWitness, which exists to print which chrome a
-provider chose. outside-shell-chrome.test.mjs is rewritten to assert the opposite of
-what it recorded: login, setup and the catch-all render the bento forms.
-
-The census from AW1 drops by every branch removed. The design system's own
-AdaptiveSectionCard keeps its console branch until VDS146, and this task does not touch
-the package.
-
 ### LXII.4 Instruments that measured a migration, re-derived for a console that has one chrome (SH960)
 
 SH896's surface digest hashes each surface's era, its chrome in source order and its

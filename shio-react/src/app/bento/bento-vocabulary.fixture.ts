@@ -164,6 +164,7 @@ export const COPY = {
   adaptiveDescription:
     "One form's markup, rendered as a frosted bento section here and as a console card under the"
     + " other chrome — the provider decides, and the fields are written once.",
+  adaptiveBody: "A form's fields go here.",
   statusTitle: "BentoStatusMarker",
   statusDirty: "dirty",
   statusMissing: "title missing",

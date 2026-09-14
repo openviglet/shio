@@ -22,7 +22,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
-import { useSectionChrome } from "@viglet/viglet-design-system/bento"
 import { cn } from "@/lib/utils"
 import { ShStaticFileService } from "@/services/static-file/static-file.service"
 import type { ShStaticFileItem, ShStaticFileUsage } from "@/models/static-file/static-file.model"
@@ -399,14 +398,11 @@ function MediaCard({ item, onOpen, selected, onToggleSelect }: {
 }) {
   const image = isImageType(item.contentType)
   const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
-  const chrome = useSectionChrome()
   return (
     <div
       className={cn(
         "group relative flex flex-col overflow-hidden transition-all",
-        chrome === "bento"
-          ? "bento-tile bento-glass rounded-2xl"
-          : "rounded-lg border bg-background hover:shadow-md",
+        "bento-tile bento-glass rounded-2xl",
         selected ? "border-orange-400 ring-2 ring-orange-300" : "hover:border-orange-300",
       )}>
       {/* Selection checkbox (always visible when selected, on hover otherwise) */}
