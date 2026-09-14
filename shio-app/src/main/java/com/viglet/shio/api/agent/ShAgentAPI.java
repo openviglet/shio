@@ -681,6 +681,9 @@ public class ShAgentAPI {
      *                    instead, which skips nothing an empty range could contain. A
      *                    repeating incident (SH144) raises its count and correctly does not
      *                    match; that is the stream saying it is still happening
+     * @param include {@code fields} (SH989) names the fields each update, publish and restore
+     *                changed — the one description of an approved run that survives the approve,
+     *                since publishing makes the draft and the live row the same document
      */
     @GetMapping("/changes")
     @Operation(summary = "Content changes since a cursor: what a human (or another session) did")
@@ -690,10 +693,12 @@ public class ShAgentAPI {
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
             @RequestParam(name = "budget", required = false) Integer budget,
+            @RequestParam(name = "include", required = false) String include,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
-        ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids, budget);
+        ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids, budget,
+                includes(include, "fields"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("changes", ShAgentChangesTerse.render(changes), ifNoneMatch)
                 : shAgentBodyEtag.json("changes", changes, ifNoneMatch);

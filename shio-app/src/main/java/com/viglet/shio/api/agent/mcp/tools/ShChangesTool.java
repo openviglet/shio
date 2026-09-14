@@ -68,7 +68,10 @@ public class ShChangesTool implements ShMcpTool {
                 "site", ShMcpTool.string("Site name; omit for every site you can read."),
                 "since", ShMcpTool.string("A cursor from a previous call — returns only what "
                         + "happened after it."),
-                "limit", ShMcpTool.integer("How many entries (default 50, max 500).")),
+                "limit", ShMcpTool.integer("How many entries (default 50, max 500)."),
+                // SH989 — REST's include=fields. After an approve the draft and the live row are one
+                // document, so these names are the only description of the run that was accepted.
+                "fields", ShMcpTool.bool("Name the fields each update or publish changed.")),
                 List.of());
     }
 
@@ -79,6 +82,7 @@ public class ShChangesTool implements ShMcpTool {
                 ShMcpArgs.string(arguments, "site"),
                 ShMcpArgs.string(arguments, "since"),
                 ShMcpArgs.integer(arguments, "limit"),
-                false));
+                false, null,
+                ShMcpArgs.bool(arguments, "fields")));
     }
 }

@@ -1900,6 +1900,58 @@ test("shio changes prints the entries and the cursor", async () => {
   assert.match(ctx.stdout.text, /cursor: 2026-07-26T10:00:00Z\|abc/);
 });
 
+test("SH989: --fields asks for include=fields and prints the names, and says when none changed", async () => {
+  const seen = [];
+  const feed = {
+    found: 3,
+    window: false,
+    cursor: "2026-07-26T10:00:00Z|abc",
+    more: false,
+    changes: [
+      { action: "CREATE", address: "post:Blog/blog/hello", at: "t0", by: "agent", what: 'Created "Hello"' },
+      { action: "UPDATE", address: "post:Blog/blog/hello", at: "t1", by: "agent", what: 'Updated "Hello"', fields: ["body", "title"] },
+      { action: "PUBLISH", address: "post:Blog/blog/hello", at: "t2", by: "curator", what: 'Published "Hello"', fields: [] },
+    ],
+    notes: [],
+  };
+  const ctx = ctxWith(async (url) => {
+    seen.push(String(url));
+    return json(feed);
+  });
+
+  await changes.run({ fields: true }, [], ctx);
+
+  assert.match(seen[0], /include=fields/, "SH989: the flag is the REST opt-in, not a local filter");
+  assert.match(ctx.stdout.text, /UPDATE post:Blog\/blog\/hello — Updated "Hello" \[agent at t1\]\n {6}fields: body, title\n/);
+  assert.match(ctx.stdout.text, /PUBLISH .*\n {6}fields: \(none changed\)\n/,
+    "SH989: an empty list is a write that changed nothing, which is not the same as not recorded");
+  assert.equal((ctx.stdout.text.match(/fields:/g) ?? []).length, 2,
+    "SH989: a create records no names, so it prints none");
+});
+
+test("SH989: --fields with --follow is refused rather than silently dropped", async () => {
+  let called = false;
+  const ctx = ctxWith(async () => {
+    called = true;
+    return json({});
+  });
+
+  await assert.rejects(() => changes.run({ follow: true, fields: true }, [], ctx), /--fields.*--follow/s);
+  assert.equal(called, false, "SH989: refused before connecting");
+});
+
+test("SH989: without --fields the feed is asked for nothing extra", async () => {
+  const seen = [];
+  const ctx = ctxWith(async (url) => {
+    seen.push(String(url));
+    return json({ found: 0, window: true, cursor: "2026-07-26T10:00:00Z|abc", changes: [], notes: [] });
+  });
+
+  await changes.run({}, [], ctx);
+
+  assert.doesNotMatch(seen[0], /include=/);
+});
+
 test("--cursor prints only the position, for a pipeline", async () => {
   const ctx = ctxWith(async () =>
     json({ found: 0, window: true, cursor: "2026-07-26T10:00:00Z|abc", changes: [], notes: [] }),

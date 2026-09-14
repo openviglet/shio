@@ -26,6 +26,7 @@ import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentStore;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.form.ShFormSubmitter;
 import com.viglet.shio.api.history.ShAuditFeedWatermark;
+import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
@@ -148,6 +149,18 @@ public class ShAgentChangesService {
      */
     public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
                                   Integer budget) {
+        return changes(site, since, limit, ids, budget, false);
+    }
+
+    /**
+     * Reads the feed, naming the fields each write changed when asked (SH989).
+     *
+     * @param fields attach the changed field names a row recorded. Off by default so an ordinary
+     *               row is byte-identical to what it was; the names are charged against the budget
+     *               with the row, because they are part of the line the caller is sent
+     */
+    public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
+                                  Integer budget, boolean fields) {
         ShAgentProperties.Changes config = properties.getChanges();
         int cap = limit == null || limit <= 0
                 ? config.getDefaultLimit()
@@ -191,7 +204,7 @@ public class ShAgentChangesService {
             tokens.add(ShAgentChangesTerse.incident(incident));
         }
 
-        List<ShAgentChanges.Change> candidates = shape(entries, scope, ids);
+        List<ShAgentChanges.Change> candidates = shape(entries, scope, ids, fields);
         Page page = gate(candidates, tokens, window);
         List<ShAgentChanges.Change> changes = candidates.subList(page.start(), page.end());
         // The window's cursor is the *edge of the feed*, so it stays the newest row this
@@ -531,7 +544,8 @@ public class ShAgentChangesService {
 
     // --- shaping ---
 
-    private List<ShAgentChanges.Change> shape(List<ShHistory> entries, Scope scope, boolean ids) {
+    private List<ShAgentChanges.Change> shape(List<ShHistory> entries, Scope scope, boolean ids,
+                                              boolean fields) {
         // One lookup per distinct object, not per row: a post that was created, updated
         // and published appears three times in a feed and has one address.
         Map<String, Optional<String>> addresses = new LinkedHashMap<>();
@@ -573,7 +587,10 @@ public class ShAgentChangesService {
                     entry.getShSite() == null ? null : scope.names().get(entry.getShSite()),
                     ids ? objectId : null,
                     affects.orElse(null),
-                    submission.orElse(null)));
+                    submission.orElse(null),
+                    // SH989 — read off the row, never recomputed: after a publish the two documents
+                    // it compared are one document, so the row is the only place the answer is.
+                    fields ? ShChangedFields.decode(entry.getChangedFields()) : null));
         }
         return List.copyOf(changes);
     }

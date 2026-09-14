@@ -156,7 +156,14 @@ class ShSilentCatchInventoryTest {
             // is reading the list for. Not an incident, for SH103's reason: the only way to reach
             // this is a row written by an older or broken writer, and there is nothing an operator
             // could act on that the row itself does not already say.
-            "api", 66,
+            //
+            // 67 since SH989, in `ShChangedFields.parse`, and it is the same judgement one table over:
+            // a stored post document or a `changed_fields` value that will not parse yields no field
+            // names. On the write path the alternative is an audit row refusing the publish it
+            // describes, which is SH544's defect; on the feed it is one bad row taking down every
+            // `include=fields` read. Both values are written by this codebase's own serializer, so the
+            // only way here is an older or broken writer, and the row's action and date still stand.
+            "api", 67,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

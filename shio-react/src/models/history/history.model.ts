@@ -16,4 +16,9 @@ export interface ShHistory {
   shObject: string
   /** The post's site id (may be empty). */
   shSite: string
+  /**
+   * SH989 — the names of the fields the write changed. `null` when the row recorded none (a
+   * create, a delete, an older row); `[]` when it recorded that nothing changed.
+   */
+  changedFields: string[] | null
 }

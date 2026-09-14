@@ -76,12 +76,20 @@ public class ShHistoryAPI {
         return PageRequest.of(0, capped);
     }
 
-    /** Stable read DTO — never leaks the {@code tenant_id} discriminator. */
+    /**
+     * Stable read DTO — never leaks the {@code tenant_id} discriminator.
+     *
+     * @param changedFields SH989 — the names of the fields the write changed; {@code null} when the
+     *                      row recorded none (a create, a delete, an older row), {@code []} when it
+     *                      recorded that nothing changed
+     */
     public record ShHistoryResponse(String id, String action, String description,
-                                    String owner, Instant date, String shObject, String shSite) {
+                                    String owner, Instant date, String shObject, String shSite,
+                                    List<String> changedFields) {
         static ShHistoryResponse of(ShHistory h) {
             return new ShHistoryResponse(h.getId(), h.getAction(), h.getDescription(),
-                    h.getOwner(), h.getDate(), h.getShObject(), h.getShSite());
+                    h.getOwner(), h.getDate(), h.getShObject(), h.getShSite(),
+                    ShChangedFields.decode(h.getChangedFields()));
         }
     }
 }

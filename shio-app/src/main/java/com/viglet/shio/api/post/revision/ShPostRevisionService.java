@@ -11,10 +11,7 @@ package com.viglet.shio.api.post.revision;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.ShAgentPostDigest;
 import com.viglet.shio.api.agent.ShAgentSessionContext;
+import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision.Reason;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -194,27 +192,15 @@ public class ShPostRevisionService {
         return ShAgentPostDigest.of(as);
     }
 
-    /** Field names this revision altered against the one before it, never their values. */
+    /**
+     * Field names this revision altered against the one before it, never their values.
+     *
+     * <p>SH989's audit rows ask the same question of a write, so both go through
+     * {@link ShChangedFields#between} and cannot come to disagree about what counts as a change.</p>
+     */
     private List<String> changedFields(ShPostRevision previous, ShPostRevision revision) {
-        JsonNode after = parse(revision.getData());
-        JsonNode before = previous == null ? null : parse(previous.getData());
-        if (after == null || !after.isObject()) {
-            return List.of();
-        }
-        List<String> changed = new ArrayList<>();
-        Set<String> names = new TreeSet<>();
-        after.propertyNames().forEach(names::add);
-        if (before != null && before.isObject()) {
-            before.propertyNames().forEach(names::add);
-        }
-        for (String name : names) {
-            JsonNode left = before == null ? null : before.get(name);
-            JsonNode right = after.get(name);
-            if (!Objects.equals(left, right)) {
-                changed.add(name);
-            }
-        }
-        return List.copyOf(changed);
+        return ShChangedFields.between(previous == null ? null : parse(previous.getData()),
+                parse(revision.getData()));
     }
 
     private JsonNode parse(String data) {

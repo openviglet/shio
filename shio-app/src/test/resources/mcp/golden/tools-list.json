@@ -104,6 +104,10 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "fields" : {
+            "description" : "#string",
+            "type" : "boolean"
+          },
           "limit" : {
             "description" : "#string",
             "type" : "integer"

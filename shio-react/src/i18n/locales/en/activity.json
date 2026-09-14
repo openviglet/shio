@@ -13,5 +13,7 @@
   "activity.actionPublish": "Published",
   "activity.actionUnpublish": "Unpublished",
   "activity.actionDelete": "Deleted",
-  "activity.actionRestore": "Restored"
+  "activity.actionRestore": "Restored",
+  "activity.fields": "Fields: {{fields}}",
+  "activity.noFieldsChanged": "No field changed"
 }

@@ -65,7 +65,22 @@ public final class ShAgentChangesTerse {
                 .attr("site", change.site())
                 .attr("id", change.id())
                 .attr("what", change.what())
+                .attr("fields", fields(change.fields()))
                 .build();
+    }
+
+    /**
+     * SH989 — the names joined, or {@code -} for a write recorded as changing nothing.
+     *
+     * <p>{@code attr} drops a blank value, which is right for a row that recorded nothing and wrong
+     * for one that recorded an empty set: the JSON tells {@code []} from absent, and the terse line
+     * has to as well, or "nothing changed" reads as "not known".</p>
+     */
+    private static String fields(java.util.List<String> fields) {
+        if (fields == null) {
+            return null;
+        }
+        return fields.isEmpty() ? "-" : String.join(",", fields);
     }
 
     /**

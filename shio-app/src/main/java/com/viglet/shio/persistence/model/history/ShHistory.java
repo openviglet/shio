@@ -104,6 +104,25 @@ public class ShHistory implements Serializable {
 	@Column(name = "agent_session_id", length = 64)
 	private String agentSessionId;
 
+	/** Declared width of {@link #changedFields} — the limit the writer bounds to (SH989). */
+	public static final int CHANGED_FIELDS_MAX_LENGTH = 1024;
+
+	/**
+	 * The names of the fields this write changed, as a JSON array (SH989), and never their values.
+	 *
+	 * <p>{@code null} means not recorded — a create, a delete, or a row older than the column — and
+	 * {@code []} means recorded and nothing changed, which is a different statement. Encoded and
+	 * bounded by {@code ShChangedFields}; {@code ShChangedFieldsTest} holds this width to the
+	 * changelog's, the way SH544's test holds {@link #description}'s.</p>
+	 */
+	@Column(name = "changed_fields", length = CHANGED_FIELDS_MAX_LENGTH)
+	private String changedFields;
+
+	/** The changed field names, already encoded by {@code ShChangedFields.encode} (SH989). */
+	public void setChangedFields(String changedFields) {
+		this.changedFields = changedFields;
+	}
+
     /** The agent run that made this change (SH106); {@code null} for a human's own edit. */
     public void setAgentSessionId(String agentSessionId) {
 		this.agentSessionId = agentSessionId;

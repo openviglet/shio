@@ -41,6 +41,14 @@ export async function run(flags, positionals, ctx) {
       : flags.since ?? positionals[0] ?? undefined;
 
   if (flags.follow) {
+    // SH989 — the event stream does not carry the names, so accepting both flags would drop one of
+    // them without saying so. Refused before connecting, with the call that does answer.
+    if (flags.fields) {
+      throw new Error(
+        "shio changes: --fields reads the names from a page of the feed, and --follow streams events " +
+          "that do not carry them. Drop --follow to see them. Example: shio changes --since last --fields",
+      );
+    }
     return follow(client, { site: flags.site, since: since ?? undefined, json: flags.json }, ctx);
   }
 
@@ -48,6 +56,8 @@ export async function run(flags, positionals, ctx) {
     site: flags.site,
     since: since ?? undefined,
     limit: flags.limit,
+    // SH989 — the fields each write changed, the one account of an approved run the approve leaves.
+    include: flags.fields ? "fields" : undefined,
   });
 
   if (flags.cursor) {
@@ -126,6 +136,11 @@ function render(changes) {
     if (change.submission) {
       const summary = change.submission.summary ? `: ${change.submission.summary}` : "";
       lines.push(`      form submission${summary}`);
+    }
+    // SH989 — present only with --fields, and only on a row that recorded them. An empty list is a
+    // write that changed nothing, which is worth saying rather than printing a blank.
+    if (Array.isArray(change.fields)) {
+      lines.push(`      fields: ${change.fields.length ? change.fields.join(", ") : "(none changed)"}`);
     }
   }
   // SH144 — asynchronous failures in the same range, under the same cursor. Marked `!` rather

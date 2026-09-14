@@ -99,7 +99,20 @@ export default function ActivityListPage() {
                           {actionLabel(item.action)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{item.description}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{item.description}</div>
+                        {/*
+                          SH989 — what the write changed, by name. After an approve the draft and
+                          the live row are one document, so this line is what still describes it.
+                        */}
+                        {item.changedFields && (
+                          <div className="text-xs text-muted-foreground">
+                            {item.changedFields.length === 0
+                              ? t("activity.noFieldsChanged")
+                              : t("activity.fields", { fields: item.changedFields.join(", ") })}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{item.owner}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {item.date ? new Date(item.date).toLocaleString() : ""}

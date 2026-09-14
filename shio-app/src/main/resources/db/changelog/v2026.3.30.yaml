@@ -1,0 +1,35 @@
+databaseChangeLog:
+  # SH989 — `ShHistory.changed_fields`: which fields a write changed, by name.
+  #
+  # An audit row said that something changed and never what. The review queue's comparison is the
+  # draft against the published row, so after an approve — which copies the draft across — it shows
+  # nothing at all: the run a curator has just accepted is the one thing that can no longer be
+  # described. The names are stored and the values are not; the values live in SH986's
+  # `sh_post_revision`, and a rich-text body in an audit row would be a second revision store.
+  #
+  # A JSON array rather than a comma list, because field names are a post's JSON keys and nothing
+  # constrains them. Bounded by the writer against `ShHistory.CHANGED_FIELDS_MAX_LENGTH` (a list
+  # that does not fit ends on `…+N`), which `ShChangedFieldsTest` holds to the width declared here:
+  # SH544 was a width known to the schema and to nobody else, and it ended a conversion with a 500.
+  #
+  # Nullable forever. Null means not recorded — a create, a delete, or a row older than this
+  # changeset — and `[]` means recorded with nothing changed. Not a tenant discriminator, so no
+  # ShTenantBackfillRunner entry. VARCHAR per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL (it does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh989-history-changed-fields
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShHistory
+                columnName: changed_fields
+      changes:
+        - addColumn:
+            tableName: ShHistory
+            columns:
+              - column:
+                  name: changed_fields
+                  type: VARCHAR(1024)

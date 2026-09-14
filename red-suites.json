@@ -2,5 +2,14 @@
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
   "emptied": "SH789 — the `fixture-traits` entry was deleted here rather than by SH780, which is what its own text expected. The grounds are different and that is the point: an exception is a licence to commit over a red, and there was no red. Roughly fifty consecutive green `pnpm test` runs, and the two comparators that should have said so were blind to this gate in exactly this direction (that hole is what SH789 fixed). SH778 and SH780 stay open: they are about diagnosing the flake, not about licensing it, and SH778's third instrument now prints the process exit code — so a third sighting arrives with a diagnosis instead of a mystery, and the correct response to it is SH579's rule from the top, not a licence that was already sitting here.",
-  "exceptions": []
+  "exceptions": [
+    {
+      "suite": "conformance",
+      "test": "conformance/docs-stack.conformance.mjs — every stated Spring Boot version matches pom.xml; conformance/docs-coverage.conformance.mjs — SH653: the summary's counts are the tables' counts",
+      "task": "SH1070",
+      "declared": "2026-09-14",
+      "expires": "2026-09-21",
+      "why": "Run for SH989 against a clean store on :2711: 123 tests, 121 pass, and both failures are SH1070's two drifts, word for word — developer-guide.md:44 states Spring Boot 4.1.0 against the pom's 4.1.1, and COVERAGE.md's summary disagrees with its rows. Both live in the vigletdocs checkout the docs suites read, and neither reads a byte SH989 changed: every scenario that drives the instance, the CLI and the change feed passed. Not fixed in this commit because the fix is a vigletdocs commit, and COVERAGE.md there carries uncommitted rows from earlier today (SH1072's half that has not landed) which a summary correction cannot be committed apart from. Run against a clean export of vigletdocs HEAD instead it is 119 of 123, the extra two being SH758 and SH747, because docs/coverage-named.json was mirrored from those uncommitted rows. It goes away with SH1070, and this entry is deleted in that commit."
+    }
+  ]
 }

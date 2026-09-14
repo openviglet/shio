@@ -1465,27 +1465,25 @@ link instead of an empty column. Restore-whole and restore-one-field call AZ3's 
 behind a confirm.
 
 The review queue's diff then appears on every entry that still exists, inline rather
-than as a modal, since a modal per entry is a click per entry on a long run.
+than as a modal, since a modal per entry is a click per entry on a long run. An approved
+entry has no live comparison left, so it lists the names SH989 stored on its audit row
+instead.
 
-### LXV.5 Audit rows that name the fields they changed (SH989)
+### LXV.6 A pushed change that names its fields (SH1080)
 
-ShHistory carries owner, date, action, subject kind, a description, the object, the site
-and the agent session, and no field list. The Activity page can only print the sentence,
-and the review queue's diff is always the current draft against the current published
-row, so after an approve it shows no changes at all, because publishing copied the draft
-across. The one thing a reviewer most wants to see is gone at the moment of acceptance.
+SH989 stored the changed field names on every audit row and made them readable on a page
+of the feed, over REST include=fields, the shio_changes fields argument and shio changes
+--fields. The pushed feed does not take the option. GET /api/v2/events opens a
+subscription holding a site and a cursor, and ShEventStreamHub reads each page with
+fields off, so shio changes --follow --fields is refused before connecting rather than
+silently dropping the flag.
 
-Store the changed field names and never the values: the values live in AZ2's revisions
-and the audit row carries the index. That is the shape the CLI's comparison already
-emits, field, change of added, removed or changed, and a size, and its javadoc gives the
-reason, that a rich-text body is the most expensive thing to print. A bounded
-changed_fields column arrives by Liquibase and is computed in the write service's update
-and publish paths, which already hold both objects in the transaction, so it is a set
-difference with no extra query.
-
-Readers follow: /agent/changes rows gain fields behind include=fields, shio changes
---fields, and the console history. The byte-identity assertion on the default row is the
-P3 guard.
+Carry it the way the polled read does. The events endpoint accepts include=fields, the
+subscription record keeps the flag, and the hub passes it to
+ShAgentChangesService.changes, whose rows already carry the names; withoutId copies them
+across already. The CLI client's events() sends the parameter and the refusal in
+changes.mjs goes. The default event stays byte-identical, asserted the way
+ShAuditChangedFieldsTest asserts the polled row.
 
 ## LXVI Releases, scheduling and the publish gate (Block BA)
 

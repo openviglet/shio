@@ -222,11 +222,22 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      * @param submission SH970 — present only on the {@code CREATE} a site's form wrote, so an
      *                arrival is told apart from a post someone made. Absent on every other row, for
      *                the reason {@code affects} is
+     * @param fields  SH989 — the names of the fields the write changed, only with
+     *                {@code include=fields}. {@code []} means the row recorded that nothing changed;
+     *                absent means it recorded nothing, which is every create and delete and every row
+     *                older than the column. Opt-in because the default row's bytes are the P3 claim:
+     *                a list a reviewer reads once is not a list every poll pays for
      */
     @JsonInclude(Include.NON_NULL)
     public record Change(String action, String subject, String address, String at, String by,
                          String what, String site, String id, Affects affects,
-                         Submission submission) {
+                         Submission submission, List<String> fields) {
+
+        /** Before SH989 named the changed fields. */
+        public Change(String action, String subject, String address, String at, String by,
+                      String what, String site, String id, Affects affects, Submission submission) {
+            this(action, subject, address, at, by, what, site, id, affects, submission, null);
+        }
     }
 
     /**

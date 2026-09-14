@@ -217,7 +217,7 @@ public class ShEventStreamHub {
     private static ShAgentChanges.Change withoutId(ShAgentChanges.Change change) {
         return new ShAgentChanges.Change(change.action(), change.subject(), change.address(),
                 change.at(), change.by(), change.what(), change.site(), null, change.affects(),
-                change.submission());
+                change.submission(), change.fields());
     }
 
     private static void withAuthentication(Authentication authentication, Runnable body) {

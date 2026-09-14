@@ -460,3 +460,26 @@ the defect this table was added for, one level up.
 It is a schema change, so it was validated with `-DskipITs=false` and Docker running:
 `ShPostgresSchemaIT` and `ShMariaDbSchemaIT` both **ran** (19s and 29s, not the `0.00 s` of a
 Docker-less skip), so the changelog is known to apply on all three engines rather than assumed to.
+
+## `ShHistory.changed_fields` — which fields a write changed (SH989)
+
+A nullable `VARCHAR(1024)` holding a **JSON array** of field names, written by
+`ShContentAuditService` from what `ShPostUnifiedWriteService` computed in the same transaction —
+update, publish, and both restores. A JSON array rather than a comma list because field names are a
+post's JSON keys and nothing constrains them.
+
+**The bound is the writer's**, SH544's lesson applied before the incident rather than after:
+`ShChangedFields.encode` keeps the array inside `ShHistory.CHANGED_FIELDS_MAX_LENGTH`, and a list
+that does not fit keeps the names that do and ends on `…+N`, the count left out. The width is measured
+in UTF-16 units, never fewer than the characters a `VARCHAR` counts. `ShChangedFieldsTest` holds the
+constant to the width the changelog declares, the way `ShAuditDescriptionLengthTest` holds
+`description`'s — against the YAML, because `ddl-auto=none`.
+
+**`null` and `[]` are different statements.** `null` is not recorded: a create (against nothing every
+field is new, which tells a reader nothing), a delete, and every row written before `v2026.3.30`.
+`[]` is recorded with nothing changed — a save that sent the same document. No backfill: an old row
+has no second document to compare against, and inventing names for it would be the one wrong answer.
+
+Validated with `-DskipITs=false` and Docker running: `ShPostgresSchemaIT` (6.9s) and
+`ShMariaDbSchemaIT` (20.1s) both ran rather than skipping, so the changeset is known to apply on all
+three engines.

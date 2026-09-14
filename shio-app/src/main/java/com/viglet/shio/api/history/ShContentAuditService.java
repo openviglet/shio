@@ -8,6 +8,8 @@
  */
 package com.viglet.shio.api.history;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.agent.ShAgentSessionContext;
@@ -63,7 +65,22 @@ public class ShContentAuditService {
      * @param actor  who performed it (may be {@code null} → "system")
      */
     public void record(ShContentAction action, String postId, String siteId, String title, String actor) {
-        record(action, ShContentSubject.POST, postId, siteId, title, actor, null);
+        record(action, ShContentSubject.POST, postId, siteId, title, actor, null, null);
+    }
+
+    /**
+     * Persist a post's audit entry naming the fields the write changed (SH989).
+     *
+     * <p>Only a caller holding the document before and after can say, which is why this is a separate
+     * overload and not a lookup here: the write service has both objects in its transaction, and a
+     * second read would ask the database for what the caller just replaced.</p>
+     *
+     * @param fields the changed field names from {@link ShChangedFields#between}; {@code null} records
+     *               nothing, and an empty list records that nothing changed
+     */
+    public void record(ShContentAction action, String postId, String siteId, String title, String actor,
+                       List<String> fields) {
+        record(action, ShContentSubject.POST, postId, siteId, title, actor, null, fields);
     }
 
     /**
@@ -86,7 +103,15 @@ public class ShContentAuditService {
      */
     public void record(ShContentAction action, ShContentSubject subject, String objectId,
                        String siteId, String title, String actor, String detail) {
+        record(action, subject, objectId, siteId, title, actor, detail, null);
+    }
+
+    private void record(ShContentAction action, ShContentSubject subject, String objectId,
+                        String siteId, String title, String actor, String detail, List<String> fields) {
         ShHistory history = new ShHistory();
+        // SH989 — bounded by the encoder, for SH544's reason: the row describes the write and must
+        // never be what refuses it.
+        history.setChangedFields(ShChangedFields.encode(fields));
         history.setAction(action.name());
         // Written for every subject including POST, so a row is self-describing going forward
         // and only a pre-SH196 row needs the null-means-post reading.

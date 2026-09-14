@@ -3013,3 +3013,32 @@ op rather than fatter prose (per-op prose 36.3 → 36.8). `shio_write`'s schema 
 under the 460-token per-tool ceiling, and `include=revisions` got its own row in the response budget
 rather than room added to `read.terse`: the claim an opt-in makes is precisely that the default did
 not move.
+
+## An approved run, still describable after the approve (SH989)
+
+An audit row said *that* something changed and never *what*. The review queue's comparison is the
+current draft against the current live row, and approving publishes, which copies the draft across —
+so at the moment a curator accepts a run, the one comparison that could describe it becomes empty.
+
+The fix is a stored fact, not a better reader: `ShHistory.changed_fields` holds the names of the
+fields each write changed, computed by the write service in the transaction that holds both documents
+(an update, a publish, both restores) and **never** recomputed afterwards, because after a publish the
+two documents are one. Names only — the values are SH986's revisions, and a rich-text body in an audit
+row would be a second revision store. `null` means not recorded (every create and delete, and every
+row older than the column); `[]` means recorded, nothing changed. Both readers keep them apart: the
+terse line prints `fields=-` for the second.
+
+It reaches every surface through a parameter that already existed or an argument beside one:
+
+- **REST** `GET /api/v2/agent/changes?include=fields`, which adds `fields` to each row that recorded
+  names. The default row is byte-identical to what it was, asserted in `ShAuditChangedFieldsTest`.
+- **MCP** `shio_changes` takes `fields`. It spent one of SH811's two arguments of headroom, and the
+  properties file says so beside the ceiling.
+- **The CLI** `shio changes --fields` prints a `fields:` line under each row, and `(none changed)`
+  for an empty list. With `--follow` it is refused, not ignored: the event stream does not carry
+  the names, and accepting both flags would drop one without saying so.
+- **The console** Activity page shows the names under each description; `/api/v2/history` always
+  carries `changedFields`, since a console table is not a budgeted response.
+
+`ShChangedFields.between` is the one comparison, and `ShPostRevisionService` now calls it too: two
+copies that agreed today would disagree the first time one learned a new rule about `null`.

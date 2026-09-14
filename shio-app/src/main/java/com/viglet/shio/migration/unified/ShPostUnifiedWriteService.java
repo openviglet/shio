@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
@@ -237,10 +238,16 @@ public class ShPostUnifiedWriteService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Post not found: " + postId + " state=" + state));
 
+        // SH989 — an update that sends no document changed no field, and says so with an empty list
+        // rather than leaving the row unrecorded.
+        List<String> changed = List.of();
         if (req.data() != null) {
             // SH956 — every write, not only the create: an edit is how a payload arrives at a post
             // that was clean when it was made.
             JsonNode clean = sanitizedMarkup(req.data(), row.getShPostType());
+            // The stored document is read before it is overwritten: this row holds both sides of the
+            // comparison, so naming the fields costs no query.
+            changed = ShChangedFields.between(readTree(row.getData()), clean);
             row.setData(writeJson(clean));
             applyTitleAndSummary(row, clean, row.getShPostType());
             shTemplateTitles.checkFree(row);
@@ -256,7 +263,7 @@ public class ShPostUnifiedWriteService {
             shPostRevisionService.capture(saved, ShPostRevision.Reason.SAVE, req.modifier());
         }
         shContentAuditService.record(ShContentAction.UPDATE, postId,
-                siteIdOf(saved), saved.getTitle(), req.modifier());
+                siteIdOf(saved), saved.getTitle(), req.modifier(), changed);
         return saved;
     }
 
@@ -424,8 +431,13 @@ public class ShPostUnifiedWriteService {
             shPostUnifiedRepository.save(draft);
         }
 
-        shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
-                .ifPresent(shPostUnifiedRepository::delete);
+        Optional<ShPostUnified> replaced = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED);
+        // SH989 — what this publish changes for a visitor, named before the live row is deleted. It is
+        // the one moment the comparison exists: afterwards the draft and the live row are the same
+        // document, which is why an approved run could not be described.
+        List<String> changed = ShChangedFields.between(
+                replaced.map(ShPostUnified::getData).orElse(null), draft.getData());
+        replaced.ifPresent(shPostUnifiedRepository::delete);
 
         ShPostUnified pub = new ShPostUnified();
         pub.setId(postId);
@@ -453,7 +465,7 @@ public class ShPostUnifiedWriteService {
         // the current one too, rather than only of the ones that have since been replaced.
         shPostRevisionService.capture(saved, ShPostRevision.Reason.PUBLISH, publisher);
         shContentAuditService.record(ShContentAction.PUBLISH, postId,
-                siteIdOf(saved), saved.getTitle(), publisher);
+                siteIdOf(saved), saved.getTitle(), publisher, changed);
         publishLifecycle(ShWebhookEventType.PUBLISH, saved);
         return saved;
     }
@@ -487,6 +499,8 @@ public class ShPostUnifiedWriteService {
                     return d;
                 });
 
+        // SH989 — a revert names what it put back, the same comparison an update makes.
+        List<String> changed = ShChangedFields.between(draft.getData(), published.getData());
         draft.setData(published.getData());
         draft.setTitle(published.getTitle());
         draft.setSummary(published.getSummary());
@@ -497,7 +511,7 @@ public class ShPostUnifiedWriteService {
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
         ShPostUnified saved = shPostUnifiedRepository.save(draft);
         shContentAuditService.record(ShContentAction.RESTORE, postId,
-                siteIdOf(saved), saved.getTitle(), modifier);
+                siteIdOf(saved), saved.getTitle(), modifier, changed);
         return saved;
     }
 
@@ -540,6 +554,7 @@ public class ShPostUnifiedWriteService {
         // this the second place in the product where going back destroys what you were on.
         shPostRevisionService.capture(draft, ShPostRevision.Reason.ROLLBACK, modifier);
 
+        List<String> changed = ShChangedFields.between(draft.getData(), revision.getData());
         draft.setData(revision.getData());
         draft.setTitle(revision.getTitle());
         draft.setFurl(revision.getFurl());
@@ -552,7 +567,7 @@ public class ShPostUnifiedWriteService {
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
         ShPostUnified saved = shPostUnifiedRepository.save(draft);
         shContentAuditService.record(ShContentAction.RESTORE, postId,
-                siteIdOf(saved), saved.getTitle(), modifier);
+                siteIdOf(saved), saved.getTitle(), modifier, changed);
         return saved;
     }
 

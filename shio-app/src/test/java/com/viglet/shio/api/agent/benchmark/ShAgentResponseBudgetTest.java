@@ -250,6 +250,10 @@ class ShAgentResponseBudgetTest {
         measure("blueprints.terse", get("/api/v2/agent/blueprints").param("format", "terse"));
         measure("changes.terse", get("/api/v2/agent/changes")
                 .param("site", siteName).param("format", "terse"));
+        // SH989 — the feed asking which fields each write changed, on its own row for SH987's reason:
+        // the default must not grow into the room the option was given.
+        measure("changes.terse.fields", get("/api/v2/agent/changes")
+                .param("site", siteName).param("format", "terse").param("include", "fields"));
         measure("memory", get("/api/v2/agent/memory").param("site", siteName));
         measureTypeRow();
     }
