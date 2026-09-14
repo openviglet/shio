@@ -1119,24 +1119,6 @@ and may only shrink, then one root provider, then the branches, the era instrume
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
 
-### LXII.2 One provider at the root instead of one per route (SH958)
-
-bento-section-chrome.tsx creates its context with console as the default. Shio pays for
-that on every route: App.tsx wraps about twenty-five route elements, and
-graphql.routes.tsx one more, in SectionCardChromeProvider chrome=bento. The wrappers are
-not decoration. A surface mounted without one renders AdaptiveSectionCard and EmptyState
-in the console look, and nothing fails when a new route forgets it.
-
-Mount one provider above the router, so every element under it, inside the shell or
-outside it, reads bento, and delete the per-route wrappers. This is the interim form:
-VDS145 flips the package's default to bento, after which the root provider is a no-op,
-and AW7 deletes it.
-
-The assertion carries the id: a route element mounted with no wrapper of its own renders
-the bento form of EmptyState, and the census from AW1 shrinks by the wrappers removed.
-The surface digest is taken before and after and must show no surface changing chrome,
-since every route already rendered bento through its own wrapper.
-
 ### LXII.3 The console branches, deleted where they are still reachable (SH959)
 
 empty-state.tsx documents the case exactly: a component rendered under no

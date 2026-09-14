@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react"
 import { Route } from "react-router-dom"
 import { IconBrandGraphql } from "@tabler/icons-react"
-import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 
 // GraphiQL pulls in Monaco (multi-MB). Load the page only when the route is hit
 // so it never weighs down the main console bundle.
@@ -38,11 +37,9 @@ export const BentoGraphQLRoute = (
     <Route
         path="graphql"
         element={
-            <SectionCardChromeProvider chrome="bento">
-                <Suspense fallback={Fallback}>
-                    <GraphiQLPage />
-                </Suspense>
-            </SectionCardChromeProvider>
+            <Suspense fallback={Fallback}>
+                <GraphiQLPage />
+            </Suspense>
         }
     />
 )

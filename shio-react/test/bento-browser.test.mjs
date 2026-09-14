@@ -90,8 +90,8 @@ test("SH900: the browser is one component with no console chrome of its own", ()
 
 test("SH900: the bento route wraps that same component in the provider", () => {
   assert.match(APP, /SectionCardChromeProvider chrome="bento"/,
-    "SH900: the bento content route no longer wraps the browser in a provider, so it renders"
-      + " console cards under the bento shell — the half-migrated look this block exists to end.")
+    "SH900: nothing in App.tsx provides bento chrome, so the browser renders console cards under"
+      + " the bento shell — the half-migrated look this block exists to end.")
   assert.match(APP, /<ObjectChildrenPage \/>/,
     "SH900: the bento route mounts something other than the console's own browser component."
       + " If it was copied after all, 960 lines now need every fix twice.")

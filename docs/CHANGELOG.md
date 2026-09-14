@@ -1694,6 +1694,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AW — One chrome: bento, and nothing left that names another
 
 - **SH957** — A census counts the two-chrome vocabulary per file (89 source lines, 81 in tests and scripts, not the 108 and 180 grepped by hand), and each removal must lower its own line (design §LXII.1 recorded in `docs/agents/console-ui.md`).
+- **SH958** — One SectionCardChromeProvider now encloses the router, replacing 22 per-route wrappers, so a route added without one still reads bento; the surface digest shows no surface changing (design §LXII.2 recorded in `docs/agents/console-ui.md`).
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 

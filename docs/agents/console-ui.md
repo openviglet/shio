@@ -2634,3 +2634,29 @@ Non-vacuity is a **copy of a real clean file** (`ui/button.tsx`) in a temp root,
 named once a provider is planted in it — a planted string alone would test the classifier and not
 the walk. **The list reaching zero is Block AW's criterion**, and it cannot happen before SH963:
 the root provider has to name a chrome while the design system still exports two.
+
+## One chrome provider, above the router (SH958)
+
+The design system's `SectionChrome` context defaults to `console`, so every route rendering
+`AdaptiveSectionCard` or `EmptyState` wrapped its own element in
+`SectionCardChromeProvider chrome="bento"` — **twenty-one in App.tsx and one in
+`graphql.routes.tsx`**, where the roadmap said "about twenty-five". A route added without one
+rendered the console look, and nothing failed, because the wrong chrome renders perfectly well.
+
+One provider now encloses `<Routes>`. Every element reads `bento`, **inside the shell and outside
+it** — so the bare `*` not-found page, login and setup read bento too, which is correct now that
+there is one chrome and harmless because `bento.css` is imported globally by `index.css`, not by
+the shell. `outside-shell-chrome.test.mjs`'s SH932 rule treats the root provider as covering every
+mount instead of looking for a per-element wrapper.
+
+`chrome-provider-root.test.mjs` holds the arrangement (one provider in App.tsx, enclosing
+`<Routes>`; no route element and no `app/routes/*.tsx` module carrying its own) and the fact a
+reading cannot prove: rendered through `StaticRouter` → `Routes` → a shell route's `Outlet`, an
+element with no wrapper reads `bento` and an `AdaptiveSectionCard` renders `bento-glass`. Its control
+asserts the package still answers `console` with no provider — **the day that fails, VDS145 has
+flipped the default, the root provider decides nothing, and SH963 deletes it.**
+
+Measured, as §LXII.2 asked: the surface digest is identical before and after (47 surfaces, no
+change), since every route already rendered bento through its own wrapper. The census went from src
+89 lines to 58 (App.tsx 39 → 11) and from 81 to 92 in tests — ten of those are the new test naming
+the provider it holds in place, which leaves with it.

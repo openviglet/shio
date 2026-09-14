@@ -60,6 +60,17 @@ function App() {
       <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}>
           <ShioServiceProvider>
             <Toaster />
+            {/*
+              SH958 — one chrome provider, above the router, instead of one per route.
+
+              The design system's context defaults to `console`, so every route rendering
+              `AdaptiveSectionCard` or `EmptyState` used to wrap its own element in this provider —
+              twenty-two wrappers, and a route added without one rendered the console look with
+              nothing failing. Here every element reads `bento`, inside the shell and outside it.
+              Interim: once the package's default is bento (VDS145) this is a no-op, and SH963
+              deletes it.
+            */}
+            <SectionCardChromeProvider chrome="bento">
             <Routes>
               {/* SH909 — the default. `ROUTES.CONSOLE` is `/bento` now, and this line did not change. */}
               <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.CONSOLE} replace />} />
@@ -126,11 +137,7 @@ function App() {
                 */}
                 <Route
                   path="content/object/:objectId"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <ObjectChildrenPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<ObjectChildrenPage />}
                 />
                 <Route path="content/folder/:folderId/edit" element={<BentoFolderEditPage />} />
                 <Route path="content/folder/:folderId/new-folder" element={<BentoFolderNewPage />} />
@@ -144,19 +151,11 @@ function App() {
                 */}
                 <Route
                   path="content/post/:postId"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <PostEditPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<PostEditPage />}
                 />
                 <Route
                   path="content/folder/:folderId/post-type/:postTypeName/new"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <PostNewPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<PostNewPage />}
                 />
                 <Route
                   path="content/folder/:folderId/post-type-select"
@@ -168,27 +167,15 @@ function App() {
                 */}
                 <Route
                   path="content/post-type"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <PostTypeListPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<PostTypeListPage />}
                 />
                 <Route
                   path="content/post-type/new"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <PostTypeNewPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<PostTypeNewPage />}
                 />
                 <Route
                   path="content/post-type/:postTypeName"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <PostTypeEditPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<PostTypeEditPage />}
                 />
                 {/*
                   SH903 — the three surfaces where rendering nothing is the normal case. All
@@ -198,27 +185,15 @@ function App() {
                 */}
                 <Route
                   path="content/search"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <SearchPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<SearchPage />}
                 />
                 <Route
                   path="content/trash"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <TrashPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<TrashPage />}
                 />
                 <Route
                   path="content/files"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <StaticFileListPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<StaticFileListPage />}
                 />
                 {/*
                   SH904 — the identity slice. Groups and roles are `{id, name, description}` and
@@ -253,11 +228,7 @@ function App() {
                 <Route path="admin/users" element={<BentoUserListPage />} />
                 <Route
                   path="admin/users/:userId"
-                  element={
-                    <SectionCardChromeProvider chrome="bento">
-                      <AdminUserPage />
-                    </SectionCardChromeProvider>
-                  }
+                  element={<AdminUserPage />}
                 />
                 {/*
                   SH905 — the eleven infrastructure pages, split the way the data splits.
@@ -276,31 +247,31 @@ function App() {
                 <Route path="admin/tokens" element={<BentoApiTokenListPage />} />
                 <Route
                   path="admin/tokens/:tokenId"
-                  element={<SectionCardChromeProvider chrome="bento"><ApiTokenPage /></SectionCardChromeProvider>}
+                  element={<ApiTokenPage />}
                 />
                 <Route path="admin/auth-providers" element={<BentoAuthProviderListPage />} />
                 <Route
                   path="admin/auth-providers/:authProviderId"
-                  element={<SectionCardChromeProvider chrome="bento"><AuthProviderPage /></SectionCardChromeProvider>}
+                  element={<AuthProviderPage />}
                 />
                 <Route path="admin/exchange-providers" element={<BentoExchangeProviderListPage />} />
                 <Route
                   path="admin/exchange-providers/:exchangeProviderId"
-                  element={<SectionCardChromeProvider chrome="bento"><ExchangeProviderPage /></SectionCardChromeProvider>}
+                  element={<ExchangeProviderPage />}
                 />
                 <Route path="admin/webhooks" element={<BentoSiteWebhookListPage />} />
                 <Route
                   path="admin/webhooks/:webhookId"
-                  element={<SectionCardChromeProvider chrome="bento"><SiteWebhookPage /></SectionCardChromeProvider>}
+                  element={<SiteWebhookPage />}
                 />
                 <Route path="admin/tenants" element={<BentoTenantListPage />} />
                 <Route
                   path="admin/tenants/:tenantId"
-                  element={<SectionCardChromeProvider chrome="bento"><TenantPage /></SectionCardChromeProvider>}
+                  element={<TenantPage />}
                 />
                 <Route
                   path="admin/email-config"
-                  element={<SectionCardChromeProvider chrome="bento"><EmailConfigPage /></SectionCardChromeProvider>}
+                  element={<EmailConfigPage />}
                 />
                 {/*
                   SH906 — the three bespoke surfaces. All adapter pages: the review queue is a
@@ -312,19 +283,19 @@ function App() {
                 */}
                 <Route
                   path="admin/review"
-                  element={<SectionCardChromeProvider chrome="bento"><ReviewListPage /></SectionCardChromeProvider>}
+                  element={<ReviewListPage />}
                 />
                 <Route
                   path="admin/activity"
-                  element={<SectionCardChromeProvider chrome="bento"><ActivityListPage /></SectionCardChromeProvider>}
+                  element={<ActivityListPage />}
                 />
                 <Route
                   path="admin/marketplace"
-                  element={<SectionCardChromeProvider chrome="bento"><MarketplaceListPage /></SectionCardChromeProvider>}
+                  element={<MarketplaceListPage />}
                 />
                 <Route
                   path="universal-editor"
-                  element={<SectionCardChromeProvider chrome="bento"><EditorSitesPage /></SectionCardChromeProvider>}
+                  element={<EditorSitesPage />}
                 />
                 {/*
                   SH908 — the last two surfaces, both mostly something this console does not draw.
@@ -351,7 +322,7 @@ function App() {
                 */}
                 <Route
                   path="*"
-                  element={<SectionCardChromeProvider chrome="bento"><NotFoundPage /></SectionCardChromeProvider>}
+                  element={<NotFoundPage />}
                 />
               </Route>
               {/*
@@ -375,6 +346,7 @@ function App() {
               {/* And outside it, for a path that is not under the console at all. */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
+            </SectionCardChromeProvider>
           </ShioServiceProvider>
       </ThemeProvider>
     </div>

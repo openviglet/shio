@@ -106,9 +106,12 @@ function mountedOutsideTheShell() {
   const outside = shell === null ? APP : APP.replace(shell, "")
   const imports = defaultImports()
   const found = new Map()
+  // SH958 — the provider moved above <Routes>, so an element is provided when the root is, and a
+  // per-route wrapper is the older spelling of the same fact rather than the only one.
+  const root = /<SectionCardChromeProvider\s+chrome="bento"\s*>\s*<Routes>/.test(APP)
 
   for (const [element] of outside.matchAll(/element=\{[\s\S]*?\}\s*\/?>/g)) {
-    const bento = /SectionCardChromeProvider\s+chrome="bento"/.test(element)
+    const bento = root || /SectionCardChromeProvider\s+chrome="bento"/.test(element)
     for (const [, name] of element.matchAll(/<(\w+)\s*\/>/g)) {
       const file = resolve(imports.get(name) ?? "")
       if (!file) continue
