@@ -19,7 +19,6 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- 📋 **SH1071** (deps: —) **an upload's file name is interpolated into Content-Disposition without escaping** — sanitizeFileName guards the filesystem and leaves quotes and control characters alone, so a name like a".svg produces a header a client parses as something else. → §LXI.8
 - 📋 **SH1073** (deps: —) **shio_write reads four op fields its schema does not declare, so MCP cannot discover them** — locale, translationOf, url and expect now reach the batch, and declaring them costs 15-25 tokens each against about 6 of headroom on mcp.tools.list.total. → §LXI.9
 
 ## Block AW — One chrome: bento, and nothing left that names another

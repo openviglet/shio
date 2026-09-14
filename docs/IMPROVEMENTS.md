@@ -1099,29 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.8 The one place that builds a header, building it by hand (SH1071)
-
-Found while centralising the header in SH950, not by a scan.
-`ShAssetResponseHeaders.disposition` builds `attachment; filename="<name>"` by
-interpolation, and the name it is handed is whatever
-`ShFileStorageService.sanitizeFileName` returned. That method is written for the
-filesystem, and it does exactly what it says: it drops every path segment before the
-last and refuses a blank, `.` or `..`. It does not touch a double quote, a semicolon, or
-a control character in the middle of the name, because none of those can escape a
-directory.
-
-So an upload named `a".svg` produces `attachment; filename="a".svg"`, which a parser
-reads as a filename of `a` followed by something it does not understand. The
-consequences run from a wrong saved name to a client that reads the parameters after it,
-and a name carrying CR LF is the same defect one step worse. The fix is small and
-specified: RFC 6266 says to escape `\` and `"` inside the quoted string, and to send a
-`filename*` form for anything non-ASCII — which Spring's `ContentDisposition` builder
-already does, so the change is to stop building the string by hand.
-
-It is filed rather than folded into SH950 because it is a different failure with a
-different blast radius, and because SH950's own rule is that one place decides how an
-asset is served: that place now exists, and this is the next thing wrong with it.
-
 ### LXI.9 The half SH952 could not afford (SH1073)
 
 SH952 made `shio_write` pass all eleven op fields, which fixed the defect: a scheduled

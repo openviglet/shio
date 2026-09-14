@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.ContentDisposition;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -133,6 +134,104 @@ class ShAssetSecurityHeadersTest {
         assertThat(ShAssetResponseHeaders.rendersInline("image/png; charset=binary")).isTrue();
         assertThat(ShAssetResponseHeaders.rendersInline("text/html; charset=utf-8")).isFalse();
         assertThat(ShAssetResponseHeaders.rendersInline(null)).isFalse();
+    }
+
+    /**
+     * SH1071 — a name is a value inside a quoted string, and it cannot end that string.
+     *
+     * <p>Read back through a parser rather than compared as text, because the defect was never what
+     * the header looked like: it was what a client made of it. The last name is the one that
+     * mattered — interpolated, its tail became a {@code filename*} parameter, which RFC 6266 tells a
+     * client to prefer over {@code filename}, so the download was named by whoever chose the upload's
+     * name.</p>
+     */
+    @Test
+    void sh1071AQuoteInANameCannotEndTheFilenameParameter() {
+        assertThat(ShAssetResponseHeaders.disposition("image/svg+xml", "a\".svg"))
+                .as("SH1071: the quote is escaped, not closing the string early")
+                .isEqualTo("attachment; filename=\"a\\\".svg\"");
+
+        for (String hostile : List.of("a\".svg", "a\\\".svg", "back\\slash.txt", "semi;colon.pdf",
+                "x\"; filename*=UTF-8''evil.html")) {
+            ContentDisposition parsed = ContentDisposition.parse(
+                    ShAssetResponseHeaders.disposition("application/pdf", hostile));
+            assertThat(parsed.getFilename())
+                    .as("SH1071: [%s] must come back as the name it is, and nothing else", hostile)
+                    .isEqualTo(hostile);
+            assertThat(parsed.getCharset())
+                    .as("SH1071: [%s] smuggled a filename* parameter out of the quoted string", hostile)
+                    .isNull();
+            assertThat(parsed.isAttachment()).isTrue();
+        }
+    }
+
+    /** CR LF in a name is the same defect one step worse: the end of the header, not of the string. */
+    @Test
+    void sh1071AControlCharacterNeverReachesTheHeader() {
+        for (String name : List.of("evil\r\nSet-Cookie: a=b.png", "relatório\r\n.pdf", "tab\there.txt")) {
+            String header = ShAssetResponseHeaders.disposition("image/png", name);
+            assertThat(header)
+                    .as("SH1071: [%s] carries a control character into the header", name)
+                    .doesNotContain("\r", "\n", "\t")
+                    // The UTF-8 form keeps them percent-encoded, and a client decodes that into the
+                    // name it saves — so they are dropped before either form is built.
+                    .doesNotContainIgnoringCase("%0D", "%0A", "%09");
+        }
+        assertThat(ShAssetResponseHeaders.disposition("image/png", "\r\n"))
+                .as("SH1071: a name with nothing printable in it is no name, not an empty quoted one")
+                .isEqualTo("inline");
+    }
+
+    /**
+     * A name outside ASCII keeps its characters, and the header stays ASCII: RFC 6266's
+     * {@code filename*} for a client that reads it, an ASCII {@code filename} for one that does not.
+     * The ASCII case is unchanged byte for byte, which {@link #sh950OnlyRasterImagesAreHandedToTheBrowserToRender}
+     * already holds.
+     */
+    @Test
+    void sh1071ANameOutsideAsciiSurvivesInAnAsciiHeader() {
+        String name = "relatório.pdf";
+        String header = ShAssetResponseHeaders.disposition("application/pdf", name);
+
+        assertThat(header).contains("filename*=UTF-8''relat%C3%B3rio.pdf");
+        assertThat(header.chars().allMatch(c -> c < 128))
+                .as("SH1071: a header value outside ASCII is rewritten by the connector, not sent: %s", header)
+                .isTrue();
+        assertThat(ContentDisposition.parse(header).getFilename()).isEqualTo(name);
+    }
+
+    /**
+     * The public route, where the defect could not be seen until it was fixed. The servlet spec
+     * leaves {@code getRequestURI()} undecoded, so the filter used to name a download
+     * {@code relat%C3%B3rio.pdf} — and the one character a raw URI cannot carry, {@code "}, came as
+     * {@code %22}. Decoding makes both real, which is why this is asserted through the filter.
+     */
+    @Test
+    void sh1071TheFileSourceRouteNamesTheDownloadAsTheFileIsNamed() throws Exception {
+        ShAssetSecurityHeadersFilter filter = new ShAssetSecurityHeadersFilter();
+
+        MockHttpServletResponse quoted = new MockHttpServletResponse();
+        filter.doFilter(new MockHttpServletRequest("GET", "/file_source/" + UUID.randomUUID() + "/a%22.svg"),
+                quoted, new MockFilterChain());
+        assertThat(ContentDisposition.parse(quoted.getHeader("Content-Disposition")).getFilename())
+                .isEqualTo("a\".svg");
+        assertThat(quoted.getHeader("Content-Disposition"))
+                .as("SH1071: decoding must not have moved an SVG off attachment")
+                .startsWith("attachment");
+
+        MockHttpServletResponse accented = new MockHttpServletResponse();
+        filter.doFilter(new MockHttpServletRequest("GET",
+                        "/file_source/" + UUID.randomUUID() + "/relat%C3%B3rio.pdf"),
+                accented, new MockFilterChain());
+        assertThat(ContentDisposition.parse(accented.getHeader("Content-Disposition")).getFilename())
+                .isEqualTo("relatório.pdf");
+
+        MockHttpServletResponse malformed = new MockHttpServletResponse();
+        filter.doFilter(new MockHttpServletRequest("GET", "/file_source/" + UUID.randomUUID() + "/bad%zz.png"),
+                malformed, new MockFilterChain());
+        assertThat(malformed.getHeader(ShAssetResponseHeaders.X_CONTENT_TYPE_OPTIONS))
+                .as("SH1071: a broken escape must not cost the asset its headers")
+                .isEqualTo("nosniff");
     }
 
     /**

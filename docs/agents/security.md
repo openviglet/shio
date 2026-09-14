@@ -665,6 +665,19 @@ writes its own `Content-Disposition`.
 **Not covered:** the allow-list on what may be uploaded at all is SH951. This is the one-commit
 mitigation, deliberately separate so the hole does not stay open while that is argued.
 
+**The download name is quoted by Spring's `ContentDisposition`, never interpolated (SH1071).** The
+name comes from `sanitizeFileName`, which guards the *filesystem* and leaves a `"` alone, so
+`a".svg` was sent as `filename="a".svg"` — and a name ending `"; filename*=UTF-8''x.html` became a
+second filename that RFC 6266 tells a client to prefer. The builder escapes `\` and `"`. Two things
+it does not do, measured on 7.0.9: it keeps a control character in `filename*` as `%0D%0A`, which a
+client decodes into the name it saves, so `disposition` drops control characters first; and a
+charset on an ASCII name adds a `filename*` anyway, so UTF-8 is asked for only when the name needs
+it — an ASCII header is byte-identical to what SH950 shipped. The filter now **decodes** the path
+segment: `getRequestURI()` is undecoded by the servlet spec, so `relatório.pdf` downloaded as
+`relat%C3%B3rio.pdf`, and `"` could only ever arrive as `%22` — which is why the quoting defect was
+invisible on the public route until this. The tests read each header back through
+`ContentDisposition.parse`, because the defect was what a client made of it, not how it looked.
+
 ## What an instance accepts as an upload (SH951)
 
 SH950 stopped uploaded bytes being *served* as documents. They were still **stored**, still listed,

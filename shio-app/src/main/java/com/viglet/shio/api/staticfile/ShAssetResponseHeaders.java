@@ -8,11 +8,15 @@
  */
 package com.viglet.shio.api.staticfile;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.net.URLConnection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -130,12 +134,45 @@ public final class ShAssetResponseHeaders {
         return RENDER_SAFE.contains(bare.toLowerCase(Locale.ROOT));
     }
 
-    /** The disposition these bytes get: {@code inline} only for a render-safe raster image. */
+    /**
+     * The disposition these bytes get: {@code inline} only for a render-safe raster image.
+     *
+     * <p><b>SH1071 — the name is quoted by the builder, never by interpolation.</b> The name handed
+     * here is whatever {@code ShFileStorageService.sanitizeFileName} returned, and that method guards
+     * the filesystem: it drops path segments and leaves a double quote alone, because a quote cannot
+     * escape a directory. So an upload named {@code a".svg} was sent as
+     * {@code attachment; filename="a".svg"} — a filename of {@code a} followed by a parameter no
+     * parser agrees on, and a name ending {@code "; filename*=UTF-8''x.html} was a second filename
+     * that RFC 6266 tells a client to prefer. Spring's {@link ContentDisposition} escapes {@code \}
+     * and {@code "} inside the quoted string, which is the whole of what the RFC asks.</p>
+     *
+     * <p>Two things it does not do, measured on 7.0.9 rather than assumed. It keeps a control
+     * character in the {@code filename*} form as {@code %0D%0A}, which a client decodes into the
+     * name it saves — so they are dropped here first. And a charset on an ASCII name still adds a
+     * {@code filename*} beside it, which would move every header SH950 shipped for no reader's
+     * benefit — so the UTF-8 form is asked for only when the name needs it.</p>
+     */
     public static String disposition(String contentType, String fileName) {
-        String how = rendersInline(contentType) ? "inline" : "attachment";
-        return fileName == null || fileName.isBlank()
-                ? how
-                : how + "; filename=\"" + fileName + "\"";
+        ContentDisposition.Builder how = rendersInline(contentType)
+                ? ContentDisposition.inline()
+                : ContentDisposition.attachment();
+        String name = downloadName(fileName);
+        if (name == null) {
+            return how.build().toString();
+        }
+        return (US_ASCII.newEncoder().canEncode(name)
+                ? how.filename(name)
+                : how.filename(name, UTF_8)).build().toString();
+    }
+
+    /** The name without control characters, or {@code null} where nothing printable is left. */
+    private static String downloadName(String fileName) {
+        if (fileName == null) {
+            return null;
+        }
+        StringBuilder name = new StringBuilder(fileName.length());
+        fileName.codePoints().filter(c -> !Character.isISOControl(c)).forEach(name::appendCodePoint);
+        return name.isEmpty() || name.toString().isBlank() ? null : name.toString();
     }
 
     /**

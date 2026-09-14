@@ -1688,6 +1688,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH954** — The Clear Cache button, its endpoint, its keys and the test that held the no-op in place are gone, and a lint now fails on any mapping whose body is a bare success (design §LXI.5 recorded in `docs/agents/content-api.md`).
 - **SH955** — A refused save now marks the field the server named, four write refusals carry that pointer, and a lint holds that every problem chains a fix (design §LXI.6 recorded in `docs/agents/console-ui.md`).
 - **SH956** — A dry run now names what the allow-list would strip, and verify reports html-unsafe on published rich text written before the sanitizer — all three through the same sanitizer (design §LXI.7 recorded in `docs/agents/security.md`).
+- **SH1071** — An asset's download name is quoted by Spring's ContentDisposition: a quote, a control character or a smuggled filename* no longer escapes it, and a name outside ASCII downloads as itself (design §LXI.8 recorded in `docs/agents/security.md`).
 
 ## Block AW — One chrome: bento, and nothing left that names another
 

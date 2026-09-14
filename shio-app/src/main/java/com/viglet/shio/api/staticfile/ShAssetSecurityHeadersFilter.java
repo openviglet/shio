@@ -9,9 +9,12 @@
 package com.viglet.shio.api.staticfile;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.NotNull;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UriUtils;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -43,6 +46,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class ShAssetSecurityHeadersFilter extends OncePerRequestFilter {
 
+    /**
+     * A segment whose every {@code %} is followed by two hex digits. Anything else is what
+     * {@link UriUtils#decode} refuses with an exception.
+     */
+    private static final Pattern WELL_FORMED = Pattern.compile("(?:[^%]|%\\p{XDigit}{2})*");
+
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request,
                                     @NotNull HttpServletResponse response,
@@ -55,7 +64,16 @@ public class ShAssetSecurityHeadersFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /** The last path segment of {@code /file_source/<id>/<name>}, or {@code null} if there is none. */
+    /**
+     * The last path segment of {@code /file_source/<id>/<name>}, decoded, or {@code null} if there
+     * is none.
+     *
+     * <p>SH1071: decoded because {@code getRequestURI()} is not, by the servlet spec, and the resource
+     * handler behind this decodes it to find the file. Read raw, {@code relatório.pdf} downloaded as
+     * {@code relat%C3%B3rio.pdf} — and the one character a raw URI cannot carry, {@code "}, arrived
+     * as {@code %22}, which is why the quoting defect was never visible on this route. It is now, and
+     * {@link ShAssetResponseHeaders#disposition} is what makes that safe.</p>
+     */
     private static String fileNameOf(String uri) {
         if (uri == null) {
             return null;
@@ -64,6 +82,12 @@ public class ShAssetSecurityHeadersFilter extends OncePerRequestFilter {
         if (slash < 0 || slash == uri.length() - 1) {
             return null;
         }
-        return uri.substring(slash + 1);
+        String segment = uri.substring(slash + 1);
+        // A broken escape is the connector's to refuse, and Tomcat does before this runs. Checked
+        // rather than caught, so a request that gets here anyway keeps its headers and its raw
+        // segment instead of a 500 — and adds no silent catch to SH270's inventory.
+        return WELL_FORMED.matcher(segment).matches()
+                ? UriUtils.decode(segment, StandardCharsets.UTF_8)
+                : segment;
     }
 }
