@@ -1447,26 +1447,6 @@ transaction, the reads and a rollback verb over it, a diff that works for a crea
 page, and audit rows that name the fields they changed. Releases, review and translation
 all read what this block stores.
 
-### LXV.2 A revision store, captured where content goes live (SH986)
-
-ShConsolePostReadService.versions is findById over an id-and-state key, and ShPostState
-is exactly DRAFT and PUBLISHED, so every version is at most two, which SH14's own ledger
-entry states. ShHistory has no payload column. So publishing destroys what visitors were
-reading, and the review queue's undo is narrower than it reads.
-
-Add sh_post_revision through a new Liquibase changeset: id, post_id as a plain string
-because the post's key is composite, a monotonic version_no, the captured state, title,
-furl, locale, post_type_id, the data CLOB, the actor, agent_session_id, captured_at, a
-reason of PUBLISH, SAVE or ROLLBACK, and a lowercase tenant_id. The JPQL invariant
-applies: store the post-type id and resolve its name in the service. A snapshot is
-written inside the publish transaction, so a revision exists for every state a visitor
-ever saw; save-time capture sits behind a property, retention is shio.versions.keep
-defaulting to fifty, and pruning happens in the same write.
-
-It is a schema change, so it runs with -DskipITs=false and Docker started. The closing
-assertion names the defect: publish twice, restore the first revision, and its bytes
-come back.
-
 ### LXV.3 Revisions on every surface, and a rollback that is itself a revision (SH987)
 
 With AZ2's store in place, the reads are the whole P1 chain and cost little. MCP:

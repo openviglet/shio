@@ -411,3 +411,52 @@ scoped to the caller's own tenant, and it is the backstop for a period no node w
 close. `usage(period)` is driven from the tenant catalog rather than from the meter rows, so a
 tenant that used nothing is present with an empty map — an absent row is indistinguishable from a
 tenant the export forgot.
+
+## `sh_post_revision` — what a page was, after the row that held it is gone (SH986)
+
+A post is `(id, state)` and `ShPostState` is exactly `DRAFT` and `PUBLISHED`, so `versions()` has
+always returned at most two rows — SH14's own ledger entry says so. Publishing deletes the live row
+and writes the draft over it, which means the bytes a visitor was reading a minute ago are **gone**:
+not archived, not superseded, gone. `ShHistory` records that a publish happened and carries no
+payload, so the review queue's undo was narrower than it read and a rollback had nothing to roll
+back to.
+
+**A separate table, not a third state.** A third state would be read by every query that filters on
+state, indexed by Turing, delivered by the CDA and counted by the quota — each of which would have
+to learn to exclude it, and the one that forgot would serve an archive row to a visitor. A revision
+is not a state of the post; it is a record of what the post was.
+
+Two columns are deliberately plain strings rather than associations:
+
+- **`post_id` is not a foreign key.** The post's primary key is composite, so a foreign key would
+  have to name a state — and the row it names is the one publishing deletes. A revision has to
+  outlive exactly that deletion, which is the whole point of keeping it.
+- **`post_type_id`, never the type's name**, per the JPQL invariant in `agents.md` and because a
+  rename is a move (SH163): a record of what the post *was* names the thing that does not move.
+
+**Where the capture happens is the guarantee.** `ShPostRevisionService.capture` runs inside the
+publishing transaction, on the row that just became visible — so a revision exists for every state a
+visitor ever saw, and a capture that rolled back took the publish with it. The *incoming* row is
+captured rather than the outgoing one, which is what makes the claim true of the current live state
+and not only of the ones already replaced.
+
+A draft save is captured too, behind `shio.versions.capture-on-save`, **off** by default: a save
+happens on every keystroke-sized edit an agent makes, and the question a curator asks is "what was
+live on Tuesday". Retention is `shio.versions.keep`, fifty per post, pruned in the same write that
+adds one — so the bound holds with no scheduled job, and an instance that never runs maintenance
+still has a bounded table. The prune is by `version_no` and never by age: a page published once a
+year would otherwise lose the only revision it has.
+
+`version_no` is `max + 1` and **not** `count + 1`. A count reissues the number a pruned revision
+used, the unique constraint refuses the insert, and it presents as publishing having stopped
+working — long after the prune and nowhere near it. There is a test that forces exactly that
+sequence rather than waiting for a table to fill.
+
+A restore lands on the **draft**, never on the live row: the curator asked to go back to a version,
+and publishing it is the separate deliberate act draft-default exists to keep separate (P7). The
+restore is itself captured with reason `ROLLBACK`, because an undo that destroys what it undid is
+the defect this table was added for, one level up.
+
+It is a schema change, so it was validated with `-DskipITs=false` and Docker running:
+`ShPostgresSchemaIT` and `ShMariaDbSchemaIT` both **ran** (19s and 29s, not the `0.00 s` of a
+Docker-less skip), so the changelog is known to apply on all three engines rather than assumed to.

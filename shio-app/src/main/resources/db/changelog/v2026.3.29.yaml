@@ -1,0 +1,152 @@
+databaseChangeLog:
+  # SH986 — a post has two rows, and a revision store is where every earlier one goes.
+  #
+  # `ShPostState` is exactly DRAFT and PUBLISHED, and the post's key is `(id, state)`, so
+  # `versions()` has always returned at most two rows — SH14's own entry says so. Publishing deletes
+  # the live row and writes the draft over it, which means the bytes a visitor was reading a minute
+  # ago are gone: not archived, not superseded, gone. `ShHistory` records that a publish happened
+  # and carries no payload, so the review queue's undo is narrower than it reads and a rollback has
+  # nothing to roll back to.
+  #
+  # A SEPARATE TABLE rather than more rows in `sh_post_unified`, and this is the decision the rest
+  # follows from. A third state would be read by every query that filters on state, indexed by
+  # Turing, delivered by the CDA and counted by the quota — every one of which would need to learn
+  # to exclude it, and the one that forgot would publish an archive row to a visitor. A revision is
+  # not a state of the post; it is a record of what the post was.
+  #
+  # `post_id` is a plain VARCHAR and NOT a foreign key into `sh_post_unified`. The post's primary
+  # key is composite `(id, state)`, so a foreign key would have to name a state — and the row it
+  # names is the one publishing deletes. A revision has to outlive exactly that deletion, which is
+  # the whole point of keeping it.
+  #
+  # `version_no` is monotonic per post, assigned in the capturing transaction as `max + 1`. Not a
+  # timestamp as the key: two captures inside one second are ordinary on a bulk publish, and a
+  # reader asking for "the revision before this one" needs an order that is total. `captured_at`
+  # is still stored, because the question a curator asks is "what was live on Tuesday".
+  #
+  # `post_type_id` rather than the type's name, per the JPQL invariant this codebase states in
+  # `agents.md`: an association whose target is an `ShObject` subclass may not be navigated past
+  # `.id`, and the name is resolved in the service. Stored as a plain column for the same reason
+  # `post_id` is: the type may be renamed (SH163 makes a rename a move) and the revision is a record
+  # of what the post was, so its type is named by the id that does not move.
+  #
+  # `tenant_id`, lowercase, as the discriminator every content table carries (SH22). No
+  # ShTenantBackfillRunner entry: that backfill exists for rows written before multi-tenancy, and
+  # this table's first row will be written after it.
+  #
+  # Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on
+  # PostgreSQL, which does not propagate through `include`.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh986-create-sh-post-revision
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_post_revision
+      changes:
+        - createTable:
+            tableName: sh_post_revision
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_post_revision
+              # The post this is a revision of. Not a foreign key — see above.
+              - column:
+                  name: post_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version_no
+                  type: INT
+                  constraints:
+                    nullable: false
+              # The state the captured row was in: DRAFT or PUBLISHED.
+              - column:
+                  name: state
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              # PUBLISH | SAVE | ROLLBACK — why the snapshot was taken, which is what lets a reader
+              # ask for "what was live" without reading every save in between.
+              - column:
+                  name: reason
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(510)
+              - column:
+                  name: furl
+                  type: VARCHAR(510)
+              - column:
+                  name: locale
+                  type: VARCHAR(16)
+              - column:
+                  name: post_type_id
+                  type: VARCHAR(36)
+              # The whole document, as `sh_post_unified.data` holds it.
+              - column:
+                  name: data
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor
+                  type: VARCHAR(255)
+              # The agent session that wrote it, when one did (SH106) — so a rollback can say
+              # whose work it is undoing rather than only when it happened.
+              - column:
+                  name: agent_session_id
+                  type: VARCHAR(255)
+              - column:
+                  name: captured_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  # One row per (post, version). The capture reads `max(version_no) + 1` and two concurrent
+  # publishes of one post would otherwise both write the same number — which reads as one revision
+  # having been overwritten by another, the exact loss this table exists to prevent.
+  - changeSet:
+      id: sh986-unique-sh-post-revision-version
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: UK_sh_post_revision_version
+      changes:
+        - addUniqueConstraint:
+            tableName: sh_post_revision
+            columnNames: post_id, version_no
+            constraintName: UK_sh_post_revision_version
+
+  # Every read of this table is "the revisions of one post, newest first", including the prune.
+  - changeSet:
+      id: sh986-index-sh-post-revision-post
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: IDX_sh_post_revision_post
+      changes:
+        - createIndex:
+            tableName: sh_post_revision
+            indexName: IDX_sh_post_revision_post
+            columns:
+              - column:
+                  name: post_id
+              - column:
+                  name: version_no

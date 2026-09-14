@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.unified.ShRestoreTitleConflictException;
 import com.viglet.shio.api.post.unified.ShRestoreUrlConflictException;
@@ -113,6 +115,8 @@ public class ShPostUnifiedWriteService {
     private final ShFurlNaming shFurlNaming;
     /** SH956 — what a rich-text field is allowed to contain, at the boundary every writer crosses. */
     private final ShHtmlSanitizer shHtmlSanitizer;
+    /** SH986 — every state a visitor saw, captured in the transaction that made it visible. */
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
@@ -124,8 +128,10 @@ public class ShPostUnifiedWriteService {
                                      ObjectProvider<ShPostUnifiedWriteService> self,
                                      ShTemplateTitles shTemplateTitles,
                                      ShFurlNaming shFurlNaming,
-                                     ShHtmlSanitizer shHtmlSanitizer) {
+                                     ShHtmlSanitizer shHtmlSanitizer,
+                                     ShPostRevisionService shPostRevisionService) {
         this.shHtmlSanitizer = shHtmlSanitizer;
+        this.shPostRevisionService = shPostRevisionService;
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -246,6 +252,9 @@ public class ShPostUnifiedWriteService {
                 ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
 
         ShPostUnified saved = shPostUnifiedRepository.save(row);
+        if (shPostRevisionService.capturesOnSave()) {
+            shPostRevisionService.capture(saved, ShPostRevision.Reason.SAVE, req.modifier());
+        }
         shContentAuditService.record(ShContentAction.UPDATE, postId,
                 siteIdOf(saved), saved.getTitle(), req.modifier());
         return saved;
@@ -438,6 +447,11 @@ public class ShPostUnifiedWriteService {
         pub.setLocale(draft.getLocale());
         pub.setTranslationGroupId(draft.getTranslationGroupId());
         ShPostUnified saved = shPostUnifiedRepository.save(pub);
+        // SH986 — the state that just went live, captured in the transaction that made it visible.
+        // The row this publish deleted already has a revision of its own, from the publish that put
+        // it there; capturing the *incoming* row is what makes "every state a visitor saw" true of
+        // the current one too, rather than only of the ones that have since been replaced.
+        shPostRevisionService.capture(saved, ShPostRevision.Reason.PUBLISH, publisher);
         shContentAuditService.record(ShContentAction.PUBLISH, postId,
                 siteIdOf(saved), saved.getTitle(), publisher);
         publishLifecycle(ShWebhookEventType.PUBLISH, saved);
@@ -477,6 +491,61 @@ public class ShPostUnifiedWriteService {
         draft.setTitle(published.getTitle());
         draft.setSummary(published.getSummary());
         draft.setFurl(published.getFurl());
+        draft.setModifiedDate(Instant.now());
+        if (modifier != null) draft.setModifier(modifier);
+        draft.setPublished(false);
+        draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
+        ShPostUnified saved = shPostUnifiedRepository.save(draft);
+        shContentAuditService.record(ShContentAction.RESTORE, postId,
+                siteIdOf(saved), saved.getTitle(), modifier);
+        return saved;
+    }
+
+    /**
+     * Put a captured revision back over the draft (SH986).
+     *
+     * <p>Over the <b>draft</b>, never over the live row. Restoring straight to publication would
+     * put bytes on the site that nobody looked at in this session, which is P7 read backwards: the
+     * curator asked to go back to a version, and publishing it is the separate, deliberate act the
+     * draft-default split exists to keep separate.</p>
+     *
+     * <p>The restore is itself captured, with reason {@code ROLLBACK}. Without that, going back to
+     * version three and then regretting it would leave nothing to come forward to — an undo that
+     * destroys what it undid is the defect this table was added for, one level up.</p>
+     */
+    @Transactional
+    public ShPostUnified restoreRevision(String postId, int versionNo, String modifier) {
+        ShPostRevision revision = shPostRevisionService.revision(postId, versionNo)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No revision " + versionNo + " of post " + postId));
+
+        ShPostUnified draft = shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.DRAFT)
+                .or(() -> shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
+                        .map(live -> {
+                            ShPostUnified d = new ShPostUnified();
+                            d.setId(postId);
+                            d.setState(ShPostState.DRAFT);
+                            d.setShFolder(live.getShFolder());
+                            d.setShSite(live.getShSite());
+                            d.setShPostType(live.getShPostType());
+                            d.setOwner(live.getOwner());
+                            d.setDate(live.getDate());
+                            d.setTranslationGroupId(live.getTranslationGroupId());
+                            return d;
+                        }))
+                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
+
+        // The draft as it stands is captured first, or restoring discards it — which would make
+        // this the second place in the product where going back destroys what you were on.
+        shPostRevisionService.capture(draft, ShPostRevision.Reason.ROLLBACK, modifier);
+
+        draft.setData(revision.getData());
+        draft.setTitle(revision.getTitle());
+        draft.setFurl(revision.getFurl());
+        if (revision.getLocale() != null) {
+            draft.setLocale(revision.getLocale());
+        }
         draft.setModifiedDate(Instant.now());
         if (modifier != null) draft.setModifier(modifier);
         draft.setPublished(false);
