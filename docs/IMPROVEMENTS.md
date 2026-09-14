@@ -1329,26 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.4 The scarcest number in the product, printed on green (SH976)
-
-The budget test computes the estimate and the limit and reveals both only through its
-failure message, so a green run prints per-tool rows and no total. The analysis measured
-the twelve tools at 2546 estimated tokens against a 2560 ceiling, with shio_apply at 441
-and shio_write at 434 against a 460 per-tool cap, and the server refuses a thirteenth
-tool. resources/list and prompts/list carry no budget at all, which matters because an
-MCP resource is where a squeezed tool list pushes new work.
-
-Three changes in one commit. Print the total, the headroom, the tool count and the
-initialize figure on every run, so the number informs a pull request while it is being
-written. Measure resources/list and prompts/list now, before anything is added, and
-record them in the budget properties with the same comment discipline every other number
-there has. And publish the affordance ladder as a test that computes, live, what each
-shape costs: an op name on shio_write, a parameter on an existing tool, a resource, a
-declared endpoint.
-
-The figures above are the analysis's; this task's first run replaces them with the
-build's own.
-
 ### LXIV.5 The tool-list headroom, allocated before it is spent (SH977)
 
 Later blocks add arguments to the tools an agent already calls: a state perspective and

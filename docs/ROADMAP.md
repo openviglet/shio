@@ -34,8 +34,7 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH976** (deps: —) **a green MCP budget run prints per-tool cost and never the total, the headroom or the tool count** — tools/list sits near its ceiling and resources/list and prompts/list carry no budget, so the number deciding whether a capability can land is visible only in a failure. → §LXIV.4
-- 📋 **SH977** (deps: SH976) **the round's new tool arguments each budget themselves alone against headroom none of them can share** — Revisions, perspectives, schedules, filters and locale each add schema to existing tools, and no per-tool reservation divides the room between them. → §LXIV.5
+- 📋 **SH977** (deps: SH976 ✅) **the round's new tool arguments each budget themselves alone against headroom none of them can share** — Revisions, perspectives, schedules, filters and locale each add schema to existing tools, and no per-tool reservation divides the room between them. → §LXIV.5
 - 📋 **SH978** (deps: SH973 ✅) **nothing joins the console's route tree to the agent surface** — The console's surfaces are a TypeScript array the JVM cannot read, and the P1 test is keyed on manifest features, so a console-first page is invisible to every instrument. → §LXIV.6
 - 📋 **SH979** (deps: SH978) **the surface declaration has no reader beyond its gate, so the rail, the palette and an agent still keep separate lists** — A declaration only one test reads is a second source of truth, and bento-nav.ts, the manifest and MCP would each go on describing surfaces their own way. → §LXIV.7
 - 📋 **SH980** (deps: SH978) **the round's console-only surfaces have no exception kind a gate can read, only paragraphs arguing why** — The surface gate fails on an unclassified page, and chrome, accessibility, caching and preference tasks argue their P1 position in prose the test cannot parse. → §LXIV.8

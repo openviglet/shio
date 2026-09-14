@@ -23,7 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.viglet.shio.api.agent.ShAgentManifestService;
 import com.viglet.shio.api.agent.ShTokenBudget;
+import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -62,6 +64,8 @@ class ShMcpToolBudgetTest {
 
     @Autowired
     private ShMcpServer shMcpServer;
+    @Autowired
+    private ShAgentManifestService shAgentManifestService;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -128,6 +132,20 @@ class ShMcpToolBudgetTest {
                 "%n[SH793] per-tool MCP schema cost, ceiling %d est. tokens%n".formatted(limit));
         perTool.forEach((name, tokens) -> out.append("  %-16s %4d  headroom %+5d%n"
                 .formatted(name, tokens, limit - tokens)));
+        // SH976 — the totals, on green. The per-tool rows say which tool to shorten and never
+        // answered the question a pull request actually asks: is there room for this at all. That
+        // number decided whether `postTypeMerge` could reach an agent, and it was visible only in a
+        // failure message — so the one figure the surface is rationed by was the one nobody could
+        // see while there was still something to do about it.
+        out.append("%n[SH976] the whole MCP surface, per turn and per session%n".formatted());
+        out.append(line("tools/list", listCost("tools/list", "tools"),
+                budget("mcp.tools.list.total"), perTool.size() + " tools"));
+        out.append(line("initialize", callCost("initialize"), budget("mcp.initialize"),
+                "the handshake"));
+        out.append(line("resources/list", listCost("resources/list", "resources"),
+                budget("mcp.resources.list.total"), "paid when a client lists them"));
+        out.append(line("prompts/list", listCost("prompts/list", "prompts"),
+                budget("mcp.prompts.list.total"), "paid when a client lists them"));
         System.out.println(out);
 
         // Not vacuous: a report of nothing agrees with every ceiling, and the failure this is about
@@ -245,6 +263,122 @@ class ShMcpToolBudgetTest {
         int estimated = ShTokenBudget.estimate(
                 objectMapper.writeValueAsString(call("initialize").get("result")));
         assertThat(estimated).isLessThanOrEqualTo(budget("mcp.initialize"));
+    }
+
+    /** One line of the SH976 summary: what it costs, what it may cost, and what is left. */
+    private static String line(String what, int estimated, int limit, String note) {
+        return "  %-15s %5d of %5d  %+5d free  (%s)%n"
+                .formatted(what, estimated, limit, limit - estimated, note);
+    }
+
+    /** What a listing payload costs, by the same heuristic the instance reports. */
+    private int listCost(String method, String field) {
+        return ShTokenBudget.estimate(
+                objectMapper.writeValueAsString(call(method).get("result").get(field)));
+    }
+
+    /** What a whole result costs — the handshake is one, and it has no list inside it. */
+    private int callCost(String method) {
+        return ShTokenBudget.estimate(
+                objectMapper.writeValueAsString(call(method).get("result")));
+    }
+
+    @Test
+    @DisplayName("SH976: the lists a client reads once are budgeted too")
+    void everyListedSurfaceHasACeiling() throws IOException {
+        Map<String, Integer> lists = new LinkedHashMap<>();
+        lists.put("mcp.resources.list.total", listCost("resources/list", "resources"));
+        lists.put("mcp.prompts.list.total", listCost("prompts/list", "prompts"));
+
+        List<String> over = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : lists.entrySet()) {
+            int limit = budget(entry.getKey());
+            if (entry.getValue() > limit) {
+                over.add("%s = %d of %d".formatted(entry.getKey(), entry.getValue(), limit));
+            }
+        }
+
+        assertThat(over)
+                .as("""
+                        SH976: `tools/list` had a ceiling and the other two lists had none, which \
+                        matters because a resource is where work goes when the tool list is full — \
+                        so the surface that absorbs the pressure was the unmeasured one. Trim, or \
+                        raise the ceiling in token-budgets.properties with the reason beside it.""")
+                .isEmpty();
+        assertThat(lists.values())
+                .as("SH976: a list that measured zero would agree with every ceiling, which is the "
+                        + "shape this file warns about everywhere else")
+                .allSatisfy(cost -> assertThat(cost).isPositive());
+    }
+
+    /**
+     * SH976 — what each way of adding a capability costs, measured on this build.
+     *
+     * <h2>Why this is a test and not a paragraph</h2>
+     *
+     * <p>The choice between an op, a parameter, a resource and an endpoint is made in nearly every
+     * task on this surface, and it was made from memory: the ladder existed as prose in three area
+     * docs and as an argument in a P1 reason, and the only figure anybody had was the one a red
+     * build printed. This computes it from the live server, so the cheapest shape is a fact on the
+     * run rather than a recollection.</p>
+     *
+     * <p>Each rung is the <b>marginal</b> cost of one more of that thing — an average over what is
+     * there, which is what a next addition actually resembles. The ordering is asserted, because
+     * that is the claim the docs make; the numbers are printed, because they are what informs the
+     * next design.</p>
+     */
+    @Test
+    @DisplayName("SH976: the affordance ladder is computed, not remembered")
+    void theAffordanceLadderIsMeasured() throws IOException {
+        JsonNode write = tool("shio_write");
+        JsonNode ops = write.at("/inputSchema/properties/ops/items/properties/op/enum");
+        assertThat(ops.isArray() && !ops.isEmpty())
+                .as("SH976: shio_write's op enum is where an op name lands, and this scan no longer "
+                        + "finds it — the ladder's cheapest rung cannot be measured")
+                .isTrue();
+        int perOp = ShTokenBudget.estimate(objectMapper.writeValueAsString(ops)) / ops.size();
+
+        int parameters = 0;
+        int parameterCost = 0;
+        for (JsonNode each : call("tools/list").get("result").get("tools")) {
+            JsonNode properties = each.at("/inputSchema/properties");
+            parameters += properties.size();
+            parameterCost += ShTokenBudget.estimate(objectMapper.writeValueAsString(properties));
+        }
+        int perParameter = parameterCost / Math.max(1, parameters);
+
+        JsonNode resources = call("resources/list").get("result").get("resources");
+        int perResource = ShTokenBudget.estimate(objectMapper.writeValueAsString(resources))
+                / Math.max(1, resources.size());
+
+        List<ShAgentEndpoint> endpoints = shAgentManifestService.manifest().endpoints();
+        int perEndpoint = ShTokenBudget.estimate(objectMapper.writeValueAsString(endpoints))
+                / Math.max(1, endpoints.size());
+
+        System.out.printf("%n[SH976] what one more of each costs, on this build%n"
+                        + "  %-28s %4d est. tokens  (paid every turn, inside shio_write)%n"
+                        + "  %-28s %4d est. tokens  (paid every turn, on the tool that takes it)%n"
+                        + "  %-28s %4d est. tokens  (paid when a client lists resources)%n"
+                        + "  %-28s %4d est. tokens  (paid on a manifest read)%n%n",
+                "an op name", perOp, "a parameter", perParameter,
+                "an MCP resource", perResource, "a declared endpoint", perEndpoint);
+
+        assertThat(perOp)
+                .as("SH976: an op name is the cheapest way to add a capability — that is why the "
+                        + "batch vocabulary is the one that grows, and a task that reaches for a "
+                        + "thirteenth tool is answering a question this number already answered")
+                .isLessThan(perParameter)
+                .isLessThan(perResource)
+                .isLessThan(perEndpoint);
+    }
+
+    private JsonNode tool(String name) {
+        for (JsonNode each : call("tools/list").get("result").get("tools")) {
+            if (name.equals(each.get("name").asString())) {
+                return each;
+            }
+        }
+        throw new AssertionError("no tool named " + name);
     }
 
     private Map<String, Integer> perTool() {

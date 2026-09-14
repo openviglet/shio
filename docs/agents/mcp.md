@@ -414,3 +414,27 @@ somebody reads rather than a percentage that absorbs it.
 zero: a reader that had stopped matching would print the same finding it shipped to report. So it is
 driven against a sample where the answer is known — a fetched URI counts, a URI named in prose does
 not, and one template is not credited by another being read.
+
+## The scarcest number in the product, printed on green (SH976)
+
+`tools/list` is paid on every turn of every session, so its ceiling is what decides whether a
+capability can be an MCP tool at all — and a green run printed the per-tool rows and never the total.
+The number that settles the design question was visible only in the failure it caused, which is the
+same shape SH793 found one level down and fixed for the per-tool figure.
+
+Every run now prints the whole surface: `tools/list` against its ceiling with the tool count,
+`initialize`, and — since SH976 gave them ceilings — `resources/list` and `prompts/list`. Those two
+had no budget at all, which was the wrong pair to leave unmeasured: a resource is where work goes
+when the tool list is full, so the surface absorbing the pressure was the one nothing watched. Their
+ceilings are loose on purpose (they are paid once, when a client lists them) and exist to make growth
+visible rather than to ration it.
+
+**The affordance ladder is computed, not remembered.** The choice between an op, a parameter, a
+resource and an endpoint is made in nearly every task on this surface and was being made from memory.
+`ShMcpToolBudgetTest` measures the marginal cost of one more of each from the live server — an op name
+in `shio_write`'s enum, a parameter averaged over every tool's schema, an entry in `resources/list`,
+an entry in the manifest's endpoint index — and prints them. On the first run: **an op name is single
+digits; a parameter is an order of magnitude more; a resource and an endpoint are another order up,
+with the resource the dearer of the two.** Only the first of those is asserted, because it is the
+claim the docs make everywhere: the batch vocabulary is the surface that grows, and a task reaching
+for a thirteenth tool is answering a question this number already answered.

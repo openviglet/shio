@@ -1712,6 +1712,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH973** — ShAgentReadReachabilityLintTest holds every GET-only controller root as declared in the manifest or classified with a falsifier, and its first inventory names 14 roots and one gap (design §LXIV.1 recorded in `docs/agents/agent-surface.md`).
 - **SH974** — The three P1 instruments write their counts to target/p1-inventory.json, and agents-md-figures.test.mjs refuses a figure in the index or an area doc unless its sentence cites that file and matches it (design §LXIV.2 recorded in `docs/agents/agent-surface.md`).
 - **SH975** — Reach.OPERATOR_HTTP classifies the review queue and checks the path really is stateless-writable, and every elsewhere pointer must parse as a shio command or a verb and a path (design §LXIV.3 recorded in `docs/agents/agent-surface.md`).
+- **SH976** — Every run prints the tool-list total, its headroom and the tool count beside initialize, resources/list and prompts/list now have ceilings, and the affordance ladder is computed from the live server (design §LXIV.4 recorded in `docs/agents/mcp.md`).
 
 ## Block AZ — What the content said before
 
