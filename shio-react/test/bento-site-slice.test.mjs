@@ -96,7 +96,7 @@ test("SH899: the four site surfaces are bento, and the console four are gone", (
   for (const name of ["site.list", "site.new", "site.edit", "site.import"]) {
     const bento = `bento/content/${name}.page.tsx`
     const legacy = `console/content/${name}.page.tsx`
-    assert.equal(surfaces[bento]?.era, "bento", `SH899: ${bento} is missing or not bento-era`)
+    assert.ok(surfaces[bento]?.chrome.length > 0, `SH899: ${bento} is missing or composes no chrome`)
     assert.equal(surfaces[legacy], undefined,
       `SH899: ${legacy} is back. SH910 deleted the console site pages with the route tree that`
         + " mounted them; a file there again is a page on the era this migration retired.")
@@ -148,46 +148,8 @@ test("SH899: the reader is not vacuous — it parses real shells and a real surv
   assert.ok(Object.keys(survey()).length > 40, "SH899: the survey is reading an empty tree")
 })
 
-/**
- * SH899 — the two era classifiers agree, because they answer the same question in two files.
- *
- * `console-chrome-census.test.mjs` and `surface-digest.mjs` both decide "is this page bento-era",
- * and SH892 taught the exclusion to one of them. SH899 is where that cost something: the console's
- * own site editor came back `bento` from the digest, because SH892 gave it `AdaptiveSectionCard`.
- *
- * Not fixed by sharing a module. The digest is a script the console runs on its own — a script
- * importing a test file is a worse dependency than two copies of a three-name list. What holds
- * them together is this: the same input, through both, must produce the same answer.
+/*
+ * SH960 — "the census and the digest classify eras the same way" is gone, with both classifiers.
+ * The census file is deleted and the digest has no era field, so there is no second reader left to
+ * disagree with; `surface-digest.test.mjs` says what the digest measures now.
  */
-test("SH899: the census and the digest classify eras the same way", async () => {
-  const { survey: surveyOf } = await import("../scripts/surface-digest.mjs")
-  const censusSource = readFileSync(join(HERE, "console-chrome-census.test.mjs"), "utf8")
-  const digestSource = readFileSync(join(HERE, "..", "scripts", "surface-digest.mjs"), "utf8")
-
-  const namesIn = (source) => {
-    const found = /const ERA_NEUTRAL = \[([^\]]*)\]/.exec(source)
-    assert.ok(found, "SH899: ERA_NEUTRAL is no longer a literal array in one of the two readers")
-    return [...found[1].matchAll(/"([^"]+)"/g)].map(([, n]) => n).sort()
-  }
-
-  assert.deepEqual(namesIn(censusSource), namesIn(digestSource),
-    "SH899: the census and the digest hold different era-neutral lists, so the same page can be"
-      + " console-era to one reader and bento-era to the other. That is not a hypothetical: it is"
-      + " what SH899 found, on a page SH892 had touched seven tasks earlier.")
-
-  /*
-   * And the answer they produce, on a page that composes the adapter.
-   *
-   * SH910 — this asked about `console/content/site.edit.page.tsx`, the page the disagreement was
-   * actually found on, and that page is deleted. The post editor is the same question: it imports
-   * `AdaptiveSectionCard`, it is mounted under `/bento` through a provider, and it must still read
-   * as console-**era**, because era is about which chrome a file composes and not about which URL
-   * reaches it. Keeping an assertion here matters more than which page carries it — the two
-   * readers agreeing on a list is worth little if they then classify a real file differently.
-   */
-  const surfaces = surveyOf()
-  assert.equal(surfaces["console/content/post.edit.page.tsx"]?.era, "console",
-    "SH899: a console page that composes the adapter is bento-era again. AdaptiveSectionCard is"
-      + " the one export written to be used from a console page, and that must not move a page's"
-      + " era — otherwise the census shrinks by every page that adopts the adapter.")
-})

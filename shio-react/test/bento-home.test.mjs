@@ -75,9 +75,10 @@ test("SH898: the survey still walks both trees, and the one home left is the ben
       + " every migration in Block AR would report 'No surface moved' — which is exactly what the"
       + " whole of SH898 reported before the survey learned about the second tree.")
 
-  assert.equal(surfaces[BENTO_HOME].era, "bento",
-    "SH898: the migrated home is not classified as bento. Era is decided by the bento subpath"
-      + " import, so this means the page is composing something else.")
+  // SH960 — asked of what the digest records now, since it has no era field.
+  assert.ok(surfaces[BENTO_HOME].chrome.includes("BentoHero"),
+    "SH898: the survey records no BentoHero on the migrated home, so either the page stopped"
+      + " composing the package's hero or the digest's vocabulary lost it.")
 
   // The survey must still reach the console directory, or "the console home is gone" is a claim
   // about a walk that stopped looking rather than about a file that stopped existing.

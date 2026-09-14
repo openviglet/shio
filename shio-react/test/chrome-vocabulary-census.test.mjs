@@ -60,7 +60,6 @@ const SELF = ["test/chrome-vocabulary-census.test.mjs", "test/support/chrome-voc
  */
 const STILL_TWO_CHROMES = {
   "e2e/console-check.mjs": 7,
-  "scripts/surface-digest.mjs": 3,
   // SH958 — 39 → 11: twenty-one per-route wrappers became one provider above <Routes>.
   "src/App.tsx": 11,
   "src/app/bento/bento-nav.ts": 1,
@@ -70,8 +69,8 @@ const STILL_TWO_CHROMES = {
   "src/app/bento/content/post-type-select.page.tsx": 3,
   "src/app/bento/home/home.page.tsx": 1,
   "src/app/console/content/object.children.page.tsx": 2,
-  "src/app/console/content/post-type.edit.page.tsx": 5,
-  "src/app/console/content/post.edit.page.tsx": 3,
+  "src/app/console/content/post-type.edit.page.tsx": 4,
+  "src/app/console/content/post.edit.page.tsx": 2,
   // SH959 — the console branches in these three are deleted; not-found.page.tsx leaves the list.
   "src/app/console/content/static-file.list.page.tsx": 1,
   "src/app/console/graphql/graphql.page.tsx": 2,
@@ -88,16 +87,14 @@ const STILL_TWO_CHROMES = {
   "test/bento-nav.test.mjs": 1,
   "test/bento-post-slice.test.mjs": 3,
   "test/bento-shell.test.mjs": 2,
-  "test/bento-site-slice.test.mjs": 2,
   "test/bento-vocabulary.test.mjs": 2,
   "test/chrome-adapter.test.mjs": 10,
   // SH958 — holds the root provider in place, so it names it until SH963 deletes both.
   "test/chrome-provider-root.test.mjs": 10,
-  "test/console-chrome-census.test.mjs": 20,
+  // SH960 — the page census (20 lines) is deleted, and the digest and its test lost the era field.
   "test/empty-state.test.mjs": 1,
   "test/jsx-elements.test.mjs": 1,
   "test/outside-shell-chrome.test.mjs": 11,
-  "test/surface-digest.test.mjs": 1,
 }
 
 /** Lines and files, split the way §LXII.1 split them: product source, and everything else. */

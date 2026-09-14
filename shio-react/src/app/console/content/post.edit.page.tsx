@@ -8,7 +8,7 @@ import { PageHero } from "@/components/page-hero"
  * code in the console. Swapping the wrapper is the whole change.
  *
  * Imported from the bento subpath because that is the only entry the package exports the adapter
- * from; the era classifier in `console-chrome-census.test.mjs` excludes it by name.
+ * from.
  */
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"

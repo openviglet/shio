@@ -21,8 +21,7 @@ import { Button } from "@/components/ui/button"
  * and no content and it renders an **empty section**: the entire post-type form, gone, under a
  * chrome nobody has switched on yet. `chrome-adapter.test.mjs` asserts both halves of that.
  *
- * Imported from the bento subpath because that is the only entry that exports the adapter; the
- * era classifier in `console-chrome-census.test.mjs` excludes it by name.
+ * Imported from the bento subpath because that is the only entry that exports the adapter.
  */
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Input } from "@/components/ui/input"

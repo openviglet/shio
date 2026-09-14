@@ -2691,3 +2691,35 @@ block, and the adapter becomes the control that must *not* match.
 
 The surface digest is unchanged, since every page still composes the same elements. The census went
 from src 58 lines to 40 in 14 files; tests stay at 92.
+
+## The migration's instruments, re-derived for one chrome (SH960)
+
+§LXII.4 described the digest's `era` field as one where "every surface reports bento". **Measured, it
+was the opposite**: 33 of 45 surfaces reported `console`, including every bento admin list, because
+they compose this console's shared `AdminListPage` and import nothing from the package themselves.
+A field that labels a bento page `console` is the log line SH938 filed a defect off.
+
+**`scripts/surface-digest.mjs` keeps chrome-in-source-order and the frost classes and loses `era`**
+— from the structure, the hash, `compare` and the CLI line. Every digest moved once; re-take a saved
+baseline with `--json` before comparing against it. No baseline is committed, so there was nothing
+to regenerate in the tree.
+
+**The chrome vocabulary was re-derived by measuring what the pages compose**, and that turned up the
+larger defect: with the old list **33 of 45 surfaces digested zero chrome**, because adapter pages
+compose `PageHero` (22 surfaces), `Panel` (12), `AdaptiveSectionCard` (11), `EmptyState` (9) and
+`AdminListPage` (8) — seams the list did not name — so the proof was blind to the pages it most
+needed to see. With those, `IdentityEntityPage` and `BentoPanel` added, one surface digests no chrome
+(the visual editor, by design since SH907) and distinct digests rose from 18 to 28. The retired
+names whose modules SH910 deleted left the list; `Card` stayed, because `@/components/ui/card` still
+resolves.
+
+**`console-chrome-census.test.mjs` is deleted, not folded.** Every page it declared carried an empty
+list and nothing was declared migrated — it asserted an absence, with an era classifier kept in step
+with the digest's by `bento-site-slice.test.mjs`. Its one live probe (a page composing `Card` again)
+is now `surface-digest.test.mjs`'s last test, on the digest's own walk, so one reader holds that
+absence rather than two that can disagree. The other readers of `era` — the home, post, site and
+browser slices — now assert the chrome the digest records (the home composes `BentoHero`, the
+adapter pages compose `PageHero` and `Panel`), and `surface-digest.test.mjs` holds the named list of
+surfaces with no chrome, so a page the vocabulary cannot see fails by name.
+
+The vocabulary census went from 92 test lines to 66 and from 40 source lines to 38.

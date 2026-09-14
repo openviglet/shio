@@ -27,25 +27,36 @@ import { compare, digestOf, structureOf, survey } from "../scripts/surface-diges
  * which is precisely SH897's complaint about the console walk.
  *
  * So both directions are asserted here, and neither would be caught by testing the hash function.
- * `stable under noise` is the property that makes the tool usable; `moves on structure` is the
- * property that makes it a proof. A change to the chrome vocabulary that broke either would pass a
- * naive round-trip test.
+ *
+ * ## What it measures since SH960, and what it does not
+ *
+ * The chrome a page composes, in source order, and the frosted-surface classes it carries. **Not an
+ * era**: that field classified pages by whether they imported the bento subpath, had no subject after
+ * SH909, and labelled 33 of 45 surfaces `console` on the day it went. **Not pixels**,
+ * and not whether a page looks right — a matching digest says the same components were composed in
+ * the same order with the same surface vocabulary, which is the part a refactor can break silently.
+ *
+ * SH960 also deleted SH886's page census. Every page it declared carried
+ * an empty list and nothing was declared migrated, so it asserted an absence the vocabulary census
+ * (SH957) and this digest both walk; its one live probe — a page composing `Card` again — is the
+ * last test below, on this walk, so there is one reader of that absence rather than two that can
+ * disagree about it.
  */
 
-/** A minimal console page, written out rather than read, so the noise cases can be exact. */
+/** A minimal one-chrome page, written out rather than read, so the noise cases can be exact. */
 const PAGE = `
-import { PageHeader } from "@/components/page-header"
-import { Card, CardContent } from "@/components/ui/card"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
 
 export default function Thing() {
   const handleSave = () => save()
   return (
-    <div className="p-6">
-      <PageHeader title="Thing" />
-      <Card className="rounded-lg border bg-card shadow-sm">
-        <CardContent className="p-0">{rows}</CardContent>
-      </Card>
-    </div>
+    <>
+      <PageHero title="Thing" />
+      <Panel className="rounded-2xl border bg-card shadow-sm">
+        <table className="p-0">{rows}</table>
+      </Panel>
+    </>
   )
 }
 `
@@ -56,10 +67,10 @@ test("SH896: the digest is stable under changes that are not about structure", (
   // Reformatting. A reviewer who reflows a file has not changed what renders.
   assert.equal(digestOf(PAGE.replace(/\n\s+/g, "\n ")), base, "SH896: reindenting moved the digest")
 
-  // A comment, including one that names chrome. If a commented-out <Card> counted, every page
-  // documenting the layer it is leaving would read as still rendering it.
+  // A comment, including one that names chrome. If a commented-out <Panel> counted, every page
+  // documenting what it replaced would read as still rendering it.
   assert.equal(
-    digestOf(PAGE.replace("return (", "// was: <Card><CardHeader/></Card>\n  return (")),
+    digestOf(PAGE.replace("return (", "// was: <Panel><BentoSection/></Panel>\n  return (")),
     base,
     "SH896: a comment moved the digest — and a comment naming chrome would read as rendering it",
   )
@@ -75,22 +86,15 @@ test("SH896: the digest is stable under changes that are not about structure", (
 test("SH896: the digest moves when the structure moves, and says which field", () => {
   const base = digestOf(PAGE)
 
-  // The migration itself: one component swapped for its bento counterpart.
-  assert.notEqual(digestOf(PAGE.replace("<Card ", "<BentoSection ")), base,
-    "SH896: swapping Card for BentoSection left the digest alone — the tool would go green across "
-      + "the migration it exists to witness")
+  // One component swapped for another.
+  assert.notEqual(digestOf(PAGE.replace("<Panel ", "<BentoSection ")), base,
+    "SH896: swapping Panel for BentoSection left the digest alone — the tool would go green across "
+      + "the change it exists to witness")
 
-  // Order, not just membership. A hero after the sections is a different page.
-  const reordered = PAGE.replace("<PageHeader title=\"Thing\" />\n      ", "")
-    .replace("</Card>", "</Card>\n      <PageHeader title=\"Thing\" />")
-  assert.notEqual(digestOf(reordered), base, "SH896: moving the header did not move the digest")
-
-  // The era, on its own. A page can import the subpath before it renders anything from it.
-  assert.notEqual(
-    digestOf(`import { BentoHero } from "@viglet/viglet-design-system/bento"\n${PAGE}`),
-    base,
-    "SH896: the era is not in the digest",
-  )
+  // Order, not just membership. A hero after the panel is a different page.
+  const reordered = PAGE.replace("<PageHero title=\"Thing\" />\n      ", "")
+    .replace("</Panel>", "</Panel>\n      <PageHero title=\"Thing\" />")
+  assert.notEqual(digestOf(reordered), base, "SH896: moving the hero did not move the digest")
 
   // And the surface vocabulary §LIV.11 names — the frosted panel and its lift.
   assert.notEqual(digestOf(PAGE.replace("shadow-sm", "backdrop-blur-md")), base,
@@ -98,26 +102,48 @@ test("SH896: the digest moves when the structure moves, and says which field", (
       + "without the proof noticing")
 })
 
+test("SH960: an import is not structure — the digest has no era", () => {
+  // The inverse of what SH896 asserted about the era: importing the package without composing
+  // anything from it changes nothing a page renders, so it must not move the digest.
+  assert.equal(
+    digestOf(`import { BentoHero } from "@viglet/viglet-design-system/bento"\n${PAGE}`),
+    digestOf(PAGE),
+    "SH960: an unused bento import moved the digest. That is the era field back: a classification"
+      + " by import that labelled 33 of 45 surfaces `console` in a console with one chrome.",
+  )
+  assert.deepEqual(Object.keys(structureOf(PAGE)).sort(), ["chrome", "surface"],
+    "SH960: the structure carries a field beyond chrome and surface. Say in surface-digest.mjs what"
+      + " it measures and what it does not before a saved survey starts comparing it.")
+})
+
 test("SH896: compare names the page and the field that moved", () => {
-  const before = { "a.page.tsx": { digest: "aaa", era: "console", chrome: ["Card"], surface: [] } }
-  const after = { "a.page.tsx": { digest: "bbb", era: "bento", chrome: ["BentoSection"], surface: [] } }
+  const before = { "a.page.tsx": { digest: "aaa", chrome: ["Panel"], surface: [] } }
+  const after = { "a.page.tsx": { digest: "bbb", chrome: ["BentoSection"], surface: [] } }
 
   const moved = compare(before, after)
   assert.equal(moved.length, 1)
   assert.match(moved[0], /a\.page\.tsx/, "SH896: the report does not name the page")
-  assert.match(moved[0], /era console -> bento/, "SH896: the report does not name the era change")
-  assert.match(moved[0], /Card.*BentoSection/s, "SH896: the report does not name the chrome change")
+  assert.match(moved[0], /Panel.*BentoSection/s, "SH896: the report does not name the chrome change")
+  assert.doesNotMatch(moved[0], /\bera\b/, "SH960: the report still speaks of an era")
 
   // A survey compared with itself is the baseline case, and it must be silent — a tool that always
   // reports something is a tool nobody reads.
   assert.deepEqual(compare(before, before), [], "SH896: comparing a survey with itself reported a change")
 
-  // Appearing and vanishing are both real events across a migration that adds a parallel route.
-  assert.match(compare({}, before)[0], /new \(console, aaa\)/)
+  // Appearing and vanishing are both real events.
+  assert.match(compare({}, before)[0], /new \(aaa\)/)
   assert.match(compare(before, {})[0], /gone/)
 })
 
-test("SH896: every console surface yields a digest, and the survey is reproducible", () => {
+/**
+ * The surfaces that compose no chrome at all, each by design. **SH960's measurement**: with the old
+ * vocabulary 33 of 45 surfaces digested nothing, because most pages compose this console's
+ * seams rather than the package; with the seams named, one does — the visual editor, which owns the
+ * viewport and draws its own frame (SH907). A page joining it is a page the proof cannot see.
+ */
+const NO_CHROME = ["console/universal-editor/visual-editor.page.tsx"]
+
+test("SH896: every surface yields a digest, the survey is reproducible, and it sees the pages", () => {
   const first = survey()
   const names = Object.keys(first)
 
@@ -131,25 +157,44 @@ test("SH896: every console surface yields a digest, and the survey is reproducib
 
   for (const [name, s] of Object.entries(first)) {
     assert.match(s.digest, /^[0-9a-f]{12}$/, `SH896: ${name} has no digest`)
-    assert.ok(s.era === "console" || s.era === "bento", `SH896: ${name} has era ${s.era}`)
   }
 
-  // Not vacuous in the way that matters: the walk must be reading real chrome, or every page would
-  // digest to the same empty structure and the tool would be silent for ever.
+  const blind = names.filter((name) => first[name].chrome.length === 0)
+  assert.deepEqual(blind, NO_CHROME,
+    "SH960: the set of surfaces the digest records no chrome for changed. A page in `+ actual`"
+      + " composes something the CHROME vocabulary does not name — add the component, or the proof"
+      + " will stay green across any change to that page's structure.")
+
   const distinct = new Set(Object.values(first).map((s) => s.digest))
-  assert.ok(distinct.size > 10,
+  assert.ok(distinct.size > 20,
     `SH896: only ${distinct.size} distinct digest(s) across ${names.length} surfaces — the chrome `
       + "vocabulary is matching almost nothing and the proof is empty")
 
   console.log(
-    `SH896: ${names.length} console surfaces, ${distinct.size} distinct digests, `
-      + `${Object.values(first).filter((s) => s.era === "bento").length} on bento`,
+    `SH896: ${names.length} surfaces, ${distinct.size} distinct digests, `
+      + `${blind.length} composing no chrome`,
   )
+})
+
+test("SH960: no surface composes a Card, the one retired component whose module still resolves", () => {
+  // SH910 kept this as the census's only live probe: `@/components/ui/card` is still imported by the
+  // login form, so a page reaching for it is possible, and it renders a surface outside the bento
+  // vocabulary. Folded here from the deleted census, onto the walk that already records it.
+  const withCard = Object.entries(survey())
+    .filter(([, s]) => s.chrome.some((name) => name.startsWith("Card")))
+    .map(([name]) => name)
+  assert.deepEqual(withCard, [],
+    "SH960: a page composes shadcn's Card. The console has one chrome; a panel is Panel or"
+      + " AdaptiveSectionCard, and a section is BentoSection.")
+
+  assert.deepEqual(structureOf(`<Card className="border"><CardContent /></Card>`).chrome,
+    ["Card", "CardContent"],
+    "SH960: the vocabulary no longer records Card, so the check above can never fire")
 })
 
 test("SH896: structureOf keeps chrome in source order and the surface set sorted", () => {
   const s = structureOf(PAGE)
-  assert.deepEqual(s.chrome, ["PageHeader", "Card", "CardContent"],
+  assert.deepEqual(s.chrome, ["PageHero", "Panel"],
     "SH896: chrome is not recorded in source order")
   // Sorted by codepoint, never by locale: the digest hashes this order, so a locale-dependent
   // comparator would hash one page to two values on two machines.

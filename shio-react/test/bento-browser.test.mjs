@@ -125,15 +125,17 @@ test("SH900: the provider really does change what the same tree renders", async 
       + " achieves nothing and the bento route shows console chrome.")
 })
 
-test("SH900: the console browser stays console-era, because the adapter is era-neutral", () => {
+test("SH900: the survey sees the browser's seams, and the two folder surfaces", () => {
+  // SH960 — this asserted the browser stayed console-era. The digest has no era now; what it
+  // records is what a page composes, which for this page is its seams.
   const surfaces = survey()
-  assert.equal(surfaces["console/content/object.children.page.tsx"]?.era, "console",
-    "SH900: the browser changed era. It imports only era-neutral names from the bento subpath —"
-      + " AdaptiveSectionCard — and PageHero keeps `BentoHero` on the components/ side"
-      + " of the boundary precisely so both classifiers stay honest about the page.")
+  const browser = surfaces["console/content/object.children.page.tsx"]
+  assert.ok(browser?.chrome.includes("PageHero") && browser.chrome.includes("Panel"),
+    "SH900: the survey records neither PageHero nor Panel on the content browser, so the digest is"
+      + " blind to the header and the three panels that were the whole of its migration.")
   for (const name of ["folder.edit", "folder.new"]) {
-    assert.equal(surfaces[`bento/content/${name}.page.tsx`]?.era, "bento",
-      `SH900: bento/content/${name}.page.tsx is missing or not bento-era`)
+    assert.ok(surfaces[`bento/content/${name}.page.tsx`],
+      `SH900: bento/content/${name}.page.tsx is missing from the survey`)
   }
 })
 

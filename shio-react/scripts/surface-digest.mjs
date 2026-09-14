@@ -62,56 +62,52 @@ export const CONSOLE_ROOT = join(HERE, "..", "src", "app", "console")
  * whole of SH898 produced `No surface moved (43 compared)` — a correct answer about a directory
  * nothing had changed, and a useless one about the migration.
  *
- * Keys are now relative to `src/app`, so `console/home/home.page.tsx` and
- * `bento/home/home.page.tsx` are different surfaces and a saved survey says which era each is. A
- * baseline taken before this reports every surface `gone` and every surface `new`: re-take it once.
+ * Keys are relative to `src/app`, so `console/content/post.edit.page.tsx` and
+ * `bento/content/site.edit.page.tsx` are different surfaces however the tree is later reshaped.
  */
 export const BENTO_ROOT = join(HERE, "..", "src", "app", "bento")
 export const APP_ROOT = join(HERE, "..", "src", "app")
 
-/**
- * A page is bento-era when it imports the subpath — **except for the era-neutral adapter**.
+/*
+ * SH960 — the `era` field is gone, and it was worse than redundant.
  *
- * SH892 taught `console-chrome-census.test.mjs` this exact exclusion and did not teach it here,
- * and SH899 is where that cost something: the console's own `site.edit.page.tsx` was classified
- * `bento`, because SH892 gave it `AdaptiveSectionCard`. That component is the one export written
- * to be used *from a console page* — it renders console cards by default and bento sections under
- * a provider — and the package exports it from the bento subpath because that is where it lives.
- *
- * Two readers answering the same question, one taught and one not. Kept in step by name here
- * rather than by importing the census's copy: this file is a script the console can run on its
- * own, and a test that imports a script is a different dependency from a script that imports a
- * test. `bento-site-slice.test.mjs` asserts both agree.
+ * It classified a page `bento` when it imported the bento subpath and `console` otherwise, which
+ * was the right question while two shells were mounted. After SH909 it had no subject, and it was
+ * also wrong: measured on the day it was removed, **33 of 45 surfaces reported `console`** —
+ * including every bento admin list, because they compose this console's shared `AdminListPage`
+ * and import nothing from the package themselves. A field that labels a bento page `console` is
+ * the kind of log line SH938 filed a defect off. Removing it moved every digest once; re-take any
+ * saved baseline with `--json` before comparing against it.
  */
-const ERA_NEUTRAL = ["AdaptiveSectionCard", "SectionCardChromeProvider", "useSectionChrome"]
-
-const BENTO_CLAUSE = /import\s*\{([^}]*)\}\s*from\s*["']@viglet\/viglet-design-system\/bento["']/g
-
-function isBentoEra(source) {
-  if (!/@viglet\/viglet-design-system\/bento/.test(source)) return false
-  const clauses = [...source.matchAll(BENTO_CLAUSE)]
-  if (!clauses.length) return true
-  return clauses.some(([, names]) => names
-    .split(",")
-    .map((name) => name.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim())
-    .filter(Boolean)
-    .some((name) => !ERA_NEUTRAL.includes(name)))
-}
 
 /**
- * The chrome vocabulary, both eras. Only these are recorded, and that is what keeps the digest
- * stable under edits that are not about chrome: renaming a handler or adding a table column moves
- * nothing here, while swapping a Card for a BentoSection moves it immediately.
+ * The chrome vocabulary, and what keeps the digest stable under edits that are not about chrome:
+ * renaming a handler or adding a table column moves nothing here, while swapping a panel for a
+ * section moves it immediately.
+ *
+ * SH960 re-derived it by measuring what the pages compose. The old list named the package's
+ * components and the retired console ones, and **33 of 45 surfaces digested nothing**: most pages
+ * compose this console's seams over the package, not the package itself, so the proof was blind to
+ * the pages it most needed to see.
  */
 const CHROME = new Set([
-  // Console era.
-  "PageHeader", "Card", "CardContent", "CardHeader", "CardTitle", "CardDescription", "CardFooter",
-  "SidebarProvider", "SidebarInset", "AppSidebar", "AppFooter", "StickySaveBar",
-  // Bento era.
+  // The package's components, where a page composes them directly.
   "BentoHero", "BentoFormHero", "BentoSection", "BentoFormSection", "BentoTile", "BentoTileGrid",
   "BentoEntityShell", "BentoEntityTile", "BentoListPage", "BentoCountTile", "BentoEmptyState",
   "BentoSaveBar", "BentoScrollSaveBar", "BentoNavRail", "BentoUserMenu", "BentoStatusMarker",
-  "BentoActionsMenu", "BentoInlineEdit", "BentoBackToTop", "BentoCommandPalette",
+  "BentoActionsMenu", "BentoInlineEdit", "BentoBackToTop", "BentoCommandPalette", "BentoPanel",
+  "AdaptiveSectionCard",
+  // This console's seams over them, which is what most pages actually compose (counted: PageHero
+  // on 22 surfaces, Panel on 12, EmptyState on 9, AdminListPage on 8).
+  "PageHero", "Panel", "EmptyState", "AdminListPage", "IdentityEntityPage",
+  /*
+   * And one retired family whose module still resolves. `@/components/ui/card` is live — the login
+   * form imports it — so a page composing a Card again is possible, and it is the non-bento surface
+   * `surface-digest.test.mjs` refuses on every page. PageHeader, the sidebar pieces and the sticky
+   * save bar left this list with the modules SH910 deleted: a name nothing can import is a name
+   * nothing can compose.
+   */
+  "Card", "CardContent", "CardHeader", "CardTitle", "CardDescription", "CardFooter",
 ])
 
 /**
@@ -161,7 +157,6 @@ function surfaces(source) {
 export function structureOf(source) {
   const composed = elements(source).filter((name) => CHROME.has(name))
   return {
-    era: isBentoEra(source) ? "bento" : "console",
     // Order is kept: a page that renders a hero after its sections is a different page.
     chrome: composed,
     surface: surfaces(source),
@@ -171,7 +166,7 @@ export function structureOf(source) {
 /** A short, stable hash over the canonical form. Same structure in, same twelve characters out. */
 export function digestOf(source) {
   const structure = structureOf(source)
-  const canonical = JSON.stringify([structure.era, structure.chrome, structure.surface])
+  const canonical = JSON.stringify([structure.chrome, structure.surface])
   return createHash("sha256").update(canonical).digest("hex").slice(0, 12)
 }
 
@@ -206,12 +201,11 @@ export function compare(before, after) {
     const was = before[name]
     const now = after[name]
     if (!was) {
-      moved.push(`${name}: new (${now.era}, ${now.digest})`)
+      moved.push(`${name}: new (${now.digest})`)
       continue
     }
     if (was.digest === now.digest) continue
     const fields = []
-    if (was.era !== now.era) fields.push(`era ${was.era} -> ${now.era}`)
     if (was.chrome.join() !== now.chrome.join()) {
       fields.push(`chrome [${was.chrome.join(" ")}] -> [${now.chrome.join(" ")}]`)
     }
@@ -247,7 +241,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log(JSON.stringify(now, null, 2))
   } else {
     for (const [name, s] of Object.entries(now)) {
-      console.log(`${s.digest}  ${s.era.padEnd(7)}  ${String(s.chrome.length).padStart(2)} chrome  ${name}`)
+      console.log(`${s.digest}  ${String(s.chrome.length).padStart(2)} chrome  ${name}`)
     }
     console.log(`\n${Object.keys(now).length} surfaces.`)
   }

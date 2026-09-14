@@ -1119,26 +1119,6 @@ and may only shrink, then one root provider, then the branches, the era instrume
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
 
-### LXII.4 Instruments that measured a migration, re-derived for a console that has one chrome (SH960)
-
-SH896's surface digest hashes each surface's era, its chrome in source order and its
-frosted-surface classes, and SH886's census holds every page by the chrome it renders.
-Both were the right instruments for a migration, and SH910 already rewrote eleven
-readers whose premise was two eras. What is left is the era field itself: every surface
-reports bento, the classifier still carries the rules for console, and a saved survey
-compares a field that cannot change.
-
-Re-derive rather than delete, because the digest is the P9 tool for proving a page did
-not change without opening it. The era field leaves the digest, the
-chrome-in-source-order and frost fields stay, and the saved survey is regenerated in the
-same commit so a comparison against it means something. The console-chrome census either
-folds into AW1's vocabulary census or is deleted with the reason recorded, since two
-walks asserting the same absence are two files that can disagree about it.
-
-SH938 is the warning worth carrying: it filed a defect off a census log line without
-reading the declaration beneath it. The rewritten readers state in their headers what
-they measure and what they do not.
-
 ### LXII.5 One page tree, organised by domain (SH961)
 
 src/app/bento holds the pages written for the shell; src/app/console holds the
