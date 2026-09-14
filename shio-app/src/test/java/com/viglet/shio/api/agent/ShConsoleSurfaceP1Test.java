@@ -1,0 +1,221 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.agent;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
+import com.viglet.shio.api.agent.mcp.ShMcpTool;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+/**
+ * SH978 — <b>every console surface says how an agent reaches the same capability.</b>
+ *
+ * <h2>The join that did not exist</h2>
+ *
+ * <p>The console's map is {@code bento-nav.ts}, and its own javadoc says the rail and the palette
+ * both need it because "declared twice they disagree within a release". The manifest and
+ * {@code tools/list} were not among its readers, and nothing in {@code shio-app} could read it at
+ * all — it is TypeScript. {@code ShAgentP1ConformanceTest} is keyed on manifest {@code features},
+ * and SH463 already recorded what that means: a capability with no flag is not classified. So a
+ * round could add console surface after console surface, every instrument green, while P1 — the law
+ * that a console-only feature is incomplete — was broken once per surface.</p>
+ *
+ * <h2>What this holds</h2>
+ *
+ * <p>{@code console/surfaces.json} is the backend's half of that map: an id, a section, a route, the
+ * capability, and either an <b>agent equivalent</b> — a tool, a batch op or a declared endpoint,
+ * each resolved here against the running server — or an <b>exception</b> with a reason and a
+ * {@code closedBy} naming what would make it stale. The id set is asserted equal to the console's
+ * own, read from {@code bento-nav.ts} as text, which is what makes the declaration impossible to
+ * leave behind: a surface added to one side and not the other fails the build.</p>
+ *
+ * <p>The exception vocabulary here is the smallest today's surfaces need; SH980 is where it is
+ * defined properly, and this test is what will hold it.</p>
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+@SpringBootTest
+class ShConsoleSurfaceP1Test {
+
+    private static final String SURFACES = "/console/surfaces.json";
+
+    /** The console's own list, which is TypeScript and stays TypeScript (SH888). */
+    private static final Path NAV = Path.of("..", "shio-react", "src", "app", "system",
+            "bento-nav.ts");
+
+    /** A nav item, which is the line that carries a `titleKey` — a section carries none. */
+    private static final Pattern NAV_ITEM = Pattern.compile(
+            "\\{\\s*id:\\s*\"([^\"]+)\"[^\\n]*titleKey:");
+
+    @Autowired
+    private ShAgentManifestService shAgentManifestService;
+    @Autowired
+    private List<ShMcpTool> mcpTools;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private JsonNode surfaces() {
+        try (InputStream in = ShConsoleSurfaceP1Test.class.getResourceAsStream(SURFACES)) {
+            assertThat(in).as("missing %s — the console's half of the map has no backend half",
+                    SURFACES).isNotNull();
+            return objectMapper.readTree(in).get("surfaces");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** The ids the console renders, read from its own declaration. */
+    private static Set<String> consoleIds() {
+        Set<String> ids = new TreeSet<>();
+        Matcher matcher = NAV_ITEM.matcher(read(NAV));
+        while (matcher.find()) {
+            ids.add(matcher.group(1));
+        }
+        return ids;
+    }
+
+    private static String read(Path path) {
+        try {
+            return Files.readString(path, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException("cannot read " + path.toAbsolutePath()
+                    + " — this test joins the console's map to the agent surface, so it has to be "
+                    + "able to read it", e);
+        }
+    }
+
+    @Test
+    @DisplayName("SH978: the declaration names exactly the surfaces the console renders")
+    void everyConsoleSurfaceIsDeclared() {
+        Set<String> declared = new TreeSet<>();
+        surfaces().forEach(surface -> declared.add(surface.get("id").asString()));
+        Set<String> rendered = consoleIds();
+
+        assertThat(rendered)
+                .as("SH978: bento-nav.ts is the console's map and this scan no longer finds items "
+                        + "in it — the join is off, and a green run would mean nothing")
+                .hasSizeGreaterThanOrEqualTo(10);
+        assertThat(declared)
+                .as("""
+                        SH978: a surface on one side and not the other is the state this task \
+                        exists to make impossible. A console page with no entry here is a \
+                        capability nobody asked the P1 question about; an entry with no page is a \
+                        claim about a surface that is gone (SH142).""")
+                .containsExactlyInAnyOrderElementsOf(rendered);
+    }
+
+    @Test
+    @DisplayName("SH978: every surface names an agent equivalent that exists, or a classified exception")
+    void everySurfaceIsReachableOrClassified() {
+        Set<String> tools = new TreeSet<>();
+        mcpTools.forEach(tool -> tools.add(tool.name()));
+        Set<String> endpoints = new TreeSet<>();
+        for (ShAgentEndpoint endpoint : shAgentManifestService.manifest().endpoints()) {
+            endpoints.add(endpoint.path());
+        }
+
+        List<String> problems = new ArrayList<>();
+        surfaces().forEach(surface -> {
+            String id = surface.get("id").asString();
+            for (String field : List.of("section", "route", "capability")) {
+                if (surface.path(field).asString("").isBlank()) {
+                    problems.add(id + ": no " + field);
+                }
+            }
+            JsonNode agent = surface.get("agent");
+            JsonNode exception = surface.get("exception");
+            if ((agent == null) == (exception == null)) {
+                problems.add(id + ": names " + (agent == null ? "neither an agent equivalent nor an "
+                        + "exception — the P1 question has to be answered one way or the other"
+                        : "both an agent equivalent and an exception, which cannot both be true"));
+                return;
+            }
+            if (agent != null) {
+                String kind = agent.path("kind").asString("");
+                String target = agent.path("target").asString("");
+                boolean exists = switch (kind) {
+                    case "tool" -> tools.contains(target);
+                    case "op" -> ShAgentBatchService.OPS.contains(target);
+                    case "endpoint" -> endpoints.contains(target);
+                    default -> false;
+                };
+                if (!exists) {
+                    problems.add("%s: names %s '%s', which this server does not serve"
+                            .formatted(id, kind.isBlank() ? "an unknown kind of equivalent" : kind,
+                                    target));
+                }
+                return;
+            }
+            if (exception.path("reason").asString("").isBlank()
+                    || exception.path("why").asString("").isBlank()) {
+                problems.add(id + ": an exception with no reason is a sentence, not a claim");
+            }
+        });
+
+        assertThat(problems)
+                .as("""
+                        SH978: P1 says a console-only feature is incomplete, and until now nothing \
+                        could ask that question of a console page at all. Point the surface at the \
+                        tool, op or declared endpoint that does the same thing — or classify it, \
+                        with what would make the classification stale.""")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH978: the inventory is the deliverable, and the run prints it")
+    void theInventoryIsTheDeliverable() {
+        Map<String, List<String>> byAnswer = new LinkedHashMap<>();
+        surfaces().forEach(surface -> {
+            String id = surface.get("id").asString();
+            JsonNode agent = surface.get("agent");
+            String answer = agent != null
+                    ? agent.path("kind").asString("?")
+                    : "exception:" + surface.path("exception").path("reason").asString("?");
+            byAnswer.computeIfAbsent(answer, ignored -> new ArrayList<>()).add(id);
+        });
+
+        System.out.printf("%n[SH978] console surfaces, P1-answered — %d surfaces%n", surfaces().size());
+        new TreeMap<>(byAnswer).forEach((answer, ids) ->
+                System.out.printf("  %-22s %2d  %s%n", answer, ids.size(), new TreeSet<>(ids)));
+        System.out.println();
+
+        List<String> gaps = byAnswer.getOrDefault("exception:GAP", List.of());
+        assertThat(gaps)
+                .as("""
+                        the gaps are the deliverable: each is a capability a curator has and the \
+                        product's primary operator does not. Closing one is an edit to this file; \
+                        gaining one must be a reviewable diff naming the task that closes it.""")
+                .containsExactly("activity");
+    }
+}

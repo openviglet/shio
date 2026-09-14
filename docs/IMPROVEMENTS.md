@@ -1329,26 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.6 One surface declaration, owned by the backend, with a gate (SH978)
-
-The console's map is bento-nav.ts, whose javadoc says the rail and the palette both need
-to know what surfaces exist because declared twice they disagree within a release. The
-manifest and tools/list are not among its readers, and no test under cli or shio-app
-reads routes.const. The conformance test is keyed on manifest features, and the
-reachability lint concedes that a capability with no flag is not classified, so a round
-that adds console surfaces without flags can read all decided while breaking P1
-repeatedly.
-
-This task lands the declaration and its gate; AY7 lands the readers. A machine-readable
-file the backend owns lists each surface: id, section, route, the capability it
-exercises, and its agent equivalent, a tool, an op, an endpoint, or a classified
-exception with a reason and a falsifier. Icons and i18n keys stay in TypeScript, where
-they must live.
-
-ShConsoleSurfaceP1Test fails when a declared surface names an agent equivalent that does
-not exist or has neither, and prints its counts on green. AY8 defines the exception
-vocabulary before any console-only surface in this round needs it.
-
 ### LXIV.7 Four readers of one declaration (SH979)
 
 AY6 makes the surface declaration exist and be checked. It stops being a second list

@@ -1583,3 +1583,29 @@ zero is Block AW's criterion**, and SH963 is the line that gets it there.
 
 Non-vacuity is a copy of a real clean file (`ui/button.tsx`) in a temp root, read clean and then
 named once a provider is planted in it.
+
+## Every surface says how an agent reaches it (SH978)
+
+`bento-nav.ts` is the console's map, and its own note says the rail and the palette both read it
+because "declared twice they disagree within a release". The manifest and `tools/list` were not among
+its readers, and nothing in `shio-app` could read it at all — it is TypeScript. `ShAgentP1ConformanceTest`
+is keyed on manifest `features`, and SH463 already recorded what that means: a capability with no flag
+is not classified. So a round could add console surface after console surface with every instrument
+green, while P1 — a console-only feature is incomplete — was broken once per surface.
+
+**`shio-app/src/main/resources/console/surfaces.json`** is the backend's half of that map: per surface
+an id, a section, a route, the capability, and either an **agent equivalent** — a tool, a batch op or
+a declared endpoint — or an **exception** carrying a reason and a `closedBy`. Icons, titles and i18n
+keys stay in `bento-nav.ts`, where they belong; this is the half a JVM has to be able to read.
+
+**`ShConsoleSurfaceP1Test`** joins the two. It reads the ids out of `bento-nav.ts` as text and asserts
+the two sets are equal, so a surface added on one side and not the other fails the build. It resolves
+every agent equivalent against the running server — the tool registry, `ShAgentBatchService.OPS`, the
+manifest's endpoint index — so a pointer at something that does not exist is a red build rather than a
+sentence. And it prints the inventory: on the first run, 17 surfaces, four answered by a tool, three by
+a declared endpoint, one by an op, and nine classified — six operator-only, one navigation hub, one
+REST-only, and **one gap**: the activity trail, which is the same hole SH973 found from the controller
+side and SH1005 is the line that closes.
+
+The exception vocabulary is the smallest today's surfaces need. SH980 is where it is defined properly,
+and this test is what will hold it.

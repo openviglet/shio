@@ -1,0 +1,171 @@
+{
+  "_comment": [
+    "SH978 — every surface this console offers, and how an agent reaches the same capability.",
+    "The backend owns this file because the readers are on both sides: ShConsoleSurfaceP1Test joins",
+    "it to the manifest, the MCP tool list and the batch ops, and the console reads it for what it",
+    "renders. Icons, titles and i18n keys stay in bento-nav.ts, where they must live — this is the",
+    "half a JVM has to be able to read.",
+    "",
+    "Each surface names an `agent` equivalent — a tool, an op or a declared endpoint, all three of",
+    "which the test resolves against the running server — or an `exception` with a reason and a",
+    "`closedBy` that says what would make the exception stale. The exception vocabulary here is the",
+    "smallest one today's surfaces need; SH980 is where it is defined properly."
+  ],
+  "surfaces": [
+    {
+      "id": "sites",
+      "section": "content",
+      "route": "/bento/content",
+      "capability": "browse a site's folders and posts",
+      "agent": { "kind": "tool", "target": "shio_find" }
+    },
+    {
+      "id": "search",
+      "section": "content",
+      "route": "/bento/content/search",
+      "capability": "find content across a site",
+      "agent": { "kind": "tool", "target": "shio_find" }
+    },
+    {
+      "id": "post-types",
+      "section": "content",
+      "route": "/bento/content/post-type",
+      "capability": "read and change the content model",
+      "agent": { "kind": "endpoint", "target": "/post-type/{name}" }
+    },
+    {
+      "id": "files",
+      "section": "content",
+      "route": "/bento/content/files",
+      "capability": "the media library",
+      "agent": { "kind": "tool", "target": "shio_assets" }
+    },
+    {
+      "id": "trash",
+      "section": "content",
+      "route": "/bento/content/trash",
+      "capability": "list what was deleted, and put it back",
+      "agent": { "kind": "op", "target": "post.restore" }
+    },
+    {
+      "id": "universal-editor",
+      "section": "content",
+      "route": "/bento/universal-editor",
+      "capability": "edit a page where it is rendered",
+      "agent": { "kind": "endpoint", "target": "/agent/editable" }
+    },
+    {
+      "id": "admin",
+      "section": "administration",
+      "route": "/bento/admin",
+      "capability": "the administration hub",
+      "exception": {
+        "reason": "NAVIGATION",
+        "why": "a landing page listing the surfaces below it, which is a way of getting somewhere rather than a capability. The manifest is what an agent reads to find its way, and it has no counterpart to a hub",
+        "closedBy": ""
+      }
+    },
+    {
+      "id": "api-tokens",
+      "section": "administration",
+      "route": "/bento/admin/tokens",
+      "capability": "mint and revoke API tokens",
+      "exception": {
+        "reason": "OPERATOR_ONLY",
+        "why": "an agent minting or widening its own credential is the escalation Block L exists to prevent — the one boundary here that must never move",
+        "closedBy": ""
+      }
+    },
+    {
+      "id": "tenants",
+      "section": "administration",
+      "route": "/bento/admin/tenants",
+      "capability": "the SH22 tenant catalogue",
+      "exception": {
+        "reason": "OPERATOR_ONLY",
+        "why": "a tenant is the isolation boundary the agent's own scoping is derived from, so writing one is the operator's act",
+        "closedBy": ""
+      }
+    },
+    {
+      "id": "auth-providers",
+      "section": "administration",
+      "route": "/bento/admin/auth-providers",
+      "capability": "how humans log in",
+      "exception": {
+        "reason": "OPERATOR_ONLY",
+        "why": "an operator decision about identity, and an agent that could rewrite it could let itself in as somebody else",
+        "closedBy": ""
+      }
+    },
+    {
+      "id": "exchange-providers",
+      "section": "administration",
+      "route": "/bento/admin/exchange-providers",
+      "capability": "where an exchange package may come from",
+      "exception": {
+        "reason": "OPERATOR_ONLY",
+        "why": "instance wiring rather than content: it says which stranger's package this installation will accept",
+        "closedBy": ""
+      }
+    },
+    {
+      "id": "email-config",
+      "section": "administration",
+      "route": "/bento/admin/email-config",
+      "capability": "SMTP credentials",
+      "exception": {
+        "reason": "OPERATOR_ONLY",
+        "why": "an agent writing these could redirect the instance's mail",
+        "closedBy": ""
+      }
+    },
+    {
+      "id": "webhooks",
+      "section": "administration",
+      "route": "/bento/admin/webhooks",
+      "capability": "tell a front end that content changed",
+      "agent": { "kind": "endpoint", "target": "/site-webhook" }
+    },
+    {
+      "id": "marketplace",
+      "section": "administration",
+      "route": "/bento/admin/marketplace",
+      "capability": "browse and install blueprint packages",
+      "agent": { "kind": "tool", "target": "shio_marketplace" }
+    },
+    {
+      "id": "activity",
+      "section": "administration",
+      "route": "/bento/admin/activity",
+      "capability": "what happened to this page, and to this site",
+      "exception": {
+        "reason": "GAP",
+        "why": "/agent/changes walks the same audit rows by cursor and cannot answer 'what happened to this page', which is the question a correction starts from (SH973 found the same hole from the controller side)",
+        "closedBy": "SH1005"
+      }
+    },
+    {
+      "id": "review",
+      "section": "administration",
+      "route": "/bento/admin/review",
+      "capability": "approve or revert an agent's run",
+      "exception": {
+        "reason": "OPERATOR_ONLY",
+        "why": "the human's veto over the agent's work (SH109). Reachable with an operator's own credential over HTTP, which is what SH975's OPERATOR_HTTP records, and refused to an AGENT token",
+        "closedBy": ""
+      }
+    },
+    {
+      "id": "graphql",
+      "section": "administration",
+      "route": "/bento/graphql",
+      "capability": "query delivery content as a front end does",
+      "exception": {
+        "reason": "REST_ONLY",
+        "why": "the delivery surface a front end queries (Block A), which the manifest points at with POST /graphql. An agent reads content through /agent/read instead",
+        "closedBy": ""
+      }
+    }
+  ]
+}
