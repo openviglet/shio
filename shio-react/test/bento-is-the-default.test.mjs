@@ -27,9 +27,8 @@ import { stripComments } from "./support/source-text.mjs"
  *
  * ## The three claims, each checkable from source
  *
- * 1. **No console shell is mounted.** `console.root.page.tsx` is what wrapped everything in the
- *    `SidebarProvider`; App.tsx must not mount it. (The file survives until SH910 deletes it,
- *    along with the rest of the console chrome.)
+ * 1. **No second shell is mounted.** `console.root.page.tsx` wrapped everything in a
+ *    `SidebarProvider`; App.tsx must not mount it, and SH910 deleted the file.
  * 2. **Every route constant points into the bento tree**, since those are what every `navigate()`,
  *    every `to=`, every `urlBase` and the whole nav declaration are built from. One that still
  *    reads `/console` is a link that bounces through the redirect — which works, and puts a

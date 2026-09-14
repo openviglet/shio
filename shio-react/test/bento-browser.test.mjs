@@ -24,20 +24,10 @@ import { stripComments } from "./support/source-text.mjs"
  *
  * ## Why this surface took a different shape
  *
- * SH898 and SH899 migrated by **adding** a surface beside the console one. Right for a home page
- * of 154 lines and four site pages of 100–200. `object.children.page.tsx` is **965 lines** —
- * twenty state variables, three view modes, selection, pagination, copy/move — and exactly
- * **four** of them were chrome: a `PageHeader` and three `Card`s.
- *
- * Copying it would have duplicated 960 lines of the most defect-prone code in the console so that
- * four could differ, and every fix would then need landing twice until SH909. So the browser is
- * written once and a `SectionCardChromeProvider` above the route decides which chrome it renders
- * — the arrangement SH892 built the adapter for, extended to the page header by
- * `PageHero`.
- *
- * **The migration shape depends on the surface.** A small entity-shaped page is worth writing
- * twice, because what changes is its whole structure. A large working surface is not, because
- * what changes is its chrome.
+ * `object.children.page.tsx` is **965 lines** — twenty state variables, three view modes,
+ * selection, pagination, copy/move — and its header and panels are four of them: `PageHero` and
+ * three `Panel`s. A small entity-shaped page gets the package's own page shape; a large working
+ * surface composes the seams, so its logic exists once.
  *
  * ## And a folder is nothing but identity
  *
@@ -67,13 +57,12 @@ test("SH900: the browser is one component with no console chrome of its own", ()
   assert.match(BROWSER, /PageHero/, "SH900: the browser lost its adaptive header")
 
   /*
-   * SH902 re-pointed this from `AdaptiveSectionCard` to `Panel`, and the correction is
-   * worth more than the count. All three of these panels were written here with
-   * `AdaptiveSectionCard` and **no header** — and the package's own branch is
-   * `chrome === "bento" && header`, so a header-less one falls back to the console card in both
-   * eras. The assertion below passed on every one of them while the bento route rendered three
-   * console cards under the frosted shell: it counted the seam and never asked whether the seam
-   * did anything. `checkBentoSurface` reading `backdrop-filter: null` is what found it.
+   * SH902 re-pointed this from `AdaptiveSectionCard` to `Panel`, and the correction is worth more
+   * than the count. All three panels were written with `AdaptiveSectionCard` and **no header**,
+   * which renders a plain card rather than the frosted section. The assertion passed on every one
+   * of them while the route rendered three plain cards under the frosted shell: it counted the seam
+   * and never asked whether the seam did anything. `checkBentoSurface` reading
+   * `backdrop-filter: null` is what found it.
    *
    * A panel is not a section. These three carry a count, a breadcrumb and a list of rows, with
    * the hero directly above naming the page; a header on any of them would be noise.

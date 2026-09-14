@@ -34,10 +34,9 @@ const CONSOLE_ADMIN = join(SRC, "app", "admin")
 function bentoParamRoutes() {
   const out = []
   /*
-   * Whole `<Route …>` elements, not a fixed prop order. App.tsx declares these two ways — the
-   * one-liner and the multi-line `element={ <SectionCardChromeProvider …> <X /> …` — and a pattern
-   * written against one of them silently reads half the routes. That is how the first draft of
-   * this reader found 8 of 13 and reported a clean tree.
+   * Whole `<Route …>` elements, not a fixed prop order. App.tsx declares these as one-liners and as
+   * multi-line elements, and a pattern written against one shape silently reads half the routes.
+   * That is how the first draft of this reader found 8 of 13 and reported a clean tree.
    */
   for (const [block] of APP.matchAll(/<Route\b[\s\S]*?\/>/g)) {
     const path = block.match(/path="([^"]*:(\w+))"/)
@@ -109,9 +108,9 @@ test("SH905: a route's param is named what the component it mounts reads", () =>
 
 test("SH905: the reader is not vacuous — it pairs real routes with real components", () => {
   /*
-   * A reader that matched nothing would pass here for ever. The route pattern is fiddly (the
-   * chrome provider sits between the `element` and the component on half of them), so this asserts
-   * that it still finds both sides rather than assuming.
+   * A reader that matched nothing would pass here for ever. The route pattern is fiddly (a
+   * multi-line element puts line breaks between `element` and the component), so this asserts that
+   * it still finds both sides rather than assuming.
    */
   const routes = bentoParamRoutes()
   const reads = paramsReadBy()
@@ -154,11 +153,10 @@ test("SH905: every card in the six editors has a header, so the adapter can re-s
   /*
    * SH902's defect, guarded where the sweep could have reintroduced it eleven times over.
    *
-   * `AdaptiveSectionCard` re-skins only when it finds a Header child — its branch is
-   * `chrome === "bento" && header` — so a header-less one renders a console card in *both* eras
-   * and nothing says so. All eleven of these pages' cards had a real `CardHeader`, which is why
-   * this slice took `AdaptiveSectionCard` where SH902's panels needed `Panel`. If a later
-   * edit drops a header, this is the difference between noticing and not.
+   * `AdaptiveSectionCard` renders its frosted form only when it finds a Header child, so a
+   * header-less one renders a plain card and nothing says so. Every section in these editors has a
+   * real header, which is why they take `AdaptiveSectionCard` where SH902's panels take `Panel`. If
+   * a later edit drops a header, this is the difference between noticing and not.
    */
   const editors = [
     "api-token/api-token.page.tsx",

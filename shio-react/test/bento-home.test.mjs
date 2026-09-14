@@ -15,33 +15,15 @@ import { DOMAINS, survey } from "../scripts/surface-digest.mjs"
 import { stripComments } from "./support/source-text.mjs"
 
 /**
- * SH898 — the console home, migrated, and the digest that can see it.
+ * SH898 — the home page, and the survey that has to be able to see it.
  *
- * ## What the first migration actually found
+ * `surface-digest.mjs` once answered **"No surface moved (43 compared)"** across a whole slice of
+ * work, and it was right about the directory it walked and useless about the one being changed.
+ * So the question here is not only what the home composes but whether the survey reaches it.
  *
- * Not a problem with the page. `surface-digest.mjs` answered **"No surface moved (43 compared)"**
- * for the whole of this task, and it was right: it walked `src/app/console`, nothing there had
- * changed, and the new page was in `src/app/bento`. The census had the same blind spot from the
- * same cause.
- *
- * That is what building the first surface is for. SH888 chose a parallel tree — the console root
- * wraps everything in a `SidebarProvider` no bento component can live under — so a migration
- * *adds* a surface rather than editing one, and every instrument that measured "the console
- * directory" was measuring the half that does not move. The digest now surveys both trees and
- * keys them under `src/app`, so `console/home/home.page.tsx` and `system/home.page.tsx` are
- * two surfaces with two eras.
- *
- * ## The before and after §LV.1 asked for
- *
- * | surface | era | chrome |
- * |---|---|---|
- * | `console/home/home.page.tsx` | console | PageHeader, Card ×3 |
- * | `system/home.page.tsx` | bento | BentoHero, BentoSection, BentoCountTile, BentoTile, BentoEmptyState |
- *
- * Digests are deliberately not asserted as literals: they are a hash of era, chrome and surface
- * classes, so pinning one here would fail on every edit to the page and teach the next reader to
- * update the number without reading it. What is asserted is what the digest is *for* — that the
- * two surfaces exist, that their eras differ, and that they do not hash to the same value.
+ * Digests are deliberately not asserted as literals: they hash the composed components and the
+ * surface classes, so pinning one would fail on every edit to the page and teach the next reader to
+ * update the number without reading it.
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")

@@ -36,9 +36,8 @@ import { stripComments as strip } from "./support/source-text.mjs"
  *
  * A ceiling ("no more than 61 orange utilities") lets one migrated page fund leaving the next
  * alone. The map below names **every file and every distinct utility in it**, so a page that
- * adds an orange fails by name in a diff somebody reviews, and a Block AR migration deletes its
- * line as part of the same commit that migrates it. Same contract as `console-chrome-census`
- * and `assertion-debt`, for the same reason.
+ * adds an orange fails by name in a diff somebody reviews, and a page that stops respelling the hue
+ * deletes its line in the same commit. Same contract as `assertion-debt`, for the same reason.
  *
  * ## What this task actually converted
  *
@@ -134,11 +133,9 @@ test("SH890: the accent is declared once, on :root, and all four source tokens a
  * SH910 — the header-chip test is gone, because its subject is.
  *
  * It asserted that `page-header.tsx` composed `vg-accent-chip` and `vg-accent-text` rather than
- * respelling the hue, on the grounds that it was "the console's one shared chrome component — an
- * accent spelled here is imposed on every page at once". That file was deleted with the console
- * shell, and no Shio source uses either class now: both are defined in the design system's own
- * stylesheet, and the shared chrome that would compose them is the package's, outside this
- * repository.
+ * respelling the hue. That file is deleted, and no Shio source uses either class now: both are
+ * defined in the design system's own stylesheet, and the components that compose them are the
+ * package's, outside this repository.
  *
  * Deleting it loses nothing this file still covers. The four **tokens** are what Shio owns, and
  * the first test holds them; the census below holds every page that respells the hue instead of

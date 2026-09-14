@@ -1,14 +1,9 @@
 import { PageHero } from "@/components/page-hero"
 /*
- * SH892 — the section chrome comes from the adapter, not from a Card. This is the form the
- * adapter exists for: the schema is built at runtime from the post type and the fields are
- * fifteen dynamic widgets rendered through a widget map, each reading a `widgetSettings` value
- * the backend can return as the literal string "null". None of that is touched here and none of
- * it should be — a parallel bento route that rebuilt this page would fork the most defect-prone
- * code in the console. Swapping the wrapper is the whole change.
- *
- * Imported from the bento subpath because that is the only entry the package exports the adapter
- * from.
+ * SH892 — the form's section is `AdaptiveSectionCard`. The schema is built at runtime from the post
+ * type and the fields are fifteen dynamic widgets rendered through a widget map, each reading a
+ * `widgetSettings` value the backend can return as the literal string "null"; the section only
+ * frames them. Imported from the bento subpath, the only entry that exports it.
  */
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
@@ -204,10 +199,8 @@ export default function PostUnifiedEditPage() {
   return (
     <>
       {/*
-        SH901 — the header and the save bar are one call, because in bento they are one
-        component. `BentoFormHero` owns both halves of the morph and the authoring contract
-        forbids composing them by hand; console chrome has no such pairing, so the adapter spans
-        a 1:2 mapping. Every badge and every action below is exactly what the console rendered.
+        SH901 — the header and the save bar are one call, because `BentoFormHero` owns both halves
+        of the morph and the authoring contract forbids composing them by hand.
       */}
       <PageHero
         icon={IconFileText}

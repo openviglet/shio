@@ -46,9 +46,8 @@ const MUTED_ICON_CHIP = /\bh-8 w-8 text-muted-foreground\b/
 
 /**
  * The pages that still hand-roll it, each named with the task that removes it. **This is the
- * debt**, and the shape is `console-chrome-census.test.mjs`'s `STILL_CONSOLE` for the same reason:
- * a ceiling lets one migration pay for the next, while a list fails by name and the diff that
- * shortens it is a diff somebody reviews.
+ * debt**, and it is a named list rather than a ceiling: a ceiling lets one fix pay for leaving the
+ * next, while a list fails by name and the diff that shortens it is a diff somebody reviews.
  *
  * ## Why they are held rather than fixed
  *

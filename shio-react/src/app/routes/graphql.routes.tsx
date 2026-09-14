@@ -24,14 +24,12 @@ export const GraphQLRoutes = (
 )
 
 /**
- * SH908 — the same lazy component under the bento shell, declared here rather than in App.tsx.
+ * SH908 — the explorer's route, declared here rather than in App.tsx.
  *
- * The import above is the reason. Every other Block AR route names its component in App.tsx, and
- * doing that for this one would have imported the page eagerly and pulled **Monaco into the main
- * console bundle** — multi-megabytes on every route, to migrate a header. Nothing in `tsc`, in the
- * census or in any live probe would have said so; the console would simply have got slower to
- * start. So the bento route reuses this file's `lazy()` and its fallback, and the two chromes
- * share one code-split chunk.
+ * The import above is the reason. Every other route names its component in App.tsx, and doing that
+ * for this one would import the page eagerly and pull **Monaco into the main console bundle** —
+ * multi-megabytes on every route. Nothing in `tsc` or in any live probe would say so; the console
+ * would simply get slower to start.
  */
 export const BentoGraphQLRoute = (
     <Route

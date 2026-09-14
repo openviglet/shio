@@ -148,10 +148,9 @@ async function discoverRoutes(siteName) {
   ]
 
   /*
-   * SH901 — the first bento surface that carries a save-bar morph, which is what
-   * `checkSaveBarMorph` has been reporting "no surface carries one yet" about since SH897. The
-   * post editor is the same component the console mounts, under the chrome provider, so this
-   * probe also proves the adapter path end to end on the heaviest form in the product.
+   * SH901 — the first surface that carries a save-bar morph, which is what `checkSaveBarMorph`
+   * had been reporting "no surface carries one yet" about since SH897. The post editor is the
+   * heaviest form in the product, so this probe also proves `PageHero`'s morph end to end.
    */
   // Not a `File`: a static file has no post editor at all, which is the exclusion the
   // per-type loop below already makes and which SH921 is filed against. Picking the first
@@ -192,12 +191,12 @@ async function discoverRoutes(siteName) {
     })
   }
   /*
-   * SH902 — the post-type slice under bento chrome. Three surfaces, one probe each, because the
-   * three fail in different ways and only one of them is visible in a source scan.
+   * SH902 — the post-type pages. Three surfaces, one probe each, because the three fail in
+   * different ways and only one of them is visible in a source scan.
    *
    * The **list** and **new** pages are the ones that caught SH902's real defect: both were written
-   * with a header-less `AdaptiveSectionCard`, which falls back to a console card in *both* eras
-   * and renders a page that looks finished and is half-migrated. `checkBentoSurface` reads
+   * with a header-less `AdaptiveSectionCard`, which renders a plain card rather than the frosted
+   * section, and a page that looks finished. `checkBentoSurface` reads
    * `backdrop-filter` off computed style, so it sees that and a class-name scan does not.
    *
    * The **edit** page is the second surface in the product to carry a save-bar morph, after
@@ -226,10 +225,8 @@ async function discoverRoutes(siteName) {
   /*
    * SH903 — the three surfaces where rendering nothing is the normal case.
    *
-   * Probed in **both** chromes on purpose, which none of the earlier bento probes bothered with.
-   * These pages are one component under a provider, so a console regression and a bento one are
-   * the same edit, and a check that only ever opens the bento route would let the console half
-   * break silently for as long as Block AR runs.
+   * Probed at both addresses — the old `/console/…` path, which redirects, and the shell's — so a
+   * redirect that stops landing on the page is caught, not just the page itself.
    *
    * `search` opens with no query, which is its **third** state — neither results nor an empty
    * result, just the form. That state used to render nothing below the form at all, and this
@@ -316,12 +313,11 @@ async function discoverRoutes(siteName) {
   routes.push({ name: "bento-editor-sites", path: "/bento/universal-editor", bento: true, mustSee: [] })
 
   /*
-   * SH908 — the last two console surfaces, both probed in **both** chromes.
+   * SH908 — the explorer and the 404, both probed at both addresses.
    *
-   * The explorer is one component under a provider, so a console regression and a bento one are
-   * the same edit (SH905's reason for probing pairs). It is also the only page in the console
-   * whose body is a third-party editor sized to its container: `graphiql-height` below reads the
-   * frame's geometry in both eras, which is the half no source scan can answer and the half SH907
+   * The explorer is the only page in the console whose body is a third-party editor sized to its
+   * container: `graphiql-height` below reads the frame's geometry, which is the half no source
+   * scan can answer and the half SH907
    * measured for the Universal Editor.
    *
    * The not-found page is the one nobody navigates to on purpose, which is exactly why it is
@@ -398,8 +394,8 @@ async function discoverRoutes(siteName) {
  *
  * ## Why this is not "does the class name appear"
  *
- * A source scan already knows which pages import the layer — that is
- * `console-chrome-census.test.mjs`, and it is cheap and runs everywhere. What it cannot see is
+ * A source scan already knows which components each page composes — that is
+ * `scripts/surface-digest.mjs`, and it is cheap and runs everywhere. What it cannot see is
  * the failure this check exists for: the components mount, the markup carries every `bento-*`
  * class, and **the stylesheet is not loaded**, so the page renders working, tested, completely
  * unstyled divs. SH887 found that shape once already; nothing in `tsc`, in an import scan, or in
@@ -551,13 +547,12 @@ async function checkSaveBarMorph(page) {
  * SH908 — does the third-party editor fit the viewport it was given?
  *
  * GraphiQL sizes itself to its container, so the container names a height, and that height is the
- * viewport minus whatever chrome sits above it — a number the page cannot read off either shell.
- * SH907 measured the same question for the Universal Editor by hand and found its iframe 48px
- * **below the fold** inside the bento shell; this asks it on every run instead, for both chromes,
- * because the two shells put different things above the same container.
+ * viewport minus whatever sits above it — a number the page cannot read off the shell. SH907
+ * measured the same question for the Universal Editor by hand and found its iframe 48px **below
+ * the fold** inside the shell; this asks it on every run instead.
  *
  * The geometry is reported whether or not it is wrong. A number nobody prints is a number nobody
- * notices has changed, and this one changes whenever either shell's header does.
+ * notices has changed, and this one changes whenever the shell's header does.
  */
 async function checkGraphiQLFit(page) {
   return page.evaluate(() => {

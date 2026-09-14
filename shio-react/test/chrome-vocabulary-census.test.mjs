@@ -58,43 +58,32 @@ const SELF = ["test/chrome-vocabulary-census.test.mjs", "test/support/chrome-voc
  * <p>Lower a number or delete a line in the commit that removes the references; add one only in a
  * diff that says why a new reference to a retired era is the right call.</p>
  */
+/*
+ * SH962 — what is left is the switch itself, and every line of it is SH963's.
+ *
+ * The narration went: comments now say what the code does, in one chrome, and the migration's
+ * reasoning is in git log. Each entry below names the design system's `SectionCardChromeProvider`
+ * or `useSectionChrome`, or the test that holds the package's two-branch `AdaptiveSectionCard`, so
+ * none of them can leave before the package stops exporting a second chrome (VDS146) and SH963
+ * deletes the root provider:
+ *
+ * - App.tsx: the root provider and its import;
+ * - the vocabulary page: the provider around its `AdaptiveSectionCard` specimen;
+ * - chrome-adapter, chrome-provider-root, bento-browser's SH900 render: tests of the provider and
+ *   of the package's two branches, and the two source files that point at chrome-adapter by name;
+ * - bento-vocabulary.test: the export ledger naming both;
+ * - outside-shell-chrome: the root-provider detection and the check that no component reads the hook.
+ */
 const STILL_TWO_CHROMES = {
-  "e2e/console-check.mjs": 7,
-  // SH958 — 39 → 11: twenty-one per-route wrappers became one provider above <Routes>.
-  "src/App.tsx": 11,
-  "src/app/system/bento-nav.ts": 1,
-  // SH959 — the ChromeWitness is gone; the provider around the adapter specimen stays until SH963.
-  "src/app/system/bento-vocabulary.page.tsx": 5,
-  "src/app/system/bento.root.page.tsx": 1,
-  "src/app/content/post-type-select.page.tsx": 3,
-  "src/app/system/home.page.tsx": 1,
-  "src/app/content/object.children.page.tsx": 2,
-  "src/app/content/post-type.edit.page.tsx": 4,
-  "src/app/content/post.edit.page.tsx": 2,
-  // SH959 — the console branches in these three are deleted; not-found.page.tsx leaves the list.
-  "src/app/content/static-file.list.page.tsx": 1,
-  "src/app/admin/graphql/graphql.page.tsx": 2,
-  "src/app/routes/graphql.routes.tsx": 1,
-  "src/components/page-hero.tsx": 2,
-  "src/components/panel.tsx": 2,
-  "test/accent-token.test.mjs": 2,
-  "test/bento-admin-slice.test.mjs": 3,
-  "test/bento-browser.test.mjs": 6,
-  "test/bento-home.test.mjs": 2,
-  "test/bento-i18n.test.mjs": 3,
-  "test/bento-identity-slice.test.mjs": 1,
-  "test/bento-is-the-default.test.mjs": 1,
-  "test/bento-nav.test.mjs": 1,
-  "test/bento-post-slice.test.mjs": 3,
-  "test/bento-shell.test.mjs": 2,
+  "src/App.tsx": 3,
+  "src/app/content/post-type.edit.page.tsx": 1,
+  "src/app/system/bento-vocabulary.page.tsx": 4,
+  "test/bento-browser.test.mjs": 4,
   "test/bento-vocabulary.test.mjs": 2,
   "test/chrome-adapter.test.mjs": 10,
-  // SH958 — holds the root provider in place, so it names it until SH963 deletes both.
   "test/chrome-provider-root.test.mjs": 10,
-  // SH960 — the page census (20 lines) is deleted, and the digest and its test lost the era field.
-  "test/empty-state.test.mjs": 1,
   "test/jsx-elements.test.mjs": 1,
-  "test/outside-shell-chrome.test.mjs": 11,
+  "test/outside-shell-chrome.test.mjs": 7,
 }
 
 /** Lines and files, split the way §LXII.1 split them: product source, and everything else. */
@@ -128,6 +117,33 @@ test("SH957: the two-chrome vocabulary is a named debt that may only shrink", ()
       + "references: lower or delete its line in STILL_TWO_CHROMES in this same commit, so the "
       + "commit says how much it removed.\n"
       + "The probes are in test/support/chrome-vocabulary.mjs.")
+})
+
+/**
+ * Files whose only census hits are prose, and why each is not narration. **Two, both a file name.**
+ *
+ * <p>SH962 removed the comments that explained code by the migration that produced it. What that
+ * leaves is a rule this can check: prose about two chromes survives only in a file that also names
+ * the switch itself — the provider or the hook — because it is describing that switch. A file whose
+ * only hits are comments is narration of a retired look. These two are the exception the heuristic
+ * cannot see past: each names `chrome-adapter.test.mjs`, a test of the package's two branches, by
+ * its file name, and goes when SH963 deletes that test.</p>
+ */
+const NAMES_A_SWITCH_TEST = [
+  "src/app/content/post-type.edit.page.tsx",
+  "test/jsx-elements.test.mjs",
+]
+
+test("SH962: prose about two chromes survives only beside the switch it describes", () => {
+  const { probesByFile } = census(ROOT, SELF)
+  const proseOnly = Object.entries(probesByFile)
+    .filter(([, probes]) => probes.every((name) => name === "comment"))
+    .map(([path]) => path)
+    .sort()
+  assert.deepEqual(proseOnly, NAMES_A_SWITCH_TEST,
+    "SH962: a file's only two-chrome hits are comments, so it narrates a console look that no longer"
+      + " exists. Say what the code does now, and leave the migration to git log. If it is a file"
+      + " name that happens to match, add it to NAMES_A_SWITCH_TEST with the reason.")
 })
 
 test("SH957: the census is not vacuous — a planted provider in a clean file is named", () => {

@@ -59,18 +59,8 @@ import { COPY, SPECIMENS } from "./bento-vocabulary.fixture"
  * So this page exists to be looked at, once, before a route tree (SH888) or a real surface
  * (Block AR) is built on top of the layer. It has **no nav entry and no data**: it takes no
  * service, issues no request, and reads nothing from the backend, which is what lets it mount
- * outside the console shell — see below — and what keeps it from failing for a reason that is
- * not the layer's.
- *
- * ## Why it mounts outside the console shell
- *
- * `console.root.page.tsx` mounts a `SidebarProvider`, and the bento layer deliberately ships no
- * provider and no context between its three shell pieces: the rail is fixed, one width, and
- * hidden below `md`, so a provider would be state nothing reads. Rendering bento content inside
- * the console shell would therefore prove the layer under chrome that is being retired, and the
- * frosted surfaces would sit inside a sidebar's content offset. Mounting at a top-level route
- * gives the layer the empty page it expects. Reconciling the two shells for real is SH888's
- * job, and this page is what SH888 has to keep rendering while it does that.
+ * outside the product's shell and what keeps it from failing for a reason that is not the layer's.
+ * A top-level route gives the layer the empty page it expects.
  *
  * ## What is deliberately not here
  *

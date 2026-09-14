@@ -98,18 +98,27 @@ function commentLines(source) {
 export function census(root, exclude = []) {
   const found = {}
   const byProbe = Object.fromEntries(PROBES.map(([name]) => [name, 0]))
+  /** Which probes fired in each file — SH962 asks whether a file's only hits are prose. */
+  const probesByFile = {}
   for (const path of files(root)) {
     if (exclude.includes(path)) continue
     const source = readFileSync(join(root, path), "utf8")
     const comments = commentLines(source)
     let lines = 0
+    const fired = new Set()
     source.split("\n").forEach((line, at) => {
       const hits = PROBES.filter(([, probe]) => probe(line, comments[at])).map(([name]) => name)
       if (!hits.length) return
       lines++
-      for (const name of hits) byProbe[name]++
+      for (const name of hits) {
+        byProbe[name]++
+        fired.add(name)
+      }
     })
-    if (lines) found[path] = lines
+    if (lines) {
+      found[path] = lines
+      probesByFile[path] = [...fired].sort()
+    }
   }
-  return { found, byProbe }
+  return { found, byProbe, probesByFile }
 }

@@ -30,8 +30,8 @@ import { stripComments } from "./support/source-text.mjs"
  *   that is lossy for half the names in the world.
  *
  * So the slice divides where the data divides rather than where the section predicted: groups and
- * roles take the shell, and the user *list* takes the mosaic while the user *editor* stays the
- * console component under the chrome provider.
+ * roles take the shell, and the user *list* takes the mosaic while the user *editor* keeps its own
+ * form under a `PageHero`.
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")

@@ -1698,6 +1698,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH959** — EmptyState, the 404 page and the media tile render only their bento form, and nothing under src reads useSectionChrome, so a page outside the shell renders like one inside it (design §LXII.3 recorded in `docs/agents/console-ui.md`).
 - **SH960** — The surface digest drops its era field, which labelled 33 of 45 surfaces console, and names the seams pages compose, so 1 surface instead of 33 digests no chrome; the empty page census is deleted (design §LXII.4 superseded: every surface already reported bento; measured, 33 of 45 reported console) (design §LXII.4 recorded in `docs/agents/console-ui.md`).
 - **SH961** — The console's pages live in one tree by domain (content, admin, editor, system) instead of two trees named after the era each page was migrated from; 52 files moved with history (design §LXII.5 recorded in `docs/agents/console-ui.md`).
+- **SH962** — The console's comments and its area doc describe one chrome, the migration sections folding into one record of today's rules, and the census holds only the switch SH963 removes (design §LXII.6 recorded in `docs/agents/console-ui.md`).
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 

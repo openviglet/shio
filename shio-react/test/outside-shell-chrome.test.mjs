@@ -14,34 +14,17 @@ import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
 
 /**
- * SH908 — console chrome mounted outside the console shell does not look wrong, it **throws**.
+ * SH908 — a component that needs a provider only the shell mounts does not look wrong outside the
+ * shell, it **throws**.
  *
- * ## The hazard, which has no type and no test until it is one
+ * `useCurrentUser()` throws where no `UserProvider` is above it, and only `bento.root.page.tsx`
+ * mounts one. So a component that reaches for it from a route outside the shell — login, setup,
+ * the vocabulary harness, the visual editor, App.tsx's bare `*` — blanks the whole application
+ * behind the error boundary. `tsc` is happy and nothing else in this directory asks where a page
+ * may be mounted; it surfaces as a white screen, once, on whichever route somebody added last.
  *
- * `PageHeader` renders `SidebarTrigger`, which calls `useSidebar()`, which is
- * `throw new Error("useSidebar must be used within a SidebarProvider.")` when there is no provider
- * above it. Only `console.root.page.tsx` mounts one. So *any* component that renders the console
- * header from a route outside that shell — the bento tree, which ships no provider at all by
- * design (§LIV.3), or App.tsx's bare `*` — blanks the whole application behind the error boundary.
- *
- * Nothing catches it: `tsc` is happy, the census reads the page as console-era and correct, and
- * every source scan in this directory is about which era a page belongs to rather than where it is
- * allowed to be mounted. It surfaces as a white screen, once, on whichever route somebody added
- * last.
- *
- * ## Why it took SH908 to notice
- *
- * `not-found.page.tsx` is mounted in **three** places — inside the console shell, inside the bento
- * shell (this task), and at the bare `*` for a path under neither. It rendered no chrome at all
- * from SH180 until now, and the census recorded that as "console-era by absence" without a word
- * about the reason. So the obvious migration — give it an `PageHero` like the other
- * thirteen surfaces in Block AR — is a crash on the one route that matters most, and the
- * information that would have stopped it existed nowhere.
- *
- * It renders the header only under bento chrome now. This reader is what makes that a rule rather
- * than a comment somebody removes, and it asks the question of **every** component App.tsx mounts
- * outside the console shell, which is the SH338 shape: the instrument covers the class, not the
- * one instance that was found.
+ * This reader asks the question of **every** component App.tsx mounts outside the shell, which is
+ * the SH338 shape: the instrument covers the class, not the one instance that was found.
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
@@ -98,8 +81,8 @@ function resolve(specifier) {
 }
 
 /**
- * Every component App.tsx mounts at a route that is **not** inside the console shell, with the
- * chrome provider that wraps it where there is one.
+ * Every component App.tsx mounts at a route that is **not** inside the shell, and whether the root
+ * section provider covers it.
  */
 function mountedOutsideTheShell() {
   const shell = bentoShellBlock()

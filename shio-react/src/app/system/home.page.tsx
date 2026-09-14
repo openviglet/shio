@@ -49,13 +49,10 @@ const historyService = new ShHistoryService()
  * tokens, the translations and the digest all work together. If something about the extracted
  * layer is wrong, one page is where it should be found — not four pages into the site slice.
  *
- * ## What changed, and what deliberately did not
+ * ## What it composes
  *
- * Every fetch, every service and every i18n key is the console page's. What moved is the chrome:
- * a `BentoHero` instead of a `PageHeader` and an `<h2>`, `BentoCountTile` for the two counts,
- * `BentoTile` for the six quick actions, and `BentoEmptyState` for an activity list with nothing
- * in it. §LV.1 asked for "the package's tiles and count tiles rather than Card", and that is the
- * whole of the change.
+ * A `BentoHero`, `BentoCountTile` for the two counts, `BentoTile` for the six quick actions, and
+ * `BentoEmptyState` for an activity list with nothing in it.
  *
  * ## The action badges lost their hardcoded hues
  *

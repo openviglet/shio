@@ -20,22 +20,9 @@ const service = new ShPostTypeService()
 /**
  * SH901 — choosing what to post, as tiles.
  *
- * ## Why this one is a copy where the editor is an adapter
- *
- * SH900's rule: a large working surface is migrated by adapter because what changes is its
- * chrome; a small page whose whole **structure** changes is worth writing twice. The post editor
- * is 375 lines of save/publish/preview/schedule handling wrapped around a widget renderer, and
- * only its header and panels differ between eras — adapter. This page is 142 lines, and its
- * `Card`s are not chrome at all: they are **clickable choices**, whose bento counterpart is
- * `BentoTile`. An adapter that turned a panel into a tile would be a different component, not a
- * chrome switch.
- *
- * ## The two "or" buttons became tiles as well
- *
- * The console page put *Or create a new Folder* and *Or model a new Post Type* in a header row,
- * one of them carrying a hardcoded orange (`text-orange-600 border-orange-300 …`) — one of the
- * seventeen files SH890 holds as accent debt. They are choices like every other choice on this
- * screen, so they are tiles in their own section, and the hue is a tone.
+ * Each post type is a **clickable choice**, so it is a `BentoTile` rather than a panel. *Create a
+ * new Folder* and *Model a new Post Type* are choices like every other on this screen, so they are
+ * tiles in their own section too, with a tone rather than a hardcoded hue (SH890).
  */
 export default function BentoPostTypeSelectPage() {
   const { t } = useTranslation()
@@ -55,24 +42,15 @@ export default function BentoPostTypeSelectPage() {
   const customTypes = postTypes.filter((pt) => !pt.system)
 
   const select = (pt: ShPostType) => {
-    // The console page remembers the last choice the same way; a curator posting twenty of one
-    // kind should not scan the grid twenty times.
+    // The content browser's New button reads this back; a curator posting twenty of one kind
+    // should not scan the grid twenty times.
     localStorage.setItem("sh-last-post-type", pt.name)
     navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${encodeURIComponent(pt.name)}/new`)
   }
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 px-6 pb-12">
-      {/*
-        SH908 — `BentoHero`, not `PageHero`, and this was a crash rather than a style
-        choice. This page lives in the bento tree and is mounted with **no**
-        `SectionCardChromeProvider`, so the adapter answered with its console default: `PageHeader`
-        → `SidebarTrigger` → `useSidebar()`, which throws where no `SidebarProvider` exists — and
-        the bento shell ships none, by design. The route rendered a blank page behind the error
-        boundary, with nothing in `tsc`, in the census or in any live probe to say so; it was found
-        by `outside-shell-chrome.test.mjs` on its first run. A bento-only page has no second chrome
-        to adapt to, so it names the hero it wants.
-      */}
+      {/* The package's hero directly: this page has no save bar, so `PageHero` would add nothing. */}
       <BentoHero
         eyebrow={t("content.postLabel")}
         title={t("content.whatToPost")}

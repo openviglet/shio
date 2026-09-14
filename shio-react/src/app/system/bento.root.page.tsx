@@ -124,8 +124,8 @@ export default function BentoRootPage() {
             Sticky keeps both: the banner takes its 53px and the header follows underneath.
 
             The rail reserves its own top ~80px (`pt-20`) against the viewport, so the two do not
-            need to agree on a height. Nothing else lives in this header: the breadcrumb bar is
-            console chrome, and the bento era puts a page's identity in its own hero.
+            need to agree on a height. Nothing else lives in this header: a page's identity is in
+            its own hero, so there is no breadcrumb bar.
           */}
           <header className="sticky top-0 z-40 flex h-16 items-center justify-end gap-2 px-4">
             {/*

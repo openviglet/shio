@@ -3,25 +3,14 @@ import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
 import { Button } from "@/components/ui/button"
 /*
- * SH892 — the section chrome comes from the adapter, not from a Card. Post types are the one
- * name-keyed surface, and this is the editor a curator returns to most after posts: the
- * attribute list, its dnd reordering, the rename operation and the managed-by-code fieldset all
- * stay exactly as they are. Only the wrapper changes, so SH902 can re-skin the page by putting a
- * `SectionCardChromeProvider` above it instead of rebuilding 1,000 lines.
+ * SH892 — the form's section is `AdaptiveSectionCard`. Its header takes `{icon, title,
+ * description}` and nothing else, so the details tabs live inside `Content`, not in the header.
  *
- * One shape did not survive the swap unchanged: the details card put a `TabsList` in its
- * `CardHeader`, and the adapter's header takes `{icon, title, description}` and nothing else —
- * deliberately, because a header that accepts arbitrary children is a header that renders
- * differently in the two chromes, which is the one thing this adapter exists to prevent. The
- * whole `Tabs` element moved inside `Content` and the card gained a real header.
- *
- * **`StaticHeader` and `Content` must be DIRECT children of `AdaptiveSectionCard`.** The bento
- * branch finds them with `Children.forEach`, which does not descend, so wrapping `Content` in
- * anything — `<Tabs>` was the first draft of this very edit — leaves the branch with a header
- * and no content and it renders an **empty section**: the entire post-type form, gone, under a
- * chrome nobody has switched on yet. `chrome-adapter.test.mjs` asserts both halves of that.
- *
- * Imported from the bento subpath because that is the only entry that exports the adapter.
+ * **`StaticHeader` and `Content` must be DIRECT children of `AdaptiveSectionCard`.** The component
+ * finds them with `Children.forEach`, which does not descend, so wrapping `Content` in anything —
+ * `<Tabs>` was the first draft of this very edit — leaves it with a header and no content, and it
+ * renders an **empty section**: the entire post-type form, gone. `chrome-adapter.test.mjs` asserts
+ * it. Imported from the bento subpath, the only entry that exports it.
  */
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Input } from "@/components/ui/input"

@@ -65,10 +65,9 @@ import { useDiscovery } from "@/hooks/use-discovery"
  * ## Titles reuse keys; descriptions are new
  *
  * The authoring contract says not to mint a parallel namespace for a surface that already has
- * one — the same entity in two chromes is the same entity — so every `titleKey` is a key the
- * console sidebar already renders. `descriptionKey` has no console equivalent: the sidebar shows
- * a label and nothing else, while a palette row and a hub tile both show a sentence. Those are
- * new, under `nav.desc.*`, in `en` and `pt` together.
+ * one, so every `titleKey` is the key the surface's own page already renders. A palette row and a
+ * hub tile both show a sentence as well, which no page had, so `descriptionKey` is new, under
+ * `nav.desc.*`, in `en` and `pt` together.
  */
 
 /** A section of the rail. `areaRoute` is what makes it *visible* — the rail draws only those. */

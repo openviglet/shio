@@ -621,76 +621,106 @@ Two things that test checks which a pair of `grep`s would not:
   `undefined`, and would hide the item on a *multi-tenant* install instead. The gate has to be able
   to change its mind.
 
-## The console-chrome census — what scopes the bento migration (SH886)
+## The console today: one shell, one chrome, pages by domain
 
-`shio-react/test/console-chrome-census.test.mjs` walks `src/app/console/**/*.page.tsx` and files
-each page into one of two eras. The classifier is a single import, and the design system chose it
-deliberately: bento ships as the `@viglet/viglet-design-system/bento` **subpath** rather than
-through the root barrel, so — in `src/bento/index.ts`'s own words — "an import that says
-`@viglet/viglet-design-system/bento` states which era a page belongs to, which is something a
-reviewer and a lint can both see."
+This is what Blocks AQ, AR and AW left, stated as what is true now. How it got here — the parallel
+route tree, the slice-by-slice migration, the cutover and the sweep — is in `git log` and in the
+CHANGELOG entries SH886–SH911 and SH957–SH962, which is where this project keeps history.
 
-At the census's first run: **43 pages, 0 on bento** — 39 on `PageHeader`, 38 on `@/components/ui/card`,
-3 on `StickySaveBar`, 1 on the sidebar provider, and 3 rendering no chrome this reader knows
-(`admin.root.page.tsx` is a bare `Outlet`, `not-found.page.tsx` a `Button`, `visual-editor.page.tsx`
-its own frame). Those last three are console-era **by absence**, and an empty marker list is how
-that is spelled — drop them and the census silently shrinks by three.
+**One shell.** `src/app/system/bento.root.page.tsx` is mounted at `ROUTES.BENTO` (`/bento`), and
+every surface a curator navigates to is inside it. Old `/console/**` bookmarks — bare or
+tenant-prefixed — redirect into it (SH909); `bento-is-the-default.test.mjs` refuses a second shell
+and a route constant pointing anywhere else. Outside the shell there are six mounts, named in
+`outside-shell-chrome.test.mjs`: login, setup, the design system's vocabulary harness, the legacy
+redirect, the 404 at App.tsx's bare `*`, and the Universal Editor — which **owns the viewport**, so
+inside the shell's 64px sticky header its iframe measured 48px below the fold (SH907). Nothing
+mounted outside the shell may need a provider only the shell mounts: `useCurrentUser()` throws
+without `UserProvider`, a white screen behind the error boundary (SH908).
 
-**Two of §LIV.1's three opening figures were wrong.** It said 40 pages on `PageHeader` and 42 on
-`Card`; the real numbers are 39 and 38. That grep ran once, by hand, and nothing re-ran it. This is
-the whole argument for the file: a migration scoped by a number nobody recomputes has no end, and a
-*wrong* number is worse than none, because it reads as measured.
+**One chrome.** One `SectionCardChromeProvider chrome="bento"` encloses `<Routes>`, because the
+design system's context still defaults to `console` (SH958); no route carries its own, and nothing
+under `src/` calls `useSectionChrome()` (SH959). Both go when the package drops the switch (VDS146,
+SH963). `chrome-vocabulary-census.test.mjs` holds what is left of that vocabulary, and it is only
+that switch.
 
-**A named list, not a ceiling.** `STILL_CONSOLE` maps every unmigrated page to the chrome it
-renders, so a migration fails the reader *by name* and lands as a diff somebody reviews. A ceiling
-would let one migrated slice pay for leaving the next page alone — the same reason
-`cli/test/assertion-debt.test.mjs` holds a list. Migrating a page means deleting its line and adding
-its name to `MIGRATED`; there is no way to bank progress.
+**Pages by domain.** `src/app/content`, `admin`, `editor` and `system` — the nav's own sections
+(SH961). A new page goes where its surface is in the nav.
 
-Two guards keep it from going quietly blind. The walk must still find more than 40 pages, or an
-emptied directory would read as a finished migration. And **every probe must match something**: a
-renamed import path would otherwise turn a probe into a permanent zero, retiring that chrome from
-the census rather than from the console — the count would fall with nothing migrated. When the last
-page carrying a probe really is migrated, the probe is deleted in that same diff.
+**How a page is built.** Two shapes, chosen by the page rather than by taste:
 
-## The surface digest — proving a migrated page without opening it (SH896)
+- **Entity-shaped pages take the package's page shapes.** `BentoEntityShell` for something whose
+  identity is a title and a description, `BentoListPage` for a mosaic with a create tile, and this
+  console's `AdminListPage` and `IdentityEntityPage` over them for the admin lists and for groups and
+  roles. A user is not an entity-shaped page: its identity is a login key, and a hero that
+  inline-edits `title` would rename it on blur (SH904).
+- **Large working surfaces compose the seams**, so their logic exists once — the content browser,
+  the post and post-type editors, the infrastructure editors, review, activity, marketplace:
+  - `PageHero` for the header, and for the save bar when the page has one: it renders
+    `BentoFormHero`, which owns both halves of the morph (SH901);
+  - `Panel` for a panel with nothing to title — a count, a toolbar, a listing;
+  - `AdaptiveSectionCard` for a titled section, with `StaticHeader`/`Header` and `Content` as its
+    **direct** children. Without a header it renders a plain card rather than the frosted section,
+    which is the defect `checkBentoSurface` found on four panels (SH902); wrapping `Content` in
+    anything renders an empty section (SH892). `chrome-adapter.test.mjs` asserts both;
+  - `EmptyState` for "nothing here", with a message per use; a hand-rolled `py-16` void fails
+    `empty-state.test.mjs` (SH903).
+
+**Rules the route tree and the forms carry**, each with a reader:
+
+- A shell's `formId` must be the id of a `<form>` its render prop declares, or its Save issues no
+  request; an entity that is all identity is `autosaveOnly` and renders no Save at all (SH899, SH900).
+- `new` is a **param value**, not a static sibling: a static `admin/groups/new` beside `:groupId`
+  matches first with no param, and the page renders `null` (SH904).
+- A route's param is named what its component reads from `useParams()`, or the page renders blank
+  with no error — `bento-admin-slice.test.mjs` pairs them (SH905).
+- A tile a curator activates is a real button, reachable by keyboard (SH906).
+- No page composes shadcn's `Card`: `surface-digest.test.mjs` refuses it (SH960).
+
+The curator-facing half of the change is documented in `vigletdocs/docs-shio` (SH911); a published
+page that still describes a second console look is a docs defect.
+
+## The surface digest — proving a page did not change without opening it (SH896, SH960)
 
 `shio-react/scripts/surface-digest.mjs` is the console's analogue of SH101's render digest, and
 `pnpm --filter shio-react surface:digest` prints one line per surface. It reads **source, not a
 rendered page**: "the instance does not run a browser" is a standing non-goal, and a console page
 resolves a router, three contexts and a service call before it paints, so rendering one to prove it
-composes would mean standing up most of the app — expensive, and flaky in the way a proof must not
-be.
+composes would mean standing up most of the app.
 
-The digest covers three things and nothing else: the **era** (does the page import
-`@viglet/viglet-design-system/bento`), the **chrome it composes in source order**, and the
-**surface classes** §LIV.11 named — the frosted panel and its lift (`backdrop-blur`, `bg-card`,
-`shadow`, `rounded`, `border`, `ring`, …). At the first run: **43 surfaces, 22 distinct digests, 0
-on bento.**
+It covers two things and nothing else: the **components a page composes, in source order**, and the
+**surface classes** that carry the frosted panel and its lift (`backdrop-blur`, `bg-card`, `shadow`,
+`rounded`, `border`, `ring`, …). It walks the four page trees in `DOMAINS`, keyed by path under
+`src/app`.
 
 ```
 node scripts/surface-digest.mjs --json > before.json
-#   ... migrate a slice ...
+#   ... change something ...
 node scripts/surface-digest.mjs --against before.json   # exits 1, naming page and field
 ```
 
-**It is not a pixel claim, and the docstring says so.** A matching digest says the same chrome was
-composed in the same order with the same surface vocabulary; it does not say the page looks right.
-The direction it buys is the one that matters across 43 surfaces: when a digest moves, something
-structural moved, and the report names the page and the field.
+**It is not a pixel claim.** A matching digest says the same components were composed in the same
+order with the same surface vocabulary; it does not say the page looks right. What it buys is the
+other direction: when a digest moves, something structural moved, and the report names the page and
+the field.
+
+**The vocabulary is measured, not listed from memory (SH960).** It names the package's components
+*and* this console's seams — `PageHero`, `Panel`, `EmptyState`, `AdaptiveSectionCard`,
+`AdminListPage`, `IdentityEntityPage` — because that is what most pages compose; with the package's
+names alone, 33 of 45 surfaces digested nothing. Today one surface composes none of them, the visual
+editor, and `surface-digest.test.mjs` holds that as a named list, so a page the vocabulary cannot
+see fails by name. The `Card` family stays in it for one reason: `@/components/ui/card` still
+resolves, and the same test refuses any page that composes it. There is **no era field**: it
+classified by import, and labelled bento pages `console` (33 of 45) once the console had one chrome.
 
 **Both failure modes are asserted, because they pull against each other.** A digest that moves on
-*everything* — reindenting, a renamed handler, a new comment — is noise, and a reviewer learns
-within a week to re-baseline without reading it, which is worse than no proof because it looks like
-proof. A digest that moves on *nothing* goes green across the migration it exists to witness. So
-`surface-digest.test.mjs` asserts stability under reformatting, comments and renamed locals, **and**
-movement on a swapped component, a reordered header, an era change and a changed surface class.
-Testing the hash function would have caught neither.
+*everything* — reindenting, a renamed handler, a new comment, an unused import — is noise, and a
+reviewer learns within a week to re-baseline without reading it. A digest that moves on *nothing* is
+green across the change it exists to witness. So the test asserts stability under reformatting,
+comments, renamed locals and an unused import, **and** movement on a swapped component, a reordered
+hero and a changed surface class.
 
 One deliberate sharp edge: the sort is **codepoint, never `localeCompare`**. The digest hashes that
-order, so a locale-dependent comparator would hash one page to two values on two machines. The lint
-that asks for `localeCompare` is right about display lists and wrong here; the comparator is stated
-in the file with that reason beside it.
+order, so a locale-dependent comparator would hash one page to two values on two machines.
 
 ## The bento layer, installed and proved here (SH887)
 
@@ -711,13 +741,13 @@ fails here by name instead of leaving the harness quietly proving less than it u
 
 ### The three things looking at it found
 
-**A page outside the console shell must paint its own ground.** `<html>` carries `dark` from
+**A page outside the shell must paint its own ground.** `<html>` carries `dark` from
 `ThemeProvider`'s default while `<body>` keeps `shio-light-boot` — the design system's
 boot-loader plugin picks light when nothing is stored under `shio-ui-theme`, which is every
 first visit, and nothing removes the class once React mounts. Every console page hides it by
 painting `bg-background` over the viewport. The harness renders `bg-background text-foreground
 min-h-screen` for that reason and not for decoration; **SH918** fixes the disagreement itself,
-and SH888 depends on it, because a second parallel root inherits exactly this.
+and every page mounted outside the shell inherits exactly this.
 
 **A top-level route needs its segment reserved.** `readTenantSegment()` treats every unreserved
 first path segment as a tenant, so `/bento-vocabulary` would set `TENANT_SEGMENT` to itself and
@@ -737,8 +767,7 @@ Specimen copy lives in `bento-vocabulary.fixture.ts`, not in the `.tsx`. `consol
 is right to fail a curator-facing page that hardcodes an English sentence and would be wrong
 about this one — these are specimen strings naming the components being proved, read by nobody
 in Portuguese. Separating them keeps that lint's `UNTRANSLATED` exemption map short enough to
-stay readable, which is the only thing it has going for it. A migrated Block AR surface goes
-through `t()` like every other page.
+stay readable, which is the only thing it has going for it. A product page goes through `t()`.
 
 ## Shio's accent is a token, and the rest is a named debt (SH890)
 
@@ -784,52 +813,10 @@ string written out twice) and the six admin save-bar tints, which were the byte-
 `bg-orange-50 dark:bg-orange-950/30` in six files. That leaves **17 files, 61 distinct
 utilities**, held by name in `test/accent-token.test.mjs`.
 
-A named map and not a ceiling, for the reason the chrome census gives: a ceiling lets one
-migrated page fund leaving the next alone. A Block AR migration deletes its file's line in the
-same commit; a page that adds an orange fails by name. `amber` is deliberately not counted —
+A named map and not a ceiling: a ceiling lets one fixed page fund leaving the next alone. A page
+that stops respelling the hue deletes its line in the same commit; a page that adds an orange fails
+by name. `amber` is deliberately not counted —
 that is the semantic warning colour and it means "careful", not "Shio".
-
-## The chrome adapter, and its two silent failure modes (SH892)
-
-The post editor, the post-type editor and the site editor wrap their sections in
-`AdaptiveSectionCard` instead of `@/components/ui/card`. The adapter renders a console card
-today and a frosted bento section when a `SectionCardChromeProvider` above it says so, and
-**console is the default** — so adopting it changed nothing visible, and SH899/SH901/SH902 opt
-in by adding a provider rather than by rebuilding 1,600 lines of the most defect-prone code in
-the console.
-
-Two rules, both of which produce a page that compiles, passes every source scan, and does
-nothing. Both were in this task's own first draft, and both were found by *rendering* the built
-package with `react-dom/server` — [`test/chrome-adapter.test.mjs`](../../shio-react/test/chrome-adapter.test.mjs),
-which is the one reader here that renders rather than reads. That is affordable because the
-adapter is a wrapper, not a page: no router, no contexts, no service call, about a millisecond.
-
-**1. A section with no header never re-skins.** The bento branch is entered only when
-`Children.forEach` recognises a `Header`/`StaticHeader` child; anything else falls through to
-the console card, deliberately, so a section built some other way cannot lose its content
-silently. The consequence for a consumer is the opposite of obvious: an adopted section with no
-header is a **no-op** that looks migrated in every import scan. The post editor's card carried
-an empty `CardHeader`, so it gained a real one (`content.fields` — identity stays in the hero).
-
-**2. `Header` and `Content` must be DIRECT children.** `Children.forEach` does not descend. Wrap
-`Content` in anything — `<Tabs>` was this task's first draft for the post-type details card — and
-the bento branch finds a header and no content, and renders an **empty section**: the whole form
-gone, in whatever later commit switches the chrome on, nowhere near the commit that caused it.
-`Tabs` belongs *inside* `Content`.
-
-### The era classifier had a hole this walked through
-
-`console-chrome-census.test.mjs` decided a page's era by "does it import the bento subpath",
-which is what the design system's own source says the subpath is for. `AdaptiveSectionCard` is
-the one export written to be imported from a **console** page, and the package exports it from
-that subpath and nowhere else — so adopting it made all three editors read as *migrated* in a
-single commit, shrinking the debt by three pages nobody had touched. The classifier now excludes
-three names (`AdaptiveSectionCard`, `SectionCardChromeProvider`, `useSectionChrome`) **by name**,
-so a page importing the adapter *and* `BentoHero` is still migrated. The exclusion carries its
-own vacuity test, because an over-broad exemption fails in the direction that reads as a
-migration which never started.
-
-Census after this task: **43 pages, 0 on bento** — `Card` 38 → 35.
 
 ## Re-declaring a shared component fails the build (SH894)
 
@@ -922,47 +909,6 @@ preference, or the test passes over the only case that was ever broken.
 Verified in a browser under both OS preferences: `<body>` carries no boot class and paints
 `rgb(10,10,15)` under `html.dark`, where it used to paint `rgb(250,250,250)`.
 
-## The bento route tree, beside the console one (SH888)
-
-`/bento` is a **sibling** of `/console`, not a child.
-[`bento.root.page.tsx`](../../shio-react/src/app/system/bento.root.page.tsx) mounts the package's
-whole shell — `BentoNavRail` down the left, `BentoUserMenu` in the header, `BentoBackToTop` at
-the corner — and **no provider between them**. `console.root.page.tsx` wraps everything in a
-`SidebarProvider` and its `PageHeader` calls `SidebarTrigger`; the two cannot nest, which is why
-a page-at-a-time migration in place would leave the console broken in the middle of each of 43
-slices. Both trees stay mounted for the length of Block AR, each surface moves under its own
-task, and **SH909** removes whichever shell loses — on the roadmap precisely so the temporary
-state cannot become permanent by nobody deciding.
-
-[`bento-nav.ts`](../../shio-react/src/app/system/bento-nav.ts) is the product's own map, which the
-package will not hold: "an entry appears when its route does." The rail draws **sections only** —
-it filters `groups` to those carrying an `areaRoute` — so a section without one is invisible,
-silently. `BentoNavItem` exists for the command palette, which SH889 wires; items are declared
-here so the rail and the palette cannot list a surface twice. `fallbackRoute` and `areaRoute`
-point at the **console** paths on purpose: each AR task repoints its own entry, and until then
-the rail takes you to the page that exists.
-
-### Two things that only a render says
-
-**The shared user menu needs the *package's* `UserProvider`.** The shell came up entirely blank
-behind the error boundary with `useCurrentUser must be used within UserProvider`. `BentoUserMenu`
-reads the design system's context, and SH894 established Shio's provider as a deliberate local
-variant — so it is a **different context object** and satisfies nothing. `tsc` is silent (both
-are called `UserProvider`, both take children); so is every import scan. The seam is `fetchUser`,
-and `ShCurrentUser` is structurally assignable to `VigUser`. **SH920** carries the consequence:
-the two trees now mount different user contexts, and all fourteen AR surfaces cross that seam.
-
-**The header is `sticky`, not `fixed`.** `BackendStatusProvider` renders its "server unavailable"
-bar as `sticky top-0 z-50` from `main.tsx`, above this tree in the flow. A fixed header sat on
-top of it and covered the retry button with the avatar — visible only while the backend is down,
-which is exactly when that button matters. Sticky lets both stack.
-
-`test/support/source-text.mjs` now holds the comment stripper these readers need. It has caught
-three of them (SH823, SH890, SH888) the same way: a reader asserting "this file must not say X"
-failing against the paragraph explaining why it does not. That is not incidental here — readers
-in this repository carry their reasoning in prose beside the code, so any such scan runs over a
-file very likely to *discuss* X.
-
 ## Every surface declared once, for both readers (SH889)
 
 [`bento-nav.ts`](../../shio-react/src/app/system/bento-nav.ts) declares **17 surfaces in 2
@@ -971,15 +917,11 @@ sections**, and the rail *and* the command palette both read it. The rail takes
 its own array would look completely fine right up to the release where one of them lists a
 surface the other does not — that is the defect §LIV.4 was filed against.
 
-Get this shape right early: it is the file each of **Block AR's fourteen** surface tasks appends
-to, so a shape settled after five have shipped is a shape five tasks have to be reopened for.
-
 | Field | Whose | Notes |
 |---|---|---|
-| `titleKey` | reused | Always a key the console sidebar already renders — the authoring contract's rule that the same entity in two chromes is the same entity |
-| `descriptionKey` | new (`nav.desc.*`) | No console equivalent: the sidebar shows a label, a palette row and a hub tile show a sentence. `en` + `pt` together |
-| `fallbackRoute` | required | Where the surface lives **today** — a console path, for all 17 |
-| `bentoRoute` | absent until moved | `bentoNavTarget()` prefers it, so **a migration is one line here** |
+| `titleKey` | reused | Always the key the surface's own page already renders — the authoring contract's rule against a parallel namespace |
+| `descriptionKey` | new (`nav.desc.*`) | A palette row and a hub tile show a sentence, which no page had. `en` + `pt` together |
+| `fallbackRoute` / `bentoRoute` | both, via `at(route)` | The package's type carries two fields; `at()` writes the one route into both (SH935) |
 | `tone` | grouped by kind | blue content · indigo model · violet delivery · amber identity · slate plumbing — a new entry has an obvious answer rather than a free choice |
 | `requires` | Shio's own | On `ShioNavItem`, not `BentoNavItem`: the package cannot read a feature model and should not try |
 
@@ -1075,7 +1017,7 @@ under-reports is worse than no gate, because a green run reads as coverage.
 
 ### Six fixed, twenty-eight declared
 
-The six in **shared components** are fixed, because the migration keeps them: the permissions
+The six in **shared components** are fixed, because a component's missing name is missing on every page that renders it: the permissions
 dialog and three of the fifteen form widgets, which SH892 exists precisely to avoid rewriting
 (`date.widget.tsx` had no i18n at all and gained the hook; `common.clear` is new in both
 locales). The remaining 28 are console pages Block AR rewrites, held by name — each AR task
@@ -1227,633 +1169,6 @@ the anchor is the control, so it carries the button's classes and the button goe
 
 Verified after: 169 rows, **0 nested pairs**, two focusables per row for two real actions.
 
-## The first migrated surface, and the instruments that could not see it (SH898)
-
-The console home is on the bento shell at `/bento`:
-[`src/app/system/home.page.tsx`](../../shio-react/src/app/system/home.page.tsx). Every
-fetch, service and i18n key is the console page's — what moved is the chrome. `BentoHero` replaces
-`PageHeader` and an `<h2>`, `BentoCountTile` the two counts, `BentoTile` the six quick actions,
-`BentoEmptyState` an activity list with nothing in it.
-
-| surface | era | chrome |
-|---|---|---|
-| `console/home/home.page.tsx` | console | PageHeader, Card ×3 |
-| `system/home.page.tsx` | bento | BentoHero, BentoSection, BentoCountTile, BentoTile, BentoEmptyState |
-
-### What the first migration actually found
-
-`surface-digest.mjs` reported **"No surface moved (43 compared)"** for the whole of this task, and
-it was right: it walked `src/app/console`, nothing there had changed, and the new page was in
-`src/app/bento`. SH888 chose a parallel tree, so **a migration adds a surface rather than editing
-one** — and every instrument that measured "the console directory" was measuring the half that
-does not move. That is what building the first surface is for.
-
-The digest now surveys both trees and keys them under `src/app`. A saved baseline from before
-reports every surface `gone` and every surface `new`; re-take it once.
-
-**The census was not wrong, and now says so.** SH886 expected `MIGRATED` to fill one name at a
-time; under a parallel tree it stays **empty forever**, because a name would appear there only if
-somebody imported bento *into a console page* — the arrangement §LIV.3 says cannot work. Its
-docstring now states that, so the next reader does not wait for a number that will never move.
-Progress is `surface-digest` (era per surface) and `bento-nav.test.mjs` (`n/17` pointing at a
-bento route).
-
-### Three things the page itself decided
-
-**The counts wait rather than answering zero.** `BentoCountTile` takes a `number`, and the obvious
-`?? 0` puts "0 Sites" on the first thing a curator sees after login. Zero is a real answer to that
-question and a wrong one.
-
-**A required prop is not an invitation to repeat the heading.** The first draft gave all six
-action tiles `eyebrow={t("home.quickActions")}`, rendering "QUICK ACTIONS" six times under a
-heading already saying it. They carry the *area* each action leads into instead.
-
-**A section with nothing to add says nothing.** The counts section was titled `home.statSites` —
-the name of one of the two counts in it — and described with the hero's own subtitle, putting the
-same sentence on screen twice forty pixels apart. It is `home.overview` now, with no description.
-
-The badges lost six hardcoded colour strings to `bentoChipClass`, so SH890's re-key reaches them.
-`teal` is not a tone, so `RESTORE` reads violet — the one deliberate visual difference.
-
-## The site slice, and the rule that makes a save bar do something (SH899)
-
-Four surfaces under `/bento/content`: the list (`BentoListPage` + `BentoEntityTile`), the editor
-(`BentoEntityShell` — the first in this console), and create/import (`BentoFormHero`). The four
-console pages are untouched until SH909, which is what makes the slice reversible.
-
-### The defect a run found and nothing else could
-
-`BentoEntityShell` renders its Save as `<GradientButton type="submit" form={formId}>`. That
-submits **an HTML form with that id, and nothing else**. The first draft returned a
-`BentoFormSection` from the render prop with no `<form>` around it — so the page rendered
-perfectly, the hero showed Save Changes and Cancel, and clicking Save issued **no request, logged
-nothing and threw nothing**.
-
-`tsc` cannot see it: `formId` is a string and the shell has no way to check a form with that id
-exists. Typing into a field, clicking Save, reloading and reading the value back is what found it.
-
-**`onUpdate` does not cover this.** The shell calls that when the *hero identity* is edited (type
-→ blur → autosave), so a page can have a working hero and a completely dead body. Every remaining
-Block AR entity editor composes this same pair, so the rule is asserted rather than remembered: a
-shell that names a `formId` must contain a `<form>` with that id **and** a submit handler that
-reaches a service.
-
-### Two era classifiers, one taught
-
-SH892 taught `console-chrome-census.test.mjs` that `AdaptiveSectionCard` is era-neutral — and did
-not teach `surface-digest.mjs`. SH899 is where that cost something: the **console's own**
-`site.edit.page.tsx` came back `bento`, because SH892 had given it the adapter seven tasks
-earlier. Both now hold the same three names, and a test asserts the two lists match — not by
-sharing a module, because the digest is a script the console runs on its own and a script
-importing a test file is the worse dependency.
-
-### What the list settles for the ten that follow
-
-| decision | why |
-|---|---|
-| Actions on the entity, not the row | the console row hid export/edit/view/delete behind `opacity-0 group-hover:opacity-100` — **four actions reachable only by a mouse**. They are `extraActions` on the shell now: focusable and announced. |
-| A failed load is not an empty list | `undefined` means "loading" to the package's gate, so a rejected query must set `[]` **and** an error, or the page spins for ever. The console page rendered its empty state for both. |
-| The filter goes in `headerAction` | `BentoListPage` has no search by design. Dropping it would have been a regression on the console list most likely to grow. |
-| The Sites/Tasks tab strip is gone | `tasks` rendered `content.noPendingTasks` in every state since it was written. A tab that is always empty teaches a curator not to look at tabs. |
-
-`new` and `import` are declared **before** `:siteId`, or the parameter route matches them first
-and the editor tries to load a site called "new".
-
-A third repetition of SH898's lesson, in three of the four files: a section titled with the name
-of one field it contains, or described with the sentence the hero above already says. Both props
-want a string, and the nearest string to hand is almost always one already on screen.
-
-## The migration shape depends on the surface (SH900)
-
-SH898 and SH899 migrated by **adding** a surface beside the console one. That is right for a home
-page of 154 lines and four site pages of 100–200. `object.children.page.tsx` is **965 lines** —
-twenty state variables, three view modes, selection, pagination, copy/move — and exactly **four**
-of them were chrome: a `PageHeader` and three `Card`s.
-
-Copying it would have duplicated 960 lines of the most defect-prone code in the console so that
-four could differ, and every fix would then need landing twice until SH909. So the browser is
-written **once**, and the route decides its chrome:
-
-```tsx
-<Route path="content/object/:objectId" element={
-  <SectionCardChromeProvider chrome="bento"><ObjectChildrenPage /></SectionCardChromeProvider>
-} />
-```
-
-`AdaptiveSectionCard` covers the three panels;
-[`PageHero`](../../shio-react/src/components/page-hero.tsx) covers the
-header — `PageHeader` or `BentoHero`, chosen by `useSectionChrome()`. **A small entity-shaped page
-is worth writing twice, because what changes is its whole structure. A large working surface is
-not, because what changes is its chrome.**
-
-`PageHero` lives in `components/` and not beside a page, deliberately: it imports
-`BentoHero`, a genuinely bento-era name, and keeping that import on this side of the boundary is
-what lets both era classifiers stay honest about the pages that use it.
-
-### A third way to have no chrome
-
-The census now records `content/object.children.page.tsx` as `[]`. The other three empty entries
-(`admin.root`, `not-found`, `visual-editor`) render no chrome because they never did; this one
-reached the same state by **migrating**. It composes no console chrome of its own and is still a
-console-era page — the same component renders bento under the provider.
-
-### A folder is nothing but identity
-
-`ShFolder` is `name` + `description`, both hero fields, so the editor's form body is **empty** —
-precisely the shape that gave SH899 a dead Save button. `autosaveOnly` is the flag the package
-already had: `showSaveSubmit = !(autosaveOnly && !isNew)`. Verified in a browser: **0 save
-buttons, 0 forms**, and the hero's inline edit issues a `PUT` that survives a reload.
-
-### One thing this task nearly changed and should not have
-
-Moving the browser's two site actions into the adaptive header, I restyled `View Site` from its
-green to an outline button. With one component serving both chromes, that is a **visible change
-to a console surface this task is not migrating** — the whole point of the arrangement is that
-the console one keeps looking the same. Restored, with the note that the hue is unresolved for
-bento, where a primary action is a tone.
-
-## The heaviest forms, and an adapter that spans a 1:2 mapping (SH901)
-
-The post editor and the new-post flow are the **same components** the console mounts, under the
-chrome provider — 500 lines of save/publish/preview/schedule handling around fifteen dynamic
-widgets, of which the chrome is a header, a save bar and one panel. SH900's rule, applied.
-
-**§LV.4 predicted "the adapter needs a prop it does not have", and it was sharper than a prop.**
-In bento the morph is **one** component: `BentoFormHero` renders the controls in the hero and
-fades a fixed bar in as the hero scrolls away, and the authoring contract forbids composing those
-halves by hand — "two halves that drift". In console chrome the same thing is **two** components
-with no relationship: `PageHeader` and `StickySaveBar`. So `PageHero` absorbed the save
-bar and now spans a 1:2 mapping.
-
-It decides on `onCancel`/`saveBadges`, never on `actions` alone — the content browser passes two
-navigation buttons and must not get a save bar.
-
-The post-type chooser is a **copy**, not an adapter: its `Card`s are clickable choices, whose
-bento counterpart is `BentoTile`. An adapter that turned a panel into a tile would be a different
-component, not a chrome switch.
-
-### SH897's morph check was looking for markup that does not exist
-
-It searched for `[data-bento-save-bar], .bento-save-bar`. **Neither is rendered by anything.**
-`BentoScrollSaveBar` emits `.bento-save-bar-spacer` and wraps the fixed bar in `.bento-fade-in`.
-So the check could not have found a morph on any page, and its report — "no surface carries one
-yet" — was true by construction and would have stayed true after one arrived.
-
-It took a surface actually having a morph for that to become visible. **Give a check its subject
-as early as you can.** Fixed against the package's real markup, and it now distinguishes the two
-answers it exists to tell apart: `morph: ok` on the post editor, `no surface carries one` on the
-home. Verified: `opacity: 0, pointer-events: none` at the top, `opacity: 1, pointer-events: auto`
-after scrolling.
-
-A second wrong answer sat beside it — `checkBentoSurface` returned a `morph` boolean from the
-same invented selectors that nothing read. Removed rather than fixed: a second, wrong answer
-beside the right one is worse than none.
-
-Census after this task: **43 pages, Card 33, PageHeader 36, StickySaveBar 1** — and six pages
-now empty, four of them empty *by migration* rather than by never having had chrome.
-
-## A header-less section is a console card in both eras (SH902)
-
-The post-type slice — list, new, edit — is three pages, and the migration was meant to be the
-routine one: `PageHero` on all three, the edit page passing `saveTitle`/`onCancel`/
-`loading`/`saveDisabled`, three routes mounted under `SectionCardChromeProvider chrome="bento"`.
-That part was routine. What it found was not.
-
-### `AdaptiveSectionCard` re-skins only when it has a header
-
-The package's own branch is `chrome === "bento" && header`, and the fallback is deliberate: a
-section built some other way falls through to the console card rather than losing its content
-silently (SH892). Correct for the package, and wrong for four of Shio's panels.
-
-The content browser's stats strip, its toolbar and its listing, and the post-type list, are
-**panels, not sections**. They carry a count, a breadcrumb, a view toggle, a list of rows — and
-the hero directly above already names the page, so a header on any of them would be noise. All
-four were written with `AdaptiveSectionCard` and no header, and **all four rendered console cards
-under the bento shell**. Three of them were introduced by SH900, in one commit, by the author who
-had documented the trap two tasks earlier.
-
-It was invisible in review, in `tsc` and in every source scan: the page imports the adapter, so
-the census reads it as migrated, and the era classifier is right to say so. What found it was
-`checkBentoSurface` reading `backdrop-filter` off computed style — `frost: null` on a page that
-looked finished.
-
-[`panel.tsx`](../../shio-react/src/components/panel.tsx) is the fix: frosted
-container, no header, one implementation instead of four hand-rolled `bento-glass rounded-2xl`
-call sites that drift the moment two of them differ. **SH923** asks the package for the component
-so this can be deleted; the classes are copied from `BentoSaveBar` so the two match today.
-
-`chrome-adapter.test.mjs` now fails any page that mounts a header-less `AdaptiveSectionCard`, and
-`bento-browser.test.mjs`'s SH900 assertion was re-pointed from counting adapters to counting
-panels. That correction is worth more than the count: the old assertion passed on all three
-browser panels while the bento route rendered three console cards. **It counted the seam and
-never asked whether the seam did anything.**
-
-### The name-key question the section raised, answered by looking
-
-§LV.5 flagged it rather than assuming: post types are the one name-keyed surface, so the identity
-in the hero is a name and not an id, and an inline-edit hero that let it be typed over would be a
-rename with no confirmation — P7 exactly. It is not. The hero edits the **display title**; `name`
-stays a read-only input with its own Rename action, which is SH117/SH163 already decided.
-Confirmed in a browser: `apiNameReadOnly: {value: "Page", readOnly: true}`, Rename present, four
-fields, and `morphAtTop: "0"` → `morphAfter: "1"`.
-
-### The first console probe to reach zero
-
-`StickySaveBar` now matches **no page**, and the census's own vacuity rule prescribed what to do:
-*"Either every page carrying it was migrated — then delete the probe in the same diff — or its
-import path was renamed."* It was the first, so the probe is gone. Not lost coverage —
-`chrome-adapter.test.mjs` asserts that no page mounts `StickySaveBar` directly, which is the same
-rule from the other side and a stricter one.
-
-Census after this task: **43 pages, Card 31, PageHeader 33, Sidebar 1, nine empty.**
-
-`console-check` gained three probes rather than one — list, new and edit. The two that carry no
-save bar are the two that caught the header-less defect, which is the argument for probing a
-slice instead of its most interesting page. 25/25 green.
-
-## Three surfaces where empty is normal, and a grep that found thirteen (SH903)
-
-Search, the trash and the static-file list. §LV.6's argument was that all three routinely render
-nothing and each says so in its own way, so the shared empty state is what they are for. Correct,
-and short by a factor of four.
-
-### The grep is the deliverable, and it lands first
-
-SH322's rule applied literally: [`empty-state.test.mjs`](../../shio-react/test/empty-state.test.mjs)
-was written before any of the three fixes, and it found the hand-rolled block in **thirteen** files
-where the section named two. Not because anyone was careless — each was written months apart by
-someone who could not see the other two, each was right in isolation, and **nothing objected**. The
-fourteenth would have gone in the same way.
-
-What it matches is the *pairing* — a centred `py-16` void plus the muted `h-8 w-8` icon chip —
-rather than either half, which is what keeps it off the load spinner and the centred dialogs.
-
-Three are fixed here and the post-type editor's is fixed too, because SH902 had already made that
-page a bento surface and a hand-rolled console void under the frosted shell is that task's defect
-exactly. The other **nine belong to SH904–SH908**, which rewrite those pages wholesale; converting
-their empty states now would touch each file twice and span four tasks in one diff. They are held
-in `STILL_HAND_ROLLED`, **each row naming the task that deletes it** — and the reader fails in both
-directions, so a task that migrates a page and leaves its row behind is caught too. A debt list
-nothing shortens is a list that only grows.
-
-### `BentoListPage` is not what these pages are
-
-§LV.6 asked for a mosaic. The package has one — `BentoListPage` — and it requires a `newRoute` and
-renders a dashed create-tile, because it is built for entity lists. **None of these three creates
-anything**: search finds, the trash restores, the file list uploads from a picker rather than
-navigating to a form. Passing dummy props to satisfy a shell whose central affordance does not
-apply is how a page ends up with a button that goes nowhere. All three took the adapter shape
-instead, and the one surface that genuinely *is* a mosaic — the file grid — got the tile classes
-directly.
-
-### Two failures a source scan could not have produced
-
-The live check found both, and both were mine:
-
-- **`bento-files` had no frosted surface.** `MediaCard` was never a `Card` — it is a hand-rolled
-  `rounded-lg border bg-background` tile, so a grep for console chrome does not find it and the
-  census counted this page as carrying *one* `Card` while it renders a grid of forty. It now
-  carries `bento-tile bento-glass` in bento chrome: the same classes `BentoTile` puts on its own
-  root, not a copy of the look.
-- **`bento-search` had no frosted surface either**, and that one is a real gap rather than a missed
-  conversion. Search has **three** states and the third is the one it opens in: before a query has
-  been run it rendered *nothing at all* below the form. An empty result is normal here — and so is
-  not having asked yet, and the two want different words. "No results for that" on a page nobody
-  has searched reports a failure that did not happen. `content.searchPromptTitle`/`Hint`, both
-  locales.
-
-Neither is visible in `tsc`, in review, or in any reader that reads imports. The probe landed on
-the unsearched state only because it opens the route with no query — **give a check its subject and
-it finds what you did not think to look for**.
-
-Census after this task: **43 pages, Card 28, PageHeader 30, Sidebar 1, twelve empty.**
-
-## The identity slice, where the design section was wrong twice (SH904)
-
-§LV.7 called users, groups and roles "the clearest case in the product for the entity shell",
-because "each of these entities has a title, a description and an enabled state". Two of those
-three claims do not survive opening the models, and both matter.
-
-**There is no `enabled`.** `ShGroup` and `ShRole` are `{id, name, description}` and nothing else,
-so `hasStatus` stays off. A status pill driven by a column that is not in the model would have
-rendered "Idle" against every group in the instance and meant nothing.
-
-**A user has neither a title nor a description.** `ShUser` is
-`{username, firstName, lastName, email, password?}`: its identity is a **login key** and its name
-is **two columns**. `BentoEntityShell`'s hero inline-edits a single `title` and commits on blur, so
-mapping `title` to `username` renames someone's login by tabbing away from it — P7 with no
-confirmation and no undo — and mapping it to the full name needs a whitespace split that is lossy
-for half the names in the world.
-
-So the slice divides where the data divides: **groups and roles take the shell** (one shared
-`IdentityEntityPage` and one shared `IdentityListPage`, because the two entities are the same
-shape and the console's two copies had already drifted in their breadcrumbs), and for users the
-**list takes the mosaic** while the **editor stays an adapter page**. The post-type editor is the
-precedent for the read-only key (SH902/SH117); a user has no equivalent Rename affordance, so the
-hero does not get the field at all.
-
-### Three defects, and the one that mattered was invisible
-
-- **A static `admin/groups/new` route beside `:groupId`** matches first and carries *no param*, so
-  `useParams().groupId` is undefined, `isNew` is false, the load never runs and the page renders
-  `null`. It reads as a route-ordering problem and is the opposite one. `new` is a **value** of
-  `:id`, which is the sentinel the console already used.
-- **`autosaveOnly` cuts both ways.** It hides Save on an existing entity — correct, the hero
-  autosaves — and deliberately *keeps* it on a new one, because there Save is what creates the
-  entity. A pure-identity entity has an empty form body, so the create branch has to render a real
-  `<form id={formId}>` or the only button on the page is inert. That is SH899 again, in the one
-  mode `autosaveOnly` does not cover.
-- **The create call sent `{id: "", …}`** — the field is required by the type, and the empty string
-  is the honest value for "not assigned yet". `POST /v2/group` **stored it verbatim.** The group
-  appears in `GET /v2/group` and in the console's list, and nothing can address it: `/v2/group/`
-  does not route and every id-shaped path 404s. Read 200, delete 404, still listed afterwards; it
-  had to be removed at the database.
-
-The third is the one worth dwelling on. Every visible thing about the flow was right — the page
-navigated to the list and the group was on it. It was found only by **creating a group and reading
-the row back**, which is the difference between driving a flow and looking at it. The client half
-is fixed here (`create` takes `Omit<IdentityEntity, "id">`); **SH924** carries the server half,
-because any client can still do this and groups are unlikely to be the only entity that allows it.
-
-### One correction to the check itself
-
-`checkBentoSurface` asked for a non-empty `h1`, which was written against `BentoHero`. The entity
-shell does not render one: its title is a `BentoInlineEdit`, which is an `<input>` carrying the
-title as its *value* with `headlineFallback` as the placeholder — and on a create page the title
-is empty by definition. So **no entity-shell page could ever have passed**, and the first four
-probed were the first four written. It now accepts either shape.
-
-The frost rule needed the opposite treatment. A create page for an all-identity entity genuinely
-has no panel and never will, so `noPanel` is declared **per probe, next to the route** rather than
-exempted inside the check — the failure this rule exists to catch (SH902) is precisely "a page
-that renders no frosted surface", and a global exemption would have retired it.
-
-Census after this task: **43 pages, Card 27, PageHeader 29, Sidebar 1, thirteen empty.**
-
-## Eleven pages, split where the data splits (SH905)
-
-API tokens, auth providers, exchange providers, site webhooks, tenants and email configuration:
-five list-and-form pairs and a settings page. §LV.8 called them the most repetitive surface in the
-console and it was right — the five lists differ only in **which two columns sit between the name
-and the status**.
-
-So the slice divides by what each half actually is:
-
-- **The five lists become configuration** on one shared
-  [`AdminListPage`](../../shio-react/src/app/admin/admin-list.page.tsx) — roughly forty lines
-  each of `query`, `tileOf` and labels. That component started as SH904's `IdentityListPage`, fixed
-  to `{id, name, description}` because that is all a group is; generalising it rather than writing
-  a second one is the whole point of the slice. **Two nearly-identical list components is the state
-  this task exists to leave, not to arrive at.** All eight admin lists are that one component now,
-  which is why a single assertion covers all of them.
-- **The six editors stay their console components** under `SectionCardChromeProvider`. Their
-  identity is name + description + enabled, which the entity shell handles well — but their
-  *bodies* are the substance: a vendor property map, a scope and site picker, an event set, a
-  provisioning flow. The shell's value is lifting identity out of a form, and on a 300-line token
-  form that is three fields of twelve. `PageHero` gives the same morph at a fraction of
-  the risk (SH900's rule).
-
-Every card in all six had a real `CardHeader`, so this slice took `AdaptiveSectionCard` where
-SH902's header-less panels needed `Panel` — and a lint now holds that, because a sweep this
-size is exactly where SH902's defect gets reintroduced eleven times.
-
-### The page that needed something — and needed the opposite
-
-§LV.8 said to "notice when one of them needs something the shell does not have instead of working
-around it eleven times". One did stand out, and it turned out to have **hand-rolled what the
-adapter already gives**: email configuration carried a `sticky top-0` div repeating the page title
-with a Save beside it. It duplicated the heading, and it was sticky *without* a morph — over the
-content from the first pixel of scroll, rather than fading in as the hero left, which is the one
-behaviour the save-bar design is about.
-
-Its conversion turned up the package rule worth writing down: **`actions` replaces the hero's own
-Save/Cancel** (`children: actions ?? <submit + cancel>`). That matters because the hero's default
-Save is a bare `type="submit"` and this page has no form — taking the default would have been
-SH899's dead button one more time. A page whose save is an `onClick` passes it as `actions`; a page
-with a real form lets the default submit it.
-
-### A route param that does not match is a blank page and nothing else
-
-`<Route path="admin/auth-providers/:providerId" element={<AuthProviderPage />} />` against a
-component reading `const { authProviderId } = useParams()`. React Router matches; the component
-reads `undefined`; `isNew` stays false, the load never runs, the page renders `null`. **No error,
-no failed request, and `tsc` is silent** — `useParams()` returns
-`Record<string, string | undefined>`, so every param name type-checks.
-
-Two of the five had it. SH904 hit the same shape from the other end — a static `/new` route beside
-a `:id` one, matching first and carrying no param at all. Same symptom, same silence, twice in two
-tasks, which is what earns an instrument rather than a fix:
-[`bento-admin-slice.test.mjs`](../../shio-react/test/bento-admin-slice.test.mjs) pairs every
-parameterised bento route with the params its component actually reads. Verified by reintroducing
-the defect and watching it name the route.
-
-Its own vacuity check is worth copying: the first draft's route pattern only matched the one-line
-`<Route>` form and found **8 of 13**, reporting a clean tree while silently skipping five. It now
-asserts the parsed count equals a raw count of `path="…:param"` in the same file, so a pattern that
-stops matching fails instead of passing.
-
-Census after this task: **43 pages, Card 21, PageHeader 23, Sidebar 1, nineteen empty** — and
-44/44 live probes, every one of the eleven opened in a browser.
-
-## Three bespoke pages, and a catalogue nobody could reach by keyboard (SH906)
-
-The review queue, the activity log and the marketplace — three layouts with little in common.
-§LV.9 predicted the shape of the problem exactly: two of them are **read-mostly surfaces**, "which
-is the page shape the package covers least well — a hero over a table is not a mosaic", and it said
-to let them have a plain section rather than tiles.
-
-They did. The review queue is a list of expandable agent sessions and the activity log is an audit
-table; both take `PageHero` + `Panel` and stay exactly the shape they were. An
-audit log is read down a column, and turning it into a mosaic would trade a readable column for a
-grid of cards saying the same thing worse. The marketplace is the one that genuinely is a mosaic,
-so its grid stayed a grid.
-
-**The review queue was the point of the slice** — it is the curator's half of the agent-native design,
-where a curator goes when they do not trust what an agent did, and §LV.9's whole argument is that
-it should not be the last part of the console that looks old. It is not.
-
-### The defect: a catalogue reachable only by mouse
-
-Every marketplace tile was `<Card className="cursor-pointer" onClick={() => open(item)}>` — a div
-with a handler. **Not focusable, not announced, no key handler.** The entire catalogue, including
-every install action behind it, was unreachable without a pointer.
-
-This is SH922's sweep from the other side and worth stating as a pair, because the two are found by
-opposite means. SH922 looked for **interactive things nested inside interactive things**, which a
-DOM walk finds. This is a thing that *looks* interactive and is not one — no nesting, nothing to
-walk, and it renders identically to a working control. The tile is a real `<button>` now, inside
-the panel rather than instead of it.
-
-The assertion holds the property rather than the fix: no `Panel` in that grid may carry
-`onClick`. Wrapping it in a button, making it a link, or giving the panel real button semantics all
-pass; a div with a handler does not.
-
-### The heading every one of these pages said twice
-
-All three rendered `<h2>{t("x.title")}</h2>` with the description under it, directly below a
-`PageHeader` already showing the title — because the console header has no subtitle slot, so the
-description had nowhere else to live. The bento hero takes both, so the pair had to go or the page
-would name itself twice with nothing between. That is the fourth and fifth time this exact
-duplication has appeared in Block AR (SH898 twice, SH899 twice), which is why it is now asserted
-rather than remembered.
-
-Census after this task: **43 pages, Card 18, PageHeader 20, Sidebar 1, twenty-two empty** — and
-47/47 live probes.
-
-## A surface that owns the viewport has no chrome to migrate (SH907)
-
-§LV.10 put this slice late on purpose: "every other slice in this block risks appearance; this one
-risks behaviour, because the bridge depends on what surrounds the frame — the sizing, the scroll
-container, the overlay stacking — and the bento shell changes all three."
-
-It was right, and the measurement is worth keeping. `visual-editor.page.tsx` is
-`flex flex-col h-screen`: it owns the viewport, draws its own toolbar, and splits the rest between
-a preview iframe and a properties panel. Mounted inside the bento shell and read in a browser at
-1600×1000, against the same page mounted outside it:
-
-| | iframe top | iframe bottom | fits in 1000px | doc overflow |
-|---|---|---|---|---|
-| inside the shell | 137 | 1048 | **no — 48px below the fold** | 64px |
-| outside it | 73 | 984 | yes | none |
-
-One viewport *plus* the shell's 64px `sticky top-0` header, and two sticky bars stacked at the top
-of the page.
-
-### The fix is a route, not a container
-
-`calc(100vh - 4rem)` would have worked and would have been wrong: it makes the editor's height a
-fact about the shell — the coupling §LV.10 is warning about, written into CSS where nothing reads
-it, and stale the next time the header changes. **A surface that owns the viewport has no chrome to
-migrate.** The editor renders the same in both eras because it renders neither era's chrome, so it
-is mounted as a sibling of the shell (beside `/bento-vocabulary`, which is there for a related
-reason) and the bridge's environment is byte-identical to the one it has always had.
-
-Outside the shell, the bento route is measurably *better* than the console one: `overflows: false`
-against the console's 58px, and the properties panel's bottom is at 1000 (visible) where the
-console route puts it at 1008 (cut off). That is a small pre-existing console defect, and the
-console tree goes with SH909/SH910.
-
-### What this task did not prove
-
-§LV.10 also says "a digest is least sufficient and a real click-through is required". **The
-click-through did not run.** `universal-editor-drive` skips on a dev box — the console is `:5173`
-and the renderer answers as `:2710`, so the bridge posts to an origin this window is not, and the
-handshake cannot complete across the Vite proxy. That is a real gap in this task's evidence rather
-than a formality, and the check reports it as a skip on every run (SH238/SH659 make it a *failure*
-under `--strict`, which is what CI passes).
-
-What did run: both routes render with the same iframe `src` (`/preview/<site>/?editor=true`), the
-same edit-mode switch, the same properties panel, and no page errors — and the geometry above,
-which is the half §LV.10 was actually worried about.
-
-Census after this task: **43 pages, Card 17, PageHeader 19, Sidebar 1, twenty-three empty** — and
-49/49 live probes.
-
-## The last two, and the crash that had no lint (SH908)
-
-The GraphQL explorer and the not-found page. §LV.11 put them together because both are "mostly
-something the console does not control", and the second one matters more than its content
-suggests: during a cutover it is where a stale bookmark or a redirect that has not landed puts
-somebody who did not choose to be there.
-
-The explorer is the adapter case (SH900's rule): `PageHero`, the token toolbar as an
-`Panel`, the no-tokens void as the shared `EmptyState` — the last row in SH903's
-`STILL_HAND_ROLLED`, now empty. Its body is GraphiQL, which is nobody's chrome.
-
-**Its bento route is the one Block AR route not declared in `App.tsx`.** The page is `lazy()` so
-Monaco stays out of the main bundle; naming the component in `App.tsx` would have imported it
-eagerly and undone that, with nothing in `tsc`, the census or any probe to say so. `BentoGraphQLRoute`
-lives beside the console one in `graphql.routes.tsx`, and the build still emits `graphql.page`
-(3 kB) and `vendor-graphiql` (4.8 MB) as separate chunks.
-
-### Console chrome outside the console shell is a crash, not a style mistake
-
-`PageHeader` renders `SidebarTrigger` → `useSidebar()`, which **throws** with no `SidebarProvider`
-above it — and only `console.root.page.tsx` mounts one. So a console header anywhere in the bento
-tree, or at `App.tsx`'s bare `*`, blanks the application behind the error boundary.
-
-That is why the not-found page has rendered no chrome since SH180, and **nothing recorded it**. The
-census called it "console-era by absence", which reads as an accident of size rather than a
-constraint. So the obvious migration — give it an `PageHero` like the other thirteen
-surfaces — is a white screen on the one route that matters most.
-
-[`outside-shell-chrome.test.mjs`](../../shio-react/test/outside-shell-chrome.test.mjs) is the
-instrument, and it asks the question of **every** component `App.tsx` mounts outside the console
-shell — 44 of them — rather than of the one that was found. It caught a second, transitive form in
-the same run: at the time, `AdaptivePageHeader`'s console branch **was** `PageHeader`, so a page
-composing the adapter with no `SectionCardChromeProvider` above it carried the same crash one file
-away. (SH910 deleted that branch and SH932 re-pointed the probe — see below.) **It
-found one on its first run**: `content/post-type-select.page.tsx`, shipped by SH901, rendering
-`PageHero` at a bento route with no provider — `/bento/content/folder/:id/post-type-select`
-was a blank page. It renders `BentoHero` now; a bento-only page has no second chrome to adapt to.
-
-### Six ways the Monaco workers do not get fixed (SH927)
-
-Under the Vite dev server the explorer's workers are **created** and then die evaluating their own
-module graph: `monaco-graphql` reaches CommonJS packages that Vite serves raw to a worker, where the
-app graph gets the optimizer's interop. A module worker that fails to evaluate raises an event
-carrying nothing, so `new Worker` reports no message — importing the same URL from the page is what
-prints the cause. The page is fine: Monaco falls back to the main thread and works, slowly.
-
-Every one of these was measured and refuted, and they are written into `console-check.mjs` so the
-next reader does not spend an afternoon re-running them:
-
-| attempt | result |
-|---|---|
-| exclude the three `?worker` entries from `optimizeDeps` | imports resolve to real `/@fs/` paths, warning unchanged |
-| suspect module workers | one built by hand in the page starts fine |
-| `optimizeDeps.include` the CJS package | no chunk — `graphiql` already swallowed it |
-| `optimizeDeps.needsInterop` | the import is rewritten no differently |
-| alias it to a local ESM shim | **works**, and reveals the next CJS package — a chain, not a package |
-| frame the GraphiQL Spring serves (Turing's design) | that page loads twenty resources from `esm.sh` with **no local fallback** |
-
-The last one is the finding worth keeping: Shio bundles 4.6 MB of `vendor-graphiql` **so the console
-does not need a CDN at runtime**. Turing can frame Spring's page because it accepts that dependency;
-Shio would be trading an offline-capable console for a lighter bundle.
-
-So the exemption is the earned answer, not a shrug — dev server only, explorer routes only, still a
-failure against the jar, and it expires by failing the day the workers start.
-
-### The not-found page renders in whatever chrome the path implies
-
-Three mount points, one component: inside the console shell, inside the bento shell (this task's
-catch-all, declared last so it only catches what every real bento route declined), and the bare `*`
-for a path under neither. It reads `useSectionChrome()` and renders the hero only under bento —
-where the Back-to-Home also leads to `/bento` rather than into the console.
-
-### The height a third-party editor needs, measured rather than assumed
-
-GraphiQL sizes itself to its container, so the container must name a height, and the only height
-available is the viewport minus whatever chrome sits above it. SH907 says not to leave that as a
-CSS expression nobody reads, so `console-check` measures it on every run, in both chromes, at
-1600×1000:
-
-| | editor top | editor bottom | viewport | below fold | doc overflow |
-|---|---|---|---|---|---|
-| `/console/graphql` | 198 | 935 | 1000 | 0 | 0 |
-| `/bento/graphql` | 282 | 984 | 1000 | 0 | 0 |
-
-`calc(100vh - 4rem)` holds in both eras for two *different* reasons — the bento shell's `sticky
-top-0` header above it, the console's `AppFooter` below — which is exactly why the number is read
-off a rendered page rather than trusted to a comment.
-
-### Two findings the probe produced by having a subject
-
-- **The explorer had none.** It is token-only (SH4), so on an instance with no enabled CDA token it
-  renders its empty state and never mounts GraphiQL. `provision.mjs` creates a READ token now, so
-  CI measures the editor; without one the check reports a **skip** with its reason, and `--strict`
-  turns that into a failure the way SH238/SH659 did for the editor drive.
-- **`/bento` 404s on a packaged instance.** `ShStaticResourceConfiguration.REACT_CONTEXTS` is
-  `{"/login", "/setup", "/console"}`, so the jar forwards none of the bento tree to the SPA shell —
-  measured: `/console` 200, `/bento` 404, same instance, same second. Every live probe in this block
-  ran against the Vite dev server, which serves `index.html` for any path. **SH926** carries it, and
-  it is the one that matters: a surface is not migrated until the thing that serves it in production
-  serves it. The Monaco worker failure the same run turned up is dev-server-only — the jar's build
-  is clean — and is **SH927**.
-
-Census after this task: **43 pages, Card 17, PageHeader 18, Sidebar 1, twenty-four empty** — and
-50/52 live probes on the dev server, the two failures being SH927 rather than either page.
-
 ## The whole block was proved on a server nobody ships (SH926)
 
 `ShStaticResourceConfiguration.REACT_CONTEXTS` was `{"/login", "/setup", "/console"}`, and those
@@ -1963,346 +1278,6 @@ SH926's own reader keeps its hand-rolled depth walk. It needs nesting rather tha
 what `endOfOpeningTag` was exported for; the workaround comment that described the bug as live has
 been corrected above.
 
-## The choice, made once (SH909)
-
-Fourteen surfaces migrated and the console still mounted **two route trees, two shells and two sets
-of chrome**. §LV.12's argument is not about appearance: "a reversal nobody claims becomes a
-permanent second product", and the legacy AngularJS console has been in exactly that state, beside
-its migrated pages, long enough for it to look normal.
-
-So: `/bento` is the console. `ROUTES.CONSOLE` is `/bento`, and one line does it —
-
-```ts
-const CONSOLE_BASE = "/bento";
-```
-
-— because every `navigate()`, every `to=`, every `urlBase` and the whole nav declaration are built
-from those constants. The 24 call sites that compose a path from `ROUTES.CONSOLE` moved without
-being touched, which is what the constants were for.
-
-### Redirect, don't drop
-
-`/console/**` is in bookmarks, in e-mails, and in redirects this repository does not control, so
-the old prefix is a route whose element is [`LegacyConsoleRedirect`](../../shio-react/src/app/legacy-console-redirect.tsx).
-Two patterns — the bare one and `/:tenant/console/*`, which is what a multi-tenant install's
-bookmarks carry — and `bentoPathFor` handles the two paths that are **not** a prefix swap:
-`/console` and `/console/home` are the same page under bento, and it is the shell's *index* rather
-than a `/home` route (SH898). Search and hash are carried across: `?q=` on search is the one place
-where dropping a query looks like a page that simply found nothing.
-
-`replace` rather than push, or Back from a bento page returns to the console path, which redirects
-forward again — a trap the reader cannot escape with the button they reached for.
-
-Measured in a browser, every legacy shape:
-
-| opened | landed on |
-|---|---|
-| `/console` | `/bento` |
-| `/console/home` | `/bento` |
-| `/console/content` | `/bento/content` |
-| `/console/admin/review` | `/bento/admin/review` |
-| `/acme/console/content` | `/bento/content` |
-| `/console/content/post/<id>` | `/bento/content/post/<id>` |
-| `/bento/admin` | `/bento/admin/users` |
-
-57/59 probes, the two failures being SH927's dev-server Monaco workers on the GraphQL page — the
-same two that fail on `main` and pass against the jar.
-
-### The tenant prefix is dropped, and that is smaller than it looks
-
-The console path was tenant-scoped (`/acme/console/...`); bento is not. **That prefix was never how
-a tenant was resolved**: `ShVigletTenantResolver` reads the session (set by
-`POST /tenant/{name}/switch`), a CDA token's own tenant, or an OIDC `workspace_id` claim, and never
-the URL. It kept generated links inside whatever prefix you arrived with, and nothing else. What is
-genuinely lost is sharing a link that names its tenant, which is **SH931**.
-
-### The adapters stopped adapting, and stopped being called Adaptive (SH932)
-
-`AdaptivePageHeader`, `AdaptivePanel` and `AdaptiveEmptyState` are `PageHero`, `Panel` and
-`EmptyState`. The name was the defect: a wrapper called *Adaptive* tells the next reader there is a
-chrome to choose, and the cheapest way to honour that reading is to write the branch back — which is
-how a retired era returns one page at a time.
-
-**The premise was right about two of the three, and SH932 measured the third rather than inheriting
-it.** `PageHero` has no chrome branch at all: SH910 deleted it, and what is left maps this product's
-header props onto `BentoHero` or `BentoFormHero` depending on whether the page wants a save bar.
-`Panel`'s console branch was **dead** — every call site is under a `chrome="bento"` provider,
-including the one that looked like an exception, since `not-found.page.tsx` composes it inside its
-`if (bento)` arm — so the branch is gone and the file is a seam, not an adapter.
-
-`EmptyState` still branches, and **not between eras**. It chooses between inside the shell and
-outside it: `not-found.page.tsx` is mounted at `App.tsx`'s bare `*`, under no provider, so
-`useSectionChrome()` answers with its `console` default. That route is permanent — a 404 for an
-unknown path cannot live inside a shell that only covers known ones — so the branch is not
-migration debt.
-
-That correction reached an instrument. `outside-shell-chrome.test.mjs` carried a transitive probe
-built on "`AdaptivePageHeader`'s console branch *is* `PageHeader`", which SH910 had made false, so
-it was guarding a crash that could no longer happen — the exact rot that file's own SH910 note warns
-about, one component along. It now holds a named `CHROME_BRANCHING` list and asserts each entry
-still reads the hook, so the list cannot rot into names that branch on nothing. Proven by removing
-the hook from `not-found.page.tsx` and watching it fail.
-
-One collision worth knowing: `static-file.list.page.tsx` already had a local `EmptyState` deciding
-*which message* an empty file list shows — filtered-out versus genuinely blank. It is
-`FilesEmptyState` now, named for the surface rather than the shape.
-
-### The frosted panel is the package's now (SH923)
-
-`Panel` carried `bento-glass rounded-2xl border shadow-md` copied out of `BentoSaveBar`,
-with a comment promising the two would be kept in step by hand. **VDS79 exports `BentoPanel`** and
-2026.3.5 is the first release carrying it, so the copy is gone: nothing in this console decides what
-a frosted panel looks like, and the next consumer that needs one asks the package instead of picking
-its own radius. What is left in `components/panel.tsx` is the console fallback branch, and
-**SH932** is the task that removes both it and the file's name.
-
-Adding the export tripped `bento-vocabulary.test.mjs` (SH887), which is the reader that keeps the
-proving page proving the whole layer rather than whatever it composed on the day it was written — a
-new package export is either rendered on that page or declared `DEFERRED` with the task that owns
-it. `BentoPanel` is rendered there, and it is proved by what it does *not* render as much as by what
-it does.
-
-### `?tenant=` is a claim about intent, and opening it changes nothing (SH931)
-
-A bento URL names its tenant with `?tenant=<name>`. `bento-tenant-link.ts` owns the parameter and
-both directions of it: `tenantFromSearch` reads the claim (a blank value is no claim), and
-`linkWithTenant` stamps one, absolute and idempotent — copying twice is byte-identical, so an
-already-stamped link is re-stamped rather than given two.
-
-**Opening such a link never switches the session.** `BentoTenantLinkNotice`, mounted in the shell
-above the `Outlet`, compares the claim with `GET /tenant/current` and renders nothing when they
-agree — the silent case, which is everyone who produced the link. When they differ it names both
-tenants and offers a switch the reader presses, or says plainly that they are not a member. The
-rejected shape is the obvious one: a parameter that switched the session on open would make every
-pasted URL a state change, carrying a curator out of the tenant they were working in and leaving a
-half-written draft behind in it. That is P7, and the cost of getting it wrong is a lost edit rather
-than a wrong page.
-
-That rule is one line from being broken — move `switchTo` into the effect that already reads the
-claim and nothing else notices — so `bento-tenant-link.test.mjs` slices the notice's `useEffect`
-bodies and holds them empty of it, with a floor on how many it found so the scan cannot pass by
-finding none.
-
-The producer is a **Copy link** item inside `BentoTenantSwitcher`, which inherits both of that
-control's gates: `multiTenant` and two memberships. So a curator who cannot switch cannot produce
-an ambiguous paste either, and a single-tenant install — where every link means the only tenant
-there is — gets neither the banner nor the affordance.
-
-### What is waiting on a design-system release, and what notices when it arrives (SH937)
-
-`shio-react/test/design-system-waits.test.mjs` holds the waits as a **named list** — id, what it
-wants, a probe that answers "is the wait over", and the instruction to run when it is. Each goes red
-on the day its wait ends, which is the shape SH919 shipped as a one-off and this generalises: the
-next wait costs a line, not a test file.
-
-**It has been through one release.** 2026.3.5 carried VDS78 and VDS79, and this reader failed three
-times in one run — the version had moved, SH919's wait was over, SH923's wait was over — while
-correctly leaving SH935 alone, which that release deliberately did not address. Both were shipped
-off the back of it. Before it existed, SH919's line read ⏳ for a week after its fix was committed
-upstream, because "has it landed" was three reads across two repositories somebody had to remember
-to do.
-
-Two probes per entry, and the coarse one is the important one. A precise probe reads the installed
-package for the exact thing — SH935's is `fallbackRoute` disappearing from `BentoNavItem`. It can
-under-report, and that is the dangerous direction: SH923 was waiting on a component **whose name
-nobody had chosen**, so looking for `BentoPanel` would have missed a release calling it
-`BentoSurface`. So `PINNED`
-holds the installed version every entry was measured against and fails when it moves — every wait
-here ends with *a release*, so that one cannot miss. Read the entries, ship what is over, then move
-`PINNED`; moving it first is how a release that ended a wait passes through unnoticed.
-
-A wait-watcher's own failure mode is that a read which has lost its file answers "not yet" for the
-same reason a real wait does, so each entry also carries a `proof()` that its read reached something
-real. Verified by running SH919's probe against the fixed gate in the design-system checkout: it
-flips to "over", with the bare-root call the entry actually makes.
-
-### The floor carries the page reference and the assistant, not only the subpaths (SH940)
-
-`^2026.3.10` is the floor because it is the first release whose `files` carry what the console now
-takes from the package besides imports: the two bins (`viglet-ds-page-reference`,
-`viglet-ds-check-duplicates`), the docs payload the page reference copies (`BENTO-AUTHORING.md`,
-`BENTO-BOUNDARY.md`, `docs/reference/`) and Block E's `VigletAssistant`, `VigletAvatar` and
-`useAssistantNotifications`. 2026.3.5 had the subpaths and none of those. A bin is not in `exports`,
-so `design-system-subpaths.test.mjs` reads the manifest and the files rather than resolving.
-
-**`registerVigTranslations` comes from `@viglet/viglet-design-system/i18n`.** VDS117 took the i18n
-runtime out of the root entry so a consumer that never asked for it does not resolve i18next; the
-root import compiled under 2026.3.5 and is a `TS2305` under 2026.3.10. The unit suite did not see it
-— only `compile:build` did — which is why a design-system bump is validated with the build, not with
-`pnpm test` alone. It also makes `./i18n` Shio's seventh entry, which SH943's line now counts.
-
-The bump read the waits list the way SH937 intends. SH935's wait was not over and never will be: it
-shipped with the collapse abandoned, so its entry left the list instead of waiting on a release
-nobody will cut. SH943 (VDS129's consumer-entries bin) and SH944 (the package's plugin manifest)
-entered it, each with a probe and a proof, because they are now the lines waiting on a release.
-
-### Two vendored directories, and nothing in them is hand-authored (SH941)
-
-`.claude/skills/viglet-ds-pages/` and `docs/design/vds-*` are written by
-`viglet-ds-page-reference`, a bin the design system ships. Run it from the repository root; it
-writes thirteen surfaces — `SKILL.md`, `authoring.md`, `boundary.md`, nine `vds-*.dc.html`
-artboards and `canvas.json` — and `--check` reports drift without writing. **Do not edit any of
-them here.** The next run rewrites them, so a correction belongs in the package, where every
-consumer gets it.
-
-The catalogue answers whether a component exists; it cannot answer whether a page reads as the same
-product, and that answer was in a repository nobody browses. Vendoring puts it where an agent
-session and a person both trip over it — the skill loads before the first screen, an artboard opens
-from the file tree.
-
-Twelve of the thirteen are copies. `canvas.json` is a **merge**: the `vds-` pages, artboards and
-annotations are re-derived and this repository's own are preserved, compared as parsed JSON so a
-formatter is not drift. That merge has a failure a copy does not — the declaration and the files can
-disagree, and a canvas naming an absent artboard opens a blank frame rather than reporting anything
-— which is what `cli/test/page-reference.test.mjs` compares in both directions. It asserts presence
-and coherence only.
-
-**Whether the copies are still the package's is a second gate, and it lives inside `pnpm test`
-(SH942).** `cli/test/page-reference-drift.test.mjs` spawns the bin's `--check --json` against this
-repository and fails on any surface that is not `unchanged`, on an orphaned `vds-` artboard, and on
-a `vds-version` stamp *newer* than the installed package — where refreshing would be a downgrade and
-the bin refuses to write. Inside the JS gate rather than beside it, because a gate run through
-`scripts/run-gate.mjs` keeps its log and stamps its outcome where the comparators read it, and
-because a test reading a spawned process's own exit status cannot lose it the way a pipeline does.
-
-Two properties of that gate are load-bearing, and changing either quietly defeats it. It is **broken
-on purpose**: it plants each kind of drift the bin can see in a throwaway root and requires the check
-to *name the file*, because SH897's browser check passed with `bento.css` deleted. And `canvas.json`
-is compared as **parsed JSON, never as bytes** — reindenting it must stay green, or the first person
-whose editor reformats it is the person who deletes the gate. Its control is a semantic edit to the
-same file, which must still be caught.
-
-### Which screens are worth drawing, and which are already decided (SH945)
-
-`docs/design/` holds two kinds of artboard. The `vds-*` ones belong to the package (above). The
-`shio-*` ones are this repository's own, on this repository's own `canvas.json` pages —
-`shio-surfaces` and `shio-not-chosen` — which the bin preserves rather than rewrites.
-
-**The 23 migrated console screens are deliberately not drawn.** Blocks AQ and AR settled them: one
-route tree, the three shapes and the panel taken from the package, zero legacy chrome. An artboard
-would re-open a decided question and cost days to confirm what the shell and `authoring.md` already
-say. Drawing is for a layout that is still open *and* whose data model follows from the choice.
-
-Five qualify, and each artboard states what it decides and names the direction it did not take:
-revision history with a **field-level** diff (Block AZ — per-field is what SH989 needs, so a
-revision stores a field map and not a rendered blob), the translation workspace (Block BH —
-staleness is per field, so SH1058's digest is too), release bundles (Block BA — a release is
-persisted and addressable, which is what gives SH994 a rollback anchor and SH998 a waiver somewhere
-to live), the agent-supervision inbox (Block BB — the verdict and its reason sit on the *item*, the
-intent on the *run*), and the asset browser (Block BE — every filter including "unused" is
-server-side and paged, which is a claim on SH1033's index).
-
-One rejected direction is kept **drawn** rather than described: `shio-release-tray.dc.html`, a
-release as a session-scoped tray. It reads perfectly well, and everything wrong with it is invisible
-on the screen — which is the argument for drawing it instead of arguing about it.
-
-`cli/test/design-canvas.test.mjs` names the five, checks the canvas and the files agree both ways,
-and — the one that matters — runs a real refresh against a copy and asserts this repository's own
-pages, artboards and annotations come back unchanged. A release that stopped preserving them would
-delete every drawing here, and the only sign would be a canvas that opens with fewer pages.
-
-### The admin hub nobody had migrated
-
-`ADMIN_ROOT` is the `urlBase` of eleven admin surfaces, so it is where their hero back-links point —
-and no bento route claimed it. Under the console it was `admin.root.page.tsx`: a bare `Outlet` with
-an index redirect to the user list. There is no hub page to migrate, so the bento route is that
-redirect, and the probe above is what would have caught eleven dead back-links.
-
-### What the switch broke in the readers, and why that is the interesting part
-
-Three checks failed on their own premises, which is the honest way for a check to notice its world
-moved:
-
-- **`bento-shell.test.mjs` asked whether the bento route was nested inside the console one.** There
-  is no console route, so it failed with "App.tsx no longer opens a route at ROUTES.CONSOLE". The
-  rule it was protecting survives and is now stronger: *nothing in the app mounts sidebar chrome
-  around the bento tree* — nesting was one way to reach that state, a wrapper above `<Routes>` is
-  another, and the old form could not see the second.
-- **`outside-shell-chrome.test.mjs` (SH908) required the console shell block to exist.** Now
-  everything is outside a shell, so the rule applies to the whole application instead of part of
-  it — 45 components rather than 44.
-- **`spa-contexts.test.mjs` (SH926) lost `/console`**, because the legacy patterns are mounted
-  through a `.map()` over a constant and no literal reader resolves `path={pattern}`. It reads the
-  constant now. The failure to notice would have been the bad one: `/console` dropping out of the
-  needed set is exactly the shape of "the redirect is unreachable on a packaged instance".
-
-And one trap worth naming: **`stripComments` eats a route wildcard.** `` `${consolePath}/*` `` is
-character-for-character a block-comment opener, so the stripped copy of `routes.const.ts` loses
-everything from there to the next `*/` — the reader saw one backtick where there are four, and no
-`/console` at all. The file's own doc warns that "block comments inside string literals would be
-stripped too"; this is the first reader in the tree to be pointed at a string that is one. Patterns
-are read from the raw source; prose-adjacent scans keep the stripped one.
-
-## Retire what nothing renders (SH910)
-
-**40 files deleted, and the census reads 43 → 23 pages with zero console chrome.** That second
-number is the whole of Blocks AQ and AR stated as one assertion: `console-chrome-census.test.mjs`
-opened at `Card 42, PageHeader 39, Sidebar 1` and every value in its map is now an empty list.
-
-### The deletion set was computed, not remembered
-
-A reachability walk from `main.tsx` — resolving `@/`, relative and barrel imports to a fixpoint —
-is what produced the list, run again after each wave until only `vite-env.d.ts` remained (an
-ambient declaration, never imported by design). Three waves, because deleting a file makes the
-next one unreachable:
-
-| wave | what it freed |
-|---|---|
-| the shell, the route files, 19 superseded pages | `page-header.tsx` had no importer left but the adapter |
-| `page-header.tsx` | `header-user-menu`, `tenant-switcher`, `ui/sidebar`, `ui/breadcrumb`, `lib/breadcrumb-key` |
-| those | `ui/avatar`, `ui/sheet`, `ui/skeleton`, `ui/gradient-button` |
-
-Guessing the set from the route tree would have stopped after wave one. Two files nothing had
-rendered *before* this task fell out of the same walk — `tenant-gateway.tsx` and
-`tenant.context.tsx`, both designed, declared and never mounted.
-
-### The premise was slightly wrong, and that is where the work was
-
-§LV.13 says the shell and its page header "stay declared and nothing reaches them". True of the
-shell; **not** true of the header. `PageHero`'s console branch rendered `PageHeader`
-plus `StickySaveBar`, so deleting the file meant collapsing that branch — which is what made this
-a change to twenty-two live pages' chrome rather than a pure deletion. `Panel` was left
-alone on purpose: **SH923** asks the package for the frosted panel that retires it, and renaming
-what SH923 will delete is work thrown away. **SH932** carries the names, which no longer describe
-what those components do.
-
-### Eleven readers encoded the two-era model, and a deletion is where they go quietly green
-
-This is the half worth reading before touching any of them. Sixteen assertions failed, in eleven
-files, and **not one was a bug in the deletion** — each had "there are two eras" as its premise.
-Three distinct endings, and choosing wrongly costs coverage rather than a red run:
-
-- **Follow the rule to its new home.** SH46 (a single-tenant install must not advertise tenant
-  admin) named `page-header.tsx` and `app-sidebar.tsx`; the *defect* moved to `bento-nav.ts`, so
-  the reader did. Same for SH679's marketplace reachability. A reader deleted alongside the surface
-  it happened to name is how a closed defect reopens.
-- **Re-derive it.** `outside-shell-chrome.test.mjs` forbade imports needing a `SidebarProvider`.
-  Both probes named deleted modules — a pattern nothing can ever match again, which is a reader
-  reporting a clean tree for ever. The *class* survived one provider along: the bento shell mounts
-  `UserProvider`, and `useCurrentUser` throws without it, on exactly the six routes outside the
-  shell. Its floor of `>= 8` became a named list of those six, because six is small enough to read.
-- **Delete it, and say why in its place.** SH890's header-chip test asserted the console's one
-  shared chrome composed `vg-accent-chip`. No Shio source uses that class now; it is the package's.
-  Re-pointing such a test at whichever file is shared this month asserts less while looking like
-  more.
-
-Two vacuity guards inverted rather than relaxed. The census required every chrome probe to *match*
-a page; zero is now the correct answer, so the probe is exercised against synthetic source instead
-— SH890's reduced-motion rule already worked that way, for the same reason. And `bento-home` gained
-a check that the survey still walks `src/app/console` at all, since "the console home is absent" is
-otherwise indistinguishable from a walk that stopped looking — which is the exact blindness SH898
-was filed against.
-
-### What the deletion cost, recorded rather than absorbed
-
-`breadcrumb-key.test.mjs` went with `lib/breadcrumb-key.ts`, and it carried **SH716**'s assertion.
-`cli/test/assertion-debt.test.mjs` caught it on the next run — an id arriving in the debt by a
-route none of its groups described: *the assertion was deleted with the surface it guarded*. It is
-a declared line now, naming **SH933**, because the retirement is half done: twenty-two live pages
-still push crumbs into a provider nothing renders. **SH934** recorded the other loss —
-`tenant-switcher.tsx` was deleted unreferenced, and it was the only caller of
-`POST /tenant/{name}/switch` — and closed it; see below.
-
 ## Unreferenced and unneeded are different findings (SH934)
 
 The reachability walk that drove SH910 was right about `tenant-switcher.tsx`: nothing rendered it.
@@ -2387,8 +1362,8 @@ building label-and-href arrays for a provider with no consumer. Nothing failed, 
 problem — the calls typechecked, the provider stored what it was given, and the next page copied
 from any of them inherited the habit.
 
-**Stripped, not restored.** The bento shell already states the design: "the breadcrumb bar is
-console chrome, and the bento era puts a page's identity in its own hero." Every hero carries a
+**Stripped, not restored.** The shell already states the design: a page's identity is in its own
+hero, so there is no breadcrumb bar. Every hero carries a
 back link, and the one place a reader moves up and down a tree all day — the content browser —
 draws its own path in its sub-toolbar. There was nothing left for a console-wide trail to do.
 
@@ -2502,30 +1477,6 @@ message) was never observed. Writing a rule that forgives *unnamed* errors on th
 report would mask real ones, which is the failure mode this whole file is written against. SH927
 stays open for that half.
 
-## What a curator has to relearn, and the two things nobody can (SH911)
-
-The published documentation described the console this block replaced. Rewriting it is in
-`vigletdocs/docs-shio` and is its own commit; what belongs here is what the rewrite **found**,
-because two of the three findings are about the product rather than the prose.
-
-**There were no screenshots.** §LV.14 asked for "every screenshot" to be retaken, and the
-published Shio pages carry none — every image under them is an SVG diagram of a flow, not a
-picture of a screen. The docs debt was entirely prose, which made it a smaller task than filed
-and is worth recording so the next cutover does not budget for a photo session.
-
-**The surface area of the change is small and specific.** Four claims went stale, not forty: the
-address (`/console` → `/bento`), the sidebar (a rail carrying two areas, plus the palette that
-replaces the list), the breadcrumb bar, and the dashboard's name. One thing that reads as stale is
-not: **the content browser still draws its own path** in its sub-toolbar, so "click a folder to go
-in, use the path to come back out" survived the header that used to carry a trail. Checking that
-before rewriting is what kept the page true.
-
-**Two entries are documented as losses**, which is the part a docs task is not supposed to produce.
-The pending-review badge has no renderer under a rail that carries areas (**SH936**), and the
-tenant switcher went with the sidebar (**SH934**). Both now carry a `:::caution` telling a reader
-what to do instead — check the queue on a schedule, switch tenants through the API — because a page
-that simply stopped mentioning them would read as though they had never existed.
-
 ## A count is the number acted on (SH953)
 
 `object.children.page.tsx` looped the selection, awaited each `DELETE` with `.catch(() => {})`, and
@@ -2605,158 +1556,30 @@ problem about a field" is a judgement no regex makes.
 **Not covered:** `didYouMean` and `allowed` render as text in the toast rather than as a clickable
 correction and a collapsible list. Block AX routes these reports into the assistant dock.
 
-## The two-chrome vocabulary, counted before it is removed (SH957)
+## The two-chrome vocabulary, counted until it is gone (SH957)
 
-Block AW removes the last of the vocabulary that says the console has two chromes. SH886's lesson
-is that a sweep scoped by a hand-grepped number has no end, and **this block's own line repeated
-it**: 108 source lines and 180 test-and-script lines, where the first run of the census measured
-**89 and 81**. The hand figure counted every "chrome", including uses a one-chrome console keeps
-writing ("the panel carries the chrome"). Swept against that number, the block could never reach
-zero and would not have said why.
+`shio-react/test/chrome-vocabulary-census.test.mjs` holds `STILL_TWO_CHROMES`: every file that
+still names the vocabulary of a console with two chromes, with its count of lines, asserted equal to
+what the walk finds. A list, not a ceiling — a ceiling lets one task's deletions fund another's
+additions — so a new reference fails naming its file, and a removal fails until its line is lowered
+in the same commit. It prints both counts on every run.
 
-`shio-react/test/chrome-vocabulary-census.test.mjs` holds `STILL_TWO_CHROMES`, every file with its
-count of lines naming the vocabulary, asserted equal to what the walk finds — a list, not a
-ceiling, for the reason every ledger here is one. **Each of SH958–SH962 lowers its lines in its own
-diff**, so each commit states how much it took. `test/support/chrome-vocabulary.mjs` owns the walk
-and the five probes, so the measurement and the assertion cannot read two different rules:
+`test/support/chrome-vocabulary.mjs` owns the walk (`src`, `test`, `scripts`, `e2e`) and five
+probes, so a measurement and the assertion cannot read two rules:
 
 - `SectionCardChromeProvider` and `useSectionChrome`, anywhere;
 - a comparison against `"bento"`/`"console"` and a `chrome=` prop, in code only;
 - a comment naming a chrome **beside an era word** (console, bento, era, both, two, either,
-  neither, adapter, provider) — a heuristic, stated as one, which is what separates vocabulary from
-  the ordinary sense of the word.
+  neither, adapter, provider) — a heuristic, stated as one, which separates vocabulary from the
+  ordinary sense of the word.
 
-It walks `e2e` as well as the `src`, `test` and `scripts` §LXII.1 named: the console check names a
-chrome seven times, and a census that stops one directory short is how the last reference survives.
-It excludes its own two files, which describe the probes and match them by construction.
+**Measured first, and the hand count was wrong again**: the roadmap line said 108 source lines and
+180 in tests; the first run read 89 and 81, because the hand figure counted uses a one-chrome console
+keeps. Block AW took it to **8 source lines and 34 test lines**, and what remains is the design
+system's switch itself — the root provider, the vocabulary harness's specimen, the tests that hold
+the provider and the package's two-branch `AdaptiveSectionCard`, and the check that nothing reads
+the hook. None of it can leave before the package drops the switch (VDS146); **the list reaching
+zero is Block AW's criterion**, and SH963 is the line that gets it there.
 
-Non-vacuity is a **copy of a real clean file** (`ui/button.tsx`) in a temp root, read clean and then
-named once a provider is planted in it — a planted string alone would test the classifier and not
-the walk. **The list reaching zero is Block AW's criterion**, and it cannot happen before SH963:
-the root provider has to name a chrome while the design system still exports two.
-
-## One chrome provider, above the router (SH958)
-
-The design system's `SectionChrome` context defaults to `console`, so every route rendering
-`AdaptiveSectionCard` or `EmptyState` wrapped its own element in
-`SectionCardChromeProvider chrome="bento"` — **twenty-one in App.tsx and one in
-`graphql.routes.tsx`**, where the roadmap said "about twenty-five". A route added without one
-rendered the console look, and nothing failed, because the wrong chrome renders perfectly well.
-
-One provider now encloses `<Routes>`. Every element reads `bento`, **inside the shell and outside
-it** — so the bare `*` not-found page, login and setup read bento too, which is correct now that
-there is one chrome and harmless because `bento.css` is imported globally by `index.css`, not by
-the shell. `outside-shell-chrome.test.mjs`'s SH932 rule treats the root provider as covering every
-mount instead of looking for a per-element wrapper.
-
-`chrome-provider-root.test.mjs` holds the arrangement (one provider in App.tsx, enclosing
-`<Routes>`; no route element and no `app/routes/*.tsx` module carrying its own) and the fact a
-reading cannot prove: rendered through `StaticRouter` → `Routes` → a shell route's `Outlet`, an
-element with no wrapper reads `bento` and an `AdaptiveSectionCard` renders `bento-glass`. Its control
-asserts the package still answers `console` with no provider — **the day that fails, VDS145 has
-flipped the default, the root provider decides nothing, and SH963 deletes it.**
-
-Measured, as §LXII.2 asked: the surface digest is identical before and after (47 surfaces, no
-change), since every route already rendered bento through its own wrapper. The census went from src
-89 lines to 58 (App.tsx 39 → 11) and from 81 to 92 in tests — ten of those are the new test naming
-the provider it holds in place, which leaves with it.
-
-## The console branches, deleted once nothing could reach them (SH959)
-
-With SH958's root provider every `useSectionChrome()` in the console answered `bento`, so the
-other arm of each branch became code nothing exercises. Deleted rather than kept as a fallback:
-
-- **`EmptyState`** renders `BentoEmptyState` and nothing else — its plain `py-16` block was the arm
-  a page under no provider took, and the catch-all 404 was that page.
-- **`not-found.page.tsx`** renders the hero and panel everywhere and always offers the bento home.
-  It is mounted twice, as the shell's catch-all and at App.tsx's bare `*`; both are under the root
-  provider now.
-- **`static-file.list.page.tsx`**'s `MediaCard` is `bento-tile bento-glass` unconditionally.
-- **The vocabulary page's `ChromeWitness`** is gone: it printed which chrome a provider chose, which
-  is now one answer. `useSectionChrome` moves to `bento-vocabulary.test.mjs`'s `DEFERRED` under
-  SH963, since nothing in this console calls it; the page keeps `SectionCardChromeProvider` around
-  the `AdaptiveSectionCard` specimen, whose console branch is the package's until VDS146.
-
-`panel.tsx` had no branch left to delete (SH932 removed it); what it keeps is narration, which is
-SH962's.
-
-**Two readers asserted the old shape and were re-derived, not deleted.**
-`outside-shell-chrome.test.mjs`'s SH932 half required a page outside the shell to *decide* rather
-than inherit the console default; it now asserts the opposite of what it recorded — no file under
-`src/` reads `useSectionChrome()` in code, every mount outside the shell is under the root provider,
-and the catch-all composes `PageHero` — with a non-vacuity case for the pattern, the comment strip
-and the walk. `empty-state.test.mjs`'s vacuity check read the hand-rolled markup off the adapter's
-console branch as its live specimen; with that branch gone the specimen is a literal hand-rolled
-block, and the adapter becomes the control that must *not* match.
-
-The surface digest is unchanged, since every page still composes the same elements. The census went
-from src 58 lines to 40 in 14 files; tests stay at 92.
-
-## The migration's instruments, re-derived for one chrome (SH960)
-
-§LXII.4 described the digest's `era` field as one where "every surface reports bento". **Measured, it
-was the opposite**: 33 of 45 surfaces reported `console`, including every bento admin list, because
-they compose this console's shared `AdminListPage` and import nothing from the package themselves.
-A field that labels a bento page `console` is the log line SH938 filed a defect off.
-
-**`scripts/surface-digest.mjs` keeps chrome-in-source-order and the frost classes and loses `era`**
-— from the structure, the hash, `compare` and the CLI line. Every digest moved once; re-take a saved
-baseline with `--json` before comparing against it. No baseline is committed, so there was nothing
-to regenerate in the tree.
-
-**The chrome vocabulary was re-derived by measuring what the pages compose**, and that turned up the
-larger defect: with the old list **33 of 45 surfaces digested zero chrome**, because adapter pages
-compose `PageHero` (22 surfaces), `Panel` (12), `AdaptiveSectionCard` (11), `EmptyState` (9) and
-`AdminListPage` (8) — seams the list did not name — so the proof was blind to the pages it most
-needed to see. With those, `IdentityEntityPage` and `BentoPanel` added, one surface digests no chrome
-(the visual editor, by design since SH907) and distinct digests rose from 18 to 28. The retired
-names whose modules SH910 deleted left the list; `Card` stayed, because `@/components/ui/card` still
-resolves.
-
-**`console-chrome-census.test.mjs` is deleted, not folded.** Every page it declared carried an empty
-list and nothing was declared migrated — it asserted an absence, with an era classifier kept in step
-with the digest's by `bento-site-slice.test.mjs`. Its one live probe (a page composing `Card` again)
-is now `surface-digest.test.mjs`'s last test, on the digest's own walk, so one reader holds that
-absence rather than two that can disagree. The other readers of `era` — the home, post, site and
-browser slices — now assert the chrome the digest records (the home composes `BentoHero`, the
-adapter pages compose `PageHero` and `Panel`), and `surface-digest.test.mjs` holds the named list of
-surfaces with no chrome, so a page the vocabulary cannot see fails by name.
-
-The vocabulary census went from 92 test lines to 66 and from 40 source lines to 38.
-
-## One page tree, by domain (SH961)
-
-`src/app/console` and `src/app/bento` recorded where each page was migrated *from* — twenty-four
-adapter pages in one, twenty-eight written-for-the-shell files in the other, all rendering bento —
-so a reader adding a page was choosing between eras. They are merged, with `git mv`, into four
-trees by domain, following the nav's own sections:
-
-| Tree | Holds |
-|---|---|
-| `content/` | the browser, posts, post types, sites, folders, search, trash, files |
-| `admin/` | users, groups, roles, the infrastructure editors and lists, review, activity, marketplace — and `graphql/`, which the nav files under administration |
-| `editor/` | the Universal Editor (site list, visual editor, field labels) |
-| `system/` | the shell (`bento.root.page.tsx`, the nav, the tenant and review-pending pieces), the home, the 404, and the vocabulary harness |
-
-File names are unchanged, so history follows each file and `bento.*` names still mean the design
-system rather than an era. `login/` and `setup/` stay where they were: pre-auth screens outside the
-product's page vocabulary. `ROUTES.CONSOLE` and the legacy `/console` redirects are untouched — the
-first is the product, the second protects bookmarks.
-
-The mechanical half was a script, and the semantic half was not: every import, `src/app/…` key,
-survey key and `join(SRC, "app", …)` path was rewritten from the move map, but the assertions that
-*meant* "two trees" were re-derived by hand. The SH898 survey test asserts the retired directories
-do not exist and that the survey finds a surface in **every** domain (SH898's blindness is a walk
-that lost a directory); "the console copy is gone" became "exactly one surface has this name";
-`bento-a11y`'s rule that icon debt may sit only on "a console page" became "on a page, never on a
-shared component", which is what it protected. `surface-digest.mjs` walks `DOMAINS` explicitly.
-
-Measured unchanged across the move: 45 surfaces and 28 distinct digests, 13/13 parameterised routes
-parsed with 6 paired, 6 components outside the shell, the census at 38 and 66 lines. `tsc`, and a
-`vite build` into a scratch directory — `graphql.page` is still its own chunk, so the lazy import
-survived the path change. `eslint-suppressions.json` is keyed by path and moved with the files.
-
-**The first Java run found a reader the JS sweep could not:** `ShEditorBridgeTest` reads
-`visual-editor.page.tsx` off disk to assert the console's half of the bridge pins its origin
-(SH304), with the path spelled as `Path.of(..., "app", "console", "universal-editor", …)`. A move
-under `shio-react/` has readers in `shio-app/` too.
+Non-vacuity is a copy of a real clean file (`ui/button.tsx`) in a temp root, read clean and then
+named once a provider is planted in it.

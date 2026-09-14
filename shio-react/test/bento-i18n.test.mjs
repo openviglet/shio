@@ -15,11 +15,11 @@ import i18next from "i18next"
 import { registerVigTranslations } from "@viglet/viglet-design-system/i18n"
 
 /**
- * SH891 — every string the bento chrome renders resolves, in English and in Portuguese.
+ * SH891 — every string the design system's layer renders resolves, in English and in Portuguese.
  *
  * ## The roadmap line was nearly all wrong, and measuring is what said so
  *
- * §LIV.6 was filed as "bento chrome strings have no Shio translations, so a shared rail and
+ * §LIV.6 was filed as "the layer's strings have no Shio translations, so a shared rail and
  * palette would render raw keys", and the work it implied was a sweep: read the layer, find its
  * strings, write two locales' worth. The measurement says otherwise. The layer calls **54** keys.
  * **53 already resolved in both languages** — `registerVigTranslations` wires the package's own
@@ -36,7 +36,7 @@ import { registerVigTranslations } from "@viglet/viglet-design-system/i18n"
  * ## So the sweep is not the deliverable; this reader is
  *
  * One key was added. What actually closes §LIV.6's concern is that the *next* design-system
- * release cannot add a chrome string this console fails to translate: the package ships the
+ * release cannot add a string this console fails to translate: the package ships the
  * layer, so the set of keys it renders changes without anything in this repository changing, and
  * the only thing that would ever notice is somebody reading the console in Portuguese.
  *

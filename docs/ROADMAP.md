@@ -19,7 +19,6 @@
 
 ## Block AW — One chrome: bento, and nothing left that names another
 
-- 📋 **SH962** (deps: SH960 ✅, SH961 ✅) **the console-ui area doc and eighteen source files narrate a two-chrome console that no longer exists** — Comments explain code by the migration that produced it, so a reader learns a console chrome exists and a new page copies an adapter that chooses nothing. → §LXII.6
 - 📋 **SH963** (deps: SH958 ✅, DS VDS146) **Shio still has to declare a chrome at all, because the package keeps a switch with a console value** — Until the design system drops SectionChrome the root provider must stay, and while it stays the census cannot reach zero. → §LXII.7
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent

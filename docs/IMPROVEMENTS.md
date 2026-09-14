@@ -1119,26 +1119,6 @@ and may only shrink, then one root provider, then the branches, the era instrume
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
 
-### LXII.6 The prose, brought to one chrome (SH962)
-
-page-hero.tsx explains that the console branch went with the shell that rendered it,
-post-type.edit.page.tsx that its sections render differently in the two chromes, App.tsx
-that the visual editor renders neither era's chrome, and object.children.page.tsx that
-it is one header for both chromes. docs/agents/console-ui.md carries the census, the
-digest's era classifier, the chrome adapter and its two silent failure modes as current
-guidance. Each was accurate when written and is now an instruction to keep supporting
-something that is gone.
-
-Rewrite comments to say what the code does now, in one chrome, and leave the migration's
-reasoning to git log, which is where agents.md puts history. In console-ui.md, sections
-whose subject was the migration collapse into one short record of what the console is
-today, and the census and digest sections describe the instruments as AW1 and AW4 left
-them.
-
-The docs-shio pages are checked for the same vocabulary, and any user-visible mention of
-a console look is removed. The census from AW1 counts comments, so this task is where
-its debt list reaches the provider AW7 removes and nothing else.
-
 ### LXII.7 The last chrome declaration, removed with the switch (SH963)
 
 After AW2 through AW6, one reference remains by design: the provider at the root that

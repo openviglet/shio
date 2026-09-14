@@ -20,14 +20,10 @@ import { stripComments } from "./support/source-text.mjs"
  * ## What §LV.4 predicted, and how it actually landed
  *
  * "This is the slice most likely to reveal that the adapter needs a prop it does not have." It
- * was sharper than a prop. In bento the save-bar morph is **one** component — `BentoFormHero`
- * renders the controls in the hero and fades a fixed bar in as the hero scrolls away — and the
- * authoring contract forbids composing those halves by hand, because "they are two halves that
- * drift". In console chrome the same thing is **two** components with no relationship:
- * `PageHeader` and `StickySaveBar`.
- *
- * So `PageHero` absorbed the save bar. One call in the page; a pair in console, a
- * single morph in bento.
+ * was sharper than a prop. The save-bar morph is **one** component — `BentoFormHero` renders the
+ * controls in the hero and fades a fixed bar in as the hero scrolls away — and the authoring
+ * contract forbids composing those halves by hand, because "they are two halves that drift". So
+ * `PageHero` absorbed the save bar: one call in the page.
  *
  * ## And a check that could never have found what it was looking for
  *
@@ -66,13 +62,9 @@ test("SH901: the adapter renders the morph, which is the half that survived", ()
       + " hero and its controls never morph")
 
   /*
-   * SH910 — the `StickySaveBar` assertion is gone, and its absence is now the rule.
-   *
-   * This spanned a 1:2 mapping: one `BentoFormHero` in bento, a `PageHeader` plus a `StickySaveBar`
-   * in console chrome. The console branch went with the shell, so the pair is not a thing the
-   * adapter can render any more — and a page reaching past the adapter for the console save bar
-   * directly is the regression, which `chrome-adapter.test.mjs` already forbids from the other
-   * side and more strictly.
+   * SH910 — the `StickySaveBar` assertion is gone, and its absence is now the rule: `PageHero`
+   * renders `BentoFormHero` and nothing else, so a page composing a sticky save bar directly is the
+   * regression.
    */
   assert.doesNotMatch(ADAPTER, /StickySaveBar/,
     "SH901: the adapter renders StickySaveBar again. That is console-era chrome, deleted with the"

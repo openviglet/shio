@@ -172,9 +172,9 @@ test("SH889: every key the nav names exists in both locales", () => {
   assert.deepEqual(Object.keys(en).sort(), Object.keys(pt).sort(),
     "SH889: en and pt nav bundles describe different key sets")
 
-  // Only the keys this file mints. A titleKey is deliberately one the console sidebar already
-  // renders — the authoring contract's rule, that the same entity in two chromes is the same
-  // entity — so those live in their own bundles and i18n-parity.test.mjs is what watches them.
+  // Only the keys this file mints. A titleKey is deliberately one the surface's own page already
+  // renders — the authoring contract's rule against a parallel namespace — so those live in their
+  // own bundles and i18n-parity.test.mjs is what watches them.
   const minted = [
     ...declared.map((item) => item.descriptionKey),
     ...[...navSource.matchAll(/descriptionKey: "(nav\.desc\.section\.[^"]+)"/g)].map(([, k]) => k),

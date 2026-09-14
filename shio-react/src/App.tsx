@@ -61,94 +61,52 @@ function App() {
           <ShioServiceProvider>
             <Toaster />
             {/*
-              SH958 — one chrome provider, above the router, instead of one per route.
-
-              The design system's context defaults to `console`, so every route rendering
-              `AdaptiveSectionCard` or `EmptyState` used to wrap its own element in this provider —
-              twenty-two wrappers, and a route added without one rendered the console look with
-              nothing failing. Here every element reads `bento`, inside the shell and outside it.
-              Interim: once the package's default is bento (VDS145) this is a no-op, and SH963
-              deletes it.
+              SH958 — the section chrome, once, above the router. The design system's context
+              defaults to `console`, so without this every `AdaptiveSectionCard` would render the
+              package's other look. It decides nothing else: once the package's default is bento
+              (VDS145) it is a no-op, and SH963 deletes it.
             */}
             <SectionCardChromeProvider chrome="bento">
             <Routes>
-              {/* SH909 — the default. `ROUTES.CONSOLE` is `/bento` now, and this line did not change. */}
               <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.CONSOLE} replace />} />
               <Route path={ROUTES.SETUP} element={<SetupPage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage />} />
               {/*
-                SH887 — the bento layer's proving page. Top-level, no nav entry, no data: it
-                composes 23 of the layer's runtime exports so a break in the package is found
-                here rather than four surfaces into a slice. It was mounted outside the console
-                shell because the two chromes could not nest; SH909 removed that shell, and the
-                route stays top-level because a harness belongs outside the product's own shell.
+                SH887 — the design system's proving page. Top-level, no nav entry and no data: it
+                composes the layer's runtime exports so a break in the package shows here first,
+                and a harness belongs outside the product's own shell.
               */}
               <Route path={ROUTES.BENTO_VOCABULARY} element={<BentoVocabularyPage />} />
               {/*
-                SH907 — the Universal Editor is mounted OUTSIDE the bento shell, and this is the
-                one route in Block AR placed by measurement rather than by pattern.
+                SH907 — the Universal Editor is mounted OUTSIDE the shell, by measurement.
 
                 `visual-editor.page.tsx` is `flex flex-col h-screen`: it owns the viewport, draws
                 its own toolbar and splits the rest between a preview iframe and a properties
                 panel. Inside the shell it is 100vh *plus* the shell's 64px `sticky top-0` header,
-                so — measured in a browser at 1600x1000 — the iframe's top moves from 81 to 137
-                and its bottom goes from 992 (visible) to 1048 (**below the fold**), while two
-                sticky bars stack at the top of the page.
-
-                §LV.10 predicted exactly this: "the bridge depends on what surrounds the frame —
-                the sizing, the scroll container, the overlay stacking — and the bento shell
-                changes all three". The answer is not to fight the shell with a taller container;
-                it is that a surface owning the viewport has no chrome to migrate. It renders the
-                same in both eras because it renders neither era's chrome.
+                so — measured in a browser at 1600x1000 — the iframe's bottom goes from 992
+                (visible) to 1048 (**below the fold**), while two sticky bars stack at the top.
               */}
               <Route path="/bento/universal-editor/:siteId" element={<VisualEditorPage />} />
               {/*
-                SH888 — the bento route tree, which since SH909 is **the** route tree.
-
-                It was built beside the console one because the two shells could not nest: the
-                console root mounted a sidebar provider and its header reached for that context,
-                while the bento shell ships none — the rail is fixed, one width, hidden below md.
-                So every surface moved under its own task (SH898–SH908) and each slice stayed
-                independently reversible, which across 43 pages was worth two shells for a block.
-
-                SH909 claimed the reversal rather than leaving it: the console tree is gone, its
-                URLs redirect here, and `bento-is-the-default.test.mjs` is what stops a second
-                shell from arriving again in a diff that had a good local reason.
-
-                SH898 — the index is the home page, the first migrated surface.
+                The shell and every page inside it. `bento-is-the-default.test.mjs` is what stops a
+                second shell from arriving in a diff that had a good local reason.
               */}
               <Route path={ROUTES.BENTO} element={<BentoRootPage />}>
                 <Route index element={<BentoHomePage />} />
                 {/*
-                  SH899 — the site slice. `new` and `import` are declared BEFORE `:siteId`, or
-                  the parameter route matches them first and the editor tries to load a site
-                  called "new" — a 404 behind a form, which is the shape SH921 was about.
+                  `new` and `import` are declared BEFORE `:siteId`, or the parameter route matches
+                  them first and the editor tries to load a site called "new" (SH899).
                 */}
                 <Route path="content" element={<BentoSiteListPage />} />
                 <Route path="content/site/new" element={<BentoSiteNewPage />} />
                 <Route path="content/site/import" element={<BentoSiteImportPage />} />
                 <Route path="content/site/:siteId" element={<BentoSiteEditPage />} />
-                {/*
-                  SH900 — the content browser is the SAME component the console mounts, wrapped in
-                  the provider that flips its chrome. 965 lines, of which four were chrome: copying
-                  it the way SH898 and SH899 copied their surfaces would have duplicated the most
-                  defect-prone code in the console so that a header and three panels could differ,
-                  and every fix would then need landing twice until SH909.
-                */}
                 <Route
                   path="content/object/:objectId"
                   element={<ObjectChildrenPage />}
                 />
                 <Route path="content/folder/:folderId/edit" element={<BentoFolderEditPage />} />
                 <Route path="content/folder/:folderId/new-folder" element={<BentoFolderNewPage />} />
-                {/*
-                  SH901 — the post editor and the new-post flow are the SAME components the
-                  console mounts, under the provider. 375 and 133 lines of save/publish/preview/
-                  schedule handling around fifteen dynamic widgets, of which the chrome is a
-                  header, a save bar and one panel: the adapter case, exactly as SH900 framed it.
-                  The post-type chooser is a copy, because its cards are choices rather than
-                  chrome and their bento counterpart is a tile.
-                */}
                 <Route
                   path="content/post/:postId"
                   element={<PostEditPage />}
@@ -161,10 +119,7 @@ function App() {
                   path="content/folder/:folderId/post-type-select"
                   element={<BentoPostTypeSelectPage />}
                 />
-                {/*
-                  SH902 — the three post-type pages, all adapter surfaces. `new` before `:name`,
-                  or the editor tries to load a post type called "new".
-                */}
+                {/* `new` before `:postTypeName`, or the editor loads a post type called "new". */}
                 <Route
                   path="content/post-type"
                   element={<PostTypeListPage />}
@@ -178,10 +133,8 @@ function App() {
                   element={<PostTypeEditPage />}
                 />
                 {/*
-                  SH903 — the three surfaces where rendering nothing is the normal case. All
-                  adapter surfaces: none of the three creates anything, so `BentoListPage` —
-                  which requires a `newRoute` and renders a create-tile — is the wrong shell for
-                  all of them, and the mosaic §LV.6 asked for is not what these pages are.
+                  SH903 — none of these three creates anything, so `BentoListPage`, which requires
+                  a `newRoute` and renders a create-tile, is the wrong shell for all of them.
                 */}
                 <Route
                   path="content/search"
@@ -196,29 +149,17 @@ function App() {
                   element={<StaticFileListPage />}
                 />
                 {/*
-                  SH904 — the identity slice. Groups and roles are `{id, name, description}` and
-                  nothing else, so both go through one shared entity shell and one shared list;
-                  `new` before `:id`, or the editor loads an entity called "new".
+                  SH904 — groups and roles are `{id, name, description}` and nothing else, so both
+                  go through one shared entity shell and one shared list. The user *editor* is not
+                  an entity shell: a user has no title and no description — its identity is a login
+                  key — so a hero that inline-edits `title` would rename the login on blur.
 
-                  The user pair splits: the *list* is a mosaic like the other two, but the
-                  *editor* stays the console component under the provider. A user has no title
-                  and no description — its identity is a login key and its name is two columns —
-                  so a hero that inline-edits `title` would rename the login on blur.
-                */}
-                {/*
-                  One route each, with `new` as a **param value** rather than a static sibling —
-                  the sentinel the console already uses. A static `admin/groups/new` route beside
-                  `:groupId` matches first and carries no param at all, so `useParams().groupId`
-                  is undefined, `isNew` is false, the load never runs and the page renders `null`.
-                  It looked like a routing-order problem and was the opposite one; the live check
-                  caught it as "no hero heading on a bento surface".
-                */}
-                {/*
-                  SH909 — the admin hub, which under the console was `admin.root.page.tsx`: a bare
-                  Outlet with an index redirect to the user list. There is no hub page to migrate,
-                  so this is that redirect and nothing else. It matters because `ADMIN_ROOT` is the
-                  `urlBase` of eleven admin surfaces — every one of their hero back-links pointed
-                  at a path no route claimed.
+                  One route each, with `new` as a **param value** rather than a static sibling. A
+                  static `admin/groups/new` route beside `:groupId` matches first and carries no
+                  param at all, so `useParams().groupId` is undefined and the page renders `null`.
+
+                  SH909 — `admin` is a redirect and nothing else, and it has to exist: `ADMIN_ROOT`
+                  is the `urlBase` of eleven admin surfaces, and their hero back-links point here.
                 */}
                 <Route path="admin" element={<Navigate to={ROUTES.BENTO_USERS} replace />} />
                 <Route path="admin/groups" element={<BentoGroupListPage />} />
@@ -231,18 +172,12 @@ function App() {
                   element={<AdminUserPage />}
                 />
                 {/*
-                  SH905 — the eleven infrastructure pages, split the way the data splits.
-
-                  The five **lists** are configuration on one shared `AdminListPage`: they differ
-                  only in which two columns sat between the name and the status, which is what
-                  §LV.8 meant by the most repetitive surface here.
-
-                  The six **editors** stay their console components under the provider. Their
-                  identity is name + description + enabled, which the entity shell handles well —
-                  but their *bodies* are the substance: a vendor property map, a scope and site
-                  picker, an event set, a provisioning flow. The shell's value is lifting identity
-                  out of a form, and on a 300-line token form that is three fields of twelve. The
-                  adapter gets the chrome right at a fraction of the risk (SH900's rule).
+                  SH905 — the infrastructure pages split the way the data splits. The five
+                  **lists** are configuration on one shared `AdminListPage`. The six **editors** are
+                  forms whose bodies are the substance — a vendor property map, a scope and site
+                  picker, an event set, a provisioning flow — so they keep their own forms under a
+                  `PageHero` rather than taking the entity shell, which would lift three fields of
+                  twelve.
                 */}
                 <Route path="admin/tokens" element={<BentoApiTokenListPage />} />
                 <Route
@@ -274,12 +209,10 @@ function App() {
                   element={<EmailConfigPage />}
                 />
                 {/*
-                  SH906 — the three bespoke surfaces. All adapter pages: the review queue is a
-                  list of expandable agent sessions, the activity log is an audit table, and the
-                  marketplace is a filtered catalogue with a detail dialog. §LV.9 predicted the
-                  first two would want "a plain section rather than tiles", and they do — a hero
-                  over a list is a shape the package has no page component for, and forcing
-                  `BentoListPage` on an audit log would trade a readable column for a mosaic.
+                  SH906 — the review queue is a list of expandable agent sessions, the activity log
+                  an audit table, the marketplace a filtered catalogue: a hero over a list, which the
+                  package has no page component for, and `BentoListPage` on an audit log would trade
+                  a readable column for a mosaic.
                 */}
                 <Route
                   path="admin/review"
@@ -298,27 +231,14 @@ function App() {
                   element={<EditorSitesPage />}
                 />
                 {/*
-                  SH908 — the last two surfaces, both mostly something this console does not draw.
-
-                  The explorer is the console component under the provider: its chrome is a header
-                  and a toolbar, and its body is a third-party editor that sizes itself to whatever
-                  container it is given. Copying it would fork a Monaco worker wiring and a fetcher
-                  that has to keep the session cookie *off* the request, so that a header could
-                  differ (SH900's rule).
-
-                  Declared in `graphql.routes.tsx` beside the console one, and it is the only
-                  Block AR route not named in this file: the page is `lazy()` so that Monaco stays
-                  out of the main console bundle, and naming the component here would have imported
-                  it eagerly and undone that — invisibly, because a bigger bundle fails no check.
+                  SH908 — the GraphQL explorer is the one route not named in this file: its page is
+                  `lazy()` so Monaco stays out of the main bundle, and naming the component here
+                  would import it eagerly — invisibly, because a bigger bundle fails no check.
                 */}
                 {BentoGraphQLRoute}
                 {/*
-                  And the page nobody navigates to on purpose. Without this route an unmatched
-                  `/bento/…` path falls through to the bare `*` below — no rail, no shell, and a
-                  Back-to-Home that leads into the console — which is the wrong chrome shown to
-                  precisely the person §LV.11 describes: somebody who followed a stale link during
-                  a cutover and did not choose to be here. Last, so it only catches what every
-                  real bento route declined.
+                  An unmatched path under the shell. Without it, it would fall through to the bare
+                  `*` below and lose the rail. Last, so it only catches what every route declined.
                 */}
                 <Route
                   path="*"
@@ -326,19 +246,11 @@ function App() {
                 />
               </Route>
               {/*
-                SH909 — the console tree is gone and its URLs are not.
-
-                Every surface moved (SH898–SH908), so what stood here was a second shell rendering
-                the same components in the chrome this block retires. What the block promised
-                instead was reversibility, and §LV.12 is about claiming that: "a reversal nobody
-                claims becomes a permanent second product", which is the state the *legacy* console
-                sat in for years with forty pages beside its migrated ones.
-
-                Both patterns, because the console path is tenant-prefixed and the bare one is what
-                an external redirect uses. The prefix is dropped rather than carried: bento is
-                unscoped, and the tenant a request runs in has always come from the session, a
-                token or an OIDC claim — never from the URL (SH931 carries the part of that which
-                is a real loss, a shared link naming its tenant).
+                SH909 — old `/console/**` bookmarks redirect into the shell. Both patterns, because
+                the old path was tenant-prefixed and the bare one is what an external redirect uses.
+                The prefix is dropped rather than carried: the tenant a request runs in comes from
+                the session, a token or an OIDC claim, never from the URL (SH931 is how a shared
+                link names one).
               */}
               {LEGACY_CONSOLE_PATTERNS.map((pattern) => (
                 <Route key={pattern} path={pattern} element={<LegacyConsoleRedirect />} />

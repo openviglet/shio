@@ -555,9 +555,8 @@ export default function ObjectChildrenPage() {
   return (
     <>
       {/*
-        SH900 — one header for both chromes. The two site-level actions move into it: the console
-        header has no slot, so they render below it as they always did, while the bento hero takes
-        them as `trailing` and puts them beside the title where the save-bar morph expects them.
+        SH900 — the two site-level actions ride in the hero as `actions`, beside the title, where
+        the save-bar morph expects them.
       */}
       <PageHero
         icon={IconFileText}
@@ -567,11 +566,8 @@ export default function ObjectChildrenPage() {
         actions={siteId ? (
           <>
             {/*
-              The console page's own green, preserved. Moving these two actions into the
-              adaptive header was a chrome change; restyling them would have been a visible
-              change to a console surface this task is not migrating — the whole point of
-              one component in two chromes is that the console one keeps looking the same.
-              The hue itself is unresolved for bento, where a primary action is a tone.
+              A hardcoded green, carried over when these actions moved into the hero. The package
+              expresses a primary action as a tone, and choosing that tone is still open.
             */}
             <Button
               variant="default"

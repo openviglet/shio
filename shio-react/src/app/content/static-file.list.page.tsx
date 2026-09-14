@@ -383,12 +383,9 @@ function CategoryChip({ active, label, count, onClick }: {
 /**
  * One file, as a tile.
  *
- * SH903 — this is the one surface in the slice that is **already** a mosaic, so it is the one
- * place the bento layer's tile classes belong rather than a panel. It was never a `Card`: it is a
- * hand-rolled `rounded-lg border bg-background` container, which is why a grep for console chrome
- * did not find it and the census counted this page as carrying one `Card` when it renders a grid
- * of forty. `bento-tile bento-glass` is what `BentoTile` itself puts on its root — the same
- * classes, not a copy of the look — and the frost is what `checkBentoSurface` reads.
+ * SH903 — the file list is a mosaic, so this carries the package's tile classes rather than a
+ * panel's. `bento-tile bento-glass` is what `BentoTile` itself puts on its root — the same classes,
+ * not a copy of the look — and the frost is what `checkBentoSurface` reads.
  *
  * Not `BentoTile` itself: this tile carries a thumbnail, a hover-revealed selection checkbox and
  * an aspect-locked preview, none of which that component's children slot expresses.

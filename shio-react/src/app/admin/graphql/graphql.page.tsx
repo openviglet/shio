@@ -144,11 +144,9 @@ export default function GraphiQLPage() {
             {header}
 
             {/*
-              The toolbar is the page's own chrome, so it goes through the adapter rather than
-              staying a `border-b bg-muted/30` strip: a console strip under the frosted shell is
-              SH902's defect exactly — a page that reads as migrated in every source scan and
-              renders console markup. In console chrome it becomes the bordered card the rest of
-              this console uses, which is the one visible change on that surface.
+              The toolbar is a `Panel`, not a `border-b bg-muted/30` strip: a hand-rolled strip under
+              the frosted shell is SH902's defect — a page that composes the right components and
+              still renders a surface of its own.
             */}
             <div className="px-4 pt-4 md:px-6">
                 <Panel contentClassName="flex flex-wrap items-center gap-3 p-3">

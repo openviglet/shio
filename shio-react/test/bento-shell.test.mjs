@@ -34,8 +34,8 @@ import { stripComments } from "./support/source-text.mjs"
  *
  * `tsc` is silent about it: both are called `UserProvider`, both take children, and the mismatch
  * only exists at runtime in `useContext`. So is every import scan. The only thing that says so is
- * a render — which is why this file renders, the way `chrome-adapter.test.mjs` does and for the
- * same reason: these are wrappers, not pages, and `react-dom/server` costs a millisecond.
+ * a render — which is why this file renders: these are wrappers, not pages, and
+ * `react-dom/server` costs a millisecond.
  *
  * SH920 carries the consequence: the two trees now mount different user contexts, and every one
  * of Block AR's fourteen surfaces crosses that seam.
@@ -122,10 +122,9 @@ test("SH888: no sidebar provider anywhere under the bento tree", () => {
  * so the original assertion failed on its own premise ("App.tsx no longer opens a route at
  * ROUTES.CONSOLE"), which is the honest way for a check to notice its world moved.
  *
- * The rule that survives is the one it was always about, and it is now stronger: **no shell in
- * this application mounts sidebar chrome around the bento tree.** Nesting was one way to reach
- * that state; a wrapper somebody adds above `<Routes>` is another, and the original check could
- * not see it.
+ * The rule that survives is the one it was always about, and it is now stronger: **nothing in this
+ * application mounts a sidebar around the shell's tree.** Nesting was one way to reach that state;
+ * a wrapper somebody adds above `<Routes>` is another, and the original check could not see it.
  */
 test("SH909: nothing in the app mounts sidebar chrome around the bento tree", () => {
   assert.match(appSource, /<Route path=\{ROUTES\.BENTO\}/,
