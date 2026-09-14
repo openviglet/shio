@@ -2805,7 +2805,9 @@ a reason and something that would falsify the claim: an `AGENT_EQUIVALENT` names
 that becomes declared while still classified fails the build, and so does a classification for a root
 that is gone (SH142).
 
-**The first run's inventory: 14 GET-only roots.** One declared (`/api/v2`), four with an agent
+**The first run's inventory** — `ShAgentReadReachabilityLintTest` prints it and writes it to
+`shio-app/target/p1-inventory.json` (SH974), so these figures are the run's rather than a reader's:
+**14 GET-only roots.** One declared (`/api/v2`), four with an agent
 equivalent (`/api/v2/events` → `/agent/changes`, `/api/v2/post/xp` → `/agent/read`,
 `/api/v2/system/info` → `/agent/manifest`, `/preview` → `/agent/render`), one entry point
 (`/api/v2/discovery`, read before the manifest), one console-only (`/api/v2/locale`, the language
@@ -2818,3 +2820,29 @@ Both lints read one scanner, `ShControllerScan` — a second copy of "what is a 
 cheapest way for two inventories to disagree about one file. It resolves a class-level
 `@RequestMapping`, a constant, and the whole-path-on-the-method spelling `ShCsrfController` and
 `ShIndexContext` use, which the older copy dropped.
+
+## A figure in prose is cited from the run, or not written (SH974)
+
+`agents.md` said, of the stateless gate, "of 25 mutating paths, which 8 an agent can write to without
+a cookie" — and `security.md` carried the same figure. Neither is current. The sentence immediately
+before it says, about the *other* gate, that the run prints both counts "which is why neither is
+written here", and then writes this gate's counts anyway. The rule was known; the exception was two
+lines below it.
+
+Nothing could have caught it: `ShAgentP1ConformanceTest` refuses an unreproducible figure only inside
+its own exception reasons, and no instrument reads prose. So the three instruments now write what they
+measured, through `ShP1Inventory`, to **`shio-app/target/p1-inventory.json`** — merged per instrument,
+so a targeted run of one does not erase the others, and in `target/`, so it is rebuilt by the run that
+proves it and never committed.
+
+**`cli/test/agents-md-figures.test.mjs`** reads `agents.md` and `docs/agents/**`, and fails a sentence
+that names one of the three instruments and states a figure unless that sentence cites the artefact.
+When the artefact is present — after a Java run — it also fails a *cited* figure the run did not
+measure, so the citation cannot rot into decoration either. Without it the check still holds the
+citation rule and says so, which keeps the JS gate independent of the Java one.
+
+The unit is the sentence, not the paragraph. A paragraph in these documents runs to half a section, so
+the stateless gate's paragraph swept in every response budget printed near it and the check became a
+list nobody would read. The cost of the narrower unit is stated in the test rather than hidden: a
+figure written two sentences from the instrument's name is out of reach, which makes this rule
+enforceable rather than complete.

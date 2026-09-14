@@ -27,6 +27,7 @@ import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.lint.ShControllerScan;
+import com.viglet.shio.lint.ShP1Inventory;
 
 /**
  * SH973 — <b>the read half of reachability</b>: every GET-only controller root is findable, or says
@@ -268,6 +269,14 @@ class ShAgentReadReachabilityLintTest {
         new TreeMap<>(byReach).forEach((reach, roots) ->
                 System.out.printf("  %-18s %2d  %s%n", reach, roots.size(), new TreeSet<>(roots)));
         System.out.println();
+
+        // SH974 — and written down, so a figure in prose can be cited from the run that measured it
+        // rather than from whoever last re-derived it.
+        Map<String, Object> counts = new TreeMap<>();
+        counts.put("getOnlyRoots", getOnly.size());
+        counts.put("declared", found.size());
+        byReach.forEach((reach, roots) -> counts.put(reach.name(), roots.size()));
+        ShP1Inventory.record("ShAgentReadReachabilityLintTest", counts);
 
         assertThat(getOnly)
                 .as("a scan that silently found nothing would pass forever, which is the failure "

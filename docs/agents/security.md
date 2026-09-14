@@ -45,8 +45,9 @@ class: SH170 (creating a site needs session + CSRF, worked around by hand in `e2
 then SH327 (`/api/v2/render/**`) and SH335 — the same defect three times, each found by someone doing
 a build rather than by a build failing. `ShStatelessReachabilityLintTest` asserts over the same
 configuration that **every mutating controller root is stateless-writable or classified**, and prints
-the inventory: **25 roots**, of which the writable count and the classified ones are printed by the
-run. `AGENT_EQUIVALENT` means the capability has an address-native form (SH170's own resolution was to
+the inventory — the roots, how many are writable and how each of the rest is classified — as well as
+writing it to `shio-app/target/p1-inventory.json`, which is where a figure about it is read from
+since SH974 rather than quoted here. `AGENT_EQUIVALENT` means the capability has an address-native form (SH170's own resolution was to
 grow `site.upsert`, not to open `POST /api/v2/site` to a token); `CONSOLE_ADMIN` means an agent
 minting its own API token is the escalation Block L prevents; and **the gap list is empty** since
 SH343. `/api/v2/render/post-types` (SH327), `/api/v2/preview-token` (SH344) and `/api/v2/site-webhook`

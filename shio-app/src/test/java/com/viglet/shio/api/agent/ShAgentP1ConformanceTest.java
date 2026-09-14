@@ -28,6 +28,7 @@ import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
+import com.viglet.shio.lint.ShP1Inventory;
 
 /**
  * SH338 — P1 is the only one of the ten laws with no instrument, and it is the one the product is
@@ -629,6 +630,17 @@ class ShAgentP1ConformanceTest {
                 .count();
         System.out.printf("  of those, %d decided (closing would be wrong) and %d still open — %s%n%n",
                 decisions, gaps.size(), gaps);
+
+        // SH974 — printed and written down, so prose can cite the run rather than a figure somebody
+        // re-derived once.
+        Map<String, Object> counts = new TreeMap<>();
+        counts.put("featuresClassified", classified.size());
+        counts.put("notAgentReachable", unreachable.size());
+        counts.put("advertisedAndUnreachable", advertisedNow.size());
+        counts.put("decided", decisions);
+        counts.put("openGaps", gaps.size());
+        byReach.forEach((reach, list) -> counts.put(reach.name(), list.size()));
+        ShP1Inventory.record("ShAgentP1ConformanceTest", counts);
 
         assertThat(unreachable)
                 .as("""

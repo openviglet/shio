@@ -1710,6 +1710,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 - **SH1072 (the matrix named and mirrored)** — All six ids are named in the published matrix — SH950 and SH951 in Security, the five Block AU ones as contributor-facing — the mirror is refreshed and the JS gate is green again.
 - **SH973** — ShAgentReadReachabilityLintTest holds every GET-only controller root as declared in the manifest or classified with a falsifier, and its first inventory names 14 roots and one gap (design §LXIV.1 recorded in `docs/agents/agent-surface.md`).
+- **SH974** — The three P1 instruments write their counts to target/p1-inventory.json, and agents-md-figures.test.mjs refuses a figure in the index or an area doc unless its sentence cites that file and matches it (design §LXIV.2 recorded in `docs/agents/agent-surface.md`).
 
 ## Block AZ — What the content said before
 

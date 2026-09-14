@@ -1329,26 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.2 A figure in prose is cited from a run or not written (SH974)
-
-agents.md says of 25 mutating paths, which 8 an agent can write to without a cookie.
-Reproducing the lint's own patterns returns twenty-eight mutating controller roots, and
-ShSecurityConfig carries eleven stateless exemptions before the permitAll paths, so
-neither figure is current. The sentence just before it gets this right for the other
-gate, saying the run prints both counts, which is why neither is written here, and then
-writes this gate's counts anyway.
-
-The guard that exists does not reach it: ShAgentP1ConformanceTest refuses a figure
-nothing reproduces only inside its exception reasons. Two halves close it. Both lints,
-and AY1's sibling, write their inventory to target/p1-inventory.json as well as printing
-it. And cli/test/agents-md-figures.test.mjs scans agents.md and docs/agents for numeric
-claims about an instrument's inventory, failing unless the number is absent or cited
-from that artefact.
-
-The index file then cites the run instead of a number. This is the honesty precondition
-for the rest of the block: a round that adds classifications to three instruments while
-the index quotes an older shape produces a document that disagrees with its own build.
-
 ### LXIV.3 A pointer is a command, and an operator path is a category (SH975)
 
 The manifest's elsewhere map points reviewQueue at console. Every other value is

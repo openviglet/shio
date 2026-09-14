@@ -25,6 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.viglet.shio.lint.ShControllerScan;
+import com.viglet.shio.lint.ShP1Inventory;
 
 /**
  * SH339 — <b>every mutating path is usable without a cookie, or says why not.</b>
@@ -311,6 +312,13 @@ class ShStatelessReachabilityLintTest {
         new TreeMap<>(byReason).forEach((reason, list) ->
                 System.out.printf("  %-16s %2d  %s%n", reason, list.size(), new TreeSet<>(list)));
         System.out.println();
+
+        // SH974 — the figures agents.md had gone stale on, written where a doc lint can read them.
+        Map<String, Object> counts = new TreeMap<>();
+        counts.put("mutatingRoots", mutatingRoots().size());
+        counts.put("statelessWritable", writable.size());
+        byReason.forEach((reason, list) -> counts.put(reason.name(), list.size()));
+        ShP1Inventory.record("ShStatelessReachabilityLintTest", counts);
 
         assertThat(byReason.getOrDefault(Reason.GAP, List.of()))
                 .as("""
