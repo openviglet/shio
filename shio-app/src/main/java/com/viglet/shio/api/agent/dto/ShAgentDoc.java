@@ -63,7 +63,17 @@ import tools.jackson.databind.JsonNode;
 public record ShAgentDoc(String address, String type, String state, String folder,
                          java.util.List<String> fields, JsonNode data, String id,
                          Problem error, Impact impact, String locale, String translationOf,
-                         Boolean published, String url, String digest) {
+                         Boolean published, String url, String digest, String curatorUrl,
+                         String previewUrl) {
+
+    /** The fourteen-field form, before SH981 attached the console's own links. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, null, null);
+    }
 
     /** The thirteen-field form, before SH721 made a write conditional on what was read. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -71,7 +81,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
                       Problem error, Impact impact, String locale, String translationOf,
                       Boolean published, String url) {
         this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
-                published, url, null);
+                published, url, null, null, null);
     }
 
     /** The twelve-field form, before SH585 made the stored spelling readable. */
@@ -94,7 +104,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc withDigest(String stateDigest) {
         return stateDigest == null ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, url, stateDigest);
+                        locale, translationOf, published, url, stateDigest, curatorUrl, previewUrl);
     }
 
     /**
@@ -111,7 +121,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return declared.equals(path)
                 ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, declared, digest);
+                        locale, translationOf, published, declared, digest, curatorUrl, previewUrl);
     }
 
     /**
@@ -134,7 +144,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     /** The same row with SH348's locale attached. */
     public ShAgentDoc withLocale(String postLocale) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                postLocale, translationOf, published, url, digest);
+                postLocale, translationOf, published, url, digest, curatorUrl, previewUrl);
     }
 
     /**
@@ -151,7 +161,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withTranslationOf(String anchorAddress) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
-                anchorAddress, published, url, digest);
+                anchorAddress, published, url, digest, curatorUrl, previewUrl);
     }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
@@ -177,13 +187,30 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withPublished(Boolean live) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                locale, translationOf, live, url, digest);
+                locale, translationOf, live, url, digest, curatorUrl, previewUrl);
+    }
+
+    /**
+     * The same row with the console's own link attached (SH981).
+     *
+     * <p>An agent's closing move used to be a sentence — "change it in the console" with no URL —
+     * and the console's routes live in TypeScript the backend cannot read. They are declared now
+     * ({@code console/surfaces.json}), so this is the route that declaration carries rather than a
+     * string concatenated here, which is what makes it survive the next time the prefix moves.</p>
+     *
+     * <p>Both fields are absent when there is nothing to point at: a folder has no preview, and an
+     * instance whose console has no page for a kind hands back no link rather than a broken one.</p>
+     */
+    public ShAgentDoc withLinks(String console, String preview) {
+        return console == null && preview == null ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, digest, console, preview);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
-                locale, translationOf, published, url, digest);
+                locale, translationOf, published, url, digest, curatorUrl, previewUrl);
     }
 
     /**

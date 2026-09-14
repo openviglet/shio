@@ -44,11 +44,16 @@ import tools.jackson.databind.JsonNode;
  * @author Alexandre Oliveira
  * @since 2026.3
  */
-public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
+public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm, boolean links) {
+
+    /** Every caller from before SH981 asked for the console's links. */
+    public ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
+        this(dryRun, ops, confirm, false);
+    }
 
     /** The two-field form, for the batches that never delete (and every pre-SH108 caller). */
     public ShAgentBatch(boolean dryRun, List<Op> ops) {
-        this(dryRun, ops, null);
+        this(dryRun, ops, null, false);
     }
 
     /**

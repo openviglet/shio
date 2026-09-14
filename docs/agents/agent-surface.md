@@ -2875,3 +2875,33 @@ deep link would have cost more than it told anyone.
 The vacuity guard's absent-path list is derived from the exceptions' own targets now. It had named
 `/agent/trash` since long after SH732 deleted the entry that awaited it, so it was asserting the
 absence of a path nothing was waiting for.
+
+## The handoff as a link (SH981)
+
+An agent's closing move was a sentence. The batch's own detail said *change it in the console* and
+named no URL; the manifest pointed the review queue at the word `console`; `ShAgentDoc.withUrl`
+attaches the stored `furl` spelling, which is a content address rather than a page. The reason it
+stayed that way is that the console's routes live in TypeScript, and `routes.const.ts` records that
+the prefix has already moved once — a URL concatenated in Java would have rotted without a sound.
+
+SH978's declaration carries routes, so it carries this too. **`deepLinks`** is a template per kind of
+thing an agent writes — `post`, `folder`, `site` — and `ShConsoleSurfaces.curatorUrl(kind, id)`
+substitutes the id the caller already holds. `bento-nav.test.mjs` holds every template against the
+router's own routes, so a template that points at no page fails the build on the console's side.
+
+A read asks for them with **`include=links`** (`links` on `shio_read`), and gets **`curatorUrl`**
+and, for a post with a site and a URL, **`previewUrl`** — `/preview/<site>/<url>`, SH99's route,
+which answers for a draft too, and a draft is exactly what has just been written. A batch asks with
+**`links: true`** and every change row carries `curatorUrl` whatever `ids` says: that flag is about
+whether a caller wants UUIDs, and this is a link a person opens. A delete gets none — the page it
+named is gone. `shio publish` asks, and prints the link under each row the way a deploy tool prints
+its URL.
+
+**The measurement changed the design, which is what it is for.** §LXIV.9 budgeted about ten est.
+tokens per response and said to measure before shipping. The two links cost **26** on a terse read —
+28 → 54 — and on every row of every result they took the build-a-site benchmark **800 tokens over its
+ceiling**: that task writes sixty times and hands over once. So they are opt-in, which is SH721's
+shape for the digest one field over, and a default read is the 28 it always was. `find` rows have no
+opt-in at all: a list of candidates is not a handoff, and a link per row would multiply the dearest
+read on the surface by its page size. `shio push --content` does not ask either — a sync writes every
+changed post, and the handoff is the publish.

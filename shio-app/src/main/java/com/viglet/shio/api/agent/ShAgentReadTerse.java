@@ -98,6 +98,9 @@ public final class ShAgentReadTerse {
                     // a terse reader asking for it got the row without the one value it asked for.
                     // Absent unless asked, so every other read's line is byte-identical.
                     .attr("digest", doc.digest())
+                    // SH981 — where a person opens it, and where they look at it.
+                    .attr("curator", doc.curatorUrl())
+                    .attr("preview", doc.previewUrl())
                     .attr("fields", doc.fields() == null ? null : String.join(",", doc.fields()))
                     .build());
             if (doc.error() != null) {

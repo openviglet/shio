@@ -175,11 +175,29 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
      */
     @JsonInclude(Include.NON_NULL)
     public record Change(String op, String address, String action, String detail, String id,
-                         InboundLinks inboundLinks) {
+                         InboundLinks inboundLinks, String curatorUrl) {
+
+        /** Every caller from before SH981 attached the console's own link. */
+        public Change(String op, String address, String action, String detail, String id,
+                      InboundLinks inboundLinks) {
+            this(op, address, action, detail, id, inboundLinks, null);
+        }
 
         /** Every caller from before SH140: a change that breaks no inbound link. */
         public Change(String op, String address, String action, String detail, String id) {
-            this(op, address, action, detail, id, null);
+            this(op, address, action, detail, id, null, null);
+        }
+
+        /**
+         * The same row with the console's page for what it just wrote (SH981).
+         *
+         * <p>An agent's closing move was a sentence — the batch's own detail said "change it in the
+         * console" and named no URL. Attached whatever {@code ids} says, because that flag is about
+         * whether the caller wants UUIDs and this is a link a person opens.</p>
+         */
+        public Change withCuratorUrl(String url) {
+            return url == null ? this
+                    : new Change(op, address, action, detail, id, inboundLinks, url);
         }
 
         /** The no-change outcome, which is the common one on a second run (P5). */

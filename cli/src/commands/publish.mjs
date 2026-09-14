@@ -154,14 +154,17 @@ function live(rows) {
  */
 async function send(client, ops, options) {
   try {
-    return [await client.batch({ dryRun: options.dryRun, ops }, { ids: options.ids })];
+    // SH981 — asks for the console's link, because publishing is the moment the work is
+    // handed to a person. A blueprint apply does not ask, and pays nothing for it.
+    return [await client.batch({ dryRun: options.dryRun, ops, links: true },
+        { ids: options.ids })];
   } catch (error) {
     const max = ceilingFrom(error);
     if (!max || ops.length <= max) throw error;
     const runs = [];
     for (let at = 0; at < ops.length; at += max) {
       runs.push(await client.batch(
-        { dryRun: options.dryRun, ops: ops.slice(at, at + max) },
+        { dryRun: options.dryRun, ops: ops.slice(at, at + max), links: true },
         { ids: options.ids },
       ));
     }
@@ -213,9 +216,12 @@ function render(runs, { verb, dryRun, addresses }) {
     `shio ${verb}: ${result.changed} of ${addresses} post(s)` +
     (dryRun ? " would change — nothing written" : " changed") +
     (noops ? `, ${noops} already ${verb === "publish" ? "live" : "down"}` : "");
-  const lines = rows.map((change) => {
+  const lines = rows.flatMap((change) => {
     const detail = change.detail ? ` (${change.detail})` : "";
-    return `  ${change.action} ${change.address}${change.id ? ` ${change.id}` : ""}${detail}`;
+    const line = `  ${change.action} ${change.address}${change.id ? ` ${change.id}` : ""}${detail}`;
+    // SH981 — the link the instance built, the way a deploy tool prints its URL. A closing move
+    // that says "change it in the console" and names no page is the thing this replaces.
+    return change.curatorUrl ? [line, `    ${change.curatorUrl}`] : [line];
   });
   if (runs.length > 1) {
     lines.push(

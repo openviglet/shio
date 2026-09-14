@@ -366,6 +366,27 @@ class ShConsoleSurfaceP1Test {
     }
 
     @Test
+    @DisplayName("SH981: the console link is built from the declaration, and points at nothing it cannot")
+    void theHandoffIsALink() {
+        assertThat(shConsoleSurfaces.deepLinks())
+                .as("SH981: an agent's closing move was a sentence — the batch detail said 'change "
+                        + "it in the console' and named no URL. The templates are what replaced it")
+                .containsKeys("post", "folder", "site");
+
+        assertThat(shConsoleSurfaces.curatorUrl("post", "7f1c"))
+                .as("SH981: built from the declared route rather than concatenated in Java, which "
+                        + "is what survives the next time the console's prefix moves")
+                .isEqualTo("/bento/content/post/7f1c");
+        assertThat(shConsoleSurfaces.curatorUrl("post", null))
+                .as("SH981: no id, no link — a caller handed a URL with a hole in it would open a "
+                        + "page that does not exist")
+                .isNull();
+        assertThat(shConsoleSurfaces.curatorUrl("nothing-like-this", "7f1c"))
+                .as("SH981: absent rather than invented where this console has no page for a kind")
+                .isNull();
+    }
+
+    @Test
     @DisplayName("SH978: the inventory is the deliverable, and the run prints it")
     void theInventoryIsTheDeliverable() {
         Map<String, List<String>> byAnswer = new LinkedHashMap<>();

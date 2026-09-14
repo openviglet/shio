@@ -87,6 +87,7 @@ public class ShAgentReadService {
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
     private final ShTemplateGraph shTemplateGraph;
+    private final ShConsoleSurfaces shConsoleSurfaces;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -95,7 +96,8 @@ public class ShAgentReadService {
                               ShAddressResolver shAddressResolver,
                               ObjectMapper objectMapper,
                               ShAgentProperties properties,
-                              ShTemplateGraph shTemplateGraph) {
+                              ShTemplateGraph shTemplateGraph,
+                              ShConsoleSurfaces shConsoleSurfaces) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -104,6 +106,7 @@ public class ShAgentReadService {
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.shTemplateGraph = shTemplateGraph;
+        this.shConsoleSurfaces = shConsoleSurfaces;
     }
 
     /**
@@ -260,7 +263,7 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact) {
-        return readDocs(addresses, fields, ids, impact, null, false);
+        return readDocs(addresses, fields, ids, impact, null, false, false);
     }
 
     /**
@@ -269,7 +272,7 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state) {
-        return readDocs(addresses, fields, ids, impact, wanted(state), false);
+        return readDocs(addresses, fields, ids, impact, wanted(state), false, false);
     }
 
     /**
@@ -280,7 +283,22 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state, boolean digest) {
-        return readDocs(addresses, fields, ids, impact, wanted(state), digest);
+        return read(addresses, fields, ids, impact, state, digest, false);
+    }
+
+    /**
+     * The same read, optionally carrying the console's own links (SH981).
+     *
+     * <p>Opt-in for SH721's reason, measured: the two links cost 26 est. tokens on a terse
+     * row — a terse read went 28 to 54 — and the build-a-site benchmark went 800 over its
+     * ceiling with them on every row. A field every reader pays for and one in fifty uses
+     * is the P3 regression this surface measures for; the caller who wants a link is the
+     * one about to hand the page to a person.</p>
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state, boolean digest,
+                                 boolean links) {
+        return readDocs(addresses, fields, ids, impact, wanted(state), digest, links);
     }
 
     /**
@@ -303,7 +321,8 @@ public class ShAgentReadService {
     }
 
     private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
-                                      boolean impact, ShPostState state, boolean digest) {
+                                      boolean impact, ShPostState state, boolean digest,
+                                      boolean links) {
         if (addresses == null || addresses.isEmpty()) {
             throw new NoAddressException();
         }
@@ -318,11 +337,11 @@ public class ShAgentReadService {
             // back to reading them one at a time to find out which one was wrong. A single
             // address still throws, because a one-address read that 404s is correct.
             if (addresses.size() == 1) {
-                docs.add(doc(address, wanted, ids, impact, state, digest));
+                docs.add(doc(address, wanted, ids, impact, state, digest, links));
                 continue;
             }
             try {
-                docs.add(doc(address, wanted, ids, impact, state, digest));
+                docs.add(doc(address, wanted, ids, impact, state, digest, links));
             } catch (ShTeachingException failure) {
                 docs.add(failed(address, failure));
             }
@@ -349,7 +368,7 @@ public class ShAgentReadService {
     }
 
     private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids, boolean impact,
-                           ShPostState state, boolean digest) {
+                           ShPostState state, boolean digest, boolean links) {
         var resolved = shAddressResolver.resolve(rawAddress);
         ShPostUnified post = rowFor(rawAddress, resolved, state);
         JsonNode data = readTree(post.getData());
@@ -374,7 +393,29 @@ public class ShAgentReadService {
                 .withUrl(post.getFurl())
                 // SH721 — last in the chain and null unless asked, so a read that did not want it
                 // is byte-identical to the one it was before this shipped.
-                .withDigest(digest ? ShAgentPostDigest.of(post) : null);
+                .withDigest(digest ? ShAgentPostDigest.of(post) : null)
+                // SH981 — where this is in the console, and where a person looks at it. Built from
+                // the declared route rather than concatenated here: the console's prefix has moved
+                // once already, and a string built in Java would have rotted without a sound.
+                .withLinks(links ? shConsoleSurfaces.curatorUrl("post", post.getId()) : null,
+                        links ? previewUrl(post) : null);
+    }
+
+    /**
+     * Where a person looks at this page (SH981), or {@code null}.
+     *
+     * <p>{@code /preview/<site>/<url>} is the route SH99 gave a curator, and it answers for a draft
+     * as well as for a published page — which is the whole point of handing it over: the agent has
+     * just written something nobody can see yet. Absent for a post with no site or no URL, because
+     * a link that cannot resolve is worse than none.</p>
+     */
+    private String previewUrl(ShPostUnified post) {
+        ShSite site = post.getShSite();
+        String furl = post.getFurl();
+        if (site == null || site.getName() == null || furl == null || furl.isBlank()) {
+            return null;
+        }
+        return "/preview/" + site.getName() + (furl.startsWith("/") ? furl : "/" + furl);
     }
 
     /**

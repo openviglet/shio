@@ -1329,25 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.9 The handoff as a link (SH981)
-
-Grepping the agent package for a console deep link finds prose: a batch detail ending
-change it in the console with no URL, and the manifest pointing review at the word
-console. ShAgentDoc's withUrl attaches the stored furl spelling, not a console route,
-and previewUrl exists only on the preview-token response. routes.const.ts records that
-the console prefix moved once already, so a URL concatenated in Java would rot on the
-next move.
-
-Every write result and every agent read gains curatorUrl for the address it touched, and
-previewUrl where one exists, built from the route AY6's declaration carries rather than
-from a string in Java. shio push and shio publish print the link the way a deploy tool
-prints its URL. The console needs nothing: it already has the pages.
-
-Budget it before shipping, at roughly ten estimated tokens per response, against the
-measured terse read and find figures, and absent rather than empty where no console page
-exists. It depends only on the declaration, not on AY7's readers, so the smallest
-version of the handoff does not wait for the largest task in the block.
-
 ### LXIV.10 A census for never surprise the curator (SH982)
 
 The conformance tests in the tree are ShAgentP1ConformanceTest and

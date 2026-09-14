@@ -298,6 +298,7 @@ public class ShAgentBatchService {
 
     /** SH956 — what a write would strip, so a plan says it before the write happens. */
     private final ShHtmlSanitizer shHtmlSanitizer;
+    private final ShConsoleSurfaces shConsoleSurfaces;
 
     public ShAgentBatchService(ShHtmlSanitizer shHtmlSanitizer,
                                ShAgentSiteAccess siteAccess,
@@ -320,8 +321,10 @@ public class ShAgentBatchService {
                                ShPostTypeAdminService shPostTypeAdminService,
                                ShPostLinks shPostLinks,
                                ShTuringIndexService shTuringIndexService,
-                               ShTuringTextExtractor shTuringTextExtractor) {
+                               ShTuringTextExtractor shTuringTextExtractor,
+                               ShConsoleSurfaces shConsoleSurfaces) {
         this.shHtmlSanitizer = shHtmlSanitizer;
+        this.shConsoleSurfaces = shConsoleSurfaces;
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -593,7 +596,7 @@ public class ShAgentBatchService {
         // destroy is what needs confirming, and a delete of something already gone is a noop
         // that needs nothing (which is what keeps a document re-runnable).
         if (!batch.dryRun() && ShAgentConfirm.mayDestroy(ops)) {
-            ShAgentChangeSet plan = execute(ops, new Session(true, ids, actor, declared));
+            ShAgentChangeSet plan = execute(ops, new Session(true, ids, batch.links(), actor, declared));
             String expected = ShAgentConfirm.ofPlan(plan);
             if (expected != null) {
                 ShAgentConfirm.require(batch.confirm(), expected, plan);
@@ -606,7 +609,7 @@ public class ShAgentBatchService {
         if (!batch.dryRun()) {
             shAgentSessionBudget.spend(ops.size());
         }
-        ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, actor, declared));
+        ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, batch.links(), actor, declared));
         // The token rides back on a dryRun only: on a real run it has been spent, and echoing
         // it would invite a caller to cache one and stop planning.
         return batch.dryRun()
@@ -3099,14 +3102,18 @@ public class ShAgentBatchService {
 
         private final boolean dryRun;
         private final boolean ids;
+        /** SH981 — whether this caller asked for the console's links on each row. */
+        private final boolean links;
         private final String actor;
         private final Declared declared;
         private final Set<String> plannedFolders = new HashSet<>();
         private final Set<String> plannedPosts = new HashSet<>();
 
-        private Session(boolean dryRun, boolean ids, String actor, Declared declared) {
+        private Session(boolean dryRun, boolean ids, boolean links, String actor,
+                        Declared declared) {
             this.dryRun = dryRun;
             this.ids = ids;
+            this.links = links;
             this.actor = actor;
             // Honoured on a dry run only (SH153): on a real run every op resolves live, so a
             // declaration can never stand in for a write that did not happen.
@@ -3146,7 +3153,27 @@ public class ShAgentBatchService {
 
         private Change change(ShAgentBatch.Op op, ShAddress address, String action,
                               String detail, String id) {
-            return new Change(op.op(), address.toString(), action, detail, ids ? id : null);
+            return new Change(op.op(), address.toString(), action, detail, ids ? id : null)
+                    .withCuratorUrl(curatorUrl(op, id));
+        }
+
+        /**
+         * Where the console shows what this op wrote (SH981), or {@code null}.
+         *
+         * <p>From the declared route rather than a string built here, and keyed on the op's own
+         * subject: a folder op lands on the browser at that folder, a post op on its editor. A
+         * delete has a link to nothing, so it gets none — the page it named is gone.</p>
+         */
+        private String curatorUrl(ShAgentBatch.Op op, String id) {
+            // SH981 — asked for, not given. Measured: a link per row took the build-a-site
+            // benchmark 800 est. tokens over its ceiling, on a task that writes sixty times and
+            // hands over once. The caller that wants the handoff is the one about to make it, which
+            // is why `shio publish` and `shio push --content` ask and a blueprint apply does not.
+            if (!links || id == null || op.op() == null || op.op().endsWith(".delete")) {
+                return null;
+            }
+            return shConsoleSurfaces.curatorUrl(op.op().startsWith("folder.") ? "folder"
+                    : op.op().startsWith("site.") ? "site" : "post", id);
         }
 
         /**
@@ -3156,7 +3183,7 @@ public class ShAgentBatchService {
         private Change change(ShAgentBatch.Op op, ShAddress address, String action, String detail,
                               String id, ShAgentChangeSet.InboundLinks inboundLinks) {
             return new Change(op.op(), address.toString(), action, detail, ids ? id : null,
-                    inboundLinks);
+                    inboundLinks).withCuratorUrl(curatorUrl(op, id));
         }
     }
 

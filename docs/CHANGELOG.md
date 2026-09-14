@@ -1717,6 +1717,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH978** — console/surfaces.json declares every console surface with the tool, op or endpoint that reaches the same capability, and ShConsoleSurfaceP1Test joins it to bento-nav.ts and resolves each equivalent (design §LXIV.6 recorded in `docs/agents/console-ui.md`).
 - **SH979** — The console builds its rail from the declaration, MCP publishes it as shio://surfaces, the manifest serves it behind an opt-in include, and shio surfaces prints it with each answer beside it (design §LXIV.7 recorded in `docs/agents/console-ui.md`).
 - **SH980** — The declaration defines nine exception words, each with what it means and what falsifies it, and the gate refuses an undefined reason, an unused word, and a surface whose reason is a paragraph (design §LXIV.8 recorded in `docs/agents/console-ui.md`).
+- **SH981** — A read with include=links and a batch with links:true carry the console page and the preview for what they touched, built from the declared routes, and shio publish prints them; measuring made them opt-in (design §LXIV.9 recorded in `docs/agents/agent-surface.md`).
 
 ## Block AZ — What the content said before
 

@@ -48,6 +48,7 @@ public class ShConsoleSurfaces {
     private final List<ShConsoleSurface> surfaces;
     private final Map<String, ShConsoleSurface.Reason> reasons;
     private final List<ShConsoleSurface.ConsoleOnly> consoleOnly;
+    private final Map<String, String> deepLinks;
 
     public ShConsoleSurfaces(ObjectMapper objectMapper) {
         try (InputStream in = ShConsoleSurfaces.class.getResourceAsStream(FILE)) {
@@ -61,6 +62,7 @@ public class ShConsoleSurfaces {
             // message and read by a person comparing two runs (SH: byte stability).
             this.reasons = ShStableMap.copyOf(declaration.reasons());
             this.consoleOnly = List.copyOf(declaration.consoleOnly());
+            this.deepLinks = ShStableMap.copyOf(declaration.deepLinks());
         } catch (IOException e) {
             throw new UncheckedIOException("cannot read " + FILE, e);
         }
@@ -87,9 +89,34 @@ public class ShConsoleSurfaces {
         return consoleOnly;
     }
 
+    /**
+     * Where a thing an agent just wrote is in the console (SH981).
+     *
+     * <p>A template per kind — {@code post}, {@code folder}, {@code site} — with {@code {id}}
+     * substituted. Declared rather than concatenated in Java because the console's prefix has moved
+     * once already: a string built here would have rotted silently, and the console's own test holds
+     * each template against the router.</p>
+     *
+     * @return the path, or {@code null} when this instance's console has no page for that kind —
+     *         absent rather than empty, so a caller is not handed a link to nowhere
+     */
+    public String curatorUrl(String kind, String id) {
+        String template = deepLinks.get(kind);
+        if (template == null || id == null || id.isBlank()) {
+            return null;
+        }
+        return template.replace("{id}", id);
+    }
+
+    /** The templates themselves, for a reader that wants to check them against the router. */
+    public Map<String, String> deepLinks() {
+        return deepLinks;
+    }
+
     /** The file's top level. The comment block it carries is for whoever opens it, not for this. */
     private record Declaration(List<ShConsoleSurface> surfaces,
                                Map<String, ShConsoleSurface.Reason> reasons,
-                               List<ShConsoleSurface.ConsoleOnly> consoleOnly) {
+                               List<ShConsoleSurface.ConsoleOnly> consoleOnly,
+                               Map<String, String> deepLinks) {
     }
 }

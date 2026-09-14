@@ -266,6 +266,10 @@
             "description" : "#string",
             "type" : "boolean"
           },
+          "links" : {
+            "description" : "#string",
+            "type" : "boolean"
+          },
           "state" : {
             "description" : "#string",
             "type" : "string"

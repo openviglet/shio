@@ -356,8 +356,13 @@ public class ShAgentAPI {
         // SH721 — and `include=digest` is the third rider on the same parameter, which is why the
         // conditional write needed no new endpoint, no new tool and no new query string: a caller
         // that intends to write asks the read it was already making for the one extra value.
+        // SH981 — `include=links` is the fourth rider on the same parameter: the console's page
+        // for this post and the preview a person opens, asked for by the caller about to hand the
+        // work over. Measured before it was made opt-in: on every row it cost 26 est. tokens a row
+        // and took the build-a-site benchmark 800 over its ceiling.
         List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids,
-                includes(include, "impact"), state, includes(include, "digest"));
+                includes(include, "impact"), state, includes(include, "digest"),
+                includes(include, "links"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);

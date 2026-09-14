@@ -274,3 +274,28 @@ test("SH979: the nav is built from the declaration, and the routes agree", () =>
         + " disagreement here sends one of them to a page that is not there.")
   }
 })
+
+/**
+ * SH981 — the deep links the backend hands out are this router's own.
+ *
+ * An agent's write result now carries `curatorUrl`, built from a template in the declaration rather
+ * than from a string in Java: the console's prefix moved once already, and a URL concatenated
+ * server-side would have rotted without a sound. What makes that safe is this — every template has
+ * a route here that matches it.
+ */
+test("SH981: every declared deep link matches a route this console serves", () => {
+  const app = readFileSync(join(SRC, "..", "src", "App.tsx"), "utf8")
+  const links = declaration.deepLinks ?? {}
+
+  assert.ok(Object.keys(links).length >= 3,
+    "SH981: the declaration carries no deep links, so an agent's write result can point nowhere")
+
+  for (const [kind, template] of Object.entries(links)) {
+    // `/bento/content/post/{id}` → the router's `content/post/:postId`, which is how App.tsx
+    // spells it under the shell's own base path.
+    const path = template.replace(/^\/bento\//, "").replace(/\{id\}/, "")
+    assert.match(app, new RegExp(`path="${path}:`),
+      `SH981: the ${kind} deep link is ${template} and no route under the bento shell matches it.`
+        + " A link the instance hands a curator has to open a page.")
+  }
+})

@@ -69,3 +69,38 @@ test("SH979: --json is the same list, for a pipeline", async () => {
 
   assert.deepEqual(JSON.parse(ctx.text()), DECLARED);
 });
+
+/**
+ * SH981 — the handoff is a link, and the CLI prints the one the instance built.
+ *
+ * `shio publish`'s closing line used to be an address and a verb; the console page for what it just
+ * published was a sentence in a batch detail with no URL in it. The instance builds the link from
+ * its declared routes, so this asserts the CLI prints what it was handed rather than composing a
+ * URL of its own — a client that concatenated one would rot the next time the prefix moves, which
+ * has already happened once.
+ */
+test("SH981: shio publish prints the console link the instance handed it", async () => {
+  const { run } = await import("../src/commands/publish.mjs");
+  const ctx = ctxWith(async (url, init) => {
+    if (String(url).includes("/agent/batch")) {
+      return {
+        ok: true, status: 200,
+        json: async () => ({
+          changed: 1, ops: 1,
+          results: [{
+            op: "post.publish", address: "post:Blog/launch", action: "publish",
+            curatorUrl: "/bento/content/post/7f1c",
+          }],
+        }),
+      };
+    }
+    return { ok: true, status: 200, json: async () => ({ results: [] }) };
+  });
+
+  await run({}, ["post:Blog/launch"], ctx);
+
+  assert.match(ctx.text(), /publish post:Blog\/launch/);
+  assert.match(ctx.text(), /\/bento\/content\/post\/7f1c/,
+    "SH981: an agent's closing move is a link a curator can open, not a sentence telling them to"
+      + " find the page themselves");
+});

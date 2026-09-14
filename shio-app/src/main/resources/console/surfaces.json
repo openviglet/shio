@@ -11,7 +11,12 @@
     "A surface names an `agent` equivalent — a tool, an op or a declared endpoint, each resolved",
     "against the running server — or an `exception` whose `reason` is one of the words in `reasons`",
     "below. `consoleOnly` is the same vocabulary applied to what is console-only by nature: a later",
-    "task adds one classified entry there instead of arguing its P1 position in prose nothing reads."
+    "task adds one classified entry there instead of arguing its P1 position in prose nothing reads.",
+    "",
+    "`deepLinks` is how the backend answers `where is this in the console` (SH981): a template per",
+    "kind of thing an agent writes, substituted with the id it already holds. Declared here because",
+    "the console's prefix has moved once already — a URL concatenated in Java would have rotted",
+    "silently, and bento-nav.test.mjs holds each template against the router's own routes."
   ],
   "reasons": {
     "operator-only": {
@@ -50,6 +55,11 @@
       "means": "the console's half of a contract whose other halves exist — it is the human end, so there is nothing for an agent to call",
       "falsifier": "the other legs disappearing, which would leave this console-only in fact rather than by design"
     }
+  },
+  "deepLinks": {
+    "post": "/bento/content/post/{id}",
+    "folder": "/bento/content/object/{id}",
+    "site": "/bento/content/site/{id}"
   },
   "surfaces": [
     {

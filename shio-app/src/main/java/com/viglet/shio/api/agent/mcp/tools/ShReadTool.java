@@ -81,7 +81,10 @@ public class ShReadTool implements ShMcpTool {
                 // SH1073 — SH721's digest, which REST has taken as `include=digest` since it
                 // shipped and MCP could not ask for. Declaring shio_write's `expect` without this
                 // would advertise a guard whose only input no MCP client can obtain.
-                "digest", ShMcpTool.bool("Return the value shio_write's expect takes.")),
+                "digest", ShMcpTool.bool("Return the value shio_write's expect takes."),
+                // SH981 — where a person edits it and where they look at it, for the turn that
+                // hands the work over. Off by default: measured at 26 est. tokens a row.
+                "links", ShMcpTool.bool("Return the console and preview URLs for each post.")),
                 List.of("address"));
     }
 
@@ -93,6 +96,7 @@ public class ShReadTool implements ShMcpTool {
                 false,
                 ShMcpArgs.bool(arguments, "impact"),
                 ShMcpArgs.string(arguments, "state"),
-                ShMcpArgs.bool(arguments, "digest")));
+                ShMcpArgs.bool(arguments, "digest"),
+                ShMcpArgs.bool(arguments, "links")));
     }
 }
