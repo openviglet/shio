@@ -34,8 +34,7 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH982** (deps: SH973 ✅) **P7 is the round's most-cited law and no census asks which mutating paths offer its guards** — Dry-run, a confirm token, attribution and a review entry are asserted task by task, so the class is never swept and the next unguarded write is invisible. → §LXIV.10
-- 📋 **SH983** (deps: SH982) **no census asks which writes return proof, so cheap textual evidence stays a per-author choice** — Digest, verify and impact are opt-in per endpoint, so a new write can ship returning a bare 200 and nothing notices the perception loop was left open. → §LXIV.11
+- 📋 **SH983** (deps: SH982 ✅) **no census asks which writes return proof, so cheap textual evidence stays a per-author choice** — Digest, verify and impact are opt-in per endpoint, so a new write can ship returning a bare 200 and nothing notices the perception loop was left open. → §LXIV.11
 - 📋 **SH984** (deps: —) **lines filed against a design-system release have no probe in the waits list, so a release can end their wait unnoticed** — SH937 holds every line waiting on the package as a named probe, and SH946, SH947, SH948, SH963, SH964, SH966 and SH968 were filed without one. → §LXIV.12
 - 📋 **SH1070** (deps: —) **the docs conformance gate is red at HEAD, and 135 commits deep in owed runs** — Two suites fail on drift nobody has seen: a published page states Spring Boot 4.1.0 against a pom declaring 4.1.1, and COVERAGE.md's summary counts 57 clusters over 54 rows. → §LXIV.13
 - ⏳ **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — the COVERAGE.md edit is in the vigletdocs working tree and uncommitted, so a fresh clone still reads the old matrix. → §LXIV.14

@@ -1329,25 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.10 A census for never surprise the curator (SH982)
-
-The conformance tests in the tree are ShAgentP1ConformanceTest and
-ShAgentP2ConformanceTest. P7, never surprise the curator, is the law this round leans on
-hardest: releases require a confirm token, the console publish gains a dry run, bulk
-verbs report per-item outcomes, attribution becomes visible and publishing gains a
-permission. Each of those tasks asserts its own fix, and none asks the SH338 question
-first: which other mutating paths have none of these?
-
-The instrument is a census built on AY1's ShControllerScan. It enumerates every mutating
-path and classifies each on four axes: does it accept a dry run, does a destructive
-branch require a confirm token from its own plan, does it write an audit row carrying
-the actor and any agent session, and does it produce a review entry where the actor is
-an agent. Each unclassified gap is fixed or held as a reason with a target and a
-falsifier, and both counts print on green.
-
-Run before the feature blocks, it is their worklist; run after, it is what stops the
-next console write arriving with none of the four.
-
 ### LXIV.11 A census for close the perception loop (SH983)
 
 P9 asks for cheap textual proof instead of asking someone to look. The instruments exist

@@ -2905,3 +2905,30 @@ shape for the digest one field over, and a default read is the 28 it always was.
 opt-in at all: a list of candidates is not a handoff, and a link per row would multiply the dearest
 read on the surface by its page size. `shio push --content` does not ask either — a sync writes every
 changed post, and the handoff is the publish.
+
+## A census for "never surprise the curator" (SH982)
+
+P1 has three instruments and P2 has one. **P7 had none** — and it is the law this round leans on
+hardest: a release needs a confirm token, the console publish gains a dry run, bulk verbs report per
+item, attribution becomes visible. Each of those tasks asserts its own fix, and none asks SH338's
+question first: which *other* mutating paths have none of these? A law argued task by task is a law
+nobody sweeps.
+
+**`ShAgentP7ConformanceTest`** asks it of every mutating root `ShControllerScan` finds, on four axes.
+**A dry run** — can a caller see the plan before it happens. **A confirm token** — does a destructive
+branch require one taken from its own plan (SH108), which is what makes a deletion something a person
+was shown. **An audit row** — does the write leave a trail carrying the actor, which
+`ShContentAuditService` also stamps with the agent session. **A review entry** — does an agent's write
+become something a curator can approve or revert, which `ShReviewService` reads off exactly those
+rows.
+
+Every claim is **falsifiable in both directions**: a guard that is present names the file and the
+token that prove it, and an absence names the same pair and asserts the token is *not* there. So a
+path that gains a dry run, or starts auditing, fails this test until its row moves — which is the
+half SH142 keeps having to add to a held list. It paid for itself on the first run:
+`/api/v2/render/post-types` was written down as having no dry run and has had one all along.
+
+The counts print on every run and land in `p1-inventory.json` beside the other three instruments, so
+a figure about them in prose is cited rather than remembered (SH974). Read before a feature block the
+census is its worklist; read after, it is what stops the next console write arriving with none of the
+four.
