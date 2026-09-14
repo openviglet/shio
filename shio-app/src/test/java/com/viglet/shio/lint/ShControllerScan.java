@@ -150,6 +150,42 @@ public final class ShControllerScan {
                 || covers(path, root));
     }
 
+    /**
+     * The path patterns a session-less caller may write to (SH975).
+     *
+     * <p>Every CSRF exemption in the security configuration, with its constant resolved to the
+     * literal. Here rather than in one lint because two instruments now ask it: the reachability
+     * inventory asks which mutating roots are writable, and the P1 table asks whether an
+     * {@code OPERATOR_HTTP} row is telling the truth. Two readers of one configuration is how they
+     * came to disagree about the review queue in the first place.</p>
+     */
+    public static List<String> csrfExemptions() {
+        String config = sources().get("ShSecurityConfig.java");
+        if (config == null) {
+            throw new IllegalStateException("ShSecurityConfig.java is gone — move this reader with "
+                    + "the configuration rather than deleting it");
+        }
+        int start = config.indexOf(".ignoringRequestMatchers(");
+        if (start < 0) {
+            throw new IllegalStateException("the CSRF configuration moved; see above");
+        }
+        int end = config.indexOf("))\n", start);
+        String block = config.substring(start, end < 0 ? config.length() : end);
+
+        Map<String, String> constants = constants(config);
+        List<String> patterns = new ArrayList<>();
+        Matcher matcher = Pattern.compile("mvc\\.matcher\\((\\w+)\\)").matcher(block);
+        while (matcher.find()) {
+            String literal = constants.get(matcher.group(1));
+            if (literal == null) {
+                throw new IllegalStateException(matcher.group(1)
+                        + " is exempted and its literal could not be resolved in the config");
+            }
+            patterns.add(literal);
+        }
+        return List.copyOf(patterns);
+    }
+
     /** Every main source file, keyed by file name, with its comments stripped (SH613). */
     public static Map<String, String> sources() {
         try (Stream<Path> files = Files.walk(MAIN)) {

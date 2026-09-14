@@ -10,7 +10,6 @@ package com.viglet.shio.spring.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,8 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,9 +53,6 @@ import com.viglet.shio.lint.ShP1Inventory;
  */
 class ShStatelessReachabilityLintTest {
 
-    private static final Path MAIN = Path.of("src", "main", "java", "com", "viglet", "shio");
-    private static final Path CONFIG = MAIN.resolve(
-            Path.of("spring", "security", "ShSecurityConfig.java"));
 
     /** Why a mutating path may require a browser session. */
     private enum Reason {
@@ -360,10 +354,6 @@ class ShStatelessReachabilityLintTest {
         return ShControllerScan.covers(pattern, root);
     }
 
-    /** {@code public static final String X = "/literal";} — for a mapping given as a constant. */
-    private static final Pattern CONSTANT = Pattern.compile(
-            "String\\s+(\\w+)\\s*=\\s*\"([^\"]*)\"");
-
     /**
      * Every controller root that carries at least one mutating mapping.
      *
@@ -404,39 +394,15 @@ class ShStatelessReachabilityLintTest {
      * config, with its constant resolved to the literal.
      */
     private static List<String> statelessWritablePatterns() {
-        String config = sources().get("ShSecurityConfig.java");
-        assertThat(config)
-                .as("ShSecurityConfig.java is gone — move this lint with the configuration rather "
-                        + "than deleting it")
-                .isNotNull();
-        int start = config.indexOf(".ignoringRequestMatchers(");
-        assertThat(start).as("the CSRF configuration moved; see above").isGreaterThanOrEqualTo(0);
-        int end = config.indexOf("))\n", start);
-        String block = config.substring(start, end < 0 ? config.length() : end)
-                .replaceAll("(?m)//.*$", "");
-
-        Map<String, String> constants = new LinkedHashMap<>();
-        Matcher constant = CONSTANT.matcher(config);
-        while (constant.find()) {
-            constants.put(constant.group(1), constant.group(2));
-        }
-
-        List<String> patterns = new ArrayList<>();
-        Matcher matcher = Pattern.compile("mvc\\.matcher\\((\\w+)\\)").matcher(block);
-        while (matcher.find()) {
-            String literal = constants.get(matcher.group(1));
-            assertThat(literal)
-                    .as("%s is exempted but its literal could not be resolved in the config",
-                            matcher.group(1))
-                    .isNotNull();
-            patterns.add(literal);
-        }
-        return List.copyOf(patterns);
+        // SH975 moved the reading itself into ShControllerScan: the P1 table asks the same question
+        // of the same configuration, and two readers of one file is how the two came to disagree
+        // about the review queue.
+        List<String> patterns = ShControllerScan.csrfExemptions();
+        assertThat(patterns)
+                .as("an empty exemption list would make every mutating root read as session-only, "
+                        + "which passes this lint and means nothing")
+                .isNotEmpty();
+        return patterns;
     }
 
-    private static Map<String, String> sources() {
-        Map<String, String> byName = ShControllerScan.sources();
-        assertThat(byName).containsKey(CONFIG.getFileName().toString());
-        return byName;
-    }
 }

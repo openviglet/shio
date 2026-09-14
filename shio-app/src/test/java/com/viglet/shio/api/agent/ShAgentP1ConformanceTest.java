@@ -28,6 +28,7 @@ import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
+import com.viglet.shio.lint.ShControllerScan;
 import com.viglet.shio.lint.ShP1Inventory;
 
 /**
@@ -140,6 +141,28 @@ class ShAgentP1ConformanceTest {
         REST_ONLY(true),
         /** P1 break: needs a browser session, so the agent cannot use it at all. */
         CONSOLE_ONLY(true),
+
+        /**
+         * Reachable over HTTP with an <b>operator's</b> credential, and refused to an agent token
+         * (SH975).
+         *
+         * <p>The category SH975 added, for the reason SH596 and SH732 added theirs: the vocabulary
+         * could not say what the review queue is. Three artefacts said three things about one path.
+         * {@code ShStatelessReachabilityLintTest} said <em>writable</em>, because
+         * {@code /api/v2/review/**} carries the narrowed CSRF exemption and HTTP Basic is enough;
+         * this table said {@code CONSOLE_ONLY}, which is false — a curator's CLI reaches it; and the
+         * manifest said the word <em>console</em>, which is not a pointer at all.</p>
+         *
+         * <p>All three were describing the same deliberate boundary: the veto over an agent's work
+         * is exercised by a person, so an {@code AGENT} token may not write here (SH109) while the
+         * person's own credential may, from anywhere. That is a different fact from "a browser is
+         * required", and it is the one worth publishing — so the pointer names the route.</p>
+         *
+         * <p>Still an exception, because an agent cannot reach it: P1 is paid, deliberately. And the
+         * category carries its own check — the target must really be stateless-writable — so this
+         * table and the reachability lint cross-check instead of disagreeing.</p>
+         */
+        OPERATOR_HTTP(true),
         /** P1 break: only the CLI does it, so a client with no shell cannot. */
         CLI_ONLY(true);
 
@@ -392,7 +415,10 @@ class ShAgentP1ConformanceTest {
         // It read the page rather than the model, which is why it was small enough to be the first
         // of these worked. The inventory had been printed on every run for many blocks and read
         // more often than it had been worked; this is one row of it.
-        byFeature.put("reviewQueue", new Delivery(Reach.CONSOLE_ONLY, "/review/sessions",
+        // SH975 — reclassified from CONSOLE_ONLY, which was the wrong half of the truth: the
+        // credential is the boundary, not the browser. A curator reaches this with HTTP Basic from a
+        // terminal; an AGENT token is refused, which is the decision SH109 made.
+        byFeature.put("reviewQueue", new Delivery(Reach.OPERATOR_HTTP, "/review/sessions",
                 "SH109 put this off the agent namespace on purpose — it is the human's veto over "
                 + "the agent's work, so an agent approving its own run is the thing it prevents. The "
                 + "first of these recognised as a design decision rather than a gap, and long "
@@ -556,6 +582,20 @@ class ShAgentP1ConformanceTest {
                     if (delivery.target() != null) {
                         problems.add(feature + ": a cross-cutting property names a target, which "
                                 + "means it is really a route — classify it as one");
+                    }
+                }
+                case OPERATOR_HTTP -> {
+                    // SH975 — the claim is that a person's own credential reaches it, so the path
+                    // has to be one a session-less caller may write to. Read from the security
+                    // configuration, which is where the reachability lint reads it: an exemption
+                    // that is narrowed away turns this row into CONSOLE_ONLY, and the build says so
+                    // rather than the table quietly meaning something else.
+                    String path = ShAgentManifestService.API_BASE + delivery.target();
+                    if (ShControllerScan.csrfExemptions().stream()
+                            .noneMatch(pattern -> ShControllerScan.covers(pattern, path))) {
+                        problems.add(feature + ": SH975 — names '" + path + "' as operator-writable, "
+                                + "and no CSRF exemption covers it, so a session-less curator cannot "
+                                + "write there and this is CONSOLE_ONLY after all");
                     }
                 }
                 case REST_ONLY, CONSOLE_ONLY, CLI_ONLY -> {
@@ -880,6 +920,15 @@ class ShAgentP1ConformanceTest {
      * direction protects: an {@code elsewhere} entry outliving its exception would send a caller to
      * the CLI for something a tool now does, and nothing about the tool's arrival would say so.</p>
      */
+    /**
+     * What a pointer may look like (SH975): a CLI command, or an HTTP verb and a path.
+     *
+     * <p>Anything after the path is a note — who may call it, which flag to pass — because the
+     * first token or two is the part a caller acts on and the rest is for the person reading.</p>
+     */
+    private static final java.util.regex.Pattern RUNNABLE_POINTER =
+            java.util.regex.Pattern.compile("^(?:shio\\s+\\S|(?:GET|POST|PUT|PATCH|DELETE)\\s+/\\S).*$");
+
     @Test
     @DisplayName("the P1 exception list is published in the manifest, and nothing else is")
     void everyExceptionSaysWhereTheCapabilityLives() {
@@ -898,10 +947,16 @@ class ShAgentP1ConformanceTest {
                         sends the next caller to a CLI for something a tool now does.""")
                 .containsExactlyInAnyOrderElementsOf(exceptions);
 
+        // SH975 — the sentence below was the rule and `isNotBlank()` was the check, so `console`
+        // passed for blocks: an apology in the shape of a value. A pointer parses as something a
+        // caller can run — a `shio` command, or a verb and a path — and whatever else it carries
+        // afterwards is a note for the person reading it.
         assertThat(elsewhere.values())
-                .as("a pointer is a command or a route, never an apology — the value is what the "
-                        + "caller runs instead")
-                .allSatisfy(where -> assertThat(where).isNotBlank());
+                .as("SH975: a pointer is a command or a route, never an apology — the value is what "
+                        + "the caller runs instead, so it starts with `shio ` or with a verb and a "
+                        + "path. `console` passed for blocks because the rule was in this message "
+                        + "and the check was isNotBlank()")
+                .allSatisfy(where -> assertThat(where).matches(RUNNABLE_POINTER));
         assertThat(List.copyOf(elsewhere.keySet()))
                 .as("sorted, like features, because the manifest is byte-stable (P5/SH136)")
                 .isSorted();
@@ -964,10 +1019,26 @@ class ShAgentP1ConformanceTest {
                 .hasSizeGreaterThanOrEqualTo(5);
         assertThat(paths)
                 .contains("/agent/resolve", "/post-type/{name}", "/render/post-types",
-                        "/site-webhook", "/preview-token")
+                        "/site-webhook", "/preview-token");
+
+        // SH975 — derived from the exceptions rather than typed here. The list said `/agent/trash`
+        // long after SH732 removed the entry that awaited it, so the guard was asserting the absence
+        // of a path nothing was waiting for: a guard that cannot outlive what it guards has to be
+        // computed from it.
+        List<String> awaited = p1Exceptions().values().stream()
+                .filter(delivery -> delivery.reach().isException())
+                .map(Delivery::target)
+                .filter(target -> target != null && target.startsWith("/"))
+                .sorted()
+                .toList();
+        assertThat(awaited)
+                .as("every exception that names a path is what makes the staleness check able to "
+                        + "fail; none of them naming one would make it vacuous")
+                .isNotEmpty();
+        assertThat(paths)
                 .as("the paths a current exception awaits must still be absent, or the guard is "
-                        + "asserting nothing")
-                .doesNotContain("/agent/import", "/agent/trash", "/review/sessions");
+                        + "asserting nothing — awaited: %s", awaited)
+                .doesNotContainAnyElementsOf(awaited);
     }
 
     /**

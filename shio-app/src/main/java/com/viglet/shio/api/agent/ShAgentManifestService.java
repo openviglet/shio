@@ -342,8 +342,14 @@ public class ShAgentManifestService {
         elsewhere.put("pageAudit", "shio audit <page>");
         elsewhere.put("siteCapture", "shio clone <url>");
         elsewhere.put("visualSnapshot", "shio snapshot <page>");
-        // Console-shaped: a human is the point, or a browser protocol is.
-        elsewhere.put("reviewQueue", "console");
+        // Operator-shaped: a person's credential is the point, not a browser. SH975 — this said the
+        // word `console`, which is not something a caller can run, and was wrong besides:
+        // `/api/v2/review/**` carries the narrowed CSRF exemption, so a curator reaches it with HTTP
+        // Basic from a terminal. What an AGENT token may not do is write there (SH109), and that is
+        // the fact worth publishing — so the pointer names the route and says whose credential.
+        // Terse because this document has a ceiling and SH743 keeps room under it: the sentence the
+        // caller needs is who may call it, and the console's own listing needs no pointer from here.
+        elsewhere.put("reviewQueue", "GET /review/sessions (operator credential, not AGENT)");
         // SH732 — `trash` was here and had been wrong for a block. SH222 gave an agent
         // `find?trash=true` to list it and `post.restore`/`folder.restore` to undo a delete, and
         // SH648 added `site.restore`. A pointer that says "console" for something three ops do is

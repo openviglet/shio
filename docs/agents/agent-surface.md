@@ -2846,3 +2846,32 @@ the stateless gate's paragraph swept in every response budget printed near it an
 list nobody would read. The cost of the narrower unit is stated in the test rather than hidden: a
 figure written two sentences from the instrument's name is out of reach, which makes this rule
 enforceable rather than complete.
+
+## A pointer is something you can run, and an operator path is a category (SH975)
+
+The manifest's `elsewhere` map pointed `reviewQueue` at the word **`console`**. Every other value is
+something a caller runs — `shio import <file>`, `POST /graphql` — and the test that checks them says
+so in its own message ("a pointer is a command or a route, never an apology") while asserting only
+`isNotBlank()`. The rule was written; the check was not.
+
+It was also wrong. `/api/v2/review/**` carries the narrowed CSRF exemption, so a curator reaches the
+review queue with HTTP Basic from a terminal; what is refused there is an **AGENT** token, which may
+write only on the agent namespace and MCP (SH109). So three artefacts said three things about one
+path: the reachability lint said *writable*, the P1 table said `CONSOLE_ONLY`, and the manifest said
+*console*. That is what a missing category looks like.
+
+**`Reach.OPERATOR_HTTP`** is that category: reachable over HTTP with a person's own credential and
+refused to an agent's. Still an exception — P1 is paid, deliberately — but for the honest reason. It
+carries its own check: the target must be covered by a CSRF exemption, read from `ShSecurityConfig`
+through `ShControllerScan.csrfExemptions()`, which is the same reader the reachability lint uses. The
+two instruments now cross-check instead of disagreeing, and narrowing that exemption turns the row
+back into `CONSOLE_ONLY` with a build failure saying so.
+
+The pointer is now `GET /review/sessions (operator credential, not AGENT)`, and every `elsewhere`
+value must parse as a `shio` command or as a verb and a path, with anything after it read as a note.
+It is terse because the manifest has a ceiling and SH743 keeps room under it — at 96% used, a console
+deep link would have cost more than it told anyone.
+
+The vacuity guard's absent-path list is derived from the exceptions' own targets now. It had named
+`/agent/trash` since long after SH732 deleted the entry that awaited it, so it was asserting the
+absence of a path nothing was waiting for.

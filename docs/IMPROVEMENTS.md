@@ -1329,26 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.3 A pointer is a command, and an operator path is a category (SH975)
-
-The manifest's elsewhere map points reviewQueue at console. Every other value is
-something a caller runs, and the conformance test's own prose says a pointer is a
-command or a route, never an apology, then asserts only isNotBlank(), so the apology
-passes. Tighten the assertion to the sentence: each value parses as a CLI command or as
-a verb and a path, and reviewQueue becomes the review route plus a console deep link,
-with the note that it needs an operator credential.
-
-That exposes the second half. /api/v2/review is stateless-writable to HTTP Basic,
-because its path carries the narrowed CSRF exemption, and refused to an AGENT token,
-which may write only on the agent namespace and MCP. So the reachability lint says
-writable, the conformance test says console-only and the manifest says console: three
-artefacts, three answers, which is what a missing category looks like. Add OPERATOR_HTTP
-to Reach, reclassify the review queue into it, and have that category assert the path
-really is stateless-writable, so the two instruments cross-check.
-
-The vacuity guard's hard-coded absent-paths list is derived from the exceptions'
-targets, so it cannot outlive the fix it guards.
-
 ### LXIV.4 The scarcest number in the product, printed on green (SH976)
 
 The budget test computes the estimate and the limit and reveals both only through its

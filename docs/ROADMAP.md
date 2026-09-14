@@ -34,7 +34,6 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH975** (deps: —) **the manifest points the review queue at the word console, and Reach has no category for operator-only** — Every other elsewhere value is a runnable command or route and the assertion checks only non-blankness, while review is writable to HTTP Basic and refused to an agent token. → §LXIV.3
 - 📋 **SH976** (deps: —) **a green MCP budget run prints per-tool cost and never the total, the headroom or the tool count** — tools/list sits near its ceiling and resources/list and prompts/list carry no budget, so the number deciding whether a capability can land is visible only in a failure. → §LXIV.4
 - 📋 **SH977** (deps: SH976) **the round's new tool arguments each budget themselves alone against headroom none of them can share** — Revisions, perspectives, schedules, filters and locale each add schema to existing tools, and no per-tool reservation divides the room between them. → §LXIV.5
 - 📋 **SH978** (deps: SH973 ✅) **nothing joins the console's route tree to the agent surface** — The console's surfaces are a TypeScript array the JVM cannot read, and the P1 test is keyed on manifest features, so a console-first page is invisible to every instrument. → §LXIV.6
