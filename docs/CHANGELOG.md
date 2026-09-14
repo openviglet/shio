@@ -1719,6 +1719,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH980** — The declaration defines nine exception words, each with what it means and what falsifies it, and the gate refuses an undefined reason, an unused word, and a surface whose reason is a paragraph (design §LXIV.8 recorded in `docs/agents/console-ui.md`).
 - **SH981** — A read with include=links and a batch with links:true carry the console page and the preview for what they touched, built from the declared routes, and shio publish prints them; measuring made them opt-in (design §LXIV.9 recorded in `docs/agents/agent-surface.md`).
 - **SH982** — ShAgentP7ConformanceTest classifies every mutating path on dry run, confirm token, audit row and review entry, each claim falsifiable both ways, and prints the counts (design §LXIV.10 recorded in `docs/agents/agent-surface.md`).
+- **SH983** — ShAgentP9ConformanceTest asks every mutating path what proof its answer carries — a change set, a digest, findings, a route delta — each present with the file and token that prove it, or absent with the reason a caller needs none, so a write that starts answering with a digest fails until its row moves. The evidence is a token in the response type rather than in the controller, which is what separates a digest offered on a second endpoint from one that answers the write: /api/v2/staticfile stamps sha256 on the item a replace returns. ShGuardCensus now holds the shape both censuses walk (design §LXIV.11 recorded in `docs/agents/agent-surface.md`).
 
 ## Block AZ — What the content said before
 

@@ -1329,26 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.11 A census for close the perception loop (SH983)
-
-P9 asks for cheap textual proof instead of asking someone to look. The instruments exist
-and are good, the structural and appearance digests, the address-scoped verify,
-include=impact and shio audit, and every one of them is something a caller must request.
-Nothing enumerates which mutating responses carry proof, so a task can observe that one
-save returns a toast while the agent path returns two digests, and the observation stays
-inside that task.
-
-The census shares AY10's walk: for each mutating path, does the response carry a digest,
-a change set, a finding list or a route delta, and if not, is there a recorded reason.
-The bar is deliberately low. The point is not that every write renders a page, but that
-a write returning a bare 200 is a decision somebody wrote down rather than an omission.
-
-It pays for itself in this round. Release runs, review decisions, bulk verbs, asset
-metadata and rollback each invent a response shape, and several independently propose a
-digest delta. A census that names the missing ones before they are written turns those
-improvisations into one contract, which is also what keeps the console and shio diff
-agreeing about what changed.
-
 ### LXIV.12 Every wait on the package, probed (SH984)
 
 design-system-waits.test.mjs exists because has it landed was three reads across two
@@ -3064,6 +3044,51 @@ the decision cannot drift from the one the REST reads make. The benchmark alread
 exists, so the fix lands as a lowered ceiling in `token-budgets.properties` beside the
 measured figure — the fan-out budget falling well below 7 per entry per stream is the
 proof, and the SH967 withheld-entry test is what says the memo still denies.
+
+### LXXII.16 A move's answer says what it touched, not what it moved (SH1078)
+
+The P9 census (SH983) classified twenty-eight mutating paths and left one row that reads
+as a gap rather than a decision. A move is the one console write that changes what a
+visitor can reach: a post's friendly URL is composed from its folder chain, so dragging
+a folder in the tree retires one set of delivery addresses and creates another. The
+answer is the list of objects it touched. Which URLs those objects now answer on, and
+which ones stopped answering, is nowhere in it.
+
+Every other absence in that census has a reason that survives being written down — the
+row is the answer, the write is not content, no route moved. This one does not: the
+route did move, and the caller is told about the objects instead. The proof exists and
+is a separate run. `shio verify --delivery` walks the site and reports what resolves,
+which is the right instrument for asking whether delivery is sound and the wrong one for
+asking what this call just changed. An agent that moved a folder has to decide, with no
+signal, whether to spend that walk.
+
+So: have the move's response carry the addresses it retired and the ones it created,
+from what the write already computed, and let `shio verify --delivery` stay the question
+about the whole site. The cheap half is that the renderer already resolves a post's
+address, so the delta is a difference over values the call holds rather than a new
+traversal.
+
+### LXXII.17 An import's answer is the site, not what arrived in it (SH1079)
+
+The P9 census (SH983) asked of every mutating path whether its answer carries a change
+set, a digest, findings or a route delta. An exchange import is the write with the
+widest effect in the product — a package creates a site, its folders, its posts, its
+post types and its static files in one call — and it answers with
+`ResponseEntity<ShSite>`: the site's own row, which the caller largely already knows,
+since it named the package.
+
+The asymmetry is the point. A single-object save can answer with the row it wrote
+because the caller sent that row and can compare. An import is the opposite: nobody
+typed its contents, a package built elsewhere is what a caller cannot predict, and what
+it needs to know is what landed and whether any of it is broken. Both proofs exist and
+neither is offered here. The import walks every object it creates, so a count by kind is
+a tally it is already keeping, and `shio verify` over the new site is the finding list —
+a run somebody has to decide to make, with nothing in the response to suggest it.
+
+So: answer an import with what arrived, by kind, and with whatever the import itself
+already knows went wrong — a skipped file, an unresolved post type. A first import on a
+fresh instance is also the moment an operator has the least context to interpret
+silence, which is when a bare created site reads as success.
 
 ## LXXIII One content model, many languages (Block BH)
 

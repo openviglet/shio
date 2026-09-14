@@ -2932,3 +2932,35 @@ The counts print on every run and land in `p1-inventory.json` beside the other t
 a figure about them in prose is cited rather than remembered (SH974). Read before a feature block the
 census is its worklist; read after, it is what stops the next console write arriving with none of the
 four.
+
+## A census for "close the perception loop" (SH983)
+
+The same walk, one law later. P9 asks for cheap textual proof instead of asking somebody to look, and
+here too the instruments are good and complete: the render digest, the address-scoped verify,
+`include=impact`, `shio audit`. Every one of them is something a caller has to **request**, and
+nothing enumerates which mutating responses carry proof at all — so a task can notice that one save
+answers with a toast while the agent path answers with two digests, and the noticing stays inside
+that task.
+
+**`ShAgentP9ConformanceTest`** asks four axes of every mutating root. **A change set** — does the
+answer say *what* changed rather than that something did. **A digest** — does it carry a value the
+caller can compare with what it held. **Findings** — does it report what is now wrong, or would be.
+**A route delta** — does it say which URLs a visitor can now reach. The bar is deliberately low: the
+point is not that every write renders a page, it is that a write answering with a bare 200 is a
+decision somebody wrote down.
+
+Where this differs from the P7 census is **where the evidence is**. A guard lives in the controller;
+proof lives in the **response type**, so a row names the DTO the caller is handed. That distinction
+is the whole reason the census is worth running: `/api/v2/staticfile` exposes a digest on a second
+`GET` endpoint *and* stamps `sha256` on the item a replace returns — one of those is answering the
+write and the other is not, and only the second reading survives being written down. Both censuses
+share `ShGuardCensus`, which holds the `Axis`/`yes`/`no` shape and the both-ways check, for SH973's
+reason: two readers of one question need one reader.
+
+The absences are the deliverable, and they are argued in families rather than one essay per row —
+*the row is the answer* for a console write that hands back what the caller sent, *not content* for
+a write the verify vocabulary does not cover, *no route moved* for one no visitor-facing URL follows.
+Two of them are worth reading before writing a new response shape: `/api/v2/object` **does** move a
+post's URL and says so only by returning the objects it touched, and `/api/v2/cda/form` withholds
+everything on purpose, because a honeypot refusal has to answer exactly like an accepted submission
+(SH633). The counts land in `p1-inventory.json` with the rest.

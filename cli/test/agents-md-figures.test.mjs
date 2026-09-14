@@ -48,6 +48,8 @@ const INSTRUMENTS = [
   // SH982 — the P7 census writes to the same artefact, so a figure about its four axes is cited
   // from the run like every other one.
   "ShAgentP7ConformanceTest",
+  // SH983 — the P9 census, same walk and same artefact.
+  "ShAgentP9ConformanceTest",
 ];
 
 /** Where a run writes what it measured (ShP1Inventory). */

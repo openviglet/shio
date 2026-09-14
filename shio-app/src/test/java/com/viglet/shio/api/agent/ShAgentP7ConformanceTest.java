@@ -8,6 +8,8 @@
  */
 package com.viglet.shio.api.agent;
 
+import static com.viglet.shio.lint.ShGuardCensus.no;
+import static com.viglet.shio.lint.ShGuardCensus.yes;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.viglet.shio.lint.ShControllerScan;
+import com.viglet.shio.lint.ShGuardCensus;
+import com.viglet.shio.lint.ShGuardCensus.Axis;
 import com.viglet.shio.lint.ShP1Inventory;
 
 /**
@@ -77,20 +81,6 @@ class ShAgentP7ConformanceTest {
             + "rather than the writer, so the row it leaves is the one they write";
     private static final String NO_WRITE_TO_REVIEW =
             "it changes no content, so there is nothing for a curator to approve or revert";
-
-    /** One axis of P7 on one path: present with its evidence, or absent with its reason. */
-    private record Axis(boolean present, String file, String token, String why) {
-    }
-
-    /** The guard is there, and this file carries the token that proves it. */
-    private static Axis yes(String file, String token) {
-        return new Axis(true, file, token, null);
-    }
-
-    /** The guard is not there, this is why, and the file must not contain the token. */
-    private static Axis no(String file, String token, String why) {
-        return new Axis(false, file, token, why);
-    }
 
     private record Guards(Axis dryRun, Axis confirm, Axis audit, Axis review) {
     }
@@ -275,39 +265,12 @@ class ShAgentP7ConformanceTest {
     @Test
     @DisplayName("SH982: every claim names a file and a token, and the source agrees with it")
     void everyClaimIsFalsifiable() {
-        Map<String, String> sources = ShControllerScan.sources();
         List<String> problems = new ArrayList<>();
-
-        census().forEach((path, guards) -> {
-            axes(guards).forEach((axis, claim) -> {
-                String source = sources.get(claim.file());
-                if (source == null) {
-                    problems.add("%s %s: names %s, which is not in the tree"
-                            .formatted(path, axis, claim.file()));
-                    return;
-                }
-                boolean found = source.contains(claim.token());
-                if (claim.present() && !found) {
-                    problems.add("%s %s: claims %s carries `%s` and it does not"
-                            .formatted(path, axis, claim.file(), claim.token()));
-                }
-                if (!claim.present() && found) {
-                    problems.add("%s %s: says there is none, and %s now carries `%s` — the guard "
-                            .formatted(path, axis, claim.file(), claim.token())
-                            + "arrived and this row did not move (SH142)");
-                }
-                if (!claim.present() && (claim.why() == null || claim.why().isBlank())) {
-                    problems.add(path + " " + axis + ": absent with no reason");
-                }
-            });
-        });
+        census().forEach((path, guards) -> problems.addAll(ShGuardCensus.problems(path, axes(guards))));
 
         assertThat(problems)
                 .as("""
-                        SH982: a census is worth what its rows can be wrong about. A guard that is \
-                        present names the file and the token that prove it; an absence names the \
-                        same pair and asserts the token is NOT there, so a path that gains a dry run \
-                        or starts auditing fails here until the row says so.""")
+                        SH982: a census is worth what its rows can be wrong about. A guard that is                         present names the file and the token that prove it; an absence names the                         same pair and asserts the token is NOT there, so a path that gains a dry run                         or starts auditing fails here until the row says so.""")
                 .isEmpty();
     }
 

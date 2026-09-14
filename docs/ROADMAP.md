@@ -34,7 +34,6 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH983** (deps: SH982 ✅) **no census asks which writes return proof, so cheap textual evidence stays a per-author choice** — Digest, verify and impact are opt-in per endpoint, so a new write can ship returning a bare 200 and nothing notices the perception loop was left open. → §LXIV.11
 - 📋 **SH984** (deps: —) **lines filed against a design-system release have no probe in the waits list, so a release can end their wait unnoticed** — SH937 holds every line waiting on the package as a named probe, and SH946, SH947, SH948, SH963, SH964, SH966 and SH968 were filed without one. → §LXIV.12
 - 📋 **SH1070** (deps: —) **the docs conformance gate is red at HEAD, and 135 commits deep in owed runs** — Two suites fail on drift nobody has seen: a published page states Spring Boot 4.1.0 against a pom declaring 4.1.1, and COVERAGE.md's summary counts 57 clusters over 54 rows. → §LXIV.13
 - ⏳ **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — the COVERAGE.md edit is in the vigletdocs working tree and uncommitted, so a fresh clone still reads the old matrix. → §LXIV.14
@@ -137,6 +136,8 @@
 - 📋 **SH1055** (deps: SH1031) **the content Shio delivers is checked for one accessibility rule, image-no-alt, and nothing else** — Verify has dozens of rules and one about accessibility, although the render path already builds the heading outline, landmarks and link inventory the rest would need. → §LXXII.13
 - 📋 **SH1075** (deps: —) **the console lint fails in CI on an error the suppressions file does not hold, and no local gate runs it** — react-hooks/set-state-in-effect in bento-tenant-link-notice.tsx has failed pnpm lint since SH931, while pnpm test and the baseline test stay green. → §LXXII.14
 - 📋 **SH1077** (deps: SH967 ✅) **an open change stream re-walks each entry's folder chain for every stream, so its cost grows as entries × streams** — SH967 measured 7.05 statements per entry per stream, and canRead's chain and principals do not change in a pass, so a per-pass memo can answer them once. → §LXXII.15
+- 📋 **SH1078** (deps: —) **a move changes which URLs a visitor can reach and its answer names only the objects it moved** — Copy and move return the touched objects, so no caller learns which delivery addresses changed without a second verify --delivery run. → §LXXII.16
+- 📋 **SH1079** (deps: —) **an import creates a whole site and answers with the site alone, so what arrived is only knowable by re-reading** — POST /api/v2/import returns ShSite and no tally of what landed, so the write whose effect a caller can least predict carries the least proof. → §LXXII.17
 
 ## Block BH — One content model, many languages
 
