@@ -1703,6 +1703,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
 - **SH967** — GET /api/v2/events streams the change feed with the reader's ACL and resumes from Last-Event-ID; shio changes --follow holds it open, and idle and fan-out costs are budgets (design §LXIII.4 recorded in `docs/agents/agent-surface.md`).
+- **SH969 (feed half)** — A failed scheduled publish carries retry {op, address} on the change feed, a retry clears the due schedule so it publishes once, and the stream withholds it from readers the ACL excludes.
 
 ## Block AY — What the conformance instruments cannot see
 

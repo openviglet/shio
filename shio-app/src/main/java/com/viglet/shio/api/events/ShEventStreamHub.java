@@ -71,6 +71,9 @@ public class ShEventStreamHub {
     /** The SSE event name for a page of the feed. */
     public static final String CHANGES = "changes";
 
+    /** How an incident names a post it has only the id of. */
+    private static final String ID_SUBJECT = "id:";
+
     private final ShAgentChangesService changesService;
     private final ShContentAclService aclService;
     private final ShEventsProperties properties;
@@ -160,8 +163,9 @@ public class ShEventStreamHub {
                         .filter(change -> change.id() == null || aclService.canRead(change.id()))
                         .map(ShEventStreamHub::withoutId)
                         .toList();
-                List<ShAgentChanges.Incident> incidents =
-                        changes.incidents() == null ? List.of() : changes.incidents();
+                List<ShAgentChanges.Incident> incidents = changes.incidents() == null
+                        ? List.of()
+                        : changes.incidents().stream().filter(this::readable).toList();
                 if (!visible.isEmpty() || !incidents.isEmpty()) {
                     subscription.sink().send(changes.cursor(), CHANGES,
                             new Page(visible, incidents.isEmpty() ? null : incidents));
@@ -190,6 +194,20 @@ public class ShEventStreamHub {
             subscriptions.remove(subscription.id());
             subscription.sink().close();
         }
+    }
+
+    /**
+     * SH969 — an incident about a post is withheld from a reader who may not read the post.
+     *
+     * <p>A failed scheduled publish names its post by id and, since SH969, carries the post's address
+     * and a retry. Sent to a reader the folder's ACL excludes, that would be the address and title
+     * the change rows were withheld for, arriving by the other array. Every other subject — a URL, a
+     * request path, a tenant — is not content and passes.</p>
+     */
+    private boolean readable(ShAgentChanges.Incident incident) {
+        String subject = incident.subject();
+        return subject == null || !subject.startsWith(ID_SUBJECT)
+                || aclService.canRead(subject.substring(ID_SUBJECT.length()));
     }
 
     /**

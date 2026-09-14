@@ -86,6 +86,11 @@ public final class ShAgentChangesTerse {
         if (incident.fix() != null && !incident.fix().isBlank()) {
             out.append("fix ").append(incident.fix()).append('\n');
         }
+        // SH969 — the op and the address, in the order a batch entry takes them.
+        if (incident.retry() != null) {
+            out.append("retry ").append(incident.retry().op()).append(' ')
+                    .append(incident.retry().address()).append('\n');
+        }
         return out.toString();
     }
 

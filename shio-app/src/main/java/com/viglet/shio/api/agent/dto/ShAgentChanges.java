@@ -156,10 +156,33 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      *                arrive without it. A row with no site reaches an unrestricted read only —
      *                the audit stream's rule, which the two must share because one cursor walks
      *                both
+     * @param retry   SH969 — the call that attempts the failed transition again, present only on a
+     *                {@code schedule} incident whose post still exists
      */
     @JsonInclude(Include.NON_NULL)
     public record Incident(String kind, String subject, String message, String fix, int count,
-                           String at, String first, String frames, String site) {
+                           String at, String first, String frames, String site, Retry retry) {
+    }
+
+    /**
+     * What to send to attempt a failed scheduled transition now (SH969).
+     *
+     * <p>A batch op rather than a retry endpoint: {@code {"op": "post.publish", "address": …}} is
+     * exactly one entry of {@code POST /api/v2/agent/batch}, and the address is what
+     * {@code shio_publish} and {@code shio publish} take. So retrying is the publish a caller already
+     * knows how to make, with the same ACL and the same gate, and there is no second way to publish
+     * to keep in step with the first (P10). A publish at or after the scheduled instant also clears
+     * the schedule, so the sweep does not fire the same transition a minute later.</p>
+     *
+     * <p>Structured rather than left to {@code fix}, because the console builds a button from it and
+     * a button built from prose is a parser of prose.</p>
+     *
+     * @param op      {@code post.publish} or {@code post.unpublish}
+     * @param address the post's address as it reads now, which may differ from when the failure
+     *                was recorded
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Retry(String op, String address) {
     }
 
     /**

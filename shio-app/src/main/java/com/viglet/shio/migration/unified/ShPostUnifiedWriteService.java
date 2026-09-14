@@ -394,10 +394,26 @@ public class ShPostUnifiedWriteService {
         }
     }
 
+    /**
+     * Publishes the draft.
+     *
+     * <h2>A publish after the scheduled instant is the scheduled publish (SH969)</h2>
+     *
+     * <p>A schedule that failed stays due, because the sweep clears it in the transaction that rolled
+     * back. So when a curator retried by hand, the retry published and the schedule was still there,
+     * and the next sweep published the page again under the scheduler's name, with a second webhook.
+     * A due schedule is therefore cleared by any publish. A schedule still in the future is left
+     * alone: publishing now and publishing again at a later date are both things a curator
+     * means.</p>
+     */
     @Transactional
     public ShPostUnified publish(String postId, String publisher) {
         ShPostUnified draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
                 .orElseThrow(() -> new IllegalArgumentException("Draft not found: " + postId));
+        if (isDue(draft.getPublishScheduledDate())) {
+            draft.setPublishScheduledDate(null);
+            shPostUnifiedRepository.save(draft);
+        }
 
         shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
                 .ifPresent(shPostUnifiedRepository::delete);
@@ -563,6 +579,11 @@ public class ShPostUnifiedWriteService {
         self.getObject().unpublish(postId, SCHEDULER_ACTOR);
     }
 
+    /** A schedule whose instant has arrived — what the sweep would fire now (SH969). */
+    private static boolean isDue(Instant scheduled) {
+        return scheduled != null && !scheduled.isAfter(Instant.now());
+    }
+
     /** Re-create a {@code DRAFT} row from the {@code PUBLISHED} snapshot (shared by restore/schedule). */
     private ShPostUnified draftFromPublished(String postId) {
         ShPostUnified published = shPostUnifiedRepository
@@ -588,8 +609,15 @@ public class ShPostUnifiedWriteService {
         return draft;
     }
 
+    /** Unpublishes the post, and clears a due unpublish schedule for {@link #publish}'s reason (SH969). */
     @Transactional
     public void unpublish(String postId, String actor) {
+        shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .filter(draft -> isDue(draft.getUnpublishScheduledDate()))
+                .ifPresent(draft -> {
+                    draft.setUnpublishScheduledDate(null);
+                    shPostUnifiedRepository.save(draft);
+                });
         shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
                 .ifPresent(published -> {
                     // Snapshot the published row before it is removed so the

@@ -17,6 +17,7 @@ import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { BASE_FILE, readBase } from "../content-store.mjs";
 import { helpText } from "../help.mjs";
+import { retryCommand } from "../report.mjs";
 
 /**
  * What `shio changes --help` prints (SH435).
@@ -133,6 +134,8 @@ function render(changes) {
         ` [at ${incident.at}]`,
     );
     if (incident.fix) lines.push(`      → ${incident.fix}`);
+    const retry = retryCommand(incident.retry);
+    if (retry) lines.push(`      retry: ${retry}`);
   }
   for (const note of changes.notes ?? []) lines.push(`  note: ${note}`);
   lines.push(`cursor: ${changes.cursor}`);

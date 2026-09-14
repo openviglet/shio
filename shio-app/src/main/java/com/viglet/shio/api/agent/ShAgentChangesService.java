@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentStore;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.history.ShAuditFeedWatermark;
@@ -30,6 +31,7 @@ import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.render.ShTemplateGraph;
+import com.viglet.shio.schedule.ShPostScheduler;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
@@ -90,6 +92,9 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 @Service
 @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentChangesService {
+
+    /** How a recorder names a post it has only the id of — the sweep's, among others. */
+    private static final String ID_SUBJECT = "id:";
 
     private final ShHistoryRepository shHistoryRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -335,8 +340,9 @@ public class ShAgentChangesService {
         if (more) {
             rows = rows.subList(0, cap);
         }
+        Map<String, Optional<String>> addresses = new HashMap<>();
         List<ShAgentChanges.Incident> shaped = rows.stream()
-                .map(row -> incident(row, scope))
+                .map(row -> incident(row, scope, addresses))
                 .toList();
         ShAgentIncident tail = rows.isEmpty() ? null : rows.get(rows.size() - 1);
         return new IncidentRows(shaped, more,
@@ -413,7 +419,8 @@ public class ShAgentChangesService {
      * an unattributed row's absent one and a site deleted since the failure, and both are honestly
      * spelled as absence.</p>
      */
-    private static ShAgentChanges.Incident incident(ShAgentIncident row, Scope scope) {
+    private ShAgentChanges.Incident incident(ShAgentIncident row, Scope scope,
+                                             Map<String, Optional<String>> addresses) {
         return new ShAgentChanges.Incident(
                 row.getKind() == null
                         ? null
@@ -425,7 +432,33 @@ public class ShAgentChangesService {
                 row.getLastSeen() == null ? null : row.getLastSeen().toString(),
                 row.getFirstSeen() == null ? null : row.getFirstSeen().toString(),
                 row.getFrames(),
-                row.getSiteId() == null ? null : scope.names().get(row.getSiteId()));
+                row.getSiteId() == null ? null : scope.names().get(row.getSiteId()),
+                retryOf(row, addresses));
+    }
+
+    /**
+     * SH969 — how to attempt a failed scheduled transition now, or {@code null}.
+     *
+     * <p>Only a {@code schedule} incident names one, and only while its post exists: a retry whose
+     * address resolves to nothing is a button that answers 404. The address is resolved here, at
+     * read time, rather than recorded with the failure, so a post renamed since then is retried at
+     * the address it has now — and the sweep's catch stays free of a lookup that could itself throw
+     * (the SH204 reasoning). Memoized per read, like a change row's address, because a failure that
+     * keeps happening is one row per post however often it is read.</p>
+     */
+    private ShAgentChanges.Retry retryOf(ShAgentIncident row,
+                                         Map<String, Optional<String>> addresses) {
+        String subject = row.getSubject();
+        String op = ShAgentIncidentLog.Kind.SCHEDULE.name().equals(row.getKind())
+                ? ShPostScheduler.retryOp(row.getMessage())
+                : null;
+        if (op == null || subject == null || !subject.startsWith(ID_SUBJECT)) {
+            return null;
+        }
+        return addresses.computeIfAbsent(subject.substring(ID_SUBJECT.length()),
+                        id -> addressOf(id, ShContentSubject.POST))
+                .map(address -> new ShAgentChanges.Retry(op, address))
+                .orElse(null);
     }
 
     /**

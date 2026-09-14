@@ -222,9 +222,24 @@ function broke(changes) {
     const subject = incident.subject ? ` \`${incident.subject}\`` : "";
     lines.push(`- **${incident.kind}**${subject} — ${incident.message ?? ""}${repeats}`);
     if (incident.fix) lines.push(`  ${incident.fix}`);
+    const retry = retryCommand(incident.retry);
+    if (retry) lines.push(`  retry: \`${retry}\``);
   }
   lines.push("");
   return lines;
+}
+
+/**
+ * The command that attempts a failed scheduled transition again, or null (SH969).
+ *
+ * The feed sends the batch op and the address; a person reading a terminal or a handoff wants the
+ * command they would type, and `shio publish` takes exactly that address.
+ */
+export function retryCommand(retry) {
+  if (!retry?.address) return null;
+  if (retry.op === "post.publish") return `shio publish ${retry.address}`;
+  if (retry.op === "post.unpublish") return `shio publish --unpublish ${retry.address}`;
+  return null;
 }
 
 /**

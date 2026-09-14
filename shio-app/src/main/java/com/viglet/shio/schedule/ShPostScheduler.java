@@ -11,6 +11,7 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -39,6 +40,12 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class ShPostScheduler {
 
+    /** The start of a failed publish's incident message, which the retry is read from (SH969). */
+    static final String PUBLISH_FAILED = "scheduled publish failed: ";
+
+    /** The start of a failed unpublish's incident message (SH969). */
+    static final String UNPUBLISH_FAILED = "scheduled unpublish failed: ";
+
     /** One remedy for both halves of the sweep: the post's state is not what was asked. */
     private static final String SCHEDULE_FIX =
             "The post is still in its previous state. Read it (GET /api/v2/agent/read) and "
@@ -50,6 +57,24 @@ public class ShPostScheduler {
     private final ShAgentIncidentLog incidentLog;
     private final ShTenantRepository shTenantRepository;
     private final ShAppProperties shAppProperties;
+
+    /**
+     * The batch op that attempts a failed transition again, read from its incident's message, or
+     * {@code null} for a message this sweep did not write — a whole tenant's pass failing names no
+     * post to retry (SH969).
+     *
+     * <p>Read from the message because the incident row has no column for the transition, and the two
+     * prefixes are written here and nowhere else, so this is the one method that has to know them.</p>
+     */
+    public static String retryOp(String message) {
+        if (message == null) {
+            return null;
+        }
+        if (message.startsWith(PUBLISH_FAILED)) {
+            return ShAgentBatchService.POST_PUBLISH;
+        }
+        return message.startsWith(UNPUBLISH_FAILED) ? ShAgentBatchService.POST_UNPUBLISH : null;
+    }
 
     public ShPostScheduler(ShPostUnifiedWriteService writeService,
                            ShScheduleProperties properties,
@@ -157,7 +182,7 @@ public class ShPostScheduler {
                 // SH269: this is the case where nobody was watching, so the frame is worth most
                 // — the message names the symptom and the frame names the writer it threw inside.
                 incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
-                        "scheduled publish failed: " + e.getMessage(), SCHEDULE_FIX,
+                        PUBLISH_FAILED + e.getMessage(), SCHEDULE_FIX,
                         ShAgentIncidentFrames.of(e), due.siteId());
             }
         }
@@ -170,7 +195,7 @@ public class ShPostScheduler {
             } catch (Exception e) {
                 log.warn("Scheduled unpublish failed for post {}: {}", id, e.getMessage());
                 incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
-                        "scheduled unpublish failed: " + e.getMessage(), SCHEDULE_FIX,
+                        UNPUBLISH_FAILED + e.getMessage(), SCHEDULE_FIX,
                         ShAgentIncidentFrames.of(e), due.siteId());
             }
         }

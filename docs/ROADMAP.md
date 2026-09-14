@@ -27,7 +27,7 @@
 - 📋 **SH965** (deps: SH964) **nothing checks that a console write reports an outcome, so a silent save leaves the mascot idle** — useAssistantNotifications reads toasts, so a mutation that resolves without one is invisible to the dock, its announcer and the curator at the same moment. → §LXIII.2
 - 📋 **SH966** (deps: SH964, SH955 ✅, DS VDS134) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
 - 📋 **SH968** (deps: SH967 ✅, DS VDS134) **agent runs and review arrivals surface only as a header count the curator cannot open** — SH936 put the pending count beside the account menu, while the contract says a count belongs to the surface that owns it, and the dock is where the system reports. → §LXIII.5
-- 📋 **SH969** (deps: SH967 ✅) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — ShPostScheduler records failures in the agent incident log and a success nowhere a person looks, so the launch a curator scheduled can silently not happen. → §LXIII.6
+- ⏳ **SH969** (deps: SH967 ✅, SH964) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — The dock still has to report a failure with open and retry actions, a success naming the page, and an unread failure for a curator who had no screen open. → §LXIII.6
 - 📋 **SH970** (deps: SH967 ✅) **a form submission lands as an ordinary draft in a folder, and nothing tells anyone it arrived** — ShFormSubmissionAPI writes a draft into a configured folder behind a rate limit and a honeypot, and no surface reports the arrival the assistant's reference design was drawn for. → §LXIII.7
 - 📋 **SH971** (deps: SH968) **a curator cannot choose what the dock reports or quiet the mascot** — An author, a reviewer and an operator need different subsets of outcomes, agent runs, schedules and arrivals, and the only control today is the browser's reduced-motion setting. → §LXIII.8
 - 📋 **SH972** (deps: SH964) **the Universal Editor renders outside the bento shell, so its saves would report to no dock** — SH907 moved the visual editor out of the shell to reclaim the viewport, and the dock mounts inside the shell, so the surface saving on every click has no outcome channel. → §LXIII.9
@@ -182,6 +182,14 @@
 - **The two-chrome census reads zero** shio-react/test/chrome-vocabulary-census.test.mjs
   prints src and test/scripts/e2e line counts on every pnpm test; STILL_TWO_CHROMES is
   empty and the run prints 0 lines on both sides.
+
+## Done when — SH969
+
+- **A planted failing schedule becomes a dock report whose retry publishes** A console
+  test drives a schedule incident with a retry through the stream and reads a report
+  with tone error and open and retry actions. Pressing retry publishes the post. A
+  success reports the page, and a failure raised while no screen was open is unread at
+  the next login.
 
 ## Non-goals (do NOT add as tasks)
 

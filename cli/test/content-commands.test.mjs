@@ -2025,6 +2025,24 @@ test("SH967: --follow --json writes one line per event, for a pipeline", async (
   assert.deepEqual(JSON.parse(lines[0]), { cursor: "c9", changes: [{ action: "DELETE", address: null }] });
 });
 
+test("SH969: --follow prints a failed schedule's retry as the command that performs it", async () => {
+  const controller = new AbortController();
+  const ctx = ctxWith(async () => eventStream([sseEvent("c10", {
+    incidents: [{
+      kind: "schedule", subject: "id:7f1c", message: "scheduled publish failed: address taken",
+      count: 1, at: "t3", retry: { op: "post.publish", address: "post:Blog/launch" },
+    }],
+  })]));
+  ctx.signal = controller.signal;
+  ctx.sleep = async () => controller.abort();
+
+  await changes.run({ follow: true }, [], ctx);
+
+  assert.match(ctx.stdout.text, /! schedule id:7f1c — scheduled publish failed: address taken/);
+  assert.match(ctx.stdout.text, /retry: shio publish post:Blog\/launch/,
+    "SH969: a curator following the feed is told what to type, not only that it broke");
+});
+
 // --- SH401: two addresses, one file path ---
 
 /**

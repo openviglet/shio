@@ -198,6 +198,37 @@ test("incidents on the feed become a 'what broke' section (SH144)", () => {
   assert.match(built.markdown, /Check the target is up\./);
 });
 
+test("SH969: a failed scheduled publish in the handoff names the command that retries it", () => {
+  const built = buildReport({
+    changes: {
+      ...CHANGES,
+      incidents: [
+        {
+          kind: "schedule",
+          subject: "id:7f1c",
+          message: "scheduled publish failed: address taken",
+          count: 1,
+          at: "2026-07-01T12:00:00Z",
+          retry: { op: "post.publish", address: "post:Blog/launch" },
+        },
+        {
+          kind: "schedule",
+          subject: "id:9a2e",
+          message: "scheduled unpublish failed: timeout",
+          count: 1,
+          at: "2026-07-01T12:01:00Z",
+          retry: { op: "post.unpublish", address: "post:Blog/old-offer" },
+        },
+      ],
+    },
+    context: CONTEXT,
+  });
+
+  assert.match(built.markdown, /retry: `shio publish post:Blog\/launch`/,
+    "SH969: the reviewer is handed the command, not asked to work out which one");
+  assert.match(built.markdown, /retry: `shio publish --unpublish post:Blog\/old-offer`/);
+});
+
 test("no incidents means no 'what broke' section at all", () => {
   const built = buildReport({ changes: CHANGES, context: CONTEXT });
   assert.doesNotMatch(built.markdown, /## What broke/);

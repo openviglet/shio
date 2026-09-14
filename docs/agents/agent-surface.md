@@ -2730,6 +2730,40 @@ accepted on this path, and the agent's read does not need it to be), reconnects 
 id with a backoff to 30s, ends on a 4xx rather than retrying an answer that will not change, and with
 `--json` writes one line per event.
 
-**Not covered:** the console does not subscribe yet — Block AX's dock is the consumer — and scheduler
-incidents and form arrivals join the feed as entry kinds under SH969 and SH970 rather than as
-channels of their own.
+**Not covered:** the console does not subscribe yet — Block AX's dock is the consumer — and form
+arrivals join the feed under SH970 rather than as a channel of their own. A scheduled transition's
+outcome is on it already (SH969, below).
+
+## A schedule's outcome, on the feed the curator's screen reads (SH969)
+
+`ShPostScheduler` recorded a failed publish in the incident log and a success in nothing a person
+reads, so the curator who set the date found out from a customer. Both outcomes were in the feed
+already, but in forms nobody could act on. The success is the `PUBLISH` (or `UNPUBLISH`) row the
+publish writes, `by: scheduler`, with the post's address and the instant. The failure is a
+`schedule` incident whose subject is `id:<uuid>`, which names no page a person could open.
+
+**A failure now says how to try again.** A `schedule` incident whose post still exists carries
+`retry: {op, address}`. That is one entry of `POST /api/v2/agent/batch` (`post.publish` or
+`post.unpublish`), and the address is what `shio_publish` and `shio publish` take. There is no retry
+endpoint: retrying is the publish a caller already knows, with its ACL and its gate (P10). The address
+is resolved when the feed is read, not when the failure was recorded, so a post renamed since then is
+retried where it lives now. The terse feed prints it as a `retry <op> <address>` line under `fix`, and
+`shio changes` and `shio report` print it as the command to type.
+
+**A publish after the scheduled instant is the scheduled publish.** A failed sweep rolls back the
+transaction that cleared the schedule, so the schedule stays due. A curator's retry published the page,
+and then the next sweep published it again as `scheduler`, sending a second webhook. `publish()` and
+`unpublish()` now clear a schedule that is due. A schedule still in the future is left alone, because
+"publish now, and again on Friday" is something a curator can mean.
+
+**The stream withholds an incident about a post the reader cannot read.** The retry carries the
+address the change rows were withheld for, so `ShEventStreamHub` applies `canRead` to any incident
+subject of the form `id:<uuid>`. Subjects that are not content (a URL, a request path, a tenant) are
+sent as before.
+
+`ShScheduleOutcomeFeedTest` plants the failure the way one happens: the page is scheduled at an address
+that another page still serves live, so SH719's unique index refuses the publish inside the sweep.
+
+**Not covered:** the dock — a failure as a report with *open* and *retry* actions, a success naming the
+page, and an unread report at next login for a curator who had no screen open — waits for SH964's
+mounted assistant.
