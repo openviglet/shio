@@ -2688,3 +2688,48 @@ two arguments of headroom. `shio_write` sits at 458 of 460 and is on `AT_THE_WAL
 there is a conversation about the per-tool ceiling. The three create-only fields say **"On create"**
 because an upsert that finds the post ignores them, and a relocalization would otherwise read as
 success.
+
+## The change feed, pushed to the screens that are open (SH967)
+
+Nothing in the backend streamed. An agent reads the feed by polling `GET /api/v2/agent/changes`
+with a cursor, the console did not read it at all, so a curator looking at a folder while an agent
+wrote to it saw nothing until they navigated. **`GET /api/v2/events`** is the same feed as Server-Sent
+Events, for a screen that is open; the agent's polling read is unchanged, because an agent has a
+cursor and a turn to spend it on and a held connection is the wrong shape for that.
+
+**A shape over the feed, not a second one (P10).** `ShEventStreamHub` holds one subscription per
+open stream and a pump (`shio.events.poll-millis`, 1s) reads `ShAgentChangesService` for each —
+the same rows, ordering guard (SH147) and site scope. One event is one **page**, named `changes`,
+whose SSE `id` is the feed cursor after it: a page is what the cursor positions, so a reconnect
+sending `Last-Event-ID` resumes exactly, and an id that positioned less would have to be invented.
+`since=` does the same for a client that cannot set the header, `site=` scopes like the feed's, and
+with neither the stream starts at the edge. A comment heartbeat goes out after
+`shio.events.heartbeat-millis` of silence, and a connection is closed after `timeout-millis` so the
+reconnect re-checks the session.
+
+**Whose rights a pass reads with.** The pump runs on a scheduler thread, and two checks this depends
+on fail **open** there: the feed reads "no token" as an unrestricted console read, and the content ACL
+grants anything to no authentication. So the tenant and the `Authentication` are captured on the
+request thread when the stream opens and bound around every pass (`ShTenantHandoff` for the tenant).
+
+**The ACL is applied here, and the feed does not apply it.** The feed scopes by site; SH54's grants
+are per folder. Each entry is read with its id, checked with `canRead`, and the id removed before
+it leaves (SH121). A withheld entry still moves the cursor, or the stream would stop at it for ever;
+a page whose every entry was withheld sends nothing, so a reconnect re-reads — and re-withholds — it.
+
+**Measured before relied on** (`ShEventStreamCostBenchmarkTest`, statements not milliseconds): an
+idle stream costs **4 statements per pass**, per open tab, every second; a fan-out costs **7.05 per
+entry per stream** for a reader who is not an administrator — 100 writes to 50 screens is 35,250
+statements in one pass, most of it the ACL's folder chain walked again per entry and per stream,
+which SH1077 memoizes per pass. Both ceilings are in `token-budgets.properties`, at the measured
+value rounded up. The benchmark needed its own
+datasource, so SH423's gauge went 66 → 67.
+
+**`shio changes --follow`** holds the stream open over the CLI's Basic auth (a `Key` token is not
+accepted on this path, and the agent's read does not need it to be), reconnects from the last event's
+id with a backoff to 30s, ends on a 4xx rather than retrying an answer that will not change, and with
+`--json` writes one line per event.
+
+**Not covered:** the console does not subscribe yet — Block AX's dock is the consumer — and scheduler
+incidents and form arrivals join the feed as entry kinds under SH969 and SH970 rather than as
+channels of their own.

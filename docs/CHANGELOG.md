@@ -1702,6 +1702,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
+- **SH967** — GET /api/v2/events streams the change feed with the reader's ACL and resumes from Last-Event-ID; shio changes --follow holds it open, and idle and fan-out costs are budgets (design §LXIII.4 recorded in `docs/agents/agent-surface.md`).
+
 ## Block AY — What the conformance instruments cannot see
 
 - **SH1072 (the matrix named and mirrored)** — All six ids are named in the published matrix — SH950 and SH951 in Security, the five Block AU ones as contributor-facing — the mirror is refreshed and the JS gate is green again.

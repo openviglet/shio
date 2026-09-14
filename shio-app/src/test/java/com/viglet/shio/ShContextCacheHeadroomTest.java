@@ -171,8 +171,14 @@ class ShContextCacheHeadroomTest {
      * session; the association turned out to be EAGER and all three tests passed on the unfixed
      * code. A green-either-way test is not worth a slot when two remain, so it was withdrawn and
      * the assertion that does fail (ShContentAclEntryPointTest) needs no context at all.
+     *
+     * SH967 spent one, to 67, with maxSize raised to 69 beside it. ShEventStreamCostBenchmarkTest
+     * counts the statements a pass of the change stream prepares, and Hibernate's statistics are
+     * cumulative on the SessionFactory — the SH221 shape, where a sibling's writes would be counted as
+     * the stream's. The behaviour tests (ShEventStreamTest) share the default context; only the
+     * measurement needed its own.
      */
-    private static final int DECLARED_CONTEXTS = 66;
+    private static final int DECLARED_CONTEXTS = 67;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

@@ -31,6 +31,8 @@ const BOOLEANS = [
   "help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict",
   // Content-as-files (Block I): `--content` picks the resource, the rest resolve a sync.
   "content", "ours", "theirs", "force", "allow-partial", "show-remote", "cursor", "json",
+  // SH967: `shio changes --follow` holds the stream open.
+  "follow",
   // Blueprints (Block J): `--files` asks for the carried front-end bodies, and the two
   // SH151/SH152 opt-ins let one command create the site and reconcile an existing model.
   "files", "create-site", "merge-post-types",

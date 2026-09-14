@@ -140,7 +140,15 @@ class ShSilentCatchInventoryTest {
             // fills with accounting notes is one nobody reads. Two of the three log at WARN
             // naming SH751; `sizeOf` does not, because it is asked about files that are routinely
             // absent (the "before" of a first write) and that is not a condition.
-            "api", 63,
+            //
+            // 65 since SH967, both in `ShEventStreamHub.pass` and both ending the stream rather than
+            // swallowing it. An IOException is the client closing its tab between two passes, which
+            // is how every stream ends. A RuntimeException is logged at WARN naming SH967 and the
+            // stream is closed, so the client's reconnect is the retry. Not an incident, and for a
+            // reason particular to this surface: the incident log is what the stream carries (SH144),
+            // so a pass failing because the database is down would be delivered to every other open
+            // stream as news, once per pass, by the mechanism that is failing.
+            "api", 65,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

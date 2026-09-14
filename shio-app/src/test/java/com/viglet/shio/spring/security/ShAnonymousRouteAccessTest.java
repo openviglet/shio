@@ -120,6 +120,9 @@ class ShAnonymousRouteAccessTest {
 			new Route("/api/v2/cda/form/**", "/api/v2/cda/form/acme", Access.AUTHENTICATED),
 			new Route("/api/v2/cda/**", "/api/v2/cda/site", Access.AUTHENTICATED),
 			new Route("/api/v2/config/**", "/api/v2/config/email", Access.AUTHENTICATED),
+			// SH967. The stream reads the change feed as a console read, which no site allow-list
+			// narrows, so this row is what keeps an anonymous reader out of every site's history.
+			new Route("/api/v2/events", "/api/v2/events", Access.AUTHENTICATED),
 			new Route("/api/v2/folder/**", "/api/v2/folder/x", Access.AUTHENTICATED),
 			new Route("/api/v2/group/**", "/api/v2/group", Access.AUTHENTICATED),
 			new Route("/api/v2/history/**", "/api/v2/history/object/x", Access.AUTHENTICATED),

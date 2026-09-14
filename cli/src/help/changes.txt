@@ -5,9 +5,11 @@ shio changes — what changed, with a cursor to resume from
   --cursor             Print only the cursor (SINCE=$(shio changes --cursor))
   --site <name>        Scope to one site
   --limit <n>          Entries to print
-  --json               Raw JSON instead of lines
+  --json               Raw JSON instead of lines (a line per event with --follow)
+  --follow             Stay open, printing each change; reconnects without loss
   --base-file <file>   Where the last content pull's position is kept
 
 Examples:
   shio changes --since last
   SINCE=$(shio changes --cursor)
+  shio changes --follow --site Blog

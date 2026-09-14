@@ -1925,6 +1925,106 @@ test("--since last resumes from the position the last content pull reached", asy
   assert.match(seen[0], /since=2026-07-26T09%3A00%3A00Z%7Caaa/);
 });
 
+// --- SH967: the feed, followed ---
+
+/** A response whose body is an SSE stream of these chunks, then the end of the connection. */
+function eventStream(chunks, status = 200) {
+  const encoder = new TextEncoder();
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => null },
+    body: (async function* body() {
+      for (const chunk of chunks) yield encoder.encode(chunk);
+    })(),
+    async text() {
+      return "";
+    },
+  };
+}
+
+const sseEvent = (id, data) => `id: ${id}\nevent: changes\ndata: ${JSON.stringify(data)}\n\n`;
+
+test("SH967: parseEventStream reads ids, names and data across chunk boundaries, and skips heartbeats", async () => {
+  const { parseEventStream } = await import("../src/agent-client.mjs");
+  const text = `: heartbeat\n\n${sseEvent("c1", { changes: [{ action: "CREATE" }] })}`;
+  // Split mid-field, the way a network delivers it.
+  const chunks = [text.slice(0, 7), text.slice(7, 40), text.slice(40)];
+  const events = [];
+  for await (const event of parseEventStream((async function* () { yield* chunks; })())) {
+    events.push(event);
+  }
+  assert.deepEqual(events, [{ id: "c1", event: "changes", data: { changes: [{ action: "CREATE" }] } }],
+    "SH967: a heartbeat is a comment, not an event, and a field split between two chunks is one field");
+});
+
+test("SH967: --follow prints each pushed page, and reconnects from the last event id without loss", async () => {
+  const requests = [];
+  const controller = new AbortController();
+  const streams = [
+    eventStream([sseEvent("2026-09-14T10:00:00Z|a", {
+      changes: [{ action: "CREATE", address: "folder:Blog/news", by: "agent", at: "t1", what: "Created" }],
+    })]),
+    eventStream([sseEvent("2026-09-14T10:05:00Z|b", {
+      changes: [{ action: "UPDATE", address: "post:Blog/news/hello", by: "agent", at: "t2", what: "Updated" }],
+    })]),
+  ];
+  const ctx = ctxWith(async (url, init) => {
+    requests.push({ url: String(url), headers: init.headers });
+    return streams.shift();
+  });
+  ctx.signal = controller.signal;
+  let slept = 0;
+  ctx.sleep = async () => {
+    slept += 1;
+    if (requests.length >= 2) controller.abort();
+  };
+
+  const result = await changes.run({ follow: true, site: "Blog" }, [], ctx);
+
+  assert.equal(requests.length, 2, "one connection, dropped, and one reconnect");
+  assert.match(requests[0].url, /\/api\/v2\/events\?site=Blog$/);
+  assert.equal(requests[0].headers.Accept, "text/event-stream");
+  assert.equal(requests[0].headers["Last-Event-ID"], undefined,
+    "SH967: a first open with no --since starts at the edge of the feed");
+  assert.equal(requests[1].headers["Last-Event-ID"], "2026-09-14T10:00:00Z|a",
+    "SH967: a reconnect must name the last event it received, or whatever was written while the"
+      + " connection was down is lost");
+  assert.match(ctx.stdout.text, /CREATE folder:Blog\/news — Created/);
+  assert.match(ctx.stdout.text, /UPDATE post:Blog\/news\/hello — Updated/);
+  assert.equal(result.cursor, "2026-09-14T10:05:00Z|b");
+  assert.ok(slept >= 1, "a dropped connection waits before reconnecting");
+});
+
+test("SH967: --follow ends on a refusal instead of retrying it", async () => {
+  let calls = 0;
+  const ctx = ctxWith(async () => {
+    calls += 1;
+    return eventStream([], 400);
+  });
+  ctx.sleep = async () => {
+    throw new Error("a refusal must not be retried");
+  };
+
+  await assert.rejects(() => changes.run({ follow: true, since: "not-a-cursor" }, [], ctx),
+    (error) => error.status === 400);
+  assert.equal(calls, 1, "SH967: a 4xx is an answer that will not change on a retry");
+});
+
+test("SH967: --follow --json writes one line per event, for a pipeline", async () => {
+  const controller = new AbortController();
+  const ctx = ctxWith(async () =>
+    eventStream([sseEvent("c9", { changes: [{ action: "DELETE", address: null }] })]));
+  ctx.signal = controller.signal;
+  ctx.sleep = async () => controller.abort();
+
+  await changes.run({ follow: true, json: true }, [], ctx);
+
+  const lines = ctx.stdout.text.trim().split("\n");
+  assert.equal(lines.length, 1);
+  assert.deepEqual(JSON.parse(lines[0]), { cursor: "c9", changes: [{ action: "DELETE", address: null }] });
+});
+
 // --- SH401: two addresses, one file path ---
 
 /**

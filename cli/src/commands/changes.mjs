@@ -11,6 +11,8 @@
  * job that pulls content only when something moved needs it in a shell variable, not in a
  * model's context.
  */
+import { ShioHttpError } from "@viglet/shio-client";
+
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { BASE_FILE, readBase } from "../content-store.mjs";
@@ -37,6 +39,10 @@ export async function run(flags, positionals, ctx) {
       ? (await readBase(ctx, flags.baseFile ?? BASE_FILE)).cursor
       : flags.since ?? positionals[0] ?? undefined;
 
+  if (flags.follow) {
+    return follow(client, { site: flags.site, since: since ?? undefined, json: flags.json }, ctx);
+  }
+
   const changes = await client.changes({
     site: flags.site,
     since: since ?? undefined,
@@ -55,6 +61,55 @@ export async function run(flags, positionals, ctx) {
 
   ctx.stdout.write(render(changes));
   return changes;
+}
+
+/**
+ * `shio changes --follow` (SH967) — the same feed, held open over `GET /api/v2/events`.
+ *
+ * Runs until the process is stopped. A dropped connection reconnects from the last event's id —
+ * the server resumes after it exactly, so nothing written while the connection was down is lost —
+ * waiting longer each time up to thirty seconds. A refusal (a 4xx: bad credentials, a malformed
+ * cursor, a site the user cannot read) is not a dropped connection and ends the command, or it
+ * would retry an answer that will not change.
+ *
+ * With `--json`, one JSON line per event (`{ "cursor", "changes", "incidents" }`), for a pipeline.
+ */
+async function follow(client, { site, since, json }, ctx) {
+  const sleep = ctx.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  let position = since;
+  let delay = 1000;
+  for (;;) {
+    try {
+      for await (const event of client.events({ site, since: position })) {
+        if (event.id) position = event.id;
+        delay = 1000;
+        const page = { cursor: event.id, ...event.data };
+        ctx.stdout.write(json ? `${JSON.stringify(page)}\n` : renderPage(page));
+      }
+    } catch (error) {
+      if (error instanceof ShioHttpError && error.status >= 400 && error.status < 500) throw error;
+      ctx.stderr.write(
+        `shio changes: the stream dropped (${error.message}); reconnecting in ${delay / 1000}s\n`,
+      );
+    }
+    if (ctx.signal?.aborted) return { cursor: position };
+    await sleep(delay);
+    delay = Math.min(delay * 2, 30000);
+    if (ctx.signal?.aborted) return { cursor: position };
+  }
+}
+
+/** One pushed page, in the lines `render` uses for a polled one. */
+function renderPage(page) {
+  return render({
+    found: page.changes?.length ?? 0,
+    window: false,
+    more: false,
+    changes: page.changes,
+    incidents: page.incidents,
+    notes: [],
+    cursor: page.cursor,
+  });
 }
 
 function render(changes) {

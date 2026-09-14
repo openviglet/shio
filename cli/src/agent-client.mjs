@@ -328,6 +328,36 @@ export class ShioAgentClient {
     return this.#get("changes", query);
   }
 
+  /**
+   * GET /api/v2/events (SH967) — the same feed, pushed: one event per page, whose `id` is the
+   * feed cursor after it.
+   *
+   * @param {{ site?: string, since?: string }} [query] `since` travels as `Last-Event-ID`, the
+   *   header the server resumes from, so a reconnect and a first open are the same request.
+   * @returns {AsyncGenerator<{ id: string|null, event: string, data: object }>}
+   */
+  async *events({ site, since } = {}) {
+    const params = new URLSearchParams();
+    if (site) params.set("site", String(site));
+    const search = params.toString();
+    const url = `${this.baseUrl}/api/v2/events${search ? `?${search}` : ""}`;
+    const headers = { Authorization: this.#authHeader(), Accept: "text/event-stream" };
+    if (since) headers["Last-Event-ID"] = String(since);
+    const res = await this.fetch(url, { method: "GET", headers });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+      throw new ShioHttpError(res.status, url, detail);
+    }
+    for await (const event of parseEventStream(res.body)) {
+      yield event;
+    }
+  }
+
   async #get(path, query) {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(query)) {
@@ -467,5 +497,45 @@ export class ShioAgentClient {
       throw new ShioHttpError(res.status, url, "");
     }
     return res.json();
+  }
+}
+
+/**
+ * Server-Sent Events off a response body (SH967), as `{ id, event, data }` with `data` parsed.
+ *
+ * Only what `GET /api/v2/events` sends is interpreted: `id`, `event` and `data` lines, a blank line
+ * ending an event, and `:` comments — the heartbeat — skipped. `id` is carried from the last event
+ * that set one, which is the SSE rule and the reason a reconnect can always name a position.
+ *
+ * @param {AsyncIterable<Uint8Array|string>} body a fetch response body, or any chunk iterable
+ */
+export async function* parseEventStream(body) {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let id = null;
+  let event = "message";
+  let data = [];
+  for await (const chunk of body) {
+    buffer += typeof chunk === "string" ? chunk : decoder.decode(chunk, { stream: true });
+    let newline;
+    while ((newline = buffer.search(/\r?\n/)) >= 0) {
+      const line = buffer.slice(0, newline);
+      buffer = buffer.slice(buffer[newline] === "\r" ? newline + 2 : newline + 1);
+      if (line === "") {
+        if (data.length) {
+          yield { id, event, data: JSON.parse(data.join("\n")) };
+        }
+        event = "message";
+        data = [];
+        continue;
+      }
+      if (line.startsWith(":")) continue;
+      const colon = line.indexOf(":");
+      const field = colon < 0 ? line : line.slice(0, colon);
+      const value = colon < 0 ? "" : line.slice(colon + 1).replace(/^ /, "");
+      if (field === "id") id = value;
+      else if (field === "event") event = value;
+      else if (field === "data") data.push(value);
+    }
   }
 }

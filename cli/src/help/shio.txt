@@ -3,8 +3,6 @@ shio — the Shio CMS CLI
 Usage:
   shio <command> [options]
   shio <command> --help      That command's own flags, with what each one means
-                             (this list names the commands; it stopped describing
-                              their flags when each command grew its own help)
 
 Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA (--blueprint for a
