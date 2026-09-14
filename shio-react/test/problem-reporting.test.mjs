@@ -140,3 +140,31 @@ test("SH955: the lint is not vacuous — it matches the call it was written to f
   assert.ok(!FIXED_STRING_REPORT.test('reportProblem(error, t("common.error"))'),
     "SH955: the replacement passes the fallback through and must not be reported as the defect");
 });
+
+/**
+ * SH955's remainder — the field pin, which is the half the console half could not use.
+ *
+ * `at` was set in exactly two places before this, and one of them is the batch, which sets
+ * `ops[3]`. A form cannot match an op index against anything, so a conflict over a friendly URL
+ * floated above a page with sixteen inputs: it said which URL was taken and not which box to type
+ * in, and by the time the curator went looking the toast had gone.
+ */
+test("SH955: the editor pins a refusal on the field the server named", () => {
+  const page = readFileSync(new URL("../src/app/console/content/post.edit.page.tsx", import.meta.url), "utf8");
+  const fields = readFileSync(new URL("../src/components/widgets/post-form-fields.tsx", import.meta.url), "utf8");
+
+  assert.match(page, /fieldOf\(problem\)/,
+    "SH955: the editor must read `at` through fieldOf — a toast the curator has already dismissed "
+    + "is not where the answer to 'which box' belongs");
+  assert.match(page, /problem=\{refusal\}/, "SH955: and hand it to the form");
+  assert.match(page, /setRefusal\(undefined\)/,
+    "SH955: a previous refusal is cleared on the next save, or a fixed field keeps its red border "
+    + "and the form lies in the other direction");
+
+  assert.match(fields, /problem\?\.field === field\.name/,
+    "SH955: the form marks the field the server named, and only that one");
+  assert.match(fields, /role="alert"/,
+    "SH955: announced to a screen reader too, not only shown in colour — a red border is not a "
+    + "message. `role=\"alert\"` rather than `aria-invalid` on the wrapper, which is not a form "
+    + "control and must not claim to be one.");
+});

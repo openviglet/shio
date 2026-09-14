@@ -14,6 +14,14 @@ interface Props {
   onDataChange: (data: Record<string, unknown>) => void
   postId?: string
   postTypeName?: string
+  /**
+   * SH955 — the field the server's last refusal was about, from the problem document's `at`.
+   *
+   * A conflict over a friendly URL used to float above a page with sixteen inputs, saying which
+   * URL was taken and not which box to type in. Marking the field is the difference between
+   * reading the message and acting on it.
+   */
+  problem?: { field: string; message: string }
 }
 
 interface TabGroup {
@@ -21,7 +29,7 @@ interface TabGroup {
   fields: ShPostTypeSchemaField[]
 }
 
-export function PostFormFields({ schema, data, onDataChange, postId, postTypeName }: Props) {
+export function PostFormFields({ schema, data, onDataChange, postId, postTypeName, problem }: Props) {
   const sorted = useMemo(
     () => [...schema].sort((a, b) => a.ordinal - b.ordinal),
     [schema]
@@ -59,11 +67,14 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
     }
 
     const accent = getWidgetAccentColor(field.widget)
+    // SH955 — the server said this refusal was about this field, so it is marked here rather than
+    // left to a toast the curator has already dismissed by the time they look for the input.
+    const refused = problem?.field === field.name ? problem.message : undefined
 
     return (
       <div
         key={field.name}
-        className={`rounded-lg border border-l-4 ${accent} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
+        className={`rounded-lg border border-l-4 ${refused ? "border-destructive" : accent} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
       >
         <div className="flex items-center gap-2 flex-wrap">
           <Label className="text-sm font-semibold flex items-center gap-1.5">
@@ -79,6 +90,13 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
 
         <Widget attr={attr} onChange={handleChange} postId={postId} />
 
+        {/*
+          `role="alert"` rather than `aria-invalid` on the wrapper: this div is not a form control,
+          so marking it invalid would be a lie to a screen reader about what kind of thing it is.
+          An alert is announced when it appears, which is the behaviour wanted — the message shows
+          up after a failed save, not while the curator is typing.
+        */}
+        {refused && <p role="alert" className="text-xs text-destructive font-medium">{refused}</p>}
         {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
       </div>
     )

@@ -1099,26 +1099,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.6 Errors are instructions, on both sides of the wall (SH955)
-
-grep for toast.error(t("common.error")) over shio-react returns twenty-four hits, three
-of them in the post editor inside catch blocks that do not bind the error. The server's
-problem type documents fix, allowed, didYouMean and at, and calls a 4xx carrying none of
-them incomplete. The console's axios interceptor handles CSRF capture and
-backend-offline reporting and nothing else, so no code path reads
-application/problem+json.
-
-P6 is a law about errors, not about the agent surface, and today it holds on one side
-only. One interceptor parses a problem document into a typed error. A single reporter
-renders detail as the headline, fix as the action, didYouMean as a clickable correction
-and allowed as a collapsible list, and the form reads at to pin the message on that
-field. The backend's half is small: populate at with data.<field> on single writes,
-which today only the batch does.
-
-The instrument is a lint that fails on a catch in a save path that reports a fixed
-string, and a backend assertion that every console-facing 4xx carries fix. Block AX
-routes these reports into the assistant dock; this task makes them exist.
-
 ### LXI.7 One sanitizer, at the one boundary every writer crosses (SH956)
 
 html-editor.widget.tsx calls document.execCommand for its formatting, reads innerHTML as
@@ -1835,6 +1815,32 @@ with the tables has visited the file without fixing what it says.
 
 `red-suites.json` carries the dated exception that licenses committing over this, and it
 names this task, so the licence dies when the work does.
+
+### LXIV.15 A rule that refuses what it teaches (SH1074)
+
+SH893's reader refuses `aria-<state>={...}` unless the expression starts with a quote:
+`aria-${state}=\{(?!\s*")([^}]*)\}`. Its failure message says to write
+`aria-selected={active ? "true" : "false"}` — a form that begins with `active`, and
+which the regex therefore rejects. The rule and the sentence teaching it disagree, and
+the sentence is the one a reader acts on.
+
+Nobody had noticed because the console has zero ARIA state attributes, which the message
+itself says: *"this console had zero of these when the rule arrived"*. A guard over an
+empty set is green whatever it means. It surfaced on the first attempt to add one —
+SH955's field pin — where following the message verbatim failed the build.
+
+BENTO-AUTHORING's accessibility section, vendored here by SH941, is the authority and it
+agrees with the message rather than with the regex: **ARIA values are string literals**
+— `aria-selected={active ? "true" : "false"}` is given as the correct form.
+
+So the regex is what is wrong. It should accept a conditional whose branches are both
+quoted strings, and keep refusing `{active}`, a bare `aria-hidden`, and anything else
+that resolves to a boolean. The narrow version — require every branch of a ternary to be
+a quoted literal — is the rule the contract actually states.
+
+The console still has no ARIA state attribute the corrected rule would accept, so the
+fix lands with a fixture rather than a corpus — and the first real one will be written
+by somebody reading the message rather than the regex.
 
 ## LXV What the content said before (Block AZ)
 

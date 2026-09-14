@@ -38,6 +38,8 @@ public class ShMoveUrlConflictException extends ShTeachingException {
                         : "'" + occupantTitle + "' already holds this friendly URL in the destination site.")
                 .withFix("Rename the post (which changes its URL) before moving it, or move it "
                         + "into a folder of the site it already belongs to — a move keeps the "
-                        + "post's URL rather than re-slugging it."));
+                        + "post's URL rather than re-slugging it.")
+                // SH955 — the field a console form pins this on.
+                .withAt("data.furl"));
     }
 }

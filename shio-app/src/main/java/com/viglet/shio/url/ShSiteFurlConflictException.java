@@ -43,6 +43,10 @@ public class ShSiteFurlConflictException extends ShTeachingException {
                 .withFix("Choose a different `furl`, or leave it out and Shio derives a free one "
                         + "from the name — a declared address is kept as given rather than "
                         + "numbered, which is why this is refused instead of renamed.")
-                .withExample("{\"name\": \"Acme\", \"furl\": \"" + furl + "-2\"}"));
+                .withExample("{\"name\": \"Acme\", \"furl\": \"" + furl + "-2\"}")
+                // SH955 — a site's `furl` is its own field, not a post's `data.furl`, and the
+                // pointer says so: a form matching `data.` blindly would pin this on the wrong
+                // input on a page that has both.
+                .withAt("furl"));
     }
 }

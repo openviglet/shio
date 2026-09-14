@@ -57,6 +57,10 @@ public class ShRestoreUrlConflictException extends ShTeachingException {
                                 + " while this post was in the trash.")
                 .withFix("Rename or delete the post that holds /" + furl + " and restore again, "
                         + "or purge this one if the occupant is the copy you meant to keep — a "
-                        + "restore returns the post to its own URL rather than numbering it."));
+                        + "restore returns the post to its own URL rather than numbering it.")
+                // SH955 — which field this is about, so a console form can pin the message on it
+                // instead of floating it above a page with sixteen inputs. Only the batch used to
+                // set `at`, and it set an op index, which no form can match against anything.
+                .withAt("data.furl"));
     }
 }

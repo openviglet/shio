@@ -2581,8 +2581,26 @@ delegates here rather than keeping a second answer to "what did the server say".
 fails the build. Comments are stripped first, or this file's own prose about the call would read as
 the call — SH952's reader made exactly that mistake.
 
-**Not covered (the remainder of SH955):** the backend half. `at` is populated on batch writes and
-not on single ones, so `fieldOf` has nothing to match for most refusals and no form pins a message
-to a field yet; and nothing asserts that every console-facing 4xx actually carries `fix`.
-`didYouMean` and `allowed` render as text in the toast rather than as a clickable correction and a
-collapsible list. Block AX routes these reports into the assistant dock; this task made them exist.
+**The backend half, which gave `fieldOf` something to read.** `at` was set in exactly two places
+before this, and one of them is the batch, which sets `ops[3]` — a form cannot match an op index
+against anything, so a conflict over a friendly URL floated above a page with sixteen inputs. The
+four refusals a curator meets while typing now carry it: the restore URL and title conflicts, the
+move URL conflict (`data.furl`, `data.title`) and the site furl conflict — which carries plain
+`furl`, not `data.furl`, because a site's own field is not a post's and a page with both would pin
+it on the wrong input.
+
+`PostFormFields` takes a `problem` prop and marks that one field: a destructive border and the
+message under the widget, with `role="alert"` so it is announced rather than only coloured.
+**Not `aria-invalid`** — the wrapper is a div, not a form control, and marking it invalid would
+tell a screen reader the wrong thing about what it is. (Writing it that way also ran into SH893's
+lint, whose regex refuses the exact ternary its own message recommends; filed as SH1074.) The
+editor clears the mark on the next save, or a corrected field keeps its red border and the form
+lies in the other direction.
+
+`ShTeachingProblemLintTest` holds both halves on the server: every `ShProblem` chains a `fix` — all
+141 of them already did, and nothing asserted it, so the 142nd was free to ship without one — and
+the four field-specific refusals carry the pointer, asserted by construction because "is this
+problem about a field" is a judgement no regex makes.
+
+**Not covered:** `didYouMean` and `allowed` render as text in the toast rather than as a clickable
+correction and a collapsible list. Block AX routes these reports into the assistant dock.

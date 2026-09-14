@@ -29,7 +29,7 @@ import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
-import { reportProblem } from "@/lib/problem"
+import { fieldOf, headlineOf, reportProblem } from "@/lib/problem"
 
 const unifiedService = new ShPostUnifiedService()
 const previewService = new ShPreviewTokenService()
@@ -42,6 +42,14 @@ export default function PostUnifiedEditPage() {
   const [state, setState] = useState<ShPostState>("DRAFT")
   const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
+  /**
+   * SH955 — the field the server's last refusal was about, so the form can mark it.
+   *
+   * A conflict over a friendly URL used to arrive as a toast above a page with sixteen inputs: it
+   * said which URL was taken and not which box to type in, and by the time the curator went
+   * looking the toast had gone.
+   */
+  const [refusal, setRefusal] = useState<{ field: string; message: string } | undefined>(undefined)
   const [isPreviewing, setIsPreviewing] = useState(false)
   /**
    * A PUBLISHED row exists — i.e. the page is live (SH654). Distinct from `state`, which
@@ -119,6 +127,7 @@ export default function PostUnifiedEditPage() {
 
   async function handleSave(close: boolean) {
     setIsLoading(true)
+    setRefusal(undefined)
     try {
       const updated = await unifiedService.update(postId, { data, state })
       toast.success(t("common.saved"))
@@ -129,7 +138,10 @@ export default function PostUnifiedEditPage() {
         setData(updated.data || {})
       }
     } catch (error) {
-      reportProblem(error, t("common.error"))
+      // SH955 — the toast says what happened; `at` says where, so the field is marked too.
+      const problem = reportProblem(error, t("common.error"))
+      const field = fieldOf(problem)
+      setRefusal(field ? { field, message: headlineOf(problem, t("common.error")) } : undefined)
     } finally {
       setIsLoading(false)
     }
@@ -151,7 +163,10 @@ export default function PostUnifiedEditPage() {
       setIsLive(true)
       toast.success(t("content.publishSuccess"))
     } catch (error) {
-      reportProblem(error, t("common.error"))
+      // SH955 — the toast says what happened; `at` says where, so the field is marked too.
+      const problem = reportProblem(error, t("common.error"))
+      const field = fieldOf(problem)
+      setRefusal(field ? { field, message: headlineOf(problem, t("common.error")) } : undefined)
     } finally {
       setIsPublishing(false)
     }
@@ -165,7 +180,10 @@ export default function PostUnifiedEditPage() {
       setIsLive(false)
       toast.success(t("content.unpublishSuccess"))
     } catch (error) {
-      reportProblem(error, t("common.error"))
+      // SH955 — the toast says what happened; `at` says where, so the field is marked too.
+      const problem = reportProblem(error, t("common.error"))
+      const field = fieldOf(problem)
+      setRefusal(field ? { field, message: headlineOf(problem, t("common.error")) } : undefined)
     } finally {
       setIsPublishing(false)
     }
@@ -348,6 +366,7 @@ export default function PostUnifiedEditPage() {
                 onDataChange={setData}
                 postId={postId}
                 postTypeName={postTypeName}
+                problem={refusal}
               />
             )}
           </AdaptiveSectionCard.Content>

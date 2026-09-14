@@ -19,7 +19,6 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- ⏳ **SH955** (deps: —) **twenty-four console save paths discard the server's problem document and show the word Error** — the backend half — `at` on single writes so a form can pin a message to its field, an assertion that every console-facing 4xx carries `fix`, and didYouMean as a clickable correction. → §LXI.6
 - 📋 **SH956** (deps: —) **the rich-text field stores whatever a paste or an agent write contains, and the renderer emits it unescaped** — The widget is execCommand over contentEditable with no paste handler or sanitizer, and field HTML renders raw by design, so any markup reaches the published page. → §LXI.7
 - 📋 **SH1071** (deps: —) **an upload's file name is interpolated into Content-Disposition without escaping** — sanitizeFileName guards the filesystem and leaves quotes and control characters alone, so a name like a".svg produces a header a client parses as something else. → §LXI.8
 - 📋 **SH1073** (deps: —) **shio_write reads four op fields its schema does not declare, so MCP cannot discover them** — locale, translationOf, url and expect now reach the batch, and declaring them costs 15-25 tokens each against about 6 of headroom on mcp.tools.list.total. → §LXI.9
@@ -38,7 +37,7 @@
 
 - 📋 **SH964** (deps: DS VDS133) **the console mounts no Viglet assistant, so its 106 toasts reach no mascot and no dock** — VigletAvatar, VigletAssistant and useAssistantNotifications shipped in the design system's Block E for a CMS screen like this one, and no consumer has mounted them. → §LXIII.1
 - 📋 **SH965** (deps: SH964) **nothing checks that a console write reports an outcome, so a silent save leaves the mascot idle** — useAssistantNotifications reads toasts, so a mutation that resolves without one is invisible to the dock, its announcer and the curator at the same moment. → §LXIII.2
-- 📋 **SH966** (deps: SH964, SH955 ⏳, DS VDS134) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
+- 📋 **SH966** (deps: SH964, SH955 ✅, DS VDS134) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
 - 📋 **SH967** (deps: —) **the console learns nothing until it reloads, so an agent's writes and a failed schedule reach no open screen** — The agent reads a keyset change feed and nothing streams it, so every ambient signal the dock could report needs a push channel that does not exist. → §LXIII.4
 - 📋 **SH968** (deps: SH967, DS VDS134) **agent runs and review arrivals surface only as a header count the curator cannot open** — SH936 put the pending count beside the account menu, while the contract says a count belongs to the surface that owns it, and the dock is where the system reports. → §LXIII.5
 - 📋 **SH969** (deps: SH967) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — ShPostScheduler records failures in the agent incident log and a success nowhere a person looks, so the launch a curator scheduled can silently not happen. → §LXIII.6
@@ -62,6 +61,7 @@
 - 📋 **SH984** (deps: —) **lines filed against a design-system release have no probe in the waits list, so a release can end their wait unnoticed** — SH937 holds every line waiting on the package as a named probe, and SH946, SH947, SH948, SH963, SH964, SH966 and SH968 were filed without one. → §LXIV.12
 - 📋 **SH1070** (deps: —) **the docs conformance gate is red at HEAD, and 135 commits deep in owed runs** — Two suites fail on drift nobody has seen: a published page states Spring Boot 4.1.0 against a pom declaring 4.1.1, and COVERAGE.md's summary counts 57 clusters over 54 rows. → §LXIV.13
 - ⏳ **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — the COVERAGE.md edit is in the vigletdocs working tree and uncommitted, so a fresh clone still reads the old matrix. → §LXIV.14
+- 📋 **SH1074** (deps: —) **the ARIA-state lint rejects the exact form its own failure message tells you to write** — Its regex refuses any expression not starting with a quote, so the ternary BENTO-AUTHORING gives as correct fails, and nobody saw it because the console had none. → §LXIV.15
 
 ## Block AZ — What the content said before
 
@@ -102,7 +102,7 @@
 - 📋 **SH1010** (deps: SH1009) **a field can declare only whether it is required, with no length, pattern, range, enum or uniqueness** — The attribute definition carries name, label, widget, required and a few flags and no constraint vocabulary, so every rule beyond presence lives in someone's head. → §LXVIII.2
 - 📋 **SH1011** (deps: SH985) **the post editor has no dirty state, no autosave and no unsaved-change guard** — Closing the tab mid-edit loses everything silently, while the design system ships the unsaved cue and the backend ships the field-level merge verb. → §LXVIII.3
 - 📋 **SH1012** (deps: —) **Relator, the only repeatable field, is read-only, while the documentation says it adds and removes items** — The widget takes onChange in its props and never calls it and prints that editing is disabled, while the whole data chain for nested items round-trips. → §LXVIII.4
-- 📋 **SH1013** (deps: SH955 ⏳) **the editor never calls the content intelligence the backend already computes for the page being edited** — The console makes no request to the agent surface, so dozens of verify rules and a structural page digest stay invisible to the person who could fix what they find. → §LXVIII.5
+- 📋 **SH1013** (deps: SH955 ✅) **the editor never calls the content intelligence the backend already computes for the page being edited** — The console makes no request to the agent surface, so dozens of verify rules and a structural page digest stay invisible to the person who could fix what they find. → §LXVIII.5
 - 📋 **SH1014** (deps: SH1011) **previewing unsaved edits is impossible, because the preview renders the last saved draft** — The preview token addresses a post id rather than a payload, and no endpoint renders a page from proposed field values, for a curator or an agent. → §LXVIII.6
 - 📋 **SH1015** (deps: SH956) **a page body is one opaque HTML string, so an agent cannot address a paragraph** — The rich-text value is innerHTML with no schema, so Edit lands inside one blob, canonical serialisation is impossible and the digest must parse markup to find structure. → §LXVIII.7
 - 📋 **SH1016** (deps: SH1015) **a front end cannot receive structured blocks, only the rendered HTML of a body** — The CDA, GraphQL and both SDKs return a body as a string, so a headless site cannot render a quote or an image block with its own components. → §LXVIII.8
@@ -150,7 +150,7 @@
 - 📋 **SH1046** (deps: SH1043) **the console has no query cache, so every mount refetches whole collections from scratch** — Seventeen call sites fetch whole collections and the browser refetches the entire post-type catalogue on every folder navigation, while one hand-rolled store shows the fix. → §LXXII.4
 - 📋 **SH1047** (deps: SH1046) **no console fetch can be cancelled, so a fast navigation renders whichever response arrives last** — AbortController appears nowhere, and the browser's page fetch is recreated on each folder, sort or query change with nothing cancelling the request before it. → §LXXII.5
 - 📋 **SH1048** (deps: SH1046) **the console API sends no ETag and no Cache-Control, so an unchanged read costs its full body every time** — Both cache filters are registered for the delivery and agent paths only, so every endpoint the console calls answers a full 200 with no validator. → §LXXII.6
-- 📋 **SH1049** (deps: SH1046, SH955 ⏳) **one error boundary guards the whole console, and a failed fetch leaves a spinner that never ends** — A render throw blanks the application, an unhandled load settles into a permanent spinner, and the design system's load provider and skeleton are used by nothing. → §LXXII.7
+- 📋 **SH1049** (deps: SH1046, SH955 ✅) **one error boundary guards the whole console, and a failed fetch leaves a spinner that never ends** — A render throw blanks the application, an unhandled load settles into a permanent spinner, and the design system's load provider and skeleton are used by nothing. → §LXXII.7
 - 📋 **SH1050** (deps: SH1048, SH991, SH1003) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
 - 📋 **SH1052** (deps: —) **every post-editor field is a label with no htmlFor over a widget that cannot take an id** — The widget contract is attr, onChange and postId, so a screen reader meets each field of every post type as an unnamed edit box and a label click focuses nothing. → §LXXII.10
@@ -186,13 +186,6 @@
   edit is committed in vigletdocs. Until then it exists only in that working tree, so
   the green JS gate here rests on an uncommitted file and any other checkout still reads
   the old matrix.
-
-## Done when — SH955
-
-- **A refused save pins its message on the field it is about** Single writes populate at
-  with data.field, the form reads fieldOf to mark it, and an assertion holds that every
-  console-facing 4xx carries fix. The console reads and renders the document today; on
-  most single-write refusals there is no at to read.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -57,6 +57,8 @@ public class ShRestoreTitleConflictException extends ShTeachingException {
                                 + "rows a curator can only tell apart by opening them.")
                 .withFix("Rename either post and restore again, or purge this one if the live post "
                         + "is the copy you meant to keep — a restore returns the post under its own "
-                        + "title rather than numbering it."));
+                        + "title rather than numbering it.")
+                // SH955 — the field a console form pins this on.
+                .withAt("data.title"));
     }
 }
