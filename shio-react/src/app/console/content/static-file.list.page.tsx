@@ -29,6 +29,7 @@ import type { ShStaticFileItem, ShStaticFileUsage } from "@/models/static-file/s
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import { reportProblem } from "@/lib/problem"
 import {
   mediaCategory, mediaCategoryIcon, isImageType, formatBytes,
   SH_MEDIA_CATEGORIES, type ShMediaCategory,
@@ -188,8 +189,8 @@ export default function StaticFileListPage() {
       toast.success(t(mode === "move" ? "staticFile.moved" : "staticFile.copied", { count: ids.length }))
       clearSelection()
       load()
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     }
   }
 
@@ -202,7 +203,7 @@ export default function StaticFileListPage() {
     const absolute = new URL(url, window.location.origin).toString()
     navigator.clipboard.writeText(absolute).then(
       () => toast.success(t("staticFile.urlCopied")),
-      () => toast.error(t("common.error")),
+      (error) => reportProblem(error, t("common.error")),
     )
   }
 
@@ -583,8 +584,8 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
       const updated = await service.updateMeta(item.id, { alt, caption, tags })
       toast.success(t("common.saved"))
       onSaved(updated)
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

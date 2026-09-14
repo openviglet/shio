@@ -1686,6 +1686,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH952** — shio_write passes all eleven op fields, so a scheduled publish schedules and a conditional write is conditional — and a reader now fails the build on any tool that declares an argument it never reads (design §LXI.3 recorded in `docs/agents/agent-surface.md`).
 - **SH953** — A bulk delete now counts what actually went, names each refused row with the server's own reason, leaves the refusals selected and refreshes the page the curator was on (design §LXI.4 recorded in `docs/agents/console-ui.md`).
 - **SH954** — The Clear Cache button, its endpoint, its keys and the test that held the no-op in place are gone, and a lint now fails on any mapping whose body is a bare success (design §LXI.5 recorded in `docs/agents/content-api.md`).
+- **SH955 (the console reads problem documents)** — All twenty-four save paths now show the server's own detail and fix instead of the word Error, one reader parses the problem document, and a lint fails the build on a fixed-string report.
 
 ## Block AW — One chrome: bento, and nothing left that names another
 

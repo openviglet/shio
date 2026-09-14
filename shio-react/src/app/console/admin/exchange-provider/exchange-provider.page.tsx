@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShExchangeProviderService } from "@/services/provider/exchange-provider.service"
+import { reportProblem } from "@/lib/problem"
 import type {
   ShExchangeProviderInstance,
   ShExchangeProviderVendor,
@@ -84,8 +85,8 @@ export default function ExchangeProviderPage() {
         await service.update(item)
         toast.success(t("exchangeProvider.updated"))
       }
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

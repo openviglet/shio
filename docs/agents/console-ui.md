@@ -2553,3 +2553,36 @@ zero: a batch delete on page 14 used to answer by scrolling back to the top of t
 exactly where the refused rows are not.
 
 When Block BD's bulk endpoint lands the loop becomes one call, and this reporting is what stays.
+
+## Errors are instructions, on both sides of the wall (SH955)
+
+The backend writes RFC 9457 problem documents carrying `fix`, `allowed`, `didYouMean` and `at`, and
+`ShProblem` calls a 4xx with none of them incomplete. **Twenty-four console save paths caught the
+rejection and toasted the word "Error"** — three of them in the post editor, in `catch` blocks that
+did not even bind the rejection. The axios interceptor handled CSRF capture and backend-offline
+reporting and nothing else, so no code path read `application/problem+json`. One refusal taught an
+agent exactly what to do and told a curator nothing; P6 is a law about errors, not about the agent
+surface, and it held on one side only.
+
+`src/lib/problem.ts` is the one reader. `problemOf` parses the document; `headlineOf` prefers
+`detail` over `title` (the long form is what a person reads first, the title is a label); `adviceOf`
+joins `fix`, `didYouMean` and a capped `allowed` into the second line; `fieldOf` turns `data.furl`
+into `furl` so a form can match it against its own fields. `reportProblem(error, fallback)` is the
+single replacement for the fixed-string toast, and **the fallback is a floor**: where a rejection
+carries nothing, it says exactly what the old line said, so this can never say less.
+
+**One reader, not two.** SH953's `batch-delete.ts` grew a small `problemOf` a task earlier; it now
+delegates here rather than keeping a second answer to "what did the server say". Its import is
+`"./problem.ts"` — relative and extension-bearing, not the `@/` alias every page uses — because
+`node --test` resolves no Vite alias, and the alias took that suite from green to
+`ERR_MODULE_NOT_FOUND`. Vite resolves this form too, so one spelling serves both.
+
+`problem-reporting.test.mjs` holds the lint: a save path reporting the fixed `common.error` string
+fails the build. Comments are stripped first, or this file's own prose about the call would read as
+the call — SH952's reader made exactly that mistake.
+
+**Not covered (the remainder of SH955):** the backend half. `at` is populated on batch writes and
+not on single ones, so `fieldOf` has nothing to match for most refusals and no form pins a message
+to a field yet; and nothing asserts that every console-facing 4xx actually carries `fix`.
+`didYouMean` and `allowed` render as text in the toast rather than as a clickable correction and a
+collapsible list. Block AX routes these reports into the assistant dock; this task made them exist.

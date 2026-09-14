@@ -14,6 +14,7 @@ import { ShPostUnifiedService } from "@/services/post-unified/post-unified.servi
 import type { ShPostType } from "@/models/post-type/post-type"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
+import { reportProblem } from "@/lib/problem"
 
 const postTypeService = new ShPostTypeService()
 const unifiedService = new ShPostUnifiedService()
@@ -51,8 +52,8 @@ export default function PostUnifiedNewPage() {
       })
       toast.success(t("common.saved"))
       navigateBack()
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }

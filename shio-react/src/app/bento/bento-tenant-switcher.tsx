@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { ShTenant } from "@/models/tenant/tenant.model"
 import { ShTenantService } from "@/services/tenant/tenant.service"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShTenantService()
 
@@ -85,8 +86,8 @@ export function BentoTenantSwitcher() {
     try {
       await service.switchTo(name)
       globalThis.location.reload()
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
       setSwitching(false)
     }
   }
@@ -95,8 +96,8 @@ export function BentoTenantSwitcher() {
     try {
       await navigator.clipboard.writeText(linkWithTenant(globalThis.location.href, current))
       toast.success(t("tenantLink.copied", { tenant: current }))
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     }
   }
 

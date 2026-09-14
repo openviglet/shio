@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShAuthProviderService } from "@/services/provider/auth-provider.service"
+import { reportProblem } from "@/lib/problem"
 import type {
   ShAuthProviderInstance,
   ShAuthProviderVendor,
@@ -84,8 +85,8 @@ export default function AuthProviderPage() {
         await service.update(item)
         toast.success(t("authProvider.updated"))
       }
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

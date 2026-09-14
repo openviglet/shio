@@ -15,6 +15,7 @@ import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShLocaleService, type ShLocale } from "@/services/locale/locale.service"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
+import { reportProblem } from "@/lib/problem"
 
 const unifiedService = new ShPostUnifiedService()
 const localeService = new ShLocaleService()
@@ -53,8 +54,8 @@ export function PostTranslationsMenu({ postId, currentLocale }: { postId: string
       const created = await unifiedService.translate(postId, initials)
       toast.success(t("content.translationCreated"))
       navigate(`${ROUTES.CONSOLE}/content/post/${created.id}`)
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setBusy(false)
     }

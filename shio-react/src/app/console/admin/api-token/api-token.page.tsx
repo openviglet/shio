@@ -19,6 +19,7 @@ import { ShApiTokenService } from "@/services/token/api-token.service"
 import type { ShApiToken, ShApiTokenScope, ShApiTokenEnv } from "@/models/token/api-token.model"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShApiTokenService()
 const siteService = new ShSiteService()
@@ -73,8 +74,8 @@ export default function ApiTokenPage() {
         await service.update(item)
         toast.success(t("apiToken.updated"))
       }
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

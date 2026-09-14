@@ -29,6 +29,7 @@ import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
+import { reportProblem } from "@/lib/problem"
 
 const unifiedService = new ShPostUnifiedService()
 const previewService = new ShPreviewTokenService()
@@ -127,8 +128,8 @@ export default function PostUnifiedEditPage() {
         setPost(updated)
         setData(updated.data || {})
       }
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }
@@ -149,8 +150,8 @@ export default function PostUnifiedEditPage() {
       setData(saved.data || {})
       setIsLive(true)
       toast.success(t("content.publishSuccess"))
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setIsPublishing(false)
     }
@@ -163,8 +164,8 @@ export default function PostUnifiedEditPage() {
       await unifiedService.unpublish(postId)
       setIsLive(false)
       toast.success(t("content.unpublishSuccess"))
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setIsPublishing(false)
     }

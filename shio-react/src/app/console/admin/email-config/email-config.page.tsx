@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShEmailConfigService } from "@/services/config/email-config.service"
 import type { ShEmailConfig } from "@/models/config/email-config.model"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShEmailConfigService()
 
@@ -40,8 +41,8 @@ export default function EmailConfigPage() {
       const saved = await service.update(config)
       setConfig(saved)
       toast.success(t("emailConfig.saved"))
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

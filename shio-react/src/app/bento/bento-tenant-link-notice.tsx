@@ -10,12 +10,12 @@ import { IconBuildingSkyscraper, IconX } from "@tabler/icons-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useLocation } from "react-router-dom"
-import { toast } from "@viglet/viglet-design-system"
 
 import { useMultiTenant } from "@/app/bento/bento-nav"
 import { tenantFromSearch } from "@/app/bento/bento-tenant-link"
 import { Button } from "@/components/ui/button"
 import { ShTenantService } from "@/services/tenant/tenant.service"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShTenantService()
 
@@ -85,8 +85,8 @@ export function BentoTenantLinkNotice() {
     try {
       await service.switchTo(claimed)
       globalThis.location.reload()
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
       setSwitching(false)
     }
   }

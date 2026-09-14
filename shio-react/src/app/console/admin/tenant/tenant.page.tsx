@@ -15,6 +15,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShTenantService } from "@/services/tenant/tenant.service"
 import type { ShTenant } from "@/models/tenant/tenant.model"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShTenantService()
 
@@ -33,7 +34,7 @@ export default function TenantPage() {
 
   useEffect(() => {
     if (!isNew) {
-      service.get(tenantId).then(setItem).catch(() => toast.error(t("common.error")))
+      service.get(tenantId).then(setItem).catch(error => reportProblem(error, t("common.error")))
     }
   }, [t, tenantId, isNew, item.name])
 
@@ -52,8 +53,8 @@ export default function TenantPage() {
         await service.update(item)
         toast.success(t("tenantAdmin.updated"))
       }
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }
@@ -71,8 +72,8 @@ export default function TenantPage() {
     try {
       const result = await service.provision(item.id)
       toast.success(t("tenantAdmin.provisioned", { count: result.postTypesCreated }))
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     }
   }
 
@@ -81,8 +82,8 @@ export default function TenantPage() {
       const updated = isSuspended ? await service.activate(item.id) : await service.suspend(item.id)
       setItem(updated)
       toast.success(isSuspended ? t("tenantAdmin.activated") : t("tenantAdmin.suspended"))
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     }
   }
 

@@ -17,6 +17,7 @@ import { Bot, Check, ChevronDown, ChevronRight, GitCompare, RefreshCw, Undo2 } f
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShReviewService()
 const postService = new ShPostUnifiedService()
@@ -77,8 +78,8 @@ export default function ReviewListPage() {
     try {
       const detail = await service.detail(session)
       setOpen((prev) => ({ ...prev, [session]: detail }))
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     }
   }
 
@@ -104,8 +105,8 @@ export default function ReviewListPage() {
       // SH207 — the navigation badge counts what this just changed, and a badge that disagrees
       // with the page it opens is the one number a curator learns to distrust.
       refreshPending()
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setBusy(null)
     }
@@ -121,8 +122,8 @@ export default function ReviewListPage() {
       const post = await postService.get(postId, "DRAFT").catch(() => postService.get(postId, "PUBLISHED"))
       setDiffSchema(postFormSchema(post.shPostType))
       setDiffPostId(postId)
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     }
   }
 

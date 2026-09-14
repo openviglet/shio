@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { ShAclService } from "@/services/acl/acl.service"
 import type { ShAclPermission, ShAclPrincipalType, ShContentAcl } from "@/models/acl/acl.model"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShAclService()
 
@@ -78,8 +79,8 @@ function PermissionsBody({
       await service.replace(objectId, clean)
       toast.success(t("acl.saved"))
       setOpen(false)
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

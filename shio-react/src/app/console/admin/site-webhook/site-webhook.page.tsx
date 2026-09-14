@@ -19,6 +19,7 @@ import type { ShSiteWebhook, ShWebhookEventType } from "@/models/webhook/site-we
 import { SH_WEBHOOK_EVENT_TYPES } from "@/models/webhook/site-webhook.model"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShSiteWebhookService()
 const siteService = new ShSiteService()
@@ -75,8 +76,8 @@ export default function SiteWebhookPage() {
         await service.update(item)
         toast.success(t("siteWebhook.updated"))
       }
-    } catch {
-      toast.error(t("common.error"))
+    } catch (error) {
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

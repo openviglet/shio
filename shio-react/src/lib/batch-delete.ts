@@ -24,6 +24,10 @@
  * This does not wait for Block BD's bulk endpoint. When that lands the loop becomes one call and
  * this reporting is what stays.
  */
+// Relative and extension-bearing, not the `@/` alias every page uses: this module is imported by
+// a `node --test` suite that resolves no Vite alias, and the alias is what took that suite from
+// green to ERR_MODULE_NOT_FOUND. Vite resolves this form too, so one spelling serves both.
+import { problemOf as readProblem } from "./problem.ts"
 
 /** What a row is, as far as deleting it goes. */
 export interface DeleteTarget {
@@ -51,24 +55,15 @@ export interface BatchOutcome {
 /**
  * The server's problem document, or the nearest honest thing (RFC 9457).
  *
- * Shio answers a refusal with `title` and `detail`, and the whole point of SH80's teaching errors
- * is that the `detail` says what to do. An axios rejection buries it in `response.data`; a network
- * failure has no document at all, and `message` is then the only true thing available.
+ * SH955 moved the reading itself into `problem.ts`, which is the whole point of that task: two
+ * readers of one document is two answers to "what did the server say". This keeps the shape a
+ * refusal has here — a `title` that is never empty, because a refusal with no words at all still
+ * has to be nameable in a list of them.
  */
 export function problemOf(error: unknown): { title: string; detail?: string } {
-  const data = (error as { response?: { data?: unknown } })?.response?.data
-  if (data && typeof data === "object") {
-    const problem = data as { title?: unknown; detail?: unknown; message?: unknown }
-    const title = [problem.title, problem.message].find((value) => typeof value === "string" && value)
-    if (typeof title === "string") {
-      // `detail` is omitted rather than set to undefined: a caller comparing problems, and a
-      // reader of one, should not have to tell an absent key from a present empty one.
-      const detail = typeof problem.detail === "string" && problem.detail ? problem.detail : null
-      return detail ? { title, detail } : { title }
-    }
-  }
-  const message = (error as { message?: unknown })?.message
-  return { title: typeof message === "string" && message ? message : "Request failed" }
+  const problem = readProblem(error)
+  const title = problem.title || "Request failed"
+  return problem.detail ? { title, detail: problem.detail } : { title }
 }
 
 /**
